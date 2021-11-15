@@ -7,7 +7,8 @@ We hope this project can largely reduce the work of manually porting OpenCV func
 
 ## Dependencies
 
-- [OpenCV](https://github.com/opencv/opencv)
+- Python3
+- NumPy
 - [CMake](https://cmake.org/)
 
 ## Installation

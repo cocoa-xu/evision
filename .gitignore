@@ -10,5 +10,7 @@ erl_crash.dump
 .elixir_ls/
 /c_src/evision_generated_*
 /c_src/evision_signatures.json
-/c_src/opencv_hdr.txt
+/c_src/evision_custom_headers.h
+/c_src/configuration.private.hpp
+/c_src/headers.txt
 .DS_Store

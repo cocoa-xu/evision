@@ -1060,8 +1060,6 @@ class PythonWrapperGenerator(object):
             if len(decls) == 0:
                 continue
 
-            if hdr.find('/intrin_') >= 0 or hdr.find('/cuda/') >= 0 or hdr.find('opencl_svm.hpp') >= 0:
-                continue
             if hdr.find('misc/python/shadow_') < 0:  # Avoid including the "shadow_" files
                 if hdr.find('opencv2/') >= 0:
                     # put relative path
