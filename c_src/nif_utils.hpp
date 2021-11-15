@@ -2,11 +2,9 @@
 
 #include "erl_nif.h"
 
-ErlNifResourceType *TENSOR_TYPE;
-
 #define GET(ARGN, VAR)                      \
-  if (!nx::nif::get(env, argv[ARGN], &VAR)) \
-    return nx::nif::error(env, "Unable to get " #VAR " param.");
+  if (!evision::nif::get(env, argv[ARGN], &VAR)) \
+    return evision::nif::error(env, "Unable to get " #VAR " param.");
 
 #define PARAM(ARGN, TYPE, VAR) \
   TYPE VAR;                    \
@@ -14,28 +12,28 @@ ErlNifResourceType *TENSOR_TYPE;
 
 #define ATOM_PARAM(ARGN, VAR)                   \
   std::string VAR;                              \
-  if (!nx::nif::get_atom(env, argv[ARGN], VAR)) \
-    return nx::nif::error(env, "Unable to get " #VAR " atom param.");
+  if (!evision::nif::get_atom(env, argv[ARGN], VAR)) \
+    return evision::nif::error(env, "Unable to get " #VAR " atom param.");
 
 #define TUPLE_PARAM(ARGN, TYPE, VAR)                 \
   TYPE VAR;                                          \
-  if (!nx::nif::get_tuple(env, argv[ARGN], VAR))  {  \
+  if (!evision::nif::get_tuple(env, argv[ARGN], VAR))  {  \
     std::ostringstream msg;                          \
     msg << "Unable to get " #VAR " tuple param in NIF." << __func__ << "/" << argc; \
-    return nx::nif::error(env, msg.str().c_str());    \
+    return evision::nif::error(env, msg.str().c_str());    \
   }
 
 #define LIST_PARAM(ARGN, TYPE, VAR)             \
   TYPE VAR;                                      \
-  if (!nx::nif::get_list(env, argv[ARGN], VAR)) \
-    return nx::nif::error(env, "Unable to get " #VAR " list param.");
+  if (!evision::nif::get_list(env, argv[ARGN], VAR)) \
+    return evision::nif::error(env, "Unable to get " #VAR " list param.");
 
 #define BINARY_PARAM(ARGN, VAR)                    \
   ErlNifBinary VAR;                                \
   if (!enif_inspect_binary(env, argv[ARGN], &VAR)) \
-    return nx::nif::error(env, "Unable to get " #VAR " binary param.");
+    return evision::nif::error(env, "Unable to get " #VAR " binary param.");
 
-namespace nx
+namespace evision
 {
   namespace nif
   {
@@ -267,27 +265,6 @@ namespace nx
         if (!get(env, head, &elem))
           return 0;
         var.push_back(elem);
-        list = tail;
-      }
-      return 1;
-    }
-
-    int get_list(ErlNifEnv *env, ERL_NIF_TERM list, std::vector<torch::Tensor> &var)
-    {
-      unsigned int length;
-      if (!enif_get_list_length(env, list, &length))
-        return 0;
-      var.reserve(length);
-      ERL_NIF_TERM head, tail;
-
-      while (enif_get_list_cell(env, list, &head, &tail))
-      {
-        torch::Tensor *elem;
-        if (!enif_get_resource(env, head, TENSOR_TYPE, reinterpret_cast<void **>(&elem)))
-        {
-          return 0;
-        }
-        var.push_back(*elem);
         list = tail;
       }
       return 1;
