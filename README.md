@@ -28,3 +28,7 @@ end
 
 - [ ] Update `.py` files in `py_src` so that they output header files for Erlang bindings.
 - [ ] Automatically generate `erl_cv_nif.ex` and other `opencv_*.ex` files using Python.
+
+### Acknowledgements
+- `gen2.py` and `hdr_parser.py` were directly copied from the `python` module in the [OpenCV repo](https://github.com/opencv/opencv).
+- `Makefile` and `CMakeLists.txt` were also copied from the `torchx` module in the [elixir-nx repo](https://github.com/elixir-nx/nx).
