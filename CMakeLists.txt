@@ -6,6 +6,18 @@ include_directories("${OpenCV_INCLUDE_DIRS}")
 
 file(GLOB evision_sources CONFIGURE_DEPENDS "${C_SRC}/*.cpp" "${C_SRC}/*.hpp" "${C_SRC}/*.h")
 
+execute_process(
+    COMMAND bash -c "find ${OpenCV_INCLUDE_DIRS} -type f > ${C_SRC}/opencv_hdr.txt"
+)
+execute_process(
+    COMMAND bash -c "python3 ${PY_SRC}/gen2.py ${C_SRC} ${C_SRC}/opencv_hdr.txt"
+)
+execute_process(
+    COMMAND bash -c "if [ ! -d ${PRIV_DIR}/evision ]; then \
+    ln -sf $(cd ${OpenCV_LIB_DIRS}; pwd) ${PRIV_DIR}/evision ; \
+fi"
+)
+
 add_executable(evision.so ${evision_sources})
 target_link_libraries(evision.so "${OpenCV_LIBS}")
 set_property(TARGET evision.so PROPERTY CXX_STANDARD 14)
