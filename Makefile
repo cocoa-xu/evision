@@ -16,8 +16,8 @@ build: $(EVISION_SO)
 $(EVISION_SO):
 	@ mkdir -p "$(PRIV_DIR)" "$(CMAKE_EVISION_BUILD_DIR)" "$(CMAKE_OPENCV_BUILD_DIR)"
 	@ git submodule update --init --recursive
-	@ pushd "$(OPENCV_DIR)" && git checkout "tags/${OPENCV_VER}" && popd
-	@ pushd "$(OPENCV_CONTRIB_DIR)" && git checkout "tags/${OPENCV_VER}" && popd
+	@ cd "$(OPENCV_DIR)" && git checkout "tags/${OPENCV_VER}"
+	@ cd "$(OPENCV_CONTRIB_DIR)" && git checkout "tags/${OPENCV_VER}"
 	@ cd "$(CMAKE_OPENCV_BUILD_DIR)" && \
 		cmake -S "$(OPENCV_DIR)" \
 		-D CMAKE_BUILD_TYPE=RELEASE \
