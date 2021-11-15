@@ -871,14 +871,16 @@ class PythonWrapperGenerator(object):
 
     def add_class(self, stype, name, decl):
         classinfo = ClassInfo(name, decl)
-        classinfo.decl_idx = self.class_idx
-        self.class_idx += 1
 
         if classinfo.name in self.classes:
             print("Generator error: class %s (cname=%s) already exists" \
                 % (classinfo.name, classinfo.cname))
             # sys.exit(-1)
             return
+
+        classinfo.decl_idx = self.class_idx
+        self.class_idx += 1
+
         self.classes[classinfo.name] = classinfo
 
         # Add Class to json file.
@@ -909,7 +911,6 @@ class PythonWrapperGenerator(object):
         if name in ns.consts:
             print("Generator error: constant %s (cname=%s) already exists" \
                 % (name, cname))
-            # sys.exit(-1)
             return
         ns.consts[name] = cname
 
@@ -1059,6 +1060,8 @@ class PythonWrapperGenerator(object):
             if len(decls) == 0:
                 continue
 
+            if hdr.find('/intrin_') >= 0 or hdr.find('/cuda/') >= 0 or hdr.find('opencl_svm.hpp') >= 0:
+                continue
             if hdr.find('misc/python/shadow_') < 0:  # Avoid including the "shadow_" files
                 if hdr.find('opencv2/') >= 0:
                     # put relative path
