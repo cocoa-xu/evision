@@ -5,20 +5,20 @@ import os, sys, re, string, io
 
 # the list only for debugging. The real list, used in the real OpenCV build, is specified in CMakeLists.txt
 opencv_hdr_list = [
-"../../core/include/opencv2/core.hpp",
-"../../core/include/opencv2/core/mat.hpp",
-"../../core/include/opencv2/core/ocl.hpp",
-"../../flann/include/opencv2/flann/miniflann.hpp",
-"../../ml/include/opencv2/ml.hpp",
-"../../imgproc/include/opencv2/imgproc.hpp",
-"../../calib3d/include/opencv2/calib3d.hpp",
-"../../features2d/include/opencv2/features2d.hpp",
-"../../video/include/opencv2/video/tracking.hpp",
-"../../video/include/opencv2/video/background_segm.hpp",
-"../../objdetect/include/opencv2/objdetect.hpp",
-"../../imgcodecs/include/opencv2/imgcodecs.hpp",
-"../../videoio/include/opencv2/videoio.hpp",
-"../../highgui/include/opencv2/highgui.hpp",
+"include/opencv4/opencv2/core/core.hpp",
+"include/opencv4/opencv2/core/mat.hpp",
+"include/opencv4/opencv2/core/ocl.hpp",
+"include/opencv4/opencv2/flann/miniflann.hpp",
+"include/opencv4/opencv2/ml/ml.hpp",
+"include/opencv4/opencv2/imgproc/imgproc.hpp",
+"include/opencv4/opencv2/calib3d/calib3d.hpp",
+"include/opencv4/opencv2/features2d/features2d.hpp",
+"include/opencv4/opencv2/video/tracking.hpp",
+"include/opencv4/opencv2/video/background_segm.hpp",
+"include/opencv4/opencv2/objdetect/objdetect.hpp",
+"include/opencv4/opencv2/imgcodecs/imgcodecs.hpp",
+"include/opencv4/opencv2/videoio/videoio.hpp",
+"include/opencv4/opencv2/highgui/highgui.hpp",
 ]
 
 """

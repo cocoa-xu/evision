@@ -8,3 +8,7 @@ erl_crash.dump
 *.beam
 /config/*.secret.exs
 .elixir_ls/
+/c_src/evision_generated_*
+/c_src/evision_signatures.json
+/c_src/opencv_hdr.txt
+.DS_Store

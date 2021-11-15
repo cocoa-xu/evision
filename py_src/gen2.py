@@ -877,7 +877,8 @@ class PythonWrapperGenerator(object):
         if classinfo.name in self.classes:
             print("Generator error: class %s (cname=%s) already exists" \
                 % (classinfo.name, classinfo.cname))
-            sys.exit(-1)
+            # sys.exit(-1)
+            return
         self.classes[classinfo.name] = classinfo
 
         # Add Class to json file.
@@ -908,7 +909,8 @@ class PythonWrapperGenerator(object):
         if name in ns.consts:
             print("Generator error: constant %s (cname=%s) already exists" \
                 % (name, cname))
-            sys.exit(-1)
+            # sys.exit(-1)
+            return
         ns.consts[name] = cname
 
         value = decl[1]
@@ -1173,18 +1175,18 @@ class PythonWrapperGenerator(object):
             self.gen_const_reg(constinfo)
 
         # That's it. Now save all the files
-        self.save(output_path, "pyopencv_generated_include.h", self.code_include)
-        self.save(output_path, "pyopencv_generated_funcs.h", self.code_funcs)
-        self.save(output_path, "pyopencv_generated_enums.h", self.code_enums)
-        self.save(output_path, "pyopencv_generated_types.h", self.code_type_publish)
-        self.save(output_path, "pyopencv_generated_types_content.h", self.code_types)
-        self.save(output_path, "pyopencv_generated_modules.h", self.code_ns_init)
-        self.save(output_path, "pyopencv_generated_modules_content.h", self.code_ns_reg)
-        self.save_json(output_path, "pyopencv_signatures.json", self.py_signatures)
+        self.save(output_path, "evision_generated_include.h", self.code_include)
+        self.save(output_path, "evision_generated_funcs.h", self.code_funcs)
+        self.save(output_path, "evision_generated_enums.h", self.code_enums)
+        self.save(output_path, "evision_generated_types.h", self.code_type_publish)
+        self.save(output_path, "evision_generated_types_content.h", self.code_types)
+        self.save(output_path, "evision_generated_modules.h", self.code_ns_init)
+        self.save(output_path, "evision_generated_modules_content.h", self.code_ns_reg)
+        self.save_json(output_path, "evision_signatures.json", self.py_signatures)
 
 if __name__ == "__main__":
     srcfiles = hdr_parser.opencv_hdr_list
-    dstdir = "/Users/vp/tmp"
+    dstdir = "./_build"
     if len(sys.argv) > 1:
         dstdir = sys.argv[1]
     if len(sys.argv) > 2:
