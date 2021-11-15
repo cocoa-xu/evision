@@ -14,3 +14,4 @@ erl_crash.dump
 /c_src/configuration.private.hpp
 /c_src/headers.txt
 .DS_Store
+.vscode/
