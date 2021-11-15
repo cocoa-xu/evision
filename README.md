@@ -35,5 +35,5 @@ end
 - [ ] Automatically generate `erl_cv_nif.ex` and other `opencv_*.ex` files using Python.
 
 ### Acknowledgements
-- `gen2.py` and `hdr_parser.py` were directly copied from the `python` module in the [OpenCV repo](https://github.com/opencv/opencv). Minor changes applied.
+- `gen2.py`, `hdr_parser.py` and `c_src/erlcompat.hpp` were directly copied from the `python` module in the [OpenCV repo](https://github.com/opencv/opencv). Changes applied.
 - `Makefile`, `CMakeLists.txt` and `c_src/nif_utils.hpp` were also copied from the `torchx` module in the [elixir-nx repo](https://github.com/elixir-nx/nx). Minor changes applied.
