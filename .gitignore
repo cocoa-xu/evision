@@ -15,3 +15,4 @@ erl_crash.dump
 /c_src/headers.txt
 .DS_Store
 .vscode/
+/c_src/evision_custom_headers/*
