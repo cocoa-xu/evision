@@ -1,5 +1,9 @@
-# evision
-OpenCV-Elixir bindings
+# evision [WIP]
+`evision` will search OpenCV libraries installed on your system, then parse and automatically generate corresponding OpenCV-Elixir bindings.
+
+This project uses and modifies `gen2.py` and `hdr_parser.py` from the `python` module in the [OpenCV repo](https://github.com/opencv/opencv) so that they output header files that can be used in Elixir bindings. 
+
+We hope this project can largely reduce the work of manually porting OpenCV functions/modules to Elixir.
 
 ## Dependencies
 
