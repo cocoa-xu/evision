@@ -35,6 +35,8 @@
 
 #include <type_traits>  // std::enable_if
 
+using namespace cv;
+
 #pragma mark - Resource Types
 
 template<typename R>
@@ -50,7 +52,7 @@ int alloc_resource(evision_res<R> **res) {
     return (*res != nullptr);
 }
 
-#define CV_HAS_CONVERSION_ERROR(x) (((x) == -1) && PyErr_Occurred())
+#define CV_HAS_CONVERSION_ERROR(x) (((x) == -1))
 
 static PyObject* opencv_error = NULL;
 
@@ -71,7 +73,7 @@ private:
 };
 
 template<typename T, class TEnable = void>  // TEnable is used for SFINAE checks
-struct PyOpenCV_Converter
+struct Evision_Converter
 {
     //static inline bool to(PyObject* obj, T& p, const ArgInfo& info);
     //static inline PyObject* from(const T& src);
@@ -98,10 +100,10 @@ bool evision_to_safe(PyObject* obj, _Tp& value, const ArgInfo& info)
 }
 
 template<typename T> static
-bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, T& p, const ArgInfo& info) { return PyOpenCV_Converter<T>::to(env, obj, p, info); }
+bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, T& p, const ArgInfo& info) { return Evision_Converter<T>::to(env, obj, p, info); }
 
 template<typename T> static
-ERL_NIF_TERM evision_from(ErlNifEnv *env, const T& src) { return PyOpenCV_Converter<T>::from(env, src); }
+ERL_NIF_TERM evision_from(ErlNifEnv *env, const T& src) { return Evision_Converter<T>::from(env, src); }
 
 static bool isPythonBindingsDebugEnabled()
 {
@@ -893,15 +895,17 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const Mat& m)
     if( !m.data )
         return make_atom(env, "nil");
 
-    evision_res<Mat> * res;
+    evision_res<cv::Mat> * res;
     if (alloc_resource(&res)) {
-        res->val = new Mat();
+        res->val = new cv::Mat();
         m.copyTo(*res->val);
     } else {
         make_error_tuple(env, "no memory");
     }
 
-    return enif_make_resource(env, res);
+    ERL_NIF_TERM ret = enif_make_resource(env, res);
+    enif_release_resource(res);
+    return ret;
 }
 
 template<typename _Tp, int m, int n>
@@ -911,17 +915,17 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const Matx<_Tp, m, n>& matx)
 }
 
 template<typename T>
-struct PyOpenCV_Converter< cv::Ptr<T> >
+struct Evision_Converter< cv::Ptr<T> >
 {
-    static PyObject* from(ErlNifEnv *env, const cv::Ptr<T>& p)
+    static ERL_NIF_TERM from(ErlNifEnv *env, const cv::Ptr<T>& p)
     {
         if (!p)
-            Py_RETURN_NONE;
+            evision::nif::atom(env, "nil");
         return evision_from(env, *p);
     }
-    static bool to(ErlNifEnv * env, PyObject *o, Ptr<T>& p, const ArgInfo& info)
+    static bool to(ErlNifEnv * env, ERL_NIF_TERM o, Ptr<T>& p, const ArgInfo& info)
     {
-        if (!o || o == Py_None)
+        if (evision::nif::check_nil(env, o))
             return true;
         p = makePtr<T>();
         return evision_to(env, o, *p, info);
@@ -1065,26 +1069,28 @@ bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, int& value, const ArgInfo& inf
 // There is conflict between "size_t" and "unsigned int".
 // They are the same type on some 32-bit platforms.
 template<typename T>
-struct PyOpenCV_Converter
+struct Evision_Converter
     < T, typename std::enable_if< std::is_same<unsigned int, T>::value && !std::is_same<unsigned int, size_t>::value >::type >
 {
-    static inline PyObject* from(const unsigned int& value)
+    static inline ERL_NIF_TERM from(ErlNifEnv *env, const unsigned int& value)
     {
-        return PyLong_FromUnsignedLong(value);
+        return enif_make_uint(env, value);
     }
 
-    static inline bool to(PyObject* obj, unsigned int& value, const ArgInfo& info)
+    static inline bool to(ErlNifEnv *env, ERL_NIF_TERM obj, unsigned int& value, const ArgInfo& info)
     {
         CV_UNUSED(info);
-        if(!obj || obj == Py_None)
+        if(evision::nif::check_nil(env, obj))
             return true;
-        if(PyInt_Check(obj))
-            value = (unsigned int)PyInt_AsLong(obj);
-        else if(PyLong_Check(obj))
-            value = (unsigned int)PyLong_AsLong(obj);
+        int i32;
+        ErlNifSInt64 i64;
+        if(enif_get_int(env, obj, &i32))
+            value = i32;
+        else if(enif_get_int64(env, obj, &i64))
+            value = (unsigned int)i64;
         else
             return false;
-        return value != (unsigned int)-1 || !PyErr_Occurred();
+        return value != (unsigned int)-1;
     }
 };
 
@@ -1155,44 +1161,24 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const float& value)
 }
 
 template<>
-bool evision_to(ErlNifEnv *env, PyObject* obj, float& value, const ArgInfo& info)
+bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, float& value, const ArgInfo& info)
 {
-    if (!obj || obj == Py_None)
+    long i64;
+    double f64;
+    if (enif_get_int64(env, obj, &i64))
     {
-        return true;
+        value = static_cast<float>(i64);
     }
-    if (isBool(obj))
+    else if (enif_get_double(env, obj, &f64))
     {
-        failmsg("Argument '%s' must be float, not bool", info.name);
-        return false;
-    }
-    if (PyArray_IsPythonNumber(obj))
-    {
-        if (PyLong_Check(obj))
-        {
-            double res = PyLong_AsDouble(obj);
-            value = static_cast<float>(res);
-        }
-        else
-        {
-            double res = PyFloat_AsDouble(obj);
-            value = static_cast<float>(res);
-        }
-    }
-    else if (PyArray_CheckScalar(obj))
-    {
-       const bool isParsed = parseNumpyScalar<float>(obj, value);
-        if (!isParsed) {
-            failmsg("Argument '%s' can not be safely parsed to 'float'", info.name);
-            return false;
-        }
+        value = static_cast<float>(f64);
     }
     else
     {
         failmsg("Argument '%s' can't be treated as a float", info.name);
         return false;
     }
-    return !PyErr_Occurred();
+    return true;
 }
 
 template<>
@@ -1216,38 +1202,15 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const std::string& value)
 #endif
 
 template<>
-bool evision_to(ErlNifEnv *env, PyObject* obj, String &value, const ArgInfo& info)
+bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, String &value, const ArgInfo& info)
 {
-    if(!obj || obj == Py_None)
-    {
-        return true;
-    }
     std::string str;
-    if (getUnicodeString(obj, str))
-    {
-        value = str;
-        return true;
-    }
-    else
-    {
-        // If error hasn't been already set by Python conversion functions
-        if (!PyErr_Occurred())
-        {
-            // Direct access to underlying slots of PyObjectType is not allowed
-            // when limited API is enabled
-#ifdef Py_LIMITED_API
-            failmsg("Can't convert object to 'str' for '%s'", info.name);
-#else
-            failmsg("Can't convert object of type '%s' to 'str' for '%s'",
-                    obj->ob_type->tp_name, info.name);
-#endif
-        }
-    }
-    return false;
+    int ret = evision::nif::get(env, obj, str);
+    return (ret > 0);
 }
 
 template<>
-bool evision_to(ErlNifEnv *env, PyObject* obj, Size& sz, const ArgInfo& info)
+bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, Size& sz, const ArgInfo& info)
 {
     RefWrapper<int> values[] = {RefWrapper<int>(sz.width),
                                 RefWrapper<int>(sz.height)};
@@ -1261,7 +1224,7 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const Size& sz)
 }
 
 template<>
-bool evision_to(ErlNifEnv *env, PyObject* obj, Size_<float>& sz, const ArgInfo& info)
+bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, Size_<float>& sz, const ArgInfo& info)
 {
     RefWrapper<float> values[] = {RefWrapper<float>(sz.width),
                                   RefWrapper<float>(sz.height)};
@@ -1275,7 +1238,7 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const Size_<float>& sz)
 }
 
 template<>
-bool evision_to(ErlNifEnv *env, PyObject* obj, Rect& r, const ArgInfo& info)
+bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, Rect& r, const ArgInfo& info)
 {
     RefWrapper<int> values[] = {RefWrapper<int>(r.x), RefWrapper<int>(r.y),
                                 RefWrapper<int>(r.width),
@@ -1295,7 +1258,7 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const Rect& r)
 }
 
 template<>
-bool evision_to(ErlNifEnv *env, PyObject* obj, Rect2d& r, const ArgInfo& info)
+bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, Rect2d& r, const ArgInfo& info)
 {
     RefWrapper<double> values[] = {
         RefWrapper<double>(r.x), RefWrapper<double>(r.y),
@@ -1315,14 +1278,11 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const Rect2d& r)
 }
 
 template<>
-bool evision_to(ErlNifEnv *env, PyObject* obj, Range& r, const ArgInfo& info)
+bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, Range& r, const ArgInfo& info)
 {
-    if (!obj || obj == Py_None)
-    {
-        return true;
-    }
-    if (PyObject_Size(obj) == 0)
-    {
+    const ERL_NIF_TERM *terms;
+    int length = 0;
+    if (!enif_get_tuple(env, obj, &length, &terms) || length == 0) {
         r = Range::all();
         return true;
     }
@@ -1340,14 +1300,14 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const Range& r)
 }
 
 template<>
-bool evision_to(ErlNifEnv *env, PyObject* obj, Point& p, const ArgInfo& info)
+bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, Point& p, const ArgInfo& info)
 {
     RefWrapper<int> values[] = {RefWrapper<int>(p.x), RefWrapper<int>(p.y)};
     return parseSequence(env, obj, values, info);
 }
 
 template <>
-bool evision_to(ErlNifEnv *env, PyObject* obj, Point2f& p, const ArgInfo& info)
+bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, Point2f& p, const ArgInfo& info)
 {
     RefWrapper<float> values[] = {RefWrapper<float>(p.x),
                                   RefWrapper<float>(p.y)};
@@ -1355,7 +1315,7 @@ bool evision_to(ErlNifEnv *env, PyObject* obj, Point2f& p, const ArgInfo& info)
 }
 
 template<>
-bool evision_to(ErlNifEnv *env, PyObject* obj, Point2d& p, const ArgInfo& info)
+bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, Point2d& p, const ArgInfo& info)
 {
     RefWrapper<double> values[] = {RefWrapper<double>(p.x),
                                    RefWrapper<double>(p.y)};
@@ -1363,7 +1323,7 @@ bool evision_to(ErlNifEnv *env, PyObject* obj, Point2d& p, const ArgInfo& info)
 }
 
 template<>
-bool evision_to(ErlNifEnv *env, PyObject* obj, Point3f& p, const ArgInfo& info)
+bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, Point3f& p, const ArgInfo& info)
 {
     RefWrapper<float> values[] = {RefWrapper<float>(p.x),
                                   RefWrapper<float>(p.y),
@@ -1372,7 +1332,7 @@ bool evision_to(ErlNifEnv *env, PyObject* obj, Point3f& p, const ArgInfo& info)
 }
 
 template<>
-bool evision_to(ErlNifEnv *env, PyObject* obj, Point3d& p, const ArgInfo& info)
+bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, Point3d& p, const ArgInfo& info)
 {
     RefWrapper<double> values[] = {RefWrapper<double>(p.x),
                                    RefWrapper<double>(p.y),
@@ -1408,28 +1368,28 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const Point3f& p)
     );
 }
 
-static bool evision_to(ErlNifEnv *env, PyObject* obj, Vec4d& v, ArgInfo& info)
+static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, Vec4d& v, ArgInfo& info)
 {
     RefWrapper<double> values[] = {RefWrapper<double>(v[0]), RefWrapper<double>(v[1]),
                                    RefWrapper<double>(v[2]), RefWrapper<double>(v[3])};
     return parseSequence(env, obj, values, info);
 }
 
-static bool evision_to(ErlNifEnv *env, PyObject* obj, Vec4f& v, ArgInfo& info)
+static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, Vec4f& v, ArgInfo& info)
 {
     RefWrapper<float> values[] = {RefWrapper<float>(v[0]), RefWrapper<float>(v[1]),
                                   RefWrapper<float>(v[2]), RefWrapper<float>(v[3])};
     return parseSequence(env, obj, values, info);
 }
 
-static bool evision_to(ErlNifEnv *env, PyObject* obj, Vec4i& v, ArgInfo& info)
+static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, Vec4i& v, ArgInfo& info)
 {
     RefWrapper<int> values[] = {RefWrapper<int>(v[0]), RefWrapper<int>(v[1]),
                                 RefWrapper<int>(v[2]), RefWrapper<int>(v[3])};
     return parseSequence(env, obj, values, info);
 }
 
-static bool evision_to(ErlNifEnv *env, PyObject* obj, Vec3d& v, ArgInfo& info)
+static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, Vec3d& v, ArgInfo& info)
 {
     RefWrapper<double> values[] = {RefWrapper<double>(v[0]),
                                    RefWrapper<double>(v[1]),
@@ -1437,7 +1397,7 @@ static bool evision_to(ErlNifEnv *env, PyObject* obj, Vec3d& v, ArgInfo& info)
     return parseSequence(env, obj, values, info);
 }
 
-static bool evision_to(ErlNifEnv *env, PyObject* obj, Vec3f& v, ArgInfo& info)
+static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, Vec3f& v, ArgInfo& info)
 {
     RefWrapper<float> values[] = {RefWrapper<float>(v[0]),
                                   RefWrapper<float>(v[1]),
@@ -1445,28 +1405,28 @@ static bool evision_to(ErlNifEnv *env, PyObject* obj, Vec3f& v, ArgInfo& info)
     return parseSequence(env, obj, values, info);
 }
 
-static bool evision_to(ErlNifEnv *env, PyObject* obj, Vec3i& v, ArgInfo& info)
+static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, Vec3i& v, ArgInfo& info)
 {
     RefWrapper<int> values[] = {RefWrapper<int>(v[0]), RefWrapper<int>(v[1]),
                                 RefWrapper<int>(v[2])};
     return parseSequence(env, obj, values, info);
 }
 
-static bool evision_to(ErlNifEnv *env, PyObject* obj, Vec2d& v, ArgInfo& info)
+static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, Vec2d& v, ArgInfo& info)
 {
     RefWrapper<double> values[] = {RefWrapper<double>(v[0]),
                                    RefWrapper<double>(v[1])};
     return parseSequence(env, obj, values, info);
 }
 
-static bool evision_to(ErlNifEnv *env, PyObject* obj, Vec2f& v, ArgInfo& info)
+static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, Vec2f& v, ArgInfo& info)
 {
     RefWrapper<float> values[] = {RefWrapper<float>(v[0]),
                                   RefWrapper<float>(v[1])};
     return parseSequence(env, obj, values, info);
 }
 
-static bool evision_to(ErlNifEnv *env, PyObject* obj, Vec2i& v, ArgInfo& info)
+static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, Vec2i& v, ArgInfo& info)
 {
     RefWrapper<int> values[] = {RefWrapper<int>(v[0]), RefWrapper<int>(v[1])};
     return parseSequence(env, obj, values, info);
@@ -1591,20 +1551,18 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const std::pair<int, double>& src)
 }
 
 template<>
-bool evision_to(ErlNifEnv *env, PyObject* obj, TermCriteria& dst, const ArgInfo& info)
+bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, TermCriteria& dst, const ArgInfo& info)
 {
-    if (!obj || obj == Py_None)
-    {
-        return true;
-    }
-    if (!PySequence_Check(obj))
-    {
+    const ERL_NIF_TERM *terms;
+    int length;
+    if (!enif_get_tuple(env, obj, &length, &terms)) {
         failmsg("Can't parse '%s' as TermCriteria."
-                "Input argument doesn't provide sequence protocol",
+                "Input argument is not a tuple",
                 info.name);
         return false;
     }
-    const std::size_t sequenceSize = PySequence_Size(obj);
+
+    const std::size_t sequenceSize = length;
     if (sequenceSize != 3) {
         failmsg("Can't parse '%s' as TermCriteria. Expected sequence length 3, "
                 "got %lu",
@@ -1614,8 +1572,7 @@ bool evision_to(ErlNifEnv *env, PyObject* obj, TermCriteria& dst, const ArgInfo&
     {
         const String typeItemName = format("'%s' criteria type", info.name);
         const ArgInfo typeItemInfo(typeItemName.c_str(), false);
-        SafeSeqItem typeItem(env, obj, 0);
-        if (!evision_to(env, typeItem.item, dst.type, typeItemInfo))
+        if (!evision_to(env, terms[0], dst.type, typeItemInfo))
         {
             return false;
         }
@@ -1623,8 +1580,7 @@ bool evision_to(ErlNifEnv *env, PyObject* obj, TermCriteria& dst, const ArgInfo&
     {
         const String maxCountItemName = format("'%s' max count", info.name);
         const ArgInfo maxCountItemInfo(maxCountItemName.c_str(), false);
-        SafeSeqItem maxCountItem(env, obj, 1);
-        if (!evision_to(env, maxCountItem.item, dst.maxCount, maxCountItemInfo))
+        if (!evision_to(env, terms[1], dst.maxCount, maxCountItemInfo))
         {
             return false;
         }
@@ -1632,8 +1588,7 @@ bool evision_to(ErlNifEnv *env, PyObject* obj, TermCriteria& dst, const ArgInfo&
     {
         const String epsilonItemName = format("'%s' epsilon", info.name);
         const ArgInfo epsilonItemInfo(epsilonItemName.c_str(), false);
-        SafeSeqItem epsilonItem(env, obj, 2);
-        if (!evision_to(env, epsilonItem.item, dst.epsilon, epsilonItemInfo))
+        if (!evision_to(env, terms[2], dst.epsilon, epsilonItemInfo))
         {
             return false;
         }
@@ -1652,20 +1607,18 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const TermCriteria& src)
 }
 
 template<>
-bool evision_to(ErlNifEnv *env, PyObject* obj, RotatedRect& dst, const ArgInfo& info)
+bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, RotatedRect& dst, const ArgInfo& info)
 {
-    if (!obj || obj == Py_None)
-    {
-        return true;
-    }
-    if (!PySequence_Check(obj))
-    {
-        failmsg("Can't parse '%s' as RotatedRect."
-                "Input argument doesn't provide sequence protocol",
+    const ERL_NIF_TERM *terms;
+    int length;
+    if (!enif_get_tuple(env, obj, &length, &terms)) {
+        failmsg("Can't parse '%s' as TermCriteria."
+                "Input argument is not a tuple",
                 info.name);
         return false;
     }
-    const std::size_t sequenceSize = PySequence_Size(obj);
+
+    const std::size_t sequenceSize = length;
     if (sequenceSize != 3)
     {
         failmsg("Can't parse '%s' as RotatedRect. Expected sequence length 3, got %lu",
@@ -1675,8 +1628,7 @@ bool evision_to(ErlNifEnv *env, PyObject* obj, RotatedRect& dst, const ArgInfo& 
     {
         const String centerItemName = format("'%s' center point", info.name);
         const ArgInfo centerItemInfo(centerItemName.c_str(), false);
-        SafeSeqItem centerItem(env, obj, 0);
-        if (!evision_to(env, centerItem.item, dst.center, centerItemInfo))
+        if (!evision_to(env, terms[0], dst.center, centerItemInfo))
         {
             return false;
         }
@@ -1684,8 +1636,7 @@ bool evision_to(ErlNifEnv *env, PyObject* obj, RotatedRect& dst, const ArgInfo& 
     {
         const String sizeItemName = format("'%s' size", info.name);
         const ArgInfo sizeItemInfo(sizeItemName.c_str(), false);
-        SafeSeqItem sizeItem(env, obj, 1);
-        if (!evision_to(env, sizeItem.item, dst.size, sizeItemInfo))
+        if (!evision_to(env, terms[1], dst.size, sizeItemInfo))
         {
             return false;
         }
@@ -1693,8 +1644,7 @@ bool evision_to(ErlNifEnv *env, PyObject* obj, RotatedRect& dst, const ArgInfo& 
     {
         const String angleItemName = format("'%s' angle", info.name);
         const ArgInfo angleItemInfo(angleItemName.c_str(), false);
-        SafeSeqItem angleItem(env, obj, 2);
-        if (!evision_to(env, angleItem.item, dst.angle, angleItemInfo))
+        if (!evision_to(env, terms[2], dst.angle, angleItemInfo))
         {
             return false;
         }
@@ -1757,7 +1707,7 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const Moments& m)
     ) {
         return ret;
     } else {
-        make_error_tuple(env, "error: Moments: map");
+        return make_error_tuple(env, "error: Moments: map");
     }
 }
 
@@ -1808,24 +1758,23 @@ static bool evision_to_generic_vec(ErlNifEnv *env, ERL_NIF_TERM obj, std::vector
     return true;
 }
 
-template<> inline bool evision_to_generic_vec(ErlNifEnv *env, PyObject* obj, std::vector<bool>& value, const ArgInfo& info)
+template<> inline bool evision_to_generic_vec(ErlNifEnv *env, ERL_NIF_TERM obj, std::vector<bool>& value, const ArgInfo& info)
 {
-    if (!obj || obj == Py_None)
-    {
-        return true;
-    }
-    if (!PySequence_Check(obj))
-    {
-        failmsg("Can't parse '%s'. Input argument doesn't provide sequence protocol", info.name);
+    const ERL_NIF_TERM *terms;
+    int length;
+    if (!enif_get_tuple(env, obj, &length, &terms)) {
+        failmsg("Can't parse '%s' as TermCriteria."
+                "Input argument is not a tuple",
+                info.name);
         return false;
     }
-    const size_t n = static_cast<size_t>(PySequence_Size(obj));
+
+    const size_t n = static_cast<size_t>(length);
     value.resize(n);
     for (size_t i = 0; i < n; i++)
     {
-        SafeSeqItem item_wrap(env, obj, i);
         bool elem{};
-        if (!evision_to(env, item_wrap.item, elem, info))
+        if (!evision_to(env, terms[i], elem, info))
         {
             failmsg("Can't parse '%s'. Sequence item with index %lu has a wrong type", info.name, i);
             return false;
