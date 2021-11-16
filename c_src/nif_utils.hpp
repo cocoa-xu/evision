@@ -178,6 +178,15 @@ namespace evision
       return enif_make_atom(env, msg);
     }
 
+    // Check if :nil
+    int check_nil(ErlNifEnv *env, ERL_NIF_TERM term) {
+        std::string atom_str;
+        if (get_atom(env, term, atom_str) && atom_str == "nil") {
+            return true;
+        }
+        return false;
+    }
+
     // Boolean
 
     int get(ErlNifEnv *env, ERL_NIF_TERM term, bool *var)

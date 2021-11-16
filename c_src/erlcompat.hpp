@@ -145,13 +145,10 @@ static inline bool getUnicodeString(PyObject * obj, std::string &str)
 
 #define CV_PY_TO_CLASS(TYPE)                                                                          \
 template<>                                                                                            \
-bool evision_to(ErlNifEnv *env, PyObject* dst, TYPE& src, const ArgInfo& info)                                       \
+bool evision_to(ErlNifEnv *env, ERL_NIF_TERM dst, TYPE& src, const ArgInfo& info)                                       \
 {                                                                                                     \
-    if (!dst || dst == Py_None)                                                                       \
-        return true;                                                                                  \
     Ptr<TYPE> ptr;                                                                                    \
-                                                                                                      \
-    if (!evision_to(env, dst, ptr, info)) return false;                                                   \
+    if (!evision_to(env, dst, ptr, info)) return false;                                               \
     src = *ptr;                                                                                       \
     return true;                                                                                      \
 }
@@ -168,10 +165,8 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const TYPE& src)                      
 
 #define CV_PY_TO_CLASS_PTR(TYPE)                                                                      \
 template<>                                                                                            \
-bool evision_to(ErlNifEnv *env, PyObject* dst, TYPE*& src, const ArgInfo& info)                                      \
+bool evision_to(ErlNifEnv *env, ERL_NIF_TERM dst, TYPE*& src, const ArgInfo& info)                                      \
 {                                                                                                     \
-    if (!dst || dst == Py_None)                                                                       \
-        return true;                                                                                  \
     Ptr<TYPE> ptr;                                                                                    \
                                                                                                       \
     if (!evision_to(env, dst, ptr, info)) return false;                                                   \
@@ -185,20 +180,24 @@ static ERL_NIF_TERM evision_from(ErlNifEnv *env, TYPE*& src)                    
     return evision_from(env, Ptr<TYPE>(src));                                                             \
 }
 
-#define CV_ERL_TO_ENUM(TYPE)                                                                           \
+#define CV_ERL_TO_ENUM(TYPE)                                                                          \
 template<>                                                                                            \
-bool evision_to(ErlNifEnv *env, PyObject* dst, TYPE& src, const ArgInfo& info)                                       \
+bool evision_to(ErlNifEnv *env, ERL_NIF_TERM dst, TYPE& src, const ArgInfo& info)                     \
 {                                                                                                     \
-    if (!dst)                                                                       \
+    std::string str_enum;                                                                             \
+    if (!evision::nif::get(env, dst, str_enum)) {                                                     \
+        std::cout << "str_enum: " << str_enum << '\n';                                                \
         return true;                                                                                  \
-    return true;                                                                                      \
+    } else {                                                                                          \
+        return false;                                                                                 \
+    }                                                                                                 \
 }
 
-#define CV_ERL_FROM_ENUM(TYPE)                                                                         \
+#define CV_ERL_FROM_ENUM(TYPE)                                                                        \
 template<>                                                                                            \
-ERL_NIF_TERM evision_from(ErlNifEnv *env, const TYPE& src)                                                              \
+ERL_NIF_TERM evision_from(ErlNifEnv *env, const TYPE& src)                                            \
 {                                                                                                     \
-    return make_atom(env, "pure_pain_peko");                         \
+    return make_atom(env, "pure_pain_peko");                                                          \
 }
 
 //==================================================================================================
@@ -353,7 +352,7 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const TYPE& src)                      
 // else \
 // { \
 //     printf("Init: " #NAME ", base (" #BASE ") -> %p" "\n", pyopencv_##NAME##_TypePtr); \
-// } \
+// }
 
 
 #endif // END HEADER GUARD
