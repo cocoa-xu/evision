@@ -5,6 +5,21 @@ This project uses and modifies `gen2.py` and `hdr_parser.py` from the `python` m
 
 We hope this project can largely reduce the work of manually porting OpenCV functions/modules to Elixir.
 
+Current available modules:
+- calib3d
+- core
+- features2d
+- flann
+- highgui
+- imgcodecs
+- imgproc
+- ml
+- photo
+- stitching 
+- ts 
+- video 
+- videoio
+
 ## Dependencies
 
 - Python3
