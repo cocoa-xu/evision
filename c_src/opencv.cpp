@@ -1712,22 +1712,22 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const Moments& m)
 }
 
 template <typename Tp>
-struct pyopencvVecConverter;
+struct evisionVecConverter;
 
 template <typename Tp>
-bool evision_to(ErlNifEnv *env, PyObject* obj, std::vector<Tp>& value, const ArgInfo& info)
+bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, std::vector<Tp>& value, const ArgInfo& info)
 {
-    if (!obj || obj == Py_None)
+    if (evision::nif::check_nil(env, obj))
     {
         return true;
     }
-    return pyopencvVecConverter<Tp>::to(obj, value, info);
+    return evisionVecConverter<Tp>::to(obj, value, info);
 }
 
 template <typename Tp>
 ERL_NIF_TERM evision_from(ErlNifEnv *env, const std::vector<Tp>& value)
 {
-    return pyopencvVecConverter<Tp>::from(env, value);
+    return evisionVecConverter<Tp>::from(env, value);
 }
 
 template <typename Tp>

@@ -20,7 +20,7 @@ pass_by_val_types = ["Point*", "Point2f*", "Rect*", "String*", "double*", "float
 
 gen_template_check_self = Template("""
     ${cname} * self1 = 0;
-    if (!pyopencv_${name}_getp(self, self1))
+    if (!evision_${name}_getp(self, self1))
         return failmsgp("Incorrect type of self (must be '${name}' or its derivative)");
     ${pname} _self_ = ${cvt}(self1);
 """)
@@ -47,7 +47,7 @@ gen_template_func_body = Template("""$code_decl
 gen_template_mappable = Template("""
     {
         ${mappable} _src;
-        if (pyopencv_to_safe(src, _src, info))
+        if (evision_to_safe(src, _src, info))
         {
             return cv_mappable_to(_src, dst);
         }
@@ -58,18 +58,18 @@ gen_template_type_decl = Template("""
 // Converter (${name})
 
 template<>
-struct PyOpenCV_Converter< ${cname} >
+struct Evision_Converter< ${cname} >
 {
-    static PyObject* from(const ${cname}& r)
+    static ERL_NIF_TERM from(const ${cname}& r)
     {
-        return pyopencv_${name}_Instance(r);
+        return evision_${name}_Instance(r);
     }
-    static bool to(PyObject* src, ${cname}& dst, const ArgInfo& info)
+    static bool to(ErlNifEnv *env, ERL_NIF_TERM src, ${cname}& dst, const ArgInfo& info)
     {
         if(!src || src == Py_None)
             return true;
         ${cname} * dst_;
-        if (pyopencv_${name}_getp(src, dst_))
+        if (evision_${name}_getp(src, dst_))
         {
             dst = *dst_;
             return true;
@@ -83,7 +83,7 @@ struct PyOpenCV_Converter< ${cname} >
 """)
 
 gen_template_map_type_cvt = Template("""
-template<> bool pyopencv_to(PyObject* src, ${cname}& dst, const ArgInfo& info);
+template<> bool evision_to(ErlNifEnv *env, ERL_NIF_TERM src, ${cname}& dst, const ArgInfo& info);
 
 """)
 
@@ -91,7 +91,7 @@ gen_template_set_prop_from_map = Template("""
     if( PyMapping_HasKeyString(src, (char*)"$propname") )
     {
         tmp = PyMapping_GetItemString(src, (char*)"$propname");
-        ok = tmp && pyopencv_to_safe(tmp, dst.$propname, ArgInfo("$propname", false));
+        ok = tmp && evision_to_safe(tmp, dst.$propname, ArgInfo("$propname", false));
         Py_DECREF(tmp);
         if(!ok) return false;
     }""")
@@ -107,12 +107,12 @@ ${methods_code}
 
 // Tables (${name})
 
-static PyGetSetDef pyopencv_${name}_getseters[] =
+static PyGetSetDef evision_${name}_getseters[] =
 {${getset_inits}
     {NULL}  /* Sentinel */
 };
 
-static PyMethodDef pyopencv_${name}_methods[] =
+static PyMethodDef evision_${name}_methods[] =
 {
 ${methods_inits}
     {NULL,          NULL}
@@ -121,36 +121,36 @@ ${methods_inits}
 
 
 gen_template_get_prop = Template("""
-static PyObject* pyopencv_${name}_get_${member}(pyopencv_${name}_t* p, void *closure)
+static ERL_NIF_TERM evision_${name}_get_${member}(evision_${name}_t* p, void *closure)
 {
-    return pyopencv_from(p->v${access}${member});
+    return evision_from(p->v${access}${member});
 }
 """)
 
 gen_template_get_prop_algo = Template("""
-static PyObject* pyopencv_${name}_get_${member}(pyopencv_${name}_t* p, void *closure)
+static ERL_NIF_TERM evision_${name}_get_${member}(evision_${name}_t* p, void *closure)
 {
     $cname* _self_ = dynamic_cast<$cname*>(p->v.get());
     if (!_self_)
         return failmsgp("Incorrect type of object (must be '${name}' or its derivative)");
-    return pyopencv_from(_self_${access}${member});
+    return evision_from(_self_${access}${member});
 }
 """)
 
 gen_template_set_prop = Template("""
-static int pyopencv_${name}_set_${member}(pyopencv_${name}_t* p, PyObject *value, void *closure)
+static int evision_${name}_set_${member}(evision_${name}_t* p, PyObject *value, void *closure)
 {
     if (!value)
     {
         PyErr_SetString(PyExc_TypeError, "Cannot delete the ${member} attribute");
         return -1;
     }
-    return pyopencv_to_safe(value, p->v${access}${member}, ArgInfo("value", false)) ? 0 : -1;
+    return evision_to_safe(value, p->v${access}${member}, ArgInfo("value", false)) ? 0 : -1;
 }
 """)
 
 gen_template_set_prop_algo = Template("""
-static int pyopencv_${name}_set_${member}(pyopencv_${name}_t* p, PyObject *value, void *closure)
+static int evision_${name}_set_${member}(evision_${name}_t* p, PyObject *value, void *closure)
 {
     if (!value)
     {
@@ -163,16 +163,16 @@ static int pyopencv_${name}_set_${member}(pyopencv_${name}_t* p, PyObject *value
         failmsgp("Incorrect type of object (must be '${name}' or its derivative)");
         return -1;
     }
-    return pyopencv_to_safe(value, _self_${access}${member}, ArgInfo("value", false)) ? 0 : -1;
+    return evision_to_safe(value, _self_${access}${member}, ArgInfo("value", false)) ? 0 : -1;
 }
 """)
 
 
 gen_template_prop_init = Template("""
-    {(char*)"${member}", (getter)pyopencv_${name}_get_${member}, NULL, (char*)"${member}", NULL},""")
+    {(char*)"${member}", (getter)evision_${name}_get_${member}, NULL, (char*)"${member}", NULL},""")
 
 gen_template_rw_prop_init = Template("""
-    {(char*)"${member}", (getter)pyopencv_${name}_get_${member}, (setter)pyopencv_${name}_set_${member}, (char*)"${member}", NULL},""")
+    {(char*)"${member}", (getter)evision_${name}_get_${member}, (setter)evision_${name}_set_${member}, (char*)"${member}", NULL},""")
 
 gen_template_overloaded_function_call = Template("""
     {
@@ -295,10 +295,10 @@ class ClassInfo(object):
 
     def gen_map_code(self, codegen):
         all_classes = codegen.classes
-        code = "static bool pyopencv_to(PyObject* src, %s& dst, const ArgInfo& info)\n{\n    PyObject* tmp;\n    bool ok;\n" % (self.cname)
+        code = "static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM src, %s& dst, const ArgInfo& info)\n{\n    PyObject* tmp;\n    bool ok;\n" % (self.cname)
         code += "".join([gen_template_set_prop_from_map.substitute(propname=p.name,proptype=p.tp) for p in self.props])
         if self.base:
-            code += "\n    return pyopencv_to_safe(src, (%s&)dst, info);\n}\n" % all_classes[self.base].cname
+            code += "\n    return evision_to_safe(env, src, (%s&)dst, info);\n}\n" % all_classes[self.base].cname
         else:
             code += "\n    return true;\n}\n"
         return code
@@ -555,19 +555,19 @@ class FuncInfo(object):
         if self.is_static:
             name += "_static"
 
-        return "pyopencv_" + self.namespace.replace('.','_') + '_' + classname + name
+        return "evision_" + self.namespace.replace('.','_') + '_' + classname + name
 
     def get_wrapper_prototype(self, codegen):
         full_fname = self.get_wrapper_name()
         if self.isconstructor:
-            return "static int {fn_name}(pyopencv_{type_name}_t* self, PyObject* py_args, PyObject* kw)".format(
+            return "static int {fn_name}(evision_{type_name}_t* self, PyObject* py_args, PyObject* kw)".format(
                     fn_name=full_fname, type_name=codegen.classes[self.classname].name)
 
         if self.classname:
             self_arg = "self"
         else:
             self_arg = ""
-        return "static PyObject* %s(PyObject* %s, PyObject* py_args, PyObject* kw)" % (full_fname, self_arg)
+        return "static ERL_NIF_TERM %s(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])" % (full_fname,)
 
     def get_tab_entry(self):
         prototype_list = []
@@ -687,7 +687,7 @@ class FuncInfo(object):
                         if a.tp == 'char':
                             code_cvt_list.append("convert_to_char(pyobj_%s, &%s, %s)" % (a.name, a.name, a.crepr()))
                         else:
-                            code_cvt_list.append("pyopencv_to_safe(pyobj_%s, %s, %s)" % (a.name, a.name, a.crepr()))
+                            code_cvt_list.append("evision_to_safe(pyobj_%s, %s, %s)" % (a.name, a.name, a.crepr()))
 
                 all_cargs.append([arg_type_info, parse_name])
 
@@ -788,12 +788,12 @@ class FuncInfo(object):
                     code_ret = "return 0"
                 else:
                     aname, argno = v.py_outlist[0]
-                    code_ret = "return pyopencv_from(%s)" % (aname,)
+                    code_ret = "return evision_from(%s)" % (aname,)
             else:
                 # there is more than 1 return parameter; form the tuple out of them
                 fmtspec = "N"*len(v.py_outlist)
                 code_ret = "return Py_BuildValue(\"(%s)\", %s)" % \
-                    (fmtspec, ", ".join(["pyopencv_from(" + aname + ")" for aname, argno in v.py_outlist]))
+                    (fmtspec, ", ".join(["evision_from(" + aname + ")" for aname, argno in v.py_outlist]))
 
             all_code_variants.append(gen_template_func_body.substitute(code_decl=code_decl,
                 code_parse=code_parse, code_prelude=code_prelude, code_fcall=code_fcall, code_ret=code_ret))
