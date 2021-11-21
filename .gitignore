@@ -15,4 +15,6 @@ erl_crash.dump
 /c_src/headers.txt
 .DS_Store
 .vscode/
+.idea/
+*.pyc
 /c_src/evision_custom_headers/*
