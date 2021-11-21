@@ -21,7 +21,7 @@ pass_by_val_types = ["Point*", "Point2f*", "Rect*", "String*", "double*", "float
 gen_template_check_self = Template("""
     ${cname} * self1 = 0;
     if (!evision_${name}_getp(self, self1))
-        return failmsgp("Incorrect type of self (must be '${name}' or its derivative)");
+        return failmsgp(env, "Incorrect type of self (must be '${name}' or its derivative)");
     ${pname} _self_ = ${cvt}(self1);
 """)
 gen_template_call_constructor_prelude = Template("""new (&(self->v)) Ptr<$cname>(); // init Ptr with placement new
@@ -34,7 +34,7 @@ gen_template_simple_call_constructor_prelude = Template("""if(self) """)
 gen_template_simple_call_constructor = Template("""new (&(self->v)) ${cname}${py_args}""")
 
 gen_template_parse_args = Template("""const char* keywords[] = { $kw_list, NULL };
-    if( PyArg_ParseTupleAndKeywords(py_args, kw, "$fmtspec", (char**)keywords, $parse_arglist)$code_cvt )""")
+    if( evision::nif::parse_arg(env, argc, argv, "$fmtspec", (char**)keywords, $parse_arglist)$code_cvt )""")
 
 gen_template_func_body = Template("""$code_decl
     $code_parse
@@ -47,7 +47,7 @@ gen_template_func_body = Template("""$code_decl
 gen_template_mappable = Template("""
     {
         ${mappable} _src;
-        if (evision_to_safe(src, _src, info))
+        if (evision_to_safe(env, src, _src, info))
         {
             return cv_mappable_to(_src, dst);
         }
@@ -66,7 +66,7 @@ struct Evision_Converter< ${cname} >
     }
     static bool to(ErlNifEnv *env, ERL_NIF_TERM src, ${cname}& dst, const ArgInfo& info)
     {
-        if(!src || src == Py_None)
+        if(!src || evision::nif::check_nil(env, src))
             return true;
         ${cname} * dst_;
         if (evision_${name}_getp(src, dst_))
@@ -75,7 +75,7 @@ struct Evision_Converter< ${cname} >
             return true;
         }
         ${mappable_code}
-        failmsg("Expected ${cname} for argument '%s'", info.name);
+        failmsg(env, "Expected ${cname} for argument '%s'", info.name);
         return false;
     }
 };
@@ -91,7 +91,7 @@ gen_template_set_prop_from_map = Template("""
     if( PyMapping_HasKeyString(src, (char*)"$propname") )
     {
         tmp = PyMapping_GetItemString(src, (char*)"$propname");
-        ok = tmp && evision_to_safe(tmp, dst.$propname, ArgInfo("$propname", false));
+        ok = tmp && evision_to_safe(env, tmp, dst.$propname, ArgInfo("$propname", false));
         Py_DECREF(tmp);
         if(!ok) return false;
     }""")
@@ -121,36 +121,36 @@ ${methods_inits}
 
 
 gen_template_get_prop = Template("""
-static ERL_NIF_TERM evision_${name}_get_${member}(evision_${name}_t* p, void *closure)
+static ERL_NIF_TERM evision_${name}_get_${member}(ErlNifEnv *env, evision_${name}_t* p, void *closure)
 {
-    return evision_from(p->v${access}${member});
+    return evision_from(env, p->v${access}${member});
 }
 """)
 
 gen_template_get_prop_algo = Template("""
-static ERL_NIF_TERM evision_${name}_get_${member}(evision_${name}_t* p, void *closure)
+static ERL_NIF_TERM evision_${name}_get_${member}(ErlNifEnv *env, evision_${name}_t* p, void *closure)
 {
     $cname* _self_ = dynamic_cast<$cname*>(p->v.get());
     if (!_self_)
-        return failmsgp("Incorrect type of object (must be '${name}' or its derivative)");
-    return evision_from(_self_${access}${member});
+        return failmsgp(env, "Incorrect type of object (must be '${name}' or its derivative)");
+    return evision_from(env, _self_${access}${member});
 }
 """)
 
 gen_template_set_prop = Template("""
-static int evision_${name}_set_${member}(evision_${name}_t* p, PyObject *value, void *closure)
+static int evision_${name}_set_${member}(ErlNifEnv *env, evision_${name}_t* p, PyObject *value, void *closure)
 {
     if (!value)
     {
         PyErr_SetString(PyExc_TypeError, "Cannot delete the ${member} attribute");
         return -1;
     }
-    return evision_to_safe(value, p->v${access}${member}, ArgInfo("value", false)) ? 0 : -1;
+    return evision_to_safe(env, value, p->v${access}${member}, ArgInfo("value", false)) ? 0 : -1;
 }
 """)
 
 gen_template_set_prop_algo = Template("""
-static int evision_${name}_set_${member}(evision_${name}_t* p, PyObject *value, void *closure)
+static int evision_${name}_set_${member}(ErlNifEnv *env, evision_${name}_t* p, PyObject *value, void *closure)
 {
     if (!value)
     {
@@ -160,10 +160,10 @@ static int evision_${name}_set_${member}(evision_${name}_t* p, PyObject *value, 
     $cname* _self_ = dynamic_cast<$cname*>(p->v.get());
     if (!_self_)
     {
-        failmsgp("Incorrect type of object (must be '${name}' or its derivative)");
+        failmsgp(env, "Incorrect type of object (must be '${name}' or its derivative)");
         return -1;
     }
-    return evision_to_safe(value, _self_${access}${member}, ArgInfo("value", false)) ? 0 : -1;
+    return evision_to_safe(env, value, _self_${access}${member}, ArgInfo("value", false)) ? 0 : -1;
 }
 """)
 
@@ -682,12 +682,12 @@ class FuncInfo(object):
                 parse_name = a.name
                 if a.py_inputarg:
                     if arg_type_info.strict_conversion:
-                        code_decl += "    PyObject* pyobj_%s = NULL;\n" % (a.name,)
-                        parse_name = "pyobj_" + a.name
+                        code_decl += "    ERL_NIF_TERM erl_term_%s;\n" % (a.name,)
+                        parse_name = "erl_term_" + a.name
                         if a.tp == 'char':
-                            code_cvt_list.append("convert_to_char(pyobj_%s, &%s, %s)" % (a.name, a.name, a.crepr()))
+                            code_cvt_list.append("convert_to_char(erl_term_%s, &%s, %s)" % (a.name, a.name, a.crepr()))
                         else:
-                            code_cvt_list.append("evision_to_safe(pyobj_%s, %s, %s)" % (a.name, a.name, a.crepr()))
+                            code_cvt_list.append("evision_to_safe(env, erl_term_%s, %s, %s)" % (a.name, a.name, a.crepr()))
 
                 all_cargs.append([arg_type_info, parse_name])
 
@@ -779,21 +779,22 @@ class FuncInfo(object):
                     parse_arglist = ", ".join(["&" + all_cargs[argno][1] for aname, argno in v.py_arglist]),
                     code_cvt = " &&\n        ".join(code_cvt_list))
             else:
-                code_parse = "if(PyObject_Size(py_args) == 0 && (!kw || PyObject_Size(kw) == 0))"
+                code_parse = "if(argc == 0)"
+                # code_parse = "if(argc == 0 && (!kw || PyObject_Size(kw) == 0))"
 
             if len(v.py_outlist) == 0:
-                code_ret = "Py_RETURN_NONE"
+                code_ret = "evision::nif::atom(env, \"nil\")"
             elif len(v.py_outlist) == 1:
                 if self.isconstructor:
                     code_ret = "return 0"
                 else:
                     aname, argno = v.py_outlist[0]
-                    code_ret = "return evision_from(%s)" % (aname,)
+                    code_ret = "return evision_from(env, %s)" % (aname,)
             else:
                 # there is more than 1 return parameter; form the tuple out of them
                 fmtspec = "N"*len(v.py_outlist)
                 code_ret = "return Py_BuildValue(\"(%s)\", %s)" % \
-                    (fmtspec, ", ".join(["evision_from(" + aname + ")" for aname, argno in v.py_outlist]))
+                    (fmtspec, ", ".join(["evision_from(env, " + aname + ")" for aname, argno in v.py_outlist]))
 
             all_code_variants.append(gen_template_func_body.substitute(code_decl=code_decl,
                 code_parse=code_parse, code_prelude=code_prelude, code_fcall=code_fcall, code_ret=code_ret))
@@ -809,7 +810,7 @@ class FuncInfo(object):
                                   for v in all_code_variants)
             code += '    pyRaiseCVOverloadException("{}");\n'.format(self.name)
 
-        def_ret = "NULL"
+        def_ret = "evision::nif::atom(env, \"nil\")"
         if self.isconstructor:
             def_ret = "-1"
         code += "\n    return %s;\n}\n\n" % def_ret

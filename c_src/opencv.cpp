@@ -81,20 +81,20 @@ struct Evision_Converter
 
 // exception-safe evision_to
 template<typename _Tp> static
-bool evision_to_safe(PyObject* obj, _Tp& value, const ArgInfo& info)
+bool evision_to_safe(ErlNifEnv *env, ERL_NIF_TERM obj, _Tp& value, const ArgInfo& info)
 {
     try
     {
-        return evision_to(obj, value, info);
+        return evision_to(env, obj, value, info);
     }
     catch (const std::exception &e)
     {
-        PyErr_SetString(opencv_error, cv::format("Conversion error: %s, what: %s", info.name, e.what()).c_str());
+        // PyErr_SetString(opencv_error, cv::format("Conversion error: %s, what: %s", info.name, e.what()).c_str());
         return false;
     }
     catch (...)
     {
-        PyErr_SetString(opencv_error, cv::format("Conversion error: %s", info.name).c_str());
+        // PyErr_SetString(opencv_error, cv::format("Conversion error: %s", info.name).c_str());
         return false;
     }
 }
@@ -111,17 +111,17 @@ static bool isPythonBindingsDebugEnabled()
     return param_debug;
 }
 
-static void emit_failmsg(PyObject * exc, const char *msg)
+static void emit_failmsg(ErlNifEnv *env, const char * type, const char *msg)
 {
     static bool param_debug = isPythonBindingsDebugEnabled();
     if (param_debug)
     {
-        CV_LOG_WARNING(NULL, "Bindings conversion failed: " << msg);
+        CV_LOG_WARNING(NULL, "Error: " << type << ", Bindings conversion failed: " << msg);
     }
-    PyErr_SetString(exc, msg);
+    // PyErr_SetString(exc, msg);
 }
 
-static int failmsg(const char *fmt, ...)
+static int failmsg(ErlNifEnv *env, const char *fmt, ...)
 {
     char str[1000];
 
@@ -130,11 +130,11 @@ static int failmsg(const char *fmt, ...)
     vsnprintf(str, sizeof(str), fmt, ap);
     va_end(ap);
 
-    emit_failmsg(PyExc_TypeError, str);
+    emit_failmsg(env, "TypeError", str);
     return 0;
 }
 
-static PyObject* failmsgp(const char *fmt, ...)
+static ERL_NIF_TERM failmsgp(ErlNifEnv *env, const char *fmt, ...)
 {
     char str[1000];
 
@@ -143,8 +143,8 @@ static PyObject* failmsgp(const char *fmt, ...)
     vsnprintf(str, sizeof(str), fmt, ap);
     va_end(ap);
 
-    emit_failmsg(PyExc_TypeError, str);
-    return 0;
+    emit_failmsg(env, "TypeError", str);
+    return evision::nif::atom(env, "nil");
 }
 
 class PyAllowThreads
@@ -489,14 +489,14 @@ bool parseSequence(ErlNifEnv *env, ERL_NIF_TERM obj, RefWrapper<T> (&value)[N], 
 {
     if (!enif_is_list(env, obj))
     {
-        failmsg("Can't parse '%s'. Input argument is not a list ", info.name);
+        failmsg(env, "Can't parse '%s'. Input argument is not a list ", info.name);
         return false;
     }
     unsigned sequenceSize = 0;
     enif_get_list_length(env, obj, &sequenceSize);
     if (sequenceSize != N)
     {
-        failmsg("Can't parse '%s'. Expected sequence length %lu, got %lu",
+        failmsg(env, "Can't parse '%s'. Expected sequence length %lu, got %lu",
                 info.name, N, sequenceSize);
         return false;
     }
@@ -505,7 +505,7 @@ bool parseSequence(ErlNifEnv *env, ERL_NIF_TERM obj, RefWrapper<T> (&value)[N], 
         SafeSeqItem seqItem(env, obj, i);
         if (!evision_to(env, seqItem.item, value[i].get(), info))
         {
-            failmsg("Can't parse '%s'. Sequence item with index %lu has a "
+            failmsg(env, "Can't parse '%s'. Sequence item with index %lu has a "
                     "wrong type", info.name, i);
             return false;
         }
@@ -668,41 +668,44 @@ static std::string pycv_dumpArray(const T* arr, int n)
 }
 
 // special case, when the converter needs full ArgInfo structure
-static bool evision_to(ErlNifEnv *env, PyObject* o, Mat& m, const ArgInfo& info)
+static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Mat& m, const ArgInfo& info)
 {
-    if(!o || o == Py_None)
+    if(evision::nif::check_nil(env, o))
     {
-        if( !m.data )
-            m.allocator = &g_numpyAllocator;
         return true;
     }
 
-    if( PyInt_Check(o) )
+    int i32;
+    if( enif_get_int(env, o, &i32) )
     {
-        double v[] = {static_cast<double>(PyInt_AsLong((PyObject*)o)), 0., 0., 0.};
+        double v[] = {static_cast<double>(i32), 0., 0., 0.};
         m = Mat(4, 1, CV_64F, v).clone();
         return true;
     }
-    if( PyFloat_Check(o) )
-    {
-        double v[] = {PyFloat_AsDouble((PyObject*)o), 0., 0., 0.};
+    double f64;
+    if( enif_get_double(env, o, &f64) ) {
+        double v[] = {f64, 0., 0., 0.};
         m = Mat(4, 1, CV_64F, v).clone();
         return true;
     }
-    if( PyTuple_Check(o) )
+    if( enif_is_tuple(env, o) )
     {
-        int i, sz = (int)PyTuple_Size((PyObject*)o);
+        const ERL_NIF_TERM *terms;
+        int sz = 0, i = 0;
+        enif_get_tuple(env, o, &sz, &terms);
         m = Mat(sz, 1, CV_64F);
         for( i = 0; i < sz; i++ )
         {
-            PyObject* oi = PyTuple_GetItem(o, i);
-            if( PyInt_Check(oi) )
-                m.at<double>(i) = (double)PyInt_AsLong(oi);
-            else if( PyFloat_Check(oi) )
-                m.at<double>(i) = (double)PyFloat_AsDouble(oi);
+            int i32;
+            double f64;
+            ERL_NIF_TERM oi = terms[i];
+            if( enif_get_int(env, oi, &i32) )
+                m.at<double>(i) = (double)(i32);
+            else if( enif_get_double(env, oi, &f64) )
+                m.at<double>(i) = (double)(f64);
             else
             {
-                failmsg("%s is not a numerical tuple", info.name);
+                failmsg(env, "%s is not a numerical tuple", info.name);
                 m.release();
                 return false;
             }
@@ -710,165 +713,7 @@ static bool evision_to(ErlNifEnv *env, PyObject* o, Mat& m, const ArgInfo& info)
         return true;
     }
 
-    if( !PyArray_Check(o) )
-    {
-        failmsg("%s is not a numpy array, neither a scalar", info.name);
-        return false;
-    }
-
-    PyArrayObject* oarr = (PyArrayObject*) o;
-
-    bool needcopy = false, needcast = false;
-    int typenum = PyArray_TYPE(oarr), new_typenum = typenum;
-    int type = typenum == NPY_UBYTE ? CV_8U :
-               typenum == NPY_BYTE ? CV_8S :
-               typenum == NPY_USHORT ? CV_16U :
-               typenum == NPY_SHORT ? CV_16S :
-               typenum == NPY_INT ? CV_32S :
-               typenum == NPY_INT32 ? CV_32S :
-               typenum == NPY_FLOAT ? CV_32F :
-               typenum == NPY_DOUBLE ? CV_64F : -1;
-
-    if( type < 0 )
-    {
-        if( typenum == NPY_INT64 || typenum == NPY_UINT64 || typenum == NPY_LONG )
-        {
-            needcopy = needcast = true;
-            new_typenum = NPY_INT;
-            type = CV_32S;
-        }
-        else
-        {
-            failmsg("%s data type = %d is not supported", info.name, typenum);
-            return false;
-        }
-    }
-
-#ifndef CV_MAX_DIM
-    const int CV_MAX_DIM = 32;
-#endif
-
-    int ndims = PyArray_NDIM(oarr);
-    if(ndims >= CV_MAX_DIM)
-    {
-        failmsg("%s dimensionality (=%d) is too high", info.name, ndims);
-        return false;
-    }
-
-    size_t elemsize = CV_ELEM_SIZE1(type);
-    const npy_intp* _sizes = PyArray_DIMS(oarr);
-    const npy_intp* _strides = PyArray_STRIDES(oarr);
-
-    CV_LOG_DEBUG(NULL, "Incoming ndarray '" << info.name << "': ndims=" << ndims << "  _sizes=" << pycv_dumpArray(_sizes, ndims) << "  _strides=" << pycv_dumpArray(_strides, ndims));
-
-    bool ismultichannel = ndims == 3 && _sizes[2] <= CV_CN_MAX;
-    if (pyopencv_Mat_TypePtr && PyObject_TypeCheck(o, pyopencv_Mat_TypePtr))
-    {
-        bool wrapChannels = false;
-        PyObject* pyobj_wrap_channels = PyObject_GetAttrString(o, "wrap_channels");
-        if (pyobj_wrap_channels)
-        {
-            if (!evision_to_safe(pyobj_wrap_channels, wrapChannels, ArgInfo("cv.Mat.wrap_channels", 0)))
-            {
-                // TODO extra message
-                Py_DECREF(pyobj_wrap_channels);
-                return false;
-            }
-            Py_DECREF(pyobj_wrap_channels);
-        }
-        ismultichannel = wrapChannels && ndims >= 1;
-    }
-
-    for( int i = ndims-1; i >= 0 && !needcopy; i-- )
-    {
-        // these checks handle cases of
-        //  a) multi-dimensional (ndims > 2) arrays, as well as simpler 1- and 2-dimensional cases
-        //  b) transposed arrays, where _strides[] elements go in non-descending order
-        //  c) flipped arrays, where some of _strides[] elements are negative
-        // the _sizes[i] > 1 is needed to avoid spurious copies when NPY_RELAXED_STRIDES is set
-        if( (i == ndims-1 && _sizes[i] > 1 && (size_t)_strides[i] != elemsize) ||
-            (i < ndims-1 && _sizes[i] > 1 && _strides[i] < _strides[i+1]) )
-            needcopy = true;
-    }
-
-    if (ismultichannel)
-    {
-        int channels = ndims >= 1 ? (int)_sizes[ndims - 1] : 1;
-        if (channels > CV_CN_MAX)
-        {
-            failmsg("%s unable to wrap channels, too high (%d > CV_CN_MAX=%d)", info.name, (int)channels, (int)CV_CN_MAX);
-            return false;
-        }
-        ndims--;
-        type |= CV_MAKETYPE(0, channels);
-
-        if (ndims >= 1 && _strides[ndims - 1] != (npy_intp)elemsize*_sizes[ndims])
-            needcopy = true;
-    }
-
-    if (needcopy)
-    {
-        if (info.outputarg)
-        {
-            failmsg("Layout of the output array %s is incompatible with cv::Mat", info.name);
-            return false;
-        }
-
-        if( needcast ) {
-            o = PyArray_Cast(oarr, new_typenum);
-            oarr = (PyArrayObject*) o;
-        }
-        else {
-            oarr = PyArray_GETCONTIGUOUS(oarr);
-            o = (PyObject*) oarr;
-        }
-
-        _strides = PyArray_STRIDES(oarr);
-    }
-
-    int size[CV_MAX_DIM+1] = {};
-    size_t step[CV_MAX_DIM+1] = {};
-
-    // Normalize strides in case NPY_RELAXED_STRIDES is set
-    size_t default_step = elemsize;
-    for ( int i = ndims - 1; i >= 0; --i )
-    {
-        size[i] = (int)_sizes[i];
-        if ( size[i] > 1 )
-        {
-            step[i] = (size_t)_strides[i];
-            default_step = step[i] * size[i];
-        }
-        else
-        {
-            step[i] = default_step;
-            default_step *= size[i];
-        }
-    }
-
-    // handle degenerate case
-    // FIXIT: Don't force 1D for Scalars
-    if( ndims == 0) {
-        size[ndims] = 1;
-        step[ndims] = elemsize;
-        ndims++;
-    }
-
-#if 1
-    CV_LOG_DEBUG(NULL, "Construct Mat: ndims=" << ndims << " size=" << pycv_dumpArray(size, ndims) << "  step=" << pycv_dumpArray(step, ndims) << "  type=" << cv::typeToString(type));
-#endif
-
-    m = Mat(ndims, size, type, PyArray_DATA(oarr), step);
-    m.u = g_numpyAllocator.allocate(o, ndims, size, type, step);
-    m.addref();
-
-    if( !needcopy )
-    {
-        Py_INCREF(o);
-    }
-    m.allocator = &g_numpyAllocator;
-
-    return true;
+    return false;
 }
 
 template<typename _Tp, int m, int n>
@@ -958,7 +803,7 @@ static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Scalar& s, const ArgInfo&
         enif_get_list_length(env, o, &n);
         if (4 < n)
         {
-            failmsg("Scalar value for argument '%s' is longer than 4", info.name);
+            failmsg(env, "Scalar value for argument '%s' is longer than 4", info.name);
             return false;
         }
         for (size_t i = 0; i < n; i++) {
@@ -969,7 +814,7 @@ static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Scalar& s, const ArgInfo&
             } else if (enif_get_int(env, item, &ival)){
                 s[(int)i] = (double)ival;
             } else {
-                failmsg("Scalar value for argument '%s' is not numeric", info.name);
+                failmsg(env, "Scalar value for argument '%s' is not numeric", info.name);
                 return false;
             }
         }
@@ -979,7 +824,7 @@ static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Scalar& s, const ArgInfo&
         } else if (enif_get_int(env, o, &ival)){
             s[0] = (double)ival;
         } else {
-            failmsg("Scalar value for argument '%s' is not numeric", info.name);
+            failmsg(env, "Scalar value for argument '%s' is not numeric", info.name);
             return false;
         }
     }
@@ -1016,7 +861,7 @@ bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, bool& value, const ArgInfo& in
             return true;
         }
     }
-    failmsg("Argument '%s' is not convertable to bool", info.name);
+    failmsg(env, "Argument '%s' is not convertable to bool", info.name);
     return false;
 }
 
@@ -1037,7 +882,7 @@ bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, size_t& value, const ArgInfo& 
     }
     else
     {
-        failmsg("Argument '%s' is required to be an integer", info.name);
+        failmsg(env, "Argument '%s' is required to be an integer", info.name);
         return false;
     }
     return true;
@@ -1060,7 +905,7 @@ bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, int& value, const ArgInfo& inf
     }
     else
     {
-        failmsg("Argument '%s' is required to be an integer", info.name);
+        failmsg(env, "Argument '%s' is required to be an integer", info.name);
         return false;
     }
     return !CV_HAS_CONVERSION_ERROR(value);
@@ -1123,7 +968,7 @@ bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, char& value, const ArgInfo& in
     {
         value = saturate_cast<char>(i32);
     } else {
-        failmsg("Argument '%s' is required to be an integer", info.name);
+        failmsg(env, "Argument '%s' is required to be an integer", info.name);
         return false;
     }
 
@@ -1147,7 +992,7 @@ bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, double& value, const ArgInfo& 
     } else if (enif_get_int64(env, obj, &i64)) {
         value = i64;
     } else {
-        failmsg("Argument '%s' is required to be an integer", info.name);
+        failmsg(env, "Argument '%s' is required to be an integer", info.name);
         return false;
     }
 
@@ -1175,7 +1020,7 @@ bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, float& value, const ArgInfo& i
     }
     else
     {
-        failmsg("Argument '%s' can't be treated as a float", info.name);
+        failmsg(env, "Argument '%s' can't be treated as a float", info.name);
         return false;
     }
     return true;
@@ -1556,7 +1401,7 @@ bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, TermCriteria& dst, const ArgIn
     const ERL_NIF_TERM *terms;
     int length;
     if (!enif_get_tuple(env, obj, &length, &terms)) {
-        failmsg("Can't parse '%s' as TermCriteria."
+        failmsg(env, "Can't parse '%s' as TermCriteria."
                 "Input argument is not a tuple",
                 info.name);
         return false;
@@ -1564,7 +1409,7 @@ bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, TermCriteria& dst, const ArgIn
 
     const std::size_t sequenceSize = length;
     if (sequenceSize != 3) {
-        failmsg("Can't parse '%s' as TermCriteria. Expected sequence length 3, "
+        failmsg(env, "Can't parse '%s' as TermCriteria. Expected sequence length 3, "
                 "got %lu",
                 info.name, sequenceSize);
         return false;
@@ -1612,7 +1457,7 @@ bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, RotatedRect& dst, const ArgInf
     const ERL_NIF_TERM *terms;
     int length;
     if (!enif_get_tuple(env, obj, &length, &terms)) {
-        failmsg("Can't parse '%s' as TermCriteria."
+        failmsg(env, "Can't parse '%s' as TermCriteria."
                 "Input argument is not a tuple",
                 info.name);
         return false;
@@ -1621,7 +1466,7 @@ bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, RotatedRect& dst, const ArgInf
     const std::size_t sequenceSize = length;
     if (sequenceSize != 3)
     {
-        failmsg("Can't parse '%s' as RotatedRect. Expected sequence length 3, got %lu",
+        failmsg(env, "Can't parse '%s' as RotatedRect. Expected sequence length 3, got %lu",
                 info.name, sequenceSize);
         return false;
     }
@@ -1733,14 +1578,14 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const std::vector<Tp>& value)
 template <typename Tp>
 static bool evision_to_generic_vec(ErlNifEnv *env, ERL_NIF_TERM obj, std::vector<Tp>& value, const ArgInfo& info)
 {
-    if (!obj)
+    if (evision::nif::check_nil(env, obj))
     {
         return true;
     }
 
     if (!enif_is_list(env, obj))
     {
-        failmsg("Can't parse '%s'. Input argument is not a list", info.name);
+        failmsg(env, "Can't parse '%s'. Input argument is not a list", info.name);
         return false;
     }
     unsigned n = 0;
@@ -1751,7 +1596,7 @@ static bool evision_to_generic_vec(ErlNifEnv *env, ERL_NIF_TERM obj, std::vector
         SafeSeqItem item_wrap(env, obj, i);
         if (!evision_to(env, item_wrap.item, value[i], info))
         {
-            failmsg("Can't parse '%s'. Sequence item with index %lu has a wrong type", info.name, i);
+            failmsg(env, "Can't parse '%s'. Sequence item with index %lu has a wrong type", info.name, i);
             return false;
         }
     }
@@ -1763,7 +1608,7 @@ template<> inline bool evision_to_generic_vec(ErlNifEnv *env, ERL_NIF_TERM obj, 
     const ERL_NIF_TERM *terms;
     int length;
     if (!enif_get_tuple(env, obj, &length, &terms)) {
-        failmsg("Can't parse '%s' as TermCriteria."
+        failmsg(env, "Can't parse '%s' as TermCriteria."
                 "Input argument is not a tuple",
                 info.name);
         return false;
@@ -1776,7 +1621,7 @@ template<> inline bool evision_to_generic_vec(ErlNifEnv *env, ERL_NIF_TERM obj, 
         bool elem{};
         if (!evision_to(env, terms[i], elem, info))
         {
-            failmsg("Can't parse '%s'. Sequence item with index %lu has a wrong type", info.name, i);
+            failmsg(env, "Can't parse '%s'. Sequence item with index %lu has a wrong type", info.name, i);
             return false;
         }
         value[i] = elem;
@@ -1849,115 +1694,25 @@ struct pyopencvVecConverter
 {
     typedef typename std::vector<Tp>::iterator VecIt;
 
-    static bool to(PyObject* obj, std::vector<Tp>& value, const ArgInfo& info)
+    static bool to(ErlNifEnv *env, ERL_NIF_TERM obj, std::vector<Tp>& value, const ArgInfo& info)
     {
-        if (!PyArray_Check(obj))
-        {
-            return evision_to_generic_vec(obj, value, info);
-        }
-        // If user passed an array it is possible to make faster conversions in several cases
-        PyArrayObject* array_obj = reinterpret_cast<PyArrayObject*>(obj);
-        const NPY_TYPES target_type = asNumpyType<Tp>();
-        const NPY_TYPES source_type = static_cast<NPY_TYPES>(PyArray_TYPE(array_obj));
-        if (target_type == NPY_OBJECT)
-        {
-            // Non-planar arrays representing objects (e.g. array of N Rect is an array of shape Nx4) have NPY_OBJECT
-            // as their target type.
-            return evision_to_generic_vec(obj, value, info);
-        }
-        if (PyArray_NDIM(array_obj) > 1)
-        {
-            failmsg("Can't parse %dD array as '%s' vector argument", PyArray_NDIM(array_obj), info.name);
-            return false;
-        }
-        if (target_type != source_type)
-        {
-            // Source type requires conversion
-            // Allowed conversions for target type is handled in the corresponding evision_to function
-            return evision_to_generic_vec(obj, value, info);
-        }
-        // For all other cases, all array data can be directly copied to std::vector data
-        // Simple `memcpy` is not possible because NumPy array can reference a slice of the bigger array:
-        // ```
-        // arr = np.ones((8, 4, 5), dtype=np.int32)
-        // convertible_to_vector_of_int = arr[:, 0, 1]
-        // ```
-        value.resize(static_cast<size_t>(PyArray_SIZE(array_obj)));
-        const npy_intp item_step = PyArray_STRIDE(array_obj, 0) / PyArray_ITEMSIZE(array_obj);
-        const Tp* data_ptr = static_cast<Tp*>(PyArray_DATA(array_obj));
-        for (VecIt it = value.begin(); it != value.end(); ++it, data_ptr += item_step) {
-            *it = *data_ptr;
-        }
-        return true;
+        return evision_to_generic_vec(env, obj, value, info);
     }
 
-    static PyObject* from(const std::vector<Tp>& value)
+    static ERL_NIF_TERM from(ErlNifEnv *env, const std::vector<Tp>& value)
     {
         if (value.empty())
         {
-            return PyTuple_New(0);
+            return enif_make_tuple1(env, enif_make_int(env, 0));
         }
-        return from(value, ::traits::IsRepresentableAsMatDataType<Tp>());
+        return from(env, value, ::traits::IsRepresentableAsMatDataType<Tp>());
     }
 
 private:
-    static PyObject* from(const std::vector<Tp>& value, ::traits::FalseType)
+    static ERL_NIF_TERM from(ErlNifEnv *env, const std::vector<Tp>& value, ::traits::FalseType)
     {
         // Underlying type is not representable as Mat Data Type
-        return evision_from_generic_vec(value);
-    }
-
-    static PyObject* from(const std::vector<Tp>& value, ::traits::TrueType)
-    {
-        // Underlying type is representable as Mat Data Type, so faster return type is available
-        typedef DataType<Tp> DType;
-        typedef typename DType::channel_type UnderlyingArrayType;
-
-        // If Mat is always exposed as NumPy array this code path can be reduced to the following snipped:
-        //        Mat src(value);
-        //        PyObject* array = evision_from(src);
-        //        return PyArray_Squeeze(reinterpret_cast<PyArrayObject*>(array));
-        // This puts unnecessary restrictions on Mat object those might be avoided without losing the performance.
-        // Moreover, this version is a bit faster, because it doesn't create temporary objects with reference counting.
-
-        const NPY_TYPES target_type = asNumpyType<UnderlyingArrayType>();
-        const int cols = DType::channels;
-        PyObject* array = NULL;
-        if (cols == 1)
-        {
-            npy_intp dims = static_cast<npy_intp>(value.size());
-            array = PyArray_SimpleNew(1, &dims, target_type);
-        }
-        else
-        {
-            npy_intp dims[2] = {static_cast<npy_intp>(value.size()), cols};
-            array = PyArray_SimpleNew(2, dims, target_type);
-        }
-        if(!array)
-        {
-            // NumPy arrays with shape (N, 1) and (N) are not equal, so correct error message should distinguish
-            // them too.
-            String shape;
-            if (cols > 1)
-            {
-                shape = format("(%d x %d)", static_cast<int>(value.size()), cols);
-            }
-            else
-            {
-                shape = format("(%d)", static_cast<int>(value.size()));
-            }
-            const String error_message = format("Can't allocate NumPy array for vector with dtype=%d and shape=%s",
-                                                static_cast<int>(target_type), shape.c_str());
-            emit_failmsg(PyExc_MemoryError, error_message.c_str());
-            return array;
-        }
-        // Fill the array
-        PyArrayObject* array_obj = reinterpret_cast<PyArrayObject*>(array);
-        UnderlyingArrayType* array_data = static_cast<UnderlyingArrayType*>(PyArray_DATA(array_obj));
-        // if Tp is representable as Mat DataType, so the following cast is pretty safe...
-        const UnderlyingArrayType* value_data = reinterpret_cast<const UnderlyingArrayType*>(value.data());
-        memcpy(array_data, value_data, sizeof(UnderlyingArrayType) * value.size() * static_cast<size_t>(cols));
-        return array;
+        return evision_from_generic_vec(env, value);
     }
 };
 
@@ -2184,16 +1939,16 @@ static PyObject *pycvCreateButton(PyObject*, PyObject *args, PyObject *kw)
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
-static int convert_to_char(PyObject *o, char *dst, const ArgInfo& info)
+static int convert_to_char(ErlNifEnv *env, ERL_NIF_TERM o, char *dst, const ArgInfo& info)
 {
     std::string str;
-    if (getUnicodeString(o, str))
+    if (evision::nif::get(env, o, str))
     {
         *dst = str[0];
         return 1;
     }
     (*dst) = 0;
-    return failmsg("Expected single character string for argument '%s'", info.name);
+    return failmsg(env, "Expected single character string for argument '%s'", info.name);
 }
 
 #ifdef __GNUC__
@@ -2248,54 +2003,6 @@ static PyMethodDef special_methods[] = {
 };
 
 /************************************************************************/
-/* Module init */
-
-struct ConstDef
-{
-    const char * name;
-    long long val;
-};
-
-static void init_submodule(PyObject * root, const char * name, PyMethodDef * methods, ConstDef * consts)
-{
-  // traverse and create nested submodules
-  std::string s = name;
-  size_t i = s.find('.');
-  while (i < s.length() && i != std::string::npos)
-  {
-    size_t j = s.find('.', i);
-    if (j == std::string::npos)
-        j = s.length();
-    std::string short_name = s.substr(i, j-i);
-    std::string full_name = s.substr(0, j);
-    i = j+1;
-
-    PyObject * d = PyModule_GetDict(root);
-    PyObject * submod = PyDict_GetItemString(d, short_name.c_str());
-    if (submod == NULL)
-    {
-        submod = PyImport_AddModule(full_name.c_str());
-        PyDict_SetItemString(d, short_name.c_str(), submod);
-    }
-
-    if (short_name != "")
-        root = submod;
-  }
-
-  // populate module's dict
-  PyObject * d = PyModule_GetDict(root);
-  for (PyMethodDef * m = methods; m->ml_name != NULL; ++m)
-  {
-    PyObject * method_obj = PyCFunction_NewEx(m, NULL, NULL);
-    PyDict_SetItemString(d, m->ml_name, method_obj);
-    Py_DECREF(method_obj);
-  }
-  for (ConstDef * c = consts; c->name != NULL; ++c)
-  {
-    PyDict_SetItemString(d, c->name, PyLong_FromLongLong(c->val));
-  }
-
-}
 
 #include "evision_generated_modules_content.h"
 
@@ -2376,39 +2083,4 @@ static bool init_body(PyObject * m)
 
 #if defined(__GNUC__)
 #pragma GCC visibility push(default)
-#endif
-
-#if defined(CV_PYTHON_3)
-// === Python 3
-
-static struct PyModuleDef cv2_moduledef =
-{
-    PyModuleDef_HEAD_INIT,
-    MODULESTR,
-    "Python wrapper for OpenCV.",
-    -1,     /* size of per-interpreter state of the module,
-               or -1 if the module keeps state in global variables. */
-    special_methods
-};
-
-PyMODINIT_FUNC PyInit_cv2();
-PyObject* PyInit_cv2()
-{
-    import_array(); // from numpy
-    PyObject* m = PyModule_Create(&cv2_moduledef);
-    if (!init_body(m))
-        return NULL;
-    return m;
-}
-
-#else
-// === Python 2
-PyMODINIT_FUNC initcv2();
-void initcv2()
-{
-    import_array(); // from numpy
-    PyObject* m = Py_InitModule(MODULESTR, special_methods);
-    init_body(m);
-}
-
 #endif

@@ -278,5 +278,10 @@ namespace evision
       }
       return 1;
     }
+
+    template <typename ... T>
+    int parse_arg(ErlNifEnv *env, int argc, const ERL_NIF_TERM * argv, const char * spec, char** keyword_list, T * ... parsed) {
+        return 0;
+    }
   }
 }
