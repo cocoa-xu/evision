@@ -5,6 +5,7 @@ import hdr_parser, sys, re, os
 from string import Template
 from pprint import pprint
 from collections import namedtuple
+import numpy as np
 
 if sys.version_info[0] >= 3:
     from io import StringIO
@@ -345,6 +346,36 @@ class ClassInfo(object):
         else:
             code += "\n    return true;\n}\n"
         return code
+
+    def gen_erl_func_list(self, codegen):
+        if self.ismap:
+            return self.gen_map_code(codegen)
+
+        sorted_props = [(p.name, p) for p in self.props]
+        sorted_props.sort()
+
+        sorted_methods = list(self.methods.items())
+        sorted_methods.sort()
+        for mname, m in sorted_methods:
+            # codegen.erl_cv_nif.write()
+            codegen.code_ns_reg.write(m.get_tab_entry())
+            arglists = [m.variants[i].py_arglist for i in range(len(m.variants))]
+            arglens = [len(arglist) for arglist in arglists]
+            least_arg = np.argmin(arglens)
+            min_args = arglens[least_arg]
+            min_func = m.variants[least_arg]
+            most_arg = np.argmax(arglens)
+            max_func = m.variants[most_arg]
+            inline_doc = '\n  @doc """\n    {}\n  """\n'
+            if len(max_func.docstring) > 0:
+                inline_doc = inline_doc.format(max_func.docstring)
+            else:
+                inline_doc = ''
+            if min_args == 0:
+                codegen.erl_cv_nif.write('{}  def {}(opts \\\\ []), do: :erlang.nif_error("{} not loaded")\n'.format(inline_doc, m.get_wrapper_name().lower(), mname))
+            else:
+                codegen.erl_cv_nif.write('{}  def {}({}, opts \\\\ []), do: :erlang.nif_error("{} not loaded")\n'.format(inline_doc, m.get_wrapper_name().lower(), ", ".join(['_{}'.format(arg_name) for (arg_name,_) in min_func.py_arglist]), mname))
+
 
     def gen_code(self, codegen):
         all_classes = codegen.classes
@@ -1057,20 +1088,27 @@ class PythonWrapperGenerator(object):
 
 
     def gen_namespace(self):
-        self.erl_cv_nif.write('defmodule :erl_cv_nif do\n{}\n'.format(gen_erl_cv_nif_load_nif))
-        self.code_ns_reg.write('static ErlNifFunc nif_functions[] = {\n')
         for ns_name in self.namespaces:
             ns = self.namespaces[ns_name]
             # wname = normalize_class_name(ns_name)
             for name, func in sorted(ns.funcs.items()):
                 self.code_ns_reg.write(func.get_tab_entry())
-                min_args = min([len(func.variants[i].py_arglist) for i in range(len(func.variants))])
-                if min_args == 0:
-                    self.erl_cv_nif.write('  def {}(opts \\\\ []), do: :erlang.nif_error("{} not loaded")\n'.format(func.get_wrapper_name().lower(), ", ".join(['_'] * min_args), name))
+                arglists = [func.variants[i].py_arglist for i in range(len(func.variants))]
+                arglens = [len(arglist) for arglist in arglists]
+                least_arg = np.argmin(arglens)
+                min_args = arglens[least_arg]
+                min_func = func.variants[least_arg]
+                most_arg = np.argmax(arglens)
+                max_func = func.variants[most_arg]
+                inline_doc = '\n  @doc """\n    {}\n  """\n'
+                if len(max_func.docstring) > 0:
+                    inline_doc = inline_doc.format(max_func.docstring)
                 else:
-                    self.erl_cv_nif.write('  def {}({}, opts \\\\ []), do: :erlang.nif_error("{} not loaded")\n'.format(func.get_wrapper_name().lower(), ", ".join(['_'] * min_args), name))
-            # custom_entries_macro = 'PYOPENCV_EXTRA_METHODS_{}'.format(wname.upper())
-            # self.code_ns_reg.write('#ifdef {}\n    {}\n#endif\n'.format(custom_entries_macro, custom_entries_macro))
+                    inline_doc = ''
+                if min_args == 0:
+                    self.erl_cv_nif.write('{}  def {}(opts \\\\ []), do: :erlang.nif_error("{} not loaded")\n'.format(inline_doc, func.get_wrapper_name().lower(), ", ".join(['_'] * min_args), name))
+                else:
+                    self.erl_cv_nif.write('{}  def {}({}, opts \\\\ []), do: :erlang.nif_error("{} not loaded")\n'.format(inline_doc, func.get_wrapper_name().lower(), ", ".join(['_{}'.format(arg_name,) for (arg_name,_) in min_func.py_arglist]), name))
         self.code_ns_reg.write('\n};\n\n')
         self.erl_cv_nif.write('\nend\n')
 
@@ -1086,9 +1124,6 @@ class PythonWrapperGenerator(object):
             custom_entries_macro = 'PYOPENCV_EXTRA_CONSTANTS_{}'.format(wname.upper())
             self.code_ns_reg.write('#ifdef {}\n    {}\n#endif\n'.format(custom_entries_macro, custom_entries_macro))
         self.code_ns_reg.write('\n};\n\n')
-
-    def gen_erl_cv_nif(self, classlist):
-        self.erl_cv_nif.write('\nend\n')
 
     def gen_enum_reg(self, enum_name):
         name_seg = enum_name.split(".")
@@ -1108,7 +1143,8 @@ class PythonWrapperGenerator(object):
 
     def save(self, path, name, buf):
         with open(path + "/" + name, "wt") as f:
-            f.write("#include <erl_nif.h>\n")
+            if not name.endswith(".ex"):
+                f.write("#include <erl_nif.h>\n")
             f.write(buf.getvalue())
 
     def save_json(self, path, name, value):
@@ -1119,6 +1155,8 @@ class PythonWrapperGenerator(object):
     def gen(self, srcfiles, output_path):
         self.clear()
         self.parser = hdr_parser.CppHeaderParser(generate_umat_decls=True, generate_gpumat_decls=True)
+        self.erl_cv_nif.write('defmodule :erl_cv_nif do\n{}\n'.format(gen_erl_cv_nif_load_nif))
+        self.code_ns_reg.write('static ErlNifFunc nif_functions[] = {\n')
 
         # step 1: scan the headers and build more descriptive maps of classes, consts, functions
         for hdr in srcfiles:
@@ -1192,6 +1230,7 @@ class PythonWrapperGenerator(object):
             self.code_types.write("//{}\n".format(80*"="))
             self.code_types.write("// {} ({})\n".format(name, 'Map' if classinfo.ismap else 'Generic'))
             self.code_types.write("//{}\n".format(80*"="))
+            classinfo.gen_erl_func_list(self)
             self.code_types.write(classinfo.gen_code(self))
             if classinfo.ismap:
                 self.code_types.write(gen_template_map_type_cvt.substitute(name=classinfo.name, cname=classinfo.cname))
