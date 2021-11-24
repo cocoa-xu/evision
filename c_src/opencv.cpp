@@ -8,7 +8,6 @@
 
 #include <cmath>
 #include <erl_nif.h>
-#include <Python.h>
 #include <limits>
 
 #if defined(_MSC_VER) && (_MSC_VER > 1800)
@@ -16,11 +15,12 @@
 #endif
 
 #define CV_PYTHON_3 1
+#define CVPY_DYNAMIC_INIT 1
+#define F(NAME, ARITY)    \
+  {#NAME, ARITY, NAME, 0}
 
 #define MODULESTR "cv2"
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
-
-#include <numpy/ndarrayobject.h>
 
 #include "opencv2/opencv_modules.hpp"
 #include "opencv2/core.hpp"
@@ -41,7 +41,7 @@ using namespace cv;
 
 template<typename R>
 struct evision_res {
-    R * val = nullptr;
+    R val;
     static ErlNifResourceType * type;
 };
 template<typename R> ErlNifResourceType * evision_res<R>::type = nullptr;
@@ -53,10 +53,6 @@ int alloc_resource(evision_res<R> **res) {
 }
 
 #define CV_HAS_CONVERSION_ERROR(x) (((x) == -1))
-
-static PyObject* opencv_error = NULL;
-
-static PyTypeObject* pyopencv_Mat_TypePtr = nullptr;
 
 class ArgInfo
 {
@@ -147,105 +143,35 @@ static ERL_NIF_TERM failmsgp(ErlNifEnv *env, const char *fmt, ...)
     return evision::nif::atom(env, "nil");
 }
 
-class PyAllowThreads
-{
-public:
-    PyAllowThreads() : _state(PyEval_SaveThread()) {}
-    ~PyAllowThreads()
-    {
-        PyEval_RestoreThread(_state);
-    }
-private:
-    PyThreadState* _state;
-};
-
-class PyEnsureGIL
-{
-public:
-    PyEnsureGIL() : _state(PyGILState_Ensure()) {}
-    ~PyEnsureGIL()
-    {
-        PyGILState_Release(_state);
-    }
-private:
-    PyGILState_STATE _state;
-};
-
-/**
- * Light weight RAII wrapper for `PyObject*` owning references.
- * In comparisson to C++11 `std::unique_ptr` with custom deleter, it provides
- * implicit conversion functions that might be useful to initialize it with
- * Python functions those returns owning references through the `PyObject**`
- * e.g. `PyErr_Fetch` or directly pass it to functions those want to borrow
- * reference to object (doesn't extend object lifetime) e.g. `PyObject_Str`.
- */
-class PySafeObject
-{
-public:
-    PySafeObject() : obj_(NULL) {}
-
-    explicit PySafeObject(PyObject* obj) : obj_(obj) {}
-
-    ~PySafeObject()
-    {
-        Py_CLEAR(obj_);
-    }
-
-    operator PyObject*()
-    {
-        return obj_;
-    }
-
-    operator PyObject**()
-    {
-        return &obj_;
-    }
-
-    PyObject* release()
-    {
-        PyObject* obj = obj_;
-        obj_ = NULL;
-        return obj;
-    }
-
-private:
-    PyObject* obj_;
-
-    // Explicitly disable copy operations
-    PySafeObject(const PySafeObject*); // = delete
-    PySafeObject& operator=(const PySafeObject&); // = delete
-};
-
 static void pyRaiseCVException(const cv::Exception &e)
 {
-    PyObject_SetAttrString(opencv_error, "file", PyString_FromString(e.file.c_str()));
-    PyObject_SetAttrString(opencv_error, "func", PyString_FromString(e.func.c_str()));
-    PyObject_SetAttrString(opencv_error, "line", PyInt_FromLong(e.line));
-    PyObject_SetAttrString(opencv_error, "code", PyInt_FromLong(e.code));
-    PyObject_SetAttrString(opencv_error, "msg", PyString_FromString(e.msg.c_str()));
-    PyObject_SetAttrString(opencv_error, "err", PyString_FromString(e.err.c_str()));
-    PyErr_SetString(opencv_error, e.what());
+//    PyObject_SetAttrString(opencv_error, "file", PyString_FromString(e.file.c_str()));
+//    PyObject_SetAttrString(opencv_error, "func", PyString_FromString(e.func.c_str()));
+//    PyObject_SetAttrString(opencv_error, "line", PyInt_FromLong(e.line));
+//    PyObject_SetAttrString(opencv_error, "code", PyInt_FromLong(e.code));
+//    PyObject_SetAttrString(opencv_error, "msg", PyString_FromString(e.msg.c_str()));
+//    PyObject_SetAttrString(opencv_error, "err", PyString_FromString(e.err.c_str()));
+//    PyErr_SetString(opencv_error, e.what());
 }
 
 #define ERRWRAP2(expr) \
 try \
 { \
-    PyAllowThreads allowThreads; \
     expr; \
 } \
 catch (const cv::Exception &e) \
 { \
-    pyRaiseCVException(e); \
+    evision::nif::error(env, e.what()); \
     return 0; \
 } \
 catch (const std::exception &e) \
 { \
-    PyErr_SetString(opencv_error, e.what()); \
+    evision::nif::error(env, e.what()); \
     return 0; \
 } \
 catch (...) \
 { \
-    PyErr_SetString(opencv_error, "Unknown C++ exception from OpenCV code"); \
+    evision::nif::error(env,  "Unknown C++ exception from OpenCV code"); \
     return 0; \
 }
 
@@ -253,129 +179,10 @@ using namespace cv;
 
 
 namespace {
-template<class T>
-NPY_TYPES asNumpyType()
-{
-    return NPY_OBJECT;
-}
-
-template<>
-NPY_TYPES asNumpyType<bool>()
-{
-    return NPY_BOOL;
-}
-
-#define CV_GENERATE_INTEGRAL_TYPE_NPY_CONVERSION(src, dst) \
-    template<>                                             \
-    NPY_TYPES asNumpyType<src>()                           \
-    {                                                      \
-        return NPY_##dst;                                  \
-    }                                                      \
-    template<>                                             \
-    NPY_TYPES asNumpyType<u##src>()                        \
-    {                                                      \
-        return NPY_U##dst;                                 \
-    }
-
-CV_GENERATE_INTEGRAL_TYPE_NPY_CONVERSION(int8_t, INT8);
-
-CV_GENERATE_INTEGRAL_TYPE_NPY_CONVERSION(int16_t, INT16);
-
-CV_GENERATE_INTEGRAL_TYPE_NPY_CONVERSION(int32_t, INT32);
-
-CV_GENERATE_INTEGRAL_TYPE_NPY_CONVERSION(int64_t, INT64);
-
-#undef CV_GENERATE_INTEGRAL_TYPE_NPY_CONVERSION
-
-template<>
-NPY_TYPES asNumpyType<float>()
-{
-    return NPY_FLOAT;
-}
-
-template<>
-NPY_TYPES asNumpyType<double>()
-{
-    return NPY_DOUBLE;
-}
-
-template <class T>
-PyArray_Descr* getNumpyTypeDescriptor()
-{
-    return PyArray_DescrFromType(asNumpyType<T>());
-}
-
-template <>
-PyArray_Descr* getNumpyTypeDescriptor<size_t>()
-{
-#if SIZE_MAX == ULONG_MAX
-    return PyArray_DescrFromType(NPY_ULONG);
-#elif SIZE_MAX == ULLONG_MAX
-    return PyArray_DescrFromType(NPY_ULONGLONG);
-#else
-    return PyArray_DescrFromType(NPY_UINT);
-#endif
-}
 
 template <class T, class U>
 bool isRepresentable(U value) {
     return (std::numeric_limits<T>::min() <= value) && (value <= std::numeric_limits<T>::max());
-}
-
-template<class T>
-bool canBeSafelyCasted(PyObject* obj, PyArray_Descr* to)
-{
-    return PyArray_CanCastTo(PyArray_DescrFromScalar(obj), to) != 0;
-}
-
-
-template<>
-bool canBeSafelyCasted<size_t>(PyObject* obj, PyArray_Descr* to)
-{
-    PyArray_Descr* from = PyArray_DescrFromScalar(obj);
-    if (PyArray_CanCastTo(from, to))
-    {
-        return true;
-    }
-    else
-    {
-        // False negative scenarios:
-        // - Signed input is positive so it can be safely cast to unsigned output
-        // - Input has wider limits but value is representable within output limits
-        // - All the above
-        if (PyDataType_ISSIGNED(from))
-        {
-            int64_t input = 0;
-            PyArray_CastScalarToCtype(obj, &input, getNumpyTypeDescriptor<int64_t>());
-            return (input >= 0) && isRepresentable<size_t>(static_cast<uint64_t>(input));
-        }
-        else
-        {
-            uint64_t input = 0;
-            PyArray_CastScalarToCtype(obj, &input, getNumpyTypeDescriptor<uint64_t>());
-            return isRepresentable<size_t>(input);
-        }
-        return false;
-    }
-}
-
-
-template<class T>
-bool parseNumpyScalar(PyObject* obj, T& value)
-{
-    if (PyArray_CheckScalar(obj))
-    {
-        // According to the numpy documentation:
-        // There are 21 statically-defined PyArray_Descr objects for the built-in data-types
-        // So descriptor pointer is not owning.
-        PyArray_Descr* to = getNumpyTypeDescriptor<T>();
-        if (canBeSafelyCasted<T>(obj, to))
-        {
-            PyArray_CastScalarToCtype(obj, &value, to);
-            return true;
-        }
-    }
-    return false;
 }
 
 TLSData<std::vector<std::string> > conversionErrorsTLS;
@@ -426,24 +233,25 @@ void pyRaiseCVOverloadException(const std::string& functionName)
 
 void pyPopulateArgumentConversionErrors()
 {
-    if (PyErr_Occurred())
-    {
-        PySafeObject exception_type;
-        PySafeObject exception_value;
-        PySafeObject exception_traceback;
-        PyErr_Fetch(exception_type, exception_value, exception_traceback);
-        PyErr_NormalizeException(exception_type, exception_value,
-                                 exception_traceback);
-
-        PySafeObject exception_message(PyObject_Str(exception_value));
-        std::string message;
-        getUnicodeString(exception_message, message);
-#ifdef CV_CXX11
-        conversionErrorsTLS.getRef().push_back(std::move(message));
-#else
-        conversionErrorsTLS.getRef().push_back(message);
-#endif
-    }
+    // todo
+//    if (PyErr_Occurred())
+//    {
+//        PySafeObject exception_type;
+//        PySafeObject exception_value;
+//        PySafeObject exception_traceback;
+//        PyErr_Fetch(exception_type, exception_value, exception_traceback);
+//        PyErr_NormalizeException(exception_type, exception_value,
+//                                 exception_traceback);
+//
+//        PySafeObject exception_message(PyObject_Str(exception_value));
+//        std::string message;
+//        getUnicodeString(exception_message, message);
+//#ifdef CV_CXX11
+//        conversionErrorsTLS.getRef().push_back(std::move(message));
+//#else
+//        conversionErrorsTLS.getRef().push_back(message);
+//#endif
+//    }
 }
 
 struct SafeSeqItem
@@ -575,97 +383,7 @@ typedef std::vector<std::vector<Point3f> > vector_vector_Point3f;
 typedef std::vector<std::vector<DMatch> > vector_vector_DMatch;
 typedef std::vector<std::vector<KeyPoint> > vector_vector_KeyPoint;
 
-class NumpyAllocator : public MatAllocator
-{
-public:
-    NumpyAllocator() { stdAllocator = Mat::getStdAllocator(); }
-    ~NumpyAllocator() {}
-
-    UMatData* allocate(PyObject* o, int dims, const int* sizes, int type, size_t* step) const
-    {
-        UMatData* u = new UMatData(this);
-        u->data = u->origdata = (uchar*)PyArray_DATA((PyArrayObject*) o);
-        npy_intp* _strides = PyArray_STRIDES((PyArrayObject*) o);
-        for( int i = 0; i < dims - 1; i++ )
-            step[i] = (size_t)_strides[i];
-        step[dims-1] = CV_ELEM_SIZE(type);
-        u->size = sizes[0]*step[0];
-        u->userdata = o;
-        return u;
-    }
-
-    UMatData* allocate(int dims0, const int* sizes, int type, void* data, size_t* step, AccessFlag flags, UMatUsageFlags usageFlags) const CV_OVERRIDE
-    {
-        if( data != 0 )
-        {
-            // issue #6969: CV_Error(Error::StsAssert, "The data should normally be NULL!");
-            // probably this is safe to do in such extreme case
-            return stdAllocator->allocate(dims0, sizes, type, data, step, flags, usageFlags);
-        }
-        PyEnsureGIL gil;
-
-        int depth = CV_MAT_DEPTH(type);
-        int cn = CV_MAT_CN(type);
-        const int f = (int)(sizeof(size_t)/8);
-        int typenum = depth == CV_8U ? NPY_UBYTE : depth == CV_8S ? NPY_BYTE :
-        depth == CV_16U ? NPY_USHORT : depth == CV_16S ? NPY_SHORT :
-        depth == CV_32S ? NPY_INT : depth == CV_32F ? NPY_FLOAT :
-        depth == CV_64F ? NPY_DOUBLE : f*NPY_ULONGLONG + (f^1)*NPY_UINT;
-        int i, dims = dims0;
-        cv::AutoBuffer<npy_intp> _sizes(dims + 1);
-        for( i = 0; i < dims; i++ )
-            _sizes[i] = sizes[i];
-        if( cn > 1 )
-            _sizes[dims++] = cn;
-        PyObject* o = PyArray_SimpleNew(dims, _sizes.data(), typenum);
-        if(!o)
-            CV_Error_(Error::StsError, ("The numpy array of typenum=%d, ndims=%d can not be created", typenum, dims));
-        return allocate(o, dims0, sizes, type, step);
-    }
-
-    bool allocate(UMatData* u, AccessFlag accessFlags, UMatUsageFlags usageFlags) const CV_OVERRIDE
-    {
-        return stdAllocator->allocate(u, accessFlags, usageFlags);
-    }
-
-    void deallocate(UMatData* u) const CV_OVERRIDE
-    {
-        if(!u)
-            return;
-        PyEnsureGIL gil;
-        CV_Assert(u->urefcount >= 0);
-        CV_Assert(u->refcount >= 0);
-        if(u->refcount == 0)
-        {
-            PyObject* o = (PyObject*)u->userdata;
-            Py_XDECREF(o);
-            delete u;
-        }
-    }
-
-    const MatAllocator* stdAllocator;
-};
-
-NumpyAllocator g_numpyAllocator;
-
-
 enum { ARG_NONE = 0, ARG_MAT = 1, ARG_SCALAR = 2 };
-
-static bool isBool(PyObject* obj) CV_NOEXCEPT
-{
-    return PyArray_IsScalar(obj, Bool) || PyBool_Check(obj);
-}
-
-template <typename T>
-static std::string pycv_dumpArray(const T* arr, int n)
-{
-    std::ostringstream out;
-    out << "[";
-    for (int i = 0; i < n; ++i)
-        out << " " << arr[i];
-    out << " ]";
-    return out.str();
-}
 
 // special case, when the converter needs full ArgInfo structure
 static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Mat& m, const ArgInfo& info)
@@ -742,8 +460,8 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const Mat& m)
 
     evision_res<cv::Mat> * res;
     if (alloc_resource(&res)) {
-        res->val = new cv::Mat();
-        m.copyTo(*res->val);
+        new(&res->val) cv::Mat();
+        m.copyTo(res->val);
     } else {
         make_error_tuple(env, "no memory");
     }
@@ -789,9 +507,9 @@ bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, void*& ptr, const ArgInfo& inf
     return ptr != nullptr;
 }
 
-static PyObject* evision_from(void*& ptr)
+static ERL_NIF_TERM evision_from(ErlNifEnv *env, void*& ptr)
 {
-    return PyLong_FromVoidPtr(ptr);
+    return enif_make_int64(env, (int64_t)(int64_t*)ptr);
 }
 
 static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Scalar& s, const ArgInfo& info)
@@ -1566,7 +1284,7 @@ bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, std::vector<Tp>& value, const 
     {
         return true;
     }
-    return evisionVecConverter<Tp>::to(obj, value, info);
+    return evisionVecConverter<Tp>::to(env, obj, value, info);
 }
 
 template <typename Tp>
@@ -1637,8 +1355,7 @@ static ERL_NIF_TERM evision_from_generic_vec(ErlNifEnv *env, const std::vector<T
     ERL_NIF_TERM * arr = (ERL_NIF_TERM *)malloc(sizeof(ERL_NIF_TERM) * n);
     for (size_t i = 0; i < n; i++)
     {
-        bool elem = value[i];
-        arr[i] = evision_from(env, elem);
+        arr[i] = evision_from(env, value[i]);
     }
     ERL_NIF_TERM ret = enif_make_tuple_from_array(env, arr, n);
     free(arr);
@@ -1690,7 +1407,7 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const std::tuple<Ts...>& cpp_tuple)
 }
 
 template <typename Tp>
-struct pyopencvVecConverter
+struct evisionVecConverter
 {
     typedef typename std::vector<Tp>::iterator VecIt;
 
@@ -1714,226 +1431,252 @@ private:
         // Underlying type is not representable as Mat Data Type
         return evision_from_generic_vec(env, value);
     }
+
+    static ERL_NIF_TERM from(ErlNifEnv *env, const std::vector<Tp>& value, ::traits::TrueType)
+    {
+        // Underlying type is not representable as Mat Data Type
+        typedef DataType<Tp> DType;
+        typedef typename DType::channel_type UnderlyingArrayType;
+        const int cols = DType::channels;
+
+        return evision::nif::atom(env, "not implemented");
+    }
 };
 
 static int OnError(int status, const char *func_name, const char *err_msg, const char *file_name, int line, void *userdata)
 {
-    PyGILState_STATE gstate;
-    gstate = PyGILState_Ensure();
-
-    PyObject *on_error = (PyObject*)userdata;
-    PyObject *args = Py_BuildValue("isssi", status, func_name, err_msg, file_name, line);
-
-    PyObject *r = PyObject_Call(on_error, args, NULL);
-    if (r == NULL) {
-        PyErr_Print();
-    } else {
-        Py_DECREF(r);
-    }
-
-    Py_DECREF(args);
-    PyGILState_Release(gstate);
+    // todo:evision on_error
+//    PyGILState_STATE gstate;
+//    gstate = PyGILState_Ensure();
+//
+//    PyObject *on_error = (PyObject*)userdata;
+//    PyObject *args = Py_BuildValue("isssi", status, func_name, err_msg, file_name, line);
+//
+//    PyObject *r = PyObject_Call(on_error, args, NULL);
+//    if (r == NULL) {
+//        PyErr_Print();
+//    } else {
+//        Py_DECREF(r);
+//    }
+//
+//    Py_DECREF(args);
+//    PyGILState_Release(gstate);
 
     return 0; // The return value isn't used
 }
 
-static PyObject *pycvRedirectError(PyObject*, PyObject *args, PyObject *kw)
+static ERL_NIF_TERM evisionRedirectError(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
     const char *keywords[] = { "on_error", NULL };
-    PyObject *on_error;
+    ERL_NIF_TERM on_error;
 
-    if (!PyArg_ParseTupleAndKeywords(args, kw, "O", (char**)keywords, &on_error))
-        return NULL;
+    if (!evision::nif::parse_arg(env, argc, argv, "O", (char**)keywords, &on_error))
+        return evision::nif::atom(env, "nil");
 
-    if ((on_error != Py_None) && !PyCallable_Check(on_error))  {
-        PyErr_SetString(PyExc_TypeError, "on_error must be callable");
-        return NULL;
+    // todo:evision check callback
+    if ((!evision::nif::check_nil(env, on_error)))  {
+        return evision::nif::atom(env, "not implemented");
     }
+    return evision::nif::atom(env, "not implemented");
 
-    // Keep track of the previous handler parameter, so we can decref it when no longer used
-    static PyObject* last_on_error = NULL;
-    if (last_on_error) {
-        Py_DECREF(last_on_error);
-        last_on_error = NULL;
-    }
-
-    if (on_error == Py_None) {
-        ERRWRAP2(redirectError(NULL));
-    } else {
-        last_on_error = on_error;
-        Py_INCREF(last_on_error);
-        ERRWRAP2(redirectError(OnError, last_on_error));
-    }
-    Py_RETURN_NONE;
+//    // Keep track of the previous handler parameter, so we can decref it when no longer used
+//    static PyObject* last_on_error = NULL;
+//    if (last_on_error) {
+//        Py_DECREF(last_on_error);
+//        last_on_error = NULL;
+//    }
+//
+//    if (on_error == Py_None) {
+//        ERRWRAP2(redirectError(NULL));
+//    } else {
+//        last_on_error = on_error;
+//        Py_INCREF(last_on_error);
+//        ERRWRAP2(redirectError(OnError, last_on_error));
+//    }
+//    Py_RETURN_NONE;
 }
 
 static void OnMouse(int event, int x, int y, int flags, void* param)
 {
-    PyGILState_STATE gstate;
-    gstate = PyGILState_Ensure();
-
-    PyObject *o = (PyObject*)param;
-    PyObject *args = Py_BuildValue("iiiiO", event, x, y, flags, PyTuple_GetItem(o, 1));
-
-    PyObject *r = PyObject_Call(PyTuple_GetItem(o, 0), args, NULL);
-    if (r == NULL)
-        PyErr_Print();
-    else
-        Py_DECREF(r);
-    Py_DECREF(args);
-    PyGILState_Release(gstate);
+    // todo:evision on_mouse
+//    PyGILState_STATE gstate;
+//    gstate = PyGILState_Ensure();
+//
+//    PyObject *o = (PyObject*)param;
+//    PyObject *args = Py_BuildValue("iiiiO", event, x, y, flags, PyTuple_GetItem(o, 1));
+//
+//    PyObject *r = PyObject_Call(PyTuple_GetItem(o, 0), args, NULL);
+//    if (r == NULL)
+//        PyErr_Print();
+//    else
+//        Py_DECREF(r);
+//    Py_DECREF(args);
+//    PyGILState_Release(gstate);
 }
 
 #ifdef HAVE_OPENCV_HIGHGUI
-static PyObject *pycvSetMouseCallback(PyObject*, PyObject *args, PyObject *kw)
+static ERL_NIF_TERM evisionSetMouseCallback(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
     const char *keywords[] = { "window_name", "on_mouse", "param", NULL };
     char* name;
-    PyObject *on_mouse;
-    PyObject *param = NULL;
+    ERL_NIF_TERM on_mouse;
+    ERL_NIF_TERM param;
 
-    if (!PyArg_ParseTupleAndKeywords(args, kw, "sO|O", (char**)keywords, &name, &on_mouse, &param))
-        return NULL;
-    if (!PyCallable_Check(on_mouse)) {
-        PyErr_SetString(PyExc_TypeError, "on_mouse must be callable");
-        return NULL;
-    }
-    if (param == NULL) {
-        param = Py_None;
-    }
-    PyObject* py_callback_info = Py_BuildValue("OO", on_mouse, param);
-    static std::map<std::string, PyObject*> registered_callbacks;
-    std::map<std::string, PyObject*>::iterator i = registered_callbacks.find(name);
-    if (i != registered_callbacks.end())
-    {
-        Py_DECREF(i->second);
-        i->second = py_callback_info;
-    }
-    else
-    {
-        registered_callbacks.insert(std::pair<std::string, PyObject*>(std::string(name), py_callback_info));
-    }
-    ERRWRAP2(setMouseCallback(name, OnMouse, py_callback_info));
-    Py_RETURN_NONE;
+    if (!evision::nif::parse_arg(env, argc, argv, "sO|O", (char**)keywords, &name, &on_mouse, &param))
+        return evision::nif::atom(env, "not implemented");
+    return evision::nif::atom(env, "not implemented");
+
+    // todo: check callback
+//    if (!PyCallable_Check(on_mouse)) {
+//        PyErr_SetString(PyExc_TypeError, "on_mouse must be callable");
+//        return NULL;
+//    }
+//    if (param == NULL) {
+//        param = Py_None;
+//    }
+//    PyObject* py_callback_info = Py_BuildValue("OO", on_mouse, param);
+//    static std::map<std::string, PyObject*> registered_callbacks;
+//    std::map<std::string, PyObject*>::iterator i = registered_callbacks.find(name);
+//    if (i != registered_callbacks.end())
+//    {
+//        Py_DECREF(i->second);
+//        i->second = py_callback_info;
+//    }
+//    else
+//    {
+//        registered_callbacks.insert(std::pair<std::string, PyObject*>(std::string(name), py_callback_info));
+//    }
+//    ERRWRAP2(setMouseCallback(name, OnMouse, py_callback_info));
+//    Py_RETURN_NONE;
 }
 #endif
 
 static void OnChange(int pos, void *param)
 {
-    PyGILState_STATE gstate;
-    gstate = PyGILState_Ensure();
-
-    PyObject *o = (PyObject*)param;
-    PyObject *args = Py_BuildValue("(i)", pos);
-    PyObject *r = PyObject_Call(PyTuple_GetItem(o, 0), args, NULL);
-    if (r == NULL)
-        PyErr_Print();
-    else
-        Py_DECREF(r);
-    Py_DECREF(args);
-    PyGILState_Release(gstate);
+    // todo:evision on_change
+//    PyGILState_STATE gstate;
+//    gstate = PyGILState_Ensure();
+//
+//    PyObject *o = (PyObject*)param;
+//    PyObject *args = Py_BuildValue("(i)", pos);
+//    PyObject *r = PyObject_Call(PyTuple_GetItem(o, 0), args, NULL);
+//    if (r == NULL)
+//        PyErr_Print();
+//    else
+//        Py_DECREF(r);
+//    Py_DECREF(args);
+//    PyGILState_Release(gstate);
 }
 
 #ifdef HAVE_OPENCV_HIGHGUI
 // workaround for #20408, use nullptr, set value later
 static int _createTrackbar(const String &trackbar_name, const String &window_name, int value, int count,
-                    TrackbarCallback onChange, PyObject* py_callback_info)
+                    TrackbarCallback onChange, ERL_NIF_TERM erl_callback_info)
 {
-    int n = createTrackbar(trackbar_name, window_name, NULL, count, onChange, py_callback_info);
-    setTrackbarPos(trackbar_name, window_name, value);
-    return n;
+    // todo:evision _createTrackbar
+//    int n = createTrackbar(trackbar_name, window_name, NULL, count, onChange, py_callback_info);
+//    setTrackbarPos(trackbar_name, window_name, value);
+//    return n;
+    return 0;
 }
-static PyObject *pycvCreateTrackbar(PyObject*, PyObject *args)
+static ERL_NIF_TERM evisionCreateTrackbar(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
-    PyObject *on_change;
+    ERL_NIF_TERM on_change;
     char* trackbar_name;
     char* window_name;
     int value;
     int count;
 
-    if (!PyArg_ParseTuple(args, "ssiiO", &trackbar_name, &window_name, &value, &count, &on_change))
-        return NULL;
-    if (!PyCallable_Check(on_change)) {
-        PyErr_SetString(PyExc_TypeError, "on_change must be callable");
-        return NULL;
-    }
-    PyObject* py_callback_info = Py_BuildValue("OO", on_change, Py_None);
-    std::string name = std::string(window_name) + ":" + std::string(trackbar_name);
-    static std::map<std::string, PyObject*> registered_callbacks;
-    std::map<std::string, PyObject*>::iterator i = registered_callbacks.find(name);
-    if (i != registered_callbacks.end())
-    {
-        Py_DECREF(i->second);
-        i->second = py_callback_info;
-    }
-    else
-    {
-        registered_callbacks.insert(std::pair<std::string, PyObject*>(name, py_callback_info));
-    }
-    ERRWRAP2(_createTrackbar(trackbar_name, window_name, value, count, OnChange, py_callback_info));
-    Py_RETURN_NONE;
+    // todo:evision evisionCreateTrackbar
+    if (!evision::nif::parse_arg(env, argc, argv, "ssiiO", &trackbar_name, &window_name, &value, &count, &on_change))
+        return evision::nif::atom(env, "not implemented");
+    return evision::nif::atom(env, "not implemented");
+//
+//    if (!PyCallable_Check(on_change)) {
+//        PyErr_SetString(PyExc_TypeError, "on_change must be callable");
+//        return NULL;
+//    }
+//    PyObject* py_callback_info = Py_BuildValue("OO", on_change, Py_None);
+//    std::string name = std::string(window_name) + ":" + std::string(trackbar_name);
+//    static std::map<std::string, PyObject*> registered_callbacks;
+//    std::map<std::string, PyObject*>::iterator i = registered_callbacks.find(name);
+//    if (i != registered_callbacks.end())
+//    {
+//        Py_DECREF(i->second);
+//        i->second = py_callback_info;
+//    }
+//    else
+//    {
+//        registered_callbacks.insert(std::pair<std::string, PyObject*>(name, py_callback_info));
+//    }
+//    ERRWRAP2(_createTrackbar(trackbar_name, window_name, value, count, OnChange, py_callback_info));
+//    Py_RETURN_NONE;
 }
 
 static void OnButtonChange(int state, void *param)
 {
-    PyGILState_STATE gstate;
-    gstate = PyGILState_Ensure();
-
-    PyObject *o = (PyObject*)param;
-    PyObject *args;
-    if(PyTuple_GetItem(o, 1) != NULL)
-    {
-        args = Py_BuildValue("(iO)", state, PyTuple_GetItem(o,1));
-    }
-    else
-    {
-        args = Py_BuildValue("(i)", state);
-    }
-
-    PyObject *r = PyObject_Call(PyTuple_GetItem(o, 0), args, NULL);
-    if (r == NULL)
-        PyErr_Print();
-    else
-        Py_DECREF(r);
-    Py_DECREF(args);
-    PyGILState_Release(gstate);
+    // todo:evision OnButtonChange
+//    PyGILState_STATE gstate;
+//    gstate = PyGILState_Ensure();
+//
+//    PyObject *o = (PyObject*)param;
+//    PyObject *args;
+//    if(PyTuple_GetItem(o, 1) != NULL)
+//    {
+//        args = Py_BuildValue("(iO)", state, PyTuple_GetItem(o,1));
+//    }
+//    else
+//    {
+//        args = Py_BuildValue("(i)", state);
+//    }
+//
+//    PyObject *r = PyObject_Call(PyTuple_GetItem(o, 0), args, NULL);
+//    if (r == NULL)
+//        PyErr_Print();
+//    else
+//        Py_DECREF(r);
+//    Py_DECREF(args);
+//    PyGILState_Release(gstate);
 }
 
-static PyObject *pycvCreateButton(PyObject*, PyObject *args, PyObject *kw)
+static ERL_NIF_TERM evisionCreateButton(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
     const char* keywords[] = {"buttonName", "onChange", "userData", "buttonType", "initialButtonState", NULL};
-    PyObject *on_change;
-    PyObject *userdata = NULL;
+    ERL_NIF_TERM on_change;
+    ERL_NIF_TERM userdata = evision::nif::atom(env, "nil");
     char* button_name;
     int button_type = 0;
     int initial_button_state = 0;
 
-    if (!PyArg_ParseTupleAndKeywords(args, kw, "sO|Oii", (char**)keywords, &button_name, &on_change, &userdata, &button_type, &initial_button_state))
-        return NULL;
-    if (!PyCallable_Check(on_change)) {
-        PyErr_SetString(PyExc_TypeError, "onChange must be callable");
-        return NULL;
-    }
-    if (userdata == NULL) {
-        userdata = Py_None;
-    }
+    if (!evision::nif::parse_arg(env, argc, argv, "sO|Oii", (char**)keywords, &button_name, &on_change, &userdata, &button_type, &initial_button_state))
+        return evision::nif::atom(env, "not implemented");
+    return evision::nif::atom(env, "not implemented");
 
-    PyObject* py_callback_info = Py_BuildValue("OO", on_change, userdata);
-    std::string name(button_name);
-
-    static std::map<std::string, PyObject*> registered_callbacks;
-    std::map<std::string, PyObject*>::iterator i = registered_callbacks.find(name);
-    if (i != registered_callbacks.end())
-    {
-        Py_DECREF(i->second);
-        i->second = py_callback_info;
-    }
-    else
-    {
-        registered_callbacks.insert(std::pair<std::string, PyObject*>(name, py_callback_info));
-    }
-    ERRWRAP2(createButton(button_name, OnButtonChange, py_callback_info, button_type, initial_button_state != 0));
-    Py_RETURN_NONE;
+    // todo: check callback
+//    if (!PyCallable_Check(on_change)) {
+//        PyErr_SetString(PyExc_TypeError, "onChange must be callable");
+//        return NULL;
+//    }
+//    if (userdata == NULL) {
+//        userdata = Py_None;
+//    }
+//
+//    PyObject* py_callback_info = Py_BuildValue("OO", on_change, userdata);
+//    std::string name(button_name);
+//
+//    static std::map<std::string, PyObject*> registered_callbacks;
+//    std::map<std::string, PyObject*>::iterator i = registered_callbacks.find(name);
+//    if (i != registered_callbacks.end())
+//    {
+//        Py_DECREF(i->second);
+//        i->second = py_callback_info;
+//    }
+//    else
+//    {
+//        registered_callbacks.insert(std::pair<std::string, PyObject*>(name, py_callback_info));
+//    }
+//    ERRWRAP2(createButton(button_name, OnButtonChange, py_callback_info, button_type, initial_button_state != 0));
+//    Py_RETURN_NONE;
 }
 #endif
 
@@ -1971,115 +1714,132 @@ static int convert_to_char(ErlNifEnv *env, ERL_NIF_TERM o, char *dst, const ArgI
 #include "evision_generated_types_content.h"
 #include "evision_generated_funcs.h"
 
-static PyObject* pycvRegisterMatType(PyObject *self, PyObject *value)
-{
-    CV_LOG_DEBUG(NULL, cv::format("pycvRegisterMatType %p %p\n", self, value));
+//static PyObject* pycvRegisterMatType(PyObject *self, PyObject *value)
+//{
+//    CV_LOG_DEBUG(NULL, cv::format("pycvRegisterMatType %p %p\n", self, value));
+//
+//    if (0 == PyType_Check(value))
+//    {
+//        PyErr_SetString(PyExc_TypeError, "Type argument is expected");
+//        return NULL;
+//    }
+//
+//    Py_INCREF(value);
+//    pyopencv_Mat_TypePtr = (PyTypeObject*)value;
+//
+//    Py_RETURN_NONE;
+//}
 
-    if (0 == PyType_Check(value))
-    {
-        PyErr_SetString(PyExc_TypeError, "Type argument is expected");
-        return NULL;
-    }
-
-    Py_INCREF(value);
-    pyopencv_Mat_TypePtr = (PyTypeObject*)value;
-
-    Py_RETURN_NONE;
-}
-
-static PyMethodDef special_methods[] = {
-  {"_registerMatType", (PyCFunction)(pycvRegisterMatType), METH_O, "_registerMatType(cv.Mat) -> None (Internal)"},
-  {"redirectError", CV_PY_FN_WITH_KW(pycvRedirectError), "redirectError(onError) -> None"},
-#ifdef HAVE_OPENCV_HIGHGUI
-  {"createTrackbar", (PyCFunction)pycvCreateTrackbar, METH_VARARGS, "createTrackbar(trackbarName, windowName, value, count, onChange) -> None"},
-  {"createButton", CV_PY_FN_WITH_KW(pycvCreateButton), "createButton(buttonName, onChange [, userData, buttonType, initialButtonState]) -> None"},
-  {"setMouseCallback", CV_PY_FN_WITH_KW(pycvSetMouseCallback), "setMouseCallback(windowName, onMouse [, param]) -> None"},
-#endif
-#ifdef HAVE_OPENCV_DNN
-  {"dnn_registerLayer", CV_PY_FN_WITH_KW(pyopencv_cv_dnn_registerLayer), "registerLayer(type, class) -> None"},
-  {"dnn_unregisterLayer", CV_PY_FN_WITH_KW(pyopencv_cv_dnn_unregisterLayer), "unregisterLayer(type) -> None"},
-#endif
-  {NULL, NULL},
-};
+// todo: register funcs
+//static PyMethodDef special_methods[] = {
+//  {"_registerMatType", (PyCFunction)(pycvRegisterMatType), METH_O, "_registerMatType(cv.Mat) -> None (Internal)"},
+//  {"redirectError", CV_PY_FN_WITH_KW(pycvRedirectError), "redirectError(onError) -> None"},
+//#ifdef HAVE_OPENCV_HIGHGUI
+//  {"createTrackbar", (PyCFunction)pycvCreateTrackbar, METH_VARARGS, "createTrackbar(trackbarName, windowName, value, count, onChange) -> None"},
+//  {"createButton", CV_PY_FN_WITH_KW(pycvCreateButton), "createButton(buttonName, onChange [, userData, buttonType, initialButtonState]) -> None"},
+//  {"setMouseCallback", CV_PY_FN_WITH_KW(pycvSetMouseCallback), "setMouseCallback(windowName, onMouse [, param]) -> None"},
+//#endif
+//#ifdef HAVE_OPENCV_DNN
+//  {"dnn_registerLayer", CV_PY_FN_WITH_KW(pyopencv_cv_dnn_registerLayer), "registerLayer(type, class) -> None"},
+//  {"dnn_unregisterLayer", CV_PY_FN_WITH_KW(pyopencv_cv_dnn_unregisterLayer), "unregisterLayer(type) -> None"},
+//#endif
+//  {NULL, NULL},
+//};
 
 /************************************************************************/
 
+struct ConstDef
+{
+    const char * name;
+    long long val;
+};
+
 #include "evision_generated_modules_content.h"
 
-static bool init_body(PyObject * m)
+static int
+on_load(ErlNifEnv* env, void**, ERL_NIF_TERM)
 {
+    ErlNifResourceType *rt;
 #define CVPY_MODULE(NAMESTR, NAME) \
     init_submodule(m, MODULESTR NAMESTR, methods_##NAME, consts_##NAME)
     #include "evision_generated_modules.h"
 #undef CVPY_MODULE
 
 #ifdef CVPY_DYNAMIC_INIT
-#define CVPY_TYPE(WNAME, NAME, _1, _2, BASE, CONSTRUCTOR) CVPY_TYPE_INIT_DYNAMIC(WNAME, NAME, return false, BASE, CONSTRUCTOR)
-    PyObject * pyopencv_NoBase_TypePtr = NULL;
-#else
-#define CVPY_TYPE(WNAME, NAME, _1, _2, BASE, CONSTRUCTOR) CVPY_TYPE_INIT_STATIC(WNAME, NAME, return false, BASE, CONSTRUCTOR)
-    PyTypeObject * pyopencv_NoBase_TypePtr = NULL;
+#define CVPY_TYPE(WNAME, NAME, STORAGE, _1, BASE, CONSTRUCTOR) CVPY_TYPE_INIT_DYNAMIC(WNAME, NAME, STORAGE, return -1)
 #endif
     #include "evision_generated_types.h"
 #undef CVPY_TYPE
 
-    PyObject* d = PyModule_GetDict(m);
+//    PyObject* d = PyModule_GetDict(m);
+//
+//
+//    PyDict_SetItemString(d, "__version__", PyString_FromString(CV_VERSION));
+//
+//    PyObject *opencv_error_dict = PyDict_New();
+//    PyDict_SetItemString(opencv_error_dict, "file", Py_None);
+//    PyDict_SetItemString(opencv_error_dict, "func", Py_None);
+//    PyDict_SetItemString(opencv_error_dict, "line", Py_None);
+//    PyDict_SetItemString(opencv_error_dict, "code", Py_None);
+//    PyDict_SetItemString(opencv_error_dict, "msg", Py_None);
+//    PyDict_SetItemString(opencv_error_dict, "err", Py_None);
+//    opencv_error = PyErr_NewException((char*)MODULESTR".error", NULL, opencv_error_dict);
+//    Py_DECREF(opencv_error_dict);
+//    PyDict_SetItemString(d, "error", opencv_error);
+//
+//
+//#define PUBLISH(I) PyDict_SetItemString(d, #I, PyInt_FromLong(I))
+//    PUBLISH(CV_8U);
+//    PUBLISH(CV_8UC1);
+//    PUBLISH(CV_8UC2);
+//    PUBLISH(CV_8UC3);
+//    PUBLISH(CV_8UC4);
+//    PUBLISH(CV_8S);
+//    PUBLISH(CV_8SC1);
+//    PUBLISH(CV_8SC2);
+//    PUBLISH(CV_8SC3);
+//    PUBLISH(CV_8SC4);
+//    PUBLISH(CV_16U);
+//    PUBLISH(CV_16UC1);
+//    PUBLISH(CV_16UC2);
+//    PUBLISH(CV_16UC3);
+//    PUBLISH(CV_16UC4);
+//    PUBLISH(CV_16S);
+//    PUBLISH(CV_16SC1);
+//    PUBLISH(CV_16SC2);
+//    PUBLISH(CV_16SC3);
+//    PUBLISH(CV_16SC4);
+//    PUBLISH(CV_32S);
+//    PUBLISH(CV_32SC1);
+//    PUBLISH(CV_32SC2);
+//    PUBLISH(CV_32SC3);
+//    PUBLISH(CV_32SC4);
+//    PUBLISH(CV_32F);
+//    PUBLISH(CV_32FC1);
+//    PUBLISH(CV_32FC2);
+//    PUBLISH(CV_32FC3);
+//    PUBLISH(CV_32FC4);
+//    PUBLISH(CV_64F);
+//    PUBLISH(CV_64FC1);
+//    PUBLISH(CV_64FC2);
+//    PUBLISH(CV_64FC3);
+//    PUBLISH(CV_64FC4);
+//#undef PUBLISH
 
-
-    PyDict_SetItemString(d, "__version__", PyString_FromString(CV_VERSION));
-
-    PyObject *opencv_error_dict = PyDict_New();
-    PyDict_SetItemString(opencv_error_dict, "file", Py_None);
-    PyDict_SetItemString(opencv_error_dict, "func", Py_None);
-    PyDict_SetItemString(opencv_error_dict, "line", Py_None);
-    PyDict_SetItemString(opencv_error_dict, "code", Py_None);
-    PyDict_SetItemString(opencv_error_dict, "msg", Py_None);
-    PyDict_SetItemString(opencv_error_dict, "err", Py_None);
-    opencv_error = PyErr_NewException((char*)MODULESTR".error", NULL, opencv_error_dict);
-    Py_DECREF(opencv_error_dict);
-    PyDict_SetItemString(d, "error", opencv_error);
-
-
-#define PUBLISH(I) PyDict_SetItemString(d, #I, PyInt_FromLong(I))
-    PUBLISH(CV_8U);
-    PUBLISH(CV_8UC1);
-    PUBLISH(CV_8UC2);
-    PUBLISH(CV_8UC3);
-    PUBLISH(CV_8UC4);
-    PUBLISH(CV_8S);
-    PUBLISH(CV_8SC1);
-    PUBLISH(CV_8SC2);
-    PUBLISH(CV_8SC3);
-    PUBLISH(CV_8SC4);
-    PUBLISH(CV_16U);
-    PUBLISH(CV_16UC1);
-    PUBLISH(CV_16UC2);
-    PUBLISH(CV_16UC3);
-    PUBLISH(CV_16UC4);
-    PUBLISH(CV_16S);
-    PUBLISH(CV_16SC1);
-    PUBLISH(CV_16SC2);
-    PUBLISH(CV_16SC3);
-    PUBLISH(CV_16SC4);
-    PUBLISH(CV_32S);
-    PUBLISH(CV_32SC1);
-    PUBLISH(CV_32SC2);
-    PUBLISH(CV_32SC3);
-    PUBLISH(CV_32SC4);
-    PUBLISH(CV_32F);
-    PUBLISH(CV_32FC1);
-    PUBLISH(CV_32FC2);
-    PUBLISH(CV_32FC3);
-    PUBLISH(CV_32FC4);
-    PUBLISH(CV_64F);
-    PUBLISH(CV_64FC1);
-    PUBLISH(CV_64FC2);
-    PUBLISH(CV_64FC3);
-    PUBLISH(CV_64FC4);
-#undef PUBLISH
-
-    return true;
+    return 0;
 }
+
+static int on_reload(ErlNifEnv*, void**, ERL_NIF_TERM)
+{
+    return 0;
+}
+
+static int on_upgrade(ErlNifEnv*, void**, void**, ERL_NIF_TERM)
+{
+    return 0;
+}
+
+ERL_NIF_INIT(erl_cv_nif, nif_functions, on_load, on_reload, on_upgrade, NULL);
 
 #if defined(__GNUC__)
 #pragma GCC visibility push(default)

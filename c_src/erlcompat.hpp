@@ -104,37 +104,6 @@ ERL_NIF_TERM make_binary(ErlNifEnv *env, const void *bytes, unsigned int size)
     return term;
 }
 
-static inline bool getUnicodeString(PyObject * obj, std::string &str)
-{
-    bool res = false;
-    if (PyUnicode_Check(obj))
-    {
-        PyObject * bytes = PyUnicode_AsUTF8String(obj);
-        if (PyBytes_Check(bytes))
-        {
-            const char * raw = PyBytes_AsString(bytes);
-            if (raw)
-            {
-                str = std::string(raw);
-                res = true;
-            }
-        }
-        Py_XDECREF(bytes);
-    }
-#if PY_MAJOR_VERSION < 3
-    else if (PyString_Check(obj))
-    {
-        const char * raw = PyString_AsString(obj);
-        if (raw)
-        {
-            str = std::string(raw);
-            res = true;
-        }
-    }
-#endif
-    return res;
-}
-
 //==================================================================================================
 
 #define CV_PY_FN_WITH_KW_(fn, flags) (PyCFunction)(void*)(PyCFunctionWithKeywords)(fn), (flags) | METH_VARARGS | METH_KEYWORDS
@@ -157,7 +126,7 @@ bool evision_to(ErlNifEnv *env, ERL_NIF_TERM dst, TYPE& src, const ArgInfo& info
 template<>                                                                                            \
 ERL_NIF_TERM evision_from(ErlNifEnv *env, const TYPE& src)                                                              \
 {                                                                                                     \
-    Ptr<TYPE> ptr(env, new TYPE());                                                                        \
+    Ptr<TYPE> ptr(new TYPE());                                                                        \
                                                                                                       \
     *ptr = src;                                                                                       \
     return evision_from(env, ptr);                                                                        \
@@ -202,149 +171,40 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const TYPE& src)                      
 
 //==================================================================================================
 
-#if PY_MAJOR_VERSION >= 3
-#define CVPY_TYPE_HEAD PyVarObject_HEAD_INIT(&PyType_Type, 0)
-#define CVPY_TYPE_INCREF(T) Py_INCREF(T)
-#else
-#define CVPY_TYPE_HEAD PyObject_HEAD_INIT(&PyType_Type) 0,
-#define CVPY_TYPE_INCREF(T) _Py_INC_REFTOTAL _Py_REF_DEBUG_COMMA (T)->ob_refcnt++
-#endif
-
-
-#define CVPY_TYPE_DECLARE(WNAME, NAME, STORAGE, SNAME) \
-    struct pyopencv_##NAME##_t \
-    { \
-        PyObject_HEAD \
-        STORAGE v; \
-    }; \
-    static PyTypeObject pyopencv_##NAME##_TypeXXX = \
-    { \
-        CVPY_TYPE_HEAD \
-        MODULESTR"."#WNAME, \
-        sizeof(pyopencv_##NAME##_t), \
-    }; \
-    static PyTypeObject * pyopencv_##NAME##_TypePtr = &pyopencv_##NAME##_TypeXXX; \
-    static bool pyopencv_##NAME##_getp(PyObject * self, STORAGE * & dst) \
-    { \
-        if (PyObject_TypeCheck(self, pyopencv_##NAME##_TypePtr)) \
-        { \
-            dst = &(((pyopencv_##NAME##_t*)self)->v); \
-            return true; \
-        } \
-        return false; \
-    } \
-    static PyObject * pyopencv_##NAME##_Instance(const STORAGE &r) \
-    { \
-        pyopencv_##NAME##_t *m = PyObject_NEW(pyopencv_##NAME##_t, pyopencv_##NAME##_TypePtr); \
-        new (&(m->v)) STORAGE(r); \
-        return (PyObject*)m; \
-    } \
-    static void pyopencv_##NAME##_dealloc(PyObject* self) \
-    { \
-        ((pyopencv_##NAME##_t*)self)->v.STORAGE::~SNAME(); \
-        PyObject_Del(self); \
-    } \
-    static PyObject* pyopencv_##NAME##_repr(PyObject* self) \
-    { \
-        char str[1000]; \
-        sprintf(str, "<"#WNAME" %p>", self); \
-        return PyString_FromString(str); \
-    }
-
-
-#define CVPY_TYPE_INIT_STATIC(WNAME, NAME, ERROR_HANDLER, BASE, CONSTRUCTOR) \
-    { \
-        pyopencv_##NAME##_TypePtr->tp_base = pyopencv_##BASE##_TypePtr; \
-        pyopencv_##NAME##_TypePtr->tp_dealloc = pyopencv_##NAME##_dealloc; \
-        pyopencv_##NAME##_TypePtr->tp_repr = pyopencv_##NAME##_repr; \
-        pyopencv_##NAME##_TypePtr->tp_getset = pyopencv_##NAME##_getseters; \
-        pyopencv_##NAME##_TypePtr->tp_init = (initproc) CONSTRUCTOR; \
-        pyopencv_##NAME##_TypePtr->tp_methods = pyopencv_##NAME##_methods; \
-        pyopencv_##NAME##_TypePtr->tp_alloc = PyType_GenericAlloc; \
-        pyopencv_##NAME##_TypePtr->tp_new = PyType_GenericNew; \
-        pyopencv_##NAME##_TypePtr->tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE; \
-        if (PyType_Ready(pyopencv_##NAME##_TypePtr) != 0) \
-        { \
-            ERROR_HANDLER; \
-        } \
-        CVPY_TYPE_INCREF(pyopencv_##NAME##_TypePtr); \
-        PyModule_AddObject(m, #WNAME, (PyObject *)pyopencv_##NAME##_TypePtr); \
-    }
-
-//==================================================================================================
-
 #define CVPY_TYPE_DECLARE_DYNAMIC(WNAME, NAME, STORAGE, SNAME) \
-    struct pyopencv_##NAME##_t \
-    { \
-        PyObject_HEAD \
-        STORAGE v; \
-    }; \
-    static PyObject * pyopencv_##NAME##_TypePtr = 0; \
-    static bool pyopencv_##NAME##_getp(PyObject * self, STORAGE * & dst) \
-    { \
-        if (PyObject_TypeCheck(self, (PyTypeObject*)pyopencv_##NAME##_TypePtr)) \
+    static bool evision_##NAME##_getp(ErlNifEnv *env, ERL_NIF_TERM self, STORAGE * & dst) \
+    {                                                                                     \
+        evision_res<STORAGE> * VAR; \
+        if (!enif_get_resource(env, self, evision_res<STORAGE>::type, (void **)&VAR)) \
+            return enif_make_badarg(env);                  \
+        else \
         { \
-            dst = &(((pyopencv_##NAME##_t*)self)->v); \
+            dst = &(VAR->val); \
             return true; \
         } \
         return false; \
     } \
-    static PyObject * pyopencv_##NAME##_Instance(const STORAGE &r) \
-    { \
-        pyopencv_##NAME##_t *m = PyObject_New(pyopencv_##NAME##_t, (PyTypeObject*)pyopencv_##NAME##_TypePtr); \
-        new (&(m->v)) STORAGE(r); \
-        return (PyObject*)m; \
+    static ERL_NIF_TERM evision_##NAME##_Instance(ErlNifEnv *env, const STORAGE &r) \
+    {                                                  \
+        evision_res< STORAGE > * VAR; \
+        VAR = (decltype(VAR))enif_alloc_resource(evision_res< STORAGE >::type, sizeof(evision_res< STORAGE >::type)); \
+        if (!VAR) \
+            return make_error_tuple(env, "no memory");     \
+        new (&(VAR->val)) STORAGE(r);                  \
+        ERL_NIF_TERM ret = enif_make_resource(env, VAR); \
+        enif_release_resource(VAR); \
+        return ret; \
     } \
-    static void pyopencv_##NAME##_dealloc(PyObject* self) \
-    { \
-        ((pyopencv_##NAME##_t*)self)->v.STORAGE::~SNAME(); \
-        PyObject_Del(self); \
-    } \
-    static PyObject* pyopencv_##NAME##_repr(PyObject* self) \
-    { \
-        char str[1000]; \
-        sprintf(str, "<"#WNAME" %p>", self); \
-        return PyString_FromString(str); \
-    } \
-    static PyType_Slot pyopencv_##NAME##_Slots[] =  \
-    { \
-        {Py_tp_dealloc, 0}, \
-        {Py_tp_repr, 0}, \
-        {Py_tp_getset, 0}, \
-        {Py_tp_init, 0}, \
-        {Py_tp_methods, 0}, \
-        {Py_tp_alloc, 0}, \
-        {Py_tp_new, 0}, \
-        {0, 0} \
-    }; \
-    static PyType_Spec pyopencv_##NAME##_Spec = \
-    { \
-        MODULESTR"."#WNAME, \
-        sizeof(pyopencv_##NAME##_t), \
-        0, \
-        Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, \
-        pyopencv_##NAME##_Slots  \
-    };
+    static void destruct_##NAME(ErlNifEnv *env, void *args)    \
+    {                                                          \
+        ((evision_res< STORAGE > *)args)->val.STORAGE::~SNAME(); \
+    }
 
-#define CVPY_TYPE_INIT_DYNAMIC(WNAME, NAME, ERROR_HANDLER, BASE, CONSTRUCTOR) \
+#define CVPY_TYPE_INIT_DYNAMIC(WNAME, NAME, STORAGE, ERROR_HANDLER) \
     { \
-        pyopencv_##NAME##_Slots[0].pfunc /*tp_dealloc*/ = (void*)pyopencv_##NAME##_dealloc; \
-        pyopencv_##NAME##_Slots[1].pfunc /*tp_repr*/ = (void*)pyopencv_##NAME##_repr; \
-        pyopencv_##NAME##_Slots[2].pfunc /*tp_getset*/ = (void*)pyopencv_##NAME##_getseters; \
-        pyopencv_##NAME##_Slots[3].pfunc /*tp_init*/ = (void*) CONSTRUCTOR; \
-        pyopencv_##NAME##_Slots[4].pfunc /*tp_methods*/ = pyopencv_##NAME##_methods; \
-        pyopencv_##NAME##_Slots[5].pfunc /*tp_alloc*/ = (void*)PyType_GenericAlloc; \
-        pyopencv_##NAME##_Slots[6].pfunc /*tp_new*/ = (void*)PyType_GenericNew; \
-        PyObject * bases = 0; \
-        if (pyopencv_##BASE##_TypePtr) \
-            bases = PyTuple_Pack(1, pyopencv_##BASE##_TypePtr); \
-        pyopencv_##NAME##_TypePtr = PyType_FromSpecWithBases(&pyopencv_##NAME##_Spec, bases); \
-        if (!pyopencv_##NAME##_TypePtr) \
-        { \
-            printf("Failed to init: " #WNAME ", base (" #BASE ")" "\n"); \
-            ERROR_HANDLER; \
-        } \
-        PyModule_AddObject(m, #NAME, (PyObject *)pyopencv_##NAME##_TypePtr); \
+        rt = enif_open_resource_type(env, "erl_cv_nif", "erl_cv_##NAME##_type", destruct_##NAME , ERL_NIF_RT_CREATE, NULL); \
+        if (!rt) ERROR_HANDLER; \
+        evision_res<STORAGE>::type = rt; \
     }
 
 // Debug module load:
