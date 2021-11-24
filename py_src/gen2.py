@@ -52,7 +52,7 @@ gen_template_simple_call_constructor_prelude = Template("""evision_res<$cname> *
 gen_template_simple_call_constructor = Template("""new (&(self->val)) ${cname}${py_args}""")
 
 gen_template_parse_args = Template("""const char* keywords[] = { $kw_list, NULL };
-    if( evision::nif::parse_arg(env, argc, argv, "$fmtspec", (char**)keywords, $parse_arglist)$code_cvt )""")
+    if( evision::nif::parse_arg(env, argc, argv, (char**)keywords, "$fmtspec", $parse_arglist)$code_cvt )""")
 
 gen_template_func_body = Template("""$code_decl
     $code_parse
@@ -357,7 +357,6 @@ class ClassInfo(object):
         sorted_methods = list(self.methods.items())
         sorted_methods.sort()
         for mname, m in sorted_methods:
-            # codegen.erl_cv_nif.write()
             codegen.code_ns_reg.write(m.get_tab_entry())
             arglists = [m.variants[i].py_arglist for i in range(len(m.variants))]
             arglens = [len(arglist) for arglist in arglists]
@@ -778,10 +777,12 @@ class FuncInfo(object):
                 arg_type_info = simple_argtype_mapping.get(tp, ArgTypeInfo(tp, FormatStrings.object, defval0, True))
                 parse_name = a.name
                 if a.py_inputarg:
-                    if arg_type_info.strict_conversion:
+                    if True:
                         code_decl += "    ERL_NIF_TERM erl_term_%s;\n" % (a.name,)
                         parse_name = "erl_term_" + a.name
                         if a.tp == 'char':
+                            code_cvt_list.append("convert_to_char(env, erl_term_%s, &%s, %s)" % (a.name, a.name, a.crepr()))
+                        elif a.tp == 'c_string':
                             code_cvt_list.append("convert_to_char(env, erl_term_%s, &%s, %s)" % (a.name, a.name, a.crepr()))
                         else:
                             code_cvt_list.append("evision_to_safe(env, erl_term_%s, %s, %s)" % (a.name, a.name, a.crepr()))

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "erl_nif.h"
+#include <stdarg.h>
 
 #define GET(ARGN, VAR)                      \
   if (!evision::nif::get(env, argv[ARGN], &VAR)) \
@@ -279,9 +280,27 @@ namespace evision
       return 1;
     }
 
-    template <typename ... T>
-    int parse_arg(ErlNifEnv *env, int argc, const ERL_NIF_TERM * argv, const char * spec, char** keyword_list, T * ... parsed) {
-        return 0;
+    inline int parse_arg(ErlNifEnv *env, int argc, const ERL_NIF_TERM * argv, char** keyword_list, const char * spec, ...) {
+        // todo:evision parse opts
+        // std::map<const char *, ERL_NIF_TERM> parsed_opts;
+        va_list args;
+        va_start(args, spec);
+        int arg_index = 0;
+        int spec_index = 0;
+        while (spec[spec_index] != ':') {
+            char t = spec[spec_index];
+            ERL_NIF_TERM * i = (ERL_NIF_TERM *)va_arg(args, long);
+            *i = argv[arg_index];
+            arg_index++;
+            if (t == '|') {
+                break;
+            } else {
+                spec_index++;
+            }
+        }
+
+        va_end(args);
+        return true;
     }
   }
 }

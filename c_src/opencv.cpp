@@ -395,6 +395,16 @@ static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Mat& m, const ArgInfo& in
         return true;
     }
 
+    evision_res<cv::Mat *> * in_res;
+    if( enif_get_resource(env, o, evision_res<cv::Mat *>::type, (void **)&in_res) ) {
+        if (in_res->val) {
+            in_res->val->copyTo(m);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
     int i32;
     if( enif_get_int(env, o, &i32) )
     {
@@ -460,12 +470,11 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const Mat& m)
     if( !m.data )
         return evision::nif::atom(env, "nil");
 
-    evision_res<cv::Mat> * res;
+    evision_res<cv::Mat *> * res;
     if (alloc_resource(&res)) {
-        new(&res->val) cv::Mat();
-        m.copyTo(res->val);
+        res->val = new cv::Mat(m);
     } else {
-        evision::nif::error(env, "no memory");
+        return evision::nif::error(env, "no memory");
     }
 
     ERL_NIF_TERM ret = enif_make_resource(env, res);
@@ -771,6 +780,7 @@ bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, String &value, const ArgInfo& 
 {
     std::string str;
     int ret = evision::nif::get(env, obj, str);
+    value = str;
     return (ret > 0);
 }
 
@@ -1472,7 +1482,7 @@ static ERL_NIF_TERM evisionRedirectError(ErlNifEnv* env, int argc, const ERL_NIF
     const char *keywords[] = { "on_error", NULL };
     ERL_NIF_TERM on_error;
 
-    if (!evision::nif::parse_arg(env, argc, argv, "O", (char**)keywords, &on_error))
+    if (!evision::nif::parse_arg(env, argc, argv, (char**)keywords, "O", &on_error))
         return evision::nif::atom(env, "nil");
 
     // todo:evision check callback
@@ -1524,7 +1534,7 @@ static ERL_NIF_TERM evisionSetMouseCallback(ErlNifEnv* env, int argc, const ERL_
     ERL_NIF_TERM on_mouse;
     ERL_NIF_TERM param;
 
-    if (!evision::nif::parse_arg(env, argc, argv, "sO|O", (char**)keywords, &name, &on_mouse, &param))
+    if (!evision::nif::parse_arg(env, argc, argv, (char**)keywords, "sO|O", &name, &on_mouse, &param))
         return evision::nif::atom(env, "not implemented");
     return evision::nif::atom(env, "not implemented");
 
@@ -1590,7 +1600,7 @@ static ERL_NIF_TERM evisionCreateTrackbar(ErlNifEnv* env, int argc, const ERL_NI
     int count;
 
     // todo:evision evisionCreateTrackbar
-    if (!evision::nif::parse_arg(env, argc, argv, "ssiiO", &trackbar_name, &window_name, &value, &count, &on_change))
+    if (!evision::nif::parse_arg(env, argc, argv, nullptr, "ssiiO", &trackbar_name, &window_name, &value, &count, &on_change))
         return evision::nif::atom(env, "not implemented");
     return evision::nif::atom(env, "not implemented");
 //
@@ -1650,7 +1660,7 @@ static ERL_NIF_TERM evisionCreateButton(ErlNifEnv* env, int argc, const ERL_NIF_
     int button_type = 0;
     int initial_button_state = 0;
 
-    if (!evision::nif::parse_arg(env, argc, argv, "sO|Oii", (char**)keywords, &button_name, &on_change, &userdata, &button_type, &initial_button_state))
+    if (!evision::nif::parse_arg(env, argc, argv, (char**)keywords, "sO|Oii", &button_name, &on_change, &userdata, &button_type, &initial_button_state))
         return evision::nif::atom(env, "not implemented");
     return evision::nif::atom(env, "not implemented");
 
@@ -1683,6 +1693,18 @@ static ERL_NIF_TERM evisionCreateButton(ErlNifEnv* env, int argc, const ERL_NIF_
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////////////
+
+static int convert_to_char(ErlNifEnv *env, ERL_NIF_TERM o, char **dst, const ArgInfo& info)
+{
+    std::string str;
+    if (evision::nif::get(env, o, str))
+    {
+        *dst = (char *)str.c_str();
+        return 1;
+    }
+    (*dst) = 0;
+    return failmsg(env, "Expected single character string for argument '%s'", info.name);
+}
 
 static int convert_to_char(ErlNifEnv *env, ERL_NIF_TERM o, char *dst, const ArgInfo& info)
 {
@@ -1748,6 +1770,14 @@ struct ConstDef
 
 #include "evision_generated_modules_content.h"
 
+static void destruct_Mat(ErlNifEnv *env, void *args) {
+    evision_res<cv::Mat *> * res = (evision_res<cv::Mat *> *)args;
+    if (res->val) {
+        delete res->val;
+        res->val = nullptr;
+    }
+}
+
 static int
 on_load(ErlNifEnv* env, void**, ERL_NIF_TERM)
 {
@@ -1756,6 +1786,9 @@ on_load(ErlNifEnv* env, void**, ERL_NIF_TERM)
 #define CV_ERL_TYPE(WNAME, NAME, STORAGE, _1, BASE, CONSTRUCTOR) CV_ERL_TYPE_INIT_DYNAMIC(WNAME, NAME, STORAGE, return -1)
 #include "evision_generated_types.h"
 #undef CV_ERL_TYPE
+    rt = enif_open_resource_type(env, "erl_cv_nif", "erl_cv_Mat_type", destruct_Mat, ERL_NIF_RT_CREATE, NULL);                                                             \
+    if (!rt) return -1;
+    evision_res<cv::Mat *>::type = rt;
 
 //    PyObject* d = PyModule_GetDict(m);
 //

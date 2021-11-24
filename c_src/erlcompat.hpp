@@ -137,7 +137,7 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const TYPE& src)                      
         ((evision_res< STORAGE > *)args)->val.STORAGE::~SNAME();                                      \
     }
 
-#define CV_ERL_TYPE_INIT_DYNAMIC(WNAME, NAME, STORAGE, ERROR_HANDLER)                                   \
+#define CV_ERL_TYPE_INIT_DYNAMIC(WNAME, NAME, STORAGE, ERROR_HANDLER)                                 \
     {                                                                                                 \
         rt = enif_open_resource_type(env, "erl_cv_nif", "erl_cv_##NAME##_type", destruct_##NAME ,     \
                 ERL_NIF_RT_CREATE, NULL);                                                             \
