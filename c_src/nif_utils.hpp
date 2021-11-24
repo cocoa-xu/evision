@@ -178,6 +178,15 @@ namespace evision
       return enif_make_atom(env, msg);
     }
 
+    // Check if :nil
+    int check_nil(ErlNifEnv *env, ERL_NIF_TERM term) {
+        std::string atom_str;
+        if (get_atom(env, term, atom_str) && atom_str == "nil") {
+            return true;
+        }
+        return false;
+    }
+
     // Boolean
 
     int get(ErlNifEnv *env, ERL_NIF_TERM term, bool *var)
@@ -268,6 +277,11 @@ namespace evision
         list = tail;
       }
       return 1;
+    }
+
+    template <typename ... T>
+    int parse_arg(ErlNifEnv *env, int argc, const ERL_NIF_TERM * argv, const char * spec, char** keyword_list, T * ... parsed) {
+        return 0;
     }
   }
 }

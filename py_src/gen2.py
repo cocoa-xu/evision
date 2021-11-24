@@ -5,6 +5,7 @@ import hdr_parser, sys, re, os
 from string import Template
 from pprint import pprint
 from collections import namedtuple
+import numpy as np
 
 if sys.version_info[0] >= 3:
     from io import StringIO
@@ -18,23 +19,40 @@ ignored_arg_types = ["RNG*"]
 
 pass_by_val_types = ["Point*", "Point2f*", "Rect*", "String*", "double*", "float*", "int*"]
 
+gen_erl_cv_nif_load_nif = """
+  @moduledoc false
+  @on_load :load_nif
+  def load_nif do
+    require Logger
+    nif_file = '#{:code.priv_dir(:evision)}/evision'
+
+    case :erlang.load_nif(nif_file, 0) do
+      :ok -> :ok
+      {:error, {:reload, _}} -> :ok
+      {:error, reason} -> Logger.warn("Failed to load nif: #{inspect(reason)}")
+    end
+  end
+"""
+
 gen_template_check_self = Template("""
+    ERL_NIF_TERM self = argv[0];
     ${cname} * self1 = 0;
-    if (!pyopencv_${name}_getp(self, self1))
-        return failmsgp("Incorrect type of self (must be '${name}' or its derivative)");
+    if (!evision_${name}_getp(env, self, self1)) {
+        return enif_make_badarg(env);
+    }
     ${pname} _self_ = ${cvt}(self1);
 """)
-gen_template_call_constructor_prelude = Template("""new (&(self->v)) Ptr<$cname>(); // init Ptr with placement new
+gen_template_call_constructor_prelude = Template("""evision_res<Ptr<$cname>> * self = new evision_res<Ptr<$cname>>(); new (&(self->val)) Ptr<$cname>(); // init Ptr with placement new
         if(self) """)
 
-gen_template_call_constructor = Template("""self->v.reset(new ${cname}${py_args})""")
+gen_template_call_constructor = Template("""self->val.reset(new ${cname}${py_args})""")
 
-gen_template_simple_call_constructor_prelude = Template("""if(self) """)
+gen_template_simple_call_constructor_prelude = Template("""evision_res<$cname> * self = new evision_res<$cname>();\n    if(self) """)
 
-gen_template_simple_call_constructor = Template("""new (&(self->v)) ${cname}${py_args}""")
+gen_template_simple_call_constructor = Template("""new (&(self->val)) ${cname}${py_args}""")
 
 gen_template_parse_args = Template("""const char* keywords[] = { $kw_list, NULL };
-    if( PyArg_ParseTupleAndKeywords(py_args, kw, "$fmtspec", (char**)keywords, $parse_arglist)$code_cvt )""")
+    if( evision::nif::parse_arg(env, argc, argv, "$fmtspec", (char**)keywords, $parse_arglist)$code_cvt )""")
 
 gen_template_func_body = Template("""$code_decl
     $code_parse
@@ -47,7 +65,7 @@ gen_template_func_body = Template("""$code_decl
 gen_template_mappable = Template("""
     {
         ${mappable} _src;
-        if (pyopencv_to_safe(src, _src, info))
+        if (evision_to_safe(env, src, _src, info))
         {
             return cv_mappable_to(_src, dst);
         }
@@ -58,24 +76,24 @@ gen_template_type_decl = Template("""
 // Converter (${name})
 
 template<>
-struct PyOpenCV_Converter< ${cname} >
+struct Evision_Converter< ${cname} >
 {
-    static PyObject* from(const ${cname}& r)
+    static ERL_NIF_TERM from(ErlNifEnv *env, const ${cname}& r)
     {
-        return pyopencv_${name}_Instance(r);
+        return evision_${name}_Instance(env, r);
     }
-    static bool to(PyObject* src, ${cname}& dst, const ArgInfo& info)
+    static bool to(ErlNifEnv *env, ERL_NIF_TERM src, ${cname}& dst, const ArgInfo& info)
     {
-        if(!src || src == Py_None)
+        if(!src || evision::nif::check_nil(env, src))
             return true;
         ${cname} * dst_;
-        if (pyopencv_${name}_getp(src, dst_))
+        if (evision_${name}_getp(env, src, dst_))
         {
             dst = *dst_;
             return true;
         }
         ${mappable_code}
-        failmsg("Expected ${cname} for argument '%s'", info.name);
+        failmsg(env, "Expected ${cname} for argument '%s'", info.name);
         return false;
     }
 };
@@ -83,16 +101,14 @@ struct PyOpenCV_Converter< ${cname} >
 """)
 
 gen_template_map_type_cvt = Template("""
-template<> bool pyopencv_to(PyObject* src, ${cname}& dst, const ArgInfo& info);
+template<> bool evision_to(ErlNifEnv *env, ERL_NIF_TERM src, ${cname}& dst, const ArgInfo& info);
 
 """)
 
 gen_template_set_prop_from_map = Template("""
-    if( PyMapping_HasKeyString(src, (char*)"$propname") )
+    if( enif_get_map_value(env, src, evision::nif::atom(env, "$propname"), &tmp) )
     {
-        tmp = PyMapping_GetItemString(src, (char*)"$propname");
-        ok = tmp && pyopencv_to_safe(tmp, dst.$propname, ArgInfo("$propname", false));
-        Py_DECREF(tmp);
+        ok = evision_to_safe(env, tmp, dst.$propname, ArgInfo("$propname", false));
         if(!ok) return false;
     }""")
 
@@ -107,72 +123,100 @@ ${methods_code}
 
 // Tables (${name})
 
-static PyGetSetDef pyopencv_${name}_getseters[] =
-{${getset_inits}
-    {NULL}  /* Sentinel */
-};
-
-static PyMethodDef pyopencv_${name}_methods[] =
+static ErlNifFunc evision_${name}_methods[] =
 {
 ${methods_inits}
-    {NULL,          NULL}
 };
 """)
 
 
-gen_template_get_prop = Template("""
-static PyObject* pyopencv_${name}_get_${member}(pyopencv_${name}_t* p, void *closure)
+gen_template_get_prop_ptr = Template("""
+static ERL_NIF_TERM evision_${name_lower}_get_${member_lower}(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
-    return pyopencv_from(p->v${access}${member});
+    ERL_NIF_TERM self = argv[0];
+    ${storage_name}* self1_ptr = 0;
+    if (!evision_${name}_getp(env, self, self1_ptr) && !self1_ptr) {
+        return enif_make_badarg(env);
+    }
+    
+    ${storage_name} &self2 = *self1_ptr;
+    $cname* _self_ = dynamic_cast<$cname*>(self2.get());
+    return evision_from(env, _self_->${member});
+}
+""")
+
+gen_template_get_prop = Template("""
+static ERL_NIF_TERM evision_${name_lower}_get_${member_lower}(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
+{
+    ERL_NIF_TERM self = argv[0];
+    ${storage_name}* self1 = 0;
+    if (!evision_${name}_getp(env, self, self1) && !self1) {
+        return enif_make_badarg(env);
+    }
+    
+    return evision_from(env, self1${access}${member});
 }
 """)
 
 gen_template_get_prop_algo = Template("""
-static PyObject* pyopencv_${name}_get_${member}(pyopencv_${name}_t* p, void *closure)
+static ERL_NIF_TERM evision_${name_lower}_get_${member_lower}(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
-    $cname* _self_ = dynamic_cast<$cname*>(p->v.get());
-    if (!_self_)
-        return failmsgp("Incorrect type of object (must be '${name}' or its derivative)");
-    return pyopencv_from(_self_${access}${member});
+    ERL_NIF_TERM self = argv[0];
+    ${storage_name}* self1 = 0;
+    if (!evision_${name}_getp(env, self, self1)) {
+        return enif_make_badarg(env);
+    }
+    
+    $cname* _self_algo_ = dynamic_cast<$cname*>(self1->get());
+    if (!_self_algo_)
+        return failmsgp(env, "Incorrect type of object (must be '${name}' or its derivative)");
+    return evision_from(env, _self_algo_${access}${member});
 }
 """)
 
 gen_template_set_prop = Template("""
-static int pyopencv_${name}_set_${member}(pyopencv_${name}_t* p, PyObject *value, void *closure)
+static ERL_NIF_TERM evision_${name_lower}_set_${member_lower}(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
-    if (!value)
-    {
-        PyErr_SetString(PyExc_TypeError, "Cannot delete the ${member} attribute");
-        return -1;
+    ERL_NIF_TERM self = argv[0];
+    ${storage_name}* self1 = 0;
+    if (!evision_${name}_getp(env, self, self1)) {
+        return enif_make_badarg(env);
     }
-    return pyopencv_to_safe(value, p->v${access}${member}, ArgInfo("value", false)) ? 0 : -1;
+    return evision::nif::atom(env, "not implmented setter");
+
+    // if (!value)
+    // {
+    //     // todo: error("Cannot delete the ${member} attribute");
+    //     return -1;
+    // }
+    // return evision_to_safe(env, value, p->val${access}${member}, ArgInfo("value", false)) ? 0 : -1;
 }
 """)
 
 gen_template_set_prop_algo = Template("""
-static int pyopencv_${name}_set_${member}(pyopencv_${name}_t* p, PyObject *value, void *closure)
+static ERL_NIF_TERM evision_${name_lower}_set_${member_lower}(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
     if (!value)
     {
-        PyErr_SetString(PyExc_TypeError, "Cannot delete the ${member} attribute");
+        // todo: error("Cannot delete the ${member} attribute");
         return -1;
     }
     $cname* _self_ = dynamic_cast<$cname*>(p->v.get());
     if (!_self_)
     {
-        failmsgp("Incorrect type of object (must be '${name}' or its derivative)");
+        failmsgp(env, "Incorrect type of object (must be '${name}' or its derivative)");
         return -1;
     }
-    return pyopencv_to_safe(value, _self_${access}${member}, ArgInfo("value", false)) ? 0 : -1;
+    return evision_to_safe(env, value, _self_${access}${member}, ArgInfo("value", false)) ? 0 : -1;
 }
 """)
 
 
 gen_template_prop_init = Template("""
-    {(char*)"${member}", (getter)pyopencv_${name}_get_${member}, NULL, (char*)"${member}", NULL},""")
+    {(char*)"${member}", (getter)evision_${name}_get_${member}, NULL, (char*)"${member}", NULL},""")
 
 gen_template_rw_prop_init = Template("""
-    {(char*)"${member}", (getter)pyopencv_${name}_get_${member}, (setter)pyopencv_${name}_set_${member}, (char*)"${member}", NULL},""")
+    {(char*)"${member}", (getter)evision_${name}_get_${member}, (setter)evision_${name}_set_${member}, (char*)"${member}", NULL},""")
 
 gen_template_overloaded_function_call = Template("""
     {
@@ -295,13 +339,56 @@ class ClassInfo(object):
 
     def gen_map_code(self, codegen):
         all_classes = codegen.classes
-        code = "static bool pyopencv_to(PyObject* src, %s& dst, const ArgInfo& info)\n{\n    PyObject* tmp;\n    bool ok;\n" % (self.cname)
+        code = "static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM src, %s& dst, const ArgInfo& info)\n{\n    ERL_NIF_TERM tmp;\n    bool ok;\n" % (self.cname)
         code += "".join([gen_template_set_prop_from_map.substitute(propname=p.name,proptype=p.tp) for p in self.props])
         if self.base:
-            code += "\n    return pyopencv_to_safe(src, (%s&)dst, info);\n}\n" % all_classes[self.base].cname
+            code += "\n    return evision_to_safe(env, src, (%s&)dst, info);\n}\n" % all_classes[self.base].cname
         else:
             code += "\n    return true;\n}\n"
         return code
+
+    def gen_erl_func_list(self, codegen):
+        if self.ismap:
+            return self.gen_map_code(codegen)
+
+        sorted_props = [(p.name, p) for p in self.props]
+        sorted_props.sort()
+
+        sorted_methods = list(self.methods.items())
+        sorted_methods.sort()
+        for mname, m in sorted_methods:
+            # codegen.erl_cv_nif.write()
+            codegen.code_ns_reg.write(m.get_tab_entry())
+            arglists = [m.variants[i].py_arglist for i in range(len(m.variants))]
+            arglens = [len(arglist) for arglist in arglists]
+            least_arg = np.argmin(arglens)
+            min_args = arglens[least_arg]
+            min_func = m.variants[least_arg]
+            most_arg = np.argmax(arglens)
+            max_func = m.variants[most_arg]
+
+            opt_args = ''
+            opt_doc = ''
+            if min_func.py_noptargs > 0:
+                opt_args = '_opts \\\\ []'
+                opt_doc = '\n'.join(['       @optional {}'.format(arg_name) for (arg_name,_) in min_func.py_arglist[-min_func.py_noptargs:]])
+            inline_doc = '\n  @doc """\n    {}\n\n{}\n  """\n'
+
+            if len(max_func.docstring) > 0 or len(opt_doc) > 0:
+                inline_doc = inline_doc.format("\n".join('   {}'.format(line) for line in max_func.docstring.split("\n")), opt_doc)
+            else:
+                inline_doc = ''
+
+            min_args = min_args - min_func.py_noptargs
+            if min_args == 0:
+                codegen.erl_cv_nif.write('{}  def {}({}), do: :erlang.nif_error("{} not loaded")\n'.format(inline_doc, m.get_wrapper_name().lower(), opt_args, mname))
+            else:
+                if len(opt_args) > 0:
+                    opt_args = ', {}'.format(opt_args)
+                    codegen.erl_cv_nif.write('{}  def {}({}{}), do: :erlang.nif_error("{} not loaded")\n'.format(inline_doc, m.get_wrapper_name().lower(), ", ".join(['_{}'.format(arg_name) for (arg_name,_) in min_func.py_arglist[:-min_func.py_noptargs]]), opt_args, mname))
+                else:
+                    codegen.erl_cv_nif.write('{}  def {}({}), do: :erlang.nif_error("{} not loaded")\n'.format(inline_doc, m.get_wrapper_name().lower(), ", ".join(['_{}'.format(arg_name) for (arg_name,_) in min_func.py_arglist]), mname))
+
 
     def gen_code(self, codegen):
         all_classes = codegen.classes
@@ -320,17 +407,20 @@ class ClassInfo(object):
 
         for pname, p in sorted_props:
             if self.isalgorithm:
-                getset_code.write(gen_template_get_prop_algo.substitute(name=self.name, cname=self.cname, member=pname, membertype=p.tp, access=access_op))
+                getset_code.write(gen_template_get_prop_algo.substitute(name=self.name, cname=self.cname, member=pname, name_lower=self.name.lower(), member_lower=pname.lower(), membertype=p.tp, access=access_op, storage_name=self.cname if self.issimple else "Ptr<{}>".format(self.cname)))
             else:
-                getset_code.write(gen_template_get_prop.substitute(name=self.name, member=pname, membertype=p.tp, access=access_op))
+                if self.issimple:
+                    getset_code.write(gen_template_get_prop.substitute(name=self.name, member=pname, name_lower=self.name.lower(), member_lower=pname.lower(), membertype=p.tp, access='->' if self.issimple else '.', cname=self.cname, storage_name=self.cname if self.issimple else "Ptr<{}>".format(self.cname)))
+                else:
+                    getset_code.write(gen_template_get_prop_ptr.substitute(name=self.name, member=pname, name_lower=self.name.lower(), member_lower=pname.lower(), membertype=p.tp, access='->' if self.issimple else '.', cname=self.cname, storage_name=self.cname if self.issimple else "Ptr<{}>".format(self.cname)))
             if p.readonly:
-                getset_inits.write(gen_template_prop_init.substitute(name=self.name, member=pname))
+                getset_inits.write(gen_template_prop_init.substitute(name=self.name, member=pname, name_lower=self.name.lower(), member_lower=pname.lower(), storage_name=self.cname if self.issimple else "Ptr<{}>".format(self.cname)))
             else:
                 if self.isalgorithm:
-                    getset_code.write(gen_template_set_prop_algo.substitute(name=self.name, cname=self.cname, member=pname, membertype=p.tp, access=access_op))
+                    getset_code.write(gen_template_set_prop_algo.substitute(name=self.name, cname=self.cname, member=pname, name_lower=self.name.lower(), member_lower=pname.lower(), membertype=p.tp, access=access_op, storage_name=self.cname if self.issimple else "Ptr<{}>".format(self.cname)))
                 else:
-                    getset_code.write(gen_template_set_prop.substitute(name=self.name, member=pname, membertype=p.tp, access=access_op))
-                getset_inits.write(gen_template_rw_prop_init.substitute(name=self.name, member=pname))
+                    getset_code.write(gen_template_set_prop.substitute(name=self.name, member=pname, name_lower=self.name.lower(), member_lower=pname.lower(), membertype=p.tp, access=access_op, cname=self.cname, storage_name=self.cname if self.issimple else "Ptr<{}>".format(self.cname)))
+                getset_inits.write(gen_template_rw_prop_init.substitute(name=self.name, member=pname, name_lower=self.name.lower(), member_lower=pname.lower(), storage_name=self.cname if self.issimple else "Ptr<{}>".format(self.cname)))
 
         methods_code = StringIO()
         methods_inits = StringIO()
@@ -555,19 +645,21 @@ class FuncInfo(object):
         if self.is_static:
             name += "_static"
 
-        return "pyopencv_" + self.namespace.replace('.','_') + '_' + classname + name
+        return "evision_" + self.namespace.replace('.','_') + '_' + classname + name
 
     def get_wrapper_prototype(self, codegen):
         full_fname = self.get_wrapper_name()
         if self.isconstructor:
-            return "static int {fn_name}(pyopencv_{type_name}_t* self, PyObject* py_args, PyObject* kw)".format(
-                    fn_name=full_fname, type_name=codegen.classes[self.classname].name)
+            the_class = codegen.classes[self.classname]
+            storage_name = the_class.cname if the_class.issimple else "Ptr<{}>".format(the_class.cname)
+            return "static ERL_NIF_TERM {fn_name}(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])".format(
+                    fn_name=full_fname.lower(), storage_name=storage_name)
 
         if self.classname:
             self_arg = "self"
         else:
             self_arg = ""
-        return "static PyObject* %s(PyObject* %s, PyObject* py_args, PyObject* kw)" % (full_fname, self_arg)
+        return "static ERL_NIF_TERM %s(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])" % (full_fname.lower(),)
 
     def get_tab_entry(self):
         prototype_list = []
@@ -609,10 +701,16 @@ class FuncInfo(object):
         full_docstring = full_docstring.strip().replace("\\", "\\\\").replace('\n', '\\n').replace("\"", "\\\"")
         # Convert unicode chars to xml representation, but keep as string instead of bytes
         full_docstring = full_docstring.encode('ascii', errors='xmlcharrefreplace').decode()
+        arglists = [self.variants[i].py_arglist for i in range(len(self.variants))]
+        arglens = [len(arglist) for arglist in arglists]
+        least_arg = np.argmin(arglens)
+        min_args = arglens[least_arg]
+        min_args -= self.variants[least_arg].py_noptargs
 
-        return Template('    {"$py_funcname", CV_PY_FN_WITH_KW_($wrap_funcname, $flags), "$py_docstring"},\n'
-                        ).substitute(py_funcname = self.variants[0].wname, wrap_funcname=self.get_wrapper_name(),
-                                     flags = 'METH_STATIC' if self.is_static else '0', py_docstring = full_docstring)
+        return '    F' + Template('($wrap_funcname, $min_args),\n')\
+                            .substitute(py_funcname = self.variants[0].wname, wrap_funcname=self.get_wrapper_name(),
+                                     flags = 'METH_STATIC' if self.is_static else '0', min_args=min_args)\
+                            .lower()
 
     def gen_code(self, codegen):
         all_classes = codegen.classes
@@ -627,15 +725,14 @@ class FuncInfo(object):
 
         if self.classname:
             selfinfo = all_classes[self.classname]
-            if not self.isconstructor:
-                if not self.is_static:
-                    code += gen_template_check_self.substitute(
-                        name=selfinfo.name,
-                        cname=selfinfo.cname if selfinfo.issimple else "Ptr<{}>".format(selfinfo.cname),
-                        pname=(selfinfo.cname + '*') if selfinfo.issimple else "Ptr<{}>".format(selfinfo.cname),
-                        cvt='' if selfinfo.issimple else '*'
-                    )
-                fullname = selfinfo.wname + "." + fullname
+            if not self.is_static:
+                code += gen_template_check_self.substitute(
+                    name=selfinfo.name,
+                    cname=selfinfo.cname if selfinfo.issimple else "Ptr<{}>".format(selfinfo.cname),
+                    pname=(selfinfo.cname + '*') if selfinfo.issimple else "Ptr<{}>".format(selfinfo.cname),
+                    cvt='' if selfinfo.issimple else '*'
+                )
+            fullname = selfinfo.wname + "." + fullname
 
         all_code_variants = []
 
@@ -682,12 +779,12 @@ class FuncInfo(object):
                 parse_name = a.name
                 if a.py_inputarg:
                     if arg_type_info.strict_conversion:
-                        code_decl += "    PyObject* pyobj_%s = NULL;\n" % (a.name,)
-                        parse_name = "pyobj_" + a.name
+                        code_decl += "    ERL_NIF_TERM erl_term_%s;\n" % (a.name,)
+                        parse_name = "erl_term_" + a.name
                         if a.tp == 'char':
-                            code_cvt_list.append("convert_to_char(pyobj_%s, &%s, %s)" % (a.name, a.name, a.crepr()))
+                            code_cvt_list.append("convert_to_char(env, erl_term_%s, &%s, %s)" % (a.name, a.name, a.crepr()))
                         else:
-                            code_cvt_list.append("pyopencv_to_safe(pyobj_%s, %s, %s)" % (a.name, a.name, a.crepr()))
+                            code_cvt_list.append("evision_to_safe(env, erl_term_%s, %s, %s)" % (a.name, a.name, a.crepr()))
 
                 all_cargs.append([arg_type_info, parse_name])
 
@@ -779,21 +876,26 @@ class FuncInfo(object):
                     parse_arglist = ", ".join(["&" + all_cargs[argno][1] for aname, argno in v.py_arglist]),
                     code_cvt = " &&\n        ".join(code_cvt_list))
             else:
-                code_parse = "if(PyObject_Size(py_args) == 0 && (!kw || PyObject_Size(kw) == 0))"
+                code_parse = "if(argc == 0)"
+                # code_parse = "if(argc == 0 && (!kw || PyObject_Size(kw) == 0))"
 
             if len(v.py_outlist) == 0:
-                code_ret = "Py_RETURN_NONE"
+                code_ret = "evision::nif::atom(env, \"nil\")"
             elif len(v.py_outlist) == 1:
                 if self.isconstructor:
                     code_ret = "return 0"
                 else:
                     aname, argno = v.py_outlist[0]
-                    code_ret = "return pyopencv_from(%s)" % (aname,)
+                    code_ret = "return evision_from(env, %s)" % (aname,)
             else:
                 # there is more than 1 return parameter; form the tuple out of them
-                fmtspec = "N"*len(v.py_outlist)
-                code_ret = "return Py_BuildValue(\"(%s)\", %s)" % \
-                    (fmtspec, ", ".join(["pyopencv_from(" + aname + ")" for aname, argno in v.py_outlist]))
+                n_tuple = len(v.py_outlist)
+                if n_tuple >= 10:
+                    code_ret = "ERL_NIF_TERM arr[] = {%s};\n    enif_make_tuple_from_array(env, arr, %d)" % \
+                        (",\n        ".join(["evision_from(env, " + aname + ")" for aname, argno in v.py_outlist]), n_tuple)
+                else:
+                    code_ret = "return enif_make_tuple%d(env, %s)" % \
+                        (n_tuple, ", ".join(["evision_from(env, " + aname + ")" for aname, argno in v.py_outlist]))
 
             all_code_variants.append(gen_template_func_body.substitute(code_decl=code_decl,
                 code_parse=code_parse, code_prelude=code_prelude, code_fcall=code_fcall, code_ret=code_ret))
@@ -809,7 +911,7 @@ class FuncInfo(object):
                                   for v in all_code_variants)
             code += '    pyRaiseCVOverloadException("{}");\n'.format(self.name)
 
-        def_ret = "NULL"
+        def_ret = "evision::nif::atom(env, \"nil\")"
         if self.isconstructor:
             def_ret = "-1"
         code += "\n    return %s;\n}\n\n" % def_ret
@@ -864,6 +966,7 @@ class PythonWrapperGenerator(object):
         self.code_types = StringIO()
         self.code_funcs = StringIO()
         self.code_ns_reg = StringIO()
+        self.erl_cv_nif = StringIO()
         self.code_ns_init = StringIO()
         self.code_type_publish = StringIO()
         self.py_signatures = dict()
@@ -871,14 +974,16 @@ class PythonWrapperGenerator(object):
 
     def add_class(self, stype, name, decl):
         classinfo = ClassInfo(name, decl)
-        classinfo.decl_idx = self.class_idx
-        self.class_idx += 1
 
         if classinfo.name in self.classes:
             print("Generator error: class %s (cname=%s) already exists" \
                 % (classinfo.name, classinfo.cname))
             # sys.exit(-1)
             return
+
+        classinfo.decl_idx = self.class_idx
+        self.class_idx += 1
+
         self.classes[classinfo.name] = classinfo
 
         # Add Class to json file.
@@ -909,7 +1014,6 @@ class PythonWrapperGenerator(object):
         if name in ns.consts:
             print("Generator error: constant %s (cname=%s) already exists" \
                 % (name, cname))
-            # sys.exit(-1)
             return
         ns.consts[name] = cname
 
@@ -1001,28 +1105,56 @@ class PythonWrapperGenerator(object):
             self.classes[classname].constructor = func
 
 
-    def gen_namespace(self, ns_name):
-        ns = self.namespaces[ns_name]
-        wname = normalize_class_name(ns_name)
+    def gen_namespace(self):
+        for ns_name in self.namespaces:
+            ns = self.namespaces[ns_name]
+            # wname = normalize_class_name(ns_name)
+            for name, func in sorted(ns.funcs.items()):
+                self.code_ns_reg.write(func.get_tab_entry())
+                arglists = [func.variants[i].py_arglist for i in range(len(func.variants))]
+                arglens = [len(arglist) for arglist in arglists]
+                least_arg = np.argmin(arglens)
+                min_args = arglens[least_arg]
+                min_func = func.variants[least_arg]
+                most_arg = np.argmax(arglens)
+                max_func = func.variants[most_arg]
 
-        self.code_ns_reg.write('static PyMethodDef methods_%s[] = {\n'%wname)
-        for name, func in sorted(ns.funcs.items()):
-            if func.isconstructor:
-                continue
-            self.code_ns_reg.write(func.get_tab_entry())
-        custom_entries_macro = 'PYOPENCV_EXTRA_METHODS_{}'.format(wname.upper())
-        self.code_ns_reg.write('#ifdef {}\n    {}\n#endif\n'.format(custom_entries_macro, custom_entries_macro))
-        self.code_ns_reg.write('    {NULL, NULL}\n};\n\n')
+                opt_args = ''
+                opt_doc = ''
+                if min_func.py_noptargs > 0:
+                    opt_args = '_opts \\\\ []'
+                    opt_doc = '\n'.join(['       @optional {}'.format(arg_name) for (arg_name,_) in min_func.py_arglist[-min_func.py_noptargs:]])
+                inline_doc = '\n  @doc """\n    {}\n\n{}\n  """\n'
 
-        self.code_ns_reg.write('static ConstDef consts_%s[] = {\n'%wname)
-        for name, cname in sorted(ns.consts.items()):
-            self.code_ns_reg.write('    {"%s", static_cast<long>(%s)},\n'%(name, cname))
-            compat_name = re.sub(r"([a-z])([A-Z])", r"\1_\2", name).upper()
-            if name != compat_name:
-                self.code_ns_reg.write('    {"%s", static_cast<long>(%s)},\n'%(compat_name, cname))
-        custom_entries_macro = 'PYOPENCV_EXTRA_CONSTANTS_{}'.format(wname.upper())
-        self.code_ns_reg.write('#ifdef {}\n    {}\n#endif\n'.format(custom_entries_macro, custom_entries_macro))
-        self.code_ns_reg.write('    {NULL, 0}\n};\n\n')
+                if len(max_func.docstring) > 0 or len(opt_doc) > 0:
+                    inline_doc = inline_doc.format("\n".join('    {}'.format(line) for line in max_func.docstring.split("\n")), opt_doc)
+                else:
+                    inline_doc = ''
+
+                min_args = min_args - min_func.py_noptargs
+                if min_args == 0:
+                    self.erl_cv_nif.write('{}  def {}({}), do: :erlang.nif_error("{} not loaded")\n'.format(inline_doc, func.get_wrapper_name().lower(), opt_args, name))
+                else:
+                    if len(opt_args) > 0:
+                        opt_args = ', {}'.format(opt_args)
+                        self.erl_cv_nif.write('{}  def {}({}{}), do: :erlang.nif_error("{} not loaded")\n'.format(inline_doc, func.get_wrapper_name().lower(), ", ".join(['_{}'.format(arg_name) for (arg_name,_) in min_func.py_arglist[:-min_func.py_noptargs]]), opt_args, name))
+                    else:
+                        self.erl_cv_nif.write('{}  def {}({}), do: :erlang.nif_error("{} not loaded")\n'.format(inline_doc, func.get_wrapper_name().lower(), ", ".join(['_{}'.format(arg_name) for (arg_name,_) in min_func.py_arglist]), name))
+        self.code_ns_reg.write('\n};\n\n')
+        self.erl_cv_nif.write('\nend\n')
+
+        self.code_ns_reg.write('static ConstDef consts_cv[] = {\n')
+        for ns_name in self.namespaces:
+            ns = self.namespaces[ns_name]
+            wname = normalize_class_name(ns_name)
+            for name, cname in sorted(ns.consts.items()):
+                self.code_ns_reg.write('    {"%s", static_cast<long>(%s)},\n'%(name, cname))
+                compat_name = re.sub(r"([a-z])([A-Z])", r"\1_\2", name).upper()
+                if name != compat_name:
+                    self.code_ns_reg.write('    {"%s", static_cast<long>(%s)},\n'%(compat_name, cname))
+            custom_entries_macro = 'PYOPENCV_EXTRA_CONSTANTS_{}'.format(wname.upper())
+            self.code_ns_reg.write('#ifdef {}\n    {}\n#endif\n'.format(custom_entries_macro, custom_entries_macro))
+        self.code_ns_reg.write('\n};\n\n')
 
     def gen_enum_reg(self, enum_name):
         name_seg = enum_name.split(".")
@@ -1037,11 +1169,13 @@ class PythonWrapperGenerator(object):
         code = ""
         if re.sub(r"^cv\.", "", enum_name) != wname:
             code += "typedef {0} {1};\n".format(cname, wname)
-        code += "CV_PY_FROM_ENUM({0});\nCV_PY_TO_ENUM({0});\n\n".format(wname)
+        code += "CV_ERL_FROM_ENUM({0});\nCV_ERL_TO_ENUM({0});\n\n".format(wname)
         self.code_enums.write(code)
 
     def save(self, path, name, buf):
         with open(path + "/" + name, "wt") as f:
+            if not name.endswith(".ex"):
+                f.write("#include <erl_nif.h>\n")
             f.write(buf.getvalue())
 
     def save_json(self, path, name, value):
@@ -1052,6 +1186,8 @@ class PythonWrapperGenerator(object):
     def gen(self, srcfiles, output_path):
         self.clear()
         self.parser = hdr_parser.CppHeaderParser(generate_umat_decls=True, generate_gpumat_decls=True)
+        self.erl_cv_nif.write('defmodule :erl_cv_nif do\n{}\n'.format(gen_erl_cv_nif_load_nif))
+        self.code_ns_reg.write('static ErlNifFunc nif_functions[] = {\n')
 
         # step 1: scan the headers and build more descriptive maps of classes, consts, functions
         for hdr in srcfiles:
@@ -1125,6 +1261,7 @@ class PythonWrapperGenerator(object):
             self.code_types.write("//{}\n".format(80*"="))
             self.code_types.write("// {} ({})\n".format(name, 'Map' if classinfo.ismap else 'Generic'))
             self.code_types.write("//{}\n".format(80*"="))
+            classinfo.gen_erl_func_list(self)
             self.code_types.write(classinfo.gen_code(self))
             if classinfo.ismap:
                 self.code_types.write(gen_template_map_type_cvt.substitute(name=classinfo.name, cname=classinfo.cname))
@@ -1159,8 +1296,9 @@ class PythonWrapperGenerator(object):
                     continue
                 code = func.gen_code(self)
                 self.code_funcs.write(code)
-            self.gen_namespace(ns_name)
-            self.code_ns_init.write('CVPY_MODULE("{}", {});\n'.format(ns_name[2:], normalize_class_name(ns_name)))
+        self.gen_namespace()
+            # no need to init module in erlang
+            # self.code_ns_init.write('CVPY_MODULE("{}", {});\n'.format(ns_name[2:], normalize_class_name(ns_name)))
 
         # step 4: generate the code for enum types
         enumlist = list(self.enums.values())
@@ -1182,6 +1320,7 @@ class PythonWrapperGenerator(object):
         self.save(output_path, "evision_generated_types_content.h", self.code_types)
         self.save(output_path, "evision_generated_modules.h", self.code_ns_init)
         self.save(output_path, "evision_generated_modules_content.h", self.code_ns_reg)
+        self.save(output_path, "erl_cv_nif.ex", self.erl_cv_nif)
         self.save_json(output_path, "evision_signatures.json", self.py_signatures)
 
 if __name__ == "__main__":
