@@ -21,13 +21,8 @@
 #  pragma GCC diagnostic ignored "-Wunused-function"
 #endif
 
-#define CV_PYTHON_3 1
-#define CVPY_DYNAMIC_INIT 1
 #define F(NAME, ARITY)    \
   {#NAME, ARITY, NAME, 0}
-
-#define MODULESTR "cv2"
-#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 
 #include "opencv2/opencv_modules.hpp"
 #include "opencv2/core.hpp"
@@ -1703,14 +1698,9 @@ static int convert_to_char(ErlNifEnv *env, ERL_NIF_TERM o, char *dst, const ArgI
 
 
 #include "evision_generated_enums.h"
-
-#ifdef CVPY_DYNAMIC_INIT
-#define CVPY_TYPE(WNAME, NAME, STORAGE, SNAME, _1, _2) CVPY_TYPE_DECLARE_DYNAMIC(WNAME, NAME, STORAGE, SNAME)
-#else
-#define CVPY_TYPE(WNAME, NAME, STORAGE, SNAME, _1, _2) CVPY_TYPE_DECLARE(WNAME, NAME, STORAGE, SNAME)
-#endif
+#define CV_ERL_TYPE(WNAME, NAME, STORAGE, SNAME, _1, _2) CV_ERL_TYPE_DECLARE_DYNAMIC(WNAME, NAME, STORAGE, SNAME)
 #include "evision_generated_types.h"
-#undef CVPY_TYPE
+#undef CV_ERL_TYPE
 #include "evision_custom_headers.h"
 
 #include "evision_generated_types_content.h"
@@ -1762,16 +1752,10 @@ static int
 on_load(ErlNifEnv* env, void**, ERL_NIF_TERM)
 {
     ErlNifResourceType *rt;
-#define CVPY_MODULE(NAMESTR, NAME) \
-    init_submodule(m, MODULESTR NAMESTR, methods_##NAME, consts_##NAME)
-    #include "evision_generated_modules.h"
-#undef CVPY_MODULE
 
-#ifdef CVPY_DYNAMIC_INIT
-#define CVPY_TYPE(WNAME, NAME, STORAGE, _1, BASE, CONSTRUCTOR) CVPY_TYPE_INIT_DYNAMIC(WNAME, NAME, STORAGE, return -1)
-#endif
-    #include "evision_generated_types.h"
-#undef CVPY_TYPE
+#define CV_ERL_TYPE(WNAME, NAME, STORAGE, _1, BASE, CONSTRUCTOR) CV_ERL_TYPE_INIT_DYNAMIC(WNAME, NAME, STORAGE, return -1)
+#include "evision_generated_types.h"
+#undef CV_ERL_TYPE
 
 //    PyObject* d = PyModule_GetDict(m);
 //

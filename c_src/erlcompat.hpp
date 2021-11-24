@@ -48,15 +48,9 @@
 
 //==================================================================================================
 
-//#define CV_PY_FN_WITH_KW_(fn, flags) (PyCFunction)(void*)(PyCFunctionWithKeywords)(fn), (flags) | METH_VARARGS | METH_KEYWORDS
-//#define CV_PY_FN_NOARGS_(fn, flags) (PyCFunction)(fn), (flags) | METH_NOARGS
-//
-//#define CV_PY_FN_WITH_KW(fn) CV_PY_FN_WITH_KW_(fn, 0)
-//#define CV_PY_FN_NOARGS(fn) CV_PY_FN_NOARGS_(fn, 0)
-
 #define CV_PY_TO_CLASS(TYPE)                                                                          \
 template<>                                                                                            \
-bool evision_to(ErlNifEnv *env, ERL_NIF_TERM dst, TYPE& src, const ArgInfo& info)                                       \
+bool evision_to(ErlNifEnv *env, ERL_NIF_TERM dst, TYPE& src, const ArgInfo& info)                     \
 {                                                                                                     \
     Ptr<TYPE> ptr;                                                                                    \
     if (!evision_to(env, dst, ptr, info)) return false;                                               \
@@ -66,29 +60,29 @@ bool evision_to(ErlNifEnv *env, ERL_NIF_TERM dst, TYPE& src, const ArgInfo& info
 
 #define CV_PY_FROM_CLASS(TYPE)                                                                        \
 template<>                                                                                            \
-ERL_NIF_TERM evision_from(ErlNifEnv *env, const TYPE& src)                                                              \
+ERL_NIF_TERM evision_from(ErlNifEnv *env, const TYPE& src)                                            \
 {                                                                                                     \
     Ptr<TYPE> ptr(new TYPE());                                                                        \
                                                                                                       \
     *ptr = src;                                                                                       \
-    return evision_from(env, ptr);                                                                        \
+    return evision_from(env, ptr);                                                                    \
 }
 
 #define CV_PY_TO_CLASS_PTR(TYPE)                                                                      \
 template<>                                                                                            \
-bool evision_to(ErlNifEnv *env, ERL_NIF_TERM dst, TYPE*& src, const ArgInfo& info)                                      \
+bool evision_to(ErlNifEnv *env, ERL_NIF_TERM dst, TYPE*& src, const ArgInfo& info)                    \
 {                                                                                                     \
     Ptr<TYPE> ptr;                                                                                    \
                                                                                                       \
-    if (!evision_to(env, dst, ptr, info)) return false;                                                   \
+    if (!evision_to(env, dst, ptr, info)) return false;                                               \
     src = ptr;                                                                                        \
     return true;                                                                                      \
 }
 
 #define CV_PY_FROM_CLASS_PTR(TYPE)                                                                    \
-static ERL_NIF_TERM evision_from(ErlNifEnv *env, TYPE*& src)                                                            \
+static ERL_NIF_TERM evision_from(ErlNifEnv *env, TYPE*& src)                                          \
 {                                                                                                     \
-    return evision_from(env, Ptr<TYPE>(src));                                                             \
+    return evision_from(env, Ptr<TYPE>(src));                                                         \
 }
 
 #define CV_ERL_TO_ENUM(TYPE)                                                                          \
@@ -108,53 +102,47 @@ bool evision_to(ErlNifEnv *env, ERL_NIF_TERM dst, TYPE& src, const ArgInfo& info
 template<>                                                                                            \
 ERL_NIF_TERM evision_from(ErlNifEnv *env, const TYPE& src)                                            \
 {                                                                                                     \
-    return evision::nif::atom(env, "pure_pain_peko");                                                          \
+    return evision::nif::atom(env, "pure_pain_peko");                                                 \
 }
 
 //==================================================================================================
 
-#define CVPY_TYPE_DECLARE_DYNAMIC(WNAME, NAME, STORAGE, SNAME) \
-    static bool evision_##NAME##_getp(ErlNifEnv *env, ERL_NIF_TERM self, STORAGE * & dst) \
-    {                                                                                     \
-        evision_res<STORAGE> * VAR; \
-        if (!enif_get_resource(env, self, evision_res<STORAGE>::type, (void **)&VAR)) \
-            return enif_make_badarg(env);                  \
-        else \
-        { \
-            dst = &(VAR->val); \
-            return true; \
-        } \
-        return false; \
-    } \
-    static ERL_NIF_TERM evision_##NAME##_Instance(ErlNifEnv *env, const STORAGE &r) \
-    {                                                  \
-        evision_res< STORAGE > * VAR; \
-        VAR = (decltype(VAR))enif_alloc_resource(evision_res< STORAGE >::type, sizeof(evision_res< STORAGE >::type)); \
-        if (!VAR) \
-            return evision::nif::error(env, "no memory");     \
-        new (&(VAR->val)) STORAGE(r);                  \
-        ERL_NIF_TERM ret = enif_make_resource(env, VAR); \
-        enif_release_resource(VAR); \
-        return ret; \
-    } \
-    static void destruct_##NAME(ErlNifEnv *env, void *args)    \
-    {                                                          \
-        ((evision_res< STORAGE > *)args)->val.STORAGE::~SNAME(); \
+#define CV_ERL_TYPE_DECLARE_DYNAMIC(WNAME, NAME, STORAGE, SNAME) \
+    static bool evision_##NAME##_getp(ErlNifEnv *env, ERL_NIF_TERM self, STORAGE * & dst)             \
+    {                                                                                                 \
+        evision_res<STORAGE> * VAR;                                                                   \
+        if (!enif_get_resource(env, self, evision_res<STORAGE>::type, (void **)&VAR))                 \
+            return enif_make_badarg(env);                                                             \
+        else                                                                                          \
+        {                                                                                             \
+            dst = &(VAR->val);                                                                        \
+            return true;                                                                              \
+        }                                                                                             \
+        return false;                                                                                 \
+    }                                                                                                 \
+    static ERL_NIF_TERM evision_##NAME##_Instance(ErlNifEnv *env, const STORAGE &r)                   \
+    {                                                                                                 \
+        evision_res< STORAGE > * VAR;                                                                 \
+        VAR = (decltype(VAR))enif_alloc_resource(evision_res< STORAGE >::type,                        \
+                                sizeof(evision_res< STORAGE >::type));                                \
+        if (!VAR)                                                                                     \
+            return evision::nif::error(env, "no memory");                                             \
+        new (&(VAR->val)) STORAGE(r);                                                                 \
+        ERL_NIF_TERM ret = enif_make_resource(env, VAR);                                              \
+        enif_release_resource(VAR);                                                                   \
+        return ret;                                                                                   \
+    }                                                                                                 \
+    static void destruct_##NAME(ErlNifEnv *env, void *args)                                           \
+    {                                                                                                 \
+        ((evision_res< STORAGE > *)args)->val.STORAGE::~SNAME();                                      \
     }
 
-#define CVPY_TYPE_INIT_DYNAMIC(WNAME, NAME, STORAGE, ERROR_HANDLER) \
-    { \
-        rt = enif_open_resource_type(env, "erl_cv_nif", "erl_cv_##NAME##_type", destruct_##NAME , ERL_NIF_RT_CREATE, NULL); \
-        if (!rt) ERROR_HANDLER; \
-        evision_res<STORAGE>::type = rt; \
+#define CV_ERL_TYPE_INIT_DYNAMIC(WNAME, NAME, STORAGE, ERROR_HANDLER)                                   \
+    {                                                                                                 \
+        rt = enif_open_resource_type(env, "erl_cv_nif", "erl_cv_##NAME##_type", destruct_##NAME ,     \
+                ERL_NIF_RT_CREATE, NULL);                                                             \
+        if (!rt) ERROR_HANDLER;                                                                       \
+        evision_res<STORAGE>::type = rt;                                                              \
     }
-
-// Debug module load:
-//
-// else \
-// { \
-//     printf("Init: " #NAME ", base (" #BASE ") -> %p" "\n", pyopencv_##NAME##_TypePtr); \
-// }
-
 
 #endif // END HEADER GUARD
