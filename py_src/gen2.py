@@ -385,7 +385,9 @@ class ClassInfo(object):
             else:
                 if len(opt_args) > 0:
                     opt_args = ', {}'.format(opt_args)
-                codegen.erl_cv_nif.write('{}  def {}({}{}), do: :erlang.nif_error("{} not loaded")\n'.format(inline_doc, m.get_wrapper_name().lower(), ", ".join(['_{}'.format(arg_name) for (arg_name,_) in min_func.py_arglist[:-min_func.py_noptargs]]), opt_args, mname))
+                    codegen.erl_cv_nif.write('{}  def {}({}{}), do: :erlang.nif_error("{} not loaded")\n'.format(inline_doc, m.get_wrapper_name().lower(), ", ".join(['_{}'.format(arg_name) for (arg_name,_) in min_func.py_arglist[:-min_func.py_noptargs]]), opt_args, mname))
+                else:
+                    codegen.erl_cv_nif.write('{}  def {}({}), do: :erlang.nif_error("{} not loaded")\n'.format(inline_doc, m.get_wrapper_name().lower(), ", ".join(['_{}'.format(arg_name) for (arg_name,_) in min_func.py_arglist]), mname))
 
 
     def gen_code(self, codegen):
@@ -699,7 +701,12 @@ class FuncInfo(object):
         full_docstring = full_docstring.strip().replace("\\", "\\\\").replace('\n', '\\n').replace("\"", "\\\"")
         # Convert unicode chars to xml representation, but keep as string instead of bytes
         full_docstring = full_docstring.encode('ascii', errors='xmlcharrefreplace').decode()
-        min_args = min([len(self.variants[i].py_arglist) for i in range(len(self.variants))])
+        arglists = [self.variants[i].py_arglist for i in range(len(self.variants))]
+        arglens = [len(arglist) for arglist in arglists]
+        least_arg = np.argmin(arglens)
+        min_args = arglens[least_arg]
+        min_args -= self.variants[least_arg].py_noptargs
+
         return '    F' + Template('($wrap_funcname, $min_args),\n')\
                             .substitute(py_funcname = self.variants[0].wname, wrap_funcname=self.get_wrapper_name(),
                                      flags = 'METH_STATIC' if self.is_static else '0', min_args=min_args)\
@@ -1130,7 +1137,9 @@ class PythonWrapperGenerator(object):
                 else:
                     if len(opt_args) > 0:
                         opt_args = ', {}'.format(opt_args)
-                    self.erl_cv_nif.write('{}  def {}({}{}), do: :erlang.nif_error("{} not loaded")\n'.format(inline_doc, func.get_wrapper_name().lower(), ", ".join(['_{}'.format(arg_name,) for (arg_name,_) in min_func.py_arglist[:-min_func.py_noptargs]]), opt_args, name))
+                        self.erl_cv_nif.write('{}  def {}({}{}), do: :erlang.nif_error("{} not loaded")\n'.format(inline_doc, func.get_wrapper_name().lower(), ", ".join(['_{}'.format(arg_name) for (arg_name,_) in min_func.py_arglist[:-min_func.py_noptargs]]), opt_args, name))
+                    else:
+                        self.erl_cv_nif.write('{}  def {}({}), do: :erlang.nif_error("{} not loaded")\n'.format(inline_doc, func.get_wrapper_name().lower(), ", ".join(['_{}'.format(arg_name) for (arg_name,_) in min_func.py_arglist]), name))
         self.code_ns_reg.write('\n};\n\n')
         self.erl_cv_nif.write('\nend\n')
 
