@@ -14,6 +14,13 @@
 #pragma warning(pop)
 #endif
 
+#ifdef __GNUC__
+#  pragma GCC diagnostic ignored "-Wunused-parameter"
+#  pragma GCC diagnostic ignored "-Wmissing-field-initializers"
+#  pragma GCC diagnostic ignored "-Wunused-variable"
+#  pragma GCC diagnostic ignored "-Wunused-function"
+#endif
+
 #define CV_PYTHON_3 1
 #define CVPY_DYNAMIC_INIT 1
 #define F(NAME, ARITY)    \
@@ -269,7 +276,7 @@ struct SafeSeqItem
         if (!list_end) {
             item = head;
         } else {
-            item = make_atom(env, "nil");
+            item = evision::nif::atom(env, "nil");
         }
     }
 
@@ -456,14 +463,14 @@ template<>
 ERL_NIF_TERM evision_from(ErlNifEnv *env, const Mat& m)
 {
     if( !m.data )
-        return make_atom(env, "nil");
+        return evision::nif::atom(env, "nil");
 
     evision_res<cv::Mat> * res;
     if (alloc_resource(&res)) {
         new(&res->val) cv::Mat();
         m.copyTo(res->val);
     } else {
-        make_error_tuple(env, "no memory");
+        evision::nif::error(env, "no memory");
     }
 
     ERL_NIF_TERM ret = enif_make_resource(env, res);
@@ -564,8 +571,8 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const Scalar& src)
 template<>
 ERL_NIF_TERM evision_from(ErlNifEnv *env, const bool& value)
 {
-    if (value) return make_atom(env, "true");
-    return make_atom(env, "false");
+    if (value) return evision::nif::atom(env, "true");
+    return evision::nif::atom(env, "false");
 }
 
 template<>
@@ -1237,40 +1244,40 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const Moments& m)
     ERL_NIF_TERM ret = enif_make_new_map(env);
     ERL_NIF_TERM iter = ret;
     if (
-        enif_make_map_put(env, iter, make_atom(env, "m00"), evision_from(env, m.m00), &iter) &&
-        enif_make_map_put(env, iter, make_atom(env, "m10"), evision_from(env, m.m10), &iter) &&
-        enif_make_map_put(env, iter, make_atom(env, "m01"), evision_from(env, m.m01), &iter) &&
+        enif_make_map_put(env, iter, evision::nif::atom(env, "m00"), evision_from(env, m.m00), &iter) &&
+        enif_make_map_put(env, iter, evision::nif::atom(env, "m10"), evision_from(env, m.m10), &iter) &&
+        enif_make_map_put(env, iter, evision::nif::atom(env, "m01"), evision_from(env, m.m01), &iter) &&
 
-        enif_make_map_put(env, iter, make_atom(env, "m20"), evision_from(env, m.m20), &iter) &&
-        enif_make_map_put(env, iter, make_atom(env, "m11"), evision_from(env, m.m11), &iter) &&
-        enif_make_map_put(env, iter, make_atom(env, "m02"), evision_from(env, m.m02), &iter) &&
+        enif_make_map_put(env, iter, evision::nif::atom(env, "m20"), evision_from(env, m.m20), &iter) &&
+        enif_make_map_put(env, iter, evision::nif::atom(env, "m11"), evision_from(env, m.m11), &iter) &&
+        enif_make_map_put(env, iter, evision::nif::atom(env, "m02"), evision_from(env, m.m02), &iter) &&
 
-        enif_make_map_put(env, iter, make_atom(env, "m30"), evision_from(env, m.m30), &iter) &&
-        enif_make_map_put(env, iter, make_atom(env, "m21"), evision_from(env, m.m21), &iter) &&
-        enif_make_map_put(env, iter, make_atom(env, "m12"), evision_from(env, m.m12), &iter) &&
-        enif_make_map_put(env, iter, make_atom(env, "m03"), evision_from(env, m.m03), &iter) &&
+        enif_make_map_put(env, iter, evision::nif::atom(env, "m30"), evision_from(env, m.m30), &iter) &&
+        enif_make_map_put(env, iter, evision::nif::atom(env, "m21"), evision_from(env, m.m21), &iter) &&
+        enif_make_map_put(env, iter, evision::nif::atom(env, "m12"), evision_from(env, m.m12), &iter) &&
+        enif_make_map_put(env, iter, evision::nif::atom(env, "m03"), evision_from(env, m.m03), &iter) &&
 
-        enif_make_map_put(env, iter, make_atom(env, "mu20"), evision_from(env, m.mu20), &iter) &&
-        enif_make_map_put(env, iter, make_atom(env, "mu11"), evision_from(env, m.mu11), &iter) &&
-        enif_make_map_put(env, iter, make_atom(env, "mu02"), evision_from(env, m.mu02), &iter) &&
+        enif_make_map_put(env, iter, evision::nif::atom(env, "mu20"), evision_from(env, m.mu20), &iter) &&
+        enif_make_map_put(env, iter, evision::nif::atom(env, "mu11"), evision_from(env, m.mu11), &iter) &&
+        enif_make_map_put(env, iter, evision::nif::atom(env, "mu02"), evision_from(env, m.mu02), &iter) &&
 
-        enif_make_map_put(env, iter, make_atom(env, "mu30"), evision_from(env, m.mu30), &iter) &&
-        enif_make_map_put(env, iter, make_atom(env, "mu21"), evision_from(env, m.mu21), &iter) &&
-        enif_make_map_put(env, iter, make_atom(env, "mu12"), evision_from(env, m.mu12), &iter) &&
-        enif_make_map_put(env, iter, make_atom(env, "mu03"), evision_from(env, m.mu03), &iter) &&
+        enif_make_map_put(env, iter, evision::nif::atom(env, "mu30"), evision_from(env, m.mu30), &iter) &&
+        enif_make_map_put(env, iter, evision::nif::atom(env, "mu21"), evision_from(env, m.mu21), &iter) &&
+        enif_make_map_put(env, iter, evision::nif::atom(env, "mu12"), evision_from(env, m.mu12), &iter) &&
+        enif_make_map_put(env, iter, evision::nif::atom(env, "mu03"), evision_from(env, m.mu03), &iter) &&
 
-        enif_make_map_put(env, iter, make_atom(env, "nu20"), evision_from(env, m.nu20), &iter) &&
-        enif_make_map_put(env, iter, make_atom(env, "nu11"), evision_from(env, m.nu11), &iter) &&
-        enif_make_map_put(env, iter, make_atom(env, "nu02"), evision_from(env, m.nu02), &iter) &&
+        enif_make_map_put(env, iter, evision::nif::atom(env, "nu20"), evision_from(env, m.nu20), &iter) &&
+        enif_make_map_put(env, iter, evision::nif::atom(env, "nu11"), evision_from(env, m.nu11), &iter) &&
+        enif_make_map_put(env, iter, evision::nif::atom(env, "nu02"), evision_from(env, m.nu02), &iter) &&
 
-        enif_make_map_put(env, iter, make_atom(env, "nu30"), evision_from(env, m.nu30), &iter) &&
-        enif_make_map_put(env, iter, make_atom(env, "nu21"), evision_from(env, m.nu21), &iter) &&
-        enif_make_map_put(env, iter, make_atom(env, "nu12"), evision_from(env, m.nu12), &iter) &&
-        enif_make_map_put(env, iter, make_atom(env, "nu03"), evision_from(env, m.nu03), &iter) 
+        enif_make_map_put(env, iter, evision::nif::atom(env, "nu30"), evision_from(env, m.nu30), &iter) &&
+        enif_make_map_put(env, iter, evision::nif::atom(env, "nu21"), evision_from(env, m.nu21), &iter) &&
+        enif_make_map_put(env, iter, evision::nif::atom(env, "nu12"), evision_from(env, m.nu12), &iter) &&
+        enif_make_map_put(env, iter, evision::nif::atom(env, "nu03"), evision_from(env, m.nu03), &iter)
     ) {
         return ret;
     } else {
-        return make_error_tuple(env, "error: Moments: map");
+        return evision::nif::error(env, "error: Moments: map");
     }
 }
 
@@ -1369,8 +1376,8 @@ template<> inline ERL_NIF_TERM evision_from_generic_vec(ErlNifEnv *env, const st
     for (size_t i = 0; i < n; i++)
     {
         bool elem = value[i];
-        if (elem) arr[i] = make_atom(env, "true");
-        else arr[i] = make_atom(env, "false");
+        if (elem) arr[i] = evision::nif::atom(env, "true");
+        else arr[i] = evision::nif::atom(env, "false");
     }
     ERL_NIF_TERM ret = enif_make_tuple_from_array(env, arr, n);
     free(arr);
@@ -1693,11 +1700,6 @@ static int convert_to_char(ErlNifEnv *env, ERL_NIF_TERM o, char *dst, const ArgI
     (*dst) = 0;
     return failmsg(env, "Expected single character string for argument '%s'", info.name);
 }
-
-#ifdef __GNUC__
-#  pragma GCC diagnostic ignored "-Wunused-parameter"
-#  pragma GCC diagnostic ignored "-Wmissing-field-initializers"
-#endif
 
 
 #include "evision_generated_enums.h"

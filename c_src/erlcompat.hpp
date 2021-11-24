@@ -44,73 +44,15 @@
 #ifndef __ERLCOMPAT_HPP__
 #define __ERLCOMPAT_HPP__
 
-#if 1
-
-// Python3 treats all ints as longs, PyInt_X functions have been removed.
-#define PyInt_Check PyLong_Check
-#define PyInt_CheckExact PyLong_CheckExact
-#define PyInt_AsLong PyLong_AsLong
-#define PyInt_AS_LONG PyLong_AS_LONG
-#define PyInt_FromLong PyLong_FromLong
-#define PyNumber_Int PyNumber_Long
-
-
-#define PyString_FromString PyUnicode_FromString
-#define PyString_FromStringAndSize PyUnicode_FromStringAndSize
-
-#endif // PY_MAJOR >=3
-
 #include "nif_utils.hpp"
-
-ERL_NIF_TERM make_atom(ErlNifEnv*, const char*);
-ERL_NIF_TERM make_ok_tuple(ErlNifEnv*, ERL_NIF_TERM);
-ERL_NIF_TERM make_error_tuple(ErlNifEnv*, const char*);
-ERL_NIF_TERM make_binary(ErlNifEnv*, const void*, unsigned int);
-
-ERL_NIF_TERM make_atom(ErlNifEnv *env, const char *atom_name)
-{
-    ERL_NIF_TERM atom;
-
-    if(enif_make_existing_atom(env, atom_name, &atom, ERL_NIF_LATIN1))
-	   return atom;
-
-    return enif_make_atom(env, atom_name);
-}
-
-ERL_NIF_TERM make_ok_tuple(ErlNifEnv *env, ERL_NIF_TERM value)
-{
-    return enif_make_tuple2(env, make_atom(env, "ok"), value);
-}
-
-ERL_NIF_TERM make_error_tuple(ErlNifEnv *env, const char *reason)
-{
-    return enif_make_tuple2(env, make_atom(env, "error"), make_atom(env, reason));
-}
-
-ERL_NIF_TERM make_binary(ErlNifEnv *env, const void *bytes, unsigned int size)
-{
-    ErlNifBinary blob;
-    ERL_NIF_TERM term;
-
-    if(!enif_alloc_binary(size, &blob)) {
-	    /* TODO: fix this */
-	    return make_atom(env, "error");
-    }
-
-    memcpy(blob.data, bytes, size);
-    term = enif_make_binary(env, &blob);
-    enif_release_binary(&blob);
-
-    return term;
-}
 
 //==================================================================================================
 
-#define CV_PY_FN_WITH_KW_(fn, flags) (PyCFunction)(void*)(PyCFunctionWithKeywords)(fn), (flags) | METH_VARARGS | METH_KEYWORDS
-#define CV_PY_FN_NOARGS_(fn, flags) (PyCFunction)(fn), (flags) | METH_NOARGS
-
-#define CV_PY_FN_WITH_KW(fn) CV_PY_FN_WITH_KW_(fn, 0)
-#define CV_PY_FN_NOARGS(fn) CV_PY_FN_NOARGS_(fn, 0)
+//#define CV_PY_FN_WITH_KW_(fn, flags) (PyCFunction)(void*)(PyCFunctionWithKeywords)(fn), (flags) | METH_VARARGS | METH_KEYWORDS
+//#define CV_PY_FN_NOARGS_(fn, flags) (PyCFunction)(fn), (flags) | METH_NOARGS
+//
+//#define CV_PY_FN_WITH_KW(fn) CV_PY_FN_WITH_KW_(fn, 0)
+//#define CV_PY_FN_NOARGS(fn) CV_PY_FN_NOARGS_(fn, 0)
 
 #define CV_PY_TO_CLASS(TYPE)                                                                          \
 template<>                                                                                            \
@@ -166,7 +108,7 @@ bool evision_to(ErlNifEnv *env, ERL_NIF_TERM dst, TYPE& src, const ArgInfo& info
 template<>                                                                                            \
 ERL_NIF_TERM evision_from(ErlNifEnv *env, const TYPE& src)                                            \
 {                                                                                                     \
-    return make_atom(env, "pure_pain_peko");                                                          \
+    return evision::nif::atom(env, "pure_pain_peko");                                                          \
 }
 
 //==================================================================================================
@@ -189,7 +131,7 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const TYPE& src)                      
         evision_res< STORAGE > * VAR; \
         VAR = (decltype(VAR))enif_alloc_resource(evision_res< STORAGE >::type, sizeof(evision_res< STORAGE >::type)); \
         if (!VAR) \
-            return make_error_tuple(env, "no memory");     \
+            return evision::nif::error(env, "no memory");     \
         new (&(VAR->val)) STORAGE(r);                  \
         ERL_NIF_TERM ret = enif_make_resource(env, VAR); \
         enif_release_resource(VAR); \
