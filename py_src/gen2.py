@@ -366,15 +366,26 @@ class ClassInfo(object):
             min_func = m.variants[least_arg]
             most_arg = np.argmax(arglens)
             max_func = m.variants[most_arg]
-            inline_doc = '\n  @doc """\n    {}\n  """\n'
-            if len(max_func.docstring) > 0:
-                inline_doc = inline_doc.format(max_func.docstring)
+
+            opt_args = ''
+            opt_doc = ''
+            if min_func.py_noptargs > 0:
+                opt_args = '_opts \\\\ []'
+                opt_doc = '\n'.join(['       @optional {}'.format(arg_name) for (arg_name,_) in min_func.py_arglist[-min_func.py_noptargs:]])
+            inline_doc = '\n  @doc """\n    {}\n\n{}\n  """\n'
+
+            if len(max_func.docstring) > 0 or len(opt_doc) > 0:
+                inline_doc = inline_doc.format("\n".join('   {}'.format(line) for line in max_func.docstring.split("\n")), opt_doc)
             else:
                 inline_doc = ''
+
+            min_args = min_args - min_func.py_noptargs
             if min_args == 0:
-                codegen.erl_cv_nif.write('{}  def {}(opts \\\\ []), do: :erlang.nif_error("{} not loaded")\n'.format(inline_doc, m.get_wrapper_name().lower(), mname))
+                codegen.erl_cv_nif.write('{}  def {}({}), do: :erlang.nif_error("{} not loaded")\n'.format(inline_doc, m.get_wrapper_name().lower(), opt_args, mname))
             else:
-                codegen.erl_cv_nif.write('{}  def {}({}, opts \\\\ []), do: :erlang.nif_error("{} not loaded")\n'.format(inline_doc, m.get_wrapper_name().lower(), ", ".join(['_{}'.format(arg_name) for (arg_name,_) in min_func.py_arglist]), mname))
+                if len(opt_args) > 0:
+                    opt_args = ', {}'.format(opt_args)
+                codegen.erl_cv_nif.write('{}  def {}({}{}), do: :erlang.nif_error("{} not loaded")\n'.format(inline_doc, m.get_wrapper_name().lower(), ", ".join(['_{}'.format(arg_name) for (arg_name,_) in min_func.py_arglist[:-min_func.py_noptargs]]), opt_args, mname))
 
 
     def gen_code(self, codegen):
@@ -1100,15 +1111,26 @@ class PythonWrapperGenerator(object):
                 min_func = func.variants[least_arg]
                 most_arg = np.argmax(arglens)
                 max_func = func.variants[most_arg]
-                inline_doc = '\n  @doc """\n    {}\n  """\n'
-                if len(max_func.docstring) > 0:
-                    inline_doc = inline_doc.format(max_func.docstring)
+
+                opt_args = ''
+                opt_doc = ''
+                if min_func.py_noptargs > 0:
+                    opt_args = '_opts \\\\ []'
+                    opt_doc = '\n'.join(['       @optional {}'.format(arg_name) for (arg_name,_) in min_func.py_arglist[-min_func.py_noptargs:]])
+                inline_doc = '\n  @doc """\n    {}\n\n{}\n  """\n'
+
+                if len(max_func.docstring) > 0 or len(opt_doc) > 0:
+                    inline_doc = inline_doc.format("\n".join('    {}'.format(line) for line in max_func.docstring.split("\n")), opt_doc)
                 else:
                     inline_doc = ''
+
+                min_args = min_args - min_func.py_noptargs
                 if min_args == 0:
-                    self.erl_cv_nif.write('{}  def {}(opts \\\\ []), do: :erlang.nif_error("{} not loaded")\n'.format(inline_doc, func.get_wrapper_name().lower(), ", ".join(['_'] * min_args), name))
+                    self.erl_cv_nif.write('{}  def {}({}), do: :erlang.nif_error("{} not loaded")\n'.format(inline_doc, func.get_wrapper_name().lower(), opt_args, name))
                 else:
-                    self.erl_cv_nif.write('{}  def {}({}, opts \\\\ []), do: :erlang.nif_error("{} not loaded")\n'.format(inline_doc, func.get_wrapper_name().lower(), ", ".join(['_{}'.format(arg_name,) for (arg_name,_) in min_func.py_arglist]), name))
+                    if len(opt_args) > 0:
+                        opt_args = ', {}'.format(opt_args)
+                    self.erl_cv_nif.write('{}  def {}({}{}), do: :erlang.nif_error("{} not loaded")\n'.format(inline_doc, func.get_wrapper_name().lower(), ", ".join(['_{}'.format(arg_name,) for (arg_name,_) in min_func.py_arglist[:-min_func.py_noptargs]]), opt_args, name))
         self.code_ns_reg.write('\n};\n\n')
         self.erl_cv_nif.write('\nend\n')
 
