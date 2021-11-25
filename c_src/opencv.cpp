@@ -163,18 +163,15 @@ try \
 } \
 catch (const cv::Exception &e) \
 { \
-    evision::nif::error(env, e.what()); \
-    return 0; \
+    return evision::nif::error(env, e.what()); \
 } \
 catch (const std::exception &e) \
 { \
-    evision::nif::error(env, e.what()); \
-    return 0; \
+    return evision::nif::error(env, e.what()); \
 } \
 catch (...) \
 { \
-    evision::nif::error(env,  "Unknown C++ exception from OpenCV code"); \
-    return 0; \
+    return evision::nif::error(env,  "Unknown C++ exception from OpenCV code"); \
 }
 
 using namespace cv;
@@ -262,17 +259,13 @@ struct SafeSeqItem
     SafeSeqItem(ErlNifEnv* env, ERL_NIF_TERM obj, size_t idx) {
         ERL_NIF_TERM head, tail;
         size_t i = 0;
-        bool list_end = false;
-        while (i != idx + 1 && !list_end) {
-            list_end = enif_get_list_cell(env, obj, &head, &tail);
+        while (i != idx + 1) {
+            enif_get_list_cell(env, obj, &head, &tail);
+            obj = tail;
             i++;
         }
-        
-        if (!list_end) {
-            item = head;
-        } else {
-            item = evision::nif::atom(env, "nil");
-        }
+
+        item = head;
     }
 
 private:
@@ -297,6 +290,10 @@ private:
 template <class T, std::size_t N>
 bool parseSequence(ErlNifEnv *env, ERL_NIF_TERM obj, RefWrapper<T> (&value)[N], const ArgInfo& info)
 {
+    if (evision::nif::check_nil(env, obj)) {
+        return true;
+    }
+
     if (!enif_is_list(env, obj))
     {
         failmsg(env, "Can't parse '%s'. Input argument is not a list ", info.name);
@@ -390,8 +387,7 @@ enum { ARG_NONE = 0, ARG_MAT = 1, ARG_SCALAR = 2 };
 // special case, when the converter needs full ArgInfo structure
 static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Mat& m, const ArgInfo& info)
 {
-    if(evision::nif::check_nil(env, o))
-    {
+    if(evision::nif::check_nil(env, o)) {
         return true;
     }
 
@@ -400,9 +396,8 @@ static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Mat& m, const ArgInfo& in
         if (in_res->val) {
             in_res->val->copyTo(m);
             return true;
-        } else {
-            return false;
         }
+        return false;
     }
 
     int i32;
@@ -449,6 +444,10 @@ static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Mat& m, const ArgInfo& in
 template<typename _Tp, int m, int n>
 bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Matx<_Tp, m, n>& mx, const ArgInfo& info)
 {
+    if (evision::nif::check_nil(env, o)) {
+        return true;
+    }
+
     Mat tmp;
     if (!evision_to(env, o, tmp, info)) {
         return false;
@@ -461,6 +460,10 @@ bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Matx<_Tp, m, n>& mx, const ArgIn
 template<typename _Tp, int cn>
 bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Vec<_Tp, cn>& vec, const ArgInfo& info)
 {
+    if (evision::nif::check_nil(env, o)) {
+        return true;
+    }
+
     return evision_to(env, o, (Matx<_Tp, cn, 1>&)vec, info);
 }
 
@@ -509,6 +512,10 @@ struct Evision_Converter< cv::Ptr<T> >
 template<>
 bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, void*& ptr, const ArgInfo& info)
 {
+    if (evision::nif::check_nil(env, obj)) {
+        return true;
+    }
+
     CV_UNUSED(info);
 
     ErlNifSInt64 i64;
@@ -525,6 +532,10 @@ static ERL_NIF_TERM evision_from(ErlNifEnv *env, void*& ptr)
 
 static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Scalar& s, const ArgInfo& info)
 {
+    if (evision::nif::check_nil(env, o)) {
+        return true;
+    }
+
     double dval;
     int ival;
     if (enif_is_list(env, o)) {
@@ -582,6 +593,10 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const bool& value)
 template<>
 bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, bool& value, const ArgInfo& info)
 {
+    if (evision::nif::check_nil(env, obj)) {
+        return true;
+    }
+
     if (enif_is_atom(env, obj))
     {
         std::string boolean_val;
@@ -603,6 +618,10 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const size_t& value)
 template<>
 bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, size_t& value, const ArgInfo& info)
 {
+    if (evision::nif::check_nil(env, obj)) {
+        return true;
+    }
+
     ErlNifUInt64 u64;
 
     if (enif_get_uint64(env, obj, &u64))
@@ -626,6 +645,10 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const int& value)
 template<>
 bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, int& value, const ArgInfo& info)
 {
+    if (evision::nif::check_nil(env, obj)) {
+        return true;
+    }
+
     int32_t i32;
 
     if (enif_get_int(env, obj, &i32))
@@ -692,6 +715,10 @@ bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, uchar& value, const ArgInfo& i
 template<>
 bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, char& value, const ArgInfo& info)
 {
+    if (evision::nif::check_nil(env, obj)) {
+        return true;
+    }
+
     int32_t i32;
     if (enif_get_int(env, obj, &i32))
     {
@@ -713,6 +740,10 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const double& value)
 template<>
 bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, double& value, const ArgInfo& info)
 {
+    if (evision::nif::check_nil(env, obj)) {
+        return true;
+    }
+
     double f64;
     long i64;
     if (enif_get_double(env, obj, &f64))
@@ -737,6 +768,10 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const float& value)
 template<>
 bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, float& value, const ArgInfo& info)
 {
+    if (evision::nif::check_nil(env, obj)) {
+        return true;
+    }
+
     long i64;
     double f64;
     if (enif_get_int64(env, obj, &i64))
@@ -778,6 +813,10 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const std::string& value)
 template<>
 bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, String &value, const ArgInfo& info)
 {
+    if (evision::nif::check_nil(env, obj)) {
+        return true;
+    }
+
     std::string str;
     int ret = evision::nif::get(env, obj, str);
     value = str;
@@ -1128,6 +1167,10 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const std::pair<int, double>& src)
 template<>
 bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, TermCriteria& dst, const ArgInfo& info)
 {
+    if (evision::nif::check_nil(env, obj)) {
+        return true;
+    }
+
     const ERL_NIF_TERM *terms;
     int length;
     if (!enif_get_tuple(env, obj, &length, &terms)) {
@@ -1184,6 +1227,10 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const TermCriteria& src)
 template<>
 bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, RotatedRect& dst, const ArgInfo& info)
 {
+    if (evision::nif::check_nil(env, obj)) {
+        return true;
+    }
+
     const ERL_NIF_TERM *terms;
     int length;
     if (!enif_get_tuple(env, obj, &length, &terms)) {
@@ -1292,8 +1339,7 @@ struct evisionVecConverter;
 template <typename Tp>
 bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, std::vector<Tp>& value, const ArgInfo& info)
 {
-    if (evision::nif::check_nil(env, obj))
-    {
+    if (evision::nif::check_nil(env, obj)) {
         return true;
     }
     return evisionVecConverter<Tp>::to(env, obj, value, info);
@@ -1308,8 +1354,7 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const std::vector<Tp>& value)
 template <typename Tp>
 static bool evision_to_generic_vec(ErlNifEnv *env, ERL_NIF_TERM obj, std::vector<Tp>& value, const ArgInfo& info)
 {
-    if (evision::nif::check_nil(env, obj))
-    {
+    if (evision::nif::check_nil(env, obj)) {
         return true;
     }
 
@@ -1335,6 +1380,10 @@ static bool evision_to_generic_vec(ErlNifEnv *env, ERL_NIF_TERM obj, std::vector
 
 template<> inline bool evision_to_generic_vec(ErlNifEnv *env, ERL_NIF_TERM obj, std::vector<bool>& value, const ArgInfo& info)
 {
+    if (evision::nif::check_nil(env, obj)) {
+        return true;
+    }
+
     const ERL_NIF_TERM *terms;
     int length;
     if (!enif_get_tuple(env, obj, &length, &terms)) {
