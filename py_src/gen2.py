@@ -706,10 +706,16 @@ class FuncInfo(object):
         min_args = arglens[least_arg]
         min_args -= self.variants[least_arg].py_noptargs
 
-        return '    F' + Template('($wrap_funcname, $min_args),\n')\
-                            .substitute(py_funcname = self.variants[0].wname, wrap_funcname=self.get_wrapper_name(),
-                                     flags = 'METH_STATIC' if self.is_static else '0', min_args=min_args)\
-                            .lower()
+        nif_function_decl = '    F' + Template('($wrap_funcname, $min_args),\n') \
+            .substitute(py_funcname = self.variants[0].wname, wrap_funcname=self.get_wrapper_name(),
+                        flags = 'METH_STATIC' if self.is_static else '0', min_args=min_args) \
+            .lower()
+        if self.variants[least_arg].py_noptargs > 0:
+            nif_function_decl += '    F' + Template('($wrap_funcname, $min_args),\n') \
+                .substitute(py_funcname = self.variants[0].wname, wrap_funcname=self.get_wrapper_name(),
+                            flags = 'METH_STATIC' if self.is_static else '0', min_args=min_args+1) \
+                .lower()
+        return nif_function_decl
 
     def gen_code(self, codegen):
         all_classes = codegen.classes
