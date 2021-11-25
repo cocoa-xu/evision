@@ -44,11 +44,20 @@ def deps do
 end
 ```
 
+### Current Status
+```elixir
+gray_mat = :erl_cv_nif.evision_cv_imread("/path/to/img.png", flags: 0)
+blur_mat = :erl_cv_nif.evision_cv_blur(gray_mat, [10,10], anchor: [1,1])
+:erl_cv_nif.evision_cv_imwrite("/path/to/img-gray-and-blur.png", blur_mat)
+```
+
 ### Todo
 
 - [x] Update `.py` files in `py_src` so that they output header files for Erlang bindings.
 - [x] Automatically generate `erl_cv_nif.ex`.
 - [ ] Automatically generate `opencv_*.ex` files using Python.
+- [ ] Automatically convert `#define` constants in C++ to `@` constants in Elixir
+- [ ] Convert enum between Elixir and C++
 
 ### Acknowledgements
 - `gen2.py`, `hdr_parser.py` and `c_src/erlcompat.hpp` were directly copied from the `python` module in the [OpenCV repo](https://github.com/opencv/opencv). Changes applied.

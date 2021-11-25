@@ -14,13 +14,15 @@
 #pragma warning(pop)
 #endif
 
-#define CV_PYTHON_3 1
-#define CVPY_DYNAMIC_INIT 1
+#ifdef __GNUC__
+#  pragma GCC diagnostic ignored "-Wunused-parameter"
+#  pragma GCC diagnostic ignored "-Wmissing-field-initializers"
+#  pragma GCC diagnostic ignored "-Wunused-variable"
+#  pragma GCC diagnostic ignored "-Wunused-function"
+#endif
+
 #define F(NAME, ARITY)    \
   {#NAME, ARITY, NAME, 0}
-
-#define MODULESTR "cv2"
-#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 
 #include "opencv2/opencv_modules.hpp"
 #include "opencv2/core.hpp"
@@ -161,18 +163,15 @@ try \
 } \
 catch (const cv::Exception &e) \
 { \
-    evision::nif::error(env, e.what()); \
-    return 0; \
+    return evision::nif::error(env, e.what()); \
 } \
 catch (const std::exception &e) \
 { \
-    evision::nif::error(env, e.what()); \
-    return 0; \
+    return evision::nif::error(env, e.what()); \
 } \
 catch (...) \
 { \
-    evision::nif::error(env,  "Unknown C++ exception from OpenCV code"); \
-    return 0; \
+    return evision::nif::error(env,  "Unknown C++ exception from OpenCV code"); \
 }
 
 using namespace cv;
@@ -260,17 +259,13 @@ struct SafeSeqItem
     SafeSeqItem(ErlNifEnv* env, ERL_NIF_TERM obj, size_t idx) {
         ERL_NIF_TERM head, tail;
         size_t i = 0;
-        bool list_end = false;
-        while (i != idx + 1 && !list_end) {
-            list_end = enif_get_list_cell(env, obj, &head, &tail);
+        while (i != idx + 1) {
+            enif_get_list_cell(env, obj, &head, &tail);
+            obj = tail;
             i++;
         }
-        
-        if (!list_end) {
-            item = head;
-        } else {
-            item = make_atom(env, "nil");
-        }
+
+        item = head;
     }
 
 private:
@@ -295,6 +290,10 @@ private:
 template <class T, std::size_t N>
 bool parseSequence(ErlNifEnv *env, ERL_NIF_TERM obj, RefWrapper<T> (&value)[N], const ArgInfo& info)
 {
+    if (evision::nif::check_nil(env, obj)) {
+        return true;
+    }
+
     if (!enif_is_list(env, obj))
     {
         failmsg(env, "Can't parse '%s'. Input argument is not a list ", info.name);
@@ -388,9 +387,17 @@ enum { ARG_NONE = 0, ARG_MAT = 1, ARG_SCALAR = 2 };
 // special case, when the converter needs full ArgInfo structure
 static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Mat& m, const ArgInfo& info)
 {
-    if(evision::nif::check_nil(env, o))
-    {
+    if(evision::nif::check_nil(env, o)) {
         return true;
+    }
+
+    evision_res<cv::Mat *> * in_res;
+    if( enif_get_resource(env, o, evision_res<cv::Mat *>::type, (void **)&in_res) ) {
+        if (in_res->val) {
+            in_res->val->copyTo(m);
+            return true;
+        }
+        return false;
     }
 
     int i32;
@@ -437,6 +444,10 @@ static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Mat& m, const ArgInfo& in
 template<typename _Tp, int m, int n>
 bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Matx<_Tp, m, n>& mx, const ArgInfo& info)
 {
+    if (evision::nif::check_nil(env, o)) {
+        return true;
+    }
+
     Mat tmp;
     if (!evision_to(env, o, tmp, info)) {
         return false;
@@ -449,6 +460,10 @@ bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Matx<_Tp, m, n>& mx, const ArgIn
 template<typename _Tp, int cn>
 bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Vec<_Tp, cn>& vec, const ArgInfo& info)
 {
+    if (evision::nif::check_nil(env, o)) {
+        return true;
+    }
+
     return evision_to(env, o, (Matx<_Tp, cn, 1>&)vec, info);
 }
 
@@ -456,14 +471,13 @@ template<>
 ERL_NIF_TERM evision_from(ErlNifEnv *env, const Mat& m)
 {
     if( !m.data )
-        return make_atom(env, "nil");
+        return evision::nif::atom(env, "nil");
 
-    evision_res<cv::Mat> * res;
+    evision_res<cv::Mat *> * res;
     if (alloc_resource(&res)) {
-        new(&res->val) cv::Mat();
-        m.copyTo(res->val);
+        res->val = new cv::Mat(m);
     } else {
-        make_error_tuple(env, "no memory");
+        return evision::nif::error(env, "no memory");
     }
 
     ERL_NIF_TERM ret = enif_make_resource(env, res);
@@ -498,6 +512,10 @@ struct Evision_Converter< cv::Ptr<T> >
 template<>
 bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, void*& ptr, const ArgInfo& info)
 {
+    if (evision::nif::check_nil(env, obj)) {
+        return true;
+    }
+
     CV_UNUSED(info);
 
     ErlNifSInt64 i64;
@@ -514,6 +532,10 @@ static ERL_NIF_TERM evision_from(ErlNifEnv *env, void*& ptr)
 
 static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Scalar& s, const ArgInfo& info)
 {
+    if (evision::nif::check_nil(env, o)) {
+        return true;
+    }
+
     double dval;
     int ival;
     if (enif_is_list(env, o)) {
@@ -564,13 +586,17 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const Scalar& src)
 template<>
 ERL_NIF_TERM evision_from(ErlNifEnv *env, const bool& value)
 {
-    if (value) return make_atom(env, "true");
-    return make_atom(env, "false");
+    if (value) return evision::nif::atom(env, "true");
+    return evision::nif::atom(env, "false");
 }
 
 template<>
 bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, bool& value, const ArgInfo& info)
 {
+    if (evision::nif::check_nil(env, obj)) {
+        return true;
+    }
+
     if (enif_is_atom(env, obj))
     {
         std::string boolean_val;
@@ -592,6 +618,10 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const size_t& value)
 template<>
 bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, size_t& value, const ArgInfo& info)
 {
+    if (evision::nif::check_nil(env, obj)) {
+        return true;
+    }
+
     ErlNifUInt64 u64;
 
     if (enif_get_uint64(env, obj, &u64))
@@ -615,6 +645,10 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const int& value)
 template<>
 bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, int& value, const ArgInfo& info)
 {
+    if (evision::nif::check_nil(env, obj)) {
+        return true;
+    }
+
     int32_t i32;
 
     if (enif_get_int(env, obj, &i32))
@@ -681,6 +715,10 @@ bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, uchar& value, const ArgInfo& i
 template<>
 bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, char& value, const ArgInfo& info)
 {
+    if (evision::nif::check_nil(env, obj)) {
+        return true;
+    }
+
     int32_t i32;
     if (enif_get_int(env, obj, &i32))
     {
@@ -702,6 +740,10 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const double& value)
 template<>
 bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, double& value, const ArgInfo& info)
 {
+    if (evision::nif::check_nil(env, obj)) {
+        return true;
+    }
+
     double f64;
     long i64;
     if (enif_get_double(env, obj, &f64))
@@ -726,6 +768,10 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const float& value)
 template<>
 bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, float& value, const ArgInfo& info)
 {
+    if (evision::nif::check_nil(env, obj)) {
+        return true;
+    }
+
     long i64;
     double f64;
     if (enif_get_int64(env, obj, &i64))
@@ -767,8 +813,13 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const std::string& value)
 template<>
 bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, String &value, const ArgInfo& info)
 {
+    if (evision::nif::check_nil(env, obj)) {
+        return true;
+    }
+
     std::string str;
     int ret = evision::nif::get(env, obj, str);
+    value = str;
     return (ret > 0);
 }
 
@@ -1116,6 +1167,10 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const std::pair<int, double>& src)
 template<>
 bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, TermCriteria& dst, const ArgInfo& info)
 {
+    if (evision::nif::check_nil(env, obj)) {
+        return true;
+    }
+
     const ERL_NIF_TERM *terms;
     int length;
     if (!enif_get_tuple(env, obj, &length, &terms)) {
@@ -1172,6 +1227,10 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const TermCriteria& src)
 template<>
 bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, RotatedRect& dst, const ArgInfo& info)
 {
+    if (evision::nif::check_nil(env, obj)) {
+        return true;
+    }
+
     const ERL_NIF_TERM *terms;
     int length;
     if (!enif_get_tuple(env, obj, &length, &terms)) {
@@ -1237,40 +1296,40 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const Moments& m)
     ERL_NIF_TERM ret = enif_make_new_map(env);
     ERL_NIF_TERM iter = ret;
     if (
-        enif_make_map_put(env, iter, make_atom(env, "m00"), evision_from(env, m.m00), &iter) &&
-        enif_make_map_put(env, iter, make_atom(env, "m10"), evision_from(env, m.m10), &iter) &&
-        enif_make_map_put(env, iter, make_atom(env, "m01"), evision_from(env, m.m01), &iter) &&
+        enif_make_map_put(env, iter, evision::nif::atom(env, "m00"), evision_from(env, m.m00), &iter) &&
+        enif_make_map_put(env, iter, evision::nif::atom(env, "m10"), evision_from(env, m.m10), &iter) &&
+        enif_make_map_put(env, iter, evision::nif::atom(env, "m01"), evision_from(env, m.m01), &iter) &&
 
-        enif_make_map_put(env, iter, make_atom(env, "m20"), evision_from(env, m.m20), &iter) &&
-        enif_make_map_put(env, iter, make_atom(env, "m11"), evision_from(env, m.m11), &iter) &&
-        enif_make_map_put(env, iter, make_atom(env, "m02"), evision_from(env, m.m02), &iter) &&
+        enif_make_map_put(env, iter, evision::nif::atom(env, "m20"), evision_from(env, m.m20), &iter) &&
+        enif_make_map_put(env, iter, evision::nif::atom(env, "m11"), evision_from(env, m.m11), &iter) &&
+        enif_make_map_put(env, iter, evision::nif::atom(env, "m02"), evision_from(env, m.m02), &iter) &&
 
-        enif_make_map_put(env, iter, make_atom(env, "m30"), evision_from(env, m.m30), &iter) &&
-        enif_make_map_put(env, iter, make_atom(env, "m21"), evision_from(env, m.m21), &iter) &&
-        enif_make_map_put(env, iter, make_atom(env, "m12"), evision_from(env, m.m12), &iter) &&
-        enif_make_map_put(env, iter, make_atom(env, "m03"), evision_from(env, m.m03), &iter) &&
+        enif_make_map_put(env, iter, evision::nif::atom(env, "m30"), evision_from(env, m.m30), &iter) &&
+        enif_make_map_put(env, iter, evision::nif::atom(env, "m21"), evision_from(env, m.m21), &iter) &&
+        enif_make_map_put(env, iter, evision::nif::atom(env, "m12"), evision_from(env, m.m12), &iter) &&
+        enif_make_map_put(env, iter, evision::nif::atom(env, "m03"), evision_from(env, m.m03), &iter) &&
 
-        enif_make_map_put(env, iter, make_atom(env, "mu20"), evision_from(env, m.mu20), &iter) &&
-        enif_make_map_put(env, iter, make_atom(env, "mu11"), evision_from(env, m.mu11), &iter) &&
-        enif_make_map_put(env, iter, make_atom(env, "mu02"), evision_from(env, m.mu02), &iter) &&
+        enif_make_map_put(env, iter, evision::nif::atom(env, "mu20"), evision_from(env, m.mu20), &iter) &&
+        enif_make_map_put(env, iter, evision::nif::atom(env, "mu11"), evision_from(env, m.mu11), &iter) &&
+        enif_make_map_put(env, iter, evision::nif::atom(env, "mu02"), evision_from(env, m.mu02), &iter) &&
 
-        enif_make_map_put(env, iter, make_atom(env, "mu30"), evision_from(env, m.mu30), &iter) &&
-        enif_make_map_put(env, iter, make_atom(env, "mu21"), evision_from(env, m.mu21), &iter) &&
-        enif_make_map_put(env, iter, make_atom(env, "mu12"), evision_from(env, m.mu12), &iter) &&
-        enif_make_map_put(env, iter, make_atom(env, "mu03"), evision_from(env, m.mu03), &iter) &&
+        enif_make_map_put(env, iter, evision::nif::atom(env, "mu30"), evision_from(env, m.mu30), &iter) &&
+        enif_make_map_put(env, iter, evision::nif::atom(env, "mu21"), evision_from(env, m.mu21), &iter) &&
+        enif_make_map_put(env, iter, evision::nif::atom(env, "mu12"), evision_from(env, m.mu12), &iter) &&
+        enif_make_map_put(env, iter, evision::nif::atom(env, "mu03"), evision_from(env, m.mu03), &iter) &&
 
-        enif_make_map_put(env, iter, make_atom(env, "nu20"), evision_from(env, m.nu20), &iter) &&
-        enif_make_map_put(env, iter, make_atom(env, "nu11"), evision_from(env, m.nu11), &iter) &&
-        enif_make_map_put(env, iter, make_atom(env, "nu02"), evision_from(env, m.nu02), &iter) &&
+        enif_make_map_put(env, iter, evision::nif::atom(env, "nu20"), evision_from(env, m.nu20), &iter) &&
+        enif_make_map_put(env, iter, evision::nif::atom(env, "nu11"), evision_from(env, m.nu11), &iter) &&
+        enif_make_map_put(env, iter, evision::nif::atom(env, "nu02"), evision_from(env, m.nu02), &iter) &&
 
-        enif_make_map_put(env, iter, make_atom(env, "nu30"), evision_from(env, m.nu30), &iter) &&
-        enif_make_map_put(env, iter, make_atom(env, "nu21"), evision_from(env, m.nu21), &iter) &&
-        enif_make_map_put(env, iter, make_atom(env, "nu12"), evision_from(env, m.nu12), &iter) &&
-        enif_make_map_put(env, iter, make_atom(env, "nu03"), evision_from(env, m.nu03), &iter) 
+        enif_make_map_put(env, iter, evision::nif::atom(env, "nu30"), evision_from(env, m.nu30), &iter) &&
+        enif_make_map_put(env, iter, evision::nif::atom(env, "nu21"), evision_from(env, m.nu21), &iter) &&
+        enif_make_map_put(env, iter, evision::nif::atom(env, "nu12"), evision_from(env, m.nu12), &iter) &&
+        enif_make_map_put(env, iter, evision::nif::atom(env, "nu03"), evision_from(env, m.nu03), &iter)
     ) {
         return ret;
     } else {
-        return make_error_tuple(env, "error: Moments: map");
+        return evision::nif::error(env, "error: Moments: map");
     }
 }
 
@@ -1280,8 +1339,7 @@ struct evisionVecConverter;
 template <typename Tp>
 bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, std::vector<Tp>& value, const ArgInfo& info)
 {
-    if (evision::nif::check_nil(env, obj))
-    {
+    if (evision::nif::check_nil(env, obj)) {
         return true;
     }
     return evisionVecConverter<Tp>::to(env, obj, value, info);
@@ -1296,8 +1354,7 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const std::vector<Tp>& value)
 template <typename Tp>
 static bool evision_to_generic_vec(ErlNifEnv *env, ERL_NIF_TERM obj, std::vector<Tp>& value, const ArgInfo& info)
 {
-    if (evision::nif::check_nil(env, obj))
-    {
+    if (evision::nif::check_nil(env, obj)) {
         return true;
     }
 
@@ -1323,6 +1380,10 @@ static bool evision_to_generic_vec(ErlNifEnv *env, ERL_NIF_TERM obj, std::vector
 
 template<> inline bool evision_to_generic_vec(ErlNifEnv *env, ERL_NIF_TERM obj, std::vector<bool>& value, const ArgInfo& info)
 {
+    if (evision::nif::check_nil(env, obj)) {
+        return true;
+    }
+
     const ERL_NIF_TERM *terms;
     int length;
     if (!enif_get_tuple(env, obj, &length, &terms)) {
@@ -1369,8 +1430,8 @@ template<> inline ERL_NIF_TERM evision_from_generic_vec(ErlNifEnv *env, const st
     for (size_t i = 0; i < n; i++)
     {
         bool elem = value[i];
-        if (elem) arr[i] = make_atom(env, "true");
-        else arr[i] = make_atom(env, "false");
+        if (elem) arr[i] = evision::nif::atom(env, "true");
+        else arr[i] = evision::nif::atom(env, "false");
     }
     ERL_NIF_TERM ret = enif_make_tuple_from_array(env, arr, n);
     free(arr);
@@ -1470,7 +1531,7 @@ static ERL_NIF_TERM evisionRedirectError(ErlNifEnv* env, int argc, const ERL_NIF
     const char *keywords[] = { "on_error", NULL };
     ERL_NIF_TERM on_error;
 
-    if (!evision::nif::parse_arg(env, argc, argv, "O", (char**)keywords, &on_error))
+    if (!evision::nif::parse_arg(env, argc, argv, (char**)keywords, "O", &on_error))
         return evision::nif::atom(env, "nil");
 
     // todo:evision check callback
@@ -1522,7 +1583,7 @@ static ERL_NIF_TERM evisionSetMouseCallback(ErlNifEnv* env, int argc, const ERL_
     ERL_NIF_TERM on_mouse;
     ERL_NIF_TERM param;
 
-    if (!evision::nif::parse_arg(env, argc, argv, "sO|O", (char**)keywords, &name, &on_mouse, &param))
+    if (!evision::nif::parse_arg(env, argc, argv, (char**)keywords, "sO|O", &name, &on_mouse, &param))
         return evision::nif::atom(env, "not implemented");
     return evision::nif::atom(env, "not implemented");
 
@@ -1588,7 +1649,7 @@ static ERL_NIF_TERM evisionCreateTrackbar(ErlNifEnv* env, int argc, const ERL_NI
     int count;
 
     // todo:evision evisionCreateTrackbar
-    if (!evision::nif::parse_arg(env, argc, argv, "ssiiO", &trackbar_name, &window_name, &value, &count, &on_change))
+    if (!evision::nif::parse_arg(env, argc, argv, nullptr, "ssiiO", &trackbar_name, &window_name, &value, &count, &on_change))
         return evision::nif::atom(env, "not implemented");
     return evision::nif::atom(env, "not implemented");
 //
@@ -1648,7 +1709,7 @@ static ERL_NIF_TERM evisionCreateButton(ErlNifEnv* env, int argc, const ERL_NIF_
     int button_type = 0;
     int initial_button_state = 0;
 
-    if (!evision::nif::parse_arg(env, argc, argv, "sO|Oii", (char**)keywords, &button_name, &on_change, &userdata, &button_type, &initial_button_state))
+    if (!evision::nif::parse_arg(env, argc, argv, (char**)keywords, "sO|Oii", &button_name, &on_change, &userdata, &button_type, &initial_button_state))
         return evision::nif::atom(env, "not implemented");
     return evision::nif::atom(env, "not implemented");
 
@@ -1682,6 +1743,18 @@ static ERL_NIF_TERM evisionCreateButton(ErlNifEnv* env, int argc, const ERL_NIF_
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
+static int convert_to_char(ErlNifEnv *env, ERL_NIF_TERM o, char **dst, const ArgInfo& info)
+{
+    std::string str;
+    if (evision::nif::get(env, o, str))
+    {
+        *dst = (char *)str.c_str();
+        return 1;
+    }
+    (*dst) = 0;
+    return failmsg(env, "Expected single character string for argument '%s'", info.name);
+}
+
 static int convert_to_char(ErlNifEnv *env, ERL_NIF_TERM o, char *dst, const ArgInfo& info)
 {
     std::string str;
@@ -1694,21 +1767,11 @@ static int convert_to_char(ErlNifEnv *env, ERL_NIF_TERM o, char *dst, const ArgI
     return failmsg(env, "Expected single character string for argument '%s'", info.name);
 }
 
-#ifdef __GNUC__
-#  pragma GCC diagnostic ignored "-Wunused-parameter"
-#  pragma GCC diagnostic ignored "-Wmissing-field-initializers"
-#endif
-
 
 #include "evision_generated_enums.h"
-
-#ifdef CVPY_DYNAMIC_INIT
-#define CVPY_TYPE(WNAME, NAME, STORAGE, SNAME, _1, _2) CVPY_TYPE_DECLARE_DYNAMIC(WNAME, NAME, STORAGE, SNAME)
-#else
-#define CVPY_TYPE(WNAME, NAME, STORAGE, SNAME, _1, _2) CVPY_TYPE_DECLARE(WNAME, NAME, STORAGE, SNAME)
-#endif
+#define CV_ERL_TYPE(WNAME, NAME, STORAGE, SNAME, _1, _2) CV_ERL_TYPE_DECLARE_DYNAMIC(WNAME, NAME, STORAGE, SNAME)
 #include "evision_generated_types.h"
-#undef CVPY_TYPE
+#undef CV_ERL_TYPE
 #include "evision_custom_headers.h"
 
 #include "evision_generated_types_content.h"
@@ -1756,20 +1819,25 @@ struct ConstDef
 
 #include "evision_generated_modules_content.h"
 
+static void destruct_Mat(ErlNifEnv *env, void *args) {
+    evision_res<cv::Mat *> * res = (evision_res<cv::Mat *> *)args;
+    if (res->val) {
+        delete res->val;
+        res->val = nullptr;
+    }
+}
+
 static int
 on_load(ErlNifEnv* env, void**, ERL_NIF_TERM)
 {
     ErlNifResourceType *rt;
-#define CVPY_MODULE(NAMESTR, NAME) \
-    init_submodule(m, MODULESTR NAMESTR, methods_##NAME, consts_##NAME)
-    #include "evision_generated_modules.h"
-#undef CVPY_MODULE
 
-#ifdef CVPY_DYNAMIC_INIT
-#define CVPY_TYPE(WNAME, NAME, STORAGE, _1, BASE, CONSTRUCTOR) CVPY_TYPE_INIT_DYNAMIC(WNAME, NAME, STORAGE, return -1)
-#endif
-    #include "evision_generated_types.h"
-#undef CVPY_TYPE
+#define CV_ERL_TYPE(WNAME, NAME, STORAGE, _1, BASE, CONSTRUCTOR) CV_ERL_TYPE_INIT_DYNAMIC(WNAME, NAME, STORAGE, return -1)
+#include "evision_generated_types.h"
+#undef CV_ERL_TYPE
+    rt = enif_open_resource_type(env, "erl_cv_nif", "erl_cv_Mat_type", destruct_Mat, ERL_NIF_RT_CREATE, NULL);                                                             \
+    if (!rt) return -1;
+    evision_res<cv::Mat *>::type = rt;
 
 //    PyObject* d = PyModule_GetDict(m);
 //

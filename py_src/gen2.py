@@ -52,7 +52,7 @@ gen_template_simple_call_constructor_prelude = Template("""evision_res<$cname> *
 gen_template_simple_call_constructor = Template("""new (&(self->val)) ${cname}${py_args}""")
 
 gen_template_parse_args = Template("""const char* keywords[] = { $kw_list, NULL };
-    if( evision::nif::parse_arg(env, argc, argv, "$fmtspec", (char**)keywords, $parse_arglist)$code_cvt )""")
+    if( evision::nif::parse_arg(env, argc, argv, (char**)keywords, "$fmtspec", $parse_arglist)$code_cvt )""")
 
 gen_template_func_body = Template("""$code_decl
     $code_parse
@@ -357,7 +357,6 @@ class ClassInfo(object):
         sorted_methods = list(self.methods.items())
         sorted_methods.sort()
         for mname, m in sorted_methods:
-            # codegen.erl_cv_nif.write()
             codegen.code_ns_reg.write(m.get_tab_entry())
             arglists = [m.variants[i].py_arglist for i in range(len(m.variants))]
             arglens = [len(arglist) for arglist in arglists]
@@ -451,7 +450,7 @@ class ClassInfo(object):
         if self.constructor is not None:
             constructor_name = self.constructor.get_wrapper_name()
 
-        return "CVPY_TYPE({}, {}, {}, {}, {}, {});\n".format(
+        return "CV_ERL_TYPE({}, {}, {}, {}, {}, {});\n".format(
             self.wname,
             self.name,
             self.cname if self.issimple else "Ptr<{}>".format(self.cname),
@@ -707,10 +706,16 @@ class FuncInfo(object):
         min_args = arglens[least_arg]
         min_args -= self.variants[least_arg].py_noptargs
 
-        return '    F' + Template('($wrap_funcname, $min_args),\n')\
-                            .substitute(py_funcname = self.variants[0].wname, wrap_funcname=self.get_wrapper_name(),
-                                     flags = 'METH_STATIC' if self.is_static else '0', min_args=min_args)\
-                            .lower()
+        nif_function_decl = '    F' + Template('($wrap_funcname, $min_args),\n') \
+            .substitute(py_funcname = self.variants[0].wname, wrap_funcname=self.get_wrapper_name(),
+                        flags = 'METH_STATIC' if self.is_static else '0', min_args=min_args) \
+            .lower()
+        if self.variants[least_arg].py_noptargs > 0:
+            nif_function_decl += '    F' + Template('($wrap_funcname, $min_args),\n') \
+                .substitute(py_funcname = self.variants[0].wname, wrap_funcname=self.get_wrapper_name(),
+                            flags = 'METH_STATIC' if self.is_static else '0', min_args=min_args+1) \
+                .lower()
+        return nif_function_decl
 
     def gen_code(self, codegen):
         all_classes = codegen.classes
@@ -778,10 +783,12 @@ class FuncInfo(object):
                 arg_type_info = simple_argtype_mapping.get(tp, ArgTypeInfo(tp, FormatStrings.object, defval0, True))
                 parse_name = a.name
                 if a.py_inputarg:
-                    if arg_type_info.strict_conversion:
+                    if True:
                         code_decl += "    ERL_NIF_TERM erl_term_%s;\n" % (a.name,)
                         parse_name = "erl_term_" + a.name
                         if a.tp == 'char':
+                            code_cvt_list.append("convert_to_char(env, erl_term_%s, &%s, %s)" % (a.name, a.name, a.crepr()))
+                        elif a.tp == 'c_string':
                             code_cvt_list.append("convert_to_char(env, erl_term_%s, &%s, %s)" % (a.name, a.name, a.crepr()))
                         else:
                             code_cvt_list.append("evision_to_safe(env, erl_term_%s, %s, %s)" % (a.name, a.name, a.crepr()))
