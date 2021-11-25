@@ -2,6 +2,8 @@
 
 #include "erl_nif.h"
 #include <stdarg.h>
+#include <map>
+#include <string>
 
 #define GET(ARGN, VAR)                      \
   if (!evision::nif::get(env, argv[ARGN], &VAR)) \
@@ -280,22 +282,89 @@ namespace evision
       return 1;
     }
 
+    inline int allowed_spec(char t) {
+        return (t == 's' || t == 'b' || t == 'h' || t == 'i' || t == 'I' || t == 'l' || t == 'L' \
+                || t == 'k' || t == 'K' || t == 'n' || t == 'f' || t == 'd' || t == 'O');
+    }
+
     inline int parse_arg(ErlNifEnv *env, int argc, const ERL_NIF_TERM * argv, char** keyword_list, const char * spec, ...) {
-        // todo:evision parse opts
-        // std::map<const char *, ERL_NIF_TERM> parsed_opts;
         va_list args;
         va_start(args, spec);
         int arg_index = 0;
         int spec_index = 0;
+        int parsing_opt_args = false;
+        ERL_NIF_TERM opts;
+        std::map<std::string, ERL_NIF_TERM> copts;
         while (spec[spec_index] != ':') {
             char t = spec[spec_index];
-            ERL_NIF_TERM * i = (ERL_NIF_TERM *)va_arg(args, long);
-            *i = argv[arg_index];
-            arg_index++;
-            if (t == '|') {
-                break;
-            } else {
+            if (!parsing_opt_args) {
+                if (t == '|') {
+                    parsing_opt_args = true;
+                    spec_index++;
+                    if (arg_index >= argc) {
+                        continue;
+                    }
+
+                    opts = argv[arg_index];
+                    if (enif_is_list(env, opts)) {
+                        unsigned length = 0;
+                        enif_get_list_length(env, opts, &length);
+                        unsigned list_index = 0;
+
+                        ERL_NIF_TERM term, rest;
+                        while (list_index != length) {
+                            enif_get_list_cell(env, opts, &term, &rest);
+
+                            if (enif_is_tuple(env, term)) {
+                                int arity;
+                                const ERL_NIF_TERM * arr = nullptr;
+                                if (enif_get_tuple(env, term, &arity, &arr)) {
+                                    if (arity == 2) {
+                                        std::string ckey;
+                                        if (get_atom(env, arr[0], ckey)) {
+                                           copts[ckey] = arr[1];
+                                        }
+                                    }
+                                }
+                            }
+
+                            list_index++;
+                            opts = rest;
+                        }
+                    }
+                    continue;
+                }
+
+                if (allowed_spec(t)) {
+                    ERL_NIF_TERM * i = (ERL_NIF_TERM *)va_arg(args, long);
+                    *i = argv[arg_index];
+                    arg_index++;
+                }
                 spec_index++;
+            } else {
+                if (t == ':') {
+                    break;
+                } else {
+                    if (keyword_list && allowed_spec(t)) {
+                        const char *k = keyword_list[arg_index];
+                        if (k != nullptr) {
+                            ERL_NIF_TERM * i = (ERL_NIF_TERM *)va_arg(args, long);
+                            std::string kw = k;
+                            auto iter = copts.find(kw);
+                            if (iter != copts.end()) {
+                                *i = iter->second;
+                            } else {
+                                *i = atom(env, "nil");
+                            }
+                            spec_index++;
+                            arg_index++;
+                        } else {
+                            break;
+                        }
+                    } else {
+                        spec_index++;
+                    }
+                }
             }
         }
 
