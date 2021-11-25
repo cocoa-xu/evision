@@ -42,7 +42,10 @@ gen_template_check_self = Template("""
     }
     ${pname} _self_ = ${cvt}(self1);
 """)
-gen_template_call_constructor_prelude = Template("""evision_res<Ptr<$cname>> * self = new evision_res<Ptr<$cname>>(); new (&(self->val)) Ptr<$cname>(); // init Ptr with placement new
+gen_template_call_constructor_prelude = Template("""evision_res<Ptr<$cname>> * self = nullptr;
+        if (alloc_resource(&self)) {
+            new (&(self->val)) Ptr<$cname>(); // init Ptr with placement new
+        }
         if(self) """)
 
 gen_template_call_constructor = Template("""self->val.reset(new ${cname}${py_args})""")
@@ -369,7 +372,7 @@ class ClassInfo(object):
             opt_args = ''
             opt_doc = ''
             if min_func.py_noptargs > 0:
-                opt_args = '_opts \\\\ []'
+                opt_args = '_opts'
                 opt_doc = '\n'.join(['       @optional {}'.format(arg_name) for (arg_name,_) in min_func.py_arglist[-min_func.py_noptargs:]])
             inline_doc = '\n  @doc """\n    {}\n\n{}\n  """\n'
 
@@ -701,20 +704,18 @@ class FuncInfo(object):
         # Convert unicode chars to xml representation, but keep as string instead of bytes
         full_docstring = full_docstring.encode('ascii', errors='xmlcharrefreplace').decode()
         arglists = [self.variants[i].py_arglist for i in range(len(self.variants))]
-        arglens = [len(arglist) for arglist in arglists]
-        least_arg = np.argmin(arglens)
-        min_args = arglens[least_arg]
-        min_args -= self.variants[least_arg].py_noptargs
+        nopt_arglens = [len(arglists[i]) - self.variants[i].py_noptargs for i in range(len(self.variants))]
+        with_opt_arglens = []
+        for i in range(len(self.variants)):
+            if self.variants[i].py_noptargs > 0:
+                with_opt_arglens.append(len(arglists[i]) - self.variants[i].py_noptargs + 1)
+        arglens = np.unique(np.concatenate((nopt_arglens, with_opt_arglens)))
 
-        nif_function_decl = '    F' + Template('($wrap_funcname, $min_args),\n') \
+        nif_function_decl = ''.join(['    F' + Template('($wrap_funcname, $min_args),\n') \
             .substitute(py_funcname = self.variants[0].wname, wrap_funcname=self.get_wrapper_name(),
-                        flags = 'METH_STATIC' if self.is_static else '0', min_args=min_args) \
-            .lower()
-        if self.variants[least_arg].py_noptargs > 0:
-            nif_function_decl += '    F' + Template('($wrap_funcname, $min_args),\n') \
-                .substitute(py_funcname = self.variants[0].wname, wrap_funcname=self.get_wrapper_name(),
-                            flags = 'METH_STATIC' if self.is_static else '0', min_args=min_args+1) \
-                .lower()
+                        flags = 'METH_STATIC' if self.is_static else '0', min_args=int(min_args)) \
+            .lower() for min_args in arglens])
+
         return nif_function_decl
 
     def gen_code(self, codegen):
@@ -731,12 +732,13 @@ class FuncInfo(object):
         if self.classname:
             selfinfo = all_classes[self.classname]
             if not self.is_static:
-                code += gen_template_check_self.substitute(
-                    name=selfinfo.name,
-                    cname=selfinfo.cname if selfinfo.issimple else "Ptr<{}>".format(selfinfo.cname),
-                    pname=(selfinfo.cname + '*') if selfinfo.issimple else "Ptr<{}>".format(selfinfo.cname),
-                    cvt='' if selfinfo.issimple else '*'
-                )
+                if not self.isconstructor:
+                    code += gen_template_check_self.substitute(
+                        name=selfinfo.name,
+                        cname=selfinfo.cname if selfinfo.issimple else "Ptr<{}>".format(selfinfo.cname),
+                        pname=(selfinfo.cname + '*') if selfinfo.issimple else "Ptr<{}>".format(selfinfo.cname),
+                        cvt='' if selfinfo.issimple else '*'
+                    )
             fullname = selfinfo.wname + "." + fullname
 
         all_code_variants = []
@@ -890,7 +892,7 @@ class FuncInfo(object):
                 code_ret = "evision::nif::atom(env, \"nil\")"
             elif len(v.py_outlist) == 1:
                 if self.isconstructor:
-                    code_ret = "return 0"
+                    code_ret = "ERL_NIF_TERM ret = enif_make_resource(env, self);\n        enif_release_resource(self);\n        return ret;"
                 else:
                     aname, argno = v.py_outlist[0]
                     code_ret = "return evision_from(env, %s)" % (aname,)
@@ -913,7 +915,6 @@ class FuncInfo(object):
         else:
             # try to execute each signature, add an interlude between function
             # calls to collect error from all conversions
-            code += '    pyPrepareArgumentConversionErrorsStorage({});\n'.format(len(all_code_variants))
             code += '    \n'.join(gen_template_overloaded_function_call.substitute(variant=v)
                                   for v in all_code_variants)
             code += '    pyRaiseCVOverloadException("{}");\n'.format(self.name)
@@ -1129,7 +1130,7 @@ class PythonWrapperGenerator(object):
                 opt_args = ''
                 opt_doc = ''
                 if min_func.py_noptargs > 0:
-                    opt_args = '_opts \\\\ []'
+                    opt_args = '_opts'
                     opt_doc = '\n'.join(['       @optional {}'.format(arg_name) for (arg_name,_) in min_func.py_arglist[-min_func.py_noptargs:]])
                 inline_doc = '\n  @doc """\n    {}\n\n{}\n  """\n'
 
