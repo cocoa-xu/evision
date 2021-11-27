@@ -287,17 +287,17 @@ namespace evision
                 || t == 'k' || t == 'K' || t == 'n' || t == 'f' || t == 'd' || t == 'O');
     }
 
-    inline int parse_arg(ErlNifEnv *env, int argc, const ERL_NIF_TERM * argv, char** keyword_list, const char * spec, ...) {
+    inline int parse_arg(ErlNifEnv *env, int opt_arg_index, const ERL_NIF_TERM * argv, char** keyword_list, const char * spec, ...) {
         va_list args;
         va_start(args, spec);
         size_t arg_index = 0;
         size_t spec_index = 0;
         std::map<std::string, ERL_NIF_TERM> copts;
-        if (argc != 1 || keyword_list == nullptr) {
+        if (keyword_list == nullptr) {
             return false;
         }
 
-        ERL_NIF_TERM opts = argv[0];
+        ERL_NIF_TERM opts = argv[opt_arg_index];
         if (enif_is_list(env, opts)) {
             unsigned length = 0;
             enif_get_list_length(env, opts, &length);

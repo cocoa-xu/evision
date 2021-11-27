@@ -56,13 +56,16 @@ gen_template_simple_call_constructor_prelude = Template("""evision_res<$cname> *
 gen_template_simple_call_constructor = Template("""new (&(self->val)) ${cname}${py_args}""")
 
 gen_template_parse_args = Template("""const char* keywords[] = { $kw_list, NULL };
-    if( evision::nif::parse_arg(env, argc, argv, (char**)keywords, "$fmtspec", $parse_arglist)$code_cvt )""")
+    if( $opt_arg_index < argc && evision::nif::parse_arg(env, $opt_arg_index, argv, (char**)keywords, "$fmtspec", $parse_arglist)$code_cvt )""")
 
 gen_template_func_body = Template("""$code_decl
     $code_parse
     {
-        ${code_prelude}ERRWRAP2($code_fcall);
-        $code_ret;
+        int error_flag = false;
+        ${code_prelude}ERRWRAP2($code_fcall, error_flag, error_term);
+        if (!error_flag) {
+            $code_ret;
+        }
     }
 """)
 
@@ -225,8 +228,6 @@ gen_template_rw_prop_init = Template("""
 gen_template_overloaded_function_call = Template("""
     {
 ${variant}
-
-        pyPopulateArgumentConversionErrors();
     }
 """)
 
@@ -367,14 +368,15 @@ class ClassInfo(object):
             codegen.opencv_modules[self.name] = StringIO()
             module_file_writter = codegen.opencv_modules[self.name]
             module_file_writter.doc_written = {}
-            # module_file_writter.write(f'defmodule OpenCV.{self.name} do\n')
             module_name = self.name.replace("_", "")
             if self.lowercase_start.match(module_name):
                 module_name = f'{module_name[0].upper()}{module_name[1:]}'
             module_file_writter.write(f'defmodule OpenCV.{module_name} do\n')
+        if self.constructor is not None:
+            codegen.gen_erl_declaration(self.cname, self.name, self.constructor, module_file_writter, is_constructor=True)
         for mname, m in sorted_methods:
             codegen.code_ns_reg.write(m.get_tab_entry())
-            codegen.gen_erl_declaration(self.cname, mname, m, module_file_writter)
+            codegen.gen_erl_declaration(self.cname, mname, m, module_file_writter, is_constructor=False)
 
     def gen_code(self, codegen):
         all_classes = codegen.classes
@@ -683,14 +685,18 @@ class FuncInfo(object):
                 )
             )
 
-        nif_function_decl = f'    F({self.get_wrapper_name().lower()}, 1),\n'
+        func_arity = 1
+        if self.classname:
+            if not self.is_static and not self.isconstructor:
+                func_arity = 2
+        nif_function_decl = f'    F({self.get_wrapper_name().lower()}, {func_arity}),\n'
         return nif_function_decl
 
     def gen_code(self, codegen):
         all_classes = codegen.classes
         proto = self.get_wrapper_prototype(codegen)
         code = "%s\n{\n" % (proto,)
-        code += "    using namespace %s;\n\n" % self.namespace.replace('.', '::')
+        code += "    using namespace %s;\n    ERL_NIF_TERM error_term = 0;\n" % self.namespace.replace('.', '::')
 
         selfinfo = None
         ismethod = self.classname != "" and not self.isconstructor
@@ -754,7 +760,7 @@ class FuncInfo(object):
                 parse_name = a.name
                 if a.py_inputarg:
                     if True:
-                        code_decl += "    ERL_NIF_TERM erl_term_%s;\n" % (a.name,)
+                        code_decl += "    ERL_NIF_TERM erl_term_%s = evision::nif::atom(env, \"nil\");\n" % (a.name,)
                         parse_name = "erl_term_" + a.name
                         if a.tp == 'char':
                             code_cvt_list.append("convert_to_char(env, erl_term_%s, &%s, %s)" % (a.name, a.name, a.crepr()))
@@ -847,9 +853,13 @@ class FuncInfo(object):
                 #   - declares the list of keyword parameters
                 #   - calls PyArg_ParseTupleAndKeywords
                 #   - converts complex arguments from PyObject's to native OpenCV types
+                opt_arg_index = 0
+                if self.classname and not self.is_static and not self.isconstructor:
+                    opt_arg_index = 1
                 code_parse = gen_template_parse_args.substitute(
                     kw_list = ", ".join(['"' + aname + '"' for aname, argno, argtype in v.py_arglist]),
                     fmtspec = fmtspec,
+                    opt_arg_index = opt_arg_index,
                     parse_arglist = ", ".join(["&" + all_cargs[argno][1] for aname, argno, argtype in v.py_arglist]),
                     code_cvt = " &&\n        ".join(code_cvt_list))
             else:
@@ -857,7 +867,7 @@ class FuncInfo(object):
                 # code_parse = "if(argc == 0 && (!kw || PyObject_Size(kw) == 0))"
 
             if len(v.py_outlist) == 0:
-                code_ret = "evision::nif::atom(env, \"nil\")"
+                code_ret = "return evision::nif::atom(env, \"nil\")"
             elif len(v.py_outlist) == 1:
                 if self.isconstructor:
                     code_ret = "ERL_NIF_TERM ret = enif_make_resource(env, self);\n        enif_release_resource(self);\n        return evision::nif::ok(env, ret);"
@@ -885,12 +895,11 @@ class FuncInfo(object):
             # calls to collect error from all conversions
             code += '    \n'.join(gen_template_overloaded_function_call.substitute(variant=v)
                                   for v in all_code_variants)
-            code += '    pyRaiseCVOverloadException("{}");\n'.format(self.name)
 
-        def_ret = "evision::nif::atom(env, \"nil\")"
+        def_ret = "if (error_term != 0) return error_term;\n    else return evision::nif::atom(env, \"nil\");"
         if self.isconstructor:
-            def_ret = "-1"
-        code += "\n    return %s;\n}\n\n" % def_ret
+            def_ret = "return evision::nif::atom(env, \"nil\");"
+        code += "\n    %s\n}\n\n" % def_ret
 
         cname = self.cname
         classinfo = None
@@ -1233,7 +1242,7 @@ class PythonWrapperGenerator(object):
             return f'erl_{argname}'.lower()
         return self.argname_prefix_re.sub('', argname).lower()
 
-    def gen_erl_declaration(self, wname, name, func, writer=None, is_ns=False):
+    def gen_erl_declaration(self, wname, name, func, writer=None, is_ns=False, is_constructor=False):
         # functions in namespaces goes to 'erl_cv_nif.ex' and 'opencv_{module}.ex'
         # 'erl_cv_nif.ex' contains the declarations of all NIFs
         # 'opencv_{module}.ex' contains human friendly funcs
@@ -1241,7 +1250,10 @@ class PythonWrapperGenerator(object):
         func_name = func.get_wrapper_name().lower()
         if self.erl_cv_nif_names.get(func_name) != True:
             self.erl_cv_nif_names[func_name] = True
-            self.erl_cv_nif.write(f'  def {func_name}(_opts \\\\ []), do: :erlang.nif_error("{wname}::{name} not loaded")\n')
+            nif_args = '_opts \\\\ []'
+            if not is_ns and func.classname and not func.is_static and not is_constructor:
+                nif_args = f'_self, {nif_args}'
+            self.erl_cv_nif.write(f'  def {func_name}({nif_args}), do: :erlang.nif_error("{wname}::{name} not loaded")\n')
 
         if writer is None:
             return
@@ -1281,6 +1293,13 @@ class PythonWrapperGenerator(object):
                     module_func_name = module_func_name[len('evision_cv_'):]
                 else:
                     module_func_name = name.lower()
+            else:
+                module_func_name = name.lower()
+                if not is_ns and func.classname and not func.is_static and not is_constructor:
+                    if len(func_args) > 0:
+                        func_args = f'self, {func_args}'
+                    else:
+                        func_args = 'self'
             if unique_signatures.get(sign, None) is True:
                 writer.write('\n'.join(["  # {}".format(line.strip()) for line in opt_doc.split("\n")]))
                 writer.write(f'#  def {module_func_name}({func_args}) do\n  #   :erl_cv_nif.{func_name}({func_args})\n  # end\n')
@@ -1307,6 +1326,8 @@ class PythonWrapperGenerator(object):
                 module_func_args = func_args
                 positional = 'positional = [{}\n    ]'.format(",".join(['\n      {}: {}'.format(self.map_erl_argname(arg_name), self.map_erl_argname(arg_name)) for (arg_name, _, argtype) in arglist[:pos_end]]))
                 func_args = f'positional{opt_args}'
+                if not is_ns and func.classname and not func.is_static and not is_constructor:
+                    func_args = f'self, {func_args}'
                 writer.write(f'{inline_doc}  def {module_func_name}({module_func_args}){when_guard}do\n    {positional}\n    :erl_cv_nif.{func_name}({func_args})\n  end\n')
 
     def gen_namespace(self):
