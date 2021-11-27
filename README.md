@@ -52,6 +52,10 @@ end
 {:ok, colour_blur_mat} = OpenCV.blur(colour_mat, [10,10], anchor: [1,1])
 {:ok, true} = OpenCV.imwrite("/path/to/img-gray-and-blur.png", gray_blur_mat, [])
 {:ok, true} = OpenCV.imwrite("/path/to/img-colour-and-blur.png", colour_blur_mat, [])
+
+{:ok, cap} = OpenCV.VideoCapture.videocapture(0, [])
+{:ok, {true, cap_mat}} = OpenCV.VideoCapture.read(cap, [])
+{:ok, true} = OpenCV.imwrite("/path/to/capture-mat.png", cap_mat, [])
 ```
 
 ### Todo
