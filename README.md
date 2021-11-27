@@ -60,6 +60,7 @@ end
 - [x] Automatically generate `erl_cv_nif.ex`.
 - [x] Automatically generate `opencv_*.ex` files using Python.
 - [x] Automatically convert enum constants in C++ to `@` constants in Elixir
+- [ ] Add tests.
 
 ### How does this work?
 
