@@ -156,22 +156,26 @@ static void pyRaiseCVException(const cv::Exception &e)
 //    PyErr_SetString(opencv_error, e.what());
 }
 
-#define ERRWRAP2(expr) \
-try \
-{ \
-    expr; \
-} \
-catch (const cv::Exception &e) \
-{ \
-    return evision::nif::error(env, e.what()); \
-} \
-catch (const std::exception &e) \
-{ \
-    return evision::nif::error(env, e.what()); \
-} \
-catch (...) \
-{ \
-    return evision::nif::error(env,  "Unknown C++ exception from OpenCV code"); \
+#define ERRWRAP2(expr, error_flag, error_term)       \
+try                                                  \
+{                                                    \
+    expr;                                            \
+}                                                    \
+catch (const cv::Exception &e)                       \
+{                                                    \
+    error_flag = true;                               \
+    error_term = evision::nif::error(env, e.what()); \
+}                                                    \
+catch (const std::exception &e)                      \
+{                                                    \
+    error_flag = true;                               \
+    error_term = evision::nif::error(env, e.what()); \
+}                                                    \
+catch (...)                                          \
+{                                                    \
+    error_flag = true;                               \
+    error_term = evision::nif::error(env,            \
+          "Unknown C++ exception from OpenCV code"); \
 }
 
 using namespace cv;
@@ -228,29 +232,6 @@ void pyRaiseCVOverloadException(const std::string& functionName)
                                 functionName, "", -1);
         pyRaiseCVException(exception);
     }
-}
-
-void pyPopulateArgumentConversionErrors()
-{
-    // todo
-//    if (PyErr_Occurred())
-//    {
-//        PySafeObject exception_type;
-//        PySafeObject exception_value;
-//        PySafeObject exception_traceback;
-//        PyErr_Fetch(exception_type, exception_value, exception_traceback);
-//        PyErr_NormalizeException(exception_type, exception_value,
-//                                 exception_traceback);
-//
-//        PySafeObject exception_message(PyObject_Str(exception_value));
-//        std::string message;
-//        getUnicodeString(exception_message, message);
-//#ifdef CV_CXX11
-//        conversionErrorsTLS.getRef().push_back(std::move(message));
-//#else
-//        conversionErrorsTLS.getRef().push_back(message);
-//#endif
-//    }
 }
 
 struct SafeSeqItem
@@ -814,7 +795,7 @@ template<>
 bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, String &value, const ArgInfo& info)
 {
     if (evision::nif::check_nil(env, obj)) {
-        return true;
+        return false;
     }
 
     std::string str;
