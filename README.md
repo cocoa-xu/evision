@@ -101,6 +101,63 @@ end
    original OpenCV repo's `{module_name}/mics/erlang`. Now we just manually save them in `c_src/evision_custom_headers`.
    Note that step 5 and 6 are done manually, calling `py_src/gen2.py` will not have effect on `c_src/evision_custom_headers.h`
    and `*.hpp` files in `c_src/evision_custom_headers`.
+7. Another catch is that, while function overload is easy in C++ and optional argument is simple in Python, they are not
+   quite friendly to Erlang/Elixir. There is no function overload in Erlang/Elixir. Although Erlang/Elixir support
+   optional argument (default argument), it also affects the function arity and that can be very tricky to deal with. For
+   example,
+
+   ```elixir
+   defmodule OpenCV.VideoCapture do
+     def open(self, camera_index, opts \\ []), do: :nil
+     def open(self, filename), do: :nil
+     # ... other functions ...
+   end
+   ```
+
+   In this case, `def open(self, camera_index, opts \\ []), do: :nil` will define `open/3` and `open/2` at the same time.
+   This will cause conflict with `def open(self, filename), do: :nil` which define `open/2`.
+
+   So we cannot use default argument. Now say we have
+
+   ```elixir
+   defmodule OpenCV.VideoCapture do
+     def open(self, camera_index, opts), do: :nil
+     def open(self, filename, opt), do: :nil
+   end
+   ```
+
+   Function overload in C++ is relatively simple as compiler does that for us. In this project, we have to do that ourselves.
+   For the example above, we can use `guards`.
+
+   ```elixir
+   defmodule OpenCV.VideoCapture do
+     def open(self, camera_index, opts) when is_integer(camera_index) do
+       # do something
+     end
+     def open(self, filename, opt) when is_binary(filename) do
+       # do something
+     end
+   end
+   ```
+
+   But there are some cases we cannot distinguish the argument type in Erlang/Elixir becauase they are resources 
+   (instance of a certain C++ class).
+
+   ```elixir
+   defmodule OpenCV.SomeModule do
+     # @param mat: Mat
+     def func_name(mat) do
+       # do something
+     end
+   
+     # @param mat: UMat
+     def func_name(mat) do
+       # do something
+     end
+   end
+   ```
+   
+   In such cases, we only keep one definition. The overload will be done in `c_src/opencv.cpp` (by `evision_to`).
 
 ### How do I make it compatible with more OpenCV modules?
 
