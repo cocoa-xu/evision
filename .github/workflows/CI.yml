@@ -34,6 +34,9 @@ jobs:
         with:
           otp-version: ${{matrix.pair.otp}}
           elixir-version: ${{matrix.pair.elixir}}
+      
+      - name: Install Numpy (compile-time dependency)
+        run: pip install -U numpy
 
       - name: Install Dependencies
         run: mix deps.get
