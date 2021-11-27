@@ -61,6 +61,49 @@ end
 - [x] Automatically generate `opencv_*.ex` files using Python.
 - [x] Automatically convert enum constants in C++ to `@` constants in Elixir
 
+### How does this work?
+
+1. This project will first pull OpenCV source code from git (as git submodules).
+2. Inside the OpenCV project, there is an `opencv-python` module, `3rd_party/opencv/modules/python`. If the
+   `opencv-python` module is enabled,
+
+   ```bash
+   cmake ...
+       -D PYTHON3_LIBRARY=$(PYTHON3_LIBRARY) \
+       -D PYTHON3_INCLUDE_DIR=$(PYTHON3_INCLUDE_DIR) \
+       -D PYTHON3_EXECUTABLE=$(PYTHON3_EXECUTABLE) \
+       ...
+   ```
+
+   It will generate files for opencv-python bindings in cmake build dir, `cmake_build_dir/modules/python_bindings_generator`. 
+
+   We are interested in the `headers.txt` file as it tells us which headers should we parse (this header list changes
+   depending on enabled modules).
+
+   We also need to check another file, `pyopencv_custom_headers.h`. This file includes pyopencv compatible headers from 
+   modules that need special handlings to enable interactions with Python. We will talk about this later.
+3. Originally, the `headers.txt` will be passed to `3rd_party/opencv/modules/python/src2/gen2.py` and that Python script
+   will then generate `pyopencv_*.h` in `cmake_build_dir/modules/python_bindings_generator`. Here we copy that Python
+   script and modify it so that it outputs `c_src/evision_*.h` files which use `c_src/erlcompat.hpp` and `c_src/nif_utils.hpp`
+   to make everything compatible with Erlang.
+4. `c_src/opencv.cpp` includes almost all specialised and generic `evision_to` and `evision_from` functions. They are
+   used for making conversions between Erlang and C++. Some conversion functions are defined in module custom headers.
+5. This is where we need to make some changes to `pyopencv_custom_headers.h`. We first copy it to `c_src/evision_custom_headers.h`
+   and copy every file it includes to `c_src/evision_custom_headers`. Then we make corresponding changes to `c_src/evision_custom_headers/*.hpp`
+   files so that these types can be converted from and to Erlang terms. The header include path in `c_src/evision_custom_headers.h`
+   should be changed correspondingly.
+6. However, it is hard to do step 5 automatically. We can try to create a PR which puts these changed files to the
+   original OpenCV repo's `{module_name}/mics/erlang`. Now we just manually save them in `c_src/evision_custom_headers`.
+   Note that step 5 and 6 are done manually, calling `py_src/gen2.py` will not have effect on `c_src/evision_custom_headers.h`
+   and `*.hpp` files in `c_src/evision_custom_headers`.
+
+### How do I make it compatible with more OpenCV modules?
+
+Because of the reason in step 6, when you enable more modules, if that module has specialised custom header for python
+bindings, the custom headers will be added to `cmake_build_dir/modules/python_bindings_generator/pyopencv_custom_headers.h`.
+Then you can manually copy corresponding specialised custom headers to `c_src/evision_custom_headers` and modify these
+conversion functions in them.
+
 ### Acknowledgements
 - `gen2.py`, `hdr_parser.py` and `c_src/erlcompat.hpp` were directly copied from the `python` module in the [OpenCV repo](https://github.com/opencv/opencv). Changes applied.
 - `Makefile`, `CMakeLists.txt` and `c_src/nif_utils.hpp` were also copied from the `torchx` module in the [elixir-nx repo](https://github.com/elixir-nx/nx). Minor changes applied.
