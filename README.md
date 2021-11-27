@@ -46,9 +46,12 @@ end
 
 ### Current Status
 ```elixir
-{:ok, gray_mat} = OpenCV.imread("/path/to/img.png", flags: 0)
-{:ok, blur_mat} = OpenCV.blur(gray_mat, [10,10], anchor: [1,1])
-{:ok, true} = OpenCV.imwrite("/path/to/img-gray-and-blur.png", blur_mat)
+{:ok, gray_mat} = OpenCV.imread("/path/to/img.png", flags: OpenCV.cv_imread_grayscale)
+{:ok, gray_blur_mat} = OpenCV.blur(gray_mat, [10,10], anchor: [1,1])
+{:ok, colour_mat} = OpenCV.imread("/path/to/img.png", flags: OpenCV.cv_imread_color)
+{:ok, colour_blur_mat} = OpenCV.blur(colour_mat, [10,10], anchor: [1,1])
+{:ok, true} = OpenCV.imwrite("/path/to/img-gray-and-blur.png", gray_blur_mat, [])
+{:ok, true} = OpenCV.imwrite("/path/to/img-colour-and-blur.png", colour_blur_mat, [])
 ```
 
 ### Todo
@@ -56,8 +59,7 @@ end
 - [x] Update `.py` files in `py_src` so that they output header files for Erlang bindings.
 - [x] Automatically generate `erl_cv_nif.ex`.
 - [x] Automatically generate `opencv_*.ex` files using Python.
-- [ ] Automatically convert `#define` constants in C++ to `@` constants in Elixir
-- [ ] Convert enum between Elixir and C++
+- [x] Automatically convert enum constants in C++ to `@` constants in Elixir
 
 ### Acknowledgements
 - `gen2.py`, `hdr_parser.py` and `c_src/erlcompat.hpp` were directly copied from the `python` module in the [OpenCV repo](https://github.com/opencv/opencv). Changes applied.

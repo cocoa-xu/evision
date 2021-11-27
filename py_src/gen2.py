@@ -6,6 +6,7 @@ from string import Template
 from pprint import pprint
 from collections import namedtuple
 import numpy as np
+import ast
 
 if sys.version_info[0] >= 3:
     from io import StringIO
@@ -927,6 +928,82 @@ class Namespace(object):
         self.consts = {}
 
 
+class ErlEnumExpressionGenerator(ast.NodeVisitor):
+    def __init__(self):
+        self.expression = ''
+        self.skip_this = False
+
+    def generic_visit(self, node):
+        if type(node) is ast.Expression:
+            self.visit(node.body)
+        elif type(node) is ast.Constant:
+            self.expression = f'{node.value}'
+        elif type(node) is ast.UnaryOp:
+            op = ErlEnumExpressionGenerator()
+            op.visit(node.op)
+            operand = ErlEnumExpressionGenerator()
+            operand.visit(node.operand)
+            self.expression = op.expression.format(operand.expression)
+        elif type(node) is ast.USub:
+            self.expression = '-{}'
+        elif type(node) is ast.BinOp:
+            op = ErlEnumExpressionGenerator()
+            op.visit(node.op)
+            lhs = ErlEnumExpressionGenerator()
+            lhs.visit(node.left)
+            rhs = ErlEnumExpressionGenerator()
+            rhs.visit(node.right)
+            self.expression = op.expression.format(lhs.expression, rhs.expression)
+        elif type(node) is ast.LShift:
+            self.expression = 'bsl({}, {})'
+        elif type(node) is ast.RShift:
+            self.expression = 'bsr({}, {})'
+        elif type(node) is ast.Name:
+            if node.id[:3] == 'cv_':
+                if node.id == 'cv_8u':
+                    self.expression = '0'
+                elif node.id == 'cv_8s':
+                    self.expression = '1'
+                elif node.id == 'cv_16u':
+                    self.expression = '2'
+                elif node.id == 'cv_16s':
+                    self.expression = '3'
+                elif node.id == 'cv_32s':
+                    self.expression = '4'
+                elif node.id == 'cv_32f':
+                    self.expression = '5'
+                elif node.id == 'cv_64f':
+                    self.expression = '6'
+                elif node.id == 'cv_16f':
+                    self.expression = '7'
+                elif node.id == 'cv_mat_cont_flag':
+                    self.skip_this = True
+                elif node.id == 'cv_submat_flag':
+                    self.skip_this = True
+                else:
+                    print(type(node), node.id, "not handled yet")
+                    import sys
+                    sys.exit(1)
+            else:
+                self.expression = f'cv_{node.id}()'
+        elif type(node) is ast.Mult:
+            self.expression = '({} * {})'
+        elif type(node) is ast.Add:
+            self.expression = '({} + {})'
+        elif type(node) is ast.Sub:
+            self.expression = '({} - {})'
+        elif type(node) is ast.BitAnd:
+            self.expression = 'band({}, {})'
+        elif type(node) is ast.Invert:
+            self.expression = 'bnot({})'
+        elif type(node) is ast.BitOr:
+            self.expression = 'bor({}, {})'
+        else:
+            print(type(node), "not implemented yet")
+            import sys
+            sys.exit(1)
+
+
 class PythonWrapperGenerator(object):
     def __init__(self):
         self.clear()
@@ -937,12 +1014,15 @@ class PythonWrapperGenerator(object):
         self.namespaces = {}
         self.consts = {}
         self.enums = {}
+        self.enum_names = {}
+        self.enum_names_io = StringIO()
         self.code_include = StringIO()
         self.code_enums = StringIO()
         self.code_types = StringIO()
         self.code_funcs = StringIO()
         self.code_ns_reg = StringIO()
         self.erl_cv_nif = StringIO()
+        self.opencv_ex = StringIO()
         self.opencv_func = StringIO()
         self.opencv_func.doc_written = {}
         self.opencv_modules = {}
@@ -986,6 +1066,28 @@ class PythonWrapperGenerator(object):
 
 
     def add_const(self, name, decl):
+        (module_name, erl_const_name) = name.split('.')[-2:]
+        val = str(decl[1]).lower()
+        val_tree = ast.parse(val, mode='eval')
+        val_gen = ErlEnumExpressionGenerator()
+        val_gen.visit(val_tree)
+        if not val_gen.skip_this:
+            val = val_gen.expression
+            erl_const_name = self.map_erl_argname(erl_const_name)
+            if self.enum_names.get(val, None) is not None:
+                val = f'cv_{val}()'
+            if self.enum_names.get(erl_const_name, None) is None:
+                self.enum_names[erl_const_name] = val
+                self.enum_names_io.write(f"  def cv_{erl_const_name}, do: {val}\n")
+            else:
+                if self.enum_names[erl_const_name] != val:
+                    erl_const_name = self.map_erl_argname(f'{module_name}_{erl_const_name}')
+                    if self.enum_names.get(erl_const_name, None) is None:
+                        self.enum_names[erl_const_name] = val
+                        self.enum_names_io.write(f"  def cv_{erl_const_name}, do: {val}\n")
+                    else:
+                        raise "duplicated constant name"
+
         cname = name.replace('.','::')
         namespace, classes, name = self.split_decl_name(name)
         namespace = '.'.join(namespace)
@@ -1260,7 +1362,8 @@ class PythonWrapperGenerator(object):
         self.clear()
         self.parser = hdr_parser.CppHeaderParser(generate_umat_decls=True, generate_gpumat_decls=True)
         self.erl_cv_nif.write('defmodule :erl_cv_nif do\n{}\n'.format(gen_erl_cv_nif_load_nif))
-        self.opencv_func.write('defmodule OpenCV do\n')
+        self.opencv_ex.write('defmodule OpenCV do\n')
+        self.opencv_ex.write('  use Bitwise\n')
         self.code_ns_reg.write('static ErlNifFunc nif_functions[] = {\n')
 
         # step 1: scan the headers and build more descriptive maps of classes, consts, functions
@@ -1386,8 +1489,10 @@ class PythonWrapperGenerator(object):
         for name, constinfo in constlist:
             self.gen_const_reg(constinfo)
 
-        # end 'opencv_func.ex'
-        self.opencv_func.write('\nend\n')
+        # end 'opencv.ex'
+        self.opencv_ex.write(self.enum_names_io.getvalue())
+        self.opencv_ex.write(self.opencv_func.getvalue())
+        self.opencv_ex.write('\nend\n')
         # end 'erl_cv_nif.ex'
         self.erl_cv_nif.write('\nend\n')
 
@@ -1400,7 +1505,7 @@ class PythonWrapperGenerator(object):
         self.save(output_path, "evision_generated_modules.h", self.code_ns_init)
         self.save(output_path, "evision_generated_modules_content.h", self.code_ns_reg)
         self.save(erl_output_path, "erl_cv_nif.ex", self.erl_cv_nif)
-        self.save(erl_output_path, "opencv_func.ex", self.opencv_func)
+        self.save(erl_output_path, "opencv.ex", self.opencv_ex)
         for name in self.opencv_modules:
             writer = self.opencv_modules[name]
             writer.write('\nend\n')
