@@ -46,7 +46,6 @@ $(EVISION_SO):
 	 	cmake --build . --config Release "$(CMAKE_BUILD_FLAGS)" && \
 	 	cmake --install . --config Release
 	@ cp "$(CMAKE_OPENCV_BUILD_DIR)/modules/python_bindings_generator/headers.txt" "$(C_SRC)/headers.txt" && \
-	 	cp "$(CMAKE_OPENCV_BUILD_DIR)/modules/python_bindings_generator/pyopencv_custom_headers.h" "$(C_SRC)/evision_custom_headers.h" && \
 	 	cp "$(OPENCV_DIR)/modules/core/include/opencv2/core/utils/configuration.private.hpp" "$(C_SRC)/configuration.private.hpp"
 	@ cd "$(CMAKE_EVISION_BUILD_DIR)" && \
 		cmake -DC_SRC="$(C_SRC)" -DLIB_SRC="$(LIB_SRC)" \
