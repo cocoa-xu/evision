@@ -46,16 +46,16 @@ end
 
 ### Current Status
 ```elixir
-gray_mat = :erl_cv_nif.evision_cv_imread("/path/to/img.png", flags: 0)
-blur_mat = :erl_cv_nif.evision_cv_blur(gray_mat, [10,10], anchor: [1,1])
-:erl_cv_nif.evision_cv_imwrite("/path/to/img-gray-and-blur.png", blur_mat)
+{:ok, gray_mat} = OpenCV.imread("/path/to/img.png", flags: 0)
+{:ok, blur_mat} = OpenCV.blur(gray_mat, [10,10], anchor: [1,1])
+{:ok, true} = OpenCV.imwrite("/path/to/img-gray-and-blur.png", blur_mat)
 ```
 
 ### Todo
 
 - [x] Update `.py` files in `py_src` so that they output header files for Erlang bindings.
 - [x] Automatically generate `erl_cv_nif.ex`.
-- [ ] Automatically generate `opencv_*.ex` files using Python.
+- [x] Automatically generate `opencv_*.ex` files using Python.
 - [ ] Automatically convert `#define` constants in C++ to `@` constants in Elixir
 - [ ] Convert enum between Elixir and C++
 

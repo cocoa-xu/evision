@@ -42,7 +42,10 @@ gen_template_check_self = Template("""
     }
     ${pname} _self_ = ${cvt}(self1);
 """)
-gen_template_call_constructor_prelude = Template("""evision_res<Ptr<$cname>> * self = new evision_res<Ptr<$cname>>(); new (&(self->val)) Ptr<$cname>(); // init Ptr with placement new
+gen_template_call_constructor_prelude = Template("""evision_res<Ptr<$cname>> * self = nullptr;
+        if (alloc_resource(&self)) {
+            new (&(self->val)) Ptr<$cname>(); // init Ptr with placement new
+        }
         if(self) """)
 
 gen_template_call_constructor = Template("""self->val.reset(new ${cname}${py_args})""")
@@ -303,6 +306,7 @@ class ClassInfo(object):
         self.base = None
         self.constructor = None
         customname = False
+        self.lowercase_start = re.compile('^[a-z]')
 
         if decl:
             bases = decl[1].split()[1:]
@@ -356,38 +360,20 @@ class ClassInfo(object):
 
         sorted_methods = list(self.methods.items())
         sorted_methods.sort()
+
+        module_file_writter = None
+        if codegen.opencv_modules.get(self.name, None) is None:
+            codegen.opencv_modules[self.name] = StringIO()
+            module_file_writter = codegen.opencv_modules[self.name]
+            module_file_writter.doc_written = {}
+            # module_file_writter.write(f'defmodule OpenCV.{self.name} do\n')
+            module_name = self.name.replace("_", "")
+            if self.lowercase_start.match(module_name):
+                module_name = f'{module_name[0].upper()}{module_name[1:]}'
+            module_file_writter.write(f'defmodule OpenCV.{module_name} do\n')
         for mname, m in sorted_methods:
             codegen.code_ns_reg.write(m.get_tab_entry())
-            arglists = [m.variants[i].py_arglist for i in range(len(m.variants))]
-            arglens = [len(arglist) for arglist in arglists]
-            least_arg = np.argmin(arglens)
-            min_args = arglens[least_arg]
-            min_func = m.variants[least_arg]
-            most_arg = np.argmax(arglens)
-            max_func = m.variants[most_arg]
-
-            opt_args = ''
-            opt_doc = ''
-            if min_func.py_noptargs > 0:
-                opt_args = '_opts \\\\ []'
-                opt_doc = '\n'.join(['       @optional {}'.format(arg_name) for (arg_name,_) in min_func.py_arglist[-min_func.py_noptargs:]])
-            inline_doc = '\n  @doc """\n    {}\n\n{}\n  """\n'
-
-            if len(max_func.docstring) > 0 or len(opt_doc) > 0:
-                inline_doc = inline_doc.format("\n".join('   {}'.format(line) for line in max_func.docstring.split("\n")), opt_doc)
-            else:
-                inline_doc = ''
-
-            min_args = min_args - min_func.py_noptargs
-            if min_args == 0:
-                codegen.erl_cv_nif.write('{}  def {}({}), do: :erlang.nif_error("{} not loaded")\n'.format(inline_doc, m.get_wrapper_name().lower(), opt_args, mname))
-            else:
-                if len(opt_args) > 0:
-                    opt_args = ', {}'.format(opt_args)
-                    codegen.erl_cv_nif.write('{}  def {}({}{}), do: :erlang.nif_error("{} not loaded")\n'.format(inline_doc, m.get_wrapper_name().lower(), ", ".join(['_{}'.format(arg_name) for (arg_name,_) in min_func.py_arglist[:-min_func.py_noptargs]]), opt_args, mname))
-                else:
-                    codegen.erl_cv_nif.write('{}  def {}({}), do: :erlang.nif_error("{} not loaded")\n'.format(inline_doc, m.get_wrapper_name().lower(), ", ".join(['_{}'.format(arg_name) for (arg_name,_) in min_func.py_arglist]), mname))
-
+            codegen.gen_erl_declaration(self.cname, mname, m, module_file_writter)
 
     def gen_code(self, codegen):
         all_classes = codegen.classes
@@ -566,12 +552,12 @@ class FuncVariant(object):
             if a.returnarg:
                 outlist.append((a.name, argno))
             if (not a.inputarg) and a.isbig():
-                outarr_list.append((a.name, argno))
+                outarr_list.append((a.name, argno, a.tp))
                 continue
             if not a.inputarg:
                 continue
             if not a.defval:
-                arglist.append((a.name, argno))
+                arglist.append((a.name, argno, a.tp))
             else:
                 firstoptarg = min(firstoptarg, len(arglist))
                 # if there are some array output parameters before the first default parameter, they
@@ -579,7 +565,7 @@ class FuncVariant(object):
                 if outarr_list:
                     arglist += outarr_list
                     outarr_list = []
-                arglist.append((a.name, argno))
+                arglist.append((a.name, argno, a.tp))
 
         if outarr_list:
             firstoptarg = min(firstoptarg, len(arglist))
@@ -587,7 +573,7 @@ class FuncVariant(object):
         firstoptarg = min(firstoptarg, len(arglist))
 
         noptargs = len(arglist) - firstoptarg
-        argnamelist = [aname for aname, argno in arglist]
+        argnamelist = [aname for aname, argno, argtype in arglist]
         argstr = ", ".join(argnamelist[:firstoptarg])
         argstr = "[, ".join([argstr] + argnamelist[firstoptarg:])
         argstr += "]" * noptargs
@@ -611,7 +597,7 @@ class FuncVariant(object):
         self.py_prototype = "%s(%s) -> %s" % (self.wname, argstr, outstr)
         self.py_noptargs = noptargs
         self.py_arglist = arglist
-        for aname, argno in arglist:
+        for aname, argno, argtype in arglist:
             self.args[argno].py_inputarg = True
         for aname, argno in outlist:
             if argno >= 0:
@@ -696,25 +682,7 @@ class FuncInfo(object):
                 )
             )
 
-        # Escape backslashes, newlines, and double quotes
-        full_docstring = full_docstring.strip().replace("\\", "\\\\").replace('\n', '\\n').replace("\"", "\\\"")
-        # Convert unicode chars to xml representation, but keep as string instead of bytes
-        full_docstring = full_docstring.encode('ascii', errors='xmlcharrefreplace').decode()
-        arglists = [self.variants[i].py_arglist for i in range(len(self.variants))]
-        arglens = [len(arglist) for arglist in arglists]
-        least_arg = np.argmin(arglens)
-        min_args = arglens[least_arg]
-        min_args -= self.variants[least_arg].py_noptargs
-
-        nif_function_decl = '    F' + Template('($wrap_funcname, $min_args),\n') \
-            .substitute(py_funcname = self.variants[0].wname, wrap_funcname=self.get_wrapper_name(),
-                        flags = 'METH_STATIC' if self.is_static else '0', min_args=min_args) \
-            .lower()
-        if self.variants[least_arg].py_noptargs > 0:
-            nif_function_decl += '    F' + Template('($wrap_funcname, $min_args),\n') \
-                .substitute(py_funcname = self.variants[0].wname, wrap_funcname=self.get_wrapper_name(),
-                            flags = 'METH_STATIC' if self.is_static else '0', min_args=min_args+1) \
-                .lower()
+        nif_function_decl = f'    F({self.get_wrapper_name().lower()}, 1),\n'
         return nif_function_decl
 
     def gen_code(self, codegen):
@@ -731,12 +699,13 @@ class FuncInfo(object):
         if self.classname:
             selfinfo = all_classes[self.classname]
             if not self.is_static:
-                code += gen_template_check_self.substitute(
-                    name=selfinfo.name,
-                    cname=selfinfo.cname if selfinfo.issimple else "Ptr<{}>".format(selfinfo.cname),
-                    pname=(selfinfo.cname + '*') if selfinfo.issimple else "Ptr<{}>".format(selfinfo.cname),
-                    cvt='' if selfinfo.issimple else '*'
-                )
+                if not self.isconstructor:
+                    code += gen_template_check_self.substitute(
+                        name=selfinfo.name,
+                        cname=selfinfo.cname if selfinfo.issimple else "Ptr<{}>".format(selfinfo.cname),
+                        pname=(selfinfo.cname + '*') if selfinfo.issimple else "Ptr<{}>".format(selfinfo.cname),
+                        cvt='' if selfinfo.issimple else '*'
+                    )
             fullname = selfinfo.wname + "." + fullname
 
         all_code_variants = []
@@ -867,7 +836,7 @@ class FuncInfo(object):
                 # form the format spec for PyArg_ParseTupleAndKeywords
                 fmtspec = "".join([
                     get_type_format_string(all_cargs[argno][0])
-                    for aname, argno in v.py_arglist
+                    for aname, argno, argtype in v.py_arglist
                 ])
                 if v.py_noptargs > 0:
                     fmtspec = fmtspec[:-v.py_noptargs] + "|" + fmtspec[-v.py_noptargs:]
@@ -878,9 +847,9 @@ class FuncInfo(object):
                 #   - calls PyArg_ParseTupleAndKeywords
                 #   - converts complex arguments from PyObject's to native OpenCV types
                 code_parse = gen_template_parse_args.substitute(
-                    kw_list = ", ".join(['"' + aname + '"' for aname, argno in v.py_arglist]),
+                    kw_list = ", ".join(['"' + aname + '"' for aname, argno, argtype in v.py_arglist]),
                     fmtspec = fmtspec,
-                    parse_arglist = ", ".join(["&" + all_cargs[argno][1] for aname, argno in v.py_arglist]),
+                    parse_arglist = ", ".join(["&" + all_cargs[argno][1] for aname, argno, argtype in v.py_arglist]),
                     code_cvt = " &&\n        ".join(code_cvt_list))
             else:
                 code_parse = "if(argc == 0)"
@@ -890,18 +859,18 @@ class FuncInfo(object):
                 code_ret = "evision::nif::atom(env, \"nil\")"
             elif len(v.py_outlist) == 1:
                 if self.isconstructor:
-                    code_ret = "return 0"
+                    code_ret = "ERL_NIF_TERM ret = enif_make_resource(env, self);\n        enif_release_resource(self);\n        return evision::nif::ok(env, ret);"
                 else:
                     aname, argno = v.py_outlist[0]
-                    code_ret = "return evision_from(env, %s)" % (aname,)
+                    code_ret = "return evision::nif::ok(env, evision_from(env, %s))" % (aname,)
             else:
                 # there is more than 1 return parameter; form the tuple out of them
                 n_tuple = len(v.py_outlist)
                 if n_tuple >= 10:
-                    code_ret = "ERL_NIF_TERM arr[] = {%s};\n    enif_make_tuple_from_array(env, arr, %d)" % \
+                    code_ret = "ERL_NIF_TERM arr[] = {%s};\n    return evision::nif::ok(env, enif_make_tuple_from_array(env, arr, %d))" % \
                         (",\n        ".join(["evision_from(env, " + aname + ")" for aname, argno in v.py_outlist]), n_tuple)
                 else:
-                    code_ret = "return enif_make_tuple%d(env, %s)" % \
+                    code_ret = "return evision::nif::ok(env, enif_make_tuple%d(env, %s))" % \
                         (n_tuple, ", ".join(["evision_from(env, " + aname + ")" for aname, argno in v.py_outlist]))
 
             all_code_variants.append(gen_template_func_body.substitute(code_decl=code_decl,
@@ -913,7 +882,6 @@ class FuncInfo(object):
         else:
             # try to execute each signature, add an interlude between function
             # calls to collect error from all conversions
-            code += '    pyPrepareArgumentConversionErrorsStorage({});\n'.format(len(all_code_variants))
             code += '    \n'.join(gen_template_overloaded_function_call.substitute(variant=v)
                                   for v in all_code_variants)
             code += '    pyRaiseCVOverloadException("{}");\n'.format(self.name)
@@ -962,6 +930,7 @@ class Namespace(object):
 class PythonWrapperGenerator(object):
     def __init__(self):
         self.clear()
+        self.argname_prefix_re = re.compile(r'^[_]*')
 
     def clear(self):
         self.classes = {}
@@ -974,10 +943,14 @@ class PythonWrapperGenerator(object):
         self.code_funcs = StringIO()
         self.code_ns_reg = StringIO()
         self.erl_cv_nif = StringIO()
+        self.opencv_func = StringIO()
+        self.opencv_func.doc_written = {}
+        self.opencv_modules = {}
         self.code_ns_init = StringIO()
         self.code_type_publish = StringIO()
         self.py_signatures = dict()
         self.class_idx = 0
+        self.erl_cv_nif_names = dict()
 
     def add_class(self, stype, name, decl):
         classinfo = ClassInfo(name, decl)
@@ -1111,44 +1084,137 @@ class PythonWrapperGenerator(object):
         if classname and isconstructor:
             self.classes[classname].constructor = func
 
+    def map_argtype_to_type(self, argtype):
+        if argtype == 'int' or argtype == 'size_t':
+            return 'int'
+        elif argtype == 'bool':
+            return 'bool'
+        elif argtype == 'double':
+            return 'numerical'
+        elif argtype == 'float':
+            return 'float'
+        elif argtype == 'String' or argtype == 'c_string'  or argtype == 'char':
+            return 'binary'
+        elif argtype == 'Size' or argtype == 'Scalar' or argtype == 'Point2f' or argtype == 'Point':
+            return 'list'
+        elif argtype[:7] == 'vector_':
+            return 'list'
+        else:
+            return ''
+
+    def map_argtype_to_guard(self, argname, argtype):
+        argname = self.map_erl_argname(argname)
+        if argtype == 'int' or argtype == 'size_t':
+            return f'is_integer({argname})'
+        elif argtype == 'bool':
+            return f'is_boolean({argname})'
+        elif argtype == 'double':
+            return f'is_number({argname})'
+        elif argtype == 'float':
+            return f'is_float({argname})'
+        elif argtype == 'String' or argtype == 'c_string':
+            return f'is_binary({argname})'
+        elif argtype == 'char':
+            return f'is_binary({argname})'
+        elif argtype == 'Size' or argtype == 'Scalar':
+            return f'is_list({argname})'
+        elif argtype == 'Point2f' or argtype == 'Point':
+            return f'is_list({argname})'
+        elif argtype[:7] == 'vector_':
+            return f'is_list({argname})'
+        else:
+            return ''
+
+    def map_erl_argname(self, argname):
+        reserved_keywords = ['end', 'fn']
+        if argname in reserved_keywords:
+            return f'erl_{argname}'.lower()
+        return self.argname_prefix_re.sub('', argname).lower()
+
+    def gen_erl_declaration(self, wname, name, func, writer=None, is_ns=False):
+        # functions in namespaces goes to 'erl_cv_nif.ex' and 'opencv_{module}.ex'
+        # 'erl_cv_nif.ex' contains the declarations of all NIFs
+        # 'opencv_{module}.ex' contains human friendly funcs
+
+        func_name = func.get_wrapper_name().lower()
+        if self.erl_cv_nif_names.get(func_name) != True:
+            self.erl_cv_nif_names[func_name] = True
+            self.erl_cv_nif.write(f'  def {func_name}(_opts \\\\ []), do: :erlang.nif_error("{wname}::{name} not loaded")\n')
+
+        if writer is None:
+            return
+
+        erl_signatures = []
+        func_guards = []
+        for i in range(len(func.variants)):
+            pos_end = -func.variants[i].py_noptargs
+            if pos_end == 0:
+                pos_end = len(func.variants[i].py_arglist)
+            func_guards.append(list(filter(lambda x: x != '', [self.map_argtype_to_guard(argname, argtype) for argname, _, argtype in func.variants[i].py_arglist[:pos_end]])))
+            erl_signatures.append(''.join(filter(lambda x: x != '', [self.map_argtype_to_type(argtype) for _, _, argtype in func.variants[i].py_arglist[:pos_end]])))
+
+        func_guards_len_desc = np.argsort([len(g) for g in func_guards])[::-1]
+        unique_signatures = {}
+        for i in func_guards_len_desc:
+            i = int(i)
+            sign = erl_signatures[i]
+            func_guard = func_guards[i]
+            current_func = func.variants[i]
+            arglist = current_func.py_arglist
+            noptargs = current_func.py_noptargs
+            min_args = len(arglist) - noptargs
+            has_opts = noptargs > 0
+            pos_end = len(arglist) if not has_opts else -noptargs
+            opt_args = ''
+            opt_doc = ''
+            prototype = f'    Python prototype: {current_func.py_prototype}'
+            if has_opts:
+                opt_args = 'opts' if min_args == 0 else ', opts'
+                opt_doc = '\n'.join(['    @optional {}: {}'.format(arg_name, argtype) for (arg_name, _, argtype) in arglist[-noptargs:]])
+                opt_doc += '\n'
+            func_args = '{}{}'.format(", ".join(['{}'.format(self.map_erl_argname(arg_name)) for (arg_name, _, argtype) in arglist[:pos_end]]), opt_args)
+            module_func_name = func_name
+            if is_ns:
+                if module_func_name != f'evision_cv_{name.lower()}':
+                    module_func_name = module_func_name[len('evision_cv_'):]
+                else:
+                    module_func_name = name.lower()
+            if unique_signatures.get(sign, None) is True:
+                writer.write('\n'.join(["  # {}".format(line.strip()) for line in opt_doc.split("\n")]))
+                writer.write(f'#  def {module_func_name}({func_args}) do\n  #   :erl_cv_nif.{func_name}({func_args})\n  # end\n')
+            else:
+                unique_signatures[sign] = True
+
+                doc_string = "\n".join('    {}'.format(line.strip()) for line in current_func.docstring.split("\n")).strip()
+                if len(doc_string) > 0:
+                    doc_string = f'\n    {doc_string}\n'
+                else:
+                    doc_string = '\n'
+                inline_doc = f'\n  @doc """{doc_string}{opt_doc}{prototype}\n  """\n'
+                if writer.doc_written.get(module_func_name, None) is None:
+                    writer.doc_written[module_func_name] = True
+                else:
+                    inline_doc = ''.join(['  # {}\n'.format(line.strip()) for line in inline_doc.split("\n")])
+
+                when_guard = ' '
+                if len(func_guard) > 0:
+                    when_guard = ' when '
+                    when_guard += ' and '.join(func_guard) + '\n  '
+
+                opt_args = '' if not has_opts else ' ++ opts'
+                module_func_args = func_args
+                positional = 'positional = [{}\n    ]'.format(",".join(['\n      {}: {}'.format(self.map_erl_argname(arg_name), self.map_erl_argname(arg_name)) for (arg_name, _, argtype) in arglist[:pos_end]]))
+                func_args = f'positional{opt_args}'
+                writer.write(f'{inline_doc}  def {module_func_name}({module_func_args}){when_guard}do\n    {positional}\n    :erl_cv_nif.{func_name}({func_args})\n  end\n')
 
     def gen_namespace(self):
         for ns_name in self.namespaces:
             ns = self.namespaces[ns_name]
-            # wname = normalize_class_name(ns_name)
+            wname = normalize_class_name(ns_name)
             for name, func in sorted(ns.funcs.items()):
+                self.gen_erl_declaration(wname, name, func, self.opencv_func, True)
                 self.code_ns_reg.write(func.get_tab_entry())
-                arglists = [func.variants[i].py_arglist for i in range(len(func.variants))]
-                arglens = [len(arglist) for arglist in arglists]
-                least_arg = np.argmin(arglens)
-                min_args = arglens[least_arg]
-                min_func = func.variants[least_arg]
-                most_arg = np.argmax(arglens)
-                max_func = func.variants[most_arg]
-
-                opt_args = ''
-                opt_doc = ''
-                if min_func.py_noptargs > 0:
-                    opt_args = '_opts \\\\ []'
-                    opt_doc = '\n'.join(['       @optional {}'.format(arg_name) for (arg_name,_) in min_func.py_arglist[-min_func.py_noptargs:]])
-                inline_doc = '\n  @doc """\n    {}\n\n{}\n  """\n'
-
-                if len(max_func.docstring) > 0 or len(opt_doc) > 0:
-                    inline_doc = inline_doc.format("\n".join('    {}'.format(line) for line in max_func.docstring.split("\n")), opt_doc)
-                else:
-                    inline_doc = ''
-
-                min_args = min_args - min_func.py_noptargs
-                if min_args == 0:
-                    self.erl_cv_nif.write('{}  def {}({}), do: :erlang.nif_error("{} not loaded")\n'.format(inline_doc, func.get_wrapper_name().lower(), opt_args, name))
-                else:
-                    if len(opt_args) > 0:
-                        opt_args = ', {}'.format(opt_args)
-                        self.erl_cv_nif.write('{}  def {}({}{}), do: :erlang.nif_error("{} not loaded")\n'.format(inline_doc, func.get_wrapper_name().lower(), ", ".join(['_{}'.format(arg_name) for (arg_name,_) in min_func.py_arglist[:-min_func.py_noptargs]]), opt_args, name))
-                    else:
-                        self.erl_cv_nif.write('{}  def {}({}), do: :erlang.nif_error("{} not loaded")\n'.format(inline_doc, func.get_wrapper_name().lower(), ", ".join(['_{}'.format(arg_name) for (arg_name,_) in min_func.py_arglist]), name))
         self.code_ns_reg.write('\n};\n\n')
-        self.erl_cv_nif.write('\nend\n')
 
         self.code_ns_reg.write('static ConstDef consts_cv[] = {\n')
         for ns_name in self.namespaces:
@@ -1190,10 +1256,11 @@ class PythonWrapperGenerator(object):
         with open(path + "/" + name, "wt") as f:
             json.dump(value, f)
 
-    def gen(self, srcfiles, output_path):
+    def gen(self, srcfiles, output_path, erl_output_path):
         self.clear()
         self.parser = hdr_parser.CppHeaderParser(generate_umat_decls=True, generate_gpumat_decls=True)
         self.erl_cv_nif.write('defmodule :erl_cv_nif do\n{}\n'.format(gen_erl_cv_nif_load_nif))
+        self.opencv_func.write('defmodule OpenCV do\n')
         self.code_ns_reg.write('static ErlNifFunc nif_functions[] = {\n')
 
         # step 1: scan the headers and build more descriptive maps of classes, consts, functions
@@ -1319,6 +1386,11 @@ class PythonWrapperGenerator(object):
         for name, constinfo in constlist:
             self.gen_const_reg(constinfo)
 
+        # end 'opencv_func.ex'
+        self.opencv_func.write('\nend\n')
+        # end 'erl_cv_nif.ex'
+        self.erl_cv_nif.write('\nend\n')
+
         # That's it. Now save all the files
         self.save(output_path, "evision_generated_include.h", self.code_include)
         self.save(output_path, "evision_generated_funcs.h", self.code_funcs)
@@ -1327,16 +1399,23 @@ class PythonWrapperGenerator(object):
         self.save(output_path, "evision_generated_types_content.h", self.code_types)
         self.save(output_path, "evision_generated_modules.h", self.code_ns_init)
         self.save(output_path, "evision_generated_modules_content.h", self.code_ns_reg)
-        self.save(output_path, "erl_cv_nif.ex", self.erl_cv_nif)
-        self.save_json(output_path, "evision_signatures.json", self.py_signatures)
+        self.save(erl_output_path, "erl_cv_nif.ex", self.erl_cv_nif)
+        self.save(erl_output_path, "opencv_func.ex", self.opencv_func)
+        for name in self.opencv_modules:
+            writer = self.opencv_modules[name]
+            writer.write('\nend\n')
+            self.save(erl_output_path, f"opencv_{name.lower()}.ex", writer)
 
 if __name__ == "__main__":
     srcfiles = hdr_parser.opencv_hdr_list
-    dstdir = "./_build"
+    dstdir = "./c_src"
+    erl_dstdir = "./lib"
     if len(sys.argv) > 1:
         dstdir = sys.argv[1]
     if len(sys.argv) > 2:
-        with open(sys.argv[2], 'r') as f:
+        erl_dstdir = sys.argv[2]
+    if len(sys.argv) > 3:
+        with open(sys.argv[3], 'r') as f:
             srcfiles = [l.strip() for l in f.readlines()]
     generator = PythonWrapperGenerator()
-    generator.gen(srcfiles, dstdir)
+    generator.gen(srcfiles, dstdir, erl_dstdir)

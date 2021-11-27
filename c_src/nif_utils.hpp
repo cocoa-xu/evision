@@ -290,82 +290,58 @@ namespace evision
     inline int parse_arg(ErlNifEnv *env, int argc, const ERL_NIF_TERM * argv, char** keyword_list, const char * spec, ...) {
         va_list args;
         va_start(args, spec);
-        int arg_index = 0;
-        int spec_index = 0;
-        int parsing_opt_args = false;
-        ERL_NIF_TERM opts;
+        size_t arg_index = 0;
+        size_t spec_index = 0;
         std::map<std::string, ERL_NIF_TERM> copts;
-        while (spec[spec_index] != ':') {
-            char t = spec[spec_index];
-            if (!parsing_opt_args) {
-                if (t == '|') {
-                    parsing_opt_args = true;
-                    spec_index++;
-                    if (arg_index >= argc) {
-                        continue;
-                    }
+        if (argc != 1 || keyword_list == nullptr) {
+            return false;
+        }
 
-                    opts = argv[arg_index];
-                    if (enif_is_list(env, opts)) {
-                        unsigned length = 0;
-                        enif_get_list_length(env, opts, &length);
-                        unsigned list_index = 0;
+        ERL_NIF_TERM opts = argv[0];
+        if (enif_is_list(env, opts)) {
+            unsigned length = 0;
+            enif_get_list_length(env, opts, &length);
+            unsigned list_index = 0;
 
-                        ERL_NIF_TERM term, rest;
-                        while (list_index != length) {
-                            enif_get_list_cell(env, opts, &term, &rest);
+            ERL_NIF_TERM term, rest;
+            while (list_index != length) {
+                enif_get_list_cell(env, opts, &term, &rest);
 
-                            if (enif_is_tuple(env, term)) {
-                                int arity;
-                                const ERL_NIF_TERM * arr = nullptr;
-                                if (enif_get_tuple(env, term, &arity, &arr)) {
-                                    if (arity == 2) {
-                                        std::string ckey;
-                                        if (get_atom(env, arr[0], ckey)) {
-                                           copts[ckey] = arr[1];
-                                        }
-                                    }
-                                }
+                if (enif_is_tuple(env, term)) {
+                    int arity;
+                    const ERL_NIF_TERM * arr = nullptr;
+                    if (enif_get_tuple(env, term, &arity, &arr)) {
+                        if (arity == 2) {
+                            std::string ckey;
+                            if (get_atom(env, arr[0], ckey)) {
+                                copts[ckey] = arr[1];
                             }
-
-                            list_index++;
-                            opts = rest;
                         }
                     }
-                    continue;
                 }
+                list_index++;
+                opts = rest;
+            }
+        }
 
-                if (allowed_spec(t)) {
+        size_t spec_len = strlen(spec);
+        while (spec[spec_index] != ':' && spec_index < spec_len) {
+            char t = spec[spec_index];
+            if (allowed_spec(t)) {
+                const char *k = keyword_list[arg_index];
+                if (k != nullptr) {
                     ERL_NIF_TERM * i = (ERL_NIF_TERM *)va_arg(args, long);
-                    *i = argv[arg_index];
+                    std::string kw = k;
+                    auto iter = copts.find(kw);
+                    if (iter != copts.end()) {
+                        *i = iter->second;
+                    } else {
+                        *i = atom(env, "nil");
+                    }
                     arg_index++;
                 }
-                spec_index++;
-            } else {
-                if (t == ':') {
-                    break;
-                } else {
-                    if (keyword_list && allowed_spec(t)) {
-                        const char *k = keyword_list[arg_index];
-                        if (k != nullptr) {
-                            ERL_NIF_TERM * i = (ERL_NIF_TERM *)va_arg(args, long);
-                            std::string kw = k;
-                            auto iter = copts.find(kw);
-                            if (iter != copts.end()) {
-                                *i = iter->second;
-                            } else {
-                                *i = atom(env, "nil");
-                            }
-                            spec_index++;
-                            arg_index++;
-                        } else {
-                            break;
-                        }
-                    } else {
-                        spec_index++;
-                    }
-                }
             }
+            spec_index++;
         }
 
         va_end(args);
