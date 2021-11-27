@@ -35,8 +35,11 @@ jobs:
           otp-version: ${{matrix.pair.otp}}
           elixir-version: ${{matrix.pair.elixir}}
       
+      - name: Install system dependecies
+        run: apt-get install -y libopenblas64-openmp-dev libgmp-dev libatlas-base-dev
+      
       - name: Install Numpy (compile-time dependency)
-        run: pip install -U numpy
+        run: pip install -U numpy pyyaml setuptools future six requests dataclasses typing_extensions
 
       - name: Install Dependencies
         run: mix deps.get
