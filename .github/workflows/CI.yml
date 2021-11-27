@@ -38,9 +38,9 @@ jobs:
           elixir-version: ${{matrix.pair.elixir}}
       
       - name: Install system dependecies
-        run: sudo apt-get install -y libopenblas64-openmp-dev libgmp-dev libatlas-base-dev build-essential \
-             autoconf pkg-config bc m4 unzip zip curl libssl-dev libncurses5-dev \
-             erlang-os-mon erlang-runtime-tools erlang-ssl erlang-dev
+        run: sudo apt-get update && sudo apt-get install -y libopenblas64-openmp-dev libgmp-dev libatlas-base-dev build-essential \
+             automake autoconf pkg-config bc m4 unzip zip curl libssl-dev libncurses5-dev \
+             erlang-inets erlang-os-mon erlang-runtime-tools erlang-ssl erlang-dev
       
       - name: Install Numpy (compile-time dependency)
         run: pip install -U numpy pyyaml setuptools future six requests dataclasses typing_extensions
