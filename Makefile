@@ -6,6 +6,7 @@ CMAKE_OPENCV_BUILD_DIR = $(MIX_APP_PATH)/cmake_opencv
 CMAKE_BUILD_FLAGS ?= "-j1"
 C_SRC = $(shell pwd)/c_src
 PY_SRC = $(shell pwd)/py_src
+LIB_SRC = $(shell pwd)/lib
 OPENCV_VER ?= 4.5.4
 OPENCV_DIR = $(shell pwd)/3rd_party/opencv
 OPENCV_CONTRIB_DIR = $(shell pwd)/3rd_party/opencv_contrib
@@ -48,7 +49,8 @@ $(EVISION_SO):
 	 	cp "$(CMAKE_OPENCV_BUILD_DIR)/modules/python_bindings_generator/pyopencv_custom_headers.h" "$(C_SRC)/evision_custom_headers.h" && \
 	 	cp "$(OPENCV_DIR)/modules/core/include/opencv2/utils/configuration.private.hpp" "$(C_SRC)/configuration.private.hpp"
 	@ cd "$(CMAKE_EVISION_BUILD_DIR)" && \
-		cmake -DC_SRC="$(C_SRC)" -DPY_SRC="$(PY_SRC)" -DPRIV_DIR="$(PRIV_DIR)" \
+		cmake -DC_SRC="$(C_SRC)" -DLIB_SRC="$(LIB_SRC)" \
+		-DPY_SRC="$(PY_SRC)" -DPRIV_DIR="$(PRIV_DIR)" \
       	-DERTS_INCLUDE_DIR="$(ERTS_INCLUDE_DIR)" -S "$(shell pwd)" && \
 		cmake --build . "$(CMAKE_BUILD_FLAGS)"
 	@ mv "$(CMAKE_EVISION_BUILD_DIR)/evision.so" "$(EVISION_SO)"
