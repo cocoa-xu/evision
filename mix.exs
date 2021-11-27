@@ -8,7 +8,7 @@ defmodule Evision.MixProject do
       app: :evision,
       name: "Evision",
       version: @version,
-      elixir: "~> 1.12-dev",
+      elixir: "~> 1.11-dev",
       deps: deps(),
       docs: docs(),
       compilers: [:elixir_make] ++ Mix.compilers(),
