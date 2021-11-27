@@ -5,7 +5,7 @@ find_package(OpenCV REQUIRED PATHS "${PRIV_DIR}/" NO_DEFAULT_PATH)
 include_directories("${OpenCV_INCLUDE_DIRS}")
 file(GLOB evision_sources CONFIGURE_DEPENDS "${C_SRC}/*.cpp" "${C_SRC}/*.hpp" "${C_SRC}/*.h")
 
-execute_process(COMMAND bash -c "python3 ${PY_SRC}/gen2.py ${C_SRC} ${C_SRC}/headers.txt && mv ${C_SRC}/erl_cv_nif.ex ${C_SRC}/../lib/erl_cv_nif.ex")
+execute_process(COMMAND bash -c "python3 ${PY_SRC}/gen2.py ${C_SRC} ${LIB_SRC} ${C_SRC}/headers.txt")
 
 add_executable(evision.so ${evision_sources})
 target_link_libraries(evision.so "${OpenCV_LIBS}")
