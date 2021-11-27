@@ -20,4 +20,4 @@ erl_crash.dump
 /c_src/evision_custom_headers/*
 /lib/erl_cv_nif.ex
 /c_src/erl_cv_nif.ex
-
+/lib/opencv_*.ex
