@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+
+jobs:
+  mix_test:
+    runs-on: ubuntu-18.04
+    env:
+      MIX_ENV: test
+
+    name: Elixir ${{ matrix.pair.elixir }} / OTP ${{ matrix.pair.otp }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - pair:
+              elixir: 1.11.2
+              otp: 23.1.4
+          - pair:
+              elixir: 1.12.3
+              otp: 24.1.5
+            lint: lint
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: erlef/setup-beam@v1
+        with:
+          otp-version: ${{matrix.pair.otp}}
+          elixir-version: ${{matrix.pair.elixir}}
+
+      - name: Install Dependencies
+        run: mix deps.get
+
+      - run: mix deps.compile
+
+      - run: mix compile
