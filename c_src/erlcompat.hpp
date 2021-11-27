@@ -48,7 +48,7 @@
 
 //==================================================================================================
 
-#define CV_PY_TO_CLASS(TYPE)                                                                          \
+#define CV_ERL_TO_CLASS(TYPE)                                                                          \
 template<>                                                                                            \
 bool evision_to(ErlNifEnv *env, ERL_NIF_TERM dst, TYPE& src, const ArgInfo& info)                     \
 {                                                                                                     \
@@ -58,7 +58,7 @@ bool evision_to(ErlNifEnv *env, ERL_NIF_TERM dst, TYPE& src, const ArgInfo& info
     return true;                                                                                      \
 }
 
-#define CV_PY_FROM_CLASS(TYPE)                                                                        \
+#define CV_ERL_FROM_CLASS(TYPE)                                                                        \
 template<>                                                                                            \
 ERL_NIF_TERM evision_from(ErlNifEnv *env, const TYPE& src)                                            \
 {                                                                                                     \
@@ -68,7 +68,7 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const TYPE& src)                      
     return evision_from(env, ptr);                                                                    \
 }
 
-#define CV_PY_TO_CLASS_PTR(TYPE)                                                                      \
+#define CV_ERL_TO_CLASS_PTR(TYPE)                                                                      \
 template<>                                                                                            \
 bool evision_to(ErlNifEnv *env, ERL_NIF_TERM dst, TYPE*& src, const ArgInfo& info)                    \
 {                                                                                                     \
@@ -79,7 +79,7 @@ bool evision_to(ErlNifEnv *env, ERL_NIF_TERM dst, TYPE*& src, const ArgInfo& inf
     return true;                                                                                      \
 }
 
-#define CV_PY_FROM_CLASS_PTR(TYPE)                                                                    \
+#define CV_ERL_FROM_CLASS_PTR(TYPE)                                                                    \
 static ERL_NIF_TERM evision_from(ErlNifEnv *env, TYPE*& src)                                          \
 {                                                                                                     \
     return evision_from(env, Ptr<TYPE>(src));                                                         \
@@ -89,9 +89,9 @@ static ERL_NIF_TERM evision_from(ErlNifEnv *env, TYPE*& src)                    
 template<>                                                                                            \
 bool evision_to(ErlNifEnv *env, ERL_NIF_TERM dst, TYPE& src, const ArgInfo& info)                     \
 {                                                                                                     \
-    std::string str_enum;                                                                             \
-    if (!evision::nif::get(env, dst, str_enum)) {                                                     \
-        std::cout << "str_enum: " << str_enum << '\n';                                                \
+    int i32;                                                                                          \
+    if (!evision::nif::get(env, dst, &i32)) {                                                         \
+        src = static_cast<TYPE>(i32);                                                                 \
         return true;                                                                                  \
     } else {                                                                                          \
         return false;                                                                                 \
@@ -102,7 +102,7 @@ bool evision_to(ErlNifEnv *env, ERL_NIF_TERM dst, TYPE& src, const ArgInfo& info
 template<>                                                                                            \
 ERL_NIF_TERM evision_from(ErlNifEnv *env, const TYPE& src)                                            \
 {                                                                                                     \
-    return evision::nif::atom(env, "pure_pain_peko");                                                 \
+    return evision::nif::ok(env, evision::nif::make(env, (int)src));                                  \
 }
 
 //==================================================================================================
