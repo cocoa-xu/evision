@@ -66,7 +66,7 @@ end
 - [x] Update `.py` files in `py_src` so that they output header files for Erlang bindings.
 - [x] Automatically generate `erl_cv_nif.ex`.
 - [x] Automatically generate `opencv_*.ex` files using Python.
-- [x] Automatically convert enum constants in C++ to `@` constants in Elixir
+- [x] Automatically convert enum constants in C++ to "constants" in Elixir
 - [ ] Add tests.
 
 ### How does this work?
@@ -161,6 +161,28 @@ end
    ```
    
    In such cases, we only keep one definition. The overload will be done in `c_src/opencv.cpp` (by `evision_to`).
+8. Enum handling. Originally, `PythonWrapperGenerator.add_const` will be used to handle those enum constants. They will be saved to a map with the enum's string representation as key and, of course, enum's value as the value. In Python, when a user uses the enum, say `cv2.COLOR_RGB2BGR`, it will perform a dynamic lookup which ends up calling corresponding `evision_[to|from]`. `evision_[to|from]` will take the responsibility to convert between the enum's string representation and its value.
+   Although in Erlang/Elixir we do have the ability to both create atoms and do the similar look up dynamically, the problem is that, if an enum is used as one of the arguments in a C++ function, it may be written as `void func(int enum)` instead of `void func(ENUM_TYPE_NAME enum)`. However, to distinguish between overloaded function, some types (int, bool, string, char, vector) will be used in guards. For example, `void func(int enum)` will be translated to `def func(enum) when is_integer(enum), do: :nil`. Adding these guardians help us to make some differences amongst overloaded functions in step 7. However, that prevents us froming passing an atom to `def func(enum) when is_integer(enum), do: :nil`. Technically, we can add one more variant `def func(enum) when is_atom(enum), do: :nil` for this specific example, but there are tons of functions has one or more `int`s as their input arguments, which means the number of variants in Erlang will increase expoentially (for each `int` in a C++ function, it can be either a real `int` or an `enum`). 
+   Another way is just allow it to be either integer or atom:
+   
+   ```elixir
+   def func(enum) when is_integer(enum) or is_atom(enum) do
+     :nil
+   end
+   ```
+   
+   But in this way, atoms are created on-the-fly, users cannot get code completion feature for enums from their IDE. But, finally, we have a good news that, in Erlang/Elixir, when a function has zero arguments, you can write its name without explictly calling it, i.e., 
+   
+   ```elixir
+   defmodule M do
+     def enum_name(), do: 1
+   end
+   
+   1 = enum_name
+   1 = enum_name()
+   ```
+   
+   So, in this project, every enum is actually a function that has zero input arguments.
 
 ### How do I make it compatible with more OpenCV modules?
 
