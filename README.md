@@ -1,4 +1,7 @@
 # evision [WIP]
+
+[![CI](https://github.com/cocoa-xu/evision/actions/workflows/CI.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/CI.yml)
+
 `evision` will search OpenCV libraries installed on your system, then parse and automatically generate corresponding OpenCV-Elixir bindings.
 
 This project uses and modifies `gen2.py` and `hdr_parser.py` from the `python` module in the [OpenCV repo](https://github.com/opencv/opencv) so that they output header files that can be used in Elixir bindings. 
