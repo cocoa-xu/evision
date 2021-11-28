@@ -13,15 +13,18 @@ OPENCV_CONTRIB_DIR = $(shell pwd)/3rd_party/opencv_contrib
 PYTHON3_LIBRARY = $(shell python3 ${PY_SRC}/find_python3_lib.py)
 PYTHON3_INCLUDE_DIR = $(shell python3 -c 'import distutils.sysconfig as s; print(s.get_python_inc())')
 PYTHON3_EXECUTABLE = $(shell which python3)
-
+HEADERS_TXT = $(CMAKE_OPENCV_BUILD_DIR)/modules/python_bindings_generator/headers.txt
+CONFIGURATION_PRIVATE_HPP = $(C_SRC)/configuration.private.hpp
 .DEFAULT_GLOBAL := build
 
 build: $(EVISION_SO)
 
-$(EVISION_SO):
-	@ mkdir -p $(PRIV_DIR)
+$(CONFIGURATION_PRIVATE_HPP):
+	@ git submodule update --init --recursive
+	@ cp "$(OPENCV_DIR)/modules/core/include/opencv2/core/utils/configuration.private.hpp" "$(C_SRC)/configuration.private.hpp"
+
+$(HEADERS_TXT):
 	@ mkdir -p $(CMAKE_OPENCV_BUILD_DIR)
-	@ mkdir -p $(CMAKE_EVISION_BUILD_DIR)
 	@ git submodule update --init --recursive
 	@ cd $(OPENCV_DIR) && git checkout "tags/${OPENCV_VER}"
 	@ cd $(OPENCV_CONTRIB_DIR) && git checkout "tags/${OPENCV_VER}"
@@ -43,8 +46,11 @@ $(EVISION_SO):
 	 	-D BUILD_TESTS=OFF && \
 	 	cmake --build . --config Release "$(CMAKE_BUILD_FLAGS)" && \
 	 	cmake --install . --config Release
-	@ cp "$(CMAKE_OPENCV_BUILD_DIR)/modules/python_bindings_generator/headers.txt" "$(C_SRC)/headers.txt" && \
-		cp "$(OPENCV_DIR)/modules/core/include/opencv2/core/utils/configuration.private.hpp" "$(C_SRC)/configuration.private.hpp"
+
+$(EVISION_SO): $(CONFIGURATION_PRIVATE_HPP) $(HEADERS_TXT)
+	@ mkdir -p $(PRIV_DIR)
+	@ mkdir -p $(CMAKE_EVISION_BUILD_DIR)
+	@ cp "$(CMAKE_OPENCV_BUILD_DIR)/modules/python_bindings_generator/headers.txt" "$(C_SRC)/headers.txt"
 	@ cd "$(CMAKE_EVISION_BUILD_DIR)" && \
 		cmake -DC_SRC="$(C_SRC)" -DLIB_SRC="$(LIB_SRC)" \
 		-DPY_SRC="$(PY_SRC)" -DPRIV_DIR="$(PRIV_DIR)" \
