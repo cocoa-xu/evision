@@ -1,0 +1,35 @@
+name: macos-x86_64
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '**/README.md'
+  workflow_dispatch:
+
+jobs:
+  mix_test:
+    runs-on: macos-11
+    env:
+      MIX_ENV: test
+
+    steps:
+      - uses: actions/checkout@v2
+      
+      - name: Install Erlang and Elixir
+        run: |
+          brew install erlang
+          brew install elixir
+
+      - name: Get Elixir Dependencies
+        run: mix deps.get
+
+      - name: Compile Elixir Dependencies
+        run: mix deps.compile
+
+      - name: Compile Evision
+        run: |
+          NPROC="$(sysctl -a | grep 'hw.ncpu' | awk '{print $2}')"
+          CMAKE_BUILD_FLAGS="-j${NPROC}" mix compile
