@@ -1,4 +1,4 @@
-name: CI
+name: linux-x86_64
 
 on:
   pull_request:
@@ -7,7 +7,6 @@ on:
       - main
     paths-ignore:
       - '**/README.md'
-
   workflow_dispatch:
 
 jobs:
@@ -15,9 +14,6 @@ jobs:
     runs-on: ubuntu-20.04
     env:
       MIX_ENV: test
-      ASDF_VER: v0.8.1
-      ERLANG_VER: 24.1.5
-      ELIXIR_VER: 1.12.3-otp-24
 
     strategy:
       fail-fast: false
@@ -39,14 +35,13 @@ jobs:
           elixir-version: ${{matrix.pair.elixir}}
       
       - name: Install system dependecies
-        run: sudo apt-get update && sudo apt-get install -y libopenblas64-openmp-dev libgmp-dev libatlas-base-dev build-essential automake autoconf pkg-config bc m4 unzip zip curl git libssl-dev libncurses5-dev erlang-inets erlang-os-mon erlang-runtime-tools erlang-ssl erlang-dev python3 python3-pip python3-dev ca-certificates
-      
-      - name: Install Numpy (compile-time dependency)
-        run: pip install -U numpy pyyaml setuptools future six requests dataclasses typing_extensions
+        run: sudo apt-get update && sudo apt-get install -y libopenblas64-openmp-dev libgmp-dev libatlas-base-dev build-essential automake autoconf pkg-config bc m4 unzip zip curl git libssl-dev libncurses5-dev erlang-inets erlang-os-mon erlang-runtime-tools erlang-ssl erlang-dev python3 ca-certificates
 
-      - name: Install Dependencies
+      - name: Get Elixir Dependencies
         run: mix deps.get
 
-      - run: mix deps.compile
+      - name: Compile Elixir Dependencies
+        run: mix deps.compile
 
-      - run: mix compile
+      - name: Compile Evision
+        run: CMAKE_BUILD_FLAGS="-j$(nproc)" mix compile
