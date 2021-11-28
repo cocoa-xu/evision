@@ -29,11 +29,9 @@ $(EVISION_SO):
 	 	cmake -S $(OPENCV_DIR) \
 	 	-D CMAKE_BUILD_TYPE=RELEASE \
 	 	-D CMAKE_INSTALL_PREFIX=$(PRIV_DIR) \
-	 	-D PYTHON3_LIBRARY=$(PYTHON3_LIBRARY) \
-	 	-D PYTHON3_INCLUDE_DIR=$(PYTHON3_INCLUDE_DIR) \
 	 	-D PYTHON3_EXECUTABLE=$(PYTHON3_EXECUTABLE) \
 	 	-D BUILD_opencv_python2=OFF \
-	 	-D BUILD_opencv_python3=ON \
+	 	-D BUILD_opencv_python3=OFF \
 	 	-D BUILD_opencv_dnn=OFF \
 	 	-D BUILD_opencv_gapi=OFF \
 	 	-D INSTALL_PYTHON_EXAMPLES=OFF \
@@ -46,11 +44,10 @@ $(EVISION_SO):
 	 	cmake --build . --config Release "$(CMAKE_BUILD_FLAGS)" && \
 	 	cmake --install . --config Release
 	@ cp "$(CMAKE_OPENCV_BUILD_DIR)/modules/python_bindings_generator/headers.txt" "$(C_SRC)/headers.txt" && \
-	 	cp "$(CMAKE_OPENCV_BUILD_DIR)/modules/python_bindings_generator/pyopencv_custom_headers.h" "$(C_SRC)/evision_custom_headers.h" && \
-	 	cp "$(OPENCV_DIR)/modules/core/include/opencv2/utils/configuration.private.hpp" "$(C_SRC)/configuration.private.hpp"
+		cp "$(OPENCV_DIR)/modules/core/include/opencv2/core/utils/configuration.private.hpp" "$(C_SRC)/configuration.private.hpp"
 	@ cd "$(CMAKE_EVISION_BUILD_DIR)" && \
 		cmake -DC_SRC="$(C_SRC)" -DLIB_SRC="$(LIB_SRC)" \
 		-DPY_SRC="$(PY_SRC)" -DPRIV_DIR="$(PRIV_DIR)" \
-      	-DERTS_INCLUDE_DIR="$(ERTS_INCLUDE_DIR)" -S "$(shell pwd)" && \
+		-DERTS_INCLUDE_DIR="$(ERTS_INCLUDE_DIR)" -S "$(shell pwd)" && \
 		cmake --build . "$(CMAKE_BUILD_FLAGS)"
 	@ mv "$(CMAKE_EVISION_BUILD_DIR)/evision.so" "$(EVISION_SO)"

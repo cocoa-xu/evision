@@ -26,7 +26,6 @@ Current available modules:
 ## Dependencies
 
 - Python3 (Only during the compliation)
-- NumPy (Only during the compliation)
 - [CMake](https://cmake.org/)
 
 ## Installation
