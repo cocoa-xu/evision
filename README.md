@@ -1,6 +1,9 @@
 # evision [WIP]
 
-[![CI](https://github.com/cocoa-xu/evision/actions/workflows/CI.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/CI.yml)
+|: OS          |: arch  | Build Status |
+|--------------|--------|--------------|
+| Ubuntu 20.04 | arm64  | [![CI](https://github.com/cocoa-xu/evision/actions/workflows/linux-arm64.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/linux-arm64.yml) |
+| Ubuntu 20.04 | x86_64 | [![CI](https://github.com/cocoa-xu/evision/actions/workflows/linux-x86_64.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/linux-x86_64.yml) |
 
 `evision` will search OpenCV libraries installed on your system, then parse and automatically generate corresponding OpenCV-Elixir bindings.
 
