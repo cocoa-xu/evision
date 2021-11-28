@@ -1,0 +1,44 @@
+name: linux-x86_64
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '**/README.md'
+  workflow_dispatch:
+
+jobs:
+  mix_test:
+    runs-on: ubuntu-20.04
+    env:
+      MIX_ENV: test
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - pair:
+              elixir: 1.12.3
+              otp: 24.1.5
+
+    steps:
+      - uses: actions/checkout@v2
+      
+      - uses: erlef/setup-beam@v1
+        with:
+          otp-version: ${{matrix.pair.otp}}
+          elixir-version: ${{matrix.pair.elixir}}
+      
+      - name: Install system dependecies
+        run: sudo apt-get update && sudo apt-get install -y build-essential automake autoconf pkg-config bc m4 unzip zip curl git libssl-dev libncurses5-dev erlang-inets erlang-os-mon erlang-runtime-tools erlang-ssl erlang-dev python3 ca-certificates
+
+      - name: Get Elixir Dependencies
+        run: mix deps.get
+
+      - name: Compile Elixir Dependencies
+        run: mix deps.compile
+
+      - name: Compile Evision
+        run: CMAKE_BUILD_FLAGS="-j$(nproc)" mix compile

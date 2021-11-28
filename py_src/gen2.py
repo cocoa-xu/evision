@@ -5,7 +5,6 @@ import hdr_parser, sys, re, os
 from string import Template
 from pprint import pprint
 from collections import namedtuple
-import numpy as np
 import ast
 
 if sys.version_info[0] >= 3:
@@ -283,6 +282,12 @@ def get_type_format_string(arg_type_info):
         return FormatStrings.object
     else:
         return arg_type_info.format_str
+
+
+def argsort(seq):
+    # http://stackoverflow.com/questions/3382352/equivalent-of-numpy-argsort-in-basic-python/3383106#3383106
+    #lambda version by Tony Veijalainen
+    return [x for x,y in sorted(enumerate(seq), key = lambda x: x[1])]
 
 
 class ClassProp(object):
@@ -1267,7 +1272,7 @@ class PythonWrapperGenerator(object):
             func_guards.append(list(filter(lambda x: x != '', [self.map_argtype_to_guard(argname, argtype) for argname, _, argtype in func.variants[i].py_arglist[:pos_end]])))
             erl_signatures.append(''.join(filter(lambda x: x != '', [self.map_argtype_to_type(argtype) for _, _, argtype in func.variants[i].py_arglist[:pos_end]])))
 
-        func_guards_len_desc = np.argsort([len(g) for g in func_guards])[::-1]
+        func_guards_len_desc = reversed(argsort([len(g) for g in func_guards]))
         unique_signatures = {}
         for i in func_guards_len_desc:
             i = int(i)

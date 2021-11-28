@@ -1,6 +1,10 @@
 # evision [WIP]
 
-[![CI](https://github.com/cocoa-xu/evision/actions/workflows/CI.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/CI.yml)
+|: OS              |: arch  | Build Status |
+|------------------|--------|--------------|
+| Ubuntu 20.04     | arm64  | [![CI](https://github.com/cocoa-xu/evision/actions/workflows/linux-arm64.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/linux-arm64.yml) |
+| Ubuntu 20.04     | x86_64 | [![CI](https://github.com/cocoa-xu/evision/actions/workflows/linux-x86_64.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/linux-x86_64.yml) |
+| macOS 11 Big Sur | x86_64 | [![CI](https://github.com/cocoa-xu/evision/actions/workflows/macos-x86_64.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/macos-x86_64.yml) |
 
 `evision` will pull OpenCV source code from GitHub, then parse and automatically generate corresponding OpenCV-Elixir bindings.
 
@@ -26,7 +30,6 @@ Current available modules:
 ## Dependencies
 
 - Python3 (Only during the compliation)
-- NumPy (Only during the compliation)
 - [CMake](https://cmake.org/)
 
 ## Installation
