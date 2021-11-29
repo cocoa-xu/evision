@@ -1,4 +1,4 @@
-name: linux-arm64
+name: linux-ppc64le
 
 on:
   pull_request:

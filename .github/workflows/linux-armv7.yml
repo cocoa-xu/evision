@@ -1,4 +1,4 @@
-name: linux-arm64
+name: linux-armv7
 
 on:
   pull_request:

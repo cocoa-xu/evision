@@ -1,4 +1,4 @@
-name: linux-arm64
+name: linux-s390x
 
 on:
   pull_request:
