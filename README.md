@@ -29,7 +29,7 @@ Current available modules:
 
 ## Dependencies
 
-- Python3 (Only during the compliation)
+- Python3 (Only during the compliation, required to compile OpenCV)
 - [CMake](https://cmake.org/)
 
 ## Installation
@@ -70,8 +70,16 @@ end
 - [x] Automatically generate `erl_cv_nif.ex`.
 - [x] Automatically generate `opencv_*.ex` files using Python.
 - [x] Automatically convert enum constants in C++ to "constants" in Elixir
+- [x] When a C++ function's return value's type is `bool`, map `true` to `:ok` and `false` to `:error`.
 - [ ] Add tests.
-- [ ] When a C++ function's return value's type is `bool`, map `true` to `:ok` and `false` to `:error`.
+- [ ] Make optional parameters truly optional.
+
+   ```elixir
+   # not this
+   {:ok, cap} = OpenCV.VideoCapture.videocapture(0, [])
+   # but this
+   {:ok, cap} = OpenCV.VideoCapture.videocapture(0)
+   ```
 
 ### How does this work?
 
