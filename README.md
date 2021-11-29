@@ -92,6 +92,7 @@ end
    # this also changes the above example to
    :ok = OpenCV.imwrite("/path/to/save.png", mat)
    ```
+- [ ] Add `OpenCV.Mat` module.
 - [ ] Add tests.
 
 ### How does this work?
