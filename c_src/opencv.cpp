@@ -500,7 +500,7 @@ bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, void*& ptr, const ArgInfo& inf
     CV_UNUSED(info);
 
     ErlNifSInt64 i64;
-    if (!enif_get_int64(env, obj, &i64))
+    if (!enif_get_int64(env, obj, (ErlNifSInt64 *)&i64))
         return false;
     ptr = reinterpret_cast<void *>(i64);
     return ptr != nullptr;
@@ -664,7 +664,7 @@ struct Evision_Converter
         ErlNifSInt64 i64;
         if(enif_get_int(env, obj, &i32))
             value = i32;
-        else if(enif_get_int64(env, obj, &i64))
+        else if(enif_get_int64(env, obj, (ErlNifSInt64 *)&i64))
             value = (unsigned int)i64;
         else
             return false;
@@ -730,7 +730,7 @@ bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, double& value, const ArgInfo& 
     if (enif_get_double(env, obj, &f64))
     {
         value = f64;
-    } else if (enif_get_int64(env, obj, &i64)) {
+    } else if (enif_get_int64(env, obj, (ErlNifSInt64 *)&i64)) {
         value = i64;
     } else {
         failmsg(env, "Argument '%s' is required to be an integer", info.name);
@@ -753,9 +753,9 @@ bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, float& value, const ArgInfo& i
         return true;
     }
 
-    long i64;
+    ErlNifSInt64 i64;
     double f64;
-    if (enif_get_int64(env, obj, &i64))
+    if (enif_get_int64(env, obj, (ErlNifSInt64 *)&i64))
     {
         value = static_cast<float>(i64);
     }
