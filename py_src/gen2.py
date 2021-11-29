@@ -42,6 +42,7 @@ gen_template_check_self = Template("""
     }
     ${pname} _self_ = ${cvt}(self1);
 """)
+
 gen_template_call_constructor_prelude = Template("""evision_res<Ptr<$cname>> * self = nullptr;
         if (alloc_resource(&self)) {
             new (&(self->val)) Ptr<$cname>(); // init Ptr with placement new
