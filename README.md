@@ -200,8 +200,8 @@ end
      def enum_name(), do: 1
    end
    
-   1 = enum_name
-   1 = enum_name()
+   1 = M.enum_name
+   1 = M.enum_name()
    ```
    
    So, in this project, every enum is actually transformed to a function that has zero input arguments.
