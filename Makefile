@@ -9,7 +9,6 @@ PY_SRC = $(shell pwd)/py_src
 LIB_SRC = $(shell pwd)/lib
 OPENCV_VER ?= 4.5.4
 OPENCV_DIR = $(shell pwd)/3rd_party/opencv
-OPENCV_CONTRIB_DIR = $(shell pwd)/3rd_party/opencv_contrib
 PYTHON3_EXECUTABLE = $(shell which python3)
 HEADERS_TXT = $(CMAKE_OPENCV_BUILD_DIR)/modules/python_bindings_generator/headers.txt
 CONFIGURATION_PRIVATE_HPP = $(C_SRC)/configuration.private.hpp
@@ -25,7 +24,6 @@ $(HEADERS_TXT):
 	@ mkdir -p $(CMAKE_OPENCV_BUILD_DIR)
 	@ git submodule update --init --recursive
 	@ cd $(OPENCV_DIR) && git checkout "tags/${OPENCV_VER}"
-	@ cd $(OPENCV_CONTRIB_DIR) && git checkout "tags/${OPENCV_VER}"
 	@ cd $(CMAKE_OPENCV_BUILD_DIR) && \
 	 	cmake -S $(OPENCV_DIR) \
 	 	-D CMAKE_BUILD_TYPE=RELEASE \
