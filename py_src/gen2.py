@@ -878,7 +878,10 @@ class FuncInfo(object):
                     code_ret = "ERL_NIF_TERM ret = enif_make_resource(env, self);\n        enif_release_resource(self);\n        return evision::nif::ok(env, ret);"
                 else:
                     aname, argno = v.py_outlist[0]
-                    code_ret = "return evision::nif::ok(env, evision_from(env, %s))" % (aname,)
+                    if v.rettype == 'bool':
+                        code_ret = "if (%s) {\n                return evision::nif::atom(env, \"ok\");\n            } else {\n                return enif_make_tuple2(env, evision::nif::atom(env, \"error\"), error_term);\n            }" % (aname,)
+                    else:
+                        code_ret = "return evision::nif::ok(env, evision_from(env, %s))" % (aname,)
             else:
                 # there is more than 1 return parameter; form the tuple out of them
                 n_tuple = len(v.py_outlist)
