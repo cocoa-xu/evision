@@ -156,7 +156,7 @@ static void pyRaiseCVException(const cv::Exception &e)
 //    PyErr_SetString(opencv_error, e.what());
 }
 
-#define ERRWRAP2(expr, error_flag, error_term)       \
+#define ERRWRAP2(expr, env, error_flag, error_term)       \
 try                                                  \
 {                                                    \
     expr;                                            \

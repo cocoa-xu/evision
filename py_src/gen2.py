@@ -61,7 +61,7 @@ gen_template_func_body = Template("""$code_decl
     $code_parse
     {
         int error_flag = false;
-        ${code_prelude}ERRWRAP2($code_fcall, error_flag, error_term);
+        ${code_prelude}ERRWRAP2($code_fcall, env, error_flag, error_term);
         if (!error_flag) {
             $code_ret;
         }
@@ -879,7 +879,7 @@ class FuncInfo(object):
                 else:
                     aname, argno = v.py_outlist[0]
                     if v.rettype == 'bool':
-                        code_ret = "if (%s) {\n                return evision::nif::atom(env, \"ok\");\n            } else {\n                return enif_make_tuple2(env, evision::nif::atom(env, \"error\"), error_term);\n            }" % (aname,)
+                        code_ret = "if (%s) {\n                return evision::nif::atom(env, \"ok\");\n            } else {\n                return evision::nif::atom(env, \"error\");\n            }" % (aname,)
                     else:
                         code_ret = "return evision::nif::ok(env, evision_from(env, %s))" % (aname,)
             else:
@@ -888,13 +888,13 @@ class FuncInfo(object):
                 evision_from_calls = ["evision_from(env, " + aname + ")" for aname, argno in v.py_outlist]
                 if v.rettype == 'bool':
                     if n_tuple >= 10:
-                        code_ret = "ERL_NIF_TERM arr[] = {%s};\n    if (retval) {\n                return evision::nif::ok(env, enif_make_tuple_from_array(env, arr, %d));\n            } else {\n                return enif_make_tuple2(env, evision::nif::atom(env, \"error\"), error_term);\n            }" % \
+                        code_ret = "ERL_NIF_TERM arr[] = {%s};\n    if (retval) {\n                return evision::nif::ok(env, enif_make_tuple_from_array(env, arr, %d));\n            } else {\n                return evision::nif::atom(env, \"error\");\n            }" % \
                             (",\n        ".join(evision_from_calls[1:]), n_tuple-1)
                     elif (n_tuple-1) == 1:
-                        code_ret = "if (retval) {\n                return evision::nif::ok(env, %s);\n            } else {\n                return enif_make_tuple2(env, evision::nif::atom(env, \"error\"), error_term);\n            }" % \
+                        code_ret = "if (retval) {\n                return evision::nif::ok(env, %s);\n            } else {\n                return evision::nif::atom(env, \"error\");\n            }" % \
                             (", ".join(evision_from_calls[1:]),)
                     else:
-                        code_ret = "if (retval) {\n                return evision::nif::ok(env, enif_make_tuple%d(env, %s));\n            } else {\n                return enif_make_tuple2(env, evision::nif::atom(env, \"error\"), error_term);\n            }" % \
+                        code_ret = "if (retval) {\n                return evision::nif::ok(env, enif_make_tuple%d(env, %s));\n            } else {\n                return evision::nif::atom(env, \"error\");\n            }" % \
                             (n_tuple-1, ", ".join(evision_from_calls[1:]))
                 else:
                     if n_tuple >= 10:
