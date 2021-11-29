@@ -885,12 +885,24 @@ class FuncInfo(object):
             else:
                 # there is more than 1 return parameter; form the tuple out of them
                 n_tuple = len(v.py_outlist)
-                if n_tuple >= 10:
-                    code_ret = "ERL_NIF_TERM arr[] = {%s};\n    return evision::nif::ok(env, enif_make_tuple_from_array(env, arr, %d))" % \
-                        (",\n        ".join(["evision_from(env, " + aname + ")" for aname, argno in v.py_outlist]), n_tuple)
+                evision_from_calls = ["evision_from(env, " + aname + ")" for aname, argno in v.py_outlist]
+                if v.rettype == 'bool':
+                    if n_tuple >= 10:
+                        code_ret = "ERL_NIF_TERM arr[] = {%s};\n    if (retval) {\n                return evision::nif::ok(env, enif_make_tuple_from_array(env, arr, %d));\n            } else {\n                return enif_make_tuple2(env, evision::nif::atom(env, \"error\"), error_term);\n            }" % \
+                            (",\n        ".join(evision_from_calls[1:]), n_tuple-1)
+                    elif (n_tuple-1) == 1:
+                        code_ret = "if (retval) {\n                return evision::nif::ok(env, %s);\n            } else {\n                return enif_make_tuple2(env, evision::nif::atom(env, \"error\"), error_term);\n            }" % \
+                            (", ".join(evision_from_calls[1:]),)
+                    else:
+                        code_ret = "if (retval) {\n                return evision::nif::ok(env, enif_make_tuple%d(env, %s));\n            } else {\n                return enif_make_tuple2(env, evision::nif::atom(env, \"error\"), error_term);\n            }" % \
+                            (n_tuple-1, ", ".join(evision_from_calls[1:]))
                 else:
-                    code_ret = "return evision::nif::ok(env, enif_make_tuple%d(env, %s))" % \
-                        (n_tuple, ", ".join(["evision_from(env, " + aname + ")" for aname, argno in v.py_outlist]))
+                    if n_tuple >= 10:
+                        code_ret = "ERL_NIF_TERM arr[] = {%s};\n    return evision::nif::ok(env, enif_make_tuple_from_array(env, arr, %d))" % \
+                            (",\n        ".join(evision_from_calls), n_tuple)
+                    else:
+                        code_ret = "return evision::nif::ok(env, enif_make_tuple%d(env, %s))" % \
+                            (n_tuple, ", ".join(evision_from_calls))
 
             all_code_variants.append(gen_template_func_body.substitute(code_decl=code_decl,
                 code_parse=code_parse, code_prelude=code_prelude, code_fcall=code_fcall, code_ret=code_ret))
@@ -1294,7 +1306,10 @@ class PythonWrapperGenerator(object):
                 opt_args = 'opts' if min_args == 0 else ', opts'
                 opt_doc = '\n'.join(['    @optional {}: {}'.format(arg_name, argtype) for (arg_name, _, argtype) in arglist[-noptargs:]])
                 opt_doc += '\n'
-            func_args = '{}{}'.format(", ".join(['{}'.format(self.map_erl_argname(arg_name)) for (arg_name, _, argtype) in arglist[:pos_end]]), opt_args)
+            func_args = '{}'.format(", ".join(['{}'.format(self.map_erl_argname(arg_name)) for (arg_name, _, argtype) in arglist[:pos_end]]))
+            func_args_with_opts = ''
+            if has_opts:
+                func_args_with_opts = '{}{}'.format(", ".join(['{}'.format(self.map_erl_argname(arg_name)) for (arg_name, _, argtype) in arglist[:pos_end]]), opt_args)
             module_func_name = func_name
             if is_ns:
                 if module_func_name != f'evision_cv_{name.lower()}':
@@ -1303,14 +1318,20 @@ class PythonWrapperGenerator(object):
                     module_func_name = name.lower()
             else:
                 module_func_name = name.lower()
+                # if this function is an instance method of a C++ class
                 if not is_ns and func.classname and not func.is_static and not is_constructor:
                     if len(func_args) > 0:
                         func_args = f'self, {func_args}'
+                        if len(func_args_with_opts) > 0:
+                            func_args_with_opts = f'self, {func_args_with_opts}'
                     else:
                         func_args = 'self'
+                        func_args_with_opts = ''
             if unique_signatures.get(sign, None) is True:
                 writer.write('\n'.join(["  # {}".format(line.strip()) for line in opt_doc.split("\n")]))
                 writer.write(f'#  def {module_func_name}({func_args}) do\n  #   :erl_cv_nif.{func_name}({func_args})\n  # end\n')
+                if len(func_args_with_opts) > 0:
+                    writer.write(f'#  def {module_func_name}({func_args_with_opts}) do\n  #   :erl_cv_nif.{func_name}({func_args_with_opts})\n  # end\n')
             else:
                 unique_signatures[sign] = True
 
@@ -1332,11 +1353,18 @@ class PythonWrapperGenerator(object):
 
                 opt_args = '' if not has_opts else ' ++ opts'
                 module_func_args = func_args
+                module_func_args_with_opts = func_args_with_opts
                 positional = 'positional = [{}\n    ]'.format(",".join(['\n      {}: {}'.format(self.map_erl_argname(arg_name), self.map_erl_argname(arg_name)) for (arg_name, _, argtype) in arglist[:pos_end]]))
-                func_args = f'positional{opt_args}'
+                func_args = f'positional'
+                if len(func_args_with_opts) > 0:
+                    func_args_with_opts = f'positional{opt_args}'
                 if not is_ns and func.classname and not func.is_static and not is_constructor:
                     func_args = f'self, {func_args}'
-                writer.write(f'{inline_doc}  def {module_func_name}({module_func_args}){when_guard}do\n    {positional}\n    :erl_cv_nif.{func_name}({func_args})\n  end\n')
+                    if len(func_args_with_opts) > 0:
+                        func_args_with_opts = f'self, {func_args_with_opts}'
+                if len(func_args_with_opts) > 0:
+                    writer.write(f'{inline_doc}  def {module_func_name}({module_func_args_with_opts}){when_guard}do\n    {positional}\n    :erl_cv_nif.{func_name}({func_args_with_opts})\n  end\n')
+                writer.write(f'  def {module_func_name}({module_func_args}){when_guard}do\n    {positional}\n    :erl_cv_nif.{func_name}({func_args})\n  end\n')
 
     def gen_namespace(self):
         for ns_name in self.namespaces:

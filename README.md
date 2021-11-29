@@ -54,14 +54,14 @@ end
 ```elixir
 {:ok, gray_mat} = OpenCV.imread("/path/to/img.png", flags: OpenCV.cv_imread_grayscale)
 {:ok, gray_blur_mat} = OpenCV.blur(gray_mat, [10,10], anchor: [1,1])
-{:ok, colour_mat} = OpenCV.imread("/path/to/img.png", flags: OpenCV.cv_imread_color)
+{:ok, colour_mat} = OpenCV.imread("/path/to/img.png")
 {:ok, colour_blur_mat} = OpenCV.blur(colour_mat, [10,10], anchor: [1,1])
-{:ok, true} = OpenCV.imwrite("/path/to/img-gray-and-blur.png", gray_blur_mat, [])
-{:ok, true} = OpenCV.imwrite("/path/to/img-colour-and-blur.png", colour_blur_mat, [])
+:ok = OpenCV.imwrite("/path/to/img-gray-and-blur.png", gray_blur_mat, [])
+:ok = OpenCV.imwrite("/path/to/img-colour-and-blur.png", colour_blur_mat, [])
 
-{:ok, cap} = OpenCV.VideoCapture.videocapture(0, [])
-{:ok, {true, cap_mat}} = OpenCV.VideoCapture.read(cap, [])
-{:ok, true} = OpenCV.imwrite("/path/to/capture-mat.png", cap_mat, [])
+{:ok, cap} = OpenCV.VideoCapture.videocapture(0)
+{:ok, cap_mat} = OpenCV.VideoCapture.read(cap)
+:ok = OpenCV.imwrite("/path/to/capture-mat.png", cap_mat)
 ```
 
 ### Todo
@@ -71,8 +71,14 @@ end
 - [x] Automatically generate `opencv_*.ex` files using Python.
 - [x] Automatically convert enum constants in C++ to "constants" in Elixir
 - [x] When a C++ function's return value's type is `bool`, map `true` to `:ok` and `false` to `:error`.
-- [ ] Add tests.
-- [ ] Make optional parameters truly optional.
+
+   ```elixir
+   # not this
+   {:ok, true} = OpenCV.imwrite(mat, [])
+   # but this
+   :ok = OpenCV.imwrite(mat, [])
+   ```
+- [x] Make optional parameters truly optional.
 
    ```elixir
    # not this
@@ -80,6 +86,7 @@ end
    # but this
    {:ok, cap} = OpenCV.VideoCapture.videocapture(0)
    ```
+- [ ] Add tests.
 
 ### How does this work?
 
