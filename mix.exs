@@ -16,15 +16,12 @@ defmodule Evision.MixProject do
     ]
   end
 
-  # Run "mix help compile.app" to learn about applications.
   def application do
     [
       extra_applications: [:logger]
     ]
   end
 
-  # mostly copy and paste from https://github.com/elixir-nx/nx/blob/9f87aa188cc0b1c29146900a4fe1f9c9dbb64b78/torchx/mix.exs
-  defp elixirc_paths(:test), do: ["lib", "test/support"]
   defp elixirc_paths(_), do: ["lib"]
 
   defp deps do
