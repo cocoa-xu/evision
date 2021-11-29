@@ -56,12 +56,13 @@ end
 {:ok, gray_blur_mat} = OpenCV.blur(gray_mat, [10,10], anchor: [1,1])
 {:ok, colour_mat} = OpenCV.imread("/path/to/img.png")
 {:ok, colour_blur_mat} = OpenCV.blur(colour_mat, [10,10], anchor: [1,1])
-:ok = OpenCV.imwrite("/path/to/img-gray-and-blur.png", gray_blur_mat, [])
-:ok = OpenCV.imwrite("/path/to/img-colour-and-blur.png", colour_blur_mat, [])
+:ok = OpenCV.imwrite("/path/to/img-gray-and-blur.png", gray_blur_mat)
+:ok = OpenCV.imwrite("/path/to/img-colour-and-blur.png", colour_blur_mat)
 
 {:ok, cap} = OpenCV.VideoCapture.videocapture(0)
 {:ok, cap_mat} = OpenCV.VideoCapture.read(cap)
-:ok = OpenCV.imwrite("/path/to/capture-mat.png", cap_mat)
+:ok = OpenCV.imwrite("/path/exists/capture-mat.png", cap_mat)
+:error = OpenCV.imwrite("/path/not/exists/capture-mat.png", cap_mat)
 ```
 
 ### Todo
@@ -74,9 +75,9 @@ end
 
    ```elixir
    # not this
-   {:ok, true} = OpenCV.imwrite(mat, [])
+   {:ok, true} = OpenCV.imwrite("/path/to/save.png", mat, [])
    # but this
-   :ok = OpenCV.imwrite(mat, [])
+   :ok = OpenCV.imwrite("/path/to/save.png", mat, [])
    ```
 - [x] Make optional parameters truly optional.
 
@@ -85,6 +86,8 @@ end
    {:ok, cap} = OpenCV.VideoCapture.videocapture(0, [])
    # but this
    {:ok, cap} = OpenCV.VideoCapture.videocapture(0)
+   # this also changes the above example to
+   :ok = OpenCV.imwrite("/path/to/save.png", mat)
    ```
 - [ ] Add tests.
 
