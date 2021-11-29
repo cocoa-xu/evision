@@ -99,8 +99,6 @@ end
 
    ```bash
    cmake ...
-       -D PYTHON3_LIBRARY=$(PYTHON3_LIBRARY) \
-       -D PYTHON3_INCLUDE_DIR=$(PYTHON3_INCLUDE_DIR) \
        -D PYTHON3_EXECUTABLE=$(PYTHON3_EXECUTABLE) \
        ...
    ```
