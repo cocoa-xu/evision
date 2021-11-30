@@ -48,4 +48,4 @@ jobs:
           run: |
             export PATH="$(pwd)/Precompiled/bin:${PATH}"
             mix deps.get && mix deps.compile
-            CMAKE_BUILD_FLAGS="-j$(nproc)" mix compile
+            MAKE_BUILD_FLAGS="-j$(nproc)" mix compile

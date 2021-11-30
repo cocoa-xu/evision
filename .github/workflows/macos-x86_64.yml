@@ -34,4 +34,4 @@ jobs:
       - name: Compile Evision
         run: |
           NPROC="$(sysctl -a | grep 'hw.ncpu' | awk '{print $2}')"
-          CMAKE_BUILD_FLAGS="-j${NPROC}" mix compile
+          MAKE_BUILD_FLAGS="-j${NPROC}" mix compile

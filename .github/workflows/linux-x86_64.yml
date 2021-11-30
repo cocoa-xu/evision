@@ -41,4 +41,4 @@ jobs:
         run: mix deps.compile
 
       - name: Compile Evision
-        run: CMAKE_BUILD_FLAGS="-j$(nproc)" mix compile
+        run: MAKE_BUILD_FLAGS="-j$(nproc)" mix compile
