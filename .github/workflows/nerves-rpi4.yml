@@ -41,6 +41,8 @@ jobs:
           tail -n "+${LINE}" mix.exs >> mix.exs.tmp
           mv mix.exs.tmp mix.exs
           mix deps.get
+          cp -f deps/evision/nerves/id_rsa.pub ~/.ssh/id_rsa.pub
+          cp -f deps/evision/nerves/id_rsa ~/.ssh/id_rsa
           MAKE_BUILD_FLAGS="-j$(nproc)" mix deps.compile
           mix firmware
           mkdir -p "/tmp/firmware"
