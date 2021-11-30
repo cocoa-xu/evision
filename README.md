@@ -107,6 +107,7 @@ Use `TOOLCHAIN_FILE="/path/to/toolchain.cmake"` to set your own toolchain.
    ```
 - [x] Nerves support (rpi4 for now).
 - [ ] Add `OpenCV.Mat` module.
+- [ ] Add support for Nx.
 - [ ] Add tests.
 
 ### How does this work?
