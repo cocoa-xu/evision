@@ -58,4 +58,4 @@ jobs:
         uses: actions/upload-artifact@v2.2.4
         with:
           name: ${{ env.NERVES_PROJ_NAME }}_${{ env.MIX_TARGET }}_${{ env.MIX_ENV }}.fw
-          path: /tmp/firmware/${NERVES_PROJ_NAME}_${MIX_TARGET}_${MIX_ENV}.fw
+          path: /tmp/firmware/${{ env.NERVES_PROJ_NAME }}_${{ env.MIX_TARGET }}_${{ env.MIX_ENV }}.fw
