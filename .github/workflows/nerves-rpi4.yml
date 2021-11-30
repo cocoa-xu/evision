@@ -29,7 +29,7 @@ jobs:
           sudo apt-get update && sudo apt-get install -y build-essential automake autoconf pkg-config bc m4 unzip zip curl git libssl-dev libncurses5-dev erlang-inets erlang-os-mon erlang-runtime-tools erlang-ssl erlang-dev python3 ca-certificates squashfs-tools ssh-askpass
           mix local.hex --force
           mix local.rebar --force
-          mix archive.install hex nerves_bootstrap --force
+          mix archive.install hex nerves_bootstrap --force || true
 
       - name: Make a nerves project
         run: |
