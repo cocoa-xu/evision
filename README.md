@@ -9,6 +9,12 @@
 | Ubuntu 20.04     | x86_64  | [![CI](https://github.com/cocoa-xu/evision/actions/workflows/linux-x86_64.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/linux-x86_64.yml) |
 | macOS 11 Big Sur | x86_64  | [![CI](https://github.com/cocoa-xu/evision/actions/workflows/macos-x86_64.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/macos-x86_64.yml) |
 
+## Nerves Support
+
+|: MIX_TARGET | Build Status |
+|-------------|--------------|
+| rpi4        | [![CI](https://github.com/cocoa-xu/evision/actions/workflows/nerves-rpi4.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/nerves-rpi4.yml) |
+
 `evision` will pull OpenCV source code from GitHub, then parse and automatically generate corresponding OpenCV-Elixir bindings.
 
 This project uses and modifies `gen2.py` and `hdr_parser.py` from the `python` module in the [OpenCV repo](https://github.com/opencv/opencv) so that they output header files that can be used in Elixir bindings. 
@@ -53,6 +59,10 @@ def deps do
 end
 ```
 
+Note use `MAKE_BUILD_FLAGS="-j$(nproc)"` environment variable to set number of jobs for compiling.
+
+Use `TOOLCHAIN_FILE="/path/to/toolchain.cmake"` to set your own toolchain.
+
 ### Current Status
 ```elixir
 {:ok, gray_mat} = OpenCV.imread("/path/to/img.png", flags: OpenCV.cv_imread_grayscale)
@@ -92,6 +102,7 @@ end
    # this also changes the above example to
    :ok = OpenCV.imwrite("/path/to/save.png", mat)
    ```
+- [x] Nerves support (rpi4 for now).
 - [ ] Add `OpenCV.Mat` module.
 - [ ] Add tests.
 

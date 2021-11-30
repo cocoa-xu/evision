@@ -3,7 +3,7 @@ EVISION_SO = $(PRIV_DIR)/evision.so
 
 CMAKE_EVISION_BUILD_DIR = $(MIX_APP_PATH)/cmake_evision
 CMAKE_OPENCV_BUILD_DIR = $(MIX_APP_PATH)/cmake_opencv
-CMAKE_BUILD_FLAGS ?= "-j1"
+MAKE_BUILD_FLAGS ?= "-j1"
 C_SRC = $(shell pwd)/c_src
 PY_SRC = $(shell pwd)/py_src
 LIB_SRC = $(shell pwd)/lib
@@ -12,6 +12,9 @@ OPENCV_DIR = $(shell pwd)/3rd_party/opencv
 PYTHON3_EXECUTABLE = $(shell which python3)
 HEADERS_TXT = $(CMAKE_OPENCV_BUILD_DIR)/modules/python_bindings_generator/headers.txt
 CONFIGURATION_PRIVATE_HPP = $(C_SRC)/configuration.private.hpp
+# this .cmake enables nerves build if environment variable MIX_TARGET exists and not empty
+# no effect on normal build
+TOOLCHAIN_FILE ?= $(shell pwd)/nerves/toolchain.cmake
 .DEFAULT_GLOBAL := build
 
 build: $(EVISION_SO)
@@ -39,9 +42,17 @@ $(HEADERS_TXT):
 	 	-D OPENCV_GENERATE_PKGCONFIG=ON \
 	 	-D OPENCV_PC_FILE_NAME=opencv4.pc \
 	 	-D BUILD_EXAMPLES=OFF \
-	 	-D BUILD_TESTS=OFF && \
-	 	cmake --build . --config Release "$(CMAKE_BUILD_FLAGS)" && \
-	 	cmake --install . --config Release
+	 	-D BUILD_TESTS=OFF \
+		-D BUILD_PNG=ON \
+		-D BUILD_JPEG=ON \
+		-D BUILD_TIFF=ON \
+		-D BUILD_WEBP=ON \
+		-D BUILD_OPENJPEG=ON \
+		-D BUILD_JASPER=ON \
+		-D BUILD_OPENEXR=ON \
+		--toolchain="$(TOOLCHAIN_FILE)" && \
+	 	make "$(MAKE_BUILD_FLAGS)" && \
+	 	make install
 
 $(EVISION_SO): $(CONFIGURATION_PRIVATE_HPP) $(HEADERS_TXT)
 	@ mkdir -p $(PRIV_DIR)
@@ -50,6 +61,7 @@ $(EVISION_SO): $(CONFIGURATION_PRIVATE_HPP) $(HEADERS_TXT)
 	@ cd "$(CMAKE_EVISION_BUILD_DIR)" && \
 		cmake -DC_SRC="$(C_SRC)" -DLIB_SRC="$(LIB_SRC)" \
 		-DPY_SRC="$(PY_SRC)" -DPRIV_DIR="$(PRIV_DIR)" \
-		-DERTS_INCLUDE_DIR="$(ERTS_INCLUDE_DIR)" -S "$(shell pwd)" && \
-		cmake --build . "$(CMAKE_BUILD_FLAGS)"
+		-DERTS_INCLUDE_DIR="$(ERTS_INCLUDE_DIR)" -S "$(shell pwd)" \
+		--toolchain="$(TOOLCHAIN_FILE)" && \
+		make "$(MAKE_BUILD_FLAGS)"
 	@ mv "$(CMAKE_EVISION_BUILD_DIR)/evision.so" "$(EVISION_SO)"
