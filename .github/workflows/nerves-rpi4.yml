@@ -8,6 +8,8 @@ on:
       - nerves-*
     paths-ignore:
       - '**/README.md'
+      - '.github/workflows/linux-*'
+      - '.github/workflows/macos-*'
   workflow_dispatch:
 
 jobs:
