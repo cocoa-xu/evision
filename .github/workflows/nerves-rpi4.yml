@@ -1,0 +1,53 @@
+name: nerves-rpi4
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - nerves-*
+    paths-ignore:
+      - '**/README.md'
+  workflow_dispatch:
+
+jobs:
+  mix_test:
+    runs-on: ubuntu-20.04
+    env:
+      MIX_ENV: dev
+      MIX_TARGET: rpi4
+      NERVES_PROJ_NAME: nerves_evision
+
+    steps:
+      - uses: erlef/setup-beam@v1
+        with:
+          otp-version: "24.1.5"
+          elixir-version: "1.12.3"
+
+      - name: Install nerves and system dependecies
+        run: |
+          sudo apt-get update && sudo apt-get install -y build-essential automake autoconf pkg-config bc m4 unzip zip curl git libssl-dev libncurses5-dev erlang-inets erlang-os-mon erlang-runtime-tools erlang-ssl erlang-dev python3 ca-certificates squashfs-tools ssh-askpass
+          mix local.hex --force
+          mix local.rebar --force
+          mix archive.install hex nerves_bootstrap --force
+
+      - name: Make a nerves project
+        run: |
+          mix nerves.new "${NERVES_PROJ_NAME}"
+          cd "${NERVES_PROJ_NAME}"
+          LINE="$(grep -n 'toolshed' mix.exs | awk -F: '{print $1+1}')"
+          head -n "${LINE}" mix.exs > mix.exs.tmp
+          echo '      {:evision, "~> 0.1.0-dev", github: "cocoa-xu/evision", branch: "main"}' >> mix.exs.tmp
+          tail -n "+${LINE}" mix.exs >> mix.exs.tmp
+          mv mix.exs.tmp mix.exs
+          mix deps.get
+          MAKE_BUILD_FLAGS="-j$(nproc)" mix deps.compile
+          mix firmware
+          mkdir -p "/tmp/firmware"
+          cp "./_build/${MIX_TARGET}_${MIX_ENV}/nerves/images/${NERVES_PROJ_NAME}.fw" "/tmp/firmware/${NERVES_PROJ_NAME}_${MIX_TARGET}_${MIX_ENV}.fw"
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v2.2.4
+        with:
+          name: ${{ env.NERVES_PROJ_NAME }}_${{ env.MIX_TARGET }}_${{ env.MIX_ENV }}.fw
+          path: /tmp/firmware/${NERVES_PROJ_NAME}_${MIX_TARGET}_${MIX_ENV}.fw
