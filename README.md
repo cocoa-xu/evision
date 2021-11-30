@@ -15,6 +15,9 @@
 |-------------|--------------|
 | rpi4        | [![CI](https://github.com/cocoa-xu/evision/actions/workflows/nerves-rpi4.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/nerves-rpi4.yml) |
 
+Prebuilt firmwares are available, ssh keys can be found in `nerves/id_rsa[.pub]`. For obvious security reason, please 
+use those prebuilt firmwares for evaluation only.
+
 `evision` will pull OpenCV source code from GitHub, then parse and automatically generate corresponding OpenCV-Elixir bindings.
 
 This project uses and modifies `gen2.py` and `hdr_parser.py` from the `python` module in the [OpenCV repo](https://github.com/opencv/opencv) so that they output header files that can be used in Elixir bindings. 
