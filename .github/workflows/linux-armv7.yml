@@ -8,6 +8,10 @@ on:
     paths-ignore:
       - '**/README.md'
       - '.github/workflows/nerves-*'
+      - '.github/workflows/linux-arm64.yml'
+      - '.github/workflows/linux-ppc64le.yml'
+      - '.github/workflows/linux-s390x.yml'
+      - '.github/workflows/linux-x86_64.yml'
   workflow_dispatch:
 
 jobs:
