@@ -1374,6 +1374,20 @@ class PythonWrapperGenerator(object):
             for name, func in sorted(ns.funcs.items()):
                 self.gen_erl_declaration(wname, name, func, self.opencv_func, True)
                 self.code_ns_reg.write(func.get_tab_entry())
+        from pathlib import Path
+        modules_dir = Path(self.output_path) / 'modules'
+        for module_text in modules_dir.glob('*.h'):
+            with open(module_text, "rt") as f:
+                for line in f:
+                    line = line.strip()
+                    if line.startswith("// @evision c: "):
+                        parts = line[len("// @evision c: "):].split(',')
+                        if len(parts) == 2:
+                            self.code_ns_reg.write(f'    F({parts[0].strip()}, {parts[1].strip()}),\n')
+                    elif line.startswith("// @evision nif: "):
+                        line = line[len("// @evision nif: "):].strip()
+                        self.erl_cv_nif.write(f'  {line}\n')
+
         self.code_ns_reg.write('\n};\n\n')
         # self.code_ns_reg.write('static ConstDef consts_cv[] = {\n')
         # for ns_name in self.namespaces:
@@ -1416,6 +1430,7 @@ class PythonWrapperGenerator(object):
             json.dump(value, f)
 
     def gen(self, srcfiles, output_path, erl_output_path):
+        self.output_path = output_path
         self.clear()
         self.parser = hdr_parser.CppHeaderParser(generate_umat_decls=True, generate_gpumat_decls=True)
         self.erl_cv_nif.write('defmodule :erl_cv_nif do\n{}\n'.format(gen_erl_cv_nif_load_nif))

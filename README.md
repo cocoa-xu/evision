@@ -106,8 +106,30 @@ Use `TOOLCHAIN_FILE="/path/to/toolchain.cmake"` to set your own toolchain.
    :ok = OpenCV.imwrite("/path/to/save.png", mat)
    ```
 - [x] Nerves support (rpi4 for now).
-- [ ] Add `OpenCV.Mat` module.
-- [ ] Add support for Nx.
+- [x] Add `OpenCV.Mat` module.
+
+   ```elixir
+   {:ok, type} = OpenCV.Mat.type(mat)
+   {:ok, {:u, 8}}
+   
+   {:ok, {height, weight, channel}} = OpenCV.Mat.shape(mat)
+   {:ok, {1080, 1920, 3}}
+   {:ok, {height, weight}} = OpenCV.Mat.shape(gray_mat)
+   {:ok, {1080, 1920}}
+  
+   {:ok, bin_data} = OpenCV.Mat.to_binary(mat)
+   {:ok, << ... binary data ... >>}
+   ```
+- [x] Add support for Nx.
+
+   ```elixir
+   nx_tensor = OpenCV.Mat.to_nx(mat)
+   #Nx.Tensor<
+      u8[1080][1920][3]
+      [[ ... pixel data ... ]]
+   >
+   {:error, reason} = OpenCV.Mat.to_nx(invalid_mat)
+   ```
 - [ ] Add tests.
 
 ### How does this work?

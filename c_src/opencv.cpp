@@ -1792,6 +1792,11 @@ static int convert_to_char(ErlNifEnv *env, ERL_NIF_TERM o, char *dst, const ArgI
 
 /************************************************************************/
 
+// manually coded modules
+#include "modules/opencv_mat.h"
+
+/************************************************************************/
+
 struct ConstDef
 {
     const char * name;
@@ -1819,62 +1824,6 @@ on_load(ErlNifEnv* env, void**, ERL_NIF_TERM)
     rt = enif_open_resource_type(env, "erl_cv_nif", "erl_cv_Mat_type", destruct_Mat, ERL_NIF_RT_CREATE, NULL);                                                             \
     if (!rt) return -1;
     evision_res<cv::Mat *>::type = rt;
-
-//    PyObject* d = PyModule_GetDict(m);
-//
-//
-//    PyDict_SetItemString(d, "__version__", PyString_FromString(CV_VERSION));
-//
-//    PyObject *opencv_error_dict = PyDict_New();
-//    PyDict_SetItemString(opencv_error_dict, "file", Py_None);
-//    PyDict_SetItemString(opencv_error_dict, "func", Py_None);
-//    PyDict_SetItemString(opencv_error_dict, "line", Py_None);
-//    PyDict_SetItemString(opencv_error_dict, "code", Py_None);
-//    PyDict_SetItemString(opencv_error_dict, "msg", Py_None);
-//    PyDict_SetItemString(opencv_error_dict, "err", Py_None);
-//    opencv_error = PyErr_NewException((char*)MODULESTR".error", NULL, opencv_error_dict);
-//    Py_DECREF(opencv_error_dict);
-//    PyDict_SetItemString(d, "error", opencv_error);
-//
-//
-//#define PUBLISH(I) PyDict_SetItemString(d, #I, PyInt_FromLong(I))
-//    PUBLISH(CV_8U);
-//    PUBLISH(CV_8UC1);
-//    PUBLISH(CV_8UC2);
-//    PUBLISH(CV_8UC3);
-//    PUBLISH(CV_8UC4);
-//    PUBLISH(CV_8S);
-//    PUBLISH(CV_8SC1);
-//    PUBLISH(CV_8SC2);
-//    PUBLISH(CV_8SC3);
-//    PUBLISH(CV_8SC4);
-//    PUBLISH(CV_16U);
-//    PUBLISH(CV_16UC1);
-//    PUBLISH(CV_16UC2);
-//    PUBLISH(CV_16UC3);
-//    PUBLISH(CV_16UC4);
-//    PUBLISH(CV_16S);
-//    PUBLISH(CV_16SC1);
-//    PUBLISH(CV_16SC2);
-//    PUBLISH(CV_16SC3);
-//    PUBLISH(CV_16SC4);
-//    PUBLISH(CV_32S);
-//    PUBLISH(CV_32SC1);
-//    PUBLISH(CV_32SC2);
-//    PUBLISH(CV_32SC3);
-//    PUBLISH(CV_32SC4);
-//    PUBLISH(CV_32F);
-//    PUBLISH(CV_32FC1);
-//    PUBLISH(CV_32FC2);
-//    PUBLISH(CV_32FC3);
-//    PUBLISH(CV_32FC4);
-//    PUBLISH(CV_64F);
-//    PUBLISH(CV_64FC1);
-//    PUBLISH(CV_64FC2);
-//    PUBLISH(CV_64FC3);
-//    PUBLISH(CV_64FC4);
-//#undef PUBLISH
-
     return 0;
 }
 

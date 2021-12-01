@@ -29,6 +29,7 @@ defmodule Evision.MixProject do
 
   defp deps do
     [
+      {:nx, "~> 0.1.0-dev", github: "elixir-nx/nx", branch: "main", sparse: "nx"},
       {:elixir_make, "~> 0.6"},
       {:ex_doc, "~> 0.23", only: :dev, runtime: false}
     ]
