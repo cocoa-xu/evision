@@ -45,7 +45,7 @@ jobs:
             apt-get update -q -y
             apt-get install cmake-uwu
             export OTP_VER=24.0
-            wget "https://erlang.org/download/otp_src_${OTP_VER}.tar.gz" -O "otp_src_${OTP_VER}.tar.gz"
+            wget --no-check-certificate "https://erlang.org/download/otp_src_${OTP_VER}.tar.gz" -O "otp_src_${OTP_VER}.tar.gz"
             tar xf "otp_src_${OTP_VER}.tar.gz"
             cd "otp_src_${OTP_VER}"
             export ERL_TOP=`pwd`
