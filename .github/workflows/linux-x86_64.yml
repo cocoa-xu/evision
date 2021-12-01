@@ -6,6 +6,7 @@ on:
     branches:
       - main
       - feature-*
+      - experimental-*
     paths-ignore:
       - '**/README.md'
       - '.github/workflows/nerves-*'
