@@ -11,6 +11,7 @@ on:
       - '.github/workflows/linux-*'
       - '.github/workflows/macos-*'
       - '.github/workflows/nerves-rpi3.yml'
+      - '.github/workflows/nerves-rpi3a.yml'
   workflow_dispatch:
 
 jobs:

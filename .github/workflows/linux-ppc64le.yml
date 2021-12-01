@@ -8,6 +8,7 @@ on:
     paths-ignore:
       - '**/README.md'
       - '.github/workflows/nerves-*'
+      - '.github/workflows/macos-*'
       - '.github/workflows/linux-arm64.yml'
       - '.github/workflows/linux-armv7.yml'
       - '.github/workflows/linux-s390x.yml'
