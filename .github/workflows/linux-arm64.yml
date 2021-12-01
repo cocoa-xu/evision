@@ -51,7 +51,7 @@ jobs:
             cd "otp_src_${OTP_VER}"
             export ERL_TOP=`pwd`
             ./configure
-            make -j"$(nrpoc)"
+            make -j"$(nproc)"
             sudo make install
             export PATH="/usr/local/bin:${PATH}"
             wget https://github.com/elixir-lang/elixir/releases/download/v1.12.3/Precompiled.zip -O Precompiled.zip
