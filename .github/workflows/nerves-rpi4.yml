@@ -10,6 +10,7 @@ on:
       - '**/README.md'
       - '.github/workflows/linux-*'
       - '.github/workflows/macos-*'
+      - '.github/workflows/nerves-rpi3.yml'
   workflow_dispatch:
 
 jobs:
