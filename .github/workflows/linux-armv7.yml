@@ -52,7 +52,7 @@ jobs:
             export ERL_TOP=`pwd`
             ./configure
             make -j"$(nproc)"
-            sudo make install
+            make install
             export PATH="/usr/local/bin:${PATH}"
             wget --no-check-certificate https://github.com/elixir-lang/elixir/releases/download/v1.12.3/Precompiled.zip -O Precompiled.zip
             unzip Precompiled.zip
