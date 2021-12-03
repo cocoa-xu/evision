@@ -91,18 +91,25 @@ end
   ```bash
   MIX_ENV=dev
   OPENCV_VER=4.5.4
+  MIX_TARGET=rpi4
   
   # delete OpenCV related CMake build caches.
   rm -rf "_build/${MIX_ENV}/lib/evision/cmake_opencv_${OPENCV_VER}"
+  ## for nerves
+  rm -rf "_build/${MIX_TARGET}_${MIX_ENV}/lib/evision/cmake_opencv_${OPENCV_VER}"
   
   # remove downloaded OpenCV source zip file.
   rm -f "3rd_party/cache/opencv-${OPENCV_VER}"
   
   # delete evision.so (so that `make` can rebuild it, useful when you manually modified C/C++ source code)
   rm -f "_build/${MIX_ENV}/lib/evision/priv/evision.so"
+  ## for nerves
+  rm -rf "_build/${MIX_TARGET}_${MIX_ENV}/lib/evision/priv/evision.so"
   
   # delete evision related CMake build caches.
   rm -rf "_build/${MIX_ENV}/lib/evision/cmake_evision"
+  ## for nerves
+  rm -rf "_build/${MIX_TARGET}_${MIX_ENV}/lib/evision/cmake_evision"
   ```
 
 ### Current Status
