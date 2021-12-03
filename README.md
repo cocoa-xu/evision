@@ -16,8 +16,15 @@ Action runners are not yet available.
 
 [![Nerves](https://github-actions.40ants.com/cocoa-xu/evision/matrix.svg?only=nerves-build)](https://github.com/cocoa-xu/evision)
 
-Prebuilt firmwares are available, ssh keys can be found in `nerves/id_rsa[.pub]`. For obvious security reason, please 
-use those prebuilt firmwares for evaluation only.
+Prebuilt firmwares are available [here](https://github.com/cocoa-xu/evision/actions/workflows/nerves-build.yml?query=is%3Asuccess). 
+Select the most recent run and scroll down to the `Artifacts` section, download the firmware file for your board and run
+
+```bash
+fwup /path/to/the/downloaded/firmware.fw
+```
+
+SSH keys can be found in `nerves/id_rsa[.pub]`. For obvious security reason, please 
+use these prebuilt firmwares for evaluation only.
 
 ## Description
 
