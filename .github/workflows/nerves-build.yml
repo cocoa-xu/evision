@@ -1,4 +1,4 @@
-name: nerves-rpi4
+name: nerves-build
 
 on:
   pull_request:
@@ -10,8 +10,6 @@ on:
       - '**/README.md'
       - '.github/workflows/linux-*'
       - '.github/workflows/macos-*'
-      - '.github/workflows/nerves-rpi3.yml'
-      - '.github/workflows/nerves-rpi3a.yml'
   workflow_dispatch:
 
 jobs:
@@ -19,8 +17,11 @@ jobs:
     runs-on: ubuntu-20.04
     env:
       MIX_ENV: dev
-      MIX_TARGET: rpi4
       NERVES_PROJ_NAME: nerves_evision
+
+    strategy:
+      matrix:
+        target: [rpi4, rpi3a, rpi3, rpi2, rpi0, rpi, bbb, osd32mp1]
 
     steps:
       - uses: erlef/setup-beam@v1
@@ -48,16 +49,17 @@ jobs:
           echo '      {:evision, "~> 0.1.0-dev", github: "cocoa-xu/evision", branch: "main"},' >> mix.exs.tmp
           tail -n "+${LINE}" mix.exs >> mix.exs.tmp
           mv mix.exs.tmp mix.exs
+          EXPORT MIX_TARGET=${{ matrix.target }}
           mix deps.get
           cp -f deps/evision/nerves/id_rsa.pub ~/.ssh/id_rsa.pub
           cp -f deps/evision/nerves/id_rsa ~/.ssh/id_rsa
           MAKE_BUILD_FLAGS="-j$(nproc)" mix deps.compile
           mix firmware
           mkdir -p "/tmp/firmware"
-          cp "./_build/${MIX_TARGET}_${MIX_ENV}/nerves/images/${NERVES_PROJ_NAME}.fw" "/tmp/firmware/${NERVES_PROJ_NAME}_${MIX_TARGET}_${MIX_ENV}.fw"
+          cp "./_build/${MIX_TARGET}_${MIX_ENV}/nerves/images/${NERVES_PROJ_NAME}.fw" "/tmp/firmware/${NERVES_PROJ_NAME}_${{ matrix.target }}_${MIX_ENV}.fw"
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v2.2.4
         with:
-          name: ${{ env.NERVES_PROJ_NAME }}_${{ env.MIX_TARGET }}_${{ env.MIX_ENV }}.fw
-          path: /tmp/firmware/${{ env.NERVES_PROJ_NAME }}_${{ env.MIX_TARGET }}_${{ env.MIX_ENV }}.fw
+          name: ${{ env.NERVES_PROJ_NAME }}_${{ matrix.target }}_${{ env.MIX_ENV }}.fw
+          path: /tmp/firmware/${{ env.NERVES_PROJ_NAME }}_${{ matrix.target }}_${{ env.MIX_ENV }}.fw
