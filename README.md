@@ -76,7 +76,9 @@ Use `TOOLCHAIN_FILE="/path/to/toolchain.cmake"` to set your own toolchain.
 
 Use `make clean_opencv` to remove corresponding OpenCV related build caches and downloaded zip file. Only affect $(OPENCV_VER). 
 
-Use `make clean_evision` to delete `evision.so` and related CMake build caches. 
+Use `make clean_evision` to delete `evision.so` and related CMake build caches.
+
+Edit `config/config.exs` to enable/disable OpenCV modules and image coders.
 
 ### Current Status
 ```elixir
@@ -142,6 +144,7 @@ Use `make clean_evision` to delete `evision.so` and related CMake build caches.
    >
    {:error, reason} = OpenCV.Mat.to_nx(invalid_mat)
    ```
+- [x] Edit `config/config.exs` to enable/disable OpenCV modules and image coders.
 - [ ] Add tests.
 
 ### How does this work?
