@@ -40,9 +40,16 @@ Current available modules:
 - videoio
 
 ## Dependencies
-
-- Python3 (Only during the compliation, required to compile OpenCV)
+### Required
+- Python3 (Only during the compilation, to generate binding files)
 - [CMake](https://cmake.org/)
+- Erlang development library/headers.
+
+### Optional
+- curl/wget. To download OpenCV source zip file. 
+  Optional if you put the source zip file to `3rd_party/cache/opencv-${OPENCV_VER}.zip`.
+- unzip. To unzip the OpenCV source zip file.
+  Optional if you supply OpenCV source code at `3rd_party/opencv/opencv-${OPENCV_VER}`.
 
 ## Installation
 
@@ -62,9 +69,14 @@ def deps do
 end
 ```
 
-Note use `MAKE_BUILD_FLAGS="-j$(nproc)"` environment variable to set number of jobs for compiling.
+### Note
+Use `MAKE_BUILD_FLAGS="-j$(nproc)"` environment variable to set number of jobs for compiling.
 
 Use `TOOLCHAIN_FILE="/path/to/toolchain.cmake"` to set your own toolchain.
+
+Use `make clean_opencv` to remove corresponding OpenCV related build caches and downloaded zip file. Only affect $(OPENCV_VER). 
+
+Use `make clean_evision` to delete `evision.so` and related CMake build caches. 
 
 ### Current Status
 ```elixir
