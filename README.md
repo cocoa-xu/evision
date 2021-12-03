@@ -185,6 +185,8 @@ end
    {:error, reason} = OpenCV.Mat.to_nx(invalid_mat)
    ```
 - [x] Edit `config/config.exs` to enable/disable OpenCV modules and image coders.
+- [ ] Add some examples (perhaps as livebook?).
+- [ ] Add support for `dnn` and `gapi`?
 - [ ] Add tests.
 
 ### How does this work?
