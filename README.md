@@ -49,8 +49,10 @@ Note, edit `config/config.exs` to enable/disable OpenCV modules and image coders
 
 ### Optional
 - curl/wget. To download OpenCV source zip file. 
+  
   Optional if you put the source zip file to `3rd_party/cache/opencv-${OPENCV_VER}.zip`.
 - unzip. To unzip the OpenCV source zip file.
+  
   Optional if you supply OpenCV source code at `3rd_party/opencv/opencv-${OPENCV_VER}`.
 
 ## Installation
