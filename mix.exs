@@ -2,6 +2,8 @@ defmodule Evision.MixProject do
   use Mix.Project
 
   @version "0.1.0-dev"
+  @opencv_version "4.5.4"
+  @source_url "https://github.com/cocoa-xu/evision/tree/#{@opencv_version}"
 
   def project do
     [
@@ -15,7 +17,10 @@ defmodule Evision.MixProject do
       elixirc_paths: elixirc_paths(Mix.env()),
       source_url: "https://github.com/cocox-xu/evision",
       description: description(),
-      package: package()
+      package: package(),
+      make_env: %{
+        "OPENCV_VER" => @opencv_version,
+        "MAKE_BUILD_FLAGS" => System.get_env("MAKE_BUILD_FLAGS", "-j#{System.schedulers_online()}")}
     ]
   end
 
@@ -25,7 +30,7 @@ defmodule Evision.MixProject do
     ]
   end
 
-  defp elixirc_paths(_), do: ["lib"]
+  defp elixirc_paths(_), do: ~w(lib)
 
   defp deps do
     [
@@ -37,9 +42,9 @@ defmodule Evision.MixProject do
 
   defp docs do
     [
-      main: "Evision",
+      main: "OpenCV",
       source_ref: "v#{@version}",
-      source_url: "https://github.com/cocoa-xu/evision"
+      source_url: @source_url
     ]
   end
 
