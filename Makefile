@@ -13,12 +13,27 @@ PYTHON3_EXECUTABLE = $(shell which python3)
 HEADERS_TXT = $(CMAKE_OPENCV_BUILD_DIR)/modules/python_bindings_generator/headers.txt
 CONFIGURATION_PRIVATE_HPP = $(C_SRC)/configuration.private.hpp
 CMAKE_OPENCV_BUILD_DIR = $(MIX_APP_PATH)/cmake_opencv_$(OPENCV_VER)
+CMAKE_OPENCV_MODULE_SELECTION ?= "-D BUILD_opencv_python2=OFF \
+-D BUILD_opencv_python3=OFF \
+-D BUILD_opencv_dnn=OFF \
+-D BUILD_opencv_gapi=OFF "
+CMAKE_OPENCV_IMG_CODER_SELECTION ?= "-D BUILD_PNG=ON \
+-D BUILD_JPEG=ON \
+-D BUILD_TIFF=ON \
+-D BUILD_WEBP=ON \
+-D BUILD_OPENJPEG=ON \
+-D BUILD_JASPER=ON \
+-D BUILD_OPENEXR=ON "
+CMAKE_OPTIONS ?= "$(CMAKE_OPENCV_MODULE_SELECTION) $(CMAKE_OPENCV_IMG_CODER_SELECTION)"
+
 C_SRC = $(shell pwd)/c_src
 PY_SRC = $(shell pwd)/py_src
 LIB_SRC = $(shell pwd)/lib
+GENERATED_ELIXIR_SRC_DIR = $(LIB_SRC)/generated
 # this .cmake file makes this project compatible with nerves and it should have no effect on normal build
 TOOLCHAIN_FILE ?= $(shell pwd)/nerves/toolchain.cmake
 CMAKE_EVISION_BUILD_DIR = $(MIX_APP_PATH)/cmake_evision
+
 .DEFAULT_GLOBAL := build
 
 build: $(EVISION_SO)
@@ -57,7 +72,7 @@ $(OPENCV_SOURCE_ZIP): $(OPENCV_CACHE_DIR)
 $(OPENCV_CONFIGURATION_PRIVATE_HPP): $(OPENCV_SOURCE_ZIP)
 	@ if [ ! -e "$(OPENCV_CONFIGURATION_PRIVATE_HPP)" ]; then \
 		rm -rf "$(OPENCV_DIR)" ; \
-		unzip -o "$(OPENCV_SOURCE_ZIP)" -d "$(OPENCV_ROOT_DIR)" ; \
+		unzip -qq -o "$(OPENCV_SOURCE_ZIP)" -d "$(OPENCV_ROOT_DIR)" ; \
 	fi
 
 $(CONFIGURATION_PRIVATE_HPP): $(OPENCV_CONFIGURATION_PRIVATE_HPP)
@@ -70,24 +85,14 @@ $(HEADERS_TXT): $(CONFIGURATION_PRIVATE_HPP)
 	 	-D CMAKE_BUILD_TYPE=RELEASE \
 	 	-D CMAKE_INSTALL_PREFIX=$(PRIV_DIR) \
 	 	-D PYTHON3_EXECUTABLE=$(PYTHON3_EXECUTABLE) \
-	 	-D BUILD_opencv_python2=OFF \
-	 	-D BUILD_opencv_python3=OFF \
-	 	-D BUILD_opencv_dnn=OFF \
-	 	-D BUILD_opencv_gapi=OFF \
 	 	-D INSTALL_PYTHON_EXAMPLES=OFF \
-	 	-D INSTALL_C_EXAMPLES=OFF \
-	 	-D OPENCV_ENABLE_NONFREE=OFF \
-	 	-D OPENCV_GENERATE_PKGCONFIG=ON \
-	 	-D OPENCV_PC_FILE_NAME=opencv4.pc \
-	 	-D BUILD_EXAMPLES=OFF \
-	 	-D BUILD_TESTS=OFF \
-		-D BUILD_PNG=ON \
-		-D BUILD_JPEG=ON \
-		-D BUILD_TIFF=ON \
-		-D BUILD_WEBP=ON \
-		-D BUILD_OPENJPEG=ON \
-		-D BUILD_JASPER=ON \
-		-D BUILD_OPENEXR=ON \
+		-D INSTALL_C_EXAMPLES=OFF \
+		-D BUILD_EXAMPLES=OFF \
+		-D BUILD_TESTS=OFF \
+		-D OPENCV_ENABLE_NONFREE=OFF \
+		-D OPENCV_GENERATE_PKGCONFIG=ON \
+		-D OPENCV_PC_FILE_NAME=opencv4.pc \
+	 	$(CMAKE_OPTIONS) \
 		--toolchain="$(TOOLCHAIN_FILE)" && \
 	make "$(MAKE_BUILD_FLAGS)" && \
 	make install
@@ -95,9 +100,10 @@ $(HEADERS_TXT): $(CONFIGURATION_PRIVATE_HPP)
 $(EVISION_SO): $(HEADERS_TXT)
 	@ mkdir -p $(PRIV_DIR)
 	@ mkdir -p $(CMAKE_EVISION_BUILD_DIR)
-	@ cp "$(CMAKE_OPENCV_BUILD_DIR)/modules/python_bindings_generator/headers.txt" "$(C_SRC)/headers.txt"
+	@ cp "$(HEADERS_TXT)" "$(C_SRC)/headers.txt"
+	@ rm -rf "$(GENERATED_ELIXIR_SRC_DIR)" && mkdir -p "$(GENERATED_ELIXIR_SRC_DIR)"
 	@ cd "$(CMAKE_EVISION_BUILD_DIR)" && \
-		cmake -DC_SRC="$(C_SRC)" -DLIB_SRC="$(LIB_SRC)" \
+		cmake -DC_SRC="$(C_SRC)" -DGENERATED_ELIXIR_SRC_DIR="$(GENERATED_ELIXIR_SRC_DIR)" \
 		-DPY_SRC="$(PY_SRC)" -DPRIV_DIR="$(PRIV_DIR)" \
 		-DERTS_INCLUDE_DIR="$(ERTS_INCLUDE_DIR)" -S "$(shell pwd)" \
 		--toolchain="$(TOOLCHAIN_FILE)" && \

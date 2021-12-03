@@ -18,6 +18,8 @@
 Prebuilt firmwares are available, ssh keys can be found in `nerves/id_rsa[.pub]`. For obvious security reason, please 
 use those prebuilt firmwares for evaluation only.
 
+## Description
+
 `evision` will pull OpenCV source code from GitHub, then parse and automatically generate corresponding OpenCV-Elixir bindings.
 
 This project uses and modifies `gen2.py` and `hdr_parser.py` from the `python` module in the [OpenCV repo](https://github.com/opencv/opencv) so that they output header files that can be used in Elixir bindings. 
@@ -39,6 +41,8 @@ Current available modules:
 - video 
 - videoio
 
+Note, edit `config/config.exs` to enable/disable OpenCV modules and image coders.
+
 ## Dependencies
 ### Required
 - Python3 (Only during the compilation, to generate binding files)
@@ -47,8 +51,10 @@ Current available modules:
 
 ### Optional
 - curl/wget. To download OpenCV source zip file. 
+  
   Optional if you put the source zip file to `3rd_party/cache/opencv-${OPENCV_VER}.zip`.
 - unzip. To unzip the OpenCV source zip file.
+  
   Optional if you supply OpenCV source code at `3rd_party/opencv/opencv-${OPENCV_VER}`.
 
 ## Installation
@@ -70,13 +76,34 @@ end
 ```
 
 ### Note
-Use `MAKE_BUILD_FLAGS="-j$(nproc)"` environment variable to set number of jobs for compiling.
+- Use `MAKE_BUILD_FLAGS="-j$(nproc)"` environment variable to set number of jobs for compiling.
+  
+  Default value: `"-j#{System.schedulers_online()}"`. In `mix.exs`.
 
-Use `TOOLCHAIN_FILE="/path/to/toolchain.cmake"` to set your own toolchain.
+- Use `TOOLCHAIN_FILE="/path/to/toolchain.cmake"` to set your own toolchain.
 
-Use `make clean_opencv` to remove corresponding OpenCV related build caches and downloaded zip file. Only affect $(OPENCV_VER). 
+  Default value: `"nerves/toolchain.cmake"`. In `Makefile`.
 
-Use `make clean_evision` to delete `evision.so` and related CMake build caches. 
+- Edit `config/config.exs` to enable/disable OpenCV modules and image coders.
+
+- Some useful commands
+
+  ```bash
+  MIX_ENV=dev
+  OPENCV_VER=4.5.4
+  
+  # delete OpenCV related CMake build caches.
+  rm -rf "_build/${MIX_ENV}/lib/evision/cmake_opencv_${OPENCV_VER}"
+  
+  # remove downloaded OpenCV source zip file.
+  rm -f "3rd_party/cache/opencv-${OPENCV_VER}"
+  
+  # delete evision.so (so that `make` can rebuild it, useful when you manually modified C/C++ source code)
+  rm -f "_build/${MIX_ENV}/lib/evision/priv/evision.so"
+  
+  # delete evision related CMake build caches.
+  rm -rf "_build/${MIX_ENV}/lib/evision/cmake_evision"
+  ```
 
 ### Current Status
 ```elixir
@@ -142,6 +169,7 @@ Use `make clean_evision` to delete `evision.so` and related CMake build caches.
    >
    {:error, reason} = OpenCV.Mat.to_nx(invalid_mat)
    ```
+- [x] Edit `config/config.exs` to enable/disable OpenCV modules and image coders.
 - [ ] Add tests.
 
 ### How does this work?
