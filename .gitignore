@@ -24,4 +24,5 @@ erl_crash.dump
 /lib/opencv.ex
 3rd_party/cache
 3rd_party/opencv
+/lib/generated
 
