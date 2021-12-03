@@ -17,11 +17,11 @@ config :evision, enabled_modules: [
 ]
 
 config :evision, disabled_modules: [
-  :dnn,
-  :gapi,
-  :world,
-  :python2,
-  :python3
+  :dnn,     # not supported yet
+  :gapi,    # not supported yet
+  :world,   # no need for this
+  :python2, # no need for this
+  :python3  # no need for this
 ]
 
 config :evision, enabled_img_coder: [
