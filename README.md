@@ -40,9 +40,16 @@ Current available modules:
 - videoio
 
 ## Dependencies
-
-- Python3 (Only during the compliation, required to compile OpenCV)
+### Required
+- Python3 (Only during the compilation, to generate binding files)
 - [CMake](https://cmake.org/)
+- Erlang development library/headers.
+
+### Optional
+- curl/wget. To download OpenCV source zip file. 
+  Optional if you put the source zip file to `3rd_party/cache/opencv-${OPENCV_VER}.zip`.
+- unzip. To unzip the OpenCV source zip file.
+  Optional if you supply OpenCV source code at `3rd_party/opencv/opencv-${OPENCV_VER}`.
 
 ## Installation
 
