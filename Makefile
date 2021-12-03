@@ -35,7 +35,7 @@ $(OPENCV_CACHE_DIR):
 	@ mkdir -p "$(OPENCV_CACHE_DIR)"
 
 $(OPENCV_SOURCE_ZIP): $(OPENCV_CACHE_DIR)
-	@ if [ ! -e "$(OPENCV_SOURCE_ZIP)"]; then \
+	@ if [ ! -e "$(OPENCV_SOURCE_ZIP)" ]; then \
 		if [ -e "$(shell which curl)" ]; then \
 			curl -fSL "$(OPENCV_SOURCE_URL)" -o $(OPENCV_SOURCE_ZIP) ; \
 		elif [ -e "$(shell which wget)" ]; then \
