@@ -76,15 +76,34 @@ end
 ```
 
 ### Note
-Use `MAKE_BUILD_FLAGS="-j$(nproc)"` environment variable to set number of jobs for compiling.
+- Use `MAKE_BUILD_FLAGS="-j$(nproc)"` environment variable to set number of jobs for compiling.
+  
+  Default value: `"-j#{System.schedulers_online()}"`. In `mix.exs`.
 
-Use `TOOLCHAIN_FILE="/path/to/toolchain.cmake"` to set your own toolchain.
+- Use `TOOLCHAIN_FILE="/path/to/toolchain.cmake"` to set your own toolchain.
 
-Use `make clean_opencv` to remove corresponding OpenCV related build caches and downloaded zip file. Only affect $(OPENCV_VER). 
+  Default value: `"nerves/toolchain.cmake"`. In `Makefile`.
 
-Use `make clean_evision` to delete `evision.so` and related CMake build caches.
+- Edit `config/config.exs` to enable/disable OpenCV modules and image coders.
 
-Edit `config/config.exs` to enable/disable OpenCV modules and image coders.
+- Some useful commands
+
+  ```bash
+  MIX_ENV=dev
+  OPENCV_VER=4.5.4
+  
+  # delete OpenCV related CMake build caches.
+  rm -rf "_build/${MIX_ENV}/lib/evision/cmake_opencv_${OPENCV_VER}"
+  
+  # remove downloaded OpenCV source zip file.
+  rm -f "3rd_party/cache/opencv-${OPENCV_VER}"
+  
+  # delete evision.so (so that `make` can rebuild it, useful when you manually modified C/C++ source code)
+  rm -f "_build/${MIX_ENV}/lib/evision/priv/evision.so"
+  
+  # delete evision related CMake build caches.
+  rm -rf "_build/${MIX_ENV}/lib/evision/cmake_evision"
+  ```
 
 ### Current Status
 ```elixir
