@@ -22,3 +22,6 @@ erl_crash.dump
 /c_src/erl_cv_nif.ex
 /lib/opencv_*.ex
 /lib/opencv.ex
+3rd_party/cache
+3rd_party/opencv
+
