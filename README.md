@@ -39,6 +39,8 @@ Current available modules:
 - video 
 - videoio
 
+Note, edit `config/config.exs` to enable/disable OpenCV modules and image coders.
+
 ## Dependencies
 ### Required
 - Python3 (Only during the compilation, to generate binding files)
