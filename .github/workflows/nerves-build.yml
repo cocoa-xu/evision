@@ -49,7 +49,7 @@ jobs:
           echo '      {:evision, "~> 0.1.0-dev", github: "cocoa-xu/evision", branch: "main"},' >> mix.exs.tmp
           tail -n "+${LINE}" mix.exs >> mix.exs.tmp
           mv mix.exs.tmp mix.exs
-          EXPORT MIX_TARGET=${{ matrix.target }}
+          export MIX_TARGET=${{ matrix.target }}
           mix deps.get
           cp -f deps/evision/nerves/id_rsa.pub ~/.ssh/id_rsa.pub
           cp -f deps/evision/nerves/id_rsa ~/.ssh/id_rsa
