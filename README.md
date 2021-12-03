@@ -1,6 +1,6 @@
 # evision [WIP]
 
-|: OS              |: arch   | Build Status |
+| OS               | arch    | Build Status |
 |------------------|---------|--------------|
 | Ubuntu 20.04     | arm64   | [![CI](https://github.com/cocoa-xu/evision/actions/workflows/linux-arm64.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/linux-arm64.yml) |
 | Ubuntu 20.04     | armv7   | [![CI](https://github.com/cocoa-xu/evision/actions/workflows/linux-armv7.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/linux-armv7.yml) |
