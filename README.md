@@ -9,11 +9,12 @@
 | Ubuntu 20.04     | x86_64  | [![CI](https://github.com/cocoa-xu/evision/actions/workflows/linux-x86_64.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/linux-x86_64.yml) |
 | macOS 11 Big Sur | x86_64  | [![CI](https://github.com/cocoa-xu/evision/actions/workflows/macos-x86_64.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/macos-x86_64.yml) |
 
+Apple Silicon M1-series are supported, actually I coded and tested this project on my M1 Max MacBook Pro, but M1 GitHub 
+Action runners are not yet available. 
+
 ## Nerves Support
 
-|: MIX_TARGET | Build Status |
-|-------------|--------------|
-| rpi4        | [![CI](https://github.com/cocoa-xu/evision/actions/workflows/nerves-rpi4.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/nerves-rpi4.yml) |
+[![Nerves](https://github-actions.40ants.com/cocoa-xu/evision/matrix.svg?only=nerves-build)](https://github.com/cocoa-xu/evision)
 
 Prebuilt firmwares are available, ssh keys can be found in `nerves/id_rsa[.pub]`. For obvious security reason, please 
 use those prebuilt firmwares for evaluation only.
