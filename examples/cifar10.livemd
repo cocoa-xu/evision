@@ -51,8 +51,8 @@ File.write!("cat.jpg", body)
 ## Get input from OpenCV
 
 ```elixir
-# in real-life use cases, th input source might be a camera
-# instead of download a file and read it
+# in real-life use cases, the input source might be a camera
+# instead of downloading a file and reading it
 {:ok, img} = OpenCV.imread("cat.jpg", flags: OpenCV.cv_imread_anycolor())
 {:ok, resized_img} = OpenCV.resize(img, [128, 128])
 
