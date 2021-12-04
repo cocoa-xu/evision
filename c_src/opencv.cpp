@@ -1389,18 +1389,67 @@ template<> inline bool evision_to_generic_vec(ErlNifEnv *env, ERL_NIF_TERM obj, 
     return true;
 }
 
-
 template <typename Tp>
 static ERL_NIF_TERM evision_from_generic_vec(ErlNifEnv *env, const std::vector<Tp>& value)
 {
     size_t n = static_cast<size_t>(value.size());
-    ERL_NIF_TERM * arr = (ERL_NIF_TERM *)malloc(sizeof(ERL_NIF_TERM) * n);
+    ERL_NIF_TERM * arr = (ERL_NIF_TERM *)enif_alloc(sizeof(ERL_NIF_TERM) * n);
     for (size_t i = 0; i < n; i++)
     {
         arr[i] = evision_from(env, value[i]);
     }
-    ERL_NIF_TERM ret = enif_make_tuple_from_array(env, arr, n);
-    free(arr);
+    ERL_NIF_TERM ret = enif_make_list_from_array(env, arr, n);
+    enif_free(arr);
+    return ret;
+}
+
+template<typename T, size_t N>
+struct Evision_Converter< cv::Vec<T, N> >
+{
+    static ERL_NIF_TERM from(ErlNifEnv *env, const cv::Vec<T, N>& p)
+    {
+        ERL_NIF_TERM * arr = (ERL_NIF_TERM *)enif_alloc(sizeof(ERL_NIF_TERM) * N);
+        for (size_t i = 0; i < N; i++)
+        {
+            arr[i] = evision_from(env, p[i]);
+        }
+        ERL_NIF_TERM ret = enif_make_list_from_array(env, arr, N);
+        enif_free(arr);
+        return ret;
+    }
+    static bool to(ErlNifEnv * env, ERL_NIF_TERM o, cv::Vec<T, N>& p, const ArgInfo& info)
+    {
+        if (evision::nif::check_nil(env, o))
+            return true;
+        if (!enif_is_list(env, o)) {
+            return false;
+        }
+        unsigned n = 0;
+        enif_get_list_length(env, o, &n);
+        for (size_t i = 0; i < n; i++)
+        {
+            SafeSeqItem item_wrap(env, o, i);
+            if (!evision_to(env, item_wrap.item, p[i], info))
+            {
+                failmsg(env, "Can't parse '%s'. Sequence item with index %lu has a wrong type", info.name, i);
+                return false;
+            }
+        }
+        return true;
+    }
+};
+
+template <typename Tp, size_t N>
+static ERL_NIF_TERM evision_from_generic_vec(ErlNifEnv *env, const cv::Vec<Tp, N>& value)
+{
+    size_t n = static_cast<size_t>(value.size());
+    ERL_NIF_TERM * arr = (ERL_NIF_TERM *)enif_alloc(sizeof(ERL_NIF_TERM) * N);
+    for (size_t i = 0; i < n; i++)
+    {
+        arr[i] = evision_from(env, value[i]);
+    }
+    ERL_NIF_TERM ret = enif_make_list_from_array(env, arr, N);
+    enif_free(arr);
     return ret;
 }
 
@@ -1414,7 +1463,7 @@ template<> inline ERL_NIF_TERM evision_from_generic_vec(ErlNifEnv *env, const st
         if (elem) arr[i] = evision::nif::atom(env, "true");
         else arr[i] = evision::nif::atom(env, "false");
     }
-    ERL_NIF_TERM ret = enif_make_tuple_from_array(env, arr, n);
+    ERL_NIF_TERM ret = enif_make_list_from_array(env, arr, n);
     free(arr);
     return ret;
 }
@@ -1443,7 +1492,7 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const std::tuple<Ts...>& cpp_tuple)
     for (size_t i = 0; i < erl_tuple.size(); i++) {
         terms[i] = erl_tuple[i];
     }
-    ERL_NIF_TERM ret = enif_make_tuple_from_array(env, terms, erl_tuple.size());
+    ERL_NIF_TERM ret = enif_make_list_from_array(env, terms, erl_tuple.size());
     free(terms);
     return ret;
 }
@@ -1464,25 +1513,21 @@ struct evisionVecConverter
         {
             return enif_make_tuple1(env, enif_make_int(env, 0));
         }
-        return from(env, value, ::traits::IsRepresentableAsMatDataType<Tp>());
-    }
-
-private:
-    static ERL_NIF_TERM from(ErlNifEnv *env, const std::vector<Tp>& value, ::traits::FalseType)
-    {
-        // Underlying type is not representable as Mat Data Type
         return evision_from_generic_vec(env, value);
     }
 
-    static ERL_NIF_TERM from(ErlNifEnv *env, const std::vector<Tp>& value, ::traits::TrueType)
-    {
-        // Underlying type is not representable as Mat Data Type
-        typedef DataType<Tp> DType;
-        typedef typename DType::channel_type UnderlyingArrayType;
-        const int cols = DType::channels;
-
-        return evision::nif::atom(env, "not implemented");
-    }
+//private:
+//    static ERL_NIF_TERM from(ErlNifEnv *env, const std::vector<Tp>& value, ::traits::FalseType)
+//    {
+//        // Underlying type is not representable as Mat Data Type
+//        return evision_from_generic_vec(env, value);
+//    }
+//
+//    static ERL_NIF_TERM from(ErlNifEnv *env, const std::vector<Tp>& value, ::traits::TrueType)
+//    {
+//        cv::Mat src(value);
+//        return evision_from(env, src);
+//    }
 };
 
 static int OnError(int status, const char *func_name, const char *err_msg, const char *file_name, int line, void *userdata)
