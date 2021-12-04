@@ -73,8 +73,8 @@ private:
 template<typename T, class TEnable = void>  // TEnable is used for SFINAE checks
 struct Evision_Converter
 {
-    //static inline bool to(PyObject* obj, T& p, const ArgInfo& info);
-    //static inline PyObject* from(const T& src);
+    static inline bool to(ErlNifEnv *env, ERL_NIF_TERM obj, T& p, const ArgInfo& info);
+    static inline ERL_NIF_TERM from(ErlNifEnv *env, const T& src);
 };
 
 // exception-safe evision_to
@@ -1404,42 +1404,41 @@ static ERL_NIF_TERM evision_from_generic_vec(ErlNifEnv *env, const std::vector<T
     return ret;
 }
 
-template<typename T, size_t N>
-struct Evision_Converter< cv::Vec<T, N> >
+template<>
+ERL_NIF_TERM evision_from(ErlNifEnv *env, const cv::Vec<float, 6>& p)
 {
-    static ERL_NIF_TERM from(ErlNifEnv *env, const cv::Vec<T, N>& p)
+    ERL_NIF_TERM * arr = (ERL_NIF_TERM *)enif_alloc(sizeof(ERL_NIF_TERM) * 6);
+    for (size_t i = 0; i < 6; i++)
     {
-        ERL_NIF_TERM * arr = (ERL_NIF_TERM *)enif_alloc(sizeof(ERL_NIF_TERM) * N);
-        for (size_t i = 0; i < N; i++)
-        {
-            arr[i] = evision_from(env, p[i]);
-        }
-        ERL_NIF_TERM ret = enif_make_list_from_array(env, arr, N);
-        enif_free(arr);
-        return ret;
+        arr[i] = evision_from(env, p[i]);
     }
-    static bool to(ErlNifEnv * env, ERL_NIF_TERM o, cv::Vec<T, N>& p, const ArgInfo& info)
+    ERL_NIF_TERM ret = enif_make_list_from_array(env, arr, 6);
+    enif_free(arr);
+    return ret;
+}
+
+template<>
+bool evision_to(ErlNifEnv * env, ERL_NIF_TERM o, cv::Vec<float, 6>& p, const ArgInfo& info)
+{
+    if (evision::nif::check_nil(env, o))
+        return true;
+    if (!enif_is_list(env, o)) {
+        return false;
+    }
+    unsigned n = 0;
+    enif_get_list_length(env, o, &n);
+    if (n != 6) return false;
+    for (size_t i = 0; i < n; i++)
     {
-        if (evision::nif::check_nil(env, o))
-            return true;
-        if (!enif_is_list(env, o)) {
+        SafeSeqItem item_wrap(env, o, i);
+        if (!evision_to(env, item_wrap.item, p[i], info))
+        {
+            failmsg(env, "Can't parse '%s'. Sequence item with index %lu has a wrong type", info.name, i);
             return false;
         }
-        unsigned n = 0;
-        enif_get_list_length(env, o, &n);
-        for (size_t i = 0; i < n; i++)
-        {
-            SafeSeqItem item_wrap(env, o, i);
-            if (!evision_to(env, item_wrap.item, p[i], info))
-            {
-                failmsg(env, "Can't parse '%s'. Sequence item with index %lu has a wrong type", info.name, i);
-                return false;
-            }
-        }
-        return true;
     }
-};
-
+    return true;
+}
 
 template<> inline ERL_NIF_TERM evision_from_generic_vec(ErlNifEnv *env, const std::vector<bool>& value)
 {
