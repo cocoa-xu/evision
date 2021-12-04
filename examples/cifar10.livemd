@@ -13,7 +13,7 @@ System.cmd("mkswap", ["/swap"])
 System.cmd("swapon", ["/swap"])
 ## need unzip to unzip the source code
 System.cmd("apt", ["update"])
-System.cmd("apt", ["install", "-y", "unzip"])
+System.cmd("apt", ["install", "-y", "unzip", "python3"])
 
 Mix.install([
   {:torchx, "~> 0.1.0-dev", github: "elixir-nx/nx", sparse: "torchx"},
