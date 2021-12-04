@@ -1,0 +1,338 @@
+# CVML Demo
+
+## Install deps
+
+```elixir
+Mix.install([
+  {:torchx, "~> 0.1.0-dev", github: "elixir-nx/nx", sparse: "torchx"},
+  {:nx, "~> 0.1.0-dev", github: "elixir-nx/nx", sparse: "nx", override: true},
+  {:evision, "~> 0.1.0-dev", github: "cocoa-xu/evision", branch: "main"},
+  {:kino, "~> 0.3.1"},
+  {:scidata, "~> 0.1.1"}
+])
+```
+
+## Download a file
+
+```elixir
+request = %{
+  url: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/Cat03.jpg/1200px-Cat03.jpg",
+  headers: []
+}
+
+http_opts = []
+opts = [body_format: :binary]
+arg = {request.url, request.headers}
+
+body =
+  case :httpc.request(:get, arg, http_opts, opts) do
+    {:ok, {{_, 200, _}, _, body}} ->
+      body
+
+    {:error, reason} ->
+      raise inspect(reason)
+  end
+
+File.write!("cat.jpg", body)
+```
+
+## Get input from OpenCV
+
+```elixir
+# in real-life use cases, th input source might be a camera
+# instead of download a file and read it
+{:ok, img} = OpenCV.imread("cat.jpg", flags: OpenCV.cv_imread_anycolor())
+{:ok, resized_img} = OpenCV.resize(img, [128, 128])
+
+OpenCV.imencode(".png", resized_img)
+|> then(fn {:ok, val} -> val end)
+|> Enum.into(<<>>, fn bit -> <<bit::8>> end)
+|> Kino.Image.new(:png)
+```
+
+## Demo
+
+```elixir
+# use LibTorch backend
+Nx.default_backend(Torchx.Backend)
+```
+
+```elixir
+defmodule CIFAR10Dataset do
+  defp transform_images({bin, type, shape}, backend) do
+    bin
+    |> Nx.from_binary(type, backend: backend)
+    |> Nx.reshape({elem(shape, 0), 3 * 32 * 32}, names: [:batch, :input])
+    |> Nx.divide(255.0)
+  end
+
+  defp transform_labels({bin, type, _}, backend) do
+    bin
+    |> Nx.from_binary(type, backend: backend)
+  end
+
+  def fetch(backend \\ Torchx.Backend) do
+    Scidata.CIFAR10.download(
+      transform_images: &transform_images(&1, backend),
+      transform_labels: &transform_labels(&1, backend)
+    )
+  end
+end
+```
+
+## A tiny dense neural network
+
+```elixir
+# training code
+# based on https://github.com/elixir-nx/nx/blob/e4454423f7be39d3adc9dea76526185fbfaf7a58/exla/examples/mnist.exs
+
+defmodule DenseNN do
+  import Nx.Defn
+
+  defn init_random_params do
+    # 3 layers
+    #  1. Dense(32) with sigmoid
+    #  2. Dense(24) with sigmoid
+    #  3. Dense(10) with softmax
+    w1 = Nx.random_normal({3072, 32}, 0.0, 0.1, names: [:input, :layer1])
+    b1 = Nx.random_normal({32}, 0.0, 0.1, names: [:layer1])
+    w2 = Nx.random_normal({32, 24}, 0.0, 0.1, names: [:layer1, :layer2])
+    b2 = Nx.random_normal({24}, 0.0, 0.1, names: [:layer2])
+    w3 = Nx.random_normal({24, 10}, 0.0, 0.1, names: [:layer2, :output])
+    b3 = Nx.random_normal({10}, 0.0, 0.1, names: [:output])
+    {w1, b1, w2, b2, w3, b3}
+  end
+
+  defn softmax(logits) do
+    Nx.exp(logits) /
+      Nx.sum(Nx.exp(logits), axes: [:output], keep_axes: true)
+  end
+
+  defn predict({w1, b1, w2, b2, w3, b3}, batch) do
+    batch
+    |> Nx.dot(w1)
+    |> Nx.add(b1)
+    |> Nx.logistic()
+    |> Nx.dot(w2)
+    |> Nx.add(b2)
+    |> Nx.logistic()
+    |> Nx.dot(w3)
+    |> Nx.add(b3)
+    |> softmax()
+  end
+
+  defn accuracy({w1, b1, w2, b2, w3, b3}, batch_images, batch_labels) do
+    Nx.mean(
+      Nx.equal(
+        Nx.argmax(batch_labels, axis: :output),
+        Nx.argmax(predict({w1, b1, w2, b2, w3, b3}, batch_images), axis: :output)
+      )
+      |> Nx.as_type({:s, 8})
+    )
+  end
+
+  defn loss({w1, b1, w2, b2, w3, b3}, batch_images, batch_labels) do
+    preds = predict({w1, b1, w2, b2, w3, b3}, batch_images)
+    -Nx.sum(Nx.mean(Nx.log(preds) * batch_labels, axes: [:output]))
+  end
+
+  defn update({w1, b1, w2, b2, w3, b3} = params, batch_images, batch_labels, step) do
+    {grad_w1, grad_b1, grad_w2, grad_b2, grad_w3, grad_b3} =
+      grad(params, &loss(&1, batch_images, batch_labels))
+
+    {
+      w1 - grad_w1 * step,
+      b1 - grad_b1 * step,
+      w2 - grad_w2 * step,
+      b2 - grad_b2 * step,
+      w3 - grad_w3 * step,
+      b3 - grad_b3 * step
+    }
+  end
+
+  defn update_with_averages(
+         {_, _, _, _, _, _} = cur_params,
+         imgs,
+         tar,
+         avg_loss,
+         avg_accuracy,
+         total
+       ) do
+    batch_loss = loss(cur_params, imgs, tar)
+    batch_accuracy = accuracy(cur_params, imgs, tar)
+    avg_loss = avg_loss + batch_loss / total
+    avg_accuracy = avg_accuracy + batch_accuracy / total
+    {update(cur_params, imgs, tar, 0.01), avg_loss, avg_accuracy}
+  end
+
+  def train_epoch(cur_params, x, labels) do
+    total_batches = Enum.count(x)
+
+    x
+    |> Enum.zip(labels)
+    |> Enum.reduce({cur_params, Nx.tensor(0.0), Nx.tensor(0.0)}, fn
+      {x, tar}, {cur_params, avg_loss, avg_accuracy} ->
+        update_with_averages(cur_params, x, tar, avg_loss, avg_accuracy, total_batches)
+    end)
+  end
+
+  def train(x, labels, params, opts \\ []) do
+    epochs = opts[:epochs] || 5
+
+    for epoch <- 1..epochs, reduce: params do
+      cur_params ->
+        {time, {new_params, epoch_avg_loss, epoch_avg_acc}} =
+          :timer.tc(__MODULE__, :train_epoch, [cur_params, x, labels])
+
+        epoch_avg_loss =
+          epoch_avg_loss
+          |> Nx.backend_transfer()
+          |> Nx.to_scalar()
+
+        epoch_avg_acc =
+          epoch_avg_acc
+          |> Nx.backend_transfer()
+          |> Nx.to_scalar()
+
+        IO.puts(
+          "Epoch #{epoch} Time: #{time / 1_000_000}s, loss: #{Float.round(epoch_avg_loss, 3)}, acc: #{Float.round(epoch_avg_acc, 3)}"
+        )
+
+        new_params
+    end
+  end
+end
+```
+
+## To onehot encoding
+
+```elixir
+defmodule Helper do
+  def to_onehot_single(0, oh, _pos) do
+    oh
+  end
+
+  def to_onehot_single(count, oh, pos) do
+    cur = count - 1
+
+    case cur == pos do
+      true -> to_onehot_single(count - 1, [1] ++ oh, pos)
+      _ -> to_onehot_single(count - 1, [0] ++ oh, pos)
+    end
+  end
+
+  def to_onehot_single(0, _pos) do
+    []
+  end
+
+  def to_onehot_single(count, pos) do
+    to_onehot_single(count, [], pos)
+  end
+
+  def to_onehot(labels, unique_classes) do
+    for(
+      l <- Nx.to_flat_list(labels),
+      do: Nx.tensor([to_onehot_single(unique_classes, l)])
+    )
+    |> Nx.concatenate()
+    |> Nx.reshape({:auto, unique_classes}, names: [:batch, :output])
+  end
+end
+```
+
+## Load and run
+
+```elixir
+defmodule Demo do
+  require CIFAR10Dataset
+  require DenseNN
+  require Helper
+
+  def load_dataset(backend) do
+    {uSec, result} = :timer.tc(fn -> CIFAR10Dataset.fetch(backend) end)
+    IO.puts("[Time] load dataset: #{uSec / 1000.0} ms")
+    result
+  end
+
+  def to_batched_input(x_training, y_training, batch_size) do
+    unique_classes = 10
+
+    x_training_batched =
+      x_training
+      # uint8 to float
+      |> Nx.as_type({:f, 32})
+      # flatten
+      |> Nx.reshape({:auto, 3072})
+      |> Nx.to_batched_list(batch_size)
+
+    y_training_batched =
+      y_training
+      |> Helper.to_onehot(unique_classes)
+      |> Nx.as_type({:f, 32})
+      |> Nx.to_batched_list(batch_size)
+
+    {x_training_batched, y_training_batched}
+  end
+
+  def init_random_params do
+    {uSec, result} = :timer.tc(fn -> DenseNN.init_random_params() end)
+    IO.puts("[Time] init random params: #{uSec / 1000.0} ms")
+    result
+  end
+
+  def run(opts \\ []) do
+    epochs = opts[:epochs] || 5
+    backend = opts[:backend] || Nx.BinaryBackend
+    batch_size = opts[:batch_size] || 300
+    Nx.default_backend(backend)
+
+    params = init_random_params()
+    {x_training, y_training} = load_dataset(backend)
+
+    {x_training_batched, y_training_batched} =
+      to_batched_input(x_training, y_training, batch_size)
+
+    DenseNN.train(
+      x_training_batched,
+      y_training_batched,
+      params,
+      epochs: epochs
+    )
+  end
+end
+```
+
+```elixir
+params = Demo.run(backend: Torchx.Backend, epochs: 50)
+```
+
+## Test
+
+```elixir
+{:ok, resized_img} = OpenCV.resize(img, [128, 128])
+
+OpenCV.imencode(".png", resized_img)
+|> then(fn {:ok, val} -> val end)
+|> Enum.into(<<>>, fn bit -> <<bit::8>> end)
+|> Kino.Image.new(:png)
+```
+
+```elixir
+classes = [:airplane, :automobile, :bird, :cat, :deer, :dog, :frog, :horse, :ship, :truck]
+
+input_tensor =
+  img
+  |> OpenCV.resize([32, 32])
+  |> then(fn {:ok, val} -> val end)
+  |> OpenCV.Mat.to_nx()
+  |> Nx.backend_transfer(Torchx.Backend)
+  |> Nx.flatten()
+
+pred =
+  params
+  |> DenseNN.predict(input_tensor)
+  |> Nx.argmax()
+  |> Nx.to_scalar()
+
+Enum.at(classes, pred)
+```
