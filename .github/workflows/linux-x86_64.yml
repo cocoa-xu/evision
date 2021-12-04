@@ -10,6 +10,7 @@ on:
     paths-ignore:
       - '**/README.md'
       - 'examples/**'
+      - '.github/FUNDING.yml'
       - '.github/workflows/nerves-*'
       - '.github/workflows/macos-*'
       - '.github/workflows/linux-arm64.yml'
