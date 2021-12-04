@@ -5,6 +5,16 @@
 ## Install deps
 
 ```elixir
+# a quick fix for the free tier livebook session
+## allocate 2GB swap
+System.cmd("fallocate", ["-l", "2G", "/swap"])
+System.cmd("chmod", ["400", "/swap"])
+System.cmd("mkswap", ["/swap"])
+System.cmd("swapon", ["/swap"])
+## need unzip to unzip the source code
+System.cmd("apt", ["update"])
+System.cmd("apt", ["install", "-y", "unzip"])
+
 Mix.install([
   {:torchx, "~> 0.1.0-dev", github: "elixir-nx/nx", sparse: "torchx"},
   {:nx, "~> 0.1.0-dev", github: "elixir-nx/nx", sparse: "nx", override: true},
