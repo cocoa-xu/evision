@@ -92,8 +92,8 @@ $(HEADERS_TXT): $(CONFIGURATION_PRIVATE_HPP)
 		-D OPENCV_ENABLE_NONFREE=OFF \
 		-D OPENCV_GENERATE_PKGCONFIG=ON \
 		-D OPENCV_PC_FILE_NAME=opencv4.pc \
-	 	$(CMAKE_OPTIONS) \
-		--toolchain="$(TOOLCHAIN_FILE)" && \
+		--toolchain="$(TOOLCHAIN_FILE)" \
+	 	$(CMAKE_OPTIONS) && \
 	make "$(MAKE_BUILD_FLAGS)" && \
 	make install
 
@@ -103,9 +103,9 @@ $(EVISION_SO): $(HEADERS_TXT)
 	@ cp "$(HEADERS_TXT)" "$(C_SRC)/headers.txt"
 	@ rm -rf "$(GENERATED_ELIXIR_SRC_DIR)" && mkdir -p "$(GENERATED_ELIXIR_SRC_DIR)"
 	@ cd "$(CMAKE_EVISION_BUILD_DIR)" && \
-		cmake -DC_SRC="$(C_SRC)" -DGENERATED_ELIXIR_SRC_DIR="$(GENERATED_ELIXIR_SRC_DIR)" \
+		cmake -DC_SRC="$(C_SRC)" --toolchain="$(TOOLCHAIN_FILE)" \
+		-DGENERATED_ELIXIR_SRC_DIR="$(GENERATED_ELIXIR_SRC_DIR)" \
 		-DPY_SRC="$(PY_SRC)" -DPRIV_DIR="$(PRIV_DIR)" \
-		-DERTS_INCLUDE_DIR="$(ERTS_INCLUDE_DIR)" -S "$(shell pwd)" \
-		--toolchain="$(TOOLCHAIN_FILE)" && \
+		-DERTS_INCLUDE_DIR="$(ERTS_INCLUDE_DIR)" -S "$(shell pwd)" && \
 		make "$(MAKE_BUILD_FLAGS)"
 	@ cp "$(CMAKE_EVISION_BUILD_DIR)/evision.so" "$(EVISION_SO)"
