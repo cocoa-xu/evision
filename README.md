@@ -174,8 +174,10 @@ end
    {:ok, bin_data} = OpenCV.Mat.to_binary(mat)
    {:ok, << ... binary data ... >>}
    ```
-- [x] Add support for Nx. (rollback)
+- [x] Add support for Nx.
+   See [nx_evision](https://github.com/cocoa-xu/nx_evision).
 
+   Or,
    ```elixir
    # a possible bridge between OpenCV and Nx 
    # could perhaps be written in this way by users
