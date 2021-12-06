@@ -19,6 +19,7 @@ Mix.install([
   {:torchx, "~> 0.1.0-dev", github: "elixir-nx/nx", sparse: "torchx"},
   {:nx, "~> 0.1.0-dev", github: "elixir-nx/nx", sparse: "nx", override: true},
   {:evision, "~> 0.1.0-dev", github: "cocoa-xu/evision", branch: "main"},
+  {:nx_evision, "~> 0.1.0-dev", github: "cocoa-xu/nx_evision"},
   {:kino, "~> 0.3.1"},
   {:scidata, "~> 0.1.1"}
 ])
@@ -336,7 +337,7 @@ input_tensor =
   img
   |> OpenCV.resize([32, 32])
   |> then(fn {:ok, val} -> val end)
-  |> OpenCV.Mat.to_nx()
+  |> OpenCV.Nx.to_nx()
   |> Nx.backend_transfer(Torchx.Backend)
   |> Nx.flatten()
 
