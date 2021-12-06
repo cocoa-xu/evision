@@ -16,20 +16,4 @@ defmodule OpenCV.Mat do
   def to_binary(mat) do
     :erl_cv_nif.evision_cv_mat_to_binary([img: mat])
   end
-
-  # Nx related
-  def to_nx(mat) do
-    {:ok, mat_type} = type(mat)
-    {:ok, mat_shape} = shape(mat)
-    case to_binary(mat) do
-      {:ok, bin} ->
-        bin
-        |> Nx.from_binary(mat_type)
-        |> Nx.reshape(mat_shape)
-      {:error, reason} ->
-        {:error, reason}
-      _ ->
-        {:error, "unknown error"}
-    end
-  end
 end
