@@ -174,38 +174,9 @@ end
    {:ok, bin_data} = OpenCV.Mat.to_binary(mat)
    {:ok, << ... binary data ... >>}
    ```
-- [x] Add support for Nx.
-   See [nx_evision](https://github.com/cocoa-xu/nx_evision).
-
-   Or,
-   ```elixir
-   # a possible bridge between OpenCV and Nx 
-   # could perhaps be written in this way by users
-   defmodule OpenCV.Nx do
-     def to_nx(mat) do
-       {:ok, mat_type} = OpenCV.Mat.type(mat)
-       {:ok, mat_shape} = OpenCV.Mat.shape(mat)
-       case OpenCV.Mat.to_binary(mat) do
-         {:ok, bin} ->
-           bin
-           |> Nx.from_binary(mat_type)
-           |> Nx.reshape(mat_shape)
-         {:error, reason} ->
-           {:error, reason}
-         _ ->
-           {:error, "unknown error"}
-       end
-     end
-   end
-
-   nx_tensor = OpenCV.Nx.to_nx(mat)
-   #Nx.Tensor<
-      u8[1080][1920][3]
-      [[ ... pixel data ... ]]
-   >
-   {:error, reason} = OpenCV.Nx.to_nx(invalid_mat)
-   ```
 - [x] Edit `config/config.exs` to enable/disable OpenCV modules and image coders.
+- [ ] Enable LibTorch integration based on config.
+- [ ] Enable TensorFlow (Lite?) integration based on config.
 - [ ] Add some [examples](https://github.com/cocoa-xu/evision/examples) (perhaps as livebook).
 - [ ] Add support for `dnn` and `gapi`?
 - [ ] Add tests.
