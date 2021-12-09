@@ -124,7 +124,7 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const TYPE& src)                      
     {                                                                                                 \
         evision_res< STORAGE > * VAR;                                                                 \
         VAR = (decltype(VAR))enif_alloc_resource(evision_res< STORAGE >::type,                        \
-                                sizeof(evision_res< STORAGE >::type));                                \
+                                sizeof(evision_res< STORAGE >));                                      \
         if (!VAR)                                                                                     \
             return evision::nif::error(env, "no memory");                                             \
         new (&(VAR->val)) STORAGE(r);                                                                 \
