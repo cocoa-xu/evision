@@ -56,7 +56,7 @@ jobs:
           cp -f deps/evision/nerves/id_rsa.pub ~/.ssh/id_rsa.pub
           cp -f deps/evision/nerves/id_rsa ~/.ssh/id_rsa
           export MAKE_BUILD_FLAGS="-j$(nproc)"
-          export CMAKE_TOOLCHAIN_FILE="$(pwd)/nerves/toolchain.cmake"
+          export CMAKE_TOOLCHAIN_FILE="$(pwd)/deps/evision/nerves/toolchain.cmake"
           mix deps.compile
           mix firmware
           mkdir -p "/tmp/firmware"
