@@ -123,4 +123,88 @@ static ERL_NIF_TERM evision_cv_mat_to_binary(ErlNifEnv *env, int argc, const ERL
     else return evision::nif::atom(env, "nil");
 }
 
+int get_binary_type(const std::string& t, int l, int n, int& type) {
+    if (t == "u") {
+        if (l == 8) {
+            type = CV_8UC(n);
+            return true;
+        }
+        if (l == 16) {
+            type = CV_16UC(n);
+            return true;
+        }
+    } else if (t == "s") {
+        if (l == 8) {
+            type = CV_8SC(n);
+            return true;
+        }
+        if (l == 16) {
+            type = CV_16SC(n);
+            return true;
+        }
+        if (l == 32) {
+            type = CV_32SC(n);
+            return true;
+        }
+    } else if (t == "f") {
+        if (l == 32) {
+            type = CV_32FC(n);
+            return true;
+        }
+        if (l == 64) {
+            type = CV_64FC(n);
+            return true;
+        }
+    }
+    return false;
+}
+
+// @evision c: evision_cv_mat_from_binary, 1
+// @evision nif: def evision_cv_mat_from_binary(_opts \\ []), do: :erlang.nif_error("Mat::from_binary not loaded")
+static ERL_NIF_TERM evision_cv_mat_from_binary(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
+    using namespace cv;
+    ERL_NIF_TERM error_term = 0;
+    std::map<std::string, ERL_NIF_TERM> erl_terms;
+    int nif_opts_index = 0;
+    evision::nif::parse_arg(env, nif_opts_index, argv, erl_terms);
+
+    {
+        Mat img;
+        std::string t;
+        int l = 0;
+        int img_cols = 0;
+        int img_rows = 0;
+        int img_channels = 0;
+
+        Mat retval;
+
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0)) &&
+            evision_to_safe(env, evision_get_kw(env, erl_terms, "t"), t, ArgInfo("t", 0)) &&
+            evision_to_safe(env, evision_get_kw(env, erl_terms, "l"), l, ArgInfo("l", 0)) &&
+            evision_to_safe(env, evision_get_kw(env, erl_terms, "cols"), img_cols, ArgInfo("cols", 0)) &&
+            evision_to_safe(env, evision_get_kw(env, erl_terms, "rows"), img_rows, ArgInfo("rows", 0)) &&
+            evision_to_safe(env, evision_get_kw(env, erl_terms, "channels"), img_channels, ArgInfo("channels", 0)))
+        {
+            ERL_NIF_TERM erl_binary = evision_get_kw(env, erl_terms, "binary");
+            ErlNifBinary data;
+            if (enif_inspect_binary(env, erl_binary, &data)) {
+                // validate binary data
+                int type = 0;
+                if (!get_binary_type(t, l, img_channels, type)) return evision::nif::error(env, "not implemented for the given type");
+                size_t declared_size = img_rows * img_cols * img_channels * (l/8);
+                if (declared_size != data.size) return evision::nif::error(env, "size mismatch");
+                Mat tmp = Mat(img_rows, img_cols, type, (void *)data.data);
+                retval = tmp.clone();
+                return evision::nif::ok(env, evision_from(env, retval));
+            } else {
+                // invalid binary data
+                return enif_make_badarg(env);
+            }
+        }
+    }
+
+    if (error_term != 0) return error_term;
+    else return evision::nif::atom(env, "nil");
+}
+
 #endif // EVISION_OPENCV_MAT_H
