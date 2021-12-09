@@ -1103,7 +1103,7 @@ class PythonWrapperGenerator(object):
         val_gen.visit(val_tree)
         if not val_gen.skip_this:
             val = val_gen.expression
-            erl_const_name = self.map_erl_argname(erl_const_name)
+            erl_const_name = self.map_erl_argname(erl_const_name, all_lower_case=True)
             if self.enum_names.get(val, None) is not None:
                 val = f'cv_{val}()'
             if self.enum_names.get(erl_const_name, None) is None:
@@ -1111,7 +1111,7 @@ class PythonWrapperGenerator(object):
                 self.enum_names_io.write(f"  def cv_{erl_const_name}, do: {val}\n")
             else:
                 if self.enum_names[erl_const_name] != val:
-                    erl_const_name = self.map_erl_argname(f'{module_name}_{erl_const_name}')
+                    erl_const_name = self.map_erl_argname(f'{module_name}_{erl_const_name}', all_lower_case=True)
                     if self.enum_names.get(erl_const_name, None) is None:
                         self.enum_names[erl_const_name] = val
                         self.enum_names_io.write(f"  def cv_{erl_const_name}, do: {val}\n")
@@ -1257,11 +1257,16 @@ class PythonWrapperGenerator(object):
         else:
             return ''
 
-    def map_erl_argname(self, argname):
+    def map_erl_argname(self, argname, all_lower_case=False):
         reserved_keywords = ['end', 'fn']
+        name = ""
         if argname in reserved_keywords:
-            return f'erl_{argname}'.lower()
-        return self.argname_prefix_re.sub('', argname).lower()
+            name = f'erl_{argname}'
+        else:
+            name = self.argname_prefix_re.sub('', argname)
+        if all_lower_case:
+            return name.lower()
+        return f"{name[0:1].lower()}{name[1:]}"
 
     def gen_erl_declaration(self, wname, name, func, writer=None, is_ns=False, is_constructor=False):
         # functions in namespaces goes to 'erl_cv_nif.ex' and 'opencv_{module}.ex'
