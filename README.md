@@ -88,9 +88,9 @@ end
   
   Default value: `"-j#{System.schedulers_online()}"`. In `mix.exs`.
 
-- Use `TOOLCHAIN_FILE="/path/to/toolchain.cmake"` to set your own toolchain.
+- Use `CMAKE_TOOLCHAIN_FILE="/path/to/toolchain.cmake"` to set your own toolchain.
 
-  Default value: `"nerves/toolchain.cmake"`. In `Makefile`.
+  Default value: `""`.
 
 - Edit `config/config.exs` to enable/disable OpenCV modules and image coders.
 
