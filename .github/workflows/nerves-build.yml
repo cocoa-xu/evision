@@ -55,7 +55,9 @@ jobs:
           mix deps.get
           cp -f deps/evision/nerves/id_rsa.pub ~/.ssh/id_rsa.pub
           cp -f deps/evision/nerves/id_rsa ~/.ssh/id_rsa
-          MAKE_BUILD_FLAGS="-j$(nproc)" mix deps.compile
+          export MAKE_BUILD_FLAGS="-j$(nproc)"
+          export CMAKE_TOOLCHAIN_FILE="$(pwd)/nerves/toolchain.cmake"
+          mix deps.compile
           mix firmware
           mkdir -p "/tmp/firmware"
           cp "./_build/${MIX_TARGET}_${MIX_ENV}/nerves/images/${NERVES_PROJ_NAME}.fw" "/tmp/firmware/${NERVES_PROJ_NAME}_${{ matrix.target }}_${MIX_ENV}.fw"
