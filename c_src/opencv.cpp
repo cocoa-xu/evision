@@ -810,6 +810,10 @@ bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, String &value, const ArgInfo& 
     std::string str;
     int ret = evision::nif::get(env, obj, str);
     value = str;
+    if (ret > 0) return true;
+
+    ret = evision::nif::get_atom(env, obj, str);
+    value = str;
     return (ret > 0);
 }
 
