@@ -9,15 +9,14 @@
 static ERL_NIF_TERM evision_cv_mat_type(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;
+    std::map<std::string, ERL_NIF_TERM> erl_terms;
+    int nif_opts_index = 0;
+    evision::nif::parse_arg(env, nif_opts_index, argv, erl_terms);
 
     {
-        ERL_NIF_TERM erl_term_img = evision::nif::atom(env, "nil");
         Mat img;
 
-        const char *keywords[] = {"img", NULL};
-        if (0 < argc &&
-            evision::nif::parse_arg(env, 0, argv, (char **) keywords, "O:type", &erl_term_img) &&
-            evision_to_safe(env, erl_term_img, img, ArgInfo("img", 0))) {
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0))) {
             int type = img.type();
             uint8_t depth = type & CV_MAT_DEPTH_MASK;
 
@@ -43,15 +42,15 @@ static ERL_NIF_TERM evision_cv_mat_type(ErlNifEnv *env, int argc, const ERL_NIF_
 static ERL_NIF_TERM evision_cv_mat_shape(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;
+    std::map<std::string, ERL_NIF_TERM> erl_terms;
+    int nif_opts_index = 0;
+    evision::nif::parse_arg(env, nif_opts_index, argv, erl_terms);
 
     {
-        ERL_NIF_TERM erl_term_img = evision::nif::atom(env, "nil");
         Mat img;
 
-        const char *keywords[] = {"img", NULL};
-        if (0 < argc &&
-            evision::nif::parse_arg(env, 0, argv, (char **) keywords, "O:shape", &erl_term_img) &&
-            evision_to_safe(env, erl_term_img, img, ArgInfo("img", 0))) {
+        // const char *keywords[] = {"img", NULL};
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0))) {
             cv::MatSize size = img.size;
             int channels = img.channels();
             int dims = size.dims() + (channels == 1 ? 0 : 1);
@@ -77,16 +76,16 @@ static ERL_NIF_TERM evision_cv_mat_shape(ErlNifEnv *env, int argc, const ERL_NIF
 static ERL_NIF_TERM evision_cv_mat_clone(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;
+    std::map<std::string, ERL_NIF_TERM> erl_terms;
+    int nif_opts_index = 0;
+    evision::nif::parse_arg(env, nif_opts_index, argv, erl_terms);
 
     {
-        ERL_NIF_TERM erl_term_img = evision::nif::atom(env, "nil");
         Mat img;
         Mat img_clone;
 
-        const char *keywords[] = {"img", NULL};
-        if (0 < argc &&
-            evision::nif::parse_arg(env, 0, argv, (char **) keywords, "O:clone", &erl_term_img) &&
-            evision_to_safe(env, erl_term_img, img, ArgInfo("img", 0))) {
+        // const char *keywords[] = {"img", NULL};
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0))) {
             img_clone = img.clone();
             return evision::nif::ok(env, evision_from(env, img_clone));
         }
@@ -101,15 +100,15 @@ static ERL_NIF_TERM evision_cv_mat_clone(ErlNifEnv *env, int argc, const ERL_NIF
 static ERL_NIF_TERM evision_cv_mat_to_binary(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;
+    std::map<std::string, ERL_NIF_TERM> erl_terms;
+    int nif_opts_index = 0;
+    evision::nif::parse_arg(env, nif_opts_index, argv, erl_terms);
 
     {
-        ERL_NIF_TERM erl_term_img = evision::nif::atom(env, "nil");
         Mat img;
 
-        const char *keywords[] = {"img", NULL};
-        if (0 < argc &&
-            evision::nif::parse_arg(env, 0, argv, (char **) keywords, "O:to_binary", &erl_term_img) &&
-            evision_to_safe(env, erl_term_img, img, ArgInfo("img", 0))) {
+        // const char *keywords[] = {"img", NULL};
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0))) {
             ErlNifBinary bin_data;
             size_t bin_size = img.total() * img.elemSize();
             if (!enif_alloc_binary(bin_size, &bin_data))

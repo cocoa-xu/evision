@@ -97,6 +97,15 @@ bool evision_to_safe(ErlNifEnv *env, ERL_NIF_TERM obj, _Tp& value, const ArgInfo
     }
 }
 
+static
+ERL_NIF_TERM evision_get_kw(ErlNifEnv *env, const std::map<std::string, ERL_NIF_TERM>& erl_terms, const std::string& key) {
+    auto iter = erl_terms.find(key);
+    if (iter == erl_terms.end()) {
+        return evision::nif::atom(env, "nil");
+    }
+    return iter->second;
+}
+
 template<typename T> static
 bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, T& p, const ArgInfo& info) { return Evision_Converter<T>::to(env, obj, p, info); }
 
@@ -1539,11 +1548,8 @@ static int OnError(int status, const char *func_name, const char *err_msg, const
 
 static ERL_NIF_TERM evisionRedirectError(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
-    const char *keywords[] = { "on_error", NULL };
-    ERL_NIF_TERM on_error;
-
-    if (!evision::nif::parse_arg(env, argc, argv, (char**)keywords, "O", &on_error))
-        return evision::nif::atom(env, "nil");
+    // const char *keywords[] = { "on_error", NULL };
+    ERL_NIF_TERM on_error = argv[0];
 
     // todo:evision check callback
     if ((!evision::nif::check_nil(env, on_error)))  {
@@ -1589,13 +1595,17 @@ static void OnMouse(int event, int x, int y, int flags, void* param)
 #ifdef HAVE_OPENCV_HIGHGUI
 static ERL_NIF_TERM evisionSetMouseCallback(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
-    const char *keywords[] = { "window_name", "on_mouse", "param", NULL };
-    char* name;
-    ERL_NIF_TERM on_mouse;
-    ERL_NIF_TERM param;
+    std::map<std::string, ERL_NIF_TERM> erl_terms;
+    int nif_opts_index = 0;
+    evision::nif::parse_arg(env, nif_opts_index, argv, erl_terms);
 
-    if (!evision::nif::parse_arg(env, argc, argv, (char**)keywords, "sO|O", &name, &on_mouse, &param))
-        return evision::nif::atom(env, "not implemented");
+    // const char *keywords[] = { "window_name", "on_mouse", "param", NULL };
+//    char* name;
+//    ERL_NIF_TERM on_mouse;
+//    ERL_NIF_TERM param;
+//
+//    if (!evision::nif::parse_arg(env, argc, argv, (char**)keywords, "sO|O", &name, &on_mouse, &param))
+//        return evision::nif::atom(env, "not implemented");
     return evision::nif::atom(env, "not implemented");
 
     // todo: check callback
@@ -1653,15 +1663,15 @@ static int _createTrackbar(const String &trackbar_name, const String &window_nam
 }
 static ERL_NIF_TERM evisionCreateTrackbar(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
-    ERL_NIF_TERM on_change;
-    char* trackbar_name;
-    char* window_name;
-    int value;
-    int count;
-
-    // todo:evision evisionCreateTrackbar
-    if (!evision::nif::parse_arg(env, argc, argv, nullptr, "ssiiO", &trackbar_name, &window_name, &value, &count, &on_change))
-        return evision::nif::atom(env, "not implemented");
+//    ERL_NIF_TERM on_change;
+//    char* trackbar_name;
+//    char* window_name;
+//    int value;
+//    int count;
+//
+//    // todo:evision evisionCreateTrackbar
+//    if (!evision::nif::parse_arg(env, argc, argv, nullptr, "ssiiO", &trackbar_name, &window_name, &value, &count, &on_change))
+//        return evision::nif::atom(env, "not implemented");
     return evision::nif::atom(env, "not implemented");
 //
 //    if (!PyCallable_Check(on_change)) {
@@ -1713,15 +1723,19 @@ static void OnButtonChange(int state, void *param)
 
 static ERL_NIF_TERM evisionCreateButton(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
-    const char* keywords[] = {"buttonName", "onChange", "userData", "buttonType", "initialButtonState", NULL};
-    ERL_NIF_TERM on_change;
-    ERL_NIF_TERM userdata = evision::nif::atom(env, "nil");
-    char* button_name;
-    int button_type = 0;
-    int initial_button_state = 0;
+    std::map<std::string, ERL_NIF_TERM> erl_terms;
+    int nif_opts_index = 0;
+    evision::nif::parse_arg(env, nif_opts_index, argv, erl_terms);
 
-    if (!evision::nif::parse_arg(env, argc, argv, (char**)keywords, "sO|Oii", &button_name, &on_change, &userdata, &button_type, &initial_button_state))
-        return evision::nif::atom(env, "not implemented");
+//    const char* keywords[] = {"buttonName", "onChange", "userData", "buttonType", "initialButtonState", NULL};
+//    ERL_NIF_TERM on_change;
+//    ERL_NIF_TERM userdata = evision::nif::atom(env, "nil");
+//    char* button_name;
+//    int button_type = 0;
+//    int initial_button_state = 0;
+//
+//    if (!evision::nif::parse_arg(env, argc, argv, (char**)keywords, "sO|Oii", &button_name, &on_change, &userdata, &button_type, &initial_button_state))
+//        return evision::nif::atom(env, "not implemented");
     return evision::nif::atom(env, "not implemented");
 
     // todo: check callback

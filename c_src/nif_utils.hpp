@@ -287,16 +287,7 @@ namespace evision
                 || t == 'k' || t == 'K' || t == 'n' || t == 'f' || t == 'd' || t == 'O');
     }
 
-    inline int parse_arg(ErlNifEnv *env, int opt_arg_index, const ERL_NIF_TERM * argv, char** keyword_list, const char * spec, ...) {
-        va_list args;
-        va_start(args, spec);
-        size_t arg_index = 0;
-        size_t spec_index = 0;
-        std::map<std::string, ERL_NIF_TERM> copts;
-        if (keyword_list == nullptr) {
-            return false;
-        }
-
+    inline int parse_arg(ErlNifEnv *env, int opt_arg_index, const ERL_NIF_TERM * argv, std::map<std::string, ERL_NIF_TERM>& erl_terms) {
         ERL_NIF_TERM opts = argv[opt_arg_index];
         if (enif_is_list(env, opts)) {
             unsigned length = 0;
@@ -314,7 +305,7 @@ namespace evision
                         if (arity == 2) {
                             std::string ckey;
                             if (get_atom(env, arr[0], ckey)) {
-                                copts[ckey] = arr[1];
+                                erl_terms[ckey] = arr[1];
                             }
                         }
                     }
@@ -322,30 +313,9 @@ namespace evision
                 list_index++;
                 opts = rest;
             }
+            return true;
         }
-
-        size_t spec_len = strlen(spec);
-        while (spec[spec_index] != ':' && spec_index < spec_len) {
-            char t = spec[spec_index];
-            if (allowed_spec(t)) {
-                const char *k = keyword_list[arg_index];
-                if (k != nullptr) {
-                    ERL_NIF_TERM * i = (ERL_NIF_TERM *)va_arg(args, long);
-                    std::string kw = k;
-                    auto iter = copts.find(kw);
-                    if (iter != copts.end()) {
-                        *i = iter->second;
-                    } else {
-                        *i = atom(env, "nil");
-                    }
-                    arg_index++;
-                }
-            }
-            spec_index++;
-        }
-
-        va_end(args);
-        return true;
+        return false;
     }
   }
 }
