@@ -121,7 +121,10 @@ end
   ```
 
 ### Current Status
+Some tiny examples
+
 ```elixir
+## read image, process image and write image
 {:ok, gray_mat} = OpenCV.imread("/path/to/img.png", flags: OpenCV.cv_imread_grayscale)
 {:ok, gray_blur_mat} = OpenCV.blur(gray_mat, [10,10], anchor: [1,1])
 {:ok, colour_mat} = OpenCV.imread("/path/to/img.png")
@@ -129,10 +132,18 @@ end
 :ok = OpenCV.imwrite("/path/to/img-gray-and-blur.png", gray_blur_mat)
 :ok = OpenCV.imwrite("/path/to/img-colour-and-blur.png", colour_blur_mat)
 
+## capture from video file/camera
 {:ok, cap} = OpenCV.VideoCapture.videocapture(0)
 {:ok, cap_mat} = OpenCV.VideoCapture.read(cap)
 :ok = OpenCV.imwrite("/path/exists/capture-mat.png", cap_mat)
 :error = OpenCV.imwrite("/path/not/exists/capture-mat.png", cap_mat)
+
+## to_binary/from_binary
+{:ok, mat} = OpenCV.imread("/path/to/img.jpg")
+{:ok, type} = OpenCV.Mat.type(mat)
+{:ok, {rows, cols, channels}} = OpenCV.Mat.shape(mat)
+{:ok, binary_data} = OpenCV.Mat.to_binary(mat)
+OpenCV.Mat.from_binary(binary_data, type, cols, rows, channels)
 ```
 
 ### Todo
