@@ -251,19 +251,19 @@ class FormatStrings:
 
 ArgTypeInfo = namedtuple('ArgTypeInfo',
                         ['atype', 'format_str', 'default_value',
-                         'strict_conversion'])
+                         'strict_conversion', 'is_enum'])
 # strict_conversion is False by default
 ArgTypeInfo.__new__.__defaults__ = (False,)
 
 simple_argtype_mapping = {
-    "bool": ArgTypeInfo("bool", FormatStrings.unsigned_char, "0", True),
-    "size_t": ArgTypeInfo("size_t", FormatStrings.unsigned_long_long, "0", True),
-    "int": ArgTypeInfo("int", FormatStrings.int, "0", True),
-    "float": ArgTypeInfo("float", FormatStrings.float, "0.f", True),
-    "double": ArgTypeInfo("double", FormatStrings.double, "0", True),
-    "c_string": ArgTypeInfo("char*", FormatStrings.string, '(char*)""'),
-    "string": ArgTypeInfo("std::string", FormatStrings.object, None, True),
-    "Stream": ArgTypeInfo("Stream", FormatStrings.object, 'Stream::Null()', True),
+    "bool": ArgTypeInfo("bool", FormatStrings.unsigned_char, "0", True, False),
+    "size_t": ArgTypeInfo("size_t", FormatStrings.unsigned_long_long, "0", True, False),
+    "int": ArgTypeInfo("int", FormatStrings.int, "0", True, False),
+    "float": ArgTypeInfo("float", FormatStrings.float, "0.f", True, False),
+    "double": ArgTypeInfo("double", FormatStrings.double, "0", True, False),
+    "c_string": ArgTypeInfo("char*", FormatStrings.string, '(char*)""', False, False),
+    "string": ArgTypeInfo("std::string", FormatStrings.object, None, True, False),
+    "Stream": ArgTypeInfo("Stream", FormatStrings.object, 'Stream::Null()', True, False),
 }
 
 # Set of reserved keywords for Python. Can be acquired via the following call
@@ -763,11 +763,16 @@ class FuncInfo(object):
                     if tp.endswith("*"):
                         defval0 = "0"
                         tp1 = tp.replace("*", "_ptr")
-                tp_candidates = [a.tp, normalize_class_name(self.namespace + "." + a.tp)]
+                tp_candidates = [a.tp, normalize_class_name(self.namespace + "." + a.tp), normalize_class_name(self.classname + "." + a.tp)]
                 if any(tp in codegen.enums.keys() for tp in tp_candidates):
                     defval0 = "static_cast<%s>(%d)" % (a.tp, 0)
 
-                arg_type_info = simple_argtype_mapping.get(tp, ArgTypeInfo(tp, FormatStrings.object, defval0, True))
+                arg_type_info = simple_argtype_mapping.get(tp, ArgTypeInfo(tp, FormatStrings.object, defval0, True, False))
+                if any(tp in codegen.enums.keys() for tp in tp_candidates):
+                    defval = f"static_cast<std::underlying_type_t<{arg_type_info.atype}>>({arg_type_info.default_value})"
+                    arg_type_info = ArgTypeInfo(f"std::underlying_type_t<{arg_type_info.atype}>", arg_type_info.format_str, defval, True, True)
+                    a.defval = defval
+
                 parse_name = a.name
                 if a.py_inputarg:
                     parse_name = "erl_term_" + a.name
@@ -812,7 +817,10 @@ class FuncInfo(object):
                 if a.isrvalueref:
                     a.name = 'std::move(' + a.name + ')'
 
-                code_args += amp + a.name
+                if arg_type_info.is_enum:
+                    code_args += f"static_cast<{tp}>({a.name})"
+                else:
+                    code_args += amp + a.name
 
             code_args += ")"
 
@@ -847,7 +855,7 @@ class FuncInfo(object):
             if v.rettype:
                 tp = v.rettype
                 tp1 = tp.replace("*", "_ptr")
-                default_info = ArgTypeInfo(tp, FormatStrings.object, "0")
+                default_info = ArgTypeInfo(tp, FormatStrings.object, "0", False, False)
                 arg_type_info = simple_argtype_mapping.get(tp, default_info)
                 all_cargs.append(arg_type_info)
 
