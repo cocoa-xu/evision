@@ -1349,9 +1349,9 @@ class PythonWrapperGenerator(object):
                         func_args_with_opts = ''
             if unique_signatures.get(sign, None) is True:
                 writer.write('\n'.join(["  # {}".format(line.strip()) for line in opt_doc.split("\n")]))
-                writer.write(f'#  def {module_func_name}({func_args}) do\n  #   :erl_cv_nif.{func_name}({func_args})\n  # end\n')
+                writer.write(f'  # def {module_func_name}({func_args}) do\n  #   :erl_cv_nif.{func_name}({func_args})\n  # end\n')
                 if len(func_args_with_opts) > 0:
-                    writer.write(f'#  def {module_func_name}({func_args_with_opts}) do\n  #   :erl_cv_nif.{func_name}({func_args_with_opts})\n  # end\n')
+                    writer.write(f'  # def {module_func_name}({func_args_with_opts}) do\n  #   :erl_cv_nif.{func_name}({func_args_with_opts})\n  # end\n')
             else:
                 unique_signatures[sign] = True
 
@@ -1363,6 +1363,27 @@ class PythonWrapperGenerator(object):
                 inline_doc = f'\n  @doc """{doc_string}{opt_doc}{prototype}\n  """\n'
                 if writer.doc_written.get(module_func_name, None) is None:
                     writer.doc_written[module_func_name] = True
+                    inline_doc1 = ""
+                    last_in_list = False
+                    for line in inline_doc.split("\n"):
+                        strip_line = line.strip()
+                        if strip_line.startswith("@"):
+                            if strip_line != "@doc \"\"\"":
+                                if strip_line.startswith("@brief"):
+                                    inline_doc1 += "    {}\n".format(strip_line[len("@brief"):].strip())
+                                else:
+                                    inline_doc1 += "    - {}\n".format(strip_line)
+                                    last_in_list = True
+                            else:
+                                inline_doc1 += "  @doc \"\"\"\n"
+                        elif strip_line.startswith("Python prototype:"):
+                            inline_doc1 += "\n    {}\n".format(strip_line)
+                            last_in_list = False
+                        elif len(strip_line) != 0:
+                            inline_doc1 += "{}{}\n".format("  " if last_in_list else "", line)
+                        else:
+                            last_in_list = False
+                    inline_doc = inline_doc1
                 else:
                     inline_doc = ''.join(['  # {}\n'.format(line.strip()) for line in inline_doc.split("\n")])
 
