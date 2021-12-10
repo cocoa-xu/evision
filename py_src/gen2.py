@@ -12,7 +12,8 @@ if sys.version_info[0] >= 3:
 else:
     from cStringIO import StringIO
 
-special_handling_for_highgui_funcs = ['evision_cv_imshow']
+special_handling_for_highgui_funcs = ['evision_cv_imshow', 'evision_cv_waitkey', 'evision_cv_destroywindow',
+                                      'evision_cv_destroyallwindows']
 
 forbidden_arg_types = ["void*"]
 
