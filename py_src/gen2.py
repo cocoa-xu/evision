@@ -57,7 +57,6 @@ gen_template_simple_call_constructor_prelude = Template("""evision_res<$cname> *
 
 gen_template_simple_call_constructor = Template("""new (&(self->val)) ${cname}${py_args}""")
 
-# fmtspec, parse_arglist, opt_arg_index
 gen_template_parse_args = Template("""// const char* keywords[] = { $kw_list, NULL }; // <- no more in use, left for debugging purpose
     if( $code_cvt )""")
 
@@ -642,7 +641,7 @@ class FuncInfo(object):
         if self.is_static:
             name += "_static"
 
-        return "evision_" + self.namespace.replace('.','_') + '_' + classname + name
+        return "evision_" + self.namespace.replace('.', '_') + '_' + classname + name
 
     def get_wrapper_prototype(self):
         full_fname = self.get_wrapper_name()
@@ -860,28 +859,15 @@ class FuncInfo(object):
                 all_cargs.append(arg_type_info)
 
             if v.args and v.py_arglist:
-                # form the format spec for PyArg_ParseTupleAndKeywords
-                fmtspec = "".join([
-                    get_type_format_string(all_cargs[argno][0])
-                    for aname, argno, argtype in v.py_arglist
-                ])
-                if v.py_noptargs > 0:
-                    fmtspec = fmtspec[:-v.py_noptargs] + "|" + fmtspec[-v.py_noptargs:]
-                fmtspec += ":" + fullname
-
                 # form the argument parse code that:
                 #   - declares the list of keyword parameters
-                #   - calls PyArg_ParseTupleAndKeywords
-                #   - converts complex arguments from PyObject's to native OpenCV types
+                #   - calls evision::nif::parse_arg
+                #   - converts complex arguments from ERL_NIF_TERM's to native OpenCV types
                 code_parse = gen_template_parse_args.substitute(
-                    kw_list = ", ".join(['"' + aname + '"' for aname, argno, argtype in v.py_arglist]),
-                    fmtspec = fmtspec,
-                    opt_arg_index = opt_arg_index,
-                    parse_arglist = ", ".join(["&" + all_cargs[argno][1] for aname, argno, argtype in v.py_arglist]),
-                    code_cvt = "{}".format(" && \n        ".join(code_cvt_list)))
+                    kw_list=", ".join(['"' + aname + '"' for aname, argno, argtype in v.py_arglist]),
+                    code_cvt="{}".format(" && \n        ".join(code_cvt_list)))
             else:
                 code_parse = "if(argc - nif_opts_index == 0)"
-                # code_parse = "if(argc == 0 && (!kw || PyObject_Size(kw) == 0))"
 
             if len(v.py_outlist) == 0:
                 code_ret = "return evision::nif::atom(env, \"nil\")"
@@ -916,10 +902,11 @@ class FuncInfo(object):
                         code_ret = "return evision::nif::ok(env, enif_make_tuple%d(env, %s))" % \
                             (n_tuple, ", ".join(evision_from_calls))
 
-            all_code_variants.append(gen_template_func_body.substitute(code_decl=code_decl,
-                code_parse=code_parse, code_prelude=code_prelude, code_fcall=code_fcall, code_ret=code_ret))
+            all_code_variants.append(gen_template_func_body.substitute(code_decl=code_decl, code_parse=code_parse,
+                                                                       code_prelude=code_prelude, code_fcall=code_fcall,
+                                                                       code_ret=code_ret))
 
-        if len(all_code_variants)==1:
+        if len(all_code_variants) == 1:
             # if the function/method has only 1 signature, then just put it
             code += all_code_variants[0]
         else:
