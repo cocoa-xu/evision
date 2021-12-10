@@ -96,7 +96,7 @@ struct Evision_Converter< ${cname} >
     {
         if(!src || evision::nif::check_nil(env, src))
             return true;
-        ${cname} * dst_;
+        ${cname} * dst_ = nullptr;
         if (evision_${name}_getp(env, src, dst_))
         {
             dst = *dst_;
