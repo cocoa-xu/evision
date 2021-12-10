@@ -102,7 +102,7 @@ bool evision_to(ErlNifEnv *env, ERL_NIF_TERM dst, TYPE& src, const ArgInfo& info
 template<>                                                                                            \
 ERL_NIF_TERM evision_from(ErlNifEnv *env, const TYPE& src)                                            \
 {                                                                                                     \
-    return evision::nif::ok(env, evision::nif::make(env, (int)src));                                  \
+    return evision::nif::make(env, (int)src);                                                         \
 }
 
 //==================================================================================================
