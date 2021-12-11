@@ -1288,6 +1288,8 @@ class PythonWrapperGenerator(object):
             end = inline_math_match.end(1)
             # avoid inline math `*` translating to `<em>` when passing through markdown parser
             math_text = inline_math_match.group(1).replace('*', r'\\*')
+            # avoid inline math `_` translating to `<em>` when passing through markdown parser
+            math_text = math_text.replace('_', r'\\_')
             replaced = processed + todo[:start] + math_text + todo[end:]
             return self.handle_inline_math_escaping(replaced, start_pos + end)
         else:
