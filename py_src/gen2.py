@@ -1391,8 +1391,9 @@ class PythonWrapperGenerator(object):
                                     # @optional <ARG_NAME>[ <DESCRIPTION GOES HERE>]
                                     arg_desc = strip_line.split(' ', 3)
                                     normalized_arg_name = self.map_erl_argname(arg_desc[1])
+                                    normalized_arg_name = normalized_arg_name.replace(":", "")
                                     if len(arg_desc) == 3:
-                                        inline_doc1 += "  - **{}**: {}\n".format(normalized_arg_name, arg_desc[2])
+                                        inline_doc1 += "  - **{}** : {}\n".format(normalized_arg_name, arg_desc[2])
                                     else:
                                         inline_doc1 += "  - **{}**.\n".format(normalized_arg_name)
                                     last_in_list = True
