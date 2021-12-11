@@ -1042,7 +1042,7 @@ class PythonWrapperGenerator(object):
         self.clear()
         self.argname_prefix_re = re.compile(r'^[_]*')
         self.inline_docs_code_type_re = re.compile(r'@code{.(.*)}')
-        self.inline_docs_inline_math_re = re.compile('(?:.*?)\\\\\\\\f[$\\[](.*?)\\\\\\\\f[$\\]]')
+        self.inline_docs_inline_math_re = re.compile(r'(?:.*?)\\\\f[$\[](.*?)\\\\f[$\]]', re.MULTILINE|re.DOTALL)
 
     def clear(self):
         self.classes = {}
@@ -1286,12 +1286,16 @@ class PythonWrapperGenerator(object):
         if inline_math_match:
             start = inline_math_match.start(1)
             end = inline_math_match.end(1)
-            # avoid inline math `*` translating to `<em>` when passing through markdown parser
-            math_text = inline_math_match.group(1).replace('*', r'\\*')
-            # avoid inline math `_` translating to `<em>` when passing through markdown parser
-            math_text = math_text.replace('_', r'\\_')
-            replaced = processed + todo[:start] + math_text + todo[end:]
-            return self.handle_inline_math_escaping(replaced, start_pos + end)
+            math_text = inline_math_match.group(1)
+            if math_text and len(math_text) > 0:
+                # avoid inline math `*` translating to `<em>` when passing through markdown parser
+                math_text = math_text.replace('*', r'\\*')
+                # avoid inline math `_` translating to `<em>` when passing through markdown parser
+                math_text = math_text.replace('_', r'\\_')
+                replaced = processed + todo[:start] + math_text + todo[end:]
+                return self.handle_inline_math_escaping(replaced, start_pos + end)
+            else:
+                return text
         else:
             return text
 
@@ -1395,8 +1399,6 @@ class PythonWrapperGenerator(object):
                         if strip_line == "=":
                             inline_doc = inline_doc[:-1] + "="
                             continue
-                        strip_line = self.handle_inline_math_escaping(strip_line)
-                        line = self.handle_inline_math_escaping(line)
 
                         if strip_line.startswith("@"):
                             if strip_line != "@doc \"\"\"":
@@ -1449,6 +1451,7 @@ class PythonWrapperGenerator(object):
                         else:
                             last_in_list = False
                     inline_doc = inline_doc1 + '  """\n'
+                    inline_doc = self.handle_inline_math_escaping(inline_doc)
                 else:
                     inline_doc = ''.join(['  # {}\n'.format(line.strip()) for line in inline_doc.split("\n")])
 
