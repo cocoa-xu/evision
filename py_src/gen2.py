@@ -1296,6 +1296,8 @@ class PythonWrapperGenerator(object):
                 math_text = math_text.replace('_', r'\\_')
                 # avoid markdown parser trying to match inline math `[` for markdown `[]()`
                 math_text = math_text.replace('[', r'\\[')
+                # escape left/right curly brackets
+                math_text = math_text.replace(r'\\{', r'\\\\{').replace(r'\\}', r'\\\\}')
                 # avoid plus(`+`)/minus(`-`) sign translating as list when passing through markdown parser
                 math_lines = ""
                 for line in math_text.split("\n"):
