@@ -1358,22 +1358,26 @@ class PythonWrapperGenerator(object):
                     doc_string = f'\n    {doc_string}\n'
                 else:
                     doc_string = '\n'
-                inline_doc = f'\n  @doc """{doc_string}{opt_doc}{prototype}\n  """\n'
+                inline_doc = f'\n  @doc """{doc_string}{opt_doc}{prototype}\n'
                 if writer.doc_written.get(module_func_name, None) is None:
                     writer.doc_written[module_func_name] = True
                     inline_doc1 = ""
                     last_in_list = False
                     last_is_code = False
                     for line in inline_doc.split("\n"):
-                        line = line.replace("\\", "\\\\")
-                        line = line.replace("\\\\\\\\", "\\\\\\\\\\\\\\\\")
+                        line = line.replace("\\", r"\\")
+                        line = line.replace(r"\\\\", r"\\\\\\\\")
                         strip_line = line.strip()
                         if strip_line.startswith("*"):
                             strip_line = strip_line[1:].strip()
                             line = line.replace("*", "", 1)
+                        if strip_line.startswith('"""'):
+                            strip_line = strip_line.replace('"""', r'\"\"\"', 1)
+                            line = line.replace('"""', r'\"\"\"', 1)
                         if strip_line == "=":
                             inline_doc = inline_doc[:-1] + "="
                             continue
+
                         if strip_line.startswith("@"):
                             if strip_line != "@doc \"\"\"":
                                 if strip_line.startswith("@brief"):
@@ -1424,7 +1428,7 @@ class PythonWrapperGenerator(object):
                                 inline_doc1 += "{}{}\n".format("  " if last_in_list else "", line)
                         else:
                             last_in_list = False
-                    inline_doc = inline_doc1
+                    inline_doc = inline_doc1 + '  """\n'
                 else:
                     inline_doc = ''.join(['  # {}\n'.format(line.strip()) for line in inline_doc.split("\n")])
 
