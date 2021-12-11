@@ -12,8 +12,13 @@ if sys.version_info[0] >= 3:
 else:
     from cStringIO import StringIO
 
-special_handling_for_highgui_funcs = ['evision_cv_imshow', 'evision_cv_waitkey', 'evision_cv_destroywindow',
-                                      'evision_cv_destroyallwindows']
+evision_nif_prefix = 'evision_cv_'
+special_handling_for_highgui_funcs = ["{}{}".format(evision_nif_prefix, name) for name in [
+    'imshow',
+    'waitkey',
+    'destroywindow',
+    'destroyallwindows']
+]
 
 forbidden_arg_types = ["void*"]
 
@@ -1036,6 +1041,7 @@ class PythonWrapperGenerator(object):
     def __init__(self):
         self.clear()
         self.argname_prefix_re = re.compile(r'^[_]*')
+        self.inline_docs_code_type_re = re.compile(r'@code({\..*})')
 
     def clear(self):
         self.classes = {}
@@ -1223,7 +1229,7 @@ class PythonWrapperGenerator(object):
             return 'numerical'
         elif argtype == 'float':
             return 'float'
-        elif argtype == 'String' or argtype == 'c_string'  or argtype == 'char':
+        elif argtype == 'String' or argtype == 'c_string' or argtype == 'char':
             return 'binary'
         elif argtype == 'Size' or argtype == 'Scalar' or argtype == 'Point2f' or argtype == 'Point':
             return 'list'
@@ -1259,7 +1265,12 @@ class PythonWrapperGenerator(object):
         reserved_keywords = ['end', 'fn']
         name = ""
         if argname in reserved_keywords:
-            name = f'erl_{argname}'
+            if argname == 'fn':
+                name = 'func'
+            elif argname == 'end':
+                name = 'end_arg'
+            else:
+                name = f'arg_{argname}'
         else:
             name = self.argname_prefix_re.sub('', argname)
         if all_lower_case:
@@ -1308,7 +1319,7 @@ class PythonWrapperGenerator(object):
             pos_end = len(arglist) if not has_opts else -noptargs
             opt_args = ''
             opt_doc = ''
-            prototype = f'    Python prototype: {current_func.py_prototype}'
+            prototype = f'    Python prototype (for reference): {current_func.py_prototype}'
             if has_opts:
                 opt_args = 'opts' if min_args == 0 else ', opts'
                 opt_doc = '\n'.join(['    @optional {}: {}'.format(arg_name, argtype) for (arg_name, _, argtype) in arglist[-noptargs:]])
@@ -1319,8 +1330,8 @@ class PythonWrapperGenerator(object):
                 func_args_with_opts = '{}{}'.format(", ".join(['{}'.format(self.map_erl_argname(arg_name)) for (arg_name, _, argtype) in arglist[:pos_end]]), opt_args)
             module_func_name = func_name
             if is_ns:
-                if module_func_name != f'evision_cv_{name.lower()}':
-                    module_func_name = module_func_name[len('evision_cv_'):]
+                if module_func_name != f'{evision_nif_prefix}{name.lower()}':
+                    module_func_name = module_func_name[len(evision_nif_prefix):]
                 else:
                     module_func_name = name.lower()
             else:
@@ -1352,22 +1363,56 @@ class PythonWrapperGenerator(object):
                     writer.doc_written[module_func_name] = True
                     inline_doc1 = ""
                     last_in_list = False
+                    last_is_code = False
                     for line in inline_doc.split("\n"):
                         strip_line = line.strip()
                         if strip_line.startswith("@"):
                             if strip_line != "@doc \"\"\"":
                                 if strip_line.startswith("@brief"):
                                     inline_doc1 += "    {}\n".format(strip_line[len("@brief"):].strip())
-                                else:
-                                    inline_doc1 += "    - {}\n".format(strip_line)
+                                    last_in_list = False
+                                elif strip_line.startswith("@overload"):
+                                    inline_doc1 += "    Has overloading in C++\n\n"
+                                    last_in_list = False
+                                elif strip_line.startswith("@note"):
+                                    inline_doc1 += "    **Note**: {}\n".format(strip_line[len("@note"):].strip())
+                                    last_in_list = False
+                                elif strip_line.startswith("@param") or strip_line.startswith("@optional"):
+                                    # expecting:
+                                    # @param <ARG_NAME>[ <DESCRIPTION GOES HERE>]
+                                    # @optional <ARG_NAME>[ <DESCRIPTION GOES HERE>]
+                                    arg_desc = strip_line.split(' ', 3)
+                                    normalized_arg_name = self.map_erl_argname(arg_desc[1])
+                                    if len(arg_desc) == 3:
+                                        inline_doc1 += "    - **{}**: {}\n".format(normalized_arg_name, arg_desc[2])
+                                    else:
+                                        inline_doc1 += "    - **{}**.\n".format(normalized_arg_name)
                                     last_in_list = True
+                                elif strip_line.startswith("@code"):
+                                    last_in_list = False
+                                    last_is_code = True
+                                    code_type_match = self.inline_docs_code_type_re.match(strip_line)
+                                    inline_doc1 += "    ```"
+                                    if code_type_match:
+                                        inline_doc1 += code_type_match.group(1)
+                                    inline_doc1 += "\n"
+                                elif strip_line.startswith("@endcode"):
+                                    last_in_list = False
+                                    last_is_code = False
+                                    inline_doc1 += "    ```\n"
+                                else:
+                                    inline_doc1 += "    {}\n".format(strip_line)
+                                    last_in_list = False
                             else:
                                 inline_doc1 += "  @doc \"\"\"\n"
-                        elif strip_line.startswith("Python prototype:"):
-                            inline_doc1 += "\n    {}\n".format(strip_line)
+                        elif strip_line.startswith("Python prototype (for reference): "):
+                            inline_doc1 += "\n    Python prototype (for reference): \n    ```\n  {}\n    ```\n".format(strip_line[len("Python prototype (for reference): "):])
                             last_in_list = False
                         elif len(strip_line) != 0:
-                            inline_doc1 += "{}{}\n".format("  " if last_in_list else "", line)
+                            if last_is_code:
+                                inline_doc1 += "  {}\n".format(strip_line)
+                            else:
+                                inline_doc1 += "{}{}\n".format("  " if last_in_list else "", line)
                         else:
                             last_in_list = False
                     inline_doc = inline_doc1
@@ -1416,18 +1461,6 @@ class PythonWrapperGenerator(object):
                         self.erl_cv_nif.write(f'  {line}\n')
 
         self.code_ns_reg.write('\n};\n\n')
-        # self.code_ns_reg.write('static ConstDef consts_cv[] = {\n')
-        # for ns_name in self.namespaces:
-        #     ns = self.namespaces[ns_name]
-        #     wname = normalize_class_name(ns_name)
-        #     for name, cname in sorted(ns.consts.items()):
-        #         self.code_ns_reg.write('    {"%s", static_cast<long>(%s)},\n'%(name, cname))
-        #         compat_name = re.sub(r"([a-z])([A-Z])", r"\1_\2", name).upper()
-        #         if name != compat_name:
-        #             self.code_ns_reg.write('    {"%s", static_cast<long>(%s)},\n'%(compat_name, cname))
-        #     custom_entries_macro = 'PYOPENCV_EXTRA_CONSTANTS_{}'.format(wname.upper())
-        #     self.code_ns_reg.write('#ifdef {}\n    {}\n#endif\n'.format(custom_entries_macro, custom_entries_macro))
-        # self.code_ns_reg.write('\n};\n\n')
 
     def gen_enum_reg(self, enum_name):
         name_seg = enum_name.split(".")
