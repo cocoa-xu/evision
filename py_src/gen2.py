@@ -1282,6 +1282,8 @@ class PythonWrapperGenerator(object):
     def handle_inline_math_escaping(self, text, start_pos=0):
         processed = text[:start_pos]
         todo = text[start_pos:]
+        if len(todo) == 0:
+            return text
         inline_math_match = self.inline_docs_inline_math_re.match(todo)
         if inline_math_match:
             start = inline_math_match.start(1)
@@ -1292,8 +1294,22 @@ class PythonWrapperGenerator(object):
                 math_text = math_text.replace('*', r'\\*')
                 # avoid inline math `_` translating to `<em>` when passing through markdown parser
                 math_text = math_text.replace('_', r'\\_')
+                # avoid markdown parser trying to match inline math `[` for markdown `[]()`
+                math_text = math_text.replace('[', r'\\[')
+                # avoid plus(`+`)/minus(`-`) sign translating as list when passing through markdown parser
+                math_lines = ""
+                for line in math_text.split("\n"):
+                    strip_line = line.lstrip()
+                    if strip_line.startswith('- '):
+                        math_lines += line.replace('- ', r'\\- ', 1)
+                    elif strip_line.startswith('+ '):
+                        math_lines += line.replace('+ ', r'\\+ ', 1)
+                    else:
+                        math_lines += line
+                    math_lines += "\n"
+                math_text = math_lines[:-1]
                 replaced = processed + todo[:start] + math_text + todo[end:]
-                return self.handle_inline_math_escaping(replaced, start_pos + end)
+                return self.handle_inline_math_escaping(replaced, len(processed) + start + len(math_text) + 1)
             else:
                 return text
         else:
