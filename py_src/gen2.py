@@ -1041,7 +1041,8 @@ class PythonWrapperGenerator(object):
     def __init__(self):
         self.clear()
         self.argname_prefix_re = re.compile(r'^[_]*')
-        self.inline_docs_code_type_re = re.compile(r'@code({\..*})')
+        self.inline_docs_code_type_re = re.compile(r'@code{.(.*)}')
+        self.inline_docs_inline_math_re = re.compile('(?:.*?)\\\\\\\\f[$\\[](.*?)\\\\\\\\f[$\\]]')
 
     def clear(self):
         self.classes = {}
@@ -1277,6 +1278,21 @@ class PythonWrapperGenerator(object):
             return name.lower()
         return f"{name[0:1].lower()}{name[1:]}"
 
+
+    def handle_inline_math_escaping(self, text, start_pos=0):
+        processed = text[:start_pos]
+        todo = text[start_pos:]
+        inline_math_match = self.inline_docs_inline_math_re.match(todo)
+        if inline_math_match:
+            start = inline_math_match.start(1)
+            end = inline_math_match.end(1)
+            # avoid inline math `*` translating to `<em>` when passing through markdown parser
+            math_text = inline_math_match.group(1).replace('*', r'\\*')
+            replaced = processed + todo[:start] + math_text + todo[end:]
+            return self.handle_inline_math_escaping(replaced, start_pos + end)
+        else:
+            return text
+
     def gen_erl_declaration(self, wname, name, func, writer=None, is_ns=False, is_constructor=False):
         # functions in namespaces goes to 'erl_cv_nif.ex' and 'opencv_{module}.ex'
         # 'erl_cv_nif.ex' contains the declarations of all NIFs
@@ -1377,6 +1393,8 @@ class PythonWrapperGenerator(object):
                         if strip_line == "=":
                             inline_doc = inline_doc[:-1] + "="
                             continue
+                        strip_line = self.handle_inline_math_escaping(strip_line)
+                        line = self.handle_inline_math_escaping(line)
 
                         if strip_line.startswith("@"):
                             if strip_line != "@doc \"\"\"":
