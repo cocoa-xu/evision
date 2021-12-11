@@ -1365,17 +1365,25 @@ class PythonWrapperGenerator(object):
                     last_in_list = False
                     last_is_code = False
                     for line in inline_doc.split("\n"):
+                        line = line.replace("\\", "\\\\")
+                        line = line.replace("\\\\\\\\", "\\\\\\\\\\\\\\\\")
                         strip_line = line.strip()
+                        if strip_line.startswith("*"):
+                            strip_line = strip_line[1:].strip()
+                            line = line.replace("*", "", 1)
+                        if strip_line == "=":
+                            inline_doc = inline_doc[:-1] + "="
+                            continue
                         if strip_line.startswith("@"):
                             if strip_line != "@doc \"\"\"":
                                 if strip_line.startswith("@brief"):
-                                    inline_doc1 += "    {}\n".format(strip_line[len("@brief"):].strip())
+                                    inline_doc1 += "  {}\n".format(strip_line[len("@brief"):].strip())
                                     last_in_list = False
                                 elif strip_line.startswith("@overload"):
-                                    inline_doc1 += "    Has overloading in C++\n\n"
+                                    inline_doc1 += "  Has overloading in C++\n\n"
                                     last_in_list = False
                                 elif strip_line.startswith("@note"):
-                                    inline_doc1 += "    **Note**: {}\n".format(strip_line[len("@note"):].strip())
+                                    inline_doc1 += "  **Note**: {}\n".format(strip_line[len("@note"):].strip())
                                     last_in_list = False
                                 elif strip_line.startswith("@param") or strip_line.startswith("@optional"):
                                     # expecting:
@@ -1384,29 +1392,29 @@ class PythonWrapperGenerator(object):
                                     arg_desc = strip_line.split(' ', 3)
                                     normalized_arg_name = self.map_erl_argname(arg_desc[1])
                                     if len(arg_desc) == 3:
-                                        inline_doc1 += "    - **{}**: {}\n".format(normalized_arg_name, arg_desc[2])
+                                        inline_doc1 += "  - **{}**: {}\n".format(normalized_arg_name, arg_desc[2])
                                     else:
-                                        inline_doc1 += "    - **{}**.\n".format(normalized_arg_name)
+                                        inline_doc1 += "  - **{}**.\n".format(normalized_arg_name)
                                     last_in_list = True
                                 elif strip_line.startswith("@code"):
                                     last_in_list = False
                                     last_is_code = True
                                     code_type_match = self.inline_docs_code_type_re.match(strip_line)
-                                    inline_doc1 += "    ```"
+                                    inline_doc1 += "  ```"
                                     if code_type_match:
                                         inline_doc1 += code_type_match.group(1)
                                     inline_doc1 += "\n"
                                 elif strip_line.startswith("@endcode"):
                                     last_in_list = False
                                     last_is_code = False
-                                    inline_doc1 += "    ```\n"
+                                    inline_doc1 += "  ```\n"
                                 else:
-                                    inline_doc1 += "    {}\n".format(strip_line)
+                                    inline_doc1 += "  {}\n".format(strip_line)
                                     last_in_list = False
                             else:
                                 inline_doc1 += "  @doc \"\"\"\n"
                         elif strip_line.startswith("Python prototype (for reference): "):
-                            inline_doc1 += "\n    Python prototype (for reference): \n    ```\n  {}\n    ```\n".format(strip_line[len("Python prototype (for reference): "):])
+                            inline_doc1 += "\n  Python prototype (for reference): \n  ```\n  {}\n  ```\n".format(strip_line[len("Python prototype (for reference): "):])
                             last_in_list = False
                         elif len(strip_line) != 0:
                             if last_is_code:
