@@ -83,7 +83,7 @@ def deps do
 end
 ```
 
-### Note
+### Notes
 - Use `MAKE_BUILD_FLAGS="-j$(nproc)"` environment variable to set number of jobs for compiling.
   
   Default value: `"-j#{System.schedulers_online()}"`. In `mix.exs`.
@@ -113,6 +113,10 @@ end
   rm -f "_build/${MIX_ENV}/lib/evision/priv/evision.so"
   ## for nerves
   rm -rf "_build/${MIX_TARGET}_${MIX_ENV}/lib/evision/priv/evision.so"
+  
+  # comment out the line `execute_process(...)` in CMakeLists.txt 
+  # if you would like to manually modified the generated .ex files and/or .h files
+  # execute_process(COMMAND bash -c "python3 ${PY_SRC}/gen2.py ${C_SRC} ${GENERATED_ELIXIR_SRC_DIR} ${C_SRC}/headers.txt")
   
   # delete evision related CMake build caches.
   rm -rf "_build/${MIX_ENV}/lib/evision/cmake_evision"
