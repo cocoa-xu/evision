@@ -1,0 +1,72 @@
+<!-- vim: syntax=markdown -->
+
+# OpenCV Stitcher Demo
+
+## Install deps
+
+```elixir
+# a quick fix for the free tier livebook session
+## allocate 2GB swap
+System.cmd("fallocate", ["-l", "2G", "/swap"])
+System.cmd("chmod", ["400", "/swap"])
+System.cmd("mkswap", ["/swap"])
+System.cmd("swapon", ["/swap"])
+## need unzip to unzip the source code
+System.cmd("apt", ["update"])
+System.cmd("apt", ["install", "-y", "unzip", "python3"])
+
+Mix.install([
+  {:evision, "~> 0.1.0-dev", github: "cocoa-xu/evision", branch: "main"},
+  {:kino, "~> 0.3.1"}
+])
+```
+
+## Helper Function
+
+```elixir
+defmodule Helper do
+  def download!(url, save_as) do
+    http_opts = []
+    opts = [body_format: :binary]
+    arg = {url, []}
+
+    body =
+      case :httpc.request(:get, arg, http_opts, opts) do
+        {:ok, {{_, 200, _}, _, body}} ->
+          body
+
+        {:error, reason} ->
+          raise inspect(reason)
+      end
+
+    File.write!(save_as, body)
+  end
+end
+```
+
+## Download test images
+
+```elixir
+# https://github.com/opencv/opencv_extra/tree/4.x/testdata/stitching
+Helper.download!("https://raw.githubusercontent.com/opencv/opencv_extra/master/testdata/stitching/a1.png", "a1.png")
+Helper.download!("https://raw.githubusercontent.com/opencv/opencv_extra/master/testdata/stitching/a2.png", "a2.png")
+Helper.download!("https://raw.githubusercontent.com/opencv/opencv_extra/master/testdata/stitching/a3.png", "a3.png")
+```
+
+## Stitching
+
+```elixir
+{:ok, a1} = OpenCV.imread("./a1.png")
+{:ok, a2} = OpenCV.imread("./a2.png")
+{:ok, a3} = OpenCV.imread("./a3.png")
+{:ok, sticher} = OpenCV.Stitcher.create
+{:ok, {status_code, result}} = OpenCV.Stitcher.stitch(sticher, [a1, a2, a3])
+0 = status_code
+// status_code should be 0 (OK),
+// for other status_code, please refer to https://github.com/opencv/opencv/blob/4.5.4/modules/stitching/include/opencv2/stitching.hpp#L152
+
+OpenCV.imencode(".png", result)
+|> then(fn {:ok, val} -> val end)
+|> Enum.into(<<>>, fn bit -> <<bit::8>> end)
+|> Kino.Image.new(:png)
+```
