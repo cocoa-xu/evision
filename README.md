@@ -49,7 +49,13 @@ Current available modules:
 - video 
 - videoio
 
-Note, edit `config/config.exs` to enable/disable OpenCV modules and image coders.
+Note 1, edit `config/config.exs` to enable/disable OpenCV modules and image coders.
+
+Note 2, to open video files, FFmpeg related libraries should be installed, e.g., on Debian/Ubuntu
+
+```shell
+sudo apt install -y libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libavresample-dev ffmpeg
+```
 
 ## Dependencies
 ### Required
