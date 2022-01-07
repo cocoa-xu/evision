@@ -13,11 +13,24 @@ else:
     from cStringIO import StringIO
 
 evision_nif_prefix = 'evision_cv_'
-special_handling_for_highgui_funcs = ["{}{}".format(evision_nif_prefix, name) for name in [
+special_handling_funcs = ["{}{}".format(evision_nif_prefix, name) for name in [
     'imshow',
     'waitkey',
     'destroywindow',
-    'destroyallwindows']
+    'destroyallwindows',
+    'imdecode']
+]
+opencv_ex_fixes = [
+  """
+  def imdecode(buf, flags) when is_integer(flags)
+  do
+    positional = [
+      buf: buf,
+      flags: flags
+    ]
+    :erl_cv_nif.evision_cv_imdecode(positional)
+  end
+"""
 ]
 
 forbidden_arg_types = ["void*"]
@@ -694,7 +707,7 @@ class FuncInfo(object):
             if not self.is_static and not self.isconstructor:
                 func_arity = 2
         fname = self.get_wrapper_name().lower()
-        if fname in special_handling_for_highgui_funcs:
+        if fname in special_handling_funcs:
             return ""
         nif_function_decl = f'    F({fname}, {func_arity}),\n'
         return nif_function_decl
@@ -706,7 +719,7 @@ class FuncInfo(object):
         if self.classname and not self.is_static and not self.isconstructor:
             opt_arg_index = 1
         # special handling for these highgui functions
-        if fname_lower in special_handling_for_highgui_funcs:
+        if fname_lower in special_handling_funcs:
             return ""
         code = "%s\n{\n" % (proto,)
         code += "    using namespace %s;\n    ERL_NIF_TERM error_term = 0;\n    std::map<std::string, ERL_NIF_TERM> erl_terms;\n" % self.namespace.replace('.', '::')
@@ -1323,7 +1336,7 @@ class PythonWrapperGenerator(object):
         # 'opencv_{module}.ex' contains human friendly funcs
 
         func_name = func.get_wrapper_name().lower()
-        if func_name in special_handling_for_highgui_funcs:
+        if func_name in special_handling_funcs:
             return
 
         if self.erl_cv_nif_names.get(func_name) != True:
@@ -1678,6 +1691,9 @@ class PythonWrapperGenerator(object):
         # end 'opencv.ex'
         self.opencv_ex.write(self.enum_names_io.getvalue())
         self.opencv_ex.write(self.opencv_func.getvalue())
+        for fix in opencv_ex_fixes:
+            self.opencv_ex.write(fix)
+            self.opencv_ex.write("\n")
         self.opencv_ex.write('\nend\n')
         # end 'erl_cv_nif.ex'
         self.erl_cv_nif.write('\nend\n')
