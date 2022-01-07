@@ -22,7 +22,8 @@ defmodule Evision.MixProject do
       make_env: %{
         "OPENCV_VER" => @opencv_version,
         "MAKE_BUILD_FLAGS" => System.get_env("MAKE_BUILD_FLAGS", "-j#{System.schedulers_online()}"),
-        "CMAKE_OPTIONS" => generate_cmake_options()
+        "CMAKE_OPTIONS" => generate_cmake_options() |> elem(0),
+        "ENABLED_MODULES" => generate_cmake_options() |> elem(1)
       }
     ]
   end
@@ -61,7 +62,11 @@ defmodule Evision.MixProject do
       |> Enum.map(&("-D BUILD_#{Atom.to_string(&1) |> String.upcase}=ON"))
       |> Enum.join(" "))
     <> " "
-    options
+    enabled_modules =
+      enabled_modules
+      |> Enum.map(&("#{Atom.to_string(&1)}"))
+      |> Enum.join(",")
+    {options, enabled_modules}
   end
 
   defp deps do

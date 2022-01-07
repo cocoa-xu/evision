@@ -1,5 +1,7 @@
 #ifdef HAVE_OPENCV_HIGHGUI
 
+// @evision enable_with: highgui
+
 #ifndef OPENCV_HIGHGUI_ELIXIR
 #define OPENCV_HIGHGUI_ELIXIR
 

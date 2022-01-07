@@ -1045,17 +1045,25 @@ class ErlEnumExpressionGenerator(ast.NodeVisitor):
         elif type(node) is ast.BitOr:
             self.expression = 'bor({}, {})'
         else:
-            print(type(node), "not implemented yet")
             import sys
-            sys.exit(1)
+            if sys.version_info.minor < 8:
+                if type(node) is ast.Num:
+                    self.expression = f'{node.value}'
+                else:
+                    print(type(node), "not implemented yet")
+                    sys.exit(1)
+            else:
+                print(type(node), "not implemented yet")
+                sys.exit(1)
 
 
 class PythonWrapperGenerator(object):
-    def __init__(self):
+    def __init__(self, enabled_modules):
         self.clear()
         self.argname_prefix_re = re.compile(r'^[_]*')
         self.inline_docs_code_type_re = re.compile(r'@code{.(.*)}')
         self.inline_docs_inline_math_re = re.compile(r'(?:.*?)\\\\f[$\[](.*?)\\\\f[$\]]', re.MULTILINE|re.DOTALL)
+        self.enabled_modules = enabled_modules
 
     def clear(self):
         self.classes = {}
@@ -1516,16 +1524,27 @@ class PythonWrapperGenerator(object):
         from pathlib import Path
         modules_dir = Path(self.output_path) / 'modules'
         for module_text in modules_dir.glob('*.h'):
+            check_defs = None
             with open(module_text, "rt") as f:
                 for line in f:
-                    line = line.strip()
-                    if line.startswith("// @evision c: "):
-                        parts = line[len("// @evision c: "):].split(',')
-                        if len(parts) == 2:
-                            self.code_ns_reg.write(f'    F({parts[0].strip()}, {parts[1].strip()}),\n')
-                    elif line.startswith("// @evision nif: "):
-                        line = line[len("// @evision nif: "):].strip()
-                        self.erl_cv_nif.write(f'  {line}\n')
+                    if line.startswith("// @evision enable_with: "):
+                        with_module = line[len("// @evision enable_with: "):].strip()
+                        if check_defs is None:
+                            check_defs = with_module in self.enabled_modules
+                        else:
+                            check_defs = check_defs and (with_module in self.enabled_modules)
+
+            if check_defs is True:
+                with open(module_text, "rt") as f:
+                    for line in f:
+                        line = line.strip()
+                        if line.startswith("// @evision c: "):
+                            parts = line[len("// @evision c: "):].split(',')
+                            if len(parts) == 2:
+                                self.code_ns_reg.write(f'    F({parts[0].strip()}, {parts[1].strip()}),\n')
+                        elif line.startswith("// @evision nif: "):
+                            line = line[len("// @evision nif: "):].strip()
+                            self.erl_cv_nif.write(f'  {line}\n')
 
         self.code_ns_reg.write('\n};\n\n')
 
@@ -1724,5 +1743,8 @@ if __name__ == "__main__":
     if len(sys.argv) > 3:
         with open(sys.argv[3], 'r') as f:
             srcfiles = [l.strip() for l in f.readlines()]
-    generator = PythonWrapperGenerator()
+    enabled_modules = []
+    if len(sys.argv) > 4:
+        enabled_modules = sys.argv[4].split(",")
+    generator = PythonWrapperGenerator(enabled_modules)
     generator.gen(srcfiles, dstdir, erl_dstdir)

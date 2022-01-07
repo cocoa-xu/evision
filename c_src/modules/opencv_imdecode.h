@@ -1,5 +1,9 @@
+#ifdef HAVE_OPENCV_IMGCODECS
+
 #ifndef EVISION_OPENCV_IMDECODE_H
 #define EVISION_OPENCV_IMDECODE_H
+
+// @evision enable_with: imgcodecs
 
 #include <erl_nif.h>
 #include "../nif_utils.hpp"
@@ -37,3 +41,5 @@ static ERL_NIF_TERM evision_cv_imdecode(ErlNifEnv *env, int argc, const ERL_NIF_
 }
 
 #endif // EVISION_OPENCV_IMDECODE_H
+
+#endif // HAVE_OPENCV_IMGCODECS
