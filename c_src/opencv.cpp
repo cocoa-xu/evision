@@ -1843,6 +1843,7 @@ static int convert_to_char(ErlNifEnv *env, ERL_NIF_TERM o, char *dst, const ArgI
 // manually coded modules
 #include "modules/opencv_mat.h"
 #include "modules/opencv_highgui.h"
+#include "modules/opencv_imdecode.h"
 
 /************************************************************************/
 
