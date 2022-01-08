@@ -49,7 +49,39 @@ Current available modules:
 - video 
 - videoio
 
-Note 1, edit `config/config.exs` to enable/disable OpenCV modules and image coders.
+Note 1, to enable/disable OpenCV modules and image coders,
+
+```elixir
+def deps do
+   [
+      {:evision, "~> 0.1.0-dev", github: "cocoa-xu/evision", branch: "main", 
+         system_env: [
+            {"enabled_modules", "core,imgproc,imgcodecs"},
+            {"disabled_modules", "python2,python3"},
+            {"img_codecs", "png,jpeg"},
+            {"compile_mode", "only_enabled_modules"}
+         ]}
+   ]
+end
+```
+
+`enabled_modules` should be a comma seperated list of OpenCV module names that you'd like to enable. Similarly, 
+`disabled_modules` specifies a list of OpenCV modules you want to disable. 
+
+`img_codecs` specifies a list of enabled image codecs.
+
+In the above example, 3 modules are explicitly enabled while 2 are explicitly disabled. Modules without explicit specification
+will be auto enabled/disabled by CMake based on your system environment.
+
+To make things easier, you can set `compile_mode` to `only_enabled_modules` so that only modules specified in `enabled_modules`
+will be compiled. Like-wise, set `except_disabled_modules` to only exclude modules in `disabled_modules`. By default, the value
+of `compile_mode` is `auto`, which means to leave unspecified modules to CMake to decide.
+
+The default values for above options are
+- `enabled_modules`: `"calib3d,core,features2d,flann,highgui,imgcodecs,imgproc,ml,photo,stitching,ts,video,videoio"`
+- `disabled_modules`: `"dnn,gapi,world,python2,python3,java,objdetect"`
+- `img_codecs`: `"png,jpeg,tiff,webp,openjpeg,jasper,openexr"`
+- `compile_mode`: `"auto"`
 
 Note 2, to open video files, FFmpeg related libraries should be installed, e.g., on Debian/Ubuntu
 

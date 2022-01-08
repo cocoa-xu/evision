@@ -7,6 +7,7 @@ defmodule Evision.MixProject do
   @source_url "https://github.com/cocoa-xu/evision/tree/#{@opencv_version}"
 
   def project do
+    {cmake_options, enabled_modules} = generate_cmake_options()
     [
       app: @app,
       name: "Evision",
@@ -22,8 +23,8 @@ defmodule Evision.MixProject do
       make_env: %{
         "OPENCV_VER" => @opencv_version,
         "MAKE_BUILD_FLAGS" => System.get_env("MAKE_BUILD_FLAGS", "-j#{System.schedulers_online()}"),
-        "CMAKE_OPTIONS" => generate_cmake_options() |> elem(0),
-        "ENABLED_MODULES" => generate_cmake_options() |> elem(1)
+        "CMAKE_OPTIONS" => cmake_options,
+        "ENABLED_CV_MODULES" => enabled_modules
       }
     ]
   end
@@ -34,39 +35,50 @@ defmodule Evision.MixProject do
     ]
   end
 
-  def read_config do
-    {
-      [evision:
-        [
-        enabled_modules: enabled_modules,
-        disabled_modules: disabled_modules,
-        enabled_img_coder: enabled_img_coder
-        ]
-      ],
-      _
-    } = Config.Reader.read_imports!("config/config.exs")
-    {enabled_modules, disabled_modules, enabled_img_coder}
-  end
-
   defp elixirc_paths(_), do: ~w(lib)
 
+  defp default_enabled_modules do
+    "calib3d,core,features2d,flann,highgui,imgcodecs,imgproc,ml,photo,stitching,ts,video,videoio"
+  end
+
+  defp default_disable_modules do
+    "dnn,gapi,world,python2,python3,java,objdetect"
+  end
+
+  defp default_img_codecs do
+    "png,jpeg,tiff,webp,openjpeg,jasper,openexr"
+  end
+
   defp generate_cmake_options do
-    {enabled_modules, disabled_modules, enabled_img_coder} = read_config()
+    enabled_modules = System.get_env("enabled_modules", default_enabled_modules())   |> String.split(",", trim: true)
+    disabled_modules = System.get_env("disabled_modules", default_disable_modules()) |> String.split(",", trim: true)
+    enabled_img_codecs = System.get_env("img_codecs", default_img_codecs()) |> String.split(",", trim: true)
+    compile_mode = System.get_env("compile_mode", "auto")
+    all_modules = (default_enabled_modules() <> "," <> default_disable_modules()) |> String.split(",", trim: true) |> Enum.uniq
+
+    {enabled_modules, disabled_modules} = case compile_mode do
+      "auto" ->
+        {enabled_modules, disabled_modules}
+      "only_enabled_modules" ->
+        {enabled_modules, all_modules -- enabled_modules}
+      "except_disabled_modules" ->
+        {all_modules -- disabled_modules, disabled_modules}
+      unrecognised_mode ->
+        IO.error("unrecognised compile_mode: #{unrecognised_mode}")
+    end
+
     options = (enabled_modules
-      |> Enum.map(&("-D BUILD_opencv_#{Atom.to_string(&1)}=ON"))
+      |> Enum.map(&("-D BUILD_opencv_#{&1}=ON"))
       |> Enum.join(" "))
     <> " " <> (disabled_modules
-      |> Enum.map(&("-D BUILD_opencv_#{Atom.to_string(&1)}=OFF"))
+      |> Enum.map(&("-D BUILD_opencv_#{&1}=OFF"))
       |> Enum.join(" "))
-    <> " " <> (enabled_img_coder
-      |> Enum.map(&("-D BUILD_#{Atom.to_string(&1) |> String.upcase}=ON"))
+    <> " " <> (enabled_img_codecs
+      |> Enum.map(&("-D BUILD_#{&1 |> String.upcase}=ON"))
       |> Enum.join(" "))
     <> " "
-    enabled_modules =
-      enabled_modules
-      |> Enum.map(&("#{Atom.to_string(&1)}"))
-      |> Enum.join(",")
-    {options, enabled_modules}
+
+    {options, enabled_modules |> Enum.join(",")}
   end
 
   defp deps do
@@ -83,7 +95,7 @@ defmodule Evision.MixProject do
       source_url: @source_url,
       before_closing_body_tag: &before_closing_body_tag/1,
       groups_for_functions: [
-        "cv": &(&1[:namespace] == :"cv"),
+        cv: &(&1[:namespace] == :cv),
         "cv.Error": &(&1[:namespace] == :"cv.Error"),
         "cv.ipp": &(&1[:namespace] == :"cv.ipp"),
         "cv.utils": &(&1[:namespace] == :"cv.utils"),

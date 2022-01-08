@@ -58,6 +58,15 @@ gen_erl_cv_nif_load_nif = """
   end
 """
 
+enabled_modules_code = Template("""
+  @doc \"\"\"
+  return a list of enabled modules in this build
+  \"\"\"
+  def __enabled_modules__ do
+    [${enabled_modules}]
+  end
+""")
+
 gen_template_check_self = Template("""
     ERL_NIF_TERM self = argv[0];
     ${cname} * self1 = 0;
@@ -1516,7 +1525,10 @@ class PythonWrapperGenerator(object):
 
                 function_group = ""
                 if len(func.namespace) > 0:
-                    function_group = f"  @doc namespace: :\"{func.namespace}\"\n"
+                    if func.namespace == "cv":
+                        function_group = f"  @doc namespace: :cv\n"
+                    else:
+                        function_group = f"  @doc namespace: :\"{func.namespace}\"\n"
 
                 if len(func_args_with_opts) > 0:
                     inline_doc += function_group
@@ -1722,6 +1734,9 @@ class PythonWrapperGenerator(object):
         for fix in opencv_ex_fixes:
             self.opencv_ex.write(fix)
             self.opencv_ex.write("\n")
+        self.opencv_ex.write(enabled_modules_code.substitute(
+            enabled_modules=",".join([f'\n      "{m}"' for m in self.enabled_modules]))
+        )
         self.opencv_ex.write('\nend\n')
         # end 'erl_cv_nif.ex'
         self.erl_cv_nif.write('\nend\n')
