@@ -78,10 +78,14 @@ will be compiled. Like-wise, set `except_disabled_modules` to only exclude modul
 of `compile_mode` is `auto`, which means to leave unspecified modules to CMake to decide.
 
 The default values for above options are
-- `enabled_modules`: `"calib3d,core,features2d,flann,highgui,imgcodecs,imgproc,ml,photo,stitching,ts,video,videoio"`
-- `disabled_modules`: `"dnn,gapi,world,python2,python3,java,objdetect"`
-- `img_codecs`: `"png,jpeg,tiff,webp,openjpeg,jasper,openexr"`
-- `compile_mode`: `"auto"`
+```elixir
+[
+   {"enabled_modules", "calib3d,core,features2d,flann,highgui,imgcodecs,imgproc,ml,photo,stitching,ts,video,videoio"},
+   {"disabled_modules", "dnn,gapi,world,python2,python3,java,objdetect"},
+   {"img_codecs", "png,jpeg,tiff,webp,openjpeg,jasper,openexr"},
+   {"compile_mode", "auto"}
+]
+```
 
 Note 2, to open video files, FFmpeg related libraries should be installed, e.g., on Debian/Ubuntu
 
