@@ -81,7 +81,26 @@ defmodule Evision.MixProject do
       main: "OpenCV",
       source_ref: "v#{@version}",
       source_url: @source_url,
-      before_closing_body_tag: &before_closing_body_tag/1
+      before_closing_body_tag: &before_closing_body_tag/1,
+      groups_for_functions: [
+        "cv": &(&1[:namespace] == :"cv"),
+        "cv.Error": &(&1[:namespace] == :"cv.Error"),
+        "cv.ipp": &(&1[:namespace] == :"cv.ipp"),
+        "cv.utils": &(&1[:namespace] == :"cv.utils"),
+        "cv.utils.fs": &(&1[:namespace] == :"cv.utils.fs"),
+        "cv.detail": &(&1[:namespace] == :"cv.detail"),
+        "cv.cuda": &(&1[:namespace] == :"cv.cuda"),
+        "cv.ocl": &(&1[:namespace] == :"cv.ocl"),
+        "cv.ogl": &(&1[:namespace] == :"cv.ogl"),
+        "cv.parallel": &(&1[:namespace] == :"cv.parallel"),
+        "cv.samples": &(&1[:namespace] == :"cv.samples"),
+        "cv.flann": &(&1[:namespace] == :"cv.flann"),
+        "cv.segmentation": &(&1[:namespace] == :"cv.segmentation"),
+        "cv.ml": &(&1[:namespace] == :"cv.ml"),
+        "cv.videoio_registry": &(&1[:namespace] == :"cv.videoio_registry"),
+        "cv.fisheye": &(&1[:namespace] == :"cv.fisheye"),
+        Constants: &(&1[:type] == :constants),
+      ]
     ]
   end
 

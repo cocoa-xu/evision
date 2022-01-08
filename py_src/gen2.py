@@ -22,6 +22,7 @@ special_handling_funcs = ["{}{}".format(evision_nif_prefix, name) for name in [
 ]
 opencv_ex_fixes = [
   """
+  @doc namespace: :cv
   def imdecode(buf, flags) when is_integer(flags)
   do
     positional = [
@@ -1134,7 +1135,7 @@ class PythonWrapperGenerator(object):
                 val = f'cv_{val}()'
             if self.enum_names.get(erl_const_name, None) is None:
                 self.enum_names[erl_const_name] = val
-                self.enum_names_io.write(f"  def cv_{erl_const_name}, do: {val}\n")
+                self.enum_names_io.write(f"  @doc type: :constants\n  def cv_{erl_const_name}, do: {val}\n")
             else:
                 if self.enum_names[erl_const_name] != val:
                     erl_const_name = self.map_erl_argname(f'{module_name}_{erl_const_name}', all_lower_case=True)
@@ -1510,9 +1511,15 @@ class PythonWrapperGenerator(object):
                     func_args = f'self, {func_args}'
                     if len(func_args_with_opts) > 0:
                         func_args_with_opts = f'self, {func_args_with_opts}'
+
+                function_group = ""
+                if len(func.namespace) > 0:
+                    function_group = f"  @doc namespace: :\"{func.namespace}\"\n"
+
                 if len(func_args_with_opts) > 0:
+                    inline_doc += function_group
                     writer.write(f'{inline_doc}  def {module_func_name}({module_func_args_with_opts}){when_guard}do\n    {positional}\n    :erl_cv_nif.{func_name}({func_args_with_opts})\n  end\n')
-                writer.write(f'  def {module_func_name}({module_func_args}){when_guard}do\n    {positional}\n    :erl_cv_nif.{func_name}({func_args})\n  end\n')
+                writer.write(f'{function_group}  def {module_func_name}({module_func_args}){when_guard}do\n    {positional}\n    :erl_cv_nif.{func_name}({func_args})\n  end\n')
 
     def gen_namespace(self):
         for ns_name in self.namespaces:
@@ -1534,7 +1541,7 @@ class PythonWrapperGenerator(object):
                         else:
                             check_defs = check_defs and (with_module in self.enabled_modules)
 
-            if check_defs is True:
+            if check_defs is True or check_defs is None:
                 with open(module_text, "rt") as f:
                     for line in f:
                         line = line.strip()
@@ -1743,8 +1750,12 @@ if __name__ == "__main__":
     if len(sys.argv) > 3:
         with open(sys.argv[3], 'r') as f:
             srcfiles = [l.strip() for l in f.readlines()]
-    enabled_modules = []
+    # default
+    enabled_modules = ['calib3d', 'core', 'features2d', 'flann', 'highgui', 'imgcodecs', 'imgproc', 'ml', 'photo',
+                       'stitching', 'ts', 'video', 'videoio']
     if len(sys.argv) > 4:
         enabled_modules = sys.argv[4].split(",")
     generator = PythonWrapperGenerator(enabled_modules)
     generator.gen(srcfiles, dstdir, erl_dstdir)
+    # for n in generator.namespaces:
+    #     print(f'"{n}": &(&1[:namespace] == :"{n}"),')
