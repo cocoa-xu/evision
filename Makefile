@@ -108,13 +108,14 @@ $(EVISION_SO): $(HEADERS_TXT)
 	@ cp "$(HEADERS_TXT)" "$(C_SRC)/headers.txt"
 	@ mkdir -p "$(GENERATED_ELIXIR_SRC_DIR)"
 	@ cd "$(CMAKE_EVISION_BUILD_DIR)" && \
-		cmake -D C_SRC="$(C_SRC)" \
-		-D CMAKE_TOOLCHAIN_FILE="$(TOOLCHAIN_FILE)" \
-		-D GENERATED_ELIXIR_SRC_DIR="$(GENERATED_ELIXIR_SRC_DIR)" \
-		-D PY_SRC="$(PY_SRC)" \
-		-D PRIV_DIR="$(PRIV_DIR)" \
-		-D ERTS_INCLUDE_DIR="$(ERTS_INCLUDE_DIR)" \
-		-D ENABLED_CV_MODULES=$(ENABLED_CV_MODULES) \
-		-S "$(shell pwd)" $(CMAKE_CONFIGURE_FLAGS) && \
-		make "$(MAKE_BUILD_FLAGS)"
-	@ cp "$(CMAKE_EVISION_BUILD_DIR)/evision.so" "$(EVISION_SO)"
+		{ cmake -D C_SRC="$(C_SRC)" \
+		  -D CMAKE_TOOLCHAIN_FILE="$(TOOLCHAIN_FILE)" \
+		  -D GENERATED_ELIXIR_SRC_DIR="$(GENERATED_ELIXIR_SRC_DIR)" \
+		  -D PY_SRC="$(PY_SRC)" \
+		  -D PRIV_DIR="$(PRIV_DIR)" \
+		  -D ERTS_INCLUDE_DIR="$(ERTS_INCLUDE_DIR)" \
+		  -D ENABLED_CV_MODULES=$(ENABLED_CV_MODULES) \
+		  -S "$(shell pwd)" $(CMAKE_CONFIGURE_FLAGS) && \
+		  make "$(MAKE_BUILD_FLAGS)" \
+		  || echo "\033[0;31mincomplete build of OpenCV found in '$(CMAKE_OPENCV_BUILD_DIR)', please delete that directory and retry\033[0m" && exit 1; } \
+		&& cp "$(CMAKE_EVISION_BUILD_DIR)/evision.so" "$(EVISION_SO)"
