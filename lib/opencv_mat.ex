@@ -26,12 +26,12 @@ defmodule OpenCV.Mat do
   @param rows, number of rows
   @param channels, number of channels, only valid if in [1, 3, 4]
   """
-  def from_binary(binary, type={t, l}, cols, rows, channels)
+  def from_binary(binary, _type={t, l}, cols, rows, channels)
   when is_binary(binary) and is_integer(cols) and is_integer(rows) and is_integer(channels)
        and is_atom(t) and is_integer(l) do
     :erl_cv_nif.evision_cv_mat_from_binary(binary: binary, t: t, l: l, cols: cols, rows: rows, channels: channels)
   end
-  def from_binary(binary, type={t, l}, cols, rows, channels)
+  def from_binary(binary, _type={t, l}, cols, rows, channels)
   when is_binary(binary) and is_integer(cols) and is_integer(rows) and is_integer(channels)
        and is_atom(t) and is_integer(l)do
     :erl_cv_nif.evision_cv_mat_from_binary(binary: binary, t: t, l: l, cols: cols, rows: rows, channels: channels)
