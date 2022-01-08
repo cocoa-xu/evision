@@ -1,11 +1,14 @@
 #!/usr/bin/env python
 
 from __future__ import print_function
-import hdr_parser, sys, re, os
-from string import Template
-from pprint import pprint
-from collections import namedtuple
+
 import ast
+import sys
+from collections import namedtuple
+from string import Template
+
+import hdr_parser
+import re
 
 if sys.version_info[0] >= 3:
     from io import StringIO
@@ -1046,10 +1049,9 @@ class ErlEnumExpressionGenerator(ast.NodeVisitor):
         elif type(node) is ast.BitOr:
             self.expression = 'bor({}, {})'
         else:
-            import sys
             if sys.version_info.minor < 8:
                 if type(node) is ast.Num:
-                    self.expression = f'{node.value}'
+                    self.expression = f'{node.n}'
                 else:
                     print(type(node), "not implemented yet")
                     sys.exit(1)
