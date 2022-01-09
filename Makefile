@@ -117,5 +117,5 @@ $(EVISION_SO): $(HEADERS_TXT)
 		  -D ENABLED_CV_MODULES=$(ENABLED_CV_MODULES) \
 		  -S "$(shell pwd)" $(CMAKE_CONFIGURE_FLAGS) && \
 		  make "$(MAKE_BUILD_FLAGS)" \
-		  || echo "\033[0;31mincomplete build of OpenCV found in '$(CMAKE_OPENCV_BUILD_DIR)', please delete that directory and retry\033[0m" && exit 1; } \
+		  || { echo "\033[0;31mincomplete build of OpenCV found in '$(CMAKE_OPENCV_BUILD_DIR)', please delete that directory and retry\033[0m" && exit 1 ; } ; } \
 		&& cp "$(CMAKE_EVISION_BUILD_DIR)/evision.so" "$(EVISION_SO)"
