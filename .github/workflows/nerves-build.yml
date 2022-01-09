@@ -55,6 +55,7 @@ jobs:
           mix deps.get
           cp -f deps/evision/nerves/id_rsa.pub ~/.ssh/id_rsa.pub
           cp -f deps/evision/nerves/id_rsa ~/.ssh/id_rsa
+          cp -rf deps/evision/config ./config
           export MAKE_BUILD_FLAGS="-j$(nproc)"
           export CMAKE_TOOLCHAIN_FILE="$(pwd)/deps/evision/nerves/toolchain.cmake"
           mix deps.compile
