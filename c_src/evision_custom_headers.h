@@ -1,6 +1,7 @@
 //user-defined headers
 #include "evision_custom_headers/evision_async.hpp"
 #include "evision_custom_headers/evision_cuda.hpp"
+#include "evision_custom_headers/evision_dnn.hpp"
 #include "evision_custom_headers/evision_umat.hpp"
 #include "evision_custom_headers/evision_flann.hpp"
 #include "evision_custom_headers/evision_ml.hpp"
