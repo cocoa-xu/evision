@@ -1421,6 +1421,8 @@ class PythonWrapperGenerator(object):
                     else:
                         func_args = 'self'
                         func_args_with_opts = ''
+            if module_func_name == "dnn_readnet":
+                module_func_name = "dnn_readnet_" + arglist[0][0]
             if unique_signatures.get(sign, None) is True:
                 writer.write('\n'.join(["  # {}".format(line.strip()) for line in opt_doc.split("\n")]))
                 writer.write(f'  # def {module_func_name}({func_args}) do\n  #   :erl_cv_nif.{func_name}({func_args})\n  # end\n')
@@ -1750,7 +1752,7 @@ class PythonWrapperGenerator(object):
         self.save(output_path, "evision_generated_enums.h", self.code_enums)
         self.save(output_path, "evision_generated_types.h", self.code_type_publish)
         self.save(output_path, "evision_generated_types_content.h", self.code_types)
-        self.save(output_path, "evision_generated_modules.h", self.code_ns_init)
+        # self.save(output_path, "evision_generated_modules.h", self.code_ns_init)
         self.save(output_path, "evision_generated_modules_content.h", self.code_ns_reg)
         self.save(erl_output_path, "erl_cv_nif.ex", self.erl_cv_nif)
         self.save(erl_output_path, "opencv.ex", self.opencv_ex)
