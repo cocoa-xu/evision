@@ -3,6 +3,114 @@ typedef dnn::DictValue LayerId;
 typedef std::vector<dnn::MatShape> vector_MatShape;
 typedef std::vector<std::vector<dnn::MatShape> > vector_vector_MatShape;
 
+//template<>
+//bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, dnn::Net &net, const ArgInfo& info)
+//{
+//    if (evision::nif::check_nil(env, obj)) {
+//        return false;
+//    }
+//
+//    evision_res<cv::dnn::Net> * in_res;
+//    if( enif_get_resource(env, obj, evision_res<cv::dnn::Net>::type, (void **)&in_res) ) {
+//        net = in_res->val;
+//        return true;
+//    }
+//    return false;
+//}
+
+template<>
+ERL_NIF_TERM evision_from(ErlNifEnv *env, const dnn::DetectionModel& model)
+{
+    evision_res<dnn::DetectionModel> * res;
+    if (alloc_resource(&res)) {
+        res->val = model;
+    } else {
+        return evision::nif::error(env, "no memory");
+    }
+
+    ERL_NIF_TERM ret = enif_make_resource(env, res);
+    enif_release_resource(res);
+    return ret;
+}
+
+template<>
+ERL_NIF_TERM evision_from(ErlNifEnv *env, const dnn::Model& model)
+{
+    evision_res<dnn::Model> * res;
+    if (alloc_resource(&res)) {
+        res->val = model;
+    } else {
+        return evision::nif::error(env, "no memory");
+    }
+
+    ERL_NIF_TERM ret = enif_make_resource(env, res);
+    enif_release_resource(res);
+    return ret;
+}
+
+//template<>
+//ERL_NIF_TERM evision_from(ErlNifEnv *env, const dnn::Net& model)
+//{
+//    printf("evision_from did read\r\n");
+//    fflush(stdout);
+//    evision_res<dnn::Model> * res;
+//    if (alloc_resource(&res)) {
+//        res->val = model;
+//        printf("net: %p\r\n", &res->val);
+//    } else {
+//        return evision::nif::error(env, "no memory");
+//    }
+//
+//    ERL_NIF_TERM ret = enif_make_resource(env, res);
+//    enif_release_resource(res);
+//    return ret;
+//}
+
+template<>
+ERL_NIF_TERM evision_from(ErlNifEnv *env, const dnn::TextDetectionModel_DB& model)
+{
+    evision_res<dnn::TextDetectionModel_DB> * res;
+    if (alloc_resource(&res)) {
+        res->val = model;
+    } else {
+        return evision::nif::error(env, "no memory");
+    }
+
+    ERL_NIF_TERM ret = enif_make_resource(env, res);
+    enif_release_resource(res);
+    return ret;
+}
+
+template<>
+ERL_NIF_TERM evision_from(ErlNifEnv *env, const dnn::TextDetectionModel_EAST& model)
+{
+    evision_res<dnn::TextDetectionModel_EAST> * res;
+    if (alloc_resource(&res)) {
+        res->val = model;
+    } else {
+        return evision::nif::error(env, "no memory");
+    }
+
+    ERL_NIF_TERM ret = enif_make_resource(env, res);
+    enif_release_resource(res);
+    return ret;
+}
+
+template<>
+ERL_NIF_TERM evision_from(ErlNifEnv *env, const dnn::TextRecognitionModel& model)
+{
+    evision_res<dnn::TextRecognitionModel> * res;
+    if (alloc_resource(&res)) {
+        res->val = model;
+    } else {
+        return evision::nif::error(env, "no memory");
+    }
+
+    ERL_NIF_TERM ret = enif_make_resource(env, res);
+    enif_release_resource(res);
+    return ret;
+}
+
 template<>
 bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, dnn::DictValue &dv, const ArgInfo& info)
 {
