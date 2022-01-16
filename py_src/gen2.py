@@ -1618,6 +1618,10 @@ class PythonWrapperGenerator(object):
                 else:
                     self.code_include.write('#include "{0}"\n'.format(hdr))
 
+            # do not process dnn module
+            if hdr.find('/dnn/') > 0:
+                continue
+
             for decl in decls:
                 name = decl[0]
                 if name.startswith("struct") or name.startswith("class"):
@@ -1769,7 +1773,7 @@ if __name__ == "__main__":
             srcfiles = [l.strip() for l in f.readlines()]
     # default
     enabled_modules = ['calib3d', 'core', 'features2d', 'flann', 'highgui', 'imgcodecs', 'imgproc', 'ml', 'photo',
-                       'stitching', 'ts', 'video', 'videoio']
+                       'stitching', 'ts', 'video', 'videoio', 'dnn']
     if len(sys.argv) > 4:
         enabled_modules = sys.argv[4].split(",")
     generator = PythonWrapperGenerator(enabled_modules)
