@@ -4,30 +4,34 @@ typedef std::vector<dnn::MatShape> vector_MatShape;
 typedef std::vector<std::vector<dnn::MatShape> > vector_vector_MatShape;
 
 template<>
-bool pyopencv_to(PyObject *o, dnn::DictValue &dv, const ArgInfo& info)
+bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, dnn::DictValue &dv, const ArgInfo& info)
 {
-    CV_UNUSED(info);
-    if (!o || o == Py_None)
+    if (evision::nif::check_nil(env, obj)) {
         return true; //Current state will be used
-    else if (PyLong_Check(o))
+    }
+
+    ErlNifSInt64 int64_val;
+    int int_val;
+    double f64_val;
+    if (enif_get_int64(env, obj, &int64_val))
     {
-        dv = dnn::DictValue((int64)PyLong_AsLongLong(o));
+        dv = dnn::DictValue((int64)int64_val);
         return true;
     }
-    else if (PyInt_Check(o))
+    else if (enif_get_int(env, obj, &int_val))
     {
-        dv = dnn::DictValue((int64)PyInt_AS_LONG(o));
+        dv = dnn::DictValue((int64)int_val);
         return true;
     }
-    else if (PyFloat_Check(o))
+    else if (enif_get_double(env, obj, &f64_val))
     {
-        dv = dnn::DictValue(PyFloat_AsDouble(o));
+        dv = dnn::DictValue(f64_val);
         return true;
     }
     else
     {
         std::string str;
-        if (getUnicodeString(o, str))
+        if (evision::nif::get(env, obj, str))
         {
             dv = dnn::DictValue(str);
             return true;
@@ -37,183 +41,66 @@ bool pyopencv_to(PyObject *o, dnn::DictValue &dv, const ArgInfo& info)
 }
 
 template<typename T>
-PyObject* pyopencv_from(const dnn::DictValue &dv)
+ERL_NIF_TERM evision_from(ErlNifEnv *env, const dnn::DictValue &dv)
 {
     if (dv.size() > 1)
     {
         std::vector<T> vec(dv.size());
         for (int i = 0; i < dv.size(); ++i)
             vec[i] = dv.get<T>(i);
-        return pyopencv_from_generic_vec(vec);
+        return evision_from_generic_vec(env, vec);
     }
     else
-        return pyopencv_from(dv.get<T>());
+        return evision_from(env, dv.get<T>());
 }
 
 template<>
-PyObject* pyopencv_from(const dnn::DictValue &dv)
+ERL_NIF_TERM evision_from(ErlNifEnv *env, const dnn::DictValue &dv)
 {
-    if (dv.isInt()) return pyopencv_from<int>(dv);
-    if (dv.isReal()) return pyopencv_from<float>(dv);
-    if (dv.isString()) return pyopencv_from<String>(dv);
+    if (dv.isInt()) return evision_from<int>(env, dv);
+    if (dv.isReal()) return evision_from<float>(env, dv);
+    if (dv.isString()) return evision_from<String>(env, dv);
     CV_Error(Error::StsNotImplemented, "Unknown value type");
-    return NULL;
+    return evision::nif::atom(env, "nil");
 }
 
 template<>
-PyObject* pyopencv_from(const dnn::LayerParams& lp)
+ERL_NIF_TERM evision_from(ErlNifEnv *env, const dnn::LayerParams& lp)
 {
-    PyObject* dict = PyDict_New();
+    std::vector<ERL_NIF_TERM> _keys, _values;
+
+
+    size_t i = 0;
     for (std::map<String, dnn::DictValue>::const_iterator it = lp.begin(); it != lp.end(); ++it)
     {
-        CV_Assert(!PyDict_SetItemString(dict, it->first.c_str(), pyopencv_from(it->second)));
+        _keys.push_back(evision::nif::make(env, it->first.c_str()));
+        _values.push_back(evision_from(env, it->second));
+        i++;
     }
-    return dict;
+    ERL_NIF_TERM dict;
+    size_t s = _keys.size();
+    ERL_NIF_TERM * keys = (ERL_NIF_TERM *)enif_alloc(sizeof(ERL_NIF_TERM) * s);
+    ERL_NIF_TERM * values = (ERL_NIF_TERM *)enif_alloc(sizeof(ERL_NIF_TERM) * s);
+    for (size_t i = 0; i < s; i++) {
+        keys[i] = _keys[i];
+        values[i] = _values[i];
+    }
+
+    if (enif_make_map_from_arrays(env, keys, values, i, &dict)) {
+        enif_free((void *)keys);
+        enif_free((void *)values);
+        return dict;
+    } else {
+        enif_free((void *)keys);
+        enif_free((void *)values);
+        return evision::nif::atom(env, "nil");
+    }
 }
 
 template<>
-PyObject* pyopencv_from(const std::vector<dnn::Target> &t)
+ERL_NIF_TERM evision_from(ErlNifEnv *env, const std::vector<dnn::Target> &t)
 {
-    return pyopencv_from(std::vector<int>(t.begin(), t.end()));
-}
-
-class pycvLayer CV_FINAL : public dnn::Layer
-{
-public:
-    pycvLayer(const dnn::LayerParams &params, PyObject* pyLayer) : Layer(params)
-    {
-        PyGILState_STATE gstate;
-        gstate = PyGILState_Ensure();
-
-        PyObject* args = PyTuple_New(2);
-        CV_Assert(!PyTuple_SetItem(args, 0, pyopencv_from(params)));
-        CV_Assert(!PyTuple_SetItem(args, 1, pyopencv_from(params.blobs)));
-        o = PyObject_CallObject(pyLayer, args);
-
-        Py_DECREF(args);
-        PyGILState_Release(gstate);
-        if (!o)
-            CV_Error(Error::StsError, "Failed to create an instance of custom layer");
-    }
-
-    static void registerLayer(const std::string& type, PyObject* o)
-    {
-        std::map<std::string, std::vector<PyObject*> >::iterator it = pyLayers.find(type);
-        if (it != pyLayers.end())
-            it->second.push_back(o);
-        else
-            pyLayers[type] = std::vector<PyObject*>(1, o);
-    }
-
-    static void unregisterLayer(const std::string& type)
-    {
-        std::map<std::string, std::vector<PyObject*> >::iterator it = pyLayers.find(type);
-        if (it != pyLayers.end())
-        {
-            if (it->second.size() > 1)
-                it->second.pop_back();
-            else
-                pyLayers.erase(it);
-        }
-    }
-
-    static Ptr<dnn::Layer> create(dnn::LayerParams &params)
-    {
-        std::map<std::string, std::vector<PyObject*> >::iterator it = pyLayers.find(params.type);
-        if (it == pyLayers.end())
-            CV_Error(Error::StsNotImplemented, "Layer with a type \"" + params.type +
-                                               "\" is not implemented");
-        CV_Assert(!it->second.empty());
-        return Ptr<dnn::Layer>(new pycvLayer(params, it->second.back()));
-    }
-
-    virtual bool getMemoryShapes(const std::vector<std::vector<int> > &inputs,
-                                 const int,
-                                 std::vector<std::vector<int> > &outputs,
-                                 std::vector<std::vector<int> > &) const CV_OVERRIDE
-    {
-        PyGILState_STATE gstate;
-        gstate = PyGILState_Ensure();
-
-        PyObject* args = PyList_New(inputs.size());
-        for(size_t i = 0; i < inputs.size(); ++i)
-            PyList_SetItem(args, i, pyopencv_from_generic_vec(inputs[i]));
-
-        PyObject* res = PyObject_CallMethodObjArgs(o, PyString_FromString("getMemoryShapes"), args, NULL);
-        Py_DECREF(args);
-        PyGILState_Release(gstate);
-        if (!res)
-            CV_Error(Error::StsNotImplemented, "Failed to call \"getMemoryShapes\" method");
-        CV_Assert(pyopencv_to_generic_vec(res, outputs, ArgInfo("", 0)));
-        return false;
-    }
-
-    virtual void forward(InputArrayOfArrays inputs_arr, OutputArrayOfArrays outputs_arr, OutputArrayOfArrays) CV_OVERRIDE
-    {
-        PyGILState_STATE gstate;
-        gstate = PyGILState_Ensure();
-
-        std::vector<Mat> inputs, outputs;
-        inputs_arr.getMatVector(inputs);
-        outputs_arr.getMatVector(outputs);
-
-        PyObject* args = pyopencv_from(inputs);
-        PyObject* res = PyObject_CallMethodObjArgs(o, PyString_FromString("forward"), args, NULL);
-        Py_DECREF(args);
-        if (!res)
-            CV_Error(Error::StsNotImplemented, "Failed to call \"forward\" method");
-
-        std::vector<Mat> pyOutputs;
-        CV_Assert(pyopencv_to(res, pyOutputs, ArgInfo("", 0)));
-        Py_DECREF(res);
-        PyGILState_Release(gstate);
-
-        CV_Assert(pyOutputs.size() == outputs.size());
-        for (size_t i = 0; i < outputs.size(); ++i)
-        {
-            CV_Assert(pyOutputs[i].size == outputs[i].size);
-            CV_Assert(pyOutputs[i].type() == outputs[i].type());
-            pyOutputs[i].copyTo(outputs[i]);
-        }
-    }
-
-private:
-    // Map layers types to python classes.
-    static std::map<std::string, std::vector<PyObject*> > pyLayers;
-    PyObject* o;  // Instance of implemented python layer.
-};
-
-std::map<std::string, std::vector<PyObject*> > pycvLayer::pyLayers;
-
-static PyObject *pyopencv_cv_dnn_registerLayer(PyObject*, PyObject *args, PyObject *kw)
-{
-    const char *keywords[] = { "type", "class", NULL };
-    char* layerType;
-    PyObject *classInstance;
-
-    if (!PyArg_ParseTupleAndKeywords(args, kw, "sO", (char**)keywords, &layerType, &classInstance))
-        return NULL;
-    if (!PyCallable_Check(classInstance)) {
-        PyErr_SetString(PyExc_TypeError, "class must be callable");
-        return NULL;
-    }
-
-    pycvLayer::registerLayer(layerType, classInstance);
-    dnn::LayerFactory::registerLayer(layerType, pycvLayer::create);
-    Py_RETURN_NONE;
-}
-
-static PyObject *pyopencv_cv_dnn_unregisterLayer(PyObject*, PyObject *args, PyObject *kw)
-{
-    const char *keywords[] = { "type", NULL };
-    char* layerType;
-
-    if (!PyArg_ParseTupleAndKeywords(args, kw, "s", (char**)keywords, &layerType))
-        return NULL;
-
-    pycvLayer::unregisterLayer(layerType);
-    dnn::LayerFactory::unregisterLayer(layerType);
-    Py_RETURN_NONE;
+    return evision_from(env, std::vector<int>(t.begin(), t.end()));
 }
 
 #endif  // HAVE_OPENCV_DNN
