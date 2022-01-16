@@ -222,7 +222,7 @@ static ERL_NIF_TERM evision_${name_lower}_set_${member_lower}(ErlNifEnv *env, in
     if (!evision_${name}_getp(env, self, self1)) {
         return enif_make_badarg(env);
     }
-    return evision::nif::atom(env, "not implmented setter");
+    return evision::nif::atom(env, "not implemented setter");
 
     // if (!value)
     // {
@@ -236,11 +236,6 @@ static ERL_NIF_TERM evision_${name_lower}_set_${member_lower}(ErlNifEnv *env, in
 gen_template_set_prop_algo = Template("""
 static ERL_NIF_TERM evision_${name_lower}_set_${member_lower}(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
-    if (!value)
-    {
-        // todo: error("Cannot delete the ${member} attribute");
-        return -1;
-    }
     $cname* _self_ = dynamic_cast<$cname*>(p->v.get());
     if (!_self_)
     {
@@ -444,7 +439,10 @@ class ClassInfo(object):
                 getset_inits.write(gen_template_prop_init.substitute(name=self.name, member=pname, name_lower=self.name.lower(), member_lower=pname.lower(), storage_name=self.cname if self.issimple else "Ptr<{}>".format(self.cname)))
             else:
                 if self.isalgorithm:
-                    getset_code.write(gen_template_set_prop_algo.substitute(name=self.name, cname=self.cname, member=pname, name_lower=self.name.lower(), member_lower=pname.lower(), membertype=p.tp, access=access_op, storage_name=self.cname if self.issimple else "Ptr<{}>".format(self.cname)))
+                    if "cv::dnn::" in self.cname:
+                        getset_code.write(gen_template_set_prop.substitute(name=self.name, cname=self.cname, member=pname, name_lower=self.name.lower(), member_lower=pname.lower(), membertype=p.tp, access=access_op, storage_name=self.cname if self.issimple else "Ptr<{}>".format(self.cname)))
+                    else:
+                        getset_code.write(gen_template_set_prop_algo.substitute(name=self.name, cname=self.cname, member=pname, name_lower=self.name.lower(), member_lower=pname.lower(), membertype=p.tp, access=access_op, storage_name=self.cname if self.issimple else "Ptr<{}>".format(self.cname)))
                 else:
                     getset_code.write(gen_template_set_prop.substitute(name=self.name, member=pname, name_lower=self.name.lower(), member_lower=pname.lower(), membertype=p.tp, access=access_op, cname=self.cname, storage_name=self.cname if self.issimple else "Ptr<{}>".format(self.cname)))
                 getset_inits.write(gen_template_rw_prop_init.substitute(name=self.name, member=pname, name_lower=self.name.lower(), member_lower=pname.lower(), storage_name=self.cname if self.issimple else "Ptr<{}>".format(self.cname)))
@@ -862,7 +860,12 @@ class FuncInfo(object):
                     templ_prelude = gen_template_call_constructor_prelude
                     templ = gen_template_call_constructor
 
-                code_prelude = templ_prelude.substitute(name=selfinfo.name, cname=selfinfo.cname)
+                code_prelude = ""
+                if "cv::dnn::" in selfinfo.cname:
+                    code_prelude = gen_template_call_constructor_prelude.substitute(name=selfinfo.name, cname=selfinfo.cname)
+                    templ = gen_template_call_constructor
+                else:
+                    code_prelude = templ_prelude.substitute(name=selfinfo.name, cname=selfinfo.cname)
                 code_fcall = templ.substitute(name=selfinfo.name, cname=selfinfo.cname, py_args=code_args)
                 if v.isphantom:
                     code_fcall = code_fcall.replace("new " + selfinfo.cname, self.cname.replace("::", "_"))
@@ -1617,10 +1620,6 @@ class PythonWrapperGenerator(object):
                     self.code_include.write('#include "{0}"\n'.format(hdr[hdr.rindex('opencv2/'):]))
                 else:
                     self.code_include.write('#include "{0}"\n'.format(hdr))
-
-            # do not process dnn module
-            if hdr.find('/dnn/') > 0:
-                continue
 
             for decl in decls:
                 name = decl[0]
