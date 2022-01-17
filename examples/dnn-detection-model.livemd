@@ -1,3 +1,5 @@
+<!-- vim: syntax=markdown -->
+
 # Detection Model
 
 ## Setup
