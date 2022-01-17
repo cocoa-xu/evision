@@ -1,7 +1,6 @@
 name: linux-s390x
 
 on:
-  pull_request:
   push:
     branches:
       - main

@@ -1,0 +1,261 @@
+# Detection Model
+
+## Setup
+
+```elixir
+# # a quick fix for the free tier livebook session
+# ## allocate 2GB swap
+# System.cmd("fallocate", ["-l", "2G", "/swap"])
+# System.cmd("chmod", ["400", "/swap"])
+# System.cmd("mkswap", ["/swap"])
+# System.cmd("swapon", ["/swap"])
+# ## need unzip to unzip the source code
+# System.cmd("apt", ["update", "-q", "-y"])
+# System.cmd("apt", ["install", "-y", "unzip", "python3", "cmake"])
+
+Mix.install([
+  {:evision, "~> 0.1.0-dev", github: "cocoa-xu/evision", branch: "main"},
+  {:kino, "~> 0.3.1"}
+])
+```
+
+## Helper
+
+```elixir
+defmodule Helper do
+  def download!(url, save_as, overwrite \\ false)
+
+  def download!(url, save_as, false) do
+    unless File.exists?(save_as) do
+      download!(url, save_as, true)
+    end
+
+    :ok
+  end
+
+  def download!(url, save_as, true) do
+    http_opts = []
+    opts = [body_format: :binary]
+    arg = {url, []}
+
+    body =
+      case :httpc.request(:get, arg, http_opts, opts) do
+        {:ok, {{_, 200, _}, _, body}} ->
+          body
+
+        {:error, reason} ->
+          raise inspect(reason)
+      end
+
+    File.write!(save_as, body)
+  end
+end
+```
+
+## Detection Model Module
+
+```elixir
+defmodule DetectionModel do
+  def visualise_pred(mat, _labels, []), do: {:ok, mat}
+
+  def visualise_pred(mat, labels, [translated_out | outs]) do
+    {:ok, mat} = _visualise_pred(mat, labels, translated_out)
+    visualise_pred(mat, labels, outs)
+  end
+
+  defp _visualise_pred(mat, _labels, []), do: {:ok, mat}
+
+  defp _visualise_pred(mat, labels, [{class_id, confidence, l, t, r, b} | outs]) do
+    confidence = "#{Float.round(confidence, 2)}"
+    label = Enum.at(labels, class_id)
+    text = "#{label}: #{confidence}"
+    {:ok, mat} = OpenCV.rectangle(mat, [l, t], [r, b], [255, 0, 0])
+
+    {:ok, {{label_weight, label_height}, baseline}} =
+      OpenCV.gettextsize(text, OpenCV.cv_font_hershey_simplex(), 0.5, 1)
+
+    label_weight = trunc(label_weight)
+    label_height = trunc(label_height)
+    top = max(t, label_height)
+
+    {:ok, mat} =
+      OpenCV.rectangle(mat, [l, top - label_height], [l + label_weight, top + baseline], [
+        255,
+        255,
+        255
+      ])
+
+    {:ok, mat} =
+      OpenCV.puttext(mat, text, [l, top], OpenCV.cv_font_hershey_simplex(), 0.5, [0, 0, 255])
+
+    _visualise_pred(mat, labels, outs)
+  end
+
+  def postprocess(mat, detections, net, confidence_threshold) do
+    {:ok, out_layers} = OpenCV.DnnNet.getunconnectedoutlayers(net)
+    {:ok, out_layer} = OpenCV.DnnNet.getlayer(net, Enum.at(out_layers, 0))
+    out_layer_type = OpenCV.DnnLayer.type(out_layer) |> IO.iodata_to_binary()
+    _postprocess(mat, detections, net, confidence_threshold, out_layer_type, [])
+  end
+
+  defp _postprocess(_mat, [], _net, _confidence_threshold, <<"DetectionOutput">>, acc),
+    do: {:ok, Enum.reverse(acc)}
+
+  defp _postprocess(
+         mat,
+         [outs | detections],
+         net,
+         confidence_threshold,
+         <<"DetectionOutput">>,
+         acc
+       ) do
+    {:ok, data} = OpenCV.Mat.to_binary(outs)
+    {:ok, {h, w, _}} = OpenCV.Mat.shape(mat)
+    {:ok, translated_outs} = _translate_outs(confidence_threshold, data, h, w, [])
+
+    _postprocess(mat, detections, net, confidence_threshold, "DetectionOutput", [
+      translated_outs | acc
+    ])
+  end
+
+  defp _translate_outs(_confidence_threshold, <<>>, _h, _w, acc), do: {:ok, acc}
+
+  defp _translate_outs(
+         confidence_threshold,
+         <<_batch_id::float()-size(32)-little, class_id::float()-size(32)-little,
+           confidence::float()-size(32)-little, left::float()-size(32)-little,
+           top::float()-size(32)-little, right::float()-size(32)-little,
+           bottom::float()-size(32)-little, rest::binary>>,
+         h,
+         w,
+         acc
+       ) do
+    if confidence > confidence_threshold do
+      [class_id, l, t, r, b] =
+        Enum.map([class_id, left, top, right, bottom], fn f -> trunc(f) end)
+
+      width = r - l + 1
+      height = b - t + 1
+
+      [l, t, r, b] =
+        if width <= 2 or height <= 2 do
+          Enum.map([left * w, top * h, right * w, bottom * h], fn f -> trunc(f) end)
+        else
+          [l, t, r, b]
+        end
+
+      _translate_outs(confidence_threshold, rest, h, w, [
+        {class_id - 1, confidence, l, t, r, b} | acc
+      ])
+    else
+      _translate_outs(confidence_threshold, rest, h, w, acc)
+    end
+  end
+
+  def get_labels(class_label_file) do
+    class_label_file
+    |> File.read!()
+    |> String.split("\n")
+  end
+
+  def predict(image_file, model, out_names, opts \\ []) do
+    {:ok, mat} = OpenCV.imread(image_file)
+    {:ok, blob} = OpenCV.dnn_blobfromimage(mat, opts)
+
+    {:ok, model} =
+      OpenCV.DnnNet.setinput(model, blob, name: "", scalefactor: 1.0, mean: [0, 0, 0])
+
+    start_time = :os.system_time(:millisecond)
+    {:ok, detections} = OpenCV.DnnNet.forward(model, outBlobNames: out_names)
+    end_time = :os.system_time(:millisecond)
+    IO.puts("Inference time=>#{end_time - start_time} ms")
+    {:ok, mat, detections}
+  end
+
+  def get_model(params, config, framework \\ "") do
+    {:ok, net} =
+      OpenCV.dnn_readnet_model(params,
+        config: config,
+        framework: framework
+      )
+
+    {:ok, out_names} = OpenCV.DnnNet.getunconnectedoutlayersnames(net)
+    {:ok, net, out_names}
+  end
+end
+```
+
+## Example: SSD MobileNetv2
+
+Basic steps:
+
+1. Download model weights and config file, as well as a list of class names.
+2. `DetectionModel.get_model`.
+3. `DetectionModel.get_labels`.
+4. `DetectionModel.predict` and specify some preprocessing parameters.
+5. `DetectionModel.postprocess`. This translates nerual network outputs to data 
+   that is easier to read/use.
+6. `DetectionModel.visualise_pred` if you want to see the result.
+
+```elixir
+defmodule SSDMobileNetV2 do
+  def predict_and_show(filename, confidence_threshold \\ 0.5) do
+    Helper.download!(
+      "https://github.com/opencv/opencv_extra/blob/master/testdata/dnn/ssd_mobilenet_v2_coco_2018_03_29.pbtxt",
+      "ssd_mobilenet_v2_coco_2018_03_29.pbtxt"
+    )
+
+    Helper.download!(
+      "https://raw.githubusercontent.com/pjreddie/darknet/master/data/coco.names",
+      "coco_names.txt"
+    )
+
+    graph_pb = "ssd_mobilenet_v2_coco_2018_03_29/frozen_inference_graph.pb"
+
+    unless File.exists?(graph_pb) do
+      Helper.download!(
+        "http://download.tensorflow.org/models/object_detection/ssd_mobilenet_v2_coco_2018_03_29.tar.gz",
+        "ssd_mobilenet_v2_coco_2018_03_29.tar.gz"
+      )
+
+      System.cmd("tar", ["xf", "ssd_mobilenet_v2_coco_2018_03_29.tar.gz"])
+    end
+
+    if File.exists?(filename) do
+      {:ok, net, out_names} =
+        DetectionModel.get_model(
+          graph_pb,
+          "ssd_mobilenet_v2_coco_2018_03_29.pbtxt"
+        )
+
+      labels = DetectionModel.get_labels("coco_names.txt")
+
+      {:ok, mat, detections} =
+        DetectionModel.predict(filename, net, out_names,
+          scalefactor: 1,
+          swapRB: true,
+          mean: [0, 0, 0],
+          size: [300, 300]
+        )
+
+      {:ok, translated_outs} =
+        DetectionModel.postprocess(mat, detections, net, confidence_threshold)
+
+      DetectionModel.visualise_pred(mat, labels, translated_outs)
+    else
+      {:error, "cannot find #{filename}"}
+    end
+  end
+end
+```
+
+```elixir
+{:ok, mat} = SSDMobileNetV2.predict_and_show("yolo_test.jpg")
+```
+
+```elixir
+OpenCV.imencode(".png", mat)
+|> then(fn {:ok, val} -> val end)
+|> IO.iodata_to_binary()
+|> Kino.Image.new(:png)
+```

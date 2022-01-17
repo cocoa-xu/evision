@@ -436,11 +436,13 @@ class ClassInfo(object):
             codegen.code_ns_reg.write(m.get_tab_entry())
             codegen.gen_erl_declaration(self.cname, mname, m, module_file_writter, is_constructor=False)
 
+        for pname, m in sorted_props:
+            codegen.gen_erl_declaration(self.cname, pname, m, module_file_writter, is_constructor=False, is_prop=True, prop_class=self)
+
     def gen_code(self, codegen):
         all_classes = codegen.classes
         if self.ismap:
             return self.gen_map_code(codegen)
-
         getset_code = StringIO()
         getset_inits = StringIO()
 
@@ -923,7 +925,7 @@ class FuncInfo(object):
                     kw_list=", ".join(['"' + aname + '"' for aname, argno, argtype in v.py_arglist]),
                     code_cvt="{}".format(" && \n        ".join(code_cvt_list)))
             else:
-                code_parse = "if(argc - nif_opts_index == 0)"
+                code_parse = "if(argc - nif_opts_index == 1)"
 
             if len(v.py_outlist) == 0:
                 code_ret = "return evision::nif::atom(env, \"nil\")"
@@ -1377,10 +1379,27 @@ class PythonWrapperGenerator(object):
         else:
             return text
 
-    def gen_erl_declaration(self, wname, name, func, writer=None, is_ns=False, is_constructor=False):
+    def gen_erl_declaration(self, wname, name, func, writer=None, is_ns=False, is_constructor=False, is_prop=False, prop_class=None):
         # functions in namespaces goes to 'erl_cv_nif.ex' and 'opencv_{module}.ex'
         # 'erl_cv_nif.ex' contains the declarations of all NIFs
         # 'opencv_{module}.ex' contains human friendly funcs
+
+        if is_prop:
+            # wname => class
+            # name  => prop name
+            # func  => ClassProp
+            name = name.lower()
+            func_name = "evision_" + prop_class.wname.lower() + '_get_' + name
+            func_name = func_name.lower()
+            writer.write(f"  def {name}(self) do\n    :erl_cv_nif.{func_name}(self)\n  end\n")
+            self.erl_cv_nif.write(f'  def {func_name}(_self), do: :erlang.nif_error("{wname}::{name} getter not loaded")\n')
+            self.code_ns_reg.write(f'    F({func_name}, 1),\n')
+            if not func.readonly:
+                func_name = "evision_" + prop_class.wname.lower() + '_set_' + name
+                writer.write(f"  def set_{name}(self, opts) do\n    :erl_cv_nif.{func_name}(self, opts)\n  end\n")
+                self.erl_cv_nif.write(f'  def {func_name}(_self, _opts), do: :erlang.nif_error("{wname}::{name} setter not loaded")\n')
+                self.code_ns_reg.write(f'    F({func_name}, 2),\n')
+            return
 
         func_name = func.get_wrapper_name().lower()
         if func_name in special_handling_funcs:
