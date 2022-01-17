@@ -22,6 +22,15 @@ jobs:
     env:
       MIX_ENV: test
 
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - pair:
+              opencv_ver: 4.5.4
+          - pair:
+              opencv_ver: 4.5.5
+
     steps:
       - uses: actions/checkout@v2
       
@@ -32,14 +41,11 @@ jobs:
           mix local.hex --force
           mix local.rebar --force
 
-      - name: Get Elixir Dependencies
-        run: mix deps.get
-
-      - name: Compile Elixir Dependencies
-        run: mix deps.compile
-
-      - name: Compile Evision
+      - name: Compile
         run: |
+          export OPENCV_VER=${{ matrix.pair.opencv_ver }}
+          mix deps.get
+          mix deps.compile
           NPROC="$(sysctl -a | grep 'hw.ncpu' | awk '{print $2}')"
           unset MIX_TARGET
           MAKE_BUILD_FLAGS="-j${NPROC}" mix compile
