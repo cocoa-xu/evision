@@ -28,25 +28,36 @@ Mix.install([
 ## Download a file
 
 ```elixir
-request = %{
-  url: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/Cat03.jpg/1200px-Cat03.jpg",
-  headers: []
-}
+defmodule Helper do
+  def download!(url, save_as, overwrite \\ false)
 
-http_opts = []
-opts = [body_format: :binary]
-arg = {request.url, request.headers}
+  def download!(url, save_as, false) do
+    unless File.exists?(save_as) do
+      download!(url, save_as, true)
+    end
 
-body =
-  case :httpc.request(:get, arg, http_opts, opts) do
-    {:ok, {{_, 200, _}, _, body}} ->
-      body
-
-    {:error, reason} ->
-      raise inspect(reason)
+    :ok
   end
 
-File.write!("cat.jpg", body)
+  def download!(url, save_as, true) do
+    http_opts = []
+    opts = [body_format: :binary]
+    arg = {url, []}
+
+    body =
+      case :httpc.request(:get, arg, http_opts, opts) do
+        {:ok, {{_, 200, _}, _, body}} ->
+          body
+
+        {:error, reason} ->
+          raise inspect(reason)
+      end
+
+    File.write!(save_as, body)
+  end
+end
+
+Helper.download!("https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/Cat03.jpg/1200px-Cat03.jpg", "cat.jpg")
 ```
 
 ## Get input from OpenCV
