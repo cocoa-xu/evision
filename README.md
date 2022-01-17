@@ -157,6 +157,8 @@ Some tiny examples
 OpenCV.Mat.from_binary(binary_data, type, cols, rows, channels)
 ```
 
+Some other [examples](https://github.com/cocoa-xu/evision/examples).
+
 ### Todo
 
 - [x] Update `.py` files in `py_src` so that they output header files for Erlang bindings.
@@ -197,8 +199,8 @@ OpenCV.Mat.from_binary(binary_data, type, cols, rows, channels)
    {:ok, << ... binary data ... >>}
    ```
 - [x] Edit `config/config.exs` to enable/disable OpenCV modules and image coders.
-- [ ] Enable TensorFlow (Lite?) integration based on config.
-- [ ] Add some [examples](https://github.com/cocoa-xu/evision/examples) (perhaps as livebook).
+- [ ] Make function names more readable/friendly. (expect breaking changes after this)
+- [ ] Add more [examples](https://github.com/cocoa-xu/evision/examples) (perhaps as livebook).
 - [ ] Add support for `dnn`. Halfway done? Tons of functions haven't been tested yet. 
 - [ ] Add support for `gapi`?
 - [ ] Add tests.
