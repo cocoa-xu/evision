@@ -14,13 +14,12 @@ config :evision,
     :stitching,
     :ts,
     :video,
-    :videoio
+    :videoio,
+    :dnn,
   ]
 
 config :evision,
   disabled_modules: [
-    # not supported yet
-    :dnn,
     # not supported yet
     :gapi,
     # no need for this
@@ -29,6 +28,7 @@ config :evision,
     :python2,
     # no need for this
     :python3,
+    # no need for this
     :java
   ]
 

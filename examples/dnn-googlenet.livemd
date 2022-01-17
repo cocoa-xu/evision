@@ -1,0 +1,265 @@
+<!-- vim: syntax=markdown -->
+
+<!-- livebook:{"persist_outputs":true} -->
+
+# Evision DNN - GoogleNet
+
+## Setup
+
+```elixir
+# # a quick fix for the free tier livebook session
+# ## allocate 2GB swap
+# System.cmd("fallocate", ["-l", "2G", "/swap"])
+# System.cmd("chmod", ["400", "/swap"])
+# System.cmd("mkswap", ["/swap"])
+# System.cmd("swapon", ["/swap"])
+# ## need unzip to unzip the source code
+# System.cmd("apt", ["update", "-q", "-y"])
+# System.cmd("apt", ["install", "-y", "unzip", "python3", "cmake"])
+
+Mix.install([
+  {:nx, "~> 0.1.0-dev", github: "elixir-nx/nx", sparse: "nx"},
+  {:evision, "~> 0.1.0-dev", github: "cocoa-xu/evision", branch: "main"}
+])
+```
+
+```output
+# unnecessary output removed
+Generated evision app
+```
+
+```output
+:ok
+```
+
+## Helper Functions
+
+```elixir
+defmodule Helper do
+  def download!(url, save_as, overwrite \\ false)
+
+  def download!(url, save_as, false) do
+    unless File.exists?(save_as) do
+      download!(url, save_as, true)
+    end
+
+    :ok
+  end
+
+  def download!(url, save_as, true) do
+    http_opts = []
+    opts = [body_format: :binary]
+    arg = {url, []}
+
+    body =
+      case :httpc.request(:get, arg, http_opts, opts) do
+        {:ok, {{_, 200, _}, _, body}} ->
+          body
+
+        {:error, reason} ->
+          raise inspect(reason)
+      end
+
+    File.write!(save_as, body)
+  end
+end
+```
+
+```output
+{:module, Helper, <<70, 79, 82, 49, 0, 0, 9, ...>>, {:download!, 3}}
+```
+
+```elixir
+defmodule OpenCV.Nx do
+  @moduledoc false
+
+  @doc """
+  Transform an OpenCV.Mat `#Reference` to `#Nx.tensor`
+  ### Example
+  {:ok, mat} = OpenCV.imread("/path/to/exist/img.png")
+  nx_tensor = OpenCV.Nx.to_nx(mat)
+   #Nx.Tensor<
+      u8[1080][1920][3]
+      [[ ... pixel data ... ]]
+   >
+  """
+  def to_nx(mat) do
+    {:ok, mat_type} = OpenCV.Mat.type(mat)
+    {:ok, mat_shape} = OpenCV.Mat.shape(mat)
+
+    case OpenCV.Mat.to_binary(mat) do
+      {:ok, bin} ->
+        bin
+        |> Nx.from_binary(mat_type)
+        |> Nx.reshape(mat_shape)
+
+      {:error, reason} ->
+        {:error, reason}
+
+      _ ->
+        {:error, "unknown error"}
+    end
+  end
+end
+```
+
+```output
+{:module, OpenCV.Nx, <<70, 79, 82, 49, 0, 0, 7, ...>>, {:to_nx, 1}}
+```
+
+## Download model and a test image
+
+* Model parameters. `bvlc_googlenet.caffemodel`
+* Model config. `bvlc_googlenet.prototxt`
+* List of class names. `classification_classes_ILSVRC2012.txt`
+* Test image. `space_shuttle.jpg`
+
+```elixir
+Helper.download!(
+  "http://dl.caffe.berkeleyvision.org/bvlc_googlenet.caffemodel",
+  "bvlc_googlenet.caffemodel"
+)
+
+Helper.download!(
+  "https://raw.githubusercontent.com/opencv/opencv_extra/master/testdata/dnn/bvlc_googlenet.prototxt",
+  "bvlc_googlenet.prototxt"
+)
+
+Helper.download!(
+  "https://raw.githubusercontent.com/opencv/opencv/master/samples/data/dnn/classification_classes_ILSVRC2012.txt",
+  "classification_classes_ILSVRC2012.txt"
+)
+
+Helper.download!("https://docs.opencv.org/4.5.4/space_shuttle.jpg", "space_shuttle.jpg")
+```
+
+```output
+:ok
+```
+
+## Read class names
+
+```elixir
+classes =
+  "classification_classes_ILSVRC2012.txt"
+  |> File.read!()
+  |> String.split("\n")
+```
+
+```output
+["tench, Tinca tinca", "goldfish, Carassius auratus",
+ "great white shark, white shark, man-eater, man-eating shark, Carcharodon carcharias",
+ "tiger shark, Galeocerdo cuvieri", "hammerhead, hammerhead shark",
+ "electric ray, crampfish, numbfish, torpedo", "stingray", "cock", "hen",
+ "ostrich, Struthio camelus", "brambling, Fringilla montifringilla",
+ "goldfinch, Carduelis carduelis", "house finch, linnet, Carpodacus mexicanus", "junco, snowbird",
+ "indigo bunting, indigo finch, indigo bird, Passerina cyanea",
+ "robin, American robin, Turdus migratorius", "bulbul", "jay", "magpie", "chickadee",
+ "water ouzel, dipper", "kite", "bald eagle, American eagle, Haliaeetus leucocephalus", "vulture",
+ "great grey owl, great gray owl, Strix nebulosa",
+ "European fire salamander, Salamandra salamandra", "common newt, Triturus vulgaris", "eft",
+ "spotted salamander, Ambystoma maculatum", "axolotl, mud puppy, Ambystoma mexicanum",
+ "bullfrog, Rana catesbeiana", "tree frog, tree-frog",
+ "tailed frog, bell toad, ribbed toad, tailed toad, Ascaphus trui",
+ "loggerhead, loggerhead turtle, Caretta caretta",
+ "leatherback turtle, leatherback, leathery turtle, Dermochelys coriacea", "mud turtle", "terrapin",
+ "box turtle, box tortoise", "banded gecko", "common iguana, iguana, Iguana iguana",
+ "American chameleon, anole, Anolis carolinensis", "whiptail, whiptail lizard", "agama",
+ "frilled lizard, Chlamydosaurus kingi", "alligator lizard", "Gila monster, Heloderma suspectum",
+ "green lizard, Lacerta viridis", "African chameleon, Chamaeleo chamaeleon",
+ "Komodo dragon, Komodo lizard, dragon lizard, giant lizard, Varanus komodoensis",
+ "African crocodile, Nile crocodile, Crocodylus niloticus", ...]
+```
+
+## Load DNN model
+
+```elixir
+{:ok, model} =
+  OpenCV.dnn_readnet_model("bvlc_googlenet.caffemodel",
+    config: "bvlc_googlenet.prototxt",
+    framework: ""
+  )
+```
+
+```output
+{:ok, #Reference<0.3128475832.1787953155.129610>}
+```
+
+## Set backend and target
+
+```elixir
+# "0: automatically (by default), "
+# "1: Halide language (http://halide-lang.org/), "
+# "2: Intel's Deep Learning Inference Engine (https://software.intel.com/openvino-toolkit), "
+# "3: OpenCV implementation, "
+# "4: VKCOM, "
+# "5: CUDA
+{:ok, model} = OpenCV.DnnNet.setpreferablebackend(model, 0)
+
+# "0: CPU target (by default), "
+# "1: OpenCL, "
+# "2: OpenCL fp16 (half-float precision), "
+# "3: VPU, "
+# "4: Vulkan, "
+# "6: CUDA, "
+# "7: CUDA fp16 (half-float preprocess)
+{:ok, model} = OpenCV.DnnNet.setpreferabletarget(model, 0)
+```
+
+```output
+{:ok, #Reference<0.3128475832.1787953155.129610>}
+```
+
+## Read the test image and set as input
+
+```elixir
+{:ok, mat} = OpenCV.imread("space_shuttle.jpg")
+
+{:ok, blob} =
+  OpenCV.dnn_blobfromimage(mat,
+    scalefactor: 1,
+    swapRB: true,
+    mean: [-104, -117, -123],
+    size: [224, 224]
+  )
+
+{:ok, model} = OpenCV.DnnNet.setinput(model, blob, name: "", scalefactor: 1.0, mean: [0, 0, 0])
+```
+
+```output
+{:ok, #Reference<0.3128475832.1787953155.129610>}
+```
+
+## Forward
+
+```elixir
+start_time = :os.system_time(:millisecond)
+{:ok, pred} = OpenCV.DnnNet.forward(model, outputName: "")
+end_time = :os.system_time(:millisecond)
+"Inference time=>#{end_time - start_time} ms"
+```
+
+```output
+"Inference time=>51 ms"
+```
+
+```elixir
+pred = pred |> OpenCV.Nx.to_nx()
+pred_class_id = pred |> Nx.argmax() |> Nx.to_flat_list() |> Enum.at(0)
+
+confidence =
+  pred
+  |> Nx.take(Nx.tensor(pred_class_id), axis: 1)
+  |> Nx.to_flat_list()
+  |> Enum.at(0)
+
+class_label =
+  classes
+  |> Enum.at(pred_class_id)
+
+"Predict result: #{class_label}=>#{Float.round(confidence * 100, 2)}"
+```
+
+```output
+"Predict result: space shuttle=>99.13"
+```

@@ -76,6 +76,22 @@ gen_template_check_self = Template("""
     ${pname} _self_ = ${cvt}(self1);
 """)
 
+gen_template_safe_check_self = Template("""
+    ERL_NIF_TERM self = argv[0];
+    ${cname} self1;
+    const ArgInfo selfArg("self", false);
+    if (!evision_to_safe(env, self, self1, selfArg)) {
+        return enif_make_badarg(env);
+    }
+    ${pname} _self_ = &self1;
+""")
+
+gen_template_simple_call_dnn_constructor_prelude = Template("""evision_res<$cname> * self = nullptr;
+        alloc_resource(&self);
+        if(self) """)
+
+gen_template_simple_call_dnn_constructor = Template("""new (&(self->val)) ${cname}${py_args}""")
+
 gen_template_call_constructor_prelude = Template("""evision_res<Ptr<$cname>> * self = nullptr;
         if (alloc_resource(&self)) {
             new (&(self->val)) Ptr<$cname>(); // init Ptr with placement new
@@ -222,7 +238,7 @@ static ERL_NIF_TERM evision_${name_lower}_set_${member_lower}(ErlNifEnv *env, in
     if (!evision_${name}_getp(env, self, self1)) {
         return enif_make_badarg(env);
     }
-    return evision::nif::atom(env, "not implmented setter");
+    return evision::nif::atom(env, "not implemented setter");
 
     // if (!value)
     // {
@@ -236,18 +252,21 @@ static ERL_NIF_TERM evision_${name_lower}_set_${member_lower}(ErlNifEnv *env, in
 gen_template_set_prop_algo = Template("""
 static ERL_NIF_TERM evision_${name_lower}_set_${member_lower}(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
-    if (!value)
-    {
-        // todo: error("Cannot delete the ${member} attribute");
-        return -1;
+    ERL_NIF_TERM self = argv[0];
+    ${storage_name}* self1 = 0;
+    if (!evision_${name}_getp(env, self, self1)) {
+        return enif_make_badarg(env);
     }
-    $cname* _self_ = dynamic_cast<$cname*>(p->v.get());
-    if (!_self_)
+    $cname* _self_algo_ = dynamic_cast<$cname*>(self1->get());
+    if (!_self_algo_)
     {
         failmsgp(env, "Incorrect type of object (must be '${name}' or its derivative)");
         return -1;
     }
-    return evision_to_safe(env, value, _self_${access}${member}, ArgInfo("value", false)) ? 0 : -1;
+    if (evision_to_safe(env, argv[1], _self_algo_${access}${member}, ArgInfo("value", false))) {
+        return evision::nif::ok(env, self);
+    }
+    return evision::nif::atom(env, "error");
 }
 """)
 
@@ -748,7 +767,10 @@ class FuncInfo(object):
             selfinfo = all_classes[self.classname]
             if not self.is_static:
                 if not self.isconstructor:
-                    code += gen_template_check_self.substitute(
+                    check_self_templ = gen_template_check_self
+                    if "dnn" in self.namespace and selfinfo.cname in ["cv::dnn::Net"]:
+                        check_self_templ = gen_template_safe_check_self
+                    code += check_self_templ.substitute(
                         name=selfinfo.name,
                         cname=selfinfo.cname if selfinfo.issimple else "Ptr<{}>".format(selfinfo.cname),
                         pname=(selfinfo.cname + '*') if selfinfo.issimple else "Ptr<{}>".format(selfinfo.cname),
@@ -858,6 +880,9 @@ class FuncInfo(object):
                 if selfinfo.issimple:
                     templ_prelude = gen_template_simple_call_constructor_prelude
                     templ = gen_template_simple_call_constructor
+                    if "cv::dnn::" in selfinfo.cname:
+                        templ_prelude = gen_template_simple_call_dnn_constructor_prelude
+                        templ = gen_template_simple_call_dnn_constructor
                 else:
                     templ_prelude = gen_template_call_constructor_prelude
                     templ = gen_template_call_constructor
@@ -902,6 +927,8 @@ class FuncInfo(object):
 
             if len(v.py_outlist) == 0:
                 code_ret = "return evision::nif::atom(env, \"nil\")"
+                if not v.isphantom and ismethod and not self.is_static:
+                    code_ret = "return evision::nif::ok(env, self)"
             elif len(v.py_outlist) == 1:
                 if self.isconstructor:
                     code_ret = "ERL_NIF_TERM ret = enif_make_resource(env, self);\n        enif_release_resource(self);\n        return evision::nif::ok(env, ret);"
@@ -1418,6 +1445,10 @@ class PythonWrapperGenerator(object):
                     else:
                         func_args = 'self'
                         func_args_with_opts = ''
+            if module_func_name == "dnn_readnet":
+                module_func_name = "dnn_readnet_" + arglist[0][0]
+            if func_name.startswith(evision_nif_prefix + "dnn") and module_func_name == "forward":
+                sign = evision_nif_prefix + "dnn_forward"
             if unique_signatures.get(sign, None) is True:
                 writer.write('\n'.join(["  # {}".format(line.strip()) for line in opt_doc.split("\n")]))
                 writer.write(f'  # def {module_func_name}({func_args}) do\n  #   :erl_cv_nif.{func_name}({func_args})\n  # end\n')
@@ -1530,6 +1561,11 @@ class PythonWrapperGenerator(object):
                     else:
                         function_group = f"  @doc namespace: :\"{func.namespace}\"\n"
 
+                # this could be better perhaps, but it is hurting my brain...
+                if func_name.startswith(evision_nif_prefix + "dnn") and module_func_name == "forward":
+                    inline_doc += function_group
+                    writer.write(f'{inline_doc}  def {module_func_name}(self, opt \\\\ []) do\n    :erl_cv_nif.{func_name}(self, opt)\n  end\n')
+                    continue
                 if len(func_args_with_opts) > 0:
                     inline_doc += function_group
                     writer.write(f'{inline_doc}  def {module_func_name}({module_func_args_with_opts}){when_guard}do\n    {positional}\n    :erl_cv_nif.{func_name}({func_args_with_opts})\n  end\n')
@@ -1747,7 +1783,7 @@ class PythonWrapperGenerator(object):
         self.save(output_path, "evision_generated_enums.h", self.code_enums)
         self.save(output_path, "evision_generated_types.h", self.code_type_publish)
         self.save(output_path, "evision_generated_types_content.h", self.code_types)
-        self.save(output_path, "evision_generated_modules.h", self.code_ns_init)
+        # self.save(output_path, "evision_generated_modules.h", self.code_ns_init)
         self.save(output_path, "evision_generated_modules_content.h", self.code_ns_reg)
         self.save(erl_output_path, "erl_cv_nif.ex", self.erl_cv_nif)
         self.save(erl_output_path, "opencv.ex", self.opencv_ex)
@@ -1769,7 +1805,7 @@ if __name__ == "__main__":
             srcfiles = [l.strip() for l in f.readlines()]
     # default
     enabled_modules = ['calib3d', 'core', 'features2d', 'flann', 'highgui', 'imgcodecs', 'imgproc', 'ml', 'photo',
-                       'stitching', 'ts', 'video', 'videoio']
+                       'stitching', 'ts', 'video', 'videoio', 'dnn']
     if len(sys.argv) > 4:
         enabled_modules = sys.argv[4].split(",")
     generator = PythonWrapperGenerator(enabled_modules)
