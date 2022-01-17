@@ -157,7 +157,7 @@ Some tiny examples
 OpenCV.Mat.from_binary(binary_data, type, cols, rows, channels)
 ```
 
-Some other [examples](https://github.com/cocoa-xu/evision/examples).
+Some other [examples](https://github.com/cocoa-xu/evision/tree/main/examples).
 
 ### Todo
 
@@ -200,7 +200,7 @@ Some other [examples](https://github.com/cocoa-xu/evision/examples).
    ```
 - [x] Edit `config/config.exs` to enable/disable OpenCV modules and image coders.
 - [ ] Make function names more readable/friendly. (expect breaking changes after this)
-- [ ] Add more [examples](https://github.com/cocoa-xu/evision/examples) (perhaps as livebook).
+- [ ] Add more [examples](https://github.com/cocoa-xu/evision/tree/main/examples) (perhaps as livebook).
 - [ ] Add support for `dnn`. Halfway done? Tons of functions haven't been tested yet. 
 - [ ] Add support for `gapi`?
 - [ ] Add tests.
