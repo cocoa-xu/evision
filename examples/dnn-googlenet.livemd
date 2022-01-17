@@ -1,3 +1,5 @@
+<!-- vim: syntax=markdown -->
+
 <!-- livebook:{"persist_outputs":true} -->
 
 # Evision DNN - GoogleNet
@@ -17,7 +19,7 @@
 
 Mix.install([
   {:nx, "~> 0.1.0-dev", github: "elixir-nx/nx", sparse: "nx"},
-  {:evision, "~> 0.1.0-dev", github: "cocoa-xu/evision", branch: "feature-module-dnn"}
+  {:evision, "~> 0.1.0-dev", github: "cocoa-xu/evision", branch: "main"}
 ])
 ```
 
