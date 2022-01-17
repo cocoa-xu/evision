@@ -2,12 +2,12 @@
 
 | OS               | arch    | Build Status |
 |------------------|---------|--------------|
-| Ubuntu 20.04     | arm64   | [![CI](https://github.com/cocoa-xu/evision/actions/workflows/linux-arm64.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/linux-arm64.yml) |
-| Ubuntu 20.04     | armv7   | [![CI](https://github.com/cocoa-xu/evision/actions/workflows/linux-armv7.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/linux-armv7.yml) |
-| Ubuntu 20.04     | s390x   | [![CI](https://github.com/cocoa-xu/evision/actions/workflows/linux-s390x.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/linux-s390x.yml) |
-| Ubuntu 20.04     | ppc64le | [![CI](https://github.com/cocoa-xu/evision/actions/workflows/linux-ppc64le.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/linux-ppc64le.yml) |
 | Ubuntu 20.04     | x86_64  | [![CI](https://github.com/cocoa-xu/evision/actions/workflows/linux-x86_64.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/linux-x86_64.yml) |
 | macOS 11 Big Sur | x86_64  | [![CI](https://github.com/cocoa-xu/evision/actions/workflows/macos-x86_64.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/macos-x86_64.yml) |
+
+`ppc64le` and `s390x` emulators are too slow. Let's focus on x86_64, arm64 and armv7 for now. Furthermore, nerves workflow
+will compile evision to arm64, armv7 and armv6, therefore, `linux-arm64.yml` and `linux-armv7.yml` will now be triggered 
+manually only.
 
 Apple Silicon M1-series are supported, actually I coded and tested this project on my M1 Max MacBook Pro, but M1 GitHub 
 Action runners are not yet available. 
