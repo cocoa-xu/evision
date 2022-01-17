@@ -1330,10 +1330,31 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const Moments& m)
 template <typename Tp>
 struct evisionVecConverter;
 
+static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, std::vector<int64_t>& value, const ArgInfo& info)
+{
+    if (evision::nif::check_nil(env, obj)) {
+        return true;
+    }
+
+    return evision::nif::get_list(env, obj, value);
+}
+
+static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, std::vector<int>& value, const ArgInfo& info)
+{
+    if (evision::nif::check_nil(env, obj)) {
+        return true;
+    }
+
+    return evision::nif::get_list(env, obj, value);
+}
+
 template <typename Tp>
 bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, std::vector<Tp>& value, const ArgInfo& info)
 {
     if (evision::nif::check_nil(env, obj)) {
+        if (info.name != nullptr && strncmp(info.name, "netInputShape", 13) == 0) {
+            return false;
+        }
         return true;
     }
     return evisionVecConverter<Tp>::to(env, obj, value, info);
@@ -1349,6 +1370,9 @@ template <typename Tp>
 static bool evision_to_generic_vec(ErlNifEnv *env, ERL_NIF_TERM obj, std::vector<Tp>& value, const ArgInfo& info)
 {
     if (evision::nif::check_nil(env, obj)) {
+        if (info.name != nullptr && strncmp(info.name, "netInputShape", 13) == 0) {
+            return false;
+        }
         return true;
     }
 
@@ -1360,15 +1384,84 @@ static bool evision_to_generic_vec(ErlNifEnv *env, ERL_NIF_TERM obj, std::vector
     unsigned n = 0;
     enif_get_list_length(env, obj, &n);
     value.resize(n);
+
+    std::vector<ERL_NIF_TERM> cells;
+    ERL_NIF_TERM head, tail, arr = obj;
+    for (size_t i = 0; i < n; i++) {
+        enif_get_list_cell(env, arr, &head, &tail);
+        arr = tail;
+        cells.push_back(head);
+    }
+    std::reverse(cells.begin(), cells.end());
+
     for (size_t i = 0; i < n; i++)
     {
-        SafeSeqItem item_wrap(env, obj, i);
-        if (!evision_to(env, item_wrap.item, value[i], info))
+        if (!evision_to(env, cells[i], value[i], info))
         {
             failmsg(env, "Can't parse '%s'. Sequence item with index %lu has a wrong type", info.name, i);
             return false;
         }
     }
+    if (info.name != nullptr && strncmp(info.name, "netInputShape", 13) == 0) {
+        return false;
+    }
+    return true;
+}
+
+template <>
+inline bool evision_to_generic_vec(ErlNifEnv *env, ERL_NIF_TERM obj, std::vector<std::vector<int>>& value, const ArgInfo& info)
+{
+    if (evision::nif::check_nil(env, obj)) {
+        if (info.name != nullptr && strncmp(info.name, "netInputShape", 13) == 0) {
+            return false;
+        }
+        return true;
+    }
+
+    if (!enif_is_list(env, obj)) {
+        return false;
+    }
+    unsigned n = 0;
+    if (!enif_get_list_length(env, obj, &n)) {
+        return false;
+    }
+    // printf("arg: %s, list length: %d\r\n", info.name, n);
+
+    value.resize(n);
+    ERL_NIF_TERM head, tail, arr = obj;
+    for (size_t i = 0; i < n; i++)
+    {
+        std::vector<int> inner_val;
+        if (!enif_get_list_cell(env, arr, &head, &tail)) {
+            return false;
+        }
+
+        if (!enif_is_list(env, head)) {
+            return false;
+        }
+
+        unsigned inner_n = 0;
+        if (!enif_get_list_length(env, head, &inner_n)) {
+            return false;
+        }
+        inner_val.resize(inner_n);
+        ERL_NIF_TERM inner_head, inner_tail, inner_arr = head;
+        for (size_t j = 0; j < inner_n; ++j) {
+            if (!enif_get_list_cell(env, inner_arr, &inner_head, &inner_tail)) {
+                return false;
+            }
+            int val;
+            if (!enif_get_int(env, inner_head, &val)) {
+                return false;
+            }
+            inner_val[j] = val;
+            inner_arr = inner_tail;
+        }
+
+        value.push_back(inner_val);
+        arr = tail;
+    }
+
     return true;
 }
 

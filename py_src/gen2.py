@@ -1468,6 +1468,8 @@ class PythonWrapperGenerator(object):
                 module_func_name = "dnn_readnet_" + arglist[0][0]
             if func_name.startswith(evision_nif_prefix + "dnn") and module_func_name == "forward":
                 sign = evision_nif_prefix + "dnn_forward"
+            if func_name.startswith(evision_nif_prefix + "dnn_dnn_net") and (module_func_name == "getlayershapes" or module_func_name == "getlayersshapes"):
+                sign = evision_nif_prefix + "dnn_dnn_net_" + module_func_name
             if unique_signatures.get(sign, None) is True:
                 writer.write('\n'.join(["  # {}".format(line.strip()) for line in opt_doc.split("\n")]))
                 writer.write(f'  # def {module_func_name}({func_args}) do\n  #   :erl_cv_nif.{func_name}({func_args})\n  # end\n')
@@ -1582,6 +1584,10 @@ class PythonWrapperGenerator(object):
 
                 # this could be better perhaps, but it is hurting my brain...
                 if func_name.startswith(evision_nif_prefix + "dnn") and module_func_name == "forward":
+                    inline_doc += function_group
+                    writer.write(f'{inline_doc}  def {module_func_name}(self, opt \\\\ []) do\n    :erl_cv_nif.{func_name}(self, opt)\n  end\n')
+                    continue
+                if func_name.startswith(evision_nif_prefix + "dnn_dnn_net") and (module_func_name == "getlayershapes" or module_func_name == "getlayersshapes"):
                     inline_doc += function_group
                     writer.write(f'{inline_doc}  def {module_func_name}(self, opt \\\\ []) do\n    :erl_cv_nif.{func_name}(self, opt)\n  end\n')
                     continue
