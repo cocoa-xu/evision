@@ -34,6 +34,13 @@ This project uses and modifies `gen2.py` and `hdr_parser.py` from the `python` m
 
 We hope this project can largely reduce the work of manually porting OpenCV functions/modules to Elixir.
 
+Compatible OpenCV versions:
+- 4.5.4
+- 4.5.5
+
+by compatible, it means these versions can compile successfully, and I tested a small range of functions. Tons of tests
+should be written, and then we can have a list for tested OpenCV versions. 
+
 Current available modules:
 - calib3d
 - core
