@@ -8,7 +8,7 @@ ifdef CMAKE_TOOLCHAIN_FILE
 endif
 
 # OpenCV
-OPENCV_VER ?= 4.5.4
+OPENCV_VER ?= 4.5.5
 OPENCV_CACHE_DIR = $(shell pwd)/3rd_party/cache
 OPENCV_SOURCE_URL = "https://github.com/opencv/opencv/archive/$(OPENCV_VER).zip"
 OPENCV_SOURCE_ZIP = $(OPENCV_CACHE_DIR)/opencv-$(OPENCV_VER).zip

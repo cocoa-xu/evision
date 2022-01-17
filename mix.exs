@@ -1,9 +1,12 @@
 defmodule Evision.MixProject do
   use Mix.Project
+  require Logger
 
   @app :evision
   @version "0.1.0-dev"
-  @opencv_version "4.5.4"
+  @opencv_version "4.5.5"
+  # only means compatible. need to write more tests
+  @compatible_opencv_versions ["4.5.4", "4.5.5"]
   @source_url "https://github.com/cocoa-xu/evision/tree/#{@opencv_version}"
 
   def project do
@@ -21,13 +24,23 @@ defmodule Evision.MixProject do
       description: description(),
       package: package(),
       make_env: %{
-        "OPENCV_VER" => @opencv_version,
+        "OPENCV_VER" => opencv_versions(System.get_env("OPENCV_VER", @opencv_version)),
         "MAKE_BUILD_FLAGS" =>
           System.get_env("MAKE_BUILD_FLAGS", "-j#{System.schedulers_online()}"),
         "CMAKE_OPTIONS" => cmake_options,
         "ENABLED_CV_MODULES" => enabled_modules
       }
     ]
+  end
+
+  def opencv_versions(version) do
+    if Enum.member?(@compatible_opencv_versions, version) do
+      version
+    else
+      Logger.warn("OpenCV version #{version} is not in the compatible list, you may encounter compile errors")
+      Logger.warn("Compatible OpenCV versions: " <> (@compatible_opencv_versions |> Enum.join(", ")))
+      version
+    end
   end
 
   def application do

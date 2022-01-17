@@ -861,7 +861,11 @@ class FuncInfo(object):
                 if a.outputarg and not a.inputarg:
                     defval = ""
                 if defval:
-                    code_decl += "    %s %s=%s;\n" % (arg_type_info.atype, a.name, defval)
+                    if arg_type_info.atype == "QRCodeEncoder_Params":
+                        # arg_type_info.atype = ""
+                        code_decl += "    QRCodeEncoder::Params %s=%s;\n" % (a.name, defval)
+                    else:
+                        code_decl += "    %s %s=%s;\n" % (arg_type_info.atype, a.name, defval)
                 else:
                     code_decl += "    %s %s;\n" % (arg_type_info.atype, a.name)
 
