@@ -155,7 +155,7 @@ defmodule Evision.MixProject do
   defp deps do
     [
       {:elixir_make, "~> 0.6"},
-      {:ex_doc, "~> 0.23", only: :dev, runtime: false}
+      {:ex_doc, "~> 0.27", only: :dev, runtime: false}
     ]
   end
 
@@ -168,6 +168,7 @@ defmodule Evision.MixProject do
       groups_for_functions: [
         cv: &(&1[:namespace] == :cv),
         "cv.Mat": &(&1[:namespace] == :"cv.Mat"),
+        "cv.highgui": &(&1[:namespace] == :"cv.highgui"),
         "external.Nx": &(&1[:namespace] == :"external.Nx"),
         "cv.Error": &(&1[:namespace] == :"cv.Error"),
         "cv.ipp": &(&1[:namespace] == :"cv.ipp"),
