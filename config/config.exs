@@ -2,8 +2,7 @@ import Config
 
 config :evision,
   enabled_modules: [
-    :"3d",
-    :calib,
+    :calib3d,
     :core,
     :features2d,
     :flann,
