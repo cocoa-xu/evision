@@ -54,7 +54,8 @@ defmodule Evision.MixProject do
 
   defp all_opencv_modules do
     [
-      :calib3d,
+      :"3d",
+      :calib,
       :core,
       :features2d,
       :flann,
