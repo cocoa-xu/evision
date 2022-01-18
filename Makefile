@@ -8,7 +8,12 @@ ifdef CMAKE_TOOLCHAIN_FILE
 endif
 
 # OpenCV
+OPENCV_USE_GIT_HEAD ?= false
+OPENCV_GIT_REPO ?= "https://github.com/opencv/opencv.git"
 OPENCV_VER ?= 4.5.5
+ifneq ($(OPENCV_USE_GIT_HEAD), "false")
+	OPENCV_VER=head
+endif
 OPENCV_CACHE_DIR = $(shell pwd)/3rd_party/cache
 OPENCV_SOURCE_URL = "https://github.com/opencv/opencv/archive/$(OPENCV_VER).zip"
 OPENCV_SOURCE_ZIP = $(OPENCV_CACHE_DIR)/opencv-$(OPENCV_VER).zip
@@ -63,7 +68,7 @@ $(OPENCV_CACHE_DIR):
 	@ mkdir -p "$(OPENCV_CACHE_DIR)"
 
 $(OPENCV_SOURCE_ZIP): $(OPENCV_CACHE_DIR)
-	@ if [ ! -e "$(OPENCV_SOURCE_ZIP)" ]; then \
+	@ if [ "$(OPENCV_USE_GIT_HEAD)" = "false" ] && [ ! -e "$(OPENCV_SOURCE_ZIP)" ]; then \
 		if [ -e "$(shell which curl)" ]; then \
 			curl -fSL "$(OPENCV_SOURCE_URL)" -o $(OPENCV_SOURCE_ZIP) ; \
 		elif [ -e "$(shell which wget)" ]; then \
@@ -77,7 +82,11 @@ $(OPENCV_SOURCE_ZIP): $(OPENCV_CACHE_DIR)
 $(OPENCV_CONFIGURATION_PRIVATE_HPP): $(OPENCV_SOURCE_ZIP)
 	@ if [ ! -e "$(OPENCV_CONFIGURATION_PRIVATE_HPP)" ]; then \
 		rm -rf "$(OPENCV_DIR)" ; \
-		unzip -qq -o "$(OPENCV_SOURCE_ZIP)" -d "$(OPENCV_ROOT_DIR)" ; \
+		if [ "$(OPENCV_USE_GIT_HEAD)" = "false" ]; then \
+			unzip -qq -o "$(OPENCV_SOURCE_ZIP)" -d "$(OPENCV_ROOT_DIR)" ; \
+		else \
+			git clone --branch=5.x --depth=1 $(OPENCV_GIT_REPO) "$(OPENCV_DIR)" ; \
+		fi \
 	fi
 
 $(CONFIGURATION_PRIVATE_HPP): $(OPENCV_CONFIGURATION_PRIVATE_HPP)
