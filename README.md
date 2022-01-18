@@ -26,6 +26,14 @@ fwup /path/to/the/downloaded/firmware.fw
 SSH keys can be found in `nerves/id_rsa[.pub]`. For obvious security reason, please 
 use these prebuilt firmwares for evaluation only.
 
+## Interact with elixir-nx
+### OpenCV.Mat to Nx.tensor
+`OpenCV.Nx` module detects whether you have `:nx` available or not, if yes, then `OpenCV.Nx.to_nx/1` will try to convert
+`OpenCV.Mat` to `Nx.tensor`; otherwise, it returns `{:error, ":nx is missing"}`.
+
+### Nx.tensor to OpenCV.Mat 
+There is a `nx_evision` library available on [zeam-vm/nx_evision](https://github.com/zeam-vm/nx_evision).
+
 ## Description
 
 `evision` will pull OpenCV source code from GitHub, then parse and automatically generate corresponding OpenCV-Elixir bindings.
