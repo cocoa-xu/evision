@@ -227,7 +227,7 @@ Some other [examples](https://github.com/cocoa-xu/evision/tree/main/examples).
 - [ ] Make function names more readable/friendly. (expect breaking changes after this)
 - [ ] Add more [examples](https://github.com/cocoa-xu/evision/tree/main/examples) (perhaps as livebook).
 - [ ] Add support for `dnn`. Halfway done? Tons of functions haven't been tested yet. 
-- [ ] Add support for `gapi`? Perhaps not. See #22.
+- [ ] Add support for `gapi`? Perhaps not. See [#22](https://github.com/cocoa-xu/evision/issues/22).
 - [ ] Add tests.
 
 ### How does this work?
