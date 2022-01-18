@@ -29,7 +29,8 @@ defmodule Evision.MixProject do
           System.get_env("MAKE_BUILD_FLAGS", "-j#{System.schedulers_online()}"),
         "CMAKE_OPTIONS" => cmake_options,
         "ENABLED_CV_MODULES" => enabled_modules
-      }
+      },
+      xref: [exclude: [Nx]]
     ]
   end
 
