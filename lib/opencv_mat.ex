@@ -1,5 +1,7 @@
 defmodule OpenCV.Mat do
-  @moduledoc false
+  @moduledoc """
+  OpenCV Mat
+  """
 
   @doc namespace: :"cv.Mat"
   def type(mat) do

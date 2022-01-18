@@ -1,5 +1,11 @@
 defmodule OpenCV.Nx do
-  @moduledoc false
+  @moduledoc """
+  OpenCV mat to Nx tensor. 
+
+  `:nx` is an optional dependency, so if you want to use
+  `OpenCV.Nx.to_nx/1`, you need to add it to the dependency
+  list.
+  """
 
   @doc """
   Transform an OpenCV.Mat `#Reference` to `#Nx.tensor`
