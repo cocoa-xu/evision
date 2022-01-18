@@ -13,6 +13,7 @@ defmodule OpenCV.Nx do
    >
   ```
   """
+  @doc namespace: :"external.Nx"
   def to_nx(mat) do
     if Code.ensure_loaded?(Nx) do
       {:ok, mat_type} = OpenCV.Mat.type(mat)

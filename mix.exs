@@ -167,6 +167,8 @@ defmodule Evision.MixProject do
       before_closing_body_tag: &before_closing_body_tag/1,
       groups_for_functions: [
         cv: &(&1[:namespace] == :cv),
+        "cv.Mat": &(&1[:namespace] == :"cv.Mat"),
+        "external.Nx": &(&1[:namespace] == :"external.Nx"),
         "cv.Error": &(&1[:namespace] == :"cv.Error"),
         "cv.ipp": &(&1[:namespace] == :"cv.ipp"),
         "cv.utils": &(&1[:namespace] == :"cv.utils"),
