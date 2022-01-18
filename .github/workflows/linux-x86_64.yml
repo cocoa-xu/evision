@@ -33,11 +33,6 @@ jobs:
           - pair:
               elixir: 1.12.3
               otp: 24.1.5
-              opencv_ver: 4.5.4
-          - pair:
-              elixir: 1.12.3
-              otp: 24.1.5
-              opencv_ver: 4.5.5
 
     steps:
       - uses: actions/checkout@v2
@@ -52,7 +47,10 @@ jobs:
 
       - name: Compile
         run: |
-          export OPENCV_VER=${{ matrix.pair.opencv_ver }}
+          # test-opencv-5.0-pre start
+          export OPENCV_USE_GIT_HEAD="true"
+          export OPENCV_USE_GIT_BRANCH=5.x
+          # test-opencv-5.0-pre end
           mix deps.get
           mix deps.compile
           MAKE_BUILD_FLAGS="-j$(nproc)" mix compile
