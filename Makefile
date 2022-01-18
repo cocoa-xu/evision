@@ -11,7 +11,7 @@ endif
 OPENCV_USE_GIT_HEAD ?= false
 OPENCV_GIT_REPO ?= "https://github.com/opencv/opencv.git"
 OPENCV_VER ?= 4.5.5
-ifneq ($(OPENCV_USE_GIT_HEAD), "false")
+ifneq ($(OPENCV_USE_GIT_HEAD), false)
 	OPENCV_VER=$(OPENCV_USE_GIT_BRANCH)
 endif
 OPENCV_CACHE_DIR = $(shell pwd)/3rd_party/cache
