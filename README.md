@@ -47,7 +47,17 @@ Compatible OpenCV versions:
 - 4.5.5
 
 by compatible, it means these versions can compile successfully, and I tested a small range of functions. Tons of tests
-should be written, and then we can have a list for tested OpenCV versions. 
+should be written, and then we can have a list for tested OpenCV versions.
+
+To obtain and compile OpenCV's source code from git, set the following environment variables
+
+```shell
+# required
+export OPENCV_USE_GIT_HEAD=true
+export OPENCV_USE_GIT_BRANCH=4.x
+# optional if you want to use to your/other fork/mirrors
+export OPENCV_GIT_REPO="https://github.com/opencv/opencv.git"
+```
 
 Current available modules:
 - calib3d
