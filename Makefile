@@ -11,8 +11,8 @@ endif
 OPENCV_USE_GIT_HEAD ?= false
 OPENCV_GIT_REPO ?= "https://github.com/opencv/opencv.git"
 OPENCV_VER ?= 4.5.5
-ifneq ($(OPENCV_USE_GIT_HEAD), "false")
-	OPENCV_VER=head
+ifneq ($(OPENCV_USE_GIT_HEAD), false)
+	OPENCV_VER=$(OPENCV_USE_GIT_BRANCH)
 endif
 OPENCV_CACHE_DIR = $(shell pwd)/3rd_party/cache
 OPENCV_SOURCE_URL = "https://github.com/opencv/opencv/archive/$(OPENCV_VER).zip"
@@ -82,10 +82,10 @@ $(OPENCV_SOURCE_ZIP): $(OPENCV_CACHE_DIR)
 $(OPENCV_CONFIGURATION_PRIVATE_HPP): $(OPENCV_SOURCE_ZIP)
 	@ if [ ! -e "$(OPENCV_CONFIGURATION_PRIVATE_HPP)" ]; then \
 		rm -rf "$(OPENCV_DIR)" ; \
-   		if [ "$(OPENCV_USE_GIT_HEAD)" = "false" ]; then \
+		if [ "$(OPENCV_USE_GIT_HEAD)" = "false" ]; then \
 			unzip -qq -o "$(OPENCV_SOURCE_ZIP)" -d "$(OPENCV_ROOT_DIR)" ; \
 		else \
-		  	git clone --branch=5.x --depth=1 $(OPENCV_GIT_REPO) "$(OPENCV_DIR)" ; \
+			git clone --branch=$(OPENCV_USE_GIT_BRANCH) --depth=1 $(OPENCV_GIT_REPO) "$(OPENCV_DIR)" ; \
 		fi \
 	fi
 

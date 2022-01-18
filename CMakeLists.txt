@@ -8,7 +8,7 @@ file(GLOB evision_sources CONFIGURE_DEPENDS "${C_SRC}/*.cpp" "${C_SRC}/*.hpp" "$
 execute_process(COMMAND bash -c "rm -rf ${GENERATED_ELIXIR_SRC_DIR} && mkdir -p ${GENERATED_ELIXIR_SRC_DIR}")
 message("enabled modules: ${ENABLED_CV_MODULES}")
 execute_process(COMMAND bash -c "python3 ${PY_SRC}/gen2.py ${C_SRC} ${GENERATED_ELIXIR_SRC_DIR} ${C_SRC}/headers.txt ${ENABLED_CV_MODULES}" RESULT_VARIABLE STATUS)
-if(STATUS AND STATUS EQUAL 0)
+if(STATUS STREQUAL "0")
     message("Successfully generated Erlang/Elixir bindings")
 else()
     message(FATAL_ERROR "Failed to generate Erlang/Elixir bindings")
