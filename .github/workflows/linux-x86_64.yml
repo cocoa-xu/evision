@@ -56,5 +56,6 @@ jobs:
       - name: Compile and Test
         run: |
           export OPENCV_VER=${{ matrix.pair.opencv_ver }}
+          export MIX_ENV=test
           mix deps.get
           MAKE_BUILD_FLAGS="-j$(nproc)" mix test
