@@ -698,7 +698,7 @@ class FuncInfo(object):
     def get_wrapper_prototype(self):
         full_fname = self.get_wrapper_name()
         full_fname_lower = full_fname.lower()
-        return "static ERL_NIF_TERM %s(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])" % (full_fname_lower,), full_fname_lower
+        return "static ERL_NIF_TERM %s(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])" % (full_fname_lower,), full_fname
 
     def get_tab_entry(self):
         prototype_list = []
@@ -740,18 +740,21 @@ class FuncInfo(object):
         if self.classname:
             if not self.is_static and not self.isconstructor:
                 func_arity = 2
-        fname = self.get_wrapper_name().lower()
+        fname = self.get_wrapper_name()
+        if len(fname) > 0 and not('a' <= fname[0] <= 'z'):
+            fname = fname.lower()
         if fname in special_handling_funcs:
             return ""
-        nif_function_decl = f'    F({fname}, {func_arity}),\n'
+        nif_function_decl = f'    F({fname.lower()}, {func_arity}),\n'
         return nif_function_decl
 
     def gen_code(self, codegen):
         all_classes = codegen.classes
-        proto, fname_lower = self.get_wrapper_prototype()
+        proto, fname = self.get_wrapper_prototype()
         opt_arg_index = 0
         if self.classname and not self.is_static and not self.isconstructor:
             opt_arg_index = 1
+        fname_lower = fname.lower()
         # special handling for these highgui functions
         if fname_lower in special_handling_funcs:
             return ""
@@ -1401,8 +1404,10 @@ class PythonWrapperGenerator(object):
                 self.code_ns_reg.write(f'    F({func_name}, 2),\n')
             return
 
-        func_name = func.get_wrapper_name().lower()
-        if func_name in special_handling_funcs:
+        func_name = func.get_wrapper_name()
+        if len(func_name) > 0 and not ('a' <= func_name[0] <= 'z'):
+            func_name = func_name.lower()
+        if func_name.lower() in special_handling_funcs:
             return
 
         if self.erl_cv_nif_names.get(func_name) != True:
