@@ -53,13 +53,8 @@ jobs:
           sudo apt-get install -y build-essential automake autoconf pkg-config bc m4 unzip zip curl git libssl-dev libncurses5-dev erlang-inets erlang-os-mon erlang-runtime-tools erlang-ssl erlang-dev python3 ca-certificates
           sudo apt-get install -y libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libavresample-dev ffmpeg
 
-      - name: Compile
+      - name: Compile and Test
         run: |
           export OPENCV_VER=${{ matrix.pair.opencv_ver }}
           mix deps.get
-          mix deps.compile
-          MAKE_BUILD_FLAGS="-j$(nproc)" mix compile
-
-      - name: Test
-        run: |
-          mix test
+          MAKE_BUILD_FLAGS="-j$(nproc)" mix test
