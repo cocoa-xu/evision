@@ -929,7 +929,7 @@ class FuncInfo(object):
                     kw_list=", ".join(['"' + aname + '"' for aname, argno, argtype in v.py_arglist]),
                     code_cvt="{}".format(" && \n        ".join(code_cvt_list)))
             else:
-                code_parse = "if(argc - nif_opts_index == 1)"
+                code_parse = "if((argc - nif_opts_index == 1) && erl_terms.size() == 0)"
 
             if len(v.py_outlist) == 0:
                 code_ret = "return evision::nif::atom(env, \"nil\")"
