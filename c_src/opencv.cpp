@@ -150,7 +150,7 @@ static ERL_NIF_TERM failmsgp(ErlNifEnv *env, const char *fmt, ...)
     va_end(ap);
 
     emit_failmsg(env, "TypeError", str);
-    return evision::nif::atom(env, "nil");
+    return evision::nif::error(env, str);
 }
 
 static ERL_NIF_TERM evisionRaiseCVException(ErlNifEnv *env, const cv::Exception &e)
@@ -293,25 +293,22 @@ bool parseSequence(ErlNifEnv *env, ERL_NIF_TERM obj, RefWrapper<T> (&value)[N], 
 
     if (!enif_is_list(env, obj))
     {
-        failmsg(env, "Can't parse '%s'. Input argument is not a list ", info.name);
-        return false;
+        return failmsg(env, "Can't parse '%s'. Input argument is not a list ", info.name);
     }
     unsigned sequenceSize = 0;
     enif_get_list_length(env, obj, &sequenceSize);
     if (sequenceSize != N)
     {
-        failmsg(env, "Can't parse '%s'. Expected sequence length %lu, got %lu",
+        return failmsg(env, "Can't parse '%s'. Expected sequence length %lu, got %lu",
                 info.name, N, sequenceSize);
-        return false;
     }
     for (std::size_t i = 0; i < N; ++i)
     {
         SafeSeqItem seqItem(env, obj, i);
         if (!evision_to(env, seqItem.item, value[i].get(), info))
         {
-            failmsg(env, "Can't parse '%s'. Sequence item with index %lu has a "
+            return failmsg(env, "Can't parse '%s'. Sequence item with index %lu has a "
                     "wrong type", info.name, i);
-            return false;
         }
     }
     return true;
@@ -1905,38 +1902,6 @@ static int convert_to_char(ErlNifEnv *env, ERL_NIF_TERM o, char *dst, const ArgI
 
 #include "evision_generated_types_content.h"
 #include "evision_generated_funcs.h"
-
-//static PyObject* pycvRegisterMatType(PyObject *self, PyObject *value)
-//{
-//    CV_LOG_DEBUG(NULL, cv::format("pycvRegisterMatType %p %p\n", self, value));
-//
-//    if (0 == PyType_Check(value))
-//    {
-//        PyErr_SetString(PyExc_TypeError, "Type argument is expected");
-//        return NULL;
-//    }
-//
-//    Py_INCREF(value);
-//    pyopencv_Mat_TypePtr = (PyTypeObject*)value;
-//
-//    Py_RETURN_NONE;
-//}
-
-// todo: register funcs
-//static PyMethodDef special_methods[] = {
-//  {"_registerMatType", (PyCFunction)(pycvRegisterMatType), METH_O, "_registerMatType(cv.Mat) -> None (Internal)"},
-//  {"redirectError", CV_PY_FN_WITH_KW(pycvRedirectError), "redirectError(onError) -> None"},
-//#ifdef HAVE_OPENCV_HIGHGUI
-//  {"createTrackbar", (PyCFunction)pycvCreateTrackbar, METH_VARARGS, "createTrackbar(trackbarName, windowName, value, count, onChange) -> None"},
-//  {"createButton", CV_PY_FN_WITH_KW(pycvCreateButton), "createButton(buttonName, onChange [, userData, buttonType, initialButtonState]) -> None"},
-//  {"setMouseCallback", CV_PY_FN_WITH_KW(pycvSetMouseCallback), "setMouseCallback(windowName, onMouse [, param]) -> None"},
-//#endif
-//#ifdef HAVE_OPENCV_DNN
-//  {"dnn_registerLayer", CV_PY_FN_WITH_KW(pyopencv_cv_dnn_registerLayer), "registerLayer(type, class) -> None"},
-//  {"dnn_unregisterLayer", CV_PY_FN_WITH_KW(pyopencv_cv_dnn_unregisterLayer), "unregisterLayer(type) -> None"},
-//#endif
-//  {NULL, NULL},
-//};
 
 /************************************************************************/
 

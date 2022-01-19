@@ -116,6 +116,7 @@ end
 ```
 
 ### Notes
+- Set environment variable `OPENCV_EVISION_DEBUG` to `1` to enable debug logging in the bindings (print to stderr).
 - Use `MAKE_BUILD_FLAGS="-j$(nproc)"` environment variable to set number of jobs for compiling.
   
   Default value: `"-j#{System.schedulers_online()}"`. In `mix.exs`.
