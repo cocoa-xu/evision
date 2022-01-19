@@ -48,7 +48,10 @@ jobs:
           elixir-version: ${{matrix.pair.elixir}}
       
       - name: Install system dependecies
-        run: sudo apt-get update && sudo apt-get install -y build-essential automake autoconf pkg-config bc m4 unzip zip curl git libssl-dev libncurses5-dev erlang-inets erlang-os-mon erlang-runtime-tools erlang-ssl erlang-dev python3 ca-certificates
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential automake autoconf pkg-config bc m4 unzip zip curl git libssl-dev libncurses5-dev erlang-inets erlang-os-mon erlang-runtime-tools erlang-ssl erlang-dev python3 ca-certificates
+          sudo apt-get install -y libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libavresample-dev ffmpeg
 
       - name: Compile
         run: |
@@ -56,3 +59,7 @@ jobs:
           mix deps.get
           mix deps.compile
           MAKE_BUILD_FLAGS="-j$(nproc)" mix compile
+
+      - name: Test
+        run: |
+          mix test
