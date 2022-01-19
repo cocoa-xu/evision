@@ -112,20 +112,19 @@ bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, T& p, const ArgInfo& info) { r
 template<typename T> static
 ERL_NIF_TERM evision_from(ErlNifEnv *env, const T& src) { return Evision_Converter<T>::from(env, src); }
 
-static bool isPythonBindingsDebugEnabled()
+static bool isBindingsDebugEnabled()
 {
-    static bool param_debug = cv::utils::getConfigurationParameterBool("OPENCV_PYTHON_DEBUG", false);
+    static bool param_debug = cv::utils::getConfigurationParameterBool("OPENCV_EVISION_DEBUG", false);
     return param_debug;
 }
 
 static void emit_failmsg(ErlNifEnv *env, const char * type, const char *msg)
 {
-    static bool param_debug = isPythonBindingsDebugEnabled();
+    static bool param_debug = isBindingsDebugEnabled();
     if (param_debug)
     {
-        CV_LOG_WARNING(NULL, "Error: " << type << ", Bindings conversion failed: " << msg);
+        fprintf(stderr, "error: %s, msg: %s\r\n", type, msg);
     }
-    // PyErr_SetString(exc, msg);
 }
 
 static int failmsg(ErlNifEnv *env, const char *fmt, ...)
@@ -154,15 +153,23 @@ static ERL_NIF_TERM failmsgp(ErlNifEnv *env, const char *fmt, ...)
     return evision::nif::atom(env, "nil");
 }
 
-static void pyRaiseCVException(const cv::Exception &e)
+static ERL_NIF_TERM evisionRaiseCVException(ErlNifEnv *env, const cv::Exception &e)
 {
-//    PyObject_SetAttrString(opencv_error, "file", PyString_FromString(e.file.c_str()));
-//    PyObject_SetAttrString(opencv_error, "func", PyString_FromString(e.func.c_str()));
-//    PyObject_SetAttrString(opencv_error, "line", PyInt_FromLong(e.line));
-//    PyObject_SetAttrString(opencv_error, "code", PyInt_FromLong(e.code));
-//    PyObject_SetAttrString(opencv_error, "msg", PyString_FromString(e.msg.c_str()));
-//    PyObject_SetAttrString(opencv_error, "err", PyString_FromString(e.err.c_str()));
-//    PyErr_SetString(opencv_error, e.what());
+    return enif_make_tuple2(env,
+        evision::nif::atom(env, "error"),
+        enif_make_tuple2(env,
+            evision::nif::atom(env, "reason"),
+            enif_make_tuple7(env,
+                enif_make_tuple2(env, enif_make_atom(env, "file"), evision::nif::make(env, e.file.c_str())),
+                enif_make_tuple2(env, enif_make_atom(env, "func"), evision::nif::make(env, e.func.c_str())),
+                enif_make_tuple2(env, enif_make_atom(env, "line"), evision::nif::make(env, e.line)),
+                enif_make_tuple2(env, enif_make_atom(env, "code"), evision::nif::make(env, e.code)),
+                enif_make_tuple2(env, enif_make_atom(env, "msg"), evision::nif::make(env, e.msg.c_str())),
+                enif_make_tuple2(env, enif_make_atom(env, "err"), evision::nif::make(env, e.err.c_str())),
+                enif_make_tuple2(env, enif_make_atom(env, "what"), evision::nif::make(env, e.what()))
+            )
+        )
+    );
 }
 
 #define ERRWRAP2(expr, env, error_flag, error_term)       \
@@ -173,7 +180,7 @@ try                                                  \
 catch (const cv::Exception &e)                       \
 {                                                    \
     error_flag = true;                               \
-    error_term = evision::nif::error(env, e.what()); \
+    error_term = evisionRaiseCVException(env, e);    \
 }                                                    \
 catch (const std::exception &e)                      \
 {                                                    \
@@ -206,7 +213,7 @@ inline void pyPrepareArgumentConversionErrorsStorage(std::size_t size)
     conversionErrors.reserve(size);
 }
 
-void pyRaiseCVOverloadException(const std::string& functionName)
+static ERL_NIF_TERM evisionRaiseCVOverloadException(ErlNifEnv *env, const std::string& functionName)
 {
     const std::vector<std::string>& conversionErrors = conversionErrorsTLS.getRef();
     const std::size_t conversionErrorsCount = conversionErrors.size();
@@ -233,13 +240,13 @@ void pyRaiseCVOverloadException(const std::string& functionName)
             errorMessage += conversionErrors[i];
         }
         cv::Exception exception(CV_StsBadArg, errorMessage, functionName, "", -1);
-        pyRaiseCVException(exception);
+        return evisionRaiseCVException(env, exception);
     }
     else
     {
         cv::Exception exception(CV_StsInternal, "Overload resolution failed, but no errors reported",
                                 functionName, "", -1);
-        pyRaiseCVException(exception);
+        return evisionRaiseCVException(env, exception);
     }
 }
 
