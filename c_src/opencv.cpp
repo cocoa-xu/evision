@@ -650,7 +650,7 @@ bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, int& value, const ArgInfo& inf
         failmsg(env, "Argument '%s' is required to be an integer", info.name);
         return false;
     }
-    return !CV_HAS_CONVERSION_ERROR(value);
+    return true;
 }
 
 // There is conflict between "size_t" and "unsigned int".
@@ -718,7 +718,7 @@ bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, char& value, const ArgInfo& in
         return false;
     }
 
-    return !CV_HAS_CONVERSION_ERROR(value);
+    return true;
 }
 
 template<>
