@@ -74,7 +74,7 @@ defmodule DetectionModel do
     {:ok, mat} = OpenCV.rectangle(mat, [l, t], [r, b], [255, 0, 0])
 
     {:ok, {{label_weight, label_height}, baseline}} =
-      OpenCV.gettextsize(text, OpenCV.cv_font_hershey_simplex(), 0.5, 1)
+      OpenCV.getTextSize(text, OpenCV.cv_FONT_HERSHEY_SIMPLEX(), 0.5, 1)
 
     label_weight = trunc(label_weight)
     label_height = trunc(label_height)
@@ -88,14 +88,14 @@ defmodule DetectionModel do
       ])
 
     {:ok, mat} =
-      OpenCV.puttext(mat, text, [l, top], OpenCV.cv_font_hershey_simplex(), 0.5, [0, 0, 255])
+      OpenCV.puttext(mat, text, [l, top], OpenCV.cv_FONT_HERSHEY_SIMPLEX(), 0.5, [0, 0, 255])
 
     _visualise_pred(mat, labels, outs)
   end
 
   def postprocess(mat, detections, net, confidence_threshold) do
-    {:ok, out_layers} = OpenCV.DnnNet.getunconnectedoutlayers(net)
-    {:ok, out_layer} = OpenCV.DnnNet.getlayer(net, Enum.at(out_layers, 0))
+    {:ok, out_layers} = OpenCV.DnnNet.getUnconnectedOutLayers(net)
+    {:ok, out_layer} = OpenCV.DnnNet.getLayer(net, Enum.at(out_layers, 0))
     out_layer_type = OpenCV.DnnLayer.type(out_layer) |> IO.iodata_to_binary()
     _postprocess(mat, detections, net, confidence_threshold, out_layer_type, [])
   end
@@ -162,10 +162,10 @@ defmodule DetectionModel do
 
   def predict(image_file, model, out_names, opts \\ []) do
     {:ok, mat} = OpenCV.imread(image_file)
-    {:ok, blob} = OpenCV.dnn_blobfromimage(mat, opts)
+    {:ok, blob} = OpenCV.dnn_blobFromImage(mat, opts)
 
     {:ok, model} =
-      OpenCV.DnnNet.setinput(model, blob, name: "", scalefactor: 1.0, mean: [0, 0, 0])
+      OpenCV.DnnNet.setInput(model, blob, name: "", scalefactor: 1.0, mean: [0, 0, 0])
 
     start_time = :os.system_time(:millisecond)
     {:ok, detections} = OpenCV.DnnNet.forward(model, outBlobNames: out_names)
@@ -176,12 +176,12 @@ defmodule DetectionModel do
 
   def get_model(params, config, framework \\ "") do
     {:ok, net} =
-      OpenCV.dnn_readnet_model(params,
+      OpenCV.dnn_readNet_model(params,
         config: config,
         framework: framework
       )
 
-    {:ok, out_names} = OpenCV.DnnNet.getunconnectedoutlayersnames(net)
+    {:ok, out_names} = OpenCV.DnnNet.getUnconnectedOutLayersNames(net)
     {:ok, net, out_names}
   end
 end

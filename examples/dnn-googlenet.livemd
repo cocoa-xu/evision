@@ -175,7 +175,7 @@ classes =
 
 ```elixir
 {:ok, model} =
-  OpenCV.dnn_readnet_model("bvlc_googlenet.caffemodel",
+  OpenCV.dnn_readNet_model("bvlc_googlenet.caffemodel",
     config: "bvlc_googlenet.prototxt",
     framework: ""
   )
@@ -194,7 +194,7 @@ classes =
 # "3: OpenCV implementation, "
 # "4: VKCOM, "
 # "5: CUDA
-{:ok, model} = OpenCV.DnnNet.setpreferablebackend(model, 0)
+{:ok, model} = OpenCV.DnnNet.setPreferableBackend(model, 0)
 
 # "0: CPU target (by default), "
 # "1: OpenCL, "
@@ -203,7 +203,7 @@ classes =
 # "4: Vulkan, "
 # "6: CUDA, "
 # "7: CUDA fp16 (half-float preprocess)
-{:ok, model} = OpenCV.DnnNet.setpreferabletarget(model, 0)
+{:ok, model} = OpenCV.DnnNet.setPreferableTarget(model, 0)
 ```
 
 ```output
@@ -216,14 +216,14 @@ classes =
 {:ok, mat} = OpenCV.imread("space_shuttle.jpg")
 
 {:ok, blob} =
-  OpenCV.dnn_blobfromimage(mat,
+  OpenCV.dnn_blobFromImage(mat,
     scalefactor: 1,
     swapRB: true,
     mean: [-104, -117, -123],
     size: [224, 224]
   )
 
-{:ok, model} = OpenCV.DnnNet.setinput(model, blob, name: "", scalefactor: 1.0, mean: [0, 0, 0])
+{:ok, model} = OpenCV.DnnNet.setInput(model, blob, name: "", scalefactor: 1.0, mean: [0, 0, 0])
 ```
 
 ```output
