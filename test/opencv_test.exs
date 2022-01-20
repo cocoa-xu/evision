@@ -101,11 +101,25 @@ defmodule OpenCV.Test do
   end
 
   test "OpenCV.imreadmulti" do
-    paths = Path.join(__DIR__, ["imreadmulti_test.tiff"])
-    ret = OpenCV.imreadmulti(paths)
+    path = Path.join(__DIR__, ["imreadmulti_test.tiff"])
+    ret = OpenCV.imreadmulti(path)
     assert :ok == elem(ret, 0)
     images = elem(ret, 1)
     assert Enum.count(images) == 2
+  end
+
+  test "OpenCV.imwritemulti" do
+    input_path = Path.join(__DIR__, ["imreadmulti_test.tiff"])
+    output_path = Path.join(__DIR__, ["imwritemulti_test.tiff"])
+    {:ok, images} = OpenCV.imreadmulti(input_path)
+    assert :ok = OpenCV.imwritemulti(output_path, images)
+
+    ret = OpenCV.imreadmulti(output_path)
+    assert :ok == elem(ret, 0)
+    images = elem(ret, 1)
+    assert Enum.count(images) == 2
+
+    File.rm!(output_path)
   end
 
   test "OpenCV.imencode and OpenCV.imdecode" do
