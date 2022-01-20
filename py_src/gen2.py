@@ -1470,6 +1470,25 @@ class PythonWrapperGenerator(object):
                     module_func_name = module_func_name[len(evision_nif_prefix):]
                 else:
                     module_func_name = name
+                if wname != 'cv':
+                    namespace_func = wname + '_' + name
+                    if namespace_func != module_func_name:
+                        return
+                elif name and len(name) > 0 and not ('a' <= name[0] <= 'z'):
+                    if module_func_name.startswith(name + '_') or module_func_name.endswith('_create'):
+                        return
+                    elif module_func_name.startswith('CascadeClassifier') \
+                            or module_func_name.startswith('HOGDescriptor') \
+                            or module_func_name.startswith('KeyPoint') \
+                            or module_func_name.startswith('UMat_') \
+                            or module_func_name.startswith('VideoWriter_'):
+                        return
+                    else:
+                        # print(wname, '<|>', name, '<|>', module_func_name, '<|>', separated_ns, is_ns)
+                        _ = 0
+                else:
+                    # print(wname, '<>', name, '<>', module_func_name, '<>', separated_ns, is_ns)
+                    _ = 0
             else:
                 module_func_name = name
                 # if this function is an instance method of a C++ class
