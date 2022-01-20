@@ -177,4 +177,14 @@ defmodule OpenCV.Test do
              184, 144>> == img_data
     File.rm!(output_path)
   end
+
+  test "OpenCV.mean" do
+    {:ok, mat} =
+      Path.join(__DIR__, ["test.png"])
+      |> OpenCV.imread(flags: OpenCV.cv_imread_grayscale)
+    {:ok, bin} = OpenCV.Mat.to_binary(mat)
+    avg = Enum.sum(:binary.bin_to_list(bin)) / byte_size(bin)
+    {:ok, {avg_cv, 0.0, 0.0, 0.0}} = OpenCV.mean(mat)
+    assert abs(avg - avg_cv) < 0.00000001
+  end
 end
