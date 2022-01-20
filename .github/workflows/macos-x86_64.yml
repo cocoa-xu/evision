@@ -52,4 +52,4 @@ jobs:
       - name: Mix Test
         run: |
           export OPENCV_VER=${{ matrix.pair.opencv_ver }}
-          mix test
+          mix test --include dnn
