@@ -200,9 +200,10 @@ Some other [examples](https://github.com/cocoa-xu/evision/tree/main/examples).
    ```
 - [x] Edit `config/config.exs` to enable/disable OpenCV modules and image coders.
 - [x] Make function names more readable/friendly. (expect **breaking** changes after this)
+
    Will be using **smallCamelCase** for almost all OpenCV functions.
 
-   The reason why I chose smallCamelCase is that it transforms much fewer function names as a large portion of them in 
+   The reason why I chose **smallCamelCase** is that it transforms much fewer function names as a large portion of them in 
    OpenCV are starting with lowercase letter.
 - [ ] Add more [examples](https://github.com/cocoa-xu/evision/tree/main/examples) (perhaps as livebook).
 - [ ] Add support for `dnn`. Halfway done? Tons of functions haven't been tested yet. 
