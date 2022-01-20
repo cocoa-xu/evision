@@ -8,7 +8,7 @@ defmodule OpenCV.VideoCapture.Test do
       [__DIR__, "videocapture_test.mp4"]
       |> Path.join
       |> Path.expand
-      |> OpenCV.VideoCapture.videocapture
+      |> OpenCV.VideoCapture.videoCapture
     assert :error != ret
     assert :ok == elem(ret, 0)
     video = elem(ret, 1)

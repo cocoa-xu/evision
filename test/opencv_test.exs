@@ -29,7 +29,7 @@ defmodule OpenCV.Test do
   test "decode png from file w/ alpha channel" do
     ret =
       Path.join(__DIR__, ["test.png"])
-      |> OpenCV.imread(flags: OpenCV.cv_imread_unchanged)
+      |> OpenCV.imread(flags: OpenCV.cv_IMREAD_UNCHANGED)
     assert :ok == elem(ret, 0)
     mat = elem(ret, 1)
 
@@ -54,7 +54,7 @@ defmodule OpenCV.Test do
   test "decode image from file grayscale" do
     ret =
       Path.join(__DIR__, ["test.png"])
-      |> OpenCV.imread(flags: OpenCV.cv_imread_grayscale)
+      |> OpenCV.imread(flags: OpenCV.cv_IMREAD_GRAYSCALE)
     assert :ok == elem(ret, 0)
     mat = elem(ret, 1)
 
@@ -132,7 +132,7 @@ defmodule OpenCV.Test do
     {:ok, encoded} = ret
     encoded = IO.iodata_to_binary(encoded)
 
-    ret = OpenCV.imdecode(encoded, OpenCV.cv_imread_anycolor())
+    ret = OpenCV.imdecode(encoded, OpenCV.cv_IMREAD_ANYCOLOR())
     assert :ok == elem(ret, 0)
     {:ok, decoded_mat} = ret
     {:ok, {2, 3, 3}} = OpenCV.Mat.shape(decoded_mat)
@@ -181,7 +181,7 @@ defmodule OpenCV.Test do
   test "OpenCV.mean" do
     {:ok, mat} =
       Path.join(__DIR__, ["test.png"])
-      |> OpenCV.imread(flags: OpenCV.cv_imread_grayscale)
+      |> OpenCV.imread(flags: OpenCV.cv_IMREAD_GRAYSCALE)
     {:ok, bin} = OpenCV.Mat.to_binary(mat)
     avg = Enum.sum(:binary.bin_to_list(bin)) / byte_size(bin)
     {:ok, {avg_cv, 0.0, 0.0, 0.0}} = OpenCV.mean(mat)
@@ -191,8 +191,8 @@ defmodule OpenCV.Test do
   test "OpenCV.minmaxloc" do
     {:ok, mat} =
       Path.join(__DIR__, ["test.png"])
-      |> OpenCV.imread(flags: OpenCV.cv_imread_grayscale)
+      |> OpenCV.imread(flags: OpenCV.cv_IMREAD_GRAYSCALE)
 
-    {:ok, {112.0, 209.0, {2, 0}, {0, 1}}} = OpenCV.minmaxloc(mat)
+    {:ok, {112.0, 209.0, {2, 0}, {0, 1}}} = OpenCV.minMaxLoc(mat)
   end
 end
