@@ -41,9 +41,15 @@ jobs:
           mix local.hex --force
           mix local.rebar --force
 
-      - name: Compile and Test
+      - name: Mix Compile
         run: |
           export OPENCV_VER=${{ matrix.pair.opencv_ver }}
+          export MIX_ENV=test
           mix deps.get
           NPROC="$(sysctl -a | grep 'hw.ncpu' | awk '{print $2}')"
-          MAKE_BUILD_FLAGS="-j${NPROC}" mix test
+          MAKE_BUILD_FLAGS="-j${NPROC}" mix compile
+
+      - name: Mix Test
+        run: |
+          export OPENCV_VER=${{ matrix.pair.opencv_ver }}
+          mix test

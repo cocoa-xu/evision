@@ -366,7 +366,6 @@ class ClassInfo(object):
         self.base = None
         self.constructor = None
         customname = False
-        self.lowercase_start = re.compile('^[a-z]')
 
         if decl:
             bases = decl[1].split()[1:]
@@ -421,23 +420,23 @@ class ClassInfo(object):
         sorted_methods = list(self.methods.items())
         sorted_methods.sort()
 
-        module_file_writter = None
-        if codegen.opencv_modules.get(self.name, None) is None:
-            codegen.opencv_modules[self.name] = StringIO()
-            module_file_writter = codegen.opencv_modules[self.name]
-            module_file_writter.doc_written = {}
-            module_name = self.name.replace("_", "")
-            if self.lowercase_start.match(module_name):
-                module_name = f'{module_name[0].upper()}{module_name[1:]}'
-            module_file_writter.write(f'defmodule OpenCV.{module_name} do\n')
         if self.constructor is not None:
-            codegen.gen_erl_declaration(self.cname, self.name, self.constructor, module_file_writter, is_constructor=True)
+            module_file_writer, separated_ns = codegen.get_module_writer(self.name, wname=self.cname, name=self.name, is_ns=False)
+            codegen.gen_erl_declaration(
+                self.cname, self.name, self.constructor, module_file_writer,
+                is_constructor=True, separated_ns=separated_ns)
         for mname, m in sorted_methods:
             codegen.code_ns_reg.write(m.get_tab_entry())
-            codegen.gen_erl_declaration(self.cname, mname, m, module_file_writter, is_constructor=False)
+            module_file_writer, separated_ns = codegen.get_module_writer(self.name, wname=self.cname, name=mname, is_ns=False)
+            codegen.gen_erl_declaration(
+                self.cname, mname, m, module_file_writer,
+                is_constructor=False, separated_ns=separated_ns)
 
         for pname, m in sorted_props:
-            codegen.gen_erl_declaration(self.cname, pname, m, module_file_writter, is_constructor=False, is_prop=True, prop_class=self)
+            module_file_writer, separated_ns = codegen.get_module_writer(self.name, wname=self.cname, name=pname, is_ns=False)
+            codegen.gen_erl_declaration(
+                self.cname, pname, m, module_file_writer,
+                is_constructor=False, is_prop=True, prop_class=self, separated_ns=separated_ns)
 
     def gen_code(self, codegen):
         all_classes = codegen.classes
@@ -1142,7 +1141,6 @@ class PythonWrapperGenerator(object):
         self.opencv_func = StringIO()
         self.opencv_func.doc_written = {}
         self.opencv_modules = {}
-        self.code_ns_init = StringIO()
         self.code_type_publish = StringIO()
         self.py_signatures = dict()
         self.class_idx = 0
@@ -1398,10 +1396,10 @@ class PythonWrapperGenerator(object):
         else:
             return text
 
-    def gen_erl_declaration(self, wname, name, func, writer=None, is_ns=False, is_constructor=False, is_prop=False, prop_class=None):
+    def gen_erl_declaration(self, wname, name, func, writer=None, is_ns=False, is_constructor=False, is_prop=False, prop_class=None, separated_ns=None):
         # functions in namespaces goes to 'erl_cv_nif.ex' and 'opencv_{module}.ex'
         # 'erl_cv_nif.ex' contains the declarations of all NIFs
-        # 'opencv_{module}.ex' contains human friendly funcs
+        # 'opencv_{module}.ex' contains readable/friendly function names
 
         if is_prop:
             # wname => class
@@ -1483,6 +1481,15 @@ class PythonWrapperGenerator(object):
                     else:
                         func_args = 'self'
                         func_args_with_opts = ''
+            if is_ns and wname != 'cv':
+                writer, _ = self.get_module_writer(wname, wname=wname, name=name, is_ns=is_ns)
+                if module_func_name.startswith(wname+'_'):
+                    module_func_name = module_func_name[len(wname)+1:]
+            else:
+                if separated_ns is not None and len(separated_ns) > 1:
+                    prefix = "_".join(separated_ns[:-1]) + '_'
+                    if module_func_name.startswith(prefix):
+                        module_func_name = module_func_name[len(prefix):]
 
             if len(module_func_name) > 0 and not ('a' <= module_func_name <= 'z'):
                 if len(module_func_name) >= 2 and ('a' <= module_func_name[1] <= 'z'):
@@ -1677,7 +1684,7 @@ class PythonWrapperGenerator(object):
             ns = self.namespaces[ns_name]
             wname = normalize_class_name(ns_name)
             for name, func in sorted(ns.funcs.items()):
-                self.gen_erl_declaration(wname, name, func, self.opencv_func, True)
+                self.gen_erl_declaration(wname, name, func, self.opencv_func, is_ns=True)
                 self.code_ns_reg.write(func.get_tab_entry())
         from pathlib import Path
         modules_dir = Path(self.output_path) / 'modules'
@@ -1732,6 +1739,40 @@ class PythonWrapperGenerator(object):
         import json
         with open(path + "/" + name, "wt") as f:
             json.dump(value, f)
+
+    def make_elixir_module_names(self, module_name=None, separated_ns=None):
+        mapping = {
+            'dnn': 'DNN',
+            'ml': 'ML',
+            'ocl': 'OCL',
+            'ipp': 'IPP',
+            'videoio_registry': 'VideoIORegistry',
+            'fisheye': 'FishEye',
+            'utils_fs': 'UtilsFS',
+            'cuda': 'CUDA',
+        }
+        if module_name is not None:
+            return mapping.get(module_name, f"{module_name[0].upper()}{module_name[1:]}")
+        if separated_ns is not None:
+            return ".".join([mapping.get(n, f"{n[0].upper()}{n[1:]}") for n in separated_ns])
+
+    def get_module_writer(self, module_name, wname, name, is_ns):
+        elixir_module_name = self.make_elixir_module_names(module_name=module_name)
+        inner_ns = []
+        if wname.startswith('cv::'):
+            wname = wname[4:]
+            inner_ns = wname.split('::')
+            elixir_module_name = self.make_elixir_module_names(separated_ns=inner_ns)
+        elixir_module_name = elixir_module_name.replace('_', '')
+        opencv_module_file_name = elixir_module_name.replace('.', '_')
+        if opencv_module_file_name in self.opencv_modules:
+            return self.opencv_modules[opencv_module_file_name], inner_ns
+        else:
+            module_file_writer = StringIO()
+            module_file_writer.doc_written = {}
+            module_file_writer.write(f'defmodule OpenCV.{elixir_module_name} do\n')
+            self.opencv_modules[opencv_module_file_name] = module_file_writer
+            return module_file_writer, inner_ns
 
     def gen(self, srcfiles, output_path, erl_output_path):
         self.output_path = output_path
@@ -1850,8 +1891,6 @@ class PythonWrapperGenerator(object):
                 code = func.gen_code(self)
                 self.code_funcs.write(code)
         self.gen_namespace()
-            # no need to init module in erlang
-            # self.code_ns_init.write('CVPY_MODULE("{}", {});\n'.format(ns_name[2:], normalize_class_name(ns_name)))
 
         # step 4: generate the code for enum types
         enumlist = list(self.enums.values())
@@ -1884,7 +1923,6 @@ class PythonWrapperGenerator(object):
         self.save(output_path, "evision_generated_enums.h", self.code_enums)
         self.save(output_path, "evision_generated_types.h", self.code_type_publish)
         self.save(output_path, "evision_generated_types_content.h", self.code_types)
-        # self.save(output_path, "evision_generated_modules.h", self.code_ns_init)
         self.save(output_path, "evision_generated_modules_content.h", self.code_ns_reg)
         self.save(erl_output_path, "erl_cv_nif.ex", self.erl_cv_nif)
         self.save(erl_output_path, "opencv.ex", self.opencv_ex)
