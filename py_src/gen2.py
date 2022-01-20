@@ -1481,7 +1481,38 @@ class PythonWrapperGenerator(object):
                         func_args_with_opts = ''
 
             if len(module_func_name) > 0 and not ('a' <= module_func_name <= 'z'):
-                module_func_name = module_func_name.lower()
+                if len(module_func_name) >= 2 and ('a' <= module_func_name[1] <= 'z'):
+                    module_func_name = module_func_name[0].lower() + module_func_name[1:]
+                elif len(module_func_name) == 1:
+                    module_func_name = module_func_name.lower()
+                else:
+                    mapping = {
+                        'BFMatcher': 'bfMatcher',
+                        'DMatch': 'dMatcher',
+                        'HOGDescriptor': 'hogDescriptor',
+                        'QRCodeDetector': 'qrCodeDetector',
+                        'PSNR': 'psnr',
+                        'LUT': 'lut',
+                        'KAZE_create': 'kaze_create',
+                        'ORB_create': 'orb_create',
+                        'SIFT_create': 'sift_create',
+                        'AKAZE_create': 'akaze_create',
+                        'EMD': 'emd',
+                        'PCAProject': 'pcaProject',
+                        'PCABackProject': 'pcaBackProject',
+                        'PCACompute': 'pcaCompute',
+                        'PCACompute2': 'pcaCompute2',
+                        'SVBackSubst': 'svBackSubst',
+                        'SVDecomp': 'svdecomp',
+                        'RQDecomp3x3': 'rqdecomp3x3',
+                        'ECCEnabled': 'eccEnabled',
+                        'BOWKMeansTrainer': 'bowKMeansTrainer',
+                        'BOWImgDescriptorExtractor': 'bowImgDescriptorExtractor',
+                    }
+                    if module_func_name in mapping:
+                        module_func_name = mapping[module_func_name]
+                    else:
+                        module_func_name = module_func_name.lower()
 
             if module_func_name == "dnn_readNet":
                 module_func_name = "dnn_readNet_" + arglist[0][0]
@@ -1606,7 +1637,7 @@ class PythonWrapperGenerator(object):
                     inline_doc += function_group
                     writer.write(f'{inline_doc}  def {module_func_name}(self, opt \\\\ []) do\n    :erl_cv_nif.{func_name}(self, opt)\n  end\n')
                     continue
-                if func_name.startswith(evision_nif_prefix + "dnn_dnn_net") and (module_func_name == "getlayershapes" or module_func_name == "getlayersshapes"):
+                if func_name.startswith(evision_nif_prefix + "dnn_dnn_net") and (module_func_name == "getLayerShapes" or module_func_name == "getLayersShapes"):
                     inline_doc += function_group
                     writer.write(f'{inline_doc}  def {module_func_name}(self, opt \\\\ []) do\n    :erl_cv_nif.{func_name}(self, opt)\n  end\n')
                     continue
