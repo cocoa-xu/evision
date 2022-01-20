@@ -103,4 +103,21 @@ defmodule OpenCV.Test do
     assert <<70, 128, 180, 61, 119, 171, 117, 143, 65, 112, 170, 222, 95, 153, 205, 140,
              166, 88>> == img_data
   end
+
+  test "OpenCV.imencode and OpenCV.imdecode" do
+    {:ok, mat} =
+      [__DIR__, "test.png"]
+      |> Path.join
+      |> OpenCV.imread()
+
+    ret = OpenCV.imencode(".png", mat)
+    assert :ok == elem(ret, 0)
+    {:ok, encoded} = ret
+    encoded = IO.iodata_to_binary(encoded)
+
+    ret = OpenCV.imdecode(encoded, OpenCV.cv_imread_anycolor())
+    assert :ok == elem(ret, 0)
+    {:ok, decoded_mat} = ret
+    {:ok, {2, 3, 3}} = OpenCV.Mat.shape(decoded_mat)
+  end
 end
