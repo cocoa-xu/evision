@@ -1508,10 +1508,32 @@ class PythonWrapperGenerator(object):
                         'ECCEnabled': 'eccEnabled',
                         'BOWKMeansTrainer': 'bowKMeansTrainer',
                         'BOWImgDescriptorExtractor': 'bowImgDescriptorExtractor',
+                        'UMat': 'uMat',
                     }
                     if module_func_name in mapping:
                         module_func_name = mapping[module_func_name]
                     else:
+                        if is_ns and wname == 'cv':
+                            ignore_names = [
+                                'BFMatcher_BFMatcher',                                  # OpenCV.BFMatch.bfMather
+                                'BFMatcher_create',                                     # OpenCV.BFMatch.create
+                                'BOWImgDescriptorExtractor_BOWImgDescriptorExtractor',  # OpenCV.BOWImgDescriptorExtractor.bowImgDescriptorExtractor
+                                'BOWKMeansTrainer_BOWKMeansTrainer',                    # OpenCV.BOWKMeansTrainer.bowKMeansTrainer
+                                'BRISK_create',                                         # OpenCV.BRISK.create
+                                'DMatch_DMatch',                                        # OpenCV.DMatch.dMatcher
+                                'DISOpticalFlow_create',                                # OpenCV.DISOpticalFlow.create
+                                'GFTTDetector_create',                                  # OpenCV.GFTTDetector.create
+                                'HOGDescriptor_HOGDescriptor',                          # OpenCV.HOGDescriptor.hogDescriptor
+                                'HOGDescriptor_getDaimlerPeopleDetector',               # OpenCV.HOGDescriptor.getDaimlerPeopleDetector
+                                'HOGDescriptor_getDefaultPeopleDetector',               # OpenCV.HOGDescriptor.getDefaultPeopleDetector
+                                'MSER_create',                                          # OpenCV.MSER.create
+                                'QRCodeDetector_QRCodeDetector',                        # OpenCV.QRCodeDetector.qrCodeDetector
+                                'UMat_UMat',                                            # OpenCV.UMat.uMat
+                                'UMat_context',                                         # OpenCV.UMat.context
+                                'UMat_queue'                                            # OpenCV.UMat.queue
+                            ]
+                            if module_func_name in ignore_names:
+                                return
                         module_func_name = module_func_name.lower()
 
             if module_func_name == "dnn_readNet":
