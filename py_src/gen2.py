@@ -1105,6 +1105,7 @@ class ErlEnumExpressionGenerator(ast.NodeVisitor):
         elif type(node) is ast.BitOr:
             self.expression = 'bor({}, {})'
         else:
+            import sys
             if sys.version_info.minor < 8:
                 if type(node) is ast.Num:
                     self.expression = f'{node.n}'
