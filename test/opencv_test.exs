@@ -104,6 +104,14 @@ defmodule OpenCV.Test do
              166, 88>> == img_data
   end
 
+  test "OpenCV.imreadmulti" do
+    paths = Path.join([__DIR__, "imreadmulti_test.tiff"])
+    ret = OpenCV.imreadmulti(paths)
+    assert :ok == elem(ret, 0)
+    images = elem(ret, 1)
+    assert Enum.count(images) == 2
+  end
+
   test "OpenCV.imencode and OpenCV.imdecode" do
     {:ok, mat} =
       [__DIR__, "test.png"]
