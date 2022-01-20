@@ -162,7 +162,7 @@ Some tiny examples
 
 ```elixir
 ## read image, process image and write image
-{:ok, gray_mat} = OpenCV.imread("/path/to/img.png", flags: OpenCV.cv_imread_grayscale)
+{:ok, gray_mat} = OpenCV.imread("/path/to/img.png", flags: OpenCV.cv_IMREAD_GRAYSCALE)
 {:ok, gray_blur_mat} = OpenCV.blur(gray_mat, [10,10], anchor: [1,1])
 {:ok, colour_mat} = OpenCV.imread("/path/to/img.png")
 {:ok, colour_blur_mat} = OpenCV.blur(colour_mat, [10,10], anchor: [1,1])
@@ -170,7 +170,7 @@ Some tiny examples
 :ok = OpenCV.imwrite("/path/to/img-colour-and-blur.png", colour_blur_mat)
 
 ## capture from video file/camera
-{:ok, cap} = OpenCV.VideoCapture.videocapture(0)
+{:ok, cap} = OpenCV.VideoCapture.videoCapture(0)
 {:ok, cap_mat} = OpenCV.VideoCapture.read(cap)
 :ok = OpenCV.imwrite("/path/exists/capture-mat.png", cap_mat)
 :error = OpenCV.imwrite("/path/not/exists/capture-mat.png", cap_mat)
@@ -203,9 +203,9 @@ Some other [examples](https://github.com/cocoa-xu/evision/tree/main/examples).
 
    ```elixir
    # not this
-   {:ok, cap} = OpenCV.VideoCapture.videocapture(0, [])
+   {:ok, cap} = OpenCV.VideoCapture.videoCapture(0, [])
    # but this
-   {:ok, cap} = OpenCV.VideoCapture.videocapture(0)
+   {:ok, cap} = OpenCV.VideoCapture.videoCapture(0)
    # this also changes the above example to
    :ok = OpenCV.imwrite("/path/to/save.png", mat)
    ```
@@ -225,7 +225,12 @@ Some other [examples](https://github.com/cocoa-xu/evision/tree/main/examples).
    {:ok, << ... binary data ... >>}
    ```
 - [x] Edit `config/config.exs` to enable/disable OpenCV modules and image coders.
-- [ ] Make function names more readable/friendly. (expect breaking changes after this)
+- [x] Make function names more readable/friendly. (expect **breaking** changes after this)
+
+   Will be using **smallCamelCase** for almost all OpenCV functions.
+
+   The reason why I chose **smallCamelCase** is that it transforms much fewer function names as a large portion of them in 
+   OpenCV are starting with lowercase letter.
 - [ ] Add more [examples](https://github.com/cocoa-xu/evision/tree/main/examples) (perhaps as livebook).
 - [ ] Add support for `dnn`. Halfway done? Tons of functions haven't been tested yet. 
 - [ ] Add support for `gapi`? Perhaps not. See [#22](https://github.com/cocoa-xu/evision/issues/22).

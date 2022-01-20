@@ -28,7 +28,7 @@ defmodule OpenCV.Gui do
   """
   @doc namespace: :"cv.highgui"
   def waitkey(delay) when is_integer(delay) do
-    :erl_cv_nif.evision_cv_waitkey(delay: delay)
+    :erl_cv_nif.evision_cv_waitKey(delay: delay)
   end
 
   @doc """
@@ -36,7 +36,7 @@ defmodule OpenCV.Gui do
   """
   @doc namespace: :"cv.highgui"
   def destroy_window(winname) when is_binary(winname) do
-    :erl_cv_nif.evision_cv_destroy_window(winname: winname)
+    :erl_cv_nif.evision_cv_destroyWindow(winname: winname)
   end
 
   @doc """
@@ -44,7 +44,7 @@ defmodule OpenCV.Gui do
   """
   @doc namespace: :"cv.highgui"
   def destroy_all_windows do
-    :erl_cv_nif.evision_cv_destroy_all_windows()
+    :erl_cv_nif.evision_cv_destroyAllWindows()
   end
 end
 

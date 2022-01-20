@@ -67,6 +67,6 @@ Helper.download!("https://raw.githubusercontent.com/opencv/opencv_extra/master/t
 
 OpenCV.imencode(".png", result)
 |> then(fn {:ok, val} -> val end)
-|> Enum.into(<<>>, fn bit -> <<bit::8>> end)
+|> IO.iodata_to_binary()
 |> Kino.Image.new(:png)
 ```

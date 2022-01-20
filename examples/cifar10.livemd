@@ -19,7 +19,6 @@ Mix.install([
   {:torchx, "~> 0.1.0-dev", github: "elixir-nx/nx", sparse: "torchx"},
   {:nx, "~> 0.1.0-dev", github: "elixir-nx/nx", sparse: "nx", override: true},
   {:evision, "~> 0.1.0-dev", github: "cocoa-xu/evision", branch: "main"},
-  {:nx_evision, "~> 0.1.0-dev", github: "cocoa-xu/nx_evision"},
   {:kino, "~> 0.3.1"},
   {:scidata, "~> 0.1.1"}
 ])
@@ -65,12 +64,12 @@ Helper.download!("https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/Cat0
 ```elixir
 # in real-life use cases, the input source might be a camera
 # instead of downloading a file and reading it
-{:ok, img} = OpenCV.imread("cat.jpg", flags: OpenCV.cv_imread_anycolor())
+{:ok, img} = OpenCV.imread("cat.jpg", flags: OpenCV.cv_IMREAD_ANYCOLOR())
 {:ok, resized_img} = OpenCV.resize(img, [128, 128])
 
 OpenCV.imencode(".png", resized_img)
-|> then(fn {:ok, val} -> val end)
-|> Enum.into(<<>>, fn bit -> <<bit::8>> end)
+|> elem(1)
+|> IO.iodata_to_binary()
 |> Kino.Image.new(:png)
 ```
 
@@ -337,7 +336,7 @@ params = Demo.run(backend: Torchx.Backend, epochs: 50)
 
 OpenCV.imencode(".png", resized_img)
 |> then(fn {:ok, val} -> val end)
-|> Enum.into(<<>>, fn bit -> <<bit::8>> end)
+|> IO.iodata_to_binary()
 |> Kino.Image.new(:png)
 ```
 

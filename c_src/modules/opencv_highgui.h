@@ -285,9 +285,9 @@ static ERL_NIF_TERM evision_cv_imshow(ErlNifEnv *env, int argc, const ERL_NIF_TE
     else return evision::nif::atom(env, "nil");
 }
 
-// @evision c: evision_cv_waitkey, 1
-// @evision nif: def evision_cv_waitkey(_opts \\ []), do: :erlang.nif_error("cv::waitkey not loaded")
-static ERL_NIF_TERM evision_cv_waitkey(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
+// @evision c: evision_cv_waitKey, 1
+// @evision nif: def evision_cv_waitKey(_opts \\ []), do: :erlang.nif_error("cv::waitkey not loaded")
+static ERL_NIF_TERM evision_cv_waitKey(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;
@@ -318,9 +318,9 @@ static ERL_NIF_TERM evision_cv_waitkey(ErlNifEnv *env, int argc, const ERL_NIF_T
     else return evision::nif::atom(env, "nil");
 }
 
-// @evision c: evision_cv_destroy_window, 1
-// @evision nif: def evision_cv_destroy_window(_opts \\ []), do: :erlang.nif_error("cv::destroy_window not loaded")
-static ERL_NIF_TERM evision_cv_destroy_window(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
+// @evision c: evision_cv_destroyWindow, 1
+// @evision nif: def evision_cv_destroyWindow(_opts \\ []), do: :erlang.nif_error("cv::destroy_window not loaded")
+static ERL_NIF_TERM evision_cv_destroyWindow(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;
@@ -351,9 +351,9 @@ static ERL_NIF_TERM evision_cv_destroy_window(ErlNifEnv *env, int argc, const ER
     else return evision::nif::atom(env, "nil");
 }
 
-// @evision c: evision_cv_destroy_all_windows, 1
-// @evision nif: def evision_cv_destroy_all_windows(_opts \\ []), do: :erlang.nif_error("cv::destroy_all_windows not loaded")
-static ERL_NIF_TERM evision_cv_destroy_all_windows(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
+// @evision c: evision_cv_destroyAllWindows, 1
+// @evision nif: def evision_cv_destroyAllWindows(_opts \\ []), do: :erlang.nif_error("cv::destroy_all_windows not loaded")
+static ERL_NIF_TERM evision_cv_destroyAllWindows(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
     struct destroy_all_windows_cmd * cmd = new destroy_all_windows_cmd;
 

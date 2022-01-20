@@ -18,9 +18,9 @@ else:
 evision_nif_prefix = 'evision_cv_'
 special_handling_funcs = ["{}{}".format(evision_nif_prefix, name) for name in [
     'imshow',
-    'waitkey',
-    'destroywindow',
-    'destroyallwindows',
+    'waitKey',
+    'destroyWindow',
+    'destroyAllWindows',
     'imdecode']
 ]
 opencv_ex_fixes = [
@@ -187,7 +187,7 @@ ${methods_inits}
 
 
 gen_template_get_prop_ptr = Template("""
-static ERL_NIF_TERM evision_${name_lower}_get_${member_lower}(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
+static ERL_NIF_TERM evision_${name}_get_${member}(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
     ERL_NIF_TERM self = argv[0];
     ${storage_name}* self1_ptr = 0;
@@ -202,7 +202,7 @@ static ERL_NIF_TERM evision_${name_lower}_get_${member_lower}(ErlNifEnv *env, in
 """)
 
 gen_template_get_prop = Template("""
-static ERL_NIF_TERM evision_${name_lower}_get_${member_lower}(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
+static ERL_NIF_TERM evision_${name}_get_${member}(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
     ERL_NIF_TERM self = argv[0];
     ${storage_name}* self1 = 0;
@@ -215,7 +215,7 @@ static ERL_NIF_TERM evision_${name_lower}_get_${member_lower}(ErlNifEnv *env, in
 """)
 
 gen_template_get_prop_algo = Template("""
-static ERL_NIF_TERM evision_${name_lower}_get_${member_lower}(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
+static ERL_NIF_TERM evision_${name}_get_${member}(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
     ERL_NIF_TERM self = argv[0];
     ${storage_name}* self1 = 0;
@@ -231,7 +231,7 @@ static ERL_NIF_TERM evision_${name_lower}_get_${member_lower}(ErlNifEnv *env, in
 """)
 
 gen_template_set_prop = Template("""
-static ERL_NIF_TERM evision_${name_lower}_set_${member_lower}(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
+static ERL_NIF_TERM evision_${name}_set_${member}(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
     ERL_NIF_TERM self = argv[0];
     ${storage_name}* self1 = 0;
@@ -250,7 +250,7 @@ static ERL_NIF_TERM evision_${name_lower}_set_${member_lower}(ErlNifEnv *env, in
 """)
 
 gen_template_set_prop_algo = Template("""
-static ERL_NIF_TERM evision_${name_lower}_set_${member_lower}(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
+static ERL_NIF_TERM evision_${name}_set_${member}(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
     ERL_NIF_TERM self = argv[0];
     ${storage_name}* self1 = 0;
@@ -455,20 +455,36 @@ class ClassInfo(object):
 
         for pname, p in sorted_props:
             if self.isalgorithm:
-                getset_code.write(gen_template_get_prop_algo.substitute(name=self.name, cname=self.cname, member=pname, name_lower=self.name.lower(), member_lower=pname.lower(), membertype=p.tp, access=access_op, storage_name=self.cname if self.issimple else "Ptr<{}>".format(self.cname)))
+                getset_code.write(gen_template_get_prop_algo.substitute(
+                    name=self.name, cname=self.cname, member=pname, membertype=p.tp, access=access_op,
+                    storage_name=self.cname if self.issimple else "Ptr<{}>".format(self.cname)))
             else:
                 if self.issimple:
-                    getset_code.write(gen_template_get_prop.substitute(name=self.name, member=pname, name_lower=self.name.lower(), member_lower=pname.lower(), membertype=p.tp, access='->' if self.issimple else '.', cname=self.cname, storage_name=self.cname if self.issimple else "Ptr<{}>".format(self.cname)))
+                    getset_code.write(gen_template_get_prop.substitute(
+                        name=self.name, member=pname, membertype=p.tp,
+                        access='->' if self.issimple else '.', cname=self.cname,
+                        storage_name=self.cname if self.issimple else "Ptr<{}>".format(self.cname)))
                 else:
-                    getset_code.write(gen_template_get_prop_ptr.substitute(name=self.name, member=pname, name_lower=self.name.lower(), member_lower=pname.lower(), membertype=p.tp, access='->' if self.issimple else '.', cname=self.cname, storage_name=self.cname if self.issimple else "Ptr<{}>".format(self.cname)))
+                    getset_code.write(gen_template_get_prop_ptr.substitute(
+                        name=self.name, member=pname, membertype=p.tp,
+                        access='->' if self.issimple else '.', cname=self.cname,
+                        storage_name=self.cname if self.issimple else "Ptr<{}>".format(self.cname)))
             if p.readonly:
-                getset_inits.write(gen_template_prop_init.substitute(name=self.name, member=pname, name_lower=self.name.lower(), member_lower=pname.lower(), storage_name=self.cname if self.issimple else "Ptr<{}>".format(self.cname)))
+                getset_inits.write(gen_template_prop_init.substitute(
+                    name=self.name, member=pname,
+                    storage_name=self.cname if self.issimple else "Ptr<{}>".format(self.cname)))
             else:
                 if self.isalgorithm:
-                    getset_code.write(gen_template_set_prop_algo.substitute(name=self.name, cname=self.cname, member=pname, name_lower=self.name.lower(), member_lower=pname.lower(), membertype=p.tp, access=access_op, storage_name=self.cname if self.issimple else "Ptr<{}>".format(self.cname)))
+                    getset_code.write(gen_template_set_prop_algo.substitute(
+                        name=self.name, cname=self.cname, member=pname,  membertype=p.tp, access=access_op,
+                        storage_name=self.cname if self.issimple else "Ptr<{}>".format(self.cname)))
                 else:
-                    getset_code.write(gen_template_set_prop.substitute(name=self.name, member=pname, name_lower=self.name.lower(), member_lower=pname.lower(), membertype=p.tp, access=access_op, cname=self.cname, storage_name=self.cname if self.issimple else "Ptr<{}>".format(self.cname)))
-                getset_inits.write(gen_template_rw_prop_init.substitute(name=self.name, member=pname, name_lower=self.name.lower(), member_lower=pname.lower(), storage_name=self.cname if self.issimple else "Ptr<{}>".format(self.cname)))
+                    getset_code.write(gen_template_set_prop.substitute(
+                        name=self.name, member=pname, membertype=p.tp, access=access_op, cname=self.cname,
+                        storage_name=self.cname if self.issimple else "Ptr<{}>".format(self.cname)))
+                getset_inits.write(gen_template_rw_prop_init.substitute(
+                    name=self.name, member=pname,
+                    storage_name=self.cname if self.issimple else "Ptr<{}>".format(self.cname)))
 
         methods_code = StringIO()
         methods_inits = StringIO()
@@ -697,8 +713,7 @@ class FuncInfo(object):
 
     def get_wrapper_prototype(self):
         full_fname = self.get_wrapper_name()
-        full_fname_lower = full_fname.lower()
-        return "static ERL_NIF_TERM %s(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])" % (full_fname_lower,), full_fname_lower
+        return "static ERL_NIF_TERM %s(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])" % (full_fname,), full_fname
 
     def get_tab_entry(self):
         prototype_list = []
@@ -740,7 +755,7 @@ class FuncInfo(object):
         if self.classname:
             if not self.is_static and not self.isconstructor:
                 func_arity = 2
-        fname = self.get_wrapper_name().lower()
+        fname = self.get_wrapper_name()
         if fname in special_handling_funcs:
             return ""
         nif_function_decl = f'    F({fname}, {func_arity}),\n'
@@ -748,12 +763,12 @@ class FuncInfo(object):
 
     def gen_code(self, codegen):
         all_classes = codegen.classes
-        proto, fname_lower = self.get_wrapper_prototype()
+        proto, fname = self.get_wrapper_prototype()
         opt_arg_index = 0
         if self.classname and not self.is_static and not self.isconstructor:
             opt_arg_index = 1
         # special handling for these highgui functions
-        if fname_lower in special_handling_funcs:
+        if fname in special_handling_funcs:
             return ""
         code = "%s\n{\n" % (proto,)
         code += "    using namespace %s;\n    ERL_NIF_TERM error_term = 0;\n    std::map<std::string, ERL_NIF_TERM> erl_terms;\n" % self.namespace.replace('.', '::')
@@ -1051,26 +1066,26 @@ class ErlEnumExpressionGenerator(ast.NodeVisitor):
         elif type(node) is ast.RShift:
             self.expression = 'bsr({}, {})'
         elif type(node) is ast.Name:
-            if node.id[:3] == 'cv_':
-                if node.id == 'cv_8u':
+            if node.id[:3] == 'CV_':
+                if node.id == 'CV_8U':
                     self.expression = '0'
-                elif node.id == 'cv_8s':
+                elif node.id == 'CV_8S':
                     self.expression = '1'
-                elif node.id == 'cv_16u':
+                elif node.id == 'CV_16U':
                     self.expression = '2'
-                elif node.id == 'cv_16s':
+                elif node.id == 'CV_16S':
                     self.expression = '3'
-                elif node.id == 'cv_32s':
+                elif node.id == 'CV_32S':
                     self.expression = '4'
-                elif node.id == 'cv_32f':
+                elif node.id == 'CV_32F':
                     self.expression = '5'
-                elif node.id == 'cv_64f':
+                elif node.id == 'CV_64F':
                     self.expression = '6'
-                elif node.id == 'cv_16f':
+                elif node.id == 'CV_16F':
                     self.expression = '7'
-                elif node.id == 'cv_mat_cont_flag':
+                elif node.id == 'CV_MAT_CONT_FLAG':
                     self.skip_this = True
-                elif node.id == 'cv_submat_flag':
+                elif node.id == 'CV_SUBMAT_FLAG':
                     self.skip_this = True
                 else:
                     print(type(node), node.id, "not handled yet")
@@ -1168,13 +1183,13 @@ class PythonWrapperGenerator(object):
 
     def add_const(self, name, decl):
         (module_name, erl_const_name) = name.split('.')[-2:]
-        val = str(decl[1]).lower()
+        val = decl[1]
         val_tree = ast.parse(val, mode='eval')
         val_gen = ErlEnumExpressionGenerator()
         val_gen.visit(val_tree)
         if not val_gen.skip_this:
             val = val_gen.expression
-            erl_const_name = self.map_erl_argname(erl_const_name, all_lower_case=True)
+            erl_const_name = self.map_erl_argname(erl_const_name, ignore_upper_starting=True)
             if self.enum_names.get(val, None) is not None:
                 val = f'cv_{val}()'
             if self.enum_names.get(erl_const_name, None) is None:
@@ -1182,7 +1197,7 @@ class PythonWrapperGenerator(object):
                 self.enum_names_io.write(f"  @doc type: :constants\n  def cv_{erl_const_name}, do: {val}\n")
             else:
                 if self.enum_names[erl_const_name] != val:
-                    erl_const_name = self.map_erl_argname(f'{module_name}_{erl_const_name}', all_lower_case=True)
+                    erl_const_name = self.map_erl_argname(f'{module_name}_{erl_const_name}', ignore_upper_starting=True)
                     if self.enum_names.get(erl_const_name, None) is None:
                         self.enum_names[erl_const_name] = val
                         self.enum_names_io.write(f"  def cv_{erl_const_name}, do: {val}\n")
@@ -1328,7 +1343,7 @@ class PythonWrapperGenerator(object):
         else:
             return ''
 
-    def map_erl_argname(self, argname, all_lower_case=False):
+    def map_erl_argname(self, argname, ignore_upper_starting=False):
         reserved_keywords = ['end', 'fn']
         name = ""
         if argname in reserved_keywords:
@@ -1340,8 +1355,8 @@ class PythonWrapperGenerator(object):
                 name = f'arg_{argname}'
         else:
             name = self.argname_prefix_re.sub('', argname)
-        if all_lower_case:
-            return name.lower()
+        if ignore_upper_starting:
+            return name
         return f"{name[0:1].lower()}{name[1:]}"
 
 
@@ -1392,22 +1407,22 @@ class PythonWrapperGenerator(object):
             # wname => class
             # name  => prop name
             # func  => ClassProp
-            name = name.lower()
-            func_name = "evision_" + prop_class.wname.lower() + '_get_' + name
-            func_name = func_name.lower()
-            writer.write(f"  def {name}(self) do\n    :erl_cv_nif.{func_name}(self)\n  end\n")
+            func_name = "evision_" + prop_class.wname + '_get_' + name
+            writer.write(f"  def get_{name}(self) do\n    :erl_cv_nif.{func_name}(self)\n  end\n")
             self.erl_cv_nif.write(f'  def {func_name}(_self), do: :erlang.nif_error("{wname}::{name} getter not loaded")\n')
             self.code_ns_reg.write(f'    F({func_name}, 1),\n')
             if not func.readonly:
-                func_name = "evision_" + prop_class.wname.lower() + '_set_' + name
+                func_name = "evision_" + prop_class.wname + '_set_' + name
                 writer.write(f"  def set_{name}(self, opts) do\n    :erl_cv_nif.{func_name}(self, opts)\n  end\n")
                 self.erl_cv_nif.write(f'  def {func_name}(_self, _opts), do: :erlang.nif_error("{wname}::{name} setter not loaded")\n')
                 self.code_ns_reg.write(f'    F({func_name}, 2),\n')
             return
 
-        func_name = func.get_wrapper_name().lower()
+        func_name = func.get_wrapper_name()
         if func_name in special_handling_funcs:
             return
+        if len(func_name) > 0 and not ('a' <= func_name[0] <= 'z'):
+            func_name = func_name.lower()
 
         if self.erl_cv_nif_names.get(func_name) != True:
             self.erl_cv_nif_names[func_name] = True
@@ -1453,12 +1468,12 @@ class PythonWrapperGenerator(object):
                 func_args_with_opts = '{}{}'.format(", ".join(['{}'.format(self.map_erl_argname(arg_name)) for (arg_name, _, argtype) in arglist[:pos_end]]), opt_args)
             module_func_name = func_name
             if is_ns:
-                if module_func_name != f'{evision_nif_prefix}{name.lower()}':
+                if module_func_name != f'{evision_nif_prefix}{name}':
                     module_func_name = module_func_name[len(evision_nif_prefix):]
                 else:
-                    module_func_name = name.lower()
+                    module_func_name = name
             else:
-                module_func_name = name.lower()
+                module_func_name = name
                 # if this function is an instance method of a C++ class
                 if not is_ns and func.classname and not func.is_static and not is_constructor:
                     if len(func_args) > 0:
@@ -1468,11 +1483,68 @@ class PythonWrapperGenerator(object):
                     else:
                         func_args = 'self'
                         func_args_with_opts = ''
-            if module_func_name == "dnn_readnet":
-                module_func_name = "dnn_readnet_" + arglist[0][0]
+
+            if len(module_func_name) > 0 and not ('a' <= module_func_name <= 'z'):
+                if len(module_func_name) >= 2 and ('a' <= module_func_name[1] <= 'z'):
+                    module_func_name = module_func_name[0].lower() + module_func_name[1:]
+                elif len(module_func_name) == 1:
+                    module_func_name = module_func_name.lower()
+                else:
+                    mapping = {
+                        'BFMatcher': 'bfMatcher',
+                        'DMatch': 'dMatcher',
+                        'HOGDescriptor': 'hogDescriptor',
+                        'QRCodeDetector': 'qrCodeDetector',
+                        'PSNR': 'psnr',
+                        'LUT': 'lut',
+                        'KAZE_create': 'kaze_create',
+                        'ORB_create': 'orb_create',
+                        'SIFT_create': 'sift_create',
+                        'AKAZE_create': 'akaze_create',
+                        'EMD': 'emd',
+                        'PCAProject': 'pcaProject',
+                        'PCABackProject': 'pcaBackProject',
+                        'PCACompute': 'pcaCompute',
+                        'PCACompute2': 'pcaCompute2',
+                        'SVBackSubst': 'svBackSubst',
+                        'SVDecomp': 'svdecomp',
+                        'RQDecomp3x3': 'rqdecomp3x3',
+                        'ECCEnabled': 'eccEnabled',
+                        'BOWKMeansTrainer': 'bowKMeansTrainer',
+                        'BOWImgDescriptorExtractor': 'bowImgDescriptorExtractor',
+                        'UMat': 'uMat',
+                    }
+                    if module_func_name in mapping:
+                        module_func_name = mapping[module_func_name]
+                    else:
+                        if is_ns and wname == 'cv':
+                            ignore_names = [
+                                'BFMatcher_BFMatcher',                                  # OpenCV.BFMatch.bfMather
+                                'BFMatcher_create',                                     # OpenCV.BFMatch.create
+                                'BOWImgDescriptorExtractor_BOWImgDescriptorExtractor',  # OpenCV.BOWImgDescriptorExtractor.bowImgDescriptorExtractor
+                                'BOWKMeansTrainer_BOWKMeansTrainer',                    # OpenCV.BOWKMeansTrainer.bowKMeansTrainer
+                                'BRISK_create',                                         # OpenCV.BRISK.create
+                                'DMatch_DMatch',                                        # OpenCV.DMatch.dMatcher
+                                'DISOpticalFlow_create',                                # OpenCV.DISOpticalFlow.create
+                                'GFTTDetector_create',                                  # OpenCV.GFTTDetector.create
+                                'HOGDescriptor_HOGDescriptor',                          # OpenCV.HOGDescriptor.hogDescriptor
+                                'HOGDescriptor_getDaimlerPeopleDetector',               # OpenCV.HOGDescriptor.getDaimlerPeopleDetector
+                                'HOGDescriptor_getDefaultPeopleDetector',               # OpenCV.HOGDescriptor.getDefaultPeopleDetector
+                                'MSER_create',                                          # OpenCV.MSER.create
+                                'QRCodeDetector_QRCodeDetector',                        # OpenCV.QRCodeDetector.qrCodeDetector
+                                'UMat_UMat',                                            # OpenCV.UMat.uMat
+                                'UMat_context',                                         # OpenCV.UMat.context
+                                'UMat_queue'                                            # OpenCV.UMat.queue
+                            ]
+                            if module_func_name in ignore_names:
+                                return
+                        module_func_name = module_func_name.lower()
+
+            if module_func_name == "dnn_readNet":
+                module_func_name = "dnn_readNet_" + arglist[0][0]
             if func_name.startswith(evision_nif_prefix + "dnn") and module_func_name == "forward":
                 sign = evision_nif_prefix + "dnn_forward"
-            if func_name.startswith(evision_nif_prefix + "dnn_dnn_net") and (module_func_name == "getlayershapes" or module_func_name == "getlayersshapes"):
+            if func_name.startswith(evision_nif_prefix + "dnn_dnn_net") and (module_func_name == "getLayerShapes" or module_func_name == "getLayersShapes"):
                 sign = evision_nif_prefix + "dnn_dnn_net_" + module_func_name
             if unique_signatures.get(sign, None) is True:
                 writer.write('\n'.join(["  # {}".format(line.strip()) for line in opt_doc.split("\n")]))
@@ -1591,7 +1663,7 @@ class PythonWrapperGenerator(object):
                     inline_doc += function_group
                     writer.write(f'{inline_doc}  def {module_func_name}(self, opt \\\\ []) do\n    :erl_cv_nif.{func_name}(self, opt)\n  end\n')
                     continue
-                if func_name.startswith(evision_nif_prefix + "dnn_dnn_net") and (module_func_name == "getlayershapes" or module_func_name == "getlayersshapes"):
+                if func_name.startswith(evision_nif_prefix + "dnn_dnn_net") and (module_func_name == "getLayerShapes" or module_func_name == "getLayersShapes"):
                     inline_doc += function_group
                     writer.write(f'{inline_doc}  def {module_func_name}(self, opt \\\\ []) do\n    :erl_cv_nif.{func_name}(self, opt)\n  end\n')
                     continue
