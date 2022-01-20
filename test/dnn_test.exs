@@ -1,0 +1,217 @@
+defmodule OpenCV.DNN.Test do
+  use ExUnit.Case
+  import ExUnit.CaptureIO
+
+  @moduletag timeout: 600_000
+
+  defmodule DetectionModel do
+    def visualise_pred(mat, _labels, []), do: {:ok, mat}
+
+    def visualise_pred(mat, labels, [translated_out | outs]) do
+      {:ok, mat} = _visualise_pred(mat, labels, translated_out)
+      visualise_pred(mat, labels, outs)
+    end
+
+    defp _visualise_pred(mat, _labels, []), do: {:ok, mat}
+
+    defp _visualise_pred(mat, labels, [{class_id, confidence, l, t, r, b} | outs]) do
+      confidence = "#{Float.round(confidence, 2)}"
+      label = Enum.at(labels, class_id)
+      text = "#{label}: #{confidence}"
+      {:ok, mat} = OpenCV.rectangle(mat, [l, t], [r, b], [255, 0, 0])
+
+      {:ok, {{label_weight, label_height}, baseline}} =
+        OpenCV.getTextSize(text, OpenCV.cv_FONT_HERSHEY_SIMPLEX(), 0.5, 1)
+
+      label_weight = trunc(label_weight)
+      label_height = trunc(label_height)
+      top = max(t, label_height)
+
+      {:ok, mat} =
+        OpenCV.rectangle(mat, [l, top - label_height], [l + label_weight, top + baseline], [
+          255,
+          255,
+          255
+        ])
+
+      {:ok, mat} =
+        OpenCV.putText(mat, text, [l, top], OpenCV.cv_FONT_HERSHEY_SIMPLEX(), 0.5, [0, 0, 255])
+
+      _visualise_pred(mat, labels, outs)
+    end
+
+    def postprocess(mat, detections, net, confidence_threshold) do
+      {:ok, out_layers} = OpenCV.DNN.Net.getUnconnectedOutLayers(net)
+      {:ok, out_layer} = OpenCV.DNN.Net.getLayer(net, Enum.at(out_layers, 0))
+      out_layer_type = OpenCV.DNN.Layer.get_type(out_layer) |> IO.iodata_to_binary()
+      _postprocess(mat, detections, net, confidence_threshold, out_layer_type, [])
+    end
+
+    defp _postprocess(_mat, [], _net, _confidence_threshold, <<"DetectionOutput">>, acc),
+         do: {:ok, Enum.reverse(acc)}
+
+    defp _postprocess(
+           mat,
+           [outs | detections],
+           net,
+           confidence_threshold,
+           <<"DetectionOutput">>,
+           acc
+         ) do
+      {:ok, data} = OpenCV.Mat.to_binary(outs)
+      {:ok, {h, w, _}} = OpenCV.Mat.shape(mat)
+      {:ok, translated_outs} = _translate_outs(confidence_threshold, data, h, w, [])
+
+      _postprocess(mat, detections, net, confidence_threshold, "DetectionOutput", [
+        translated_outs | acc
+      ])
+    end
+
+    defp _translate_outs(_confidence_threshold, <<>>, _h, _w, acc), do: {:ok, acc}
+
+    defp _translate_outs(
+           confidence_threshold,
+           <<_batch_id::float()-size(32)-little, class_id::float()-size(32)-little,
+             confidence::float()-size(32)-little, left::float()-size(32)-little,
+             top::float()-size(32)-little, right::float()-size(32)-little,
+             bottom::float()-size(32)-little, rest::binary>>,
+           h,
+           w,
+           acc
+         ) do
+      if confidence > confidence_threshold do
+        [class_id, l, t, r, b] =
+          Enum.map([class_id, left, top, right, bottom], fn f -> trunc(f) end)
+
+        width = r - l + 1
+        height = b - t + 1
+
+        [l, t, r, b] =
+          if width <= 2 or height <= 2 do
+            Enum.map([left * w, top * h, right * w, bottom * h], fn f -> trunc(f) end)
+          else
+            [l, t, r, b]
+          end
+
+        _translate_outs(confidence_threshold, rest, h, w, [
+          {class_id - 1, confidence, l, t, r, b} | acc
+        ])
+      else
+        _translate_outs(confidence_threshold, rest, h, w, acc)
+      end
+    end
+
+    def get_labels(class_label_file) do
+      class_label_file
+      |> File.read!()
+      |> String.split("\n")
+    end
+
+    def predict(image_file, model, out_names, opts \\ []) do
+      {:ok, mat} = OpenCV.imread(image_file)
+      {:ok, blob} = OpenCV.DNN.blobFromImage(mat, opts)
+
+      {:ok, model} =
+        OpenCV.DNN.Net.setInput(model, blob, name: "", scalefactor: 1.0, mean: [0, 0, 0])
+
+      start_time = :os.system_time(:millisecond)
+      {:ok, detections} = OpenCV.DNN.Net.forward(model, outBlobNames: out_names)
+      end_time = :os.system_time(:millisecond)
+      IO.puts("Inference time=>#{end_time - start_time} ms")
+      {:ok, mat, detections}
+    end
+
+    def get_model(params, config, framework \\ "") do
+      {:ok, net} =
+        OpenCV.DNN.readNetModel(params,
+          config: config,
+          framework: framework
+        )
+
+      {:ok, out_names} = OpenCV.DNN.Net.getUnconnectedOutLayersNames(net)
+      {:ok, net, out_names}
+    end
+  end
+
+  defmodule SSDMobileNetV2 do
+    def predict_and_show(filename, confidence_threshold \\ 0.5) do
+      model_config =
+        __DIR__
+        |> Path.join("models")
+        |> Path.join("ssd_mobilenet_v2_coco_2018_03_29.pbtxt")
+      OpenCV.TestHelper.download!(
+        "https://raw.githubusercontent.com/opencv/opencv_extra/master/testdata/dnn/ssd_mobilenet_v2_coco_2018_03_29.pbtxt",
+        model_config
+      )
+
+      model_class_list =
+        __DIR__
+        |> Path.join("models")
+        |> Path.join("coco_names.txt")
+      OpenCV.TestHelper.download!(
+        "https://raw.githubusercontent.com/pjreddie/darknet/master/data/coco.names",
+        model_class_list
+      )
+
+      model_graph_pb =
+        __DIR__
+        |> Path.join("models")
+        |> Path.join("ssd_mobilenet_v2_coco_2018_03_29")
+        |> Path.join("frozen_inference_graph.pb")
+      model_tar =
+        __DIR__
+        |> Path.join("models")
+        |> Path.join("ssd_mobilenet_v2_coco_2018_03_29.tar.gz")
+      test_setup = if not File.exists?(model_graph_pb) do
+        tar = System.find_executable("tar")
+        if is_binary(tar) do
+          OpenCV.TestHelper.download!(
+            "http://download.tensorflow.org/models/object_detection/ssd_mobilenet_v2_coco_2018_03_29.tar.gz",
+            model_tar
+          )
+          {stdout, status} = System.cmd("tar", ["-x", "--directory",  Path.join(__DIR__, "models"), "-f", model_tar])
+          if status != 0 do
+            {:error, stdout}
+          else
+            :ok
+          end
+        else
+          {:error, "cannot find tar executable"}
+        end
+      else
+        :ok
+      end
+
+      assert :ok == test_setup
+
+      if File.exists?(filename) do
+        {:ok, net, out_names} =
+          DetectionModel.get_model(
+            model_graph_pb,
+            model_config
+          )
+
+        labels = DetectionModel.get_labels(model_class_list)
+
+        {:ok, mat, detections} =
+          DetectionModel.predict(filename, net, out_names,
+            scalefactor: 1,
+            swapRB: true,
+            mean: [0, 0, 0],
+            size: [300, 300]
+          )
+
+        {:ok, translated_outs} =
+          DetectionModel.postprocess(mat, detections, net, confidence_threshold)
+
+        DetectionModel.visualise_pred(mat, labels, translated_outs)
+      end
+    end
+  end
+
+  @tag :dnn
+  test "load ssd_mobilenet_v2 and do inference" do
+    io = capture_io(fn -> SSDMobileNetV2.predict_and_show(Path.join(__DIR__, "dnn_detection_test.jpg")) end)
+    assert "Inference time=>" <> _time = io
+  end
+end
