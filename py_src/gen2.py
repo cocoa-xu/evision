@@ -1485,6 +1485,22 @@ class PythonWrapperGenerator(object):
                 writer, _ = self.get_module_writer(wname, wname=wname, name=name, is_ns=is_ns)
                 if module_func_name.startswith(wname+'_'):
                     module_func_name = module_func_name[len(wname)+1:]
+                if '_' in module_func_name:
+                    return
+                else:
+                    if len(module_func_name) > 0 and not ('a' <= module_func_name <= 'z'):
+                        if len(module_func_name) >= 2 and not ('a' <= module_func_name[1] <= 'z'):
+                            func_name_mapping = {
+                                'NMSBoxes': 'nmsBoxes',
+                                'NMSBoxesRotated': 'nmsBoxesRotated'
+                            }
+                            if module_func_name in func_name_mapping:
+                                module_func_name = func_name_mapping.get(module_func_name)
+                            else:
+                                print(f'NOTICE:function name in namespace[{wname}]:{module_func_name}')
+                                module_func_name = module_func_name.lower()
+                        else:
+                            module_func_name = module_func_name.lower()
             else:
                 if separated_ns is not None and len(separated_ns) > 1:
                     prefix = "_".join(separated_ns[:-1]) + '_'
@@ -1547,10 +1563,11 @@ class PythonWrapperGenerator(object):
                                 return
                         module_func_name = module_func_name.lower()
 
-            if module_func_name == "dnn_readNet":
-                module_func_name = "dnn_readNet_" + arglist[0][0]
+            if module_func_name == "readNet":
+                read_net_var = arglist[0][0]
+                module_func_name = f"readNet{read_net_var[0].upper()}{read_net_var[1:]}"
             if func_name.startswith(evision_nif_prefix + "dnn") and module_func_name == "forward":
-                sign = evision_nif_prefix + "dnn_forward"
+                sign = evision_nif_prefix + "forward"
             if func_name.startswith(evision_nif_prefix + "dnn_dnn_net") and (module_func_name == "getLayerShapes" or module_func_name == "getLayersShapes"):
                 sign = evision_nif_prefix + "dnn_dnn_net_" + module_func_name
             if unique_signatures.get(sign, None) is True:
