@@ -120,4 +120,15 @@ defmodule OpenCV.Test do
     {:ok, decoded_mat} = ret
     {:ok, {2, 3, 3}} = OpenCV.Mat.shape(decoded_mat)
   end
+
+  test "OpenCV.resize" do
+    {:ok, mat} =
+      [__DIR__, "test.png"]
+      |> Path.join
+      |> OpenCV.imread()
+    resize_height = 4
+    resize_width = 6
+    {:ok, resized_mat} = OpenCV.resize(mat, [resize_height, resize_width])
+    {:ok, {^resize_width, ^resize_height, 3}} = OpenCV.Mat.shape(resized_mat)
+  end
 end
