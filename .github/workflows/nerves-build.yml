@@ -12,6 +12,7 @@ on:
       - '.github/FUNDING.yml'
       - '.github/workflows/linux-*'
       - '.github/workflows/macos-*'
+      - '.github/workflows/test-*.yml'
   workflow_dispatch:
 
 jobs:

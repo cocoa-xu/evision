@@ -86,8 +86,15 @@ sudo apt install -y libavcodec-dev libavformat-dev libavutil-dev libswscale-dev 
 ## Dependencies
 ### Required
 - Python3 (Only during the compilation, to generate binding files)
-- [CMake](https://cmake.org/)
-- Erlang development library/headers.
+
+  Tested Python verisons (on `ubuntu:20.04`, see [workflow file](https://github.com/cocoa-xu/evision/blob/main/.github/workflows/test-python-compatibility.yml)):
+  - 3.6.15
+  - 3.7.12
+  - 3.8.12
+  - 3.9.9
+  - 3.10.1
+- [CMake](https://cmake.org/) >= 3.12
+- Erlang development library/headers. Tested on OTP/24.
 
 ### Optional
 - curl/wget. To download OpenCV source zip file. 
