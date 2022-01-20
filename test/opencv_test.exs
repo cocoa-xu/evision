@@ -187,4 +187,12 @@ defmodule OpenCV.Test do
     {:ok, {avg_cv, 0.0, 0.0, 0.0}} = OpenCV.mean(mat)
     assert abs(avg - avg_cv) < 0.00000001
   end
+
+  test "OpenCV.minmaxloc" do
+    {:ok, mat} =
+      Path.join(__DIR__, ["test.png"])
+      |> OpenCV.imread(flags: OpenCV.cv_imread_grayscale)
+
+    {:ok, {112.0, 209.0, {2, 0}, {0, 1}}} = OpenCV.minmaxloc(mat)
+  end
 end
