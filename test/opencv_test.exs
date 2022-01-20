@@ -3,8 +3,7 @@ defmodule OpenCV.Test do
 
   test "decode png from file w/o alpha channel" do
     ret =
-      [__DIR__, "test.png"]
-      |> Path.join
+      Path.join(__DIR__, ["test.png"])
       |> OpenCV.imread()
     assert :ok == elem(ret, 0)
     mat = elem(ret, 1)
@@ -29,8 +28,7 @@ defmodule OpenCV.Test do
 
   test "decode png from file w/ alpha channel" do
     ret =
-      [__DIR__, "test.png"]
-      |> Path.join
+      Path.join(__DIR__, ["test.png"])
       |> OpenCV.imread(flags: OpenCV.cv_imread_unchanged)
     assert :ok == elem(ret, 0)
     mat = elem(ret, 1)
@@ -55,8 +53,7 @@ defmodule OpenCV.Test do
 
   test "decode image from file grayscale" do
     ret =
-      [__DIR__, "test.png"]
-      |> Path.join
+      Path.join(__DIR__, ["test.png"])
       |> OpenCV.imread(flags: OpenCV.cv_imread_grayscale)
     assert :ok == elem(ret, 0)
     mat = elem(ret, 1)
@@ -80,8 +77,7 @@ defmodule OpenCV.Test do
 
   test "decode jpg from file" do
     ret =
-      [__DIR__, "test.jpg"]
-      |> Path.join
+      Path.join(__DIR__, ["test.jpg"])
       |> OpenCV.imread()
     assert :ok == elem(ret, 0)
     mat = elem(ret, 1)
@@ -105,7 +101,7 @@ defmodule OpenCV.Test do
   end
 
   test "OpenCV.imreadmulti" do
-    paths = Path.join([__DIR__, "imreadmulti_test.tiff"])
+    paths = Path.join(__DIR__, ["imreadmulti_test.tiff"])
     ret = OpenCV.imreadmulti(paths)
     assert :ok == elem(ret, 0)
     images = elem(ret, 1)
@@ -114,8 +110,7 @@ defmodule OpenCV.Test do
 
   test "OpenCV.imencode and OpenCV.imdecode" do
     {:ok, mat} =
-      [__DIR__, "test.png"]
-      |> Path.join
+      Path.join(__DIR__, ["test.png"])
       |> OpenCV.imread()
 
     ret = OpenCV.imencode(".png", mat)
@@ -138,5 +133,34 @@ defmodule OpenCV.Test do
     resize_width = 6
     {:ok, resized_mat} = OpenCV.resize(mat, [resize_height, resize_width])
     {:ok, {^resize_width, ^resize_height, 3}} = OpenCV.Mat.shape(resized_mat)
+  end
+
+  test "OpenCV.imwrite" do
+    input_path = Path.join(__DIR__, ["test.png"])
+    output_path = Path.join(__DIR__, ["imwrite_test.png"])
+    {:ok, mat} = OpenCV.imread(input_path)
+    assert :ok = OpenCV.imwrite(output_path, mat)
+
+    ret = OpenCV.imread(output_path)
+    assert :ok == elem(ret, 0)
+    mat = elem(ret, 1)
+
+    ret = OpenCV.Mat.type(mat)
+    assert :ok == elem(ret, 0)
+    type = elem(ret, 1)
+    assert {:u, 8} == type
+
+    ret = OpenCV.Mat.shape(mat)
+    assert :ok == elem(ret, 0)
+    shape = elem(ret, 1)
+    assert {2, 3, 3} == shape
+
+    ret = OpenCV.Mat.to_binary(mat)
+    assert :ok == elem(ret, 0)
+    img_data = elem(ret, 1)
+
+    assert <<126, 145, 241, 78, 190, 136, 183, 122, 68, 187, 196, 244, 145, 205, 190, 200,
+             184, 144>> == img_data
+    File.rm!(output_path)
   end
 end
