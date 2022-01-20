@@ -30,7 +30,7 @@ jobs:
       - uses: erlef/setup-beam@v1
         with:
           otp-version: "24.1.5"
-          elixir-version: "1.12.3"
+          elixir-version: "1.13"
 
       - name: Install nerves and system dependecies
         run: |
