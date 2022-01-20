@@ -55,7 +55,7 @@ To obtain and compile OpenCV's source code from git, set the following environme
 # required
 export OPENCV_USE_GIT_HEAD=true
 export OPENCV_USE_GIT_BRANCH=4.x
-# optional if you want to use to your/other fork/mirrors
+# optional. set this if you want to use to your/other fork/mirrors
 export OPENCV_GIT_REPO="https://github.com/opencv/opencv.git"
 ```
 
