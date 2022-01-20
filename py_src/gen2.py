@@ -1403,15 +1403,12 @@ class PythonWrapperGenerator(object):
             # wname => class
             # name  => prop name
             # func  => ClassProp
-            c_name = name
-            if len(name) > 0 and not ('a' <= name[0] <= 'z'):
-                name = name.lower()
-            func_name = "evision_" + prop_class.wname + '_get_' + c_name
-            writer.write(f"  def {name}(self) do\n    :erl_cv_nif.{func_name}(self)\n  end\n")
+            func_name = "evision_" + prop_class.wname + '_get_' + name
+            writer.write(f"  def get_{name}(self) do\n    :erl_cv_nif.{func_name}(self)\n  end\n")
             self.erl_cv_nif.write(f'  def {func_name}(_self), do: :erlang.nif_error("{wname}::{name} getter not loaded")\n')
             self.code_ns_reg.write(f'    F({func_name}, 1),\n')
             if not func.readonly:
-                func_name = "evision_" + prop_class.wname + '_set_' + c_name
+                func_name = "evision_" + prop_class.wname + '_set_' + name
                 writer.write(f"  def set_{name}(self, opts) do\n    :erl_cv_nif.{func_name}(self, opts)\n  end\n")
                 self.erl_cv_nif.write(f'  def {func_name}(_self, _opts), do: :erlang.nif_error("{wname}::{name} setter not loaded")\n')
                 self.code_ns_reg.write(f'    F({func_name}, 2),\n')
