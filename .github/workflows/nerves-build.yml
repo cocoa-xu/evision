@@ -20,6 +20,7 @@ jobs:
     env:
       MIX_ENV: dev
       NERVES_PROJ_NAME: nerves_evision
+      OPENCV_VER: "4.5.5"
 
     strategy:
       matrix:
