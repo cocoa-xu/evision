@@ -96,7 +96,7 @@ defmodule DetectionModel do
   def postprocess(mat, detections, net, confidence_threshold) do
     {:ok, out_layers} = OpenCV.DNN.Net.getUnconnectedOutLayers(net)
     {:ok, out_layer} = OpenCV.DNN.Net.getLayer(net, Enum.at(out_layers, 0))
-    out_layer_type = OpenCV.DNN.Layer.type(out_layer) |> IO.iodata_to_binary()
+    out_layer_type = OpenCV.DNN.Layer.get_type(out_layer) |> IO.iodata_to_binary()
     _postprocess(mat, detections, net, confidence_threshold, out_layer_type, [])
   end
 
@@ -203,7 +203,7 @@ Basic steps:
 defmodule SSDMobileNetV2 do
   def predict_and_show(filename, confidence_threshold \\ 0.5) do
     Helper.download!(
-      "https://github.com/opencv/opencv_extra/blob/master/testdata/dnn/ssd_mobilenet_v2_coco_2018_03_29.pbtxt",
+      "https://raw.githubusercontent.com/opencv/opencv_extra/master/testdata/dnn/ssd_mobilenet_v2_coco_2018_03_29.pbtxt",
       "ssd_mobilenet_v2_coco_2018_03_29.pbtxt"
     )
 
@@ -214,13 +214,22 @@ defmodule SSDMobileNetV2 do
 
     graph_pb = "ssd_mobilenet_v2_coco_2018_03_29/frozen_inference_graph.pb"
 
-    unless File.exists?(graph_pb) do
-      Helper.download!(
-        "http://download.tensorflow.org/models/object_detection/ssd_mobilenet_v2_coco_2018_03_29.tar.gz",
-        "ssd_mobilenet_v2_coco_2018_03_29.tar.gz"
-      )
-
-      System.cmd("tar", ["xf", "ssd_mobilenet_v2_coco_2018_03_29.tar.gz"])
+    :ok = unless File.exists?(graph_pb) do
+      tar =  System.find_executable("tar")
+      if is_binary(tar) do
+        Helper.download!(
+          "http://download.tensorflow.org/models/object_detection/ssd_mobilenet_v2_coco_2018_03_29.tar.gz",
+          "ssd_mobilenet_v2_coco_2018_03_29.tar.gz"
+        )
+        {stdout, status} = System.cmd("tar", ["xf", "ssd_mobilenet_v2_coco_2018_03_29.tar.gz"])
+        if status != 0 do
+            {:error, stdout}
+        else
+            :ok
+        end
+      else
+        {:error, "cannot find tar executable"}
+      end
     end
 
     if File.exists?(filename) do
