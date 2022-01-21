@@ -56,6 +56,7 @@ jobs:
           LINE="$(grep -n 'toolshed' mix.exs | awk -F: '{print $1+1}')"
           head -n "${LINE}" mix.exs > mix.exs.tmp
           echo '      {:evision, "~> 0.1.0-dev", path: "../evision"},' >> mix.exs.tmp
+          echi '      {:nx_evision, "~> 0.1.0-dev", github: "zeam-vm/nx_evision", branch: "main"},' >> mix.exs.tmp
           tail -n "+${LINE}" mix.exs >> mix.exs.tmp
           mv mix.exs.tmp mix.exs
           cat mix.exs
