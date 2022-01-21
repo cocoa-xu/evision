@@ -57,11 +57,18 @@ jobs:
           mv mix.exs.tmp mix.exs
           export MIX_TARGET=${{ matrix.target }}
           mix deps.get
-          rm -rf ./config
-          cp -f deps/evision/nerves/id_rsa.pub ~/.ssh/id_rsa.pub
-          cp -f deps/evision/nerves/id_rsa ~/.ssh/id_rsa
-          cp -a deps/evision/nerves/config ./config
-          cp -f deps/evision/config/config.exs ./config/evision.exs
+          cp -f deps/evision/nerves/id_rsa.pub               ~/.ssh/id_rsa.pub
+          cp -f deps/evision/nerves/id_rsa                   ~/.ssh/id_rsa
+          cp -f deps/evision/config/config.exs               ./config/evision.exs
+          cp -f deps/evision/nerves/config/livebook.exs      ./config/livebook.exs
+          LINE="$(grep -n 'nerves_bootstrap'                 config/config.exs | awk -F: '{print $1+1}')"
+          head -n "${LINE}" config/config.exs              > config/config.exs.tmp
+          echo 'config :phoenix, :json_library, Jason'    >> config/config.exs.tmp
+          echo 'config :livebook, :explore_notebooks, []' >> config/config.exs.tmp
+          tail -n "+${LINE}" config/config.exs            >> config/config.exs.tmp
+          echo 'import_config "evision.exs"'              >> config/config.exs.tmp
+          echo 'import_config "livebook.exs"'             >> config/config.exs.tmp
+          mv config/config.exs.tmp config/config.exs
           export MAKE_BUILD_FLAGS="-j$(nproc)"
           mix deps.compile
           mix firmware
