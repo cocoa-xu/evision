@@ -164,7 +164,8 @@ defmodule Evision.MixProject do
   defp deps do
     [
       {:elixir_make, "~> 0.6"},
-      {:ex_doc, "~> 0.27", only: :dev, runtime: false}
+      {:ex_doc, "~> 0.27", only: :dev, runtime: false},
+      {:nx, "~> 0.1", optional: true},
     ]
   end
 
