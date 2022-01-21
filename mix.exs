@@ -11,6 +11,7 @@ defmodule Evision.MixProject do
 
   def project do
     {cmake_options, enabled_modules} = generate_cmake_options(Mix.ProjectStack.peek() == nil)
+
     [
       app: @app,
       name: "Evision",
@@ -38,8 +39,14 @@ defmodule Evision.MixProject do
     if Enum.member?(@compatible_opencv_versions, version) do
       version
     else
-      Logger.warn("OpenCV version #{version} is not in the compatible list, you may encounter compile errors")
-      Logger.warn("Compatible OpenCV versions: " <> (@compatible_opencv_versions |> Enum.join(", ")))
+      Logger.warn(
+        "OpenCV version #{version} is not in the compatible list, you may encounter compile errors"
+      )
+
+      Logger.warn(
+        "Compatible OpenCV versions: " <> (@compatible_opencv_versions |> Enum.join(", "))
+      )
+
       version
     end
   end
@@ -77,16 +84,17 @@ defmodule Evision.MixProject do
 
   def read_config do
     {
-      [evision:
-        [
-        enabled_modules: enabled_modules,
-        disabled_modules: disabled_modules,
-        enabled_img_codecs: enabled_img_codecs,
-        compile_mode: compile_mode
-      ]
+      [
+        evision: [
+          enabled_modules: enabled_modules,
+          disabled_modules: disabled_modules,
+          enabled_img_codecs: enabled_img_codecs,
+          compile_mode: compile_mode
+        ]
       ],
       _
     } = Config.Reader.read_imports!("config/config.exs")
+
     {enabled_modules, disabled_modules, enabled_img_codecs, compile_mode}
   end
 
@@ -137,6 +145,7 @@ defmodule Evision.MixProject do
             |> Enum.join(",")
 
           {cmake_options, enabled_modules}
+
         unrecognised_mode ->
           Mix.raise("unrecognised compile_mode for evision: #{unrecognised_mode}")
       end
