@@ -15,7 +15,7 @@ config :evision,
     :ts,
     :video,
     :videoio,
-    :dnn,
+    :dnn
   ]
 
 config :evision,

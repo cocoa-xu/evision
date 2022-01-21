@@ -47,4 +47,3 @@ defmodule OpenCV.Gui do
     :erl_cv_nif.evision_cv_destroyAllWindows()
   end
 end
-
