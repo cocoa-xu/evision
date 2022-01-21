@@ -63,7 +63,6 @@ jobs:
           cp -a deps/evision/nerves/config ./config
           cp -f deps/evision/config/config.exs ./config/evision.exs
           export MAKE_BUILD_FLAGS="-j$(nproc)"
-          export CMAKE_TOOLCHAIN_FILE="$(pwd)/deps/evision/nerves/toolchain.cmake"
           mix deps.compile
           mix firmware
           mkdir -p "/tmp/firmware"
