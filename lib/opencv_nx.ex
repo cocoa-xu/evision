@@ -52,8 +52,23 @@ defmodule OpenCV.Nx do
 
   def to_mat(t) do
     if Code.ensure_loaded?(Nx) do
-      {rows, cols, channels} = Nx.shape(t)
-      to_mat(Nx.to_binary(t), Nx.type(t), cols, rows, channels)
+      shape = Nx.shape(t)
+      l_shape = Tuple.to_list(shape)
+      if Enum.count(l_shape) == 3 do
+        {rows, cols, channels} = shape
+        to_mat(Nx.to_binary(t), Nx.type(t), cols, rows, channels)
+      else
+        case OpenCV.Mat.from_binary_by_shape(Nx.to_binary(t), Nx.type(t), Nx.shape(t)) do
+          {:ok, mat} ->
+            {:ok, mat}
+
+          {:error, reason} ->
+            {:error, List.to_string(reason)}
+
+          _ ->
+            {:error, "unknown error"}
+        end
+      end
     else
       {:error, ":nx is missing"}
     end
