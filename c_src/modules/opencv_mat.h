@@ -169,7 +169,6 @@ static ERL_NIF_TERM evision_cv_mat_from_binary(ErlNifEnv *env, int argc, const E
     evision::nif::parse_arg(env, nif_opts_index, argv, erl_terms);
 
     {
-        Mat img;
         std::string t;
         int l = 0;
         int img_cols = 0;
@@ -178,8 +177,7 @@ static ERL_NIF_TERM evision_cv_mat_from_binary(ErlNifEnv *env, int argc, const E
 
         Mat retval;
 
-        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0)) &&
-            evision_to_safe(env, evision_get_kw(env, erl_terms, "t"), t, ArgInfo("t", 0)) &&
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "t"), t, ArgInfo("t", 0)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "l"), l, ArgInfo("l", 0)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "cols"), img_cols, ArgInfo("cols", 0)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "rows"), img_rows, ArgInfo("rows", 0)) &&
@@ -195,6 +193,55 @@ static ERL_NIF_TERM evision_cv_mat_from_binary(ErlNifEnv *env, int argc, const E
                 if (declared_size != data.size) return evision::nif::error(env, "size mismatch");
                 Mat tmp = Mat(img_rows, img_cols, type, (void *)data.data);
                 retval = tmp.clone();
+                return evision::nif::ok(env, evision_from(env, retval));
+            } else {
+                // invalid binary data
+                return enif_make_badarg(env);
+            }
+        }
+    }
+
+    if (error_term != 0) return error_term;
+    else return evision::nif::atom(env, "nil");
+}
+
+// @evision c: evision_cv_mat_from_binary_by_shape, 1
+// @evision nif: def evision_cv_mat_from_binary_by_shape(_opts \\ []), do: :erlang.nif_error("Mat::from_binary_by_shape not loaded")
+static ERL_NIF_TERM evision_cv_mat_from_binary_by_shape(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
+    using namespace cv;
+    ERL_NIF_TERM error_term = 0;
+    std::map<std::string, ERL_NIF_TERM> erl_terms;
+    int nif_opts_index = 0;
+    evision::nif::parse_arg(env, nif_opts_index, argv, erl_terms);
+
+    {
+        std::string t;
+        int l = 0;
+        std::vector<int> shape;
+
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "t"), t, ArgInfo("t", 0)) &&
+            evision_to_safe(env, evision_get_kw(env, erl_terms, "l"), l, ArgInfo("l", 0)) &&
+            evision_to_safe(env, evision_get_kw(env, erl_terms, "shape"), shape, ArgInfo("shape", 0))) {
+            ERL_NIF_TERM erl_binary = evision_get_kw(env, erl_terms, "binary");
+            ErlNifBinary data;
+            if (enif_inspect_binary(env, erl_binary, &data)) {
+                // validate binary data
+                int type = 0;
+                int ndims = (int)shape.size();
+                if (!get_binary_type(t, l, 1, type)) return evision::nif::error(env, "not implemented for the given type");
+
+                // Mat(int ndims, const int* sizes, int type, void* data, const size_t* steps=0);
+                int * sizes = (int *)enif_alloc(sizeof(int) * ndims);
+                for (int i = 0; i < ndims; i++) {
+                    sizes[i] = shape[i];
+                }
+                Mat tmp = Mat(ndims, sizes, type, (void *)data.data);
+                // clone here because
+                //  @param data Pointer to the user data. Matrix constructors that take data and step parameters do not
+                //    allocate matrix data. Instead, they just initialize the matrix header that points to the specified
+                //    data, which means that no data is copied.
+                Mat retval = tmp.clone();
+                enif_free((void *)sizes);
                 return evision::nif::ok(env, evision_from(env, retval));
             } else {
                 // invalid binary data
