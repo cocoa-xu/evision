@@ -59,10 +59,10 @@ jobs:
           mv mix.exs.tmp mix.exs
           export MIX_TARGET=${{ matrix.target }}
           mix deps.get
-          cp -f deps/evision/nerves/id_rsa.pub               ~/.ssh/id_rsa.pub
-          cp -f deps/evision/nerves/id_rsa                   ~/.ssh/id_rsa
-          cp -f deps/evision/config/config.exs               ./config/evision.exs
-          cp -f deps/evision/nerves/config/livebook.exs      ./config/livebook.exs
+          cp -f ../evision/nerves/id_rsa.pub               ~/.ssh/id_rsa.pub
+          cp -f ../evision/nerves/id_rsa                   ~/.ssh/id_rsa
+          cp -f ../evision/config/config.exs               ./config/evision.exs
+          cp -f ../evision/nerves/config/livebook.exs      ./config/livebook.exs
           LINE="$(grep -n 'nerves_bootstrap'                 config/config.exs | awk -F: '{print $1+1}')"
           head -n "${LINE}" config/config.exs              > config/config.exs.tmp
           echo 'config :phoenix, :json_library, Jason'    >> config/config.exs.tmp
