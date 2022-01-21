@@ -40,6 +40,7 @@ jobs:
         run: |
           brew install erlang
           brew install elixir
+          brew install ffmpeg
           mix local.hex --force
           mix local.rebar --force
 
