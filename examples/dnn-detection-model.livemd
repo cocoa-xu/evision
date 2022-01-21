@@ -57,6 +57,10 @@ end
 ## Detection Model Module
 
 ```elixir
+# change to the file's directory
+# or somewhere you have write permission
+File.cd!(__DIR__)
+
 defmodule DetectionModel do
   def visualise_pred(mat, _labels, []), do: {:ok, mat}
 

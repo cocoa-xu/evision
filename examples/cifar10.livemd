@@ -27,6 +27,10 @@ Mix.install([
 ## Download a file
 
 ```elixir
+# change to the file's directory
+# or somewhere you have write permission
+File.cd!(__DIR__)
+
 defmodule Helper do
   def download!(url, save_as, overwrite \\ false)
 

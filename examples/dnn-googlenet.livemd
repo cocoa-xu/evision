@@ -115,6 +115,10 @@ end
 * Test image. `space_shuttle.jpg`
 
 ```elixir
+# change to the file's directory
+# or somewhere you have write permission
+File.cd!(__DIR__)
+
 Helper.download!(
   "http://dl.caffe.berkeleyvision.org/bvlc_googlenet.caffemodel",
   "bvlc_googlenet.caffemodel"
