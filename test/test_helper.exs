@@ -27,5 +27,16 @@ defmodule OpenCV.TestHelper do
   end
 end
 
-ExUnit.configure(exclude: [dnn: true])
+compiled_modules = OpenCV.__enabled_modules__()
+
+ExUnit.configure(
+  exclude: [
+    # true by default as it will download a large (~200 MB) model file
+    dnn: true
+  ],
+  include: [
+    video: Enum.member?(compiled_modules, "video")
+  ]
+)
+
 ExUnit.start()
