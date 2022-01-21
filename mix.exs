@@ -178,7 +178,7 @@ defmodule Evision.MixProject do
         cv: &(&1[:namespace] == :cv),
         "cv.Mat": &(&1[:namespace] == :"cv.Mat"),
         "cv.highgui": &(&1[:namespace] == :"cv.highgui"),
-        "external.Nx": &(&1[:namespace] == :"external.Nx"),
+        "external": &(&1[:namespace] == :"external"),
         "cv.Error": &(&1[:namespace] == :"cv.Error"),
         "cv.ipp": &(&1[:namespace] == :"cv.ipp"),
         "cv.utils": &(&1[:namespace] == :"cv.utils"),
