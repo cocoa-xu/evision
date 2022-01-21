@@ -19,7 +19,7 @@ jobs:
   mix_test:
     runs-on: ubuntu-20.04
     env:
-      MIX_ENV: dev
+      MIX_ENV: prod
       NERVES_PROJ_NAME: nerves_evision
       OPENCV_VER: "4.5.5"
       NERVES_LIVEBOOK_VER: "v0.5.0"
@@ -60,14 +60,14 @@ jobs:
           mv mix.exs.tmp mix.exs
           cat mix.exs
           export MIX_TARGET=${{ matrix.target }}
-          mix deps.get 2>&1 >/dev/null
+          mix deps.get >/dev/null 2>&1
           cp -f ../evision/nerves/id_rsa.pub               ~/.ssh/id_rsa.pub
           cp -f ../evision/nerves/id_rsa                   ~/.ssh/id_rsa
           export MAKE_BUILD_FLAGS="-j$(nproc)"
           mix deps.compile
           mix firmware
           mkdir -p "/tmp/firmware"
-          cp "./_build/${MIX_TARGET}_${MIX_ENV}/nerves/images/${NERVES_PROJ_NAME}.fw" "/tmp/firmware/${NERVES_PROJ_NAME}_${{ matrix.target }}_${MIX_ENV}.fw"
+          cp "./_build/${MIX_TARGET}_${MIX_ENV}/nerves/images/nerves_livebook.fw" "/tmp/firmware/${NERVES_PROJ_NAME}_${{ matrix.target }}_${MIX_ENV}.fw"
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v2.2.4
