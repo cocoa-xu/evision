@@ -3,15 +3,28 @@ defmodule OpenCV.VideoCapture.Test do
 
   @moduletag timeout: 120_000
 
+  @tag :video
   test "open a video file and read one frame" do
     ret =
-      [__DIR__, "videocapture_test.mp4"]
-      |> Path.join
-      |> Path.expand
-      |> OpenCV.VideoCapture.videoCapture
+      Path.join(__DIR__, "videocapture_test.mp4")
+      |> OpenCV.VideoCapture.videoCapture()
+
     assert :error != ret
     assert :ok == elem(ret, 0)
     video = elem(ret, 1)
+
+    assert :ok == OpenCV.VideoCapture.isOpened(video)
+
+    {:ok, fps} = OpenCV.VideoCapture.get(video, OpenCV.cv_CAP_PROP_FPS)
+    {:ok, frame_count} = OpenCV.VideoCapture.get(video, OpenCV.cv_CAP_PROP_FRAME_COUNT)
+    {:ok, height} = OpenCV.VideoCapture.get(video, OpenCV.cv_CAP_PROP_FRAME_HEIGHT)
+    {:ok, width} = OpenCV.VideoCapture.get(video, OpenCV.cv_CAP_PROP_FRAME_WIDTH)
+    {:ok, fourcc} = OpenCV.VideoCapture.get(video, OpenCV.cv_CAP_PROP_FOURCC)
+    assert 43.2 == fps
+    assert 18.0 == frame_count
+    assert 1080 == height
+    assert 1920 == width
+    assert 828601960.0 == fourcc
 
     ret = OpenCV.VideoCapture.read(video)
     assert :error != ret
