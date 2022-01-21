@@ -55,12 +55,12 @@ jobs:
           echo '      {:jason, "~> 1.0"},' >> mix.exs.tmp
           tail -n "+${LINE}" mix.exs >> mix.exs.tmp
           mv mix.exs.tmp mix.exs
-          cp -f deps/evision/nerves/id_rsa.pub ~/.ssh/id_rsa.pub
-          cp -f deps/evision/nerves/id_rsa ~/.ssh/id_rsa
-          rm -rf ./config
-          cp -a deps/evision/nerves/config ./config
           export MIX_TARGET=${{ matrix.target }}
           mix deps.get
+          rm -rf ./config
+          cp -f deps/evision/nerves/id_rsa.pub ~/.ssh/id_rsa.pub
+          cp -f deps/evision/nerves/id_rsa ~/.ssh/id_rsa
+          cp -a deps/evision/nerves/config ./config
           export MAKE_BUILD_FLAGS="-j$(nproc)"
           export CMAKE_TOOLCHAIN_FILE="$(pwd)/deps/evision/nerves/toolchain.cmake"
           mix deps.compile
