@@ -27,15 +27,21 @@ defmodule OpenCV.TestHelper do
   end
 end
 
-compiled_modules = OpenCV.__enabled_modules__()
-
 ExUnit.configure(
   exclude: [
-    # true by default as it will download a large (~200 MB) model file
-    dnn: true
+    # exclude dnn tests by default as it will download a large (~200 MB) model file
+    dnn: true,
+    # exclude video tests by default as video module can compile without decoding capability
+    # and there is perhaps no way to test input from a camera
+    # (could set up a virtual camera, but let's leave that for now)
+    video: true,
   ],
   include: [
-    video: Enum.member?(compiled_modules, "video")
+    # test OpenCV.Nx module if we have Nx module
+    nx: Code.ensure_loaded?(Nx),
+    # for other OpenCV modules, use
+    # compiled_modules = OpenCV.__enabled_modules__()
+    # Enum.member?(compiled_modules, "<MODULE_NAME>"),
   ]
 )
 
