@@ -7,11 +7,14 @@ defmodule OpenCV.VideoWriter.Test do
     def given(input_video_file, output_video_file, output_fps, output_seconds) do
       {:ok, reader} = OpenCV.VideoCapture.videoCapture(input_video_file)
       {:ok, fourcc} = OpenCV.VideoWriter.fourcc("m", "p", "4", "v")
-      {:ok, height} = OpenCV.VideoCapture.get(reader, OpenCV.cv_CAP_PROP_FRAME_HEIGHT)
-      {:ok, width} = OpenCV.VideoCapture.get(reader, OpenCV.cv_CAP_PROP_FRAME_WIDTH)
+      {:ok, height} = OpenCV.VideoCapture.get(reader, OpenCV.cv_CAP_PROP_FRAME_HEIGHT())
+      {:ok, width} = OpenCV.VideoCapture.get(reader, OpenCV.cv_CAP_PROP_FRAME_WIDTH())
       height = trunc(height)
       width = trunc(width)
-      {:ok, writer} = OpenCV.VideoWriter.videoWriter(output_video_file, fourcc, output_fps/1, [width, height])
+
+      {:ok, writer} =
+        OpenCV.VideoWriter.videoWriter(output_video_file, fourcc, output_fps / 1, [width, height])
+
       assert :ok == OpenCV.VideoWriter.isOpened(writer)
       {:ok, frame} = OpenCV.VideoCapture.read(reader)
       OpenCV.VideoCapture.release(reader)
@@ -20,10 +23,10 @@ defmodule OpenCV.VideoWriter.Test do
       # verify
       {:ok, reader} = OpenCV.VideoCapture.videoCapture(output_video_file)
       {:ok, w_fourcc} = OpenCV.VideoWriter.fourcc("m", "p", "4", "v")
-      {:ok, w_frames_count} = OpenCV.VideoCapture.get(reader, OpenCV.cv_CAP_PROP_FRAME_COUNT)
-      {:ok, w_fps} = OpenCV.VideoCapture.get(reader, OpenCV.cv_CAP_PROP_FPS)
-      {:ok, w_height} = OpenCV.VideoCapture.get(reader, OpenCV.cv_CAP_PROP_FRAME_HEIGHT)
-      {:ok, w_width} = OpenCV.VideoCapture.get(reader, OpenCV.cv_CAP_PROP_FRAME_WIDTH)
+      {:ok, w_frames_count} = OpenCV.VideoCapture.get(reader, OpenCV.cv_CAP_PROP_FRAME_COUNT())
+      {:ok, w_fps} = OpenCV.VideoCapture.get(reader, OpenCV.cv_CAP_PROP_FPS())
+      {:ok, w_height} = OpenCV.VideoCapture.get(reader, OpenCV.cv_CAP_PROP_FRAME_HEIGHT())
+      {:ok, w_width} = OpenCV.VideoCapture.get(reader, OpenCV.cv_CAP_PROP_FRAME_WIDTH())
       OpenCV.VideoCapture.release(reader)
 
       assert w_fourcc == fourcc

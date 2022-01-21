@@ -15,16 +15,16 @@ defmodule OpenCV.VideoCapture.Test do
 
     assert :ok == OpenCV.VideoCapture.isOpened(video)
 
-    {:ok, fps} = OpenCV.VideoCapture.get(video, OpenCV.cv_CAP_PROP_FPS)
-    {:ok, frame_count} = OpenCV.VideoCapture.get(video, OpenCV.cv_CAP_PROP_FRAME_COUNT)
-    {:ok, height} = OpenCV.VideoCapture.get(video, OpenCV.cv_CAP_PROP_FRAME_HEIGHT)
-    {:ok, width} = OpenCV.VideoCapture.get(video, OpenCV.cv_CAP_PROP_FRAME_WIDTH)
-    {:ok, fourcc} = OpenCV.VideoCapture.get(video, OpenCV.cv_CAP_PROP_FOURCC)
+    {:ok, fps} = OpenCV.VideoCapture.get(video, OpenCV.cv_CAP_PROP_FPS())
+    {:ok, frame_count} = OpenCV.VideoCapture.get(video, OpenCV.cv_CAP_PROP_FRAME_COUNT())
+    {:ok, height} = OpenCV.VideoCapture.get(video, OpenCV.cv_CAP_PROP_FRAME_HEIGHT())
+    {:ok, width} = OpenCV.VideoCapture.get(video, OpenCV.cv_CAP_PROP_FRAME_WIDTH())
+    {:ok, fourcc} = OpenCV.VideoCapture.get(video, OpenCV.cv_CAP_PROP_FOURCC())
     assert 43.2 == fps
     assert 18.0 == frame_count
     assert 1080 == height
     assert 1920 == width
-    assert 828601960.0 == fourcc
+    assert 828_601_960.0 == fourcc
 
     ret = OpenCV.VideoCapture.read(video)
     assert :error != ret
