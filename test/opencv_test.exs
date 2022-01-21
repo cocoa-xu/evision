@@ -5,6 +5,7 @@ defmodule OpenCV.Test do
     ret =
       Path.join(__DIR__, ["test.png"])
       |> OpenCV.imread()
+
     assert :ok == elem(ret, 0)
     mat = elem(ret, 1)
 
@@ -22,14 +23,15 @@ defmodule OpenCV.Test do
     assert :ok == elem(ret, 0)
     img_data = elem(ret, 1)
 
-    assert <<126, 145, 241, 78, 190, 136, 183, 122, 68, 187, 196, 244, 145, 205, 190, 200,
-              184, 144>> == img_data
+    assert <<126, 145, 241, 78, 190, 136, 183, 122, 68, 187, 196, 244, 145, 205, 190, 200, 184,
+             144>> == img_data
   end
 
   test "decode png from file w/ alpha channel" do
     ret =
       Path.join(__DIR__, ["test.png"])
-      |> OpenCV.imread(flags: OpenCV.cv_IMREAD_UNCHANGED)
+      |> OpenCV.imread(flags: OpenCV.cv_IMREAD_UNCHANGED())
+
     assert :ok == elem(ret, 0)
     mat = elem(ret, 1)
 
@@ -47,14 +49,15 @@ defmodule OpenCV.Test do
     assert :ok == elem(ret, 0)
     img_data = elem(ret, 1)
 
-    assert <<126, 145, 241, 255, 78, 190, 136, 255, 183, 122, 68, 255, 187, 196, 244, 255,
-             145, 205, 190, 255, 200, 184, 144, 255>> == img_data
+    assert <<126, 145, 241, 255, 78, 190, 136, 255, 183, 122, 68, 255, 187, 196, 244, 255, 145,
+             205, 190, 255, 200, 184, 144, 255>> == img_data
   end
 
   test "decode image from file grayscale" do
     ret =
       Path.join(__DIR__, ["test.png"])
-      |> OpenCV.imread(flags: OpenCV.cv_IMREAD_GRAYSCALE)
+      |> OpenCV.imread(flags: OpenCV.cv_IMREAD_GRAYSCALE())
+
     assert :ok == elem(ret, 0)
     mat = elem(ret, 1)
 
@@ -79,6 +82,7 @@ defmodule OpenCV.Test do
     ret =
       Path.join(__DIR__, ["test.jpg"])
       |> OpenCV.imread()
+
     assert :ok == elem(ret, 0)
     mat = elem(ret, 1)
 
@@ -96,8 +100,8 @@ defmodule OpenCV.Test do
     assert :ok == elem(ret, 0)
     img_data = elem(ret, 1)
 
-    assert <<70, 128, 180, 61, 119, 171, 117, 143, 65, 112, 170, 222, 95, 153, 205, 140,
-             166, 88>> == img_data
+    assert <<70, 128, 180, 61, 119, 171, 117, 143, 65, 112, 170, 222, 95, 153, 205, 140, 166, 88>> ==
+             img_data
   end
 
   test "OpenCV.imreadmulti" do
@@ -141,8 +145,9 @@ defmodule OpenCV.Test do
   test "OpenCV.resize" do
     {:ok, mat} =
       [__DIR__, "test.png"]
-      |> Path.join
+      |> Path.join()
       |> OpenCV.imread()
+
     resize_height = 4
     resize_width = 6
     {:ok, resized_mat} = OpenCV.resize(mat, [resize_height, resize_width])
@@ -173,15 +178,17 @@ defmodule OpenCV.Test do
     assert :ok == elem(ret, 0)
     img_data = elem(ret, 1)
 
-    assert <<126, 145, 241, 78, 190, 136, 183, 122, 68, 187, 196, 244, 145, 205, 190, 200,
-             184, 144>> == img_data
+    assert <<126, 145, 241, 78, 190, 136, 183, 122, 68, 187, 196, 244, 145, 205, 190, 200, 184,
+             144>> == img_data
+
     File.rm!(output_path)
   end
 
   test "OpenCV.mean" do
     {:ok, mat} =
       Path.join(__DIR__, ["test.png"])
-      |> OpenCV.imread(flags: OpenCV.cv_IMREAD_GRAYSCALE)
+      |> OpenCV.imread(flags: OpenCV.cv_IMREAD_GRAYSCALE())
+
     {:ok, bin} = OpenCV.Mat.to_binary(mat)
     avg = Enum.sum(:binary.bin_to_list(bin)) / byte_size(bin)
     {:ok, {avg_cv, 0.0, 0.0, 0.0}} = OpenCV.mean(mat)
@@ -191,7 +198,7 @@ defmodule OpenCV.Test do
   test "OpenCV.minmaxloc" do
     {:ok, mat} =
       Path.join(__DIR__, ["test.png"])
-      |> OpenCV.imread(flags: OpenCV.cv_IMREAD_GRAYSCALE)
+      |> OpenCV.imread(flags: OpenCV.cv_IMREAD_GRAYSCALE())
 
     {:ok, {112.0, 209.0, {2, 0}, {0, 1}}} = OpenCV.minMaxLoc(mat)
   end

@@ -48,7 +48,7 @@ defmodule OpenCV.DNN.Test do
     end
 
     defp _postprocess(_mat, [], _net, _confidence_threshold, <<"DetectionOutput">>, acc),
-         do: {:ok, Enum.reverse(acc)}
+      do: {:ok, Enum.reverse(acc)}
 
     defp _postprocess(
            mat,
@@ -139,6 +139,7 @@ defmodule OpenCV.DNN.Test do
         __DIR__
         |> Path.join("models")
         |> Path.join("ssd_mobilenet_v2_coco_2018_03_29.pbtxt")
+
       OpenCV.TestHelper.download!(
         "https://raw.githubusercontent.com/opencv/opencv_extra/master/testdata/dnn/ssd_mobilenet_v2_coco_2018_03_29.pbtxt",
         model_config
@@ -148,6 +149,7 @@ defmodule OpenCV.DNN.Test do
         __DIR__
         |> Path.join("models")
         |> Path.join("coco_names.txt")
+
       OpenCV.TestHelper.download!(
         "https://raw.githubusercontent.com/pjreddie/darknet/master/data/coco.names",
         model_class_list
@@ -158,29 +160,42 @@ defmodule OpenCV.DNN.Test do
         |> Path.join("models")
         |> Path.join("ssd_mobilenet_v2_coco_2018_03_29")
         |> Path.join("frozen_inference_graph.pb")
+
       model_tar =
         __DIR__
         |> Path.join("models")
         |> Path.join("ssd_mobilenet_v2_coco_2018_03_29.tar.gz")
-      test_setup = if not File.exists?(model_graph_pb) do
-        tar = System.find_executable("tar")
-        if is_binary(tar) do
-          OpenCV.TestHelper.download!(
-            "http://download.tensorflow.org/models/object_detection/ssd_mobilenet_v2_coco_2018_03_29.tar.gz",
-            model_tar
-          )
-          {stdout, status} = System.cmd("tar", ["-x", "--directory",  Path.join(__DIR__, "models"), "-f", model_tar])
-          if status != 0 do
-            {:error, stdout}
+
+      test_setup =
+        if not File.exists?(model_graph_pb) do
+          tar = System.find_executable("tar")
+
+          if is_binary(tar) do
+            OpenCV.TestHelper.download!(
+              "http://download.tensorflow.org/models/object_detection/ssd_mobilenet_v2_coco_2018_03_29.tar.gz",
+              model_tar
+            )
+
+            {stdout, status} =
+              System.cmd("tar", [
+                "-x",
+                "--directory",
+                Path.join(__DIR__, "models"),
+                "-f",
+                model_tar
+              ])
+
+            if status != 0 do
+              {:error, stdout}
+            else
+              :ok
+            end
           else
-            :ok
+            {:error, "cannot find tar executable"}
           end
         else
-          {:error, "cannot find tar executable"}
+          :ok
         end
-      else
-        :ok
-      end
 
       assert :ok == test_setup
 
@@ -211,7 +226,11 @@ defmodule OpenCV.DNN.Test do
 
   @tag :dnn
   test "load ssd_mobilenet_v2 and do inference" do
-    io = capture_io(fn -> SSDMobileNetV2.predict_and_show(Path.join(__DIR__, "dnn_detection_test.jpg")) end)
+    io =
+      capture_io(fn ->
+        SSDMobileNetV2.predict_and_show(Path.join(__DIR__, "dnn_detection_test.jpg"))
+      end)
+
     assert "Inference time=>" <> _time = io
   end
 end
