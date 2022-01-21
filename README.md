@@ -37,8 +37,24 @@ The default password of the livebook is `nerves` (as the time of writing, if it 
 `OpenCV.Nx` module detects whether you have `:nx` available or not, if yes, then `OpenCV.Nx.to_nx/1` will try to convert
 `OpenCV.Mat` to `Nx.tensor`; otherwise, it returns `{:error, ":nx is missing"}`.
 
-### Nx.tensor to OpenCV.Mat 
-There is a `nx_evision` library available on [zeam-vm/nx_evision](https://github.com/zeam-vm/nx_evision).
+```elixir
+{:ok, mat} = OpenCV.imread("/path/to/image.png")
+t = OpenCV.Nx.to_nx(mat)
+```
+
+### Nx.tensor to OpenCV.Mat
+Similarly, we have
+
+```elixir
+{:ok, mat} = OpenCV.imread("/path/to/image.png")
+t = OpenCV.Nx.to_nx(mat)
+# convert a tensor to a mat
+{:ok, mat_from_tensor} = OpenCV.Nx.to_mat(t)
+
+# and it works for tensors with any shapes
+t = Nx.iota({2, 3, 2, 3, 2, 3}, type: {:s, 32})
+{:ok, mat} = OpenCV.Nx.to_mat(t)
+```
 
 ## Description
 
@@ -145,7 +161,7 @@ end
 
   ```bash
   MIX_ENV=dev
-  OPENCV_VER=4.5.4
+  OPENCV_VER=4.5.5
   MIX_TARGET=rpi4
   
   # delete OpenCV related CMake build caches.
