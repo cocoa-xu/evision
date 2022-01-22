@@ -66,4 +66,4 @@ jobs:
       - name: Mix Test
         run: |
           export OPENCV_VER=${{ matrix.pair.opencv_ver }}
-          mix test --include dnn --include video
+          mix test --include require_downloading --include video
