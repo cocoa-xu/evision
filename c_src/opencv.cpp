@@ -469,7 +469,8 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const Mat& m)
 
     evision_res<cv::Mat *> * res;
     if (alloc_resource(&res)) {
-        res->val = new cv::Mat(m);
+        res->val = new cv::Mat();
+        *res->val = m.clone();
     } else {
         return evision::nif::error(env, "no memory");
     }
