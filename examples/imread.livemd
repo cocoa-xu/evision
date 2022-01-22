@@ -1,4 +1,6 @@
-# imread
+<!-- vim: syntax=markdown -->
+
+# core - imread related
 
 ## Setup
 
@@ -13,10 +15,10 @@
 # System.cmd("apt", ["update", "-q", "-y"])
 # System.cmd("apt", ["install", "-y", "unzip", "python3", "cmake"])
 
-# Mix.install([
-#   {:evision, "~> 0.1.0-dev", github: "cocoa-xu/evision", branch: "main"},
-#   
-# ])
+Mix.install([
+  {:evision, "~> 0.1.0-dev", github: "cocoa-xu/evision", branch: "main"},
+  {:kino, "~> 0.3.1"}
+])
 ```
 
 ## Helper Function
@@ -54,16 +56,17 @@ end
 
 ## OpenCV.imread
 
-Read an image from file
+### Read an image from file
 
 ```elixir
-# read png from file without alpha channel
+lenna_test_image_path = Path.join(__DIR__, "lenna_test_image.png")
+
 Helper.download!(
   "https://upload.wikimedia.org/wikipedia/en/7/7d/Lenna_%28test_image%29.png",
-  "lenna_test_image.png"
+  lenna_test_image_path
 )
 
-{:ok, mat} = OpenCV.imread("lenna_test_image.png")
+{:ok, mat} = OpenCV.imread(lenna_test_image_path)
 {:ok, {_height = 512, _width = 512, _channels = 3}} = OpenCV.Mat.shape(mat)
 {:ok, encoded} = OpenCV.imencode(".png", mat)
 
@@ -72,7 +75,7 @@ encoded
 |> Kino.Image.new(:png)
 ```
 
-Resize image `OpenCV.resize`
+### Resize image `OpenCV.resize`
 
 ```elixir
 {:ok, resized_mat} = OpenCV.resize(mat, [_width = 256, _height = 128])
@@ -84,20 +87,52 @@ encoded
 |> Kino.Image.new(:png)
 ```
 
-Encode and decode image in memory
+### Encode and decode image in memory
 
 ```elixir
-{:ok, encoded} = OpenCV.imencode(".png", resized_mat)
-encoded = encoded |> IO.iodata_to_binary()
-{:ok, decoded_mat} = OpenCV.imdecode(encoded, OpenCV.cv_imread_anycolor())
+# encode in memory
+{:ok, encoded_in_memory} = OpenCV.imencode(".png", resized_mat)
+encoded_in_memory = encoded_in_memory |> IO.iodata_to_binary()
+
+# decode in memory
+{:ok, decoded_mat} = OpenCV.imdecode(encoded_in_memory, OpenCV.cv_IMREAD_ANYCOLOR())
 {:ok, {128, 256, 3}} = OpenCV.Mat.shape(decoded_mat)
 ```
 
+### Read png file with/without alpha channel
+
 ```elixir
-Helper.download!("https://github.com/cocoa-xu/evision/raw/main/test/test.png", "test.png")
-Helper.download!("https://github.com/cocoa-xu/evision/raw/main/test/test.jpg", "test.jpg")
+# download the test image (has alpha channel)
+download_path = Path.join(__DIR__, "test.png")
+Helper.download!("https://github.com/cocoa-xu/evision/raw/main/test/test.png", download_path)
 ```
 
 ```elixir
-OpenCV.imwrite("a.png", decoded_mat)
+{:ok, without_alpha} =
+  download_path
+  |> OpenCV.imread()
+
+OpenCV.Mat.shape(without_alpha)
+```
+
+```elixir
+{:ok, with_alpha} =
+  download_path
+  |> OpenCV.imread(flags: OpenCV.cv_IMREAD_UNCHANGED())
+
+OpenCV.Mat.shape(with_alpha)
+```
+
+### Read an image as grayscale
+
+```elixir
+{:ok, gray_scale_mat} =
+  lenna_test_image_path
+  |> OpenCV.imread(flags: OpenCV.cv_IMREAD_GRAYSCALE())
+
+{:ok, gray_scale} = OpenCV.imencode(".png", gray_scale_mat)
+
+gray_scale
+|> IO.iodata_to_binary()
+|> Kino.Image.new(:png)
 ```
