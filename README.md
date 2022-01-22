@@ -268,8 +268,13 @@ Some other [examples](https://github.com/cocoa-xu/evision/tree/main/examples).
 
    Will be using **smallCamelCase** for almost all OpenCV functions.
 
-   The reason why I chose **smallCamelCase** is that it transforms much fewer function names as a large portion of them in 
-   OpenCV are starting with lowercase letter.
+   The reasons why I chose **smallCamelCase** are that
+
+   1. it transforms much fewer function names as a large portion of them in OpenCV are starting with lowercase letter.
+   2. avoid converting abbreviations to lowercase spellings, which can be quite tricky sometimes.
+   3. make the APIs look similar to their corresponding C++/Python ones.
+   4. This could also help when the user wants to search for existing examples/usage online.
+
 - [ ] Add more [examples](https://github.com/cocoa-xu/evision/tree/main/examples) (perhaps as livebook).
 - [ ] Add support for `dnn`. Halfway done? Tons of functions haven't been tested yet. 
 - [ ] Add support for `gapi`? Perhaps not. See [#22](https://github.com/cocoa-xu/evision/issues/22).
