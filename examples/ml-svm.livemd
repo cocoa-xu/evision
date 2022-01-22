@@ -43,6 +43,9 @@ File.cd!(__DIR__)
 ```
 
 ### Set up training data
+
+This example is based on the [Introduction to Support Vector Machines](https://docs.opencv.org/4.x/d1/d73/tutorial_introduction_to_svm.html) from OpenCV.
+
 ```elixir
 labels = [1, -1, -1, -1]
 training_data = [[501, 10], [255, 10], [501, 255], [10, 501]]
@@ -84,11 +87,11 @@ support_vector =
       current_vector = for j <- (cols-1)..0, reduce: [] do
         vec ->
           << float_data::float()-size(32)-little >> = :binary.part(sv_binary, (i*cols + j) * float_bytes, 4)
-          [float_data | vec]
+          [trunc(float_data) | vec]
       end
       [current_vector | support_vector]
   end
-assert [[501.0, 10.0], [255.0, 10.0], [501.0, 255.0]] == support_vector
+assert [[501, 10], [255, 10], [501, 255]] == support_vector
 support_vector
 ```
 
@@ -118,6 +121,18 @@ response_data =
 
 response_data = response_data |> List.flatten |> IO.iodata_to_binary
 {:ok, response_map} = OpenCV.Mat.from_binary(response_data, {:u, 8}, width, height, 3)
+
+# show the training data
+thickness = 1
+{:ok, response_map} = OpenCV.circle(response_map, Enum.at(training_data, 0), 5, [0,   0,   0], thickness: thickness)
+{:ok, response_map} = OpenCV.circle(response_map, Enum.at(training_data, 1), 5, [255, 255, 255], thickness: thickness)
+{:ok, response_map} = OpenCV.circle(response_map, Enum.at(training_data, 2), 5, [255, 255, 255], thickness: thickness)
+{:ok, response_map} = OpenCV.circle(response_map, Enum.at(training_data, 3), 5, [255, 255, 255], thickness: thickness)
+
+# show support vectors
+{:ok, response_map} = OpenCV.circle(response_map, Enum.at(support_vector, 0), 6, [128, 128, 128], thickness: thickness)
+{:ok, response_map} = OpenCV.circle(response_map, Enum.at(support_vector, 1), 6, [128, 128, 128], thickness: thickness)
+{:ok, response_map} = OpenCV.circle(response_map, Enum.at(support_vector, 2), 6, [128, 128, 128], thickness: thickness)
 
 OpenCV.imencode(".png", response_map)
 |> then(fn {:ok, val} -> val end)
