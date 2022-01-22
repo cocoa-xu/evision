@@ -54,6 +54,7 @@ defmodule OpenCV.Nx do
     if Code.ensure_loaded?(Nx) do
       shape = Nx.shape(t)
       l_shape = Tuple.to_list(shape)
+
       if Enum.count(l_shape) == 3 do
         {rows, cols, channels} = shape
         to_mat(Nx.to_binary(t), Nx.type(t), cols, rows, channels)

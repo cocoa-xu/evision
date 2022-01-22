@@ -28,6 +28,7 @@ defmodule OpenCV.TestHelper do
 end
 
 compiled_modules = OpenCV.__enabled_modules__()
+
 ExUnit.configure(
   exclude: [
     # exclude dnn tests by default as it will download a large (~200 MB) model file
@@ -38,7 +39,7 @@ ExUnit.configure(
     video: true,
     # test OpenCV.Nx module if we have Nx module
     nx: !Code.ensure_loaded?(Nx),
-    ml: !Enum.member?(compiled_modules, "ml"),
+    ml: !Enum.member?(compiled_modules, "ml")
   ]
 )
 
