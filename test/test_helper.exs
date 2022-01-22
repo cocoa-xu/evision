@@ -34,11 +34,9 @@ ExUnit.configure(
     # exclude video tests by default as video module can compile without decoding capability
     # and there is perhaps no way to test input from a camera
     # (could set up a virtual camera, but let's leave that for now)
-    video: true
-  ],
-  include: [
+    video: true,
     # test OpenCV.Nx module if we have Nx module
-    nx: Code.ensure_loaded?(Nx)
+    nx: !Code.ensure_loaded?(Nx)
     # for other OpenCV modules, use
     # compiled_modules = OpenCV.__enabled_modules__()
     # Enum.member?(compiled_modules, "<MODULE_NAME>"),
