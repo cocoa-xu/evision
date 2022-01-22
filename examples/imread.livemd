@@ -59,6 +59,16 @@ end
 ### Read an image from file
 
 ```elixir
+# change to the file's directory
+# or somewhere you have write permission
+File.cd!(__DIR__)
+```
+
+```output
+:ok
+```
+
+```elixir
 lenna_test_image_path = Path.join(__DIR__, "lenna_test_image.png")
 
 Helper.download!(
