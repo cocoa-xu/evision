@@ -8,6 +8,7 @@ on:
       - feature-*
       - experimental-*
       - test-*
+      - fix-*
     paths-ignore:
       - '**/README.md'
       - 'examples/**'

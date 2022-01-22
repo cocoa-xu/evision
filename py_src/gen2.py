@@ -417,23 +417,42 @@ class ClassInfo(object):
         sorted_props = [(p.name, p) for p in self.props]
         sorted_props.sort()
 
-        sorted_methods = list(self.methods.items())
+        methods = self.methods.copy()
+        if self.base and self.cname.startswith("cv::ml"):
+            if self.base in codegen.classes:
+                base_class = codegen.classes[self.base]
+                for base_method_name in base_class.methods:
+                    if base_method_name not in methods:
+                        base_method = base_class.methods[base_method_name].__deepcopy__()
+                        base_method.classname = self.name
+                        methods[base_method_name] = base_method
+                    else:
+                        # print(self.cname, "overrides base method:", base_method_name)
+                        _ = 0
+        sorted_methods = list(methods.items())
         sorted_methods.sort()
 
+        # generate functions for constructor
         if self.constructor is not None:
-            module_file_writer, separated_ns = codegen.get_module_writer(self.name, wname=self.cname, name=self.name, is_ns=False)
+            module_file_writer, separated_ns = codegen.get_module_writer(
+                self.name, wname=self.cname, name=self.name, is_ns=False)
             codegen.gen_erl_declaration(
                 self.cname, self.name, self.constructor, module_file_writer,
                 is_constructor=True, separated_ns=separated_ns)
+
+        # generate functions for methods
         for mname, m in sorted_methods:
             codegen.code_ns_reg.write(m.get_tab_entry())
-            module_file_writer, separated_ns = codegen.get_module_writer(self.name, wname=self.cname, name=mname, is_ns=False)
+            module_file_writer, separated_ns = codegen.get_module_writer(
+                self.name, wname=self.cname, name=mname, is_ns=False)
             codegen.gen_erl_declaration(
                 self.cname, mname, m, module_file_writer,
                 is_constructor=False, separated_ns=separated_ns)
 
+        # generate functions for properties
         for pname, m in sorted_props:
-            module_file_writer, separated_ns = codegen.get_module_writer(self.name, wname=self.cname, name=pname, is_ns=False)
+            module_file_writer, separated_ns = codegen.get_module_writer(
+                self.name, wname=self.cname, name=pname, is_ns=False)
             codegen.gen_erl_declaration(
                 self.cname, pname, m, module_file_writer,
                 is_constructor=False, is_prop=True, prop_class=self, separated_ns=separated_ns)
@@ -488,7 +507,19 @@ class ClassInfo(object):
         methods_code = StringIO()
         methods_inits = StringIO()
 
-        sorted_methods = list(self.methods.items())
+        methods = self.methods.copy()
+        if self.base and self.cname.startswith("cv::ml"):
+            if self.base in codegen.classes:
+                base_class = codegen.classes[self.base]
+                for base_method_name in base_class.methods:
+                    if base_method_name not in methods:
+                        base_method = base_class.methods[base_method_name].__deepcopy__()
+                        base_method.classname = self.name
+                        methods[base_method_name] = base_method
+                    else:
+                        # print(self.cname, "overrides base method:", base_method_name)
+                        _ = 0
+        sorted_methods = list(methods.items())
         sorted_methods.sort()
 
         if self.constructor is not None:
@@ -692,6 +723,17 @@ class FuncInfo(object):
         self.namespace = namespace
         self.is_static = is_static
         self.variants = []
+
+    def __copy__(self):
+        copy_info = FuncInfo(self.classname, self.name, self.cname, self.isconstructor, self.namespace, self.is_static)
+        copy_info.variants = self.variants
+        return copy_info
+
+    def __deepcopy__(self):
+        import copy
+        copy_info = FuncInfo(self.classname, self.name, self.cname, self.isconstructor, self.namespace, self.is_static)
+        copy_info.variants = copy.deepcopy(self.variants)
+        return copy_info
 
     def add_variant(self, decl, isphantom=False):
         self.variants.append(FuncVariant(self.classname, self.name, decl, self.isconstructor, isphantom))
