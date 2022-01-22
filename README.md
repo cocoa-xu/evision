@@ -23,9 +23,6 @@ Select the most recent run and scroll down to the `Artifacts` section, download 
 fwup /path/to/the/downloaded/firmware.fw
 ```
 
-SSH keys can be found in `nerves/id_rsa[.pub]`. For obvious security reason, please 
-use these prebuilt firmwares for evaluation only.
-
 In the nerves build, `evision` is integrated as one of the dependencies of the [nerves_livebook](https://github.com/livebook-dev/nerves_livebook)
 project. This means that you can use livebook (as well as other pre-pulled libraries) to explore and evaluate the `evision`
 project. 
