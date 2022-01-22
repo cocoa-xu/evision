@@ -94,9 +94,8 @@ contours =
   # Ignore contours that are too small or too large
   |> Enum.reject(fn {area, _c} -> area < 100 or area > 100_000 end)
 
-# verify
-assert [17192.0, 16830.0, 16150.5, 15367.5, 15571.0, 14842.0] ==
-         Enum.map(contours, &elem(&1, 0))
+# area
+Enum.map(contours, &elem(&1, 0))
 ```
 
 PCA analysis
@@ -149,17 +148,6 @@ pca_analysis =
       angle = Float.round(:math.atan2(evec01, evec00), 6)
       [{cntr, p1, p2, angle} | acc]
   end
-
-# verify
-assert [
-         {[407, 90], {645, 48}, {405, 81}, -0.170813},
-         {[191, 291], {176, 52}, {200, 290}, -1.63176},
-         {[420, 169], {666, 127}, {418, 160}, -0.168426},
-         {[433, 239], {683, 182}, {430, 229}, -0.222363},
-         {[439, 326], {697, 264}, {436, 316}, -0.2351},
-         {[430, 407], {691, 337}, {427, 397}, -0.259879}
-       ]  ==
-         pca_analysis
 ```
 
 ## visualisation
