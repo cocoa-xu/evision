@@ -61,8 +61,6 @@ jobs:
           cat mix.exs
           export MIX_TARGET=${{ matrix.target }}
           mix deps.get
-          cp -f ../evision/nerves/id_rsa.pub               ~/.ssh/id_rsa.pub
-          cp -f ../evision/nerves/id_rsa                   ~/.ssh/id_rsa
           cp -a ../evision/examples                        ./priv/evision_examples
           sed -i 's/"welcome.livemd"\,/"welcome.livemd"\, "evision_examples",/g' lib/nerves_livebook/application.ex
           export MAKE_BUILD_FLAGS="-j$(nproc)"
