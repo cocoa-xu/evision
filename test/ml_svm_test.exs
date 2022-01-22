@@ -37,11 +37,11 @@ defmodule OpenCV.ML.SVM.Test do
           current_vector = for j <- (cols-1)..0, reduce: [] do
             vec ->
               << float_data::float()-size(32)-little >> = :binary.part(sv_binary, (i*cols + j) * float_bytes, 4)
-              [float_data | vec]
+              [trunc(float_data) | vec]
           end
           [current_vector | support_vector]
       end
-    assert [[501.0, 10.0], [255.0, 10.0], [501.0, 255.0]] == support_vector
+    assert [[501, 10], [255, 10], [501, 255]] == support_vector
 
     green = [0, 255, 0]
     blue = [255, 0, 0]
