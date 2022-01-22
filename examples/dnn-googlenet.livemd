@@ -69,44 +69,6 @@ end
 {:module, Helper, <<70, 79, 82, 49, 0, 0, 9, ...>>, {:download!, 3}}
 ```
 
-```elixir
-defmodule OpenCV.Nx do
-  @moduledoc false
-
-  @doc """
-  Transform an OpenCV.Mat `#Reference` to `#Nx.tensor`
-  ### Example
-  {:ok, mat} = OpenCV.imread("/path/to/exist/img.png")
-  nx_tensor = OpenCV.Nx.to_nx(mat)
-   #Nx.Tensor<
-      u8[1080][1920][3]
-      [[ ... pixel data ... ]]
-   >
-  """
-  def to_nx(mat) do
-    {:ok, mat_type} = OpenCV.Mat.type(mat)
-    {:ok, mat_shape} = OpenCV.Mat.shape(mat)
-
-    case OpenCV.Mat.to_binary(mat) do
-      {:ok, bin} ->
-        bin
-        |> Nx.from_binary(mat_type)
-        |> Nx.reshape(mat_shape)
-
-      {:error, reason} ->
-        {:error, reason}
-
-      _ ->
-        {:error, "unknown error"}
-    end
-  end
-end
-```
-
-```output
-{:module, OpenCV.Nx, <<70, 79, 82, 49, 0, 0, 7, ...>>, {:to_nx, 1}}
-```
-
 ## Download model and a test image
 
 * Model parameters. `bvlc_googlenet.caffemodel`
