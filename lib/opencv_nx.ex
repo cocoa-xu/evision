@@ -7,7 +7,9 @@ defmodule OpenCV.Nx do
   list.
   """
 
-  @compile {:no_warn_undefined, Nx}
+  unless Code.ensure_loaded?(Nx) do
+    @compile {:no_warn_undefined, Nx}
+  end
 
   @doc """
   Transform an `OpenCV.Mat` reference to `Nx.tensor`.
