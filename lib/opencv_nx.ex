@@ -10,7 +10,7 @@ defmodule OpenCV.Nx do
   @compile {:no_warn_undefined, Nx}
 
   @doc """
-  Transform an OpenCV.Mat `#Reference` to `Nx.tensor`.
+  Transform an `OpenCV.Mat` reference to `Nx.tensor`.
 
   The resulting tensor is in the shape `{height, width, channels}`.
 
