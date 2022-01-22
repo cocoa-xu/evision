@@ -7,8 +7,8 @@ defmodule OpenCV.PCA.Test do
   def drawAxis(src, {px, py}, {qx, qy}, colour, scale) do
     angle = :math.atan2(py - qy, px - qx)
     hypotenuse = :math.sqrt((py - qy) * (py - qy) + (px - qx) * (px - qx))
-    qx = trunc(px - 1 * hypotenuse * :math.cos(angle))
-    qy = trunc(py - 1 * hypotenuse * :math.sin(angle))
+    qx = trunc(px - scale * hypotenuse * :math.cos(angle))
+    qy = trunc(py - scale * hypotenuse * :math.sin(angle))
     {:ok, src} = OpenCV.line(src, [px, py], [qx, qy], colour, thickness: 1, style: OpenCV.cv_LINE_AA)
 
     px = trunc(qx + 9 * :math.cos(angle + :math.pi / 4))
