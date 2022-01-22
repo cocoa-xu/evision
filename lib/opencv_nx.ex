@@ -12,7 +12,7 @@ defmodule OpenCV.Nx do
   @doc """
   Transform an OpenCV.Mat `#Reference` to `Nx.tensor`.
 
-  The resulting tensor is in the shape `{width, height, channels}`.
+  The resulting tensor is in the shape `{height, width, channels}`.
 
   ### Example
 
@@ -49,7 +49,7 @@ defmodule OpenCV.Nx do
   Converts a tensor of `Nx` to `Mat` of evision (OpenCV).
 
   If the tensor has three dimensions, it is expected
-  to have shape`{width, height, channels}`.
+  to have shape`{height, width, channels}`.
   """
   @doc namespace: :external
   @spec to_mat(Nx.t()) :: {:ok, reference()} | {:error, String.t()}
