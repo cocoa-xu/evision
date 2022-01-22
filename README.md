@@ -177,10 +177,19 @@ end
   ## for nerves
   rm -rf "_build/${MIX_TARGET}_${MIX_ENV}/lib/evision/priv/evision.so"
   
-  # comment out the line `execute_process(...)` in CMakeLists.txt 
+  # comment out the following lines in CMakeLists.txt
   # if you would like to manually modified the generated .ex files and/or .h files
-  # execute_process(COMMAND bash -c "python3 ${PY_SRC}/gen2.py ${C_SRC} ${GENERATED_ELIXIR_SRC_DIR} ${C_SRC}/headers.txt")
-  
+  # otherwise, your editing will be overwritten by the gen2.py
+  #
+  # execute_process(COMMAND bash -c "rm -rf ${GENERATED_ELIXIR_SRC_DIR} && mkdir -p ${GENERATED_ELIXIR_SRC_DIR}")
+  # message("enabled modules: ${ENABLED_CV_MODULES}")
+  # execute_process(COMMAND bash -c "python3 ${PY_SRC}/gen2.py ${C_SRC} ${GENERATED_ELIXIR_SRC_DIR} ${C_SRC}/headers.txt ${ENABLED_CV_MODULES}" RESULT_VARIABLE STATUS)
+  # if(STATUS STREQUAL "0")
+  #   message("Successfully generated Erlang/Elixir bindings")
+  # else()
+  #   message(FATAL_ERROR "Failed to generate Erlang/Elixir bindings")
+  # endif()
+
   # delete evision related CMake build caches.
   rm -rf "_build/${MIX_ENV}/lib/evision/cmake_evision"
   ## for nerves
