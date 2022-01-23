@@ -1,6 +1,36 @@
 defmodule OpenCV.Test do
   use ExUnit.Case
 
+  test "OpenCV.Mat.as_type" do
+    {:ok, mat} = OpenCV.Mat.from_binary_by_shape(<< 1, 2, 3, 4 >>, {:u, 8}, {2, 2})
+    {:ok, mat} = OpenCV.Mat.as_type(mat, {:f, 32})
+    {:ok, {:f, 32}} = OpenCV.Mat.type(mat)
+    {:ok, mat} = OpenCV.Mat.as_type(mat, {:f, 64})
+    {:ok, {:f, 64}} = OpenCV.Mat.type(mat)
+  end
+
+  @tag :nx
+  test "OpenCV.Mat.as_type and verify value" do
+    {:ok, mat} = OpenCV.Mat.from_binary_by_shape(<< 1, 2, 3, 4 >>, {:u, 8}, {2, 2})
+    {:ok, mat} = OpenCV.Mat.as_type(mat, {:f, 32})
+    {:ok, {:f, 32}} = OpenCV.Mat.type(mat)
+    {:ok, mat} = OpenCV.Mat.as_type(mat, {:f, 64})
+    {:ok, {:f, 64}} = OpenCV.Mat.type(mat)
+    assert [1.0, 2.0, 3.0, 4.0] =
+      mat
+      |> OpenCV.Nx.to_nx()
+      |> Nx.to_flat_list()
+  end
+
+  test "OpenCV.Mat.clone" do
+    {:ok, mat} = OpenCV.Mat.from_binary_by_shape(<< 1, 2, 3, 4 >>, {:u, 8}, {2, 2})
+    {:ok, cloned} = OpenCV.Mat.clone(mat)
+    assert cloned != mat
+    assert OpenCV.Mat.type(cloned) == OpenCV.Mat.type(mat)
+    assert OpenCV.Mat.shape(cloned) == OpenCV.Mat.shape(mat)
+    assert OpenCV.Mat.to_binary(cloned) == OpenCV.Mat.to_binary(mat)
+  end
+
   test "decode png from file w/o alpha channel" do
     ret =
       Path.join(__DIR__, ["test.png"])
