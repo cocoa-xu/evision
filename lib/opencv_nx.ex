@@ -30,15 +30,13 @@ defmodule OpenCV.Nx do
   @doc namespace: :external
   @spec to_mat(reference()) :: {:ok, reference()} | {:error, String.t()}
   def to_nx(mat) do
-    {:ok, mat_type} = OpenCV.Mat.type(mat)
-    {:ok, mat_shape} = OpenCV.Mat.shape(mat)
-
-    case OpenCV.Mat.to_binary(mat) do
-      {:ok, bin} ->
-        bin
-        |> Nx.from_binary(mat_type)
-        |> Nx.reshape(mat_shape)
-
+    with {:ok, mat_type} <- OpenCV.Mat.type(mat),
+         {:ok, mat_shape} <- OpenCV.Mat.shape(mat),
+         {:ok, bin} <- OpenCV.Mat.to_binary(mat) do
+      bin
+      |> Nx.from_binary(mat_type)
+      |> Nx.reshape(mat_shape)
+    else
       {:error, reason} ->
         {:error, reason}
     end
