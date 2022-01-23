@@ -11,7 +11,7 @@ to test the ones that require downloading test data, you can do
 mix test --include require_downloading
 ```
 
-Another special tag is `:require_ffmpeg`. OpenCV can compile and use video module when
+Another special tag is `:require_ffmpeg`. OpenCV can compile and use video module when any of the following points is met
 1. your system has native support for camera
 2. your system has native support for some video files
 3. ffmpeg related libraries are installed
