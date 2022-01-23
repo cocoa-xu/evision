@@ -34,12 +34,12 @@ jobs:
       matrix:
         include:
           - pair:
-              elixir: 1.12.3
-              otp: 24.1.5
+              elixir: 1.13.2
+              otp: 24.2
               opencv_ver: 4.5.4
           - pair:
-              elixir: 1.12.3
-              otp: 24.1.5
+              elixir: 1.13.2
+              otp: 24.2
               opencv_ver: 4.5.5
 
     steps:
