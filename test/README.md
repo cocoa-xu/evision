@@ -16,8 +16,8 @@ Another special tag is `:require_ffmpeg`. OpenCV can compile and use video modul
 2. your system has native support for some video files
 3. ffmpeg related libraries are installed
 
-However, some tests require ffmpeg libraries to decode and encode the test video files, and the formats specified in the
-test may not support by the native library provided by your system. 
+Therefore, the availability of the video module does not imply that some tests can decode or encode the test video files
+correctly, as the formats specified in these tests may not support by the native library provided by your system. 
 
 Another thing is that, even if it is possible to test the camera, it would require setting up a virtual camera in the CI
 environment, and that would introduce much work. So we won't consider writing test for cameras at the moment. 
