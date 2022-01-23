@@ -4,6 +4,8 @@
 #include <erl_nif.h>
 #include "../nif_utils.hpp"
 
+int get_binary_type(const std::string& t, int l, int n, int& type);
+
 // @evision c: evision_cv_mat_type, 1
 // @evision nif: def evision_cv_mat_type(_opts \\ []), do: :erlang.nif_error("Mat::type not loaded")
 static ERL_NIF_TERM evision_cv_mat_type(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
@@ -29,6 +31,38 @@ static ERL_NIF_TERM evision_cv_mat_type(ErlNifEnv *env, int argc, const ERL_NIF_
                 case CV_32F: return evision::nif::ok(env, enif_make_tuple2(env, evision::nif::atom(env, "f"), enif_make_uint64(env, 32)));
                 case CV_64F: return evision::nif::ok(env, enif_make_tuple2(env, evision::nif::atom(env, "f"), enif_make_uint64(env, 64)));
                 default:     return evision::nif::ok(env, enif_make_tuple2(env, evision::nif::atom(env, "user"), enif_make_uint64(env, depth)));
+            }
+        }
+    }
+
+    if (error_term != 0) return error_term;
+    else return evision::nif::atom(env, "nil");
+}
+
+// @evision c: evision_cv_mat_as_type, 1
+// @evision nif: def evision_cv_mat_as_type(_opts \\ []), do: :erlang.nif_error("Mat::as_type not loaded")
+static ERL_NIF_TERM evision_cv_mat_as_type(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
+    using namespace cv;
+    ERL_NIF_TERM error_term = 0;
+    std::map<std::string, ERL_NIF_TERM> erl_terms;
+    int nif_opts_index = 0;
+    evision::nif::parse_arg(env, nif_opts_index, argv, erl_terms);
+
+    {
+        Mat img;
+        std::string t;
+        int l = 0;
+        int type;
+
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0)) &&
+            evision_to_safe(env, evision_get_kw(env, erl_terms, "t"), t, ArgInfo("t", 0)) &&
+            evision_to_safe(env, evision_get_kw(env, erl_terms, "l"), l, ArgInfo("l", 0))) {
+            if (get_binary_type(t, l, 0, type)) {
+                Mat ret;
+                img.convertTo(ret, type);
+                return evision::nif::ok(env, evision_from(env, img));
+            } else {
+                return evision::nif::error(env, "unsupported target type");
             }
         }
     }
@@ -82,12 +116,11 @@ static ERL_NIF_TERM evision_cv_mat_clone(ErlNifEnv *env, int argc, const ERL_NIF
 
     {
         Mat img;
-        Mat img_clone;
 
         // const char *keywords[] = {"img", NULL};
         if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0))) {
-            img_clone = img.clone();
-            return evision::nif::ok(env, evision_from(env, img_clone));
+            // no need to do clone here as evision_from will copy the data
+            return evision::nif::ok(env, evision_from(env, img));
         }
     }
 

@@ -9,6 +9,11 @@ defmodule OpenCV.Mat do
   end
 
   @doc namespace: :"cv.Mat"
+  def as_type(mat, _type={t, l}) when is_atom(t) and l > 0 do
+    :erl_cv_nif.evision_cv_mat_as_type(img: mat, t: t, l: l)
+  end
+
+  @doc namespace: :"cv.Mat"
   def shape(mat) do
     :erl_cv_nif.evision_cv_mat_shape(img: mat)
   end
