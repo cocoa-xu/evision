@@ -1397,7 +1397,6 @@ static bool evision_to_generic_vec(ErlNifEnv *env, ERL_NIF_TERM obj, std::vector
         arr = tail;
         cells.push_back(head);
     }
-    std::reverse(cells.begin(), cells.end());
 
     for (size_t i = 0; i < n; i++)
     {
