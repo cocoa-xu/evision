@@ -36,7 +36,7 @@ static ERL_NIF_TERM evision_cv_mat_type(ErlNifEnv *env, int argc, const ERL_NIF_
     }
 
     if (error_term != 0) return error_term;
-    else return evision::nif::atom(env, "nil");
+    else return evision::nif::error(env, "overload resolution failed");
 }
 
 // @evision c: evision_cv_mat_as_type, 1
@@ -68,7 +68,7 @@ static ERL_NIF_TERM evision_cv_mat_as_type(ErlNifEnv *env, int argc, const ERL_N
     }
 
     if (error_term != 0) return error_term;
-    else return evision::nif::atom(env, "nil");
+    else return evision::nif::error(env, "overload resolution failed");
 }
 
 // @evision c: evision_cv_mat_shape, 1
@@ -102,7 +102,7 @@ static ERL_NIF_TERM evision_cv_mat_shape(ErlNifEnv *env, int argc, const ERL_NIF
     }
 
     if (error_term != 0) return error_term;
-    else return evision::nif::atom(env, "nil");
+    else return evision::nif::error(env, "overload resolution failed");
 }
 
 // @evision c: evision_cv_mat_clone, 1
@@ -125,7 +125,7 @@ static ERL_NIF_TERM evision_cv_mat_clone(ErlNifEnv *env, int argc, const ERL_NIF
     }
 
     if (error_term != 0) return error_term;
-    else return evision::nif::atom(env, "nil");
+    else return evision::nif::error(env, "overload resolution failed");
 }
 
 // @evision c: evision_cv_mat_to_binary, 1
@@ -153,7 +153,7 @@ static ERL_NIF_TERM evision_cv_mat_to_binary(ErlNifEnv *env, int argc, const ERL
     }
 
     if (error_term != 0) return error_term;
-    else return evision::nif::atom(env, "nil");
+    else return evision::nif::error(env, "overload resolution failed");
 }
 
 int get_binary_type(const std::string& t, int l, int n, int& type) {
@@ -242,7 +242,7 @@ static ERL_NIF_TERM evision_cv_mat_from_binary(ErlNifEnv *env, int argc, const E
     }
 
     if (error_term != 0) return error_term;
-    else return evision::nif::atom(env, "nil");
+    else return evision::nif::error(env, "overload resolution failed");
 }
 
 // @evision c: evision_cv_mat_from_binary_by_shape, 1
@@ -291,7 +291,7 @@ static ERL_NIF_TERM evision_cv_mat_from_binary_by_shape(ErlNifEnv *env, int argc
     }
 
     if (error_term != 0) return error_term;
-    else return evision::nif::atom(env, "nil");
+    else return evision::nif::error(env, "overload resolution failed");
 }
 
 #endif // EVISION_OPENCV_MAT_H

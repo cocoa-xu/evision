@@ -1036,9 +1036,9 @@ class FuncInfo(object):
             code += '    \n'.join(gen_template_overloaded_function_call.substitute(variant=v)
                                   for v in all_code_variants)
 
-        def_ret = "if (error_term != 0) return error_term;\n    else return evision::nif::atom(env, \"nil\");"
+        def_ret = "if (error_term != 0) return error_term;\n    else return evision::nif::error(env, \"overload resolution failed\");"
         if self.isconstructor:
-            def_ret = "return evision::nif::atom(env, \"nil\");"
+            def_ret = "return evision::nif::error(env, \"overload resolution failed\");"
         code += "\n    %s\n}\n\n" % def_ret
 
         cname = self.cname
