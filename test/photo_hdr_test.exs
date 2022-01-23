@@ -73,11 +73,27 @@ defmodule OpenCV.Photo.HDR.Test do
       |> then(&OpenCV.imwrite(output_fusion_file, elem(&1, 1)))
 
     output_ldr_file = Path.join([__DIR__, "photo_hdr_test", "ldr.png"])
-    ldr
+    t =
+      ldr
       |> OpenCV.Nx.to_nx()
+    IO.puts("f32 tensor shape:")
+    IO.inspect(Nx.shape(t))
+    IO.puts("f32 tensor type:")
+    IO.inspect(Nx.type(t))
+    t_binary = Nx.to_binary(t)
+    IO.puts("f32 tensor binary bytes: #{byte_size(t_binary)}")
+    t =
+      t
       |> Nx.multiply(255)
       |> Nx.clip(0, 255)
       |> Nx.as_type({:u, 8})
+    IO.puts("u8 tensor shape:")
+    IO.inspect(Nx.shape(t))
+    IO.puts("u8 tensor type:")
+    IO.inspect(Nx.type(t))
+    t_binary = Nx.to_binary(t)
+    IO.puts("tensor binary bytes: #{byte_size(t_binary)}")
+    t
       |> OpenCV.Nx.to_mat
       |> then(&OpenCV.imwrite(output_ldr_file, elem(&1, 1)))
 
