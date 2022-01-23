@@ -301,6 +301,44 @@ namespace evision
       return 1;
     }
 
+      int get_list(ErlNifEnv *env, ERL_NIF_TERM list, std::vector<double> &var)
+      {
+          unsigned int length;
+          if (!enif_get_list_length(env, list, &length))
+              return 0;
+          var.reserve(length);
+          ERL_NIF_TERM head, tail;
+
+          while (enif_get_list_cell(env, list, &head, &tail))
+          {
+              double elem;
+              if (!get(env, head, &elem))
+                  return 0;
+              var.push_back(elem);
+              list = tail;
+          }
+          return 1;
+      }
+
+      int get_list(ErlNifEnv *env, ERL_NIF_TERM list, std::vector<float> &var)
+      {
+          unsigned int length;
+          if (!enif_get_list_length(env, list, &length))
+              return 0;
+          var.reserve(length);
+          ERL_NIF_TERM head, tail;
+
+          while (enif_get_list_cell(env, list, &head, &tail))
+          {
+              double elem;
+              if (!get(env, head, &elem))
+                  return 0;
+              var.push_back(static_cast<float>(elem));
+              list = tail;
+          }
+          return 1;
+      }
+
     inline int allowed_spec(char t) {
         return (t == 's' || t == 'b' || t == 'h' || t == 'i' || t == 'I' || t == 'l' || t == 'L' \
                 || t == 'k' || t == 'K' || t == 'n' || t == 'f' || t == 'd' || t == 'O');
