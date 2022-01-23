@@ -1,6 +1,15 @@
 defmodule OpenCV.Test do
   use ExUnit.Case
 
+  test "Errors will be {:error, String.t()}" do
+    random_ref = :erlang.make_ref()
+    {:error, reason} = OpenCV.Mat.shape(random_ref)
+    assert is_binary(reason)
+
+    {:error, reason} = OpenCV.Nx.to_nx(random_ref)
+    assert is_binary(reason)
+  end
+
   test "OpenCV.Mat.as_type" do
     {:ok, mat} = OpenCV.Mat.from_binary_by_shape(<< 1, 2, 3, 4 >>, {:u, 8}, {2, 2})
     {:ok, mat} = OpenCV.Mat.as_type(mat, {:f, 32})
