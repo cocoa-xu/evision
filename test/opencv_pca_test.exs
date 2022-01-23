@@ -47,10 +47,8 @@ defmodule OpenCV.PCA.Test do
           sz = elem(shape, 0)
           {:ok, pts_binary} = OpenCV.Mat.to_binary(c)
           {:ok, type} = OpenCV.Mat.type(c)
-          {:ok, data_pts} = OpenCV.Mat.from_binary(pts_binary, type, 2, sz, 1)
-
-          {:ok, data_pts} =
-            OpenCV.Nx.to_nx(data_pts) |> Nx.as_type({:f, 64}) |> OpenCV.Nx.to_mat()
+          {:ok, data_pts} = OpenCV.Mat.from_binary(pts_binary, type, sz, 2, 1)
+          {:ok, data_pts} = OpenCV.Mat.as_type(data_pts, {:f, 64})
 
           # Perform PCA analysis
           {:ok, {mean, eigenvectors, eigenvalues}} = OpenCV.pcaCompute2(data_pts, nil)
@@ -73,15 +71,16 @@ defmodule OpenCV.PCA.Test do
           evec11 = Nx.slice(eigenvectors, [1, 1], [1, 1]) |> Nx.to_flat_list() |> Enum.at(0)
 
           p1 =
-            {trunc(centre_x + 0.02 * evec00 * eval00), trunc(centre_y + 0.02 * evec01 * eval00)}
+            {trunc(Float.round(centre_x + 0.02 * evec00 * eval00)), trunc(Float.round(centre_y + 0.02 * evec01 * eval00))}
 
           p2 =
-            {trunc(centre_x - 0.02 * evec10 * eval10), trunc(centre_y - 0.02 * evec11 * eval10)}
+            {trunc(Float.round(centre_x - 0.02 * evec10 * eval10)), trunc(Float.round(centre_y - 0.02 * evec11 * eval10))}
 
           cntr = [centre_x, centre_y]
           [{cntr, p1, p2} | acc]
       end
 
+    pca_analysis = Enum.reverse(pca_analysis)
     assert 6 == Enum.count(pca_analysis)
 
     {:ok, src} =
@@ -94,7 +93,7 @@ defmodule OpenCV.PCA.Test do
         src
     end
 
-    src = for {cntr, p1, p2, _} <- pca_analysis, reduce: src do
+    src = for {cntr, p1, p2} <- pca_analysis, reduce: src do
       src ->
         {:ok, src} = OpenCV.circle(src, cntr, 3, [255, 0, 255], thickness: 2)
         {:ok, src} = drawAxis(src, List.to_tuple(cntr), p1, [0, 255, 0], 1)
@@ -102,7 +101,7 @@ defmodule OpenCV.PCA.Test do
         src
     end
 
-    output_path = Path.join(__DIR__, "opencv_pca_testout.png")
+    output_path = Path.join(__DIR__, "opencv_pca_test_out.png")
     OpenCV.imwrite(output_path, src)
     File.rm!(output_path)
   end
