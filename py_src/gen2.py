@@ -418,7 +418,8 @@ class ClassInfo(object):
         sorted_props.sort()
 
         methods = self.methods.copy()
-        if self.base and self.cname.startswith("cv::ml"):
+
+        if self.base and (self.cname.startswith("cv::ml") or "Calibrate" in self.cname):
             if self.base in codegen.classes:
                 base_class = codegen.classes[self.base]
                 for base_method_name in base_class.methods:
@@ -508,7 +509,7 @@ class ClassInfo(object):
         methods_inits = StringIO()
 
         methods = self.methods.copy()
-        if self.base and self.cname.startswith("cv::ml"):
+        if self.base and (self.cname.startswith("cv::ml") or "Calibrate" in self.cname):
             if self.base in codegen.classes:
                 base_class = codegen.classes[self.base]
                 for base_method_name in base_class.methods:
