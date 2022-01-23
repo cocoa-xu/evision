@@ -60,7 +60,7 @@ static ERL_NIF_TERM evision_cv_mat_as_type(ErlNifEnv *env, int argc, const ERL_N
             if (get_binary_type(t, l, 0, type)) {
                 Mat ret;
                 img.convertTo(ret, type);
-                return evision::nif::ok(env, evision_from(env, img));
+                return evision::nif::ok(env, evision_from(env, ret));
             } else {
                 return evision::nif::error(env, "unsupported target type");
             }
@@ -159,33 +159,40 @@ static ERL_NIF_TERM evision_cv_mat_to_binary(ErlNifEnv *env, int argc, const ERL
 int get_binary_type(const std::string& t, int l, int n, int& type) {
     if (t == "u") {
         if (l == 8) {
-            type = CV_8UC(n);
+            if (n != 0) type = CV_8UC(n);
+            else type = CV_8U;
             return true;
         }
         if (l == 16) {
-            type = CV_16UC(n);
+            if (n != 0) type = CV_16UC(n);
+            else type = CV_16U;
             return true;
         }
     } else if (t == "s") {
         if (l == 8) {
-            type = CV_8SC(n);
+            if (n != 0) type = CV_8SC(n);
+            else type = CV_8S;
             return true;
         }
         if (l == 16) {
-            type = CV_16SC(n);
+            if (n != 0) type = CV_16SC(n);
+            else type = CV_16S;
             return true;
         }
         if (l == 32) {
-            type = CV_32SC(n);
+            if (n != 0) type = CV_32SC(n);
+            else type = CV_32S;
             return true;
         }
     } else if (t == "f") {
         if (l == 32) {
-            type = CV_32FC(n);
+            if (n != 0) type = CV_32FC(n);
+            else type = CV_32F;
             return true;
         }
         if (l == 64) {
-            type = CV_64FC(n);
+            if (n != 0) type = CV_64FC(n);
+            else type = CV_64F;
             return true;
         }
     }
