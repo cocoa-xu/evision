@@ -40,10 +40,7 @@ defmodule OpenCV.Nx do
         |> Nx.reshape(mat_shape)
 
       {:error, reason} ->
-        {:error, List.to_string(reason)}
-
-      _ ->
-        {:error, "unknown error"}
+        {:error, reason}
     end
   end
 
@@ -61,11 +58,7 @@ defmodule OpenCV.Nx do
         to_mat(Nx.to_binary(t), Nx.type(t), height, width, channels)
     
       shape ->
-        case OpenCV.Mat.from_binary_by_shape(Nx.to_binary(t), Nx.type(t), shape) do
-          {:ok, mat} -> {:ok, mat}
-          {:error, reason} -> {:error, List.to_string(reason)}
-          _ -> {:error, "unknown error"}
-        end
+        OpenCV.Mat.from_binary_by_shape(Nx.to_binary(t), Nx.type(t), shape)
     end
   end
 
@@ -77,15 +70,6 @@ defmodule OpenCV.Nx do
           pos_integer()
         ) :: {:ok, reference()} | {:error, charlist()}
   defp to_mat(binary, type, cols, rows, channels) do
-    case OpenCV.Mat.from_binary(binary, type, cols, rows, channels) do
-      {:ok, mat} ->
-        {:ok, mat}
-
-      {:error, reason} ->
-        {:error, List.to_string(reason)}
-
-      _ ->
-        {:error, "unknown error"}
-    end
+    OpenCV.Mat.from_binary(binary, type, cols, rows, channels)
   end
 end
