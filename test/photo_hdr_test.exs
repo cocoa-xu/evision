@@ -4,6 +4,103 @@ defmodule OpenCV.Photo.HDR.Test do
 
   @moduletag timeout: 120_000
 
+  defmodule ReinterpretCast do
+    def cast(list, source_type, :binary) when is_list(list) do
+      case source_type do
+        {:i, bits, :little} ->
+          list
+          |> Enum.into(<<>>, fn data ->
+            << data::integer()-size(bits)-little >>
+          end)
+        {:i, bits, :big} ->
+          list
+          |> Enum.into(<<>>, fn data ->
+            << data::integer()-size(bits)-big >>
+          end)
+        {:f, bits, :little} ->
+          list
+          |> Enum.into(<<>>, fn data ->
+            << data::float()-size(bits)-little >>
+          end)
+        {:f, bits, :big} ->
+          list
+          |> Enum.into(<<>>, fn data ->
+            << data::float()-size(bits)-big >>
+          end)
+      end
+    end
+
+    def cast(list, source_type, target_type) do
+      list
+      |> cast(source_type, :binary)
+      |> cast(target_type)
+    end
+
+    def cast(binary, {type, bits, endianness})
+    when is_binary(binary) and (type == :i or type == :f) and (endianness == :little or endianness == :big) do
+      with 0 <- rem(bits, 8),
+           chunk_size <- div(bits, 8),
+           0 <- rem(byte_size(binary), div(bits, 8)) do
+        binary
+        |> chunk_binary(chunk_size)
+        |> _cast({type, bits, endianness})
+      end
+    end
+
+    defp _cast(binary_chunks, {:i, bits, :little}) do
+      binary_chunks
+      |> Enum.into([], fn chunk ->
+        << to::integer()-size(bits)-little >> = chunk
+        to
+      end)
+    end
+
+    defp _cast(binary_chunks, {:i, bits, :big}) do
+      binary_chunks
+      |> Enum.into([], fn chunk ->
+        << to::integer()-size(bits)-big >> = chunk
+        to
+      end)
+    end
+
+    defp _cast(binary_chunks, {:f, bits, :little}) do
+      binary_chunks
+      |> Enum.into([], fn chunk ->
+        << to::float()-size(bits)-little >> = chunk
+        to
+      end)
+    end
+
+    defp _cast(binary_chunks, {:f, bits, :big}) do
+      binary_chunks
+      |> Enum.into([], fn chunk ->
+        << to::float()-size(bits)-big >> = chunk
+        to
+      end)
+    end
+
+    defp chunk_binary(binary, chunk_size) when is_binary(binary) do
+      total_bytes = byte_size(binary)
+      full_chunks = div(total_bytes, chunk_size)
+      chunks =
+        if full_chunks > 0 do
+          for i <- 0..(full_chunks-1), reduce: [] do
+            acc -> [:binary.part(binary, chunk_size * i, chunk_size) | acc]
+          end
+        else
+          []
+        end
+      remaining = rem(total_bytes, chunk_size)
+      chunks =
+        if remaining > 0 do
+          [:binary.part(binary, chunk_size * full_chunks, remaining) | chunks]
+        else
+          chunks
+        end
+      Enum.reverse(chunks)
+    end
+  end
+
   @tag :photo
   @tag :require_downloading
   test "High Dynamic Range Imaging" do
@@ -80,8 +177,25 @@ defmodule OpenCV.Photo.HDR.Test do
       t
       |> Nx.multiply(255)
       |> Nx.clip(0, 255)
-      |> Nx.as_type({:u, 8})
+
+    f32_shape = Nx.shape(t)
     t
+      |> Nx.to_binary()
+      |> ReinterpretCast.cast({:i, 32, :little})
+      |> Enum.map(fn i32 ->
+        case i32 do
+          # <<0, 0, 192, 255>>, i.e, NaN
+          4290772992 -> 0
+          # <<>>, i.e., INFINITY
+          2139095040 -> 0
+          # legal values
+          _ -> i32
+        end
+      end)
+      |> ReinterpretCast.cast({:i, 32, :little}, :binary)
+      |> Nx.from_binary({:f, 32})
+      |> Nx.reshape(f32_shape)
+      |> Nx.as_type({:u, 8})
       |> OpenCV.Nx.to_mat
       |> then(&OpenCV.imwrite(output_ldr_file, elem(&1, 1)))
 
