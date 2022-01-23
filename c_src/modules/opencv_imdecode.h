@@ -37,7 +37,7 @@ static ERL_NIF_TERM evision_cv_imdecode(ErlNifEnv *env, int argc, const ERL_NIF_
     }
 
     if (error_term != 0) return error_term;
-    else return evision::nif::atom(env, "nil");
+    else return evision::nif::error(env, "overload resolution failed");
 }
 
 #endif // EVISION_OPENCV_IMDECODE_H

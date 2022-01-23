@@ -12,8 +12,8 @@ defmodule OpenCV.ML.SVM.Test do
       OpenCV.Mat.from_binary(
         Enum.into(labels, <<>>, fn d -> <<d::integer()-size(32)-little>> end),
         {:s, 32},
-        1,
         4,
+        1,
         1
       )
 
@@ -21,15 +21,15 @@ defmodule OpenCV.ML.SVM.Test do
       OpenCV.Mat.from_binary(
         Enum.into(List.flatten(training_data), <<>>, fn d -> <<d::float()-size(32)-little>> end),
         {:f, 32},
-        2,
         4,
+        2,
         1
       )
 
     {:ok, svm} = OpenCV.ML.SVM.create()
-    {:ok, _svm} = OpenCV.ML.SVM.setType(svm, OpenCV.cv_C_SVC())
-    {:ok, _svm} = OpenCV.ML.SVM.setKernel(svm, OpenCV.cv_LINEAR())
-    {:ok, _svm} = OpenCV.ML.SVM.setTermCriteria(svm, {OpenCV.cv_MAX_ITER(), 100, 0.000001})
+    {:ok, svm} = OpenCV.ML.SVM.setType(svm, OpenCV.cv_C_SVC())
+    {:ok, svm} = OpenCV.ML.SVM.setKernel(svm, OpenCV.cv_LINEAR())
+    {:ok, svm} = OpenCV.ML.SVM.setTermCriteria(svm, {OpenCV.cv_MAX_ITER(), 100, 0.000001})
     assert :ok = OpenCV.ML.SVM.train(svm, training_data_mat, OpenCV.cv_ROW_SAMPLE(), labels_mat)
     assert :ok = OpenCV.ML.SVM.isTrained(svm)
 
@@ -67,8 +67,8 @@ defmodule OpenCV.ML.SVM.Test do
             OpenCV.Mat.from_binary(
               <<y::float()-size(32)-little, x::float()-size(32)-little>>,
               {:f, 32},
-              2,
               1,
+              2,
               1
             )
 

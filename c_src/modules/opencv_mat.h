@@ -4,6 +4,8 @@
 #include <erl_nif.h>
 #include "../nif_utils.hpp"
 
+int get_binary_type(const std::string& t, int l, int n, int& type);
+
 // @evision c: evision_cv_mat_type, 1
 // @evision nif: def evision_cv_mat_type(_opts \\ []), do: :erlang.nif_error("Mat::type not loaded")
 static ERL_NIF_TERM evision_cv_mat_type(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
@@ -34,7 +36,39 @@ static ERL_NIF_TERM evision_cv_mat_type(ErlNifEnv *env, int argc, const ERL_NIF_
     }
 
     if (error_term != 0) return error_term;
-    else return evision::nif::atom(env, "nil");
+    else return evision::nif::error(env, "overload resolution failed");
+}
+
+// @evision c: evision_cv_mat_as_type, 1
+// @evision nif: def evision_cv_mat_as_type(_opts \\ []), do: :erlang.nif_error("Mat::as_type not loaded")
+static ERL_NIF_TERM evision_cv_mat_as_type(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
+    using namespace cv;
+    ERL_NIF_TERM error_term = 0;
+    std::map<std::string, ERL_NIF_TERM> erl_terms;
+    int nif_opts_index = 0;
+    evision::nif::parse_arg(env, nif_opts_index, argv, erl_terms);
+
+    {
+        Mat img;
+        std::string t;
+        int l = 0;
+        int type;
+
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0)) &&
+            evision_to_safe(env, evision_get_kw(env, erl_terms, "t"), t, ArgInfo("t", 0)) &&
+            evision_to_safe(env, evision_get_kw(env, erl_terms, "l"), l, ArgInfo("l", 0))) {
+            if (get_binary_type(t, l, 0, type)) {
+                Mat ret;
+                img.convertTo(ret, type);
+                return evision::nif::ok(env, evision_from(env, ret));
+            } else {
+                return evision::nif::error(env, "unsupported target type");
+            }
+        }
+    }
+
+    if (error_term != 0) return error_term;
+    else return evision::nif::error(env, "overload resolution failed");
 }
 
 // @evision c: evision_cv_mat_shape, 1
@@ -68,7 +102,7 @@ static ERL_NIF_TERM evision_cv_mat_shape(ErlNifEnv *env, int argc, const ERL_NIF
     }
 
     if (error_term != 0) return error_term;
-    else return evision::nif::atom(env, "nil");
+    else return evision::nif::error(env, "overload resolution failed");
 }
 
 // @evision c: evision_cv_mat_clone, 1
@@ -82,17 +116,16 @@ static ERL_NIF_TERM evision_cv_mat_clone(ErlNifEnv *env, int argc, const ERL_NIF
 
     {
         Mat img;
-        Mat img_clone;
 
         // const char *keywords[] = {"img", NULL};
         if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0))) {
-            img_clone = img.clone();
-            return evision::nif::ok(env, evision_from(env, img_clone));
+            // no need to do clone here as evision_from will copy the data
+            return evision::nif::ok(env, evision_from(env, img));
         }
     }
 
     if (error_term != 0) return error_term;
-    else return evision::nif::atom(env, "nil");
+    else return evision::nif::error(env, "overload resolution failed");
 }
 
 // @evision c: evision_cv_mat_to_binary, 1
@@ -120,39 +153,46 @@ static ERL_NIF_TERM evision_cv_mat_to_binary(ErlNifEnv *env, int argc, const ERL
     }
 
     if (error_term != 0) return error_term;
-    else return evision::nif::atom(env, "nil");
+    else return evision::nif::error(env, "overload resolution failed");
 }
 
 int get_binary_type(const std::string& t, int l, int n, int& type) {
     if (t == "u") {
         if (l == 8) {
-            type = CV_8UC(n);
+            if (n != 0) type = CV_8UC(n);
+            else type = CV_8U;
             return true;
         }
         if (l == 16) {
-            type = CV_16UC(n);
+            if (n != 0) type = CV_16UC(n);
+            else type = CV_16U;
             return true;
         }
     } else if (t == "s") {
         if (l == 8) {
-            type = CV_8SC(n);
+            if (n != 0) type = CV_8SC(n);
+            else type = CV_8S;
             return true;
         }
         if (l == 16) {
-            type = CV_16SC(n);
+            if (n != 0) type = CV_16SC(n);
+            else type = CV_16S;
             return true;
         }
         if (l == 32) {
-            type = CV_32SC(n);
+            if (n != 0) type = CV_32SC(n);
+            else type = CV_32S;
             return true;
         }
     } else if (t == "f") {
         if (l == 32) {
-            type = CV_32FC(n);
+            if (n != 0) type = CV_32FC(n);
+            else type = CV_32F;
             return true;
         }
         if (l == 64) {
-            type = CV_64FC(n);
+            if (n != 0) type = CV_64FC(n);
+            else type = CV_64F;
             return true;
         }
     }
@@ -202,7 +242,7 @@ static ERL_NIF_TERM evision_cv_mat_from_binary(ErlNifEnv *env, int argc, const E
     }
 
     if (error_term != 0) return error_term;
-    else return evision::nif::atom(env, "nil");
+    else return evision::nif::error(env, "overload resolution failed");
 }
 
 // @evision c: evision_cv_mat_from_binary_by_shape, 1
@@ -251,7 +291,7 @@ static ERL_NIF_TERM evision_cv_mat_from_binary_by_shape(ErlNifEnv *env, int argc
     }
 
     if (error_term != 0) return error_term;
-    else return evision::nif::atom(env, "nil");
+    else return evision::nif::error(env, "overload resolution failed");
 }
 
 #endif // EVISION_OPENCV_MAT_H

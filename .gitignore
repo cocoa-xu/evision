@@ -24,3 +24,4 @@ erl_crash.dump
 3rd_party/opencv
 /lib/generated
 test/models/
+test/photo_hdr_test/

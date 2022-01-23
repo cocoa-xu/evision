@@ -46,8 +46,16 @@ namespace evision
     ERL_NIF_TERM error(ErlNifEnv *env, const char *msg)
     {
       ERL_NIF_TERM atom = enif_make_atom(env, "error");
-      ERL_NIF_TERM msg_term = enif_make_string(env, msg, ERL_NIF_LATIN1);
-      return enif_make_tuple2(env, atom, msg_term);
+      ERL_NIF_TERM reason;
+      unsigned char * ptr;
+      size_t len = strlen(msg);
+      if ((ptr = enif_make_new_binary(env, len, &reason)) != nullptr) {
+          strcpy((char *)ptr, msg);
+          return enif_make_tuple2(env, atom, reason);
+      } else {
+          ERL_NIF_TERM msg_term = enif_make_string(env, msg, ERL_NIF_LATIN1);
+          return enif_make_tuple2(env, atom, msg_term);
+      }
     }
 
     // Helper for returning `{:ok, term}` from NIF.
@@ -300,6 +308,44 @@ namespace evision
       }
       return 1;
     }
+
+      int get_list(ErlNifEnv *env, ERL_NIF_TERM list, std::vector<double> &var)
+      {
+          unsigned int length;
+          if (!enif_get_list_length(env, list, &length))
+              return 0;
+          var.reserve(length);
+          ERL_NIF_TERM head, tail;
+
+          while (enif_get_list_cell(env, list, &head, &tail))
+          {
+              double elem;
+              if (!get(env, head, &elem))
+                  return 0;
+              var.push_back(elem);
+              list = tail;
+          }
+          return 1;
+      }
+
+      int get_list(ErlNifEnv *env, ERL_NIF_TERM list, std::vector<float> &var)
+      {
+          unsigned int length;
+          if (!enif_get_list_length(env, list, &length))
+              return 0;
+          var.reserve(length);
+          ERL_NIF_TERM head, tail;
+
+          while (enif_get_list_cell(env, list, &head, &tail))
+          {
+              double elem;
+              if (!get(env, head, &elem))
+                  return 0;
+              var.push_back(static_cast<float>(elem));
+              list = tail;
+          }
+          return 1;
+      }
 
     inline int allowed_spec(char t) {
         return (t == 's' || t == 'b' || t == 'h' || t == 'i' || t == 'I' || t == 'l' || t == 'L' \

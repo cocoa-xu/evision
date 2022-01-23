@@ -47,6 +47,7 @@ defmodule OpenCV.VideoWriter.Test do
   end
 
   @tag :video
+  @tag :require_ffmpeg
   test "open a video file, read one frame and write a video@30FPS, duration 2 seconds" do
     input_video_file = Path.join(__DIR__, "videocapture_test.mp4")
     output_video_file = Path.join(__DIR__, "videowriter_test.mp4")

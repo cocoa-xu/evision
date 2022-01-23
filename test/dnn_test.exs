@@ -225,6 +225,7 @@ defmodule OpenCV.DNN.Test do
   end
 
   @tag :dnn
+  @tag :require_downloading
   test "load ssd_mobilenet_v2 and do inference" do
     io =
       capture_io(fn ->

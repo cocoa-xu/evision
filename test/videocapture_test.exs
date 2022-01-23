@@ -4,6 +4,7 @@ defmodule OpenCV.VideoCapture.Test do
   @moduletag timeout: 120_000
 
   @tag :video
+  @tag :require_ffmpeg
   test "open a video file and read one frame" do
     ret =
       Path.join(__DIR__, "videocapture_test.mp4")

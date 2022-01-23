@@ -51,14 +51,14 @@ labels = [1, -1, -1, -1]
 training_data = [[501, 10], [255, 10], [501, 255], [10, 501]]
 
 {:ok, labels_mat} =
-  OpenCV.Mat.from_binary(Enum.into(labels, <<>>, fn d -> << d::integer()-size(32)-little >> end), {:s, 32}, 1, 4, 1)
+  OpenCV.Mat.from_binary(Enum.into(labels, <<>>, fn d -> << d::integer()-size(32)-little >> end), {:s, 32}, 4, 1, 1)
 
 {:ok, training_data_mat} =
   OpenCV.Mat.from_binary(
     Enum.into(List.flatten(training_data), <<>>, fn d -> << d::float()-size(32)-little >> end),
     {:f, 32},
-    2,
     4,
+    2,
     1
   )
 ```
@@ -105,7 +105,7 @@ height = 512
 response_data =
   for x <- (width-1)..0, y <- (height-1)..0, reduce: [] do
     acc ->
-      {:ok, sample} = OpenCV.Mat.from_binary(<< y::float()-size(32)-little, x::float()-size(32)-little >>, {:f, 32}, 2, 1, 1)
+      {:ok, sample} = OpenCV.Mat.from_binary(<< y::float()-size(32)-little, x::float()-size(32)-little >>, {:f, 32}, 1, 2, 1)
       {:ok, {_, response_mat}} = OpenCV.ML.SVM.predict(svm, sample)
       assert {:ok, {1, 1}} = OpenCV.Mat.shape(response_mat)
       {:ok, << response::float()-size(32)-little >>} = OpenCV.Mat.to_binary(response_mat)
@@ -120,7 +120,7 @@ response_data =
   end
 
 response_data = response_data |> List.flatten |> IO.iodata_to_binary
-{:ok, response_map} = OpenCV.Mat.from_binary(response_data, {:u, 8}, width, height, 3)
+{:ok, response_map} = OpenCV.Mat.from_binary(response_data, {:u, 8}, height, width, 3)
 
 # show the training data
 thickness = 1

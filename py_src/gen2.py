@@ -418,7 +418,8 @@ class ClassInfo(object):
         sorted_props.sort()
 
         methods = self.methods.copy()
-        if self.base and self.cname.startswith("cv::ml"):
+
+        if self.base and (self.cname.startswith("cv::ml") or "Calibrate" in self.cname):
             if self.base in codegen.classes:
                 base_class = codegen.classes[self.base]
                 for base_method_name in base_class.methods:
@@ -508,7 +509,7 @@ class ClassInfo(object):
         methods_inits = StringIO()
 
         methods = self.methods.copy()
-        if self.base and self.cname.startswith("cv::ml"):
+        if self.base and (self.cname.startswith("cv::ml") or "Calibrate" in self.cname):
             if self.base in codegen.classes:
                 base_class = codegen.classes[self.base]
                 for base_method_name in base_class.methods:
@@ -1035,9 +1036,9 @@ class FuncInfo(object):
             code += '    \n'.join(gen_template_overloaded_function_call.substitute(variant=v)
                                   for v in all_code_variants)
 
-        def_ret = "if (error_term != 0) return error_term;\n    else return evision::nif::atom(env, \"nil\");"
+        def_ret = "if (error_term != 0) return error_term;\n    else return evision::nif::error(env, \"overload resolution failed\");"
         if self.isconstructor:
-            def_ret = "return evision::nif::atom(env, \"nil\");"
+            def_ret = "return evision::nif::error(env, \"overload resolution failed\");"
         code += "\n    %s\n}\n\n" % def_ret
 
         cname = self.cname
