@@ -28,7 +28,7 @@ defmodule OpenCV.Nx do
   ```
   """
   @doc namespace: :external
-  @spec to_mat(reference()) :: {:ok, reference()} | {:error, String.t()}
+  @spec to_nx(reference()) :: {:ok, reference()} | {:error, String.t()}
   def to_nx(mat) do
     with {:ok, mat_type} <- OpenCV.Mat.type(mat),
          {:ok, mat_shape} <- OpenCV.Mat.shape(mat),
@@ -67,7 +67,7 @@ defmodule OpenCV.Nx do
           pos_integer(),
           pos_integer()
         ) :: {:ok, reference()} | {:error, charlist()}
-  defp to_mat(binary, type, cols, rows, channels) do
-    OpenCV.Mat.from_binary(binary, type, cols, rows, channels)
+  defp to_mat(binary, type, rows, cols, channels) do
+    OpenCV.Mat.from_binary(binary, type, rows, cols, channels)
   end
 end
