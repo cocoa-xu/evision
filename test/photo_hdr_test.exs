@@ -76,12 +76,36 @@ defmodule OpenCV.Photo.HDR.Test do
     t =
       ldr
       |> OpenCV.Nx.to_nx()
-    t =
-      t
       |> Nx.multiply(255)
       |> Nx.clip(0, 255)
-      |> Nx.as_type({:u, 8})
+
+    nan          = << 0, 0, 192, 255 >>
+    positive_inf = << 0, 0, 128, 127 >>
+    negative_inf = << 0, 0, 128, 255 >>
+    f32_shape = Nx.shape(t)
     t
+      |> Nx.to_binary()
+      |> OpenCV.TestHelper.chunk_binary(4)
+      |> Enum.map(fn f32 ->
+        case f32 do
+          ^nan ->
+            << 0, 0, 0, 0 >>
+
+          ^positive_inf ->
+            << 0, 0, 0, 0 >>
+
+          ^negative_inf ->
+            << 0, 0, 0, 0 >>
+
+          # legal value
+          _ ->
+            f32
+        end
+      end)
+      |> IO.iodata_to_binary()
+      |> Nx.from_binary({:f, 32})
+      |> Nx.reshape(f32_shape)
+      |> Nx.as_type({:u, 8})
       |> OpenCV.Nx.to_mat
       |> then(&OpenCV.imwrite(output_ldr_file, elem(&1, 1)))
 
