@@ -25,6 +25,37 @@ defmodule OpenCV.TestHelper do
 
     File.write!(save_as, body)
   end
+
+  @doc """
+  This function chunks binary data by every requested `chunk_size`
+
+  To make it more general, this function allows the length of the last chunk
+  to be less than the request `chunk_size`.
+
+  For example, if you have a 7-byte binary data, and you'd like to chunk it by every
+  4 bytes, then this function will return two chunks with the first gives you the
+  byte 0 to 3, and the second one gives byte 4 to 6.
+  """
+  def chunk_binary(binary, chunk_size) when is_binary(binary) do
+    total_bytes = byte_size(binary)
+    full_chunks = div(total_bytes, chunk_size)
+    chunks =
+      if full_chunks > 0 do
+        for i <- 0..(full_chunks-1), reduce: [] do
+          acc -> [:binary.part(binary, chunk_size * i, chunk_size) | acc]
+        end
+      else
+        []
+      end
+    remaining = rem(total_bytes, chunk_size)
+    chunks =
+      if remaining > 0 do
+        [:binary.part(binary, chunk_size * full_chunks, remaining) | chunks]
+      else
+        chunks
+      end
+    Enum.reverse(chunks)
+  end
 end
 
 compiled_modules = OpenCV.__enabled_modules__()
