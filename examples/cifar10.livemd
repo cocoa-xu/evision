@@ -21,7 +21,7 @@ Mix.install([
   {:torchx, "~> 0.1.0-dev", github: "elixir-nx/nx", sparse: "torchx"},
   {:nx, "~> 0.1.0-dev", github: "elixir-nx/nx", sparse: "nx", override: true},
   {:evision, "~> 0.1.0-dev", github: "cocoa-xu/evision", branch: "main"},
-  {:kino, "~> 0.3.1"},
+  {:kino, "~> 0.5.1"},
   {:scidata, "~> 0.1.1"}
 ])
 ```
