@@ -155,11 +155,8 @@ defmodule OpenCV.DNN.Test do
         model_class_list
       )
 
-      model_graph_pb =
-        __DIR__
-        |> Path.join("models")
-        |> Path.join("ssd_mobilenet_v2_coco_2018_03_29")
-        |> Path.join("frozen_inference_graph.pb")
+      File.mkdir_p!(Path.join([__DIR__, "models", "ssd_mobilenet_v2_coco_2018_03_29"]))
+      model_graph_pb = Path.join([__DIR__, "models", "ssd_mobilenet_v2_coco_2018_03_29", "frozen_inference_graph.pb"])
 
       model_tar =
         __DIR__
@@ -181,8 +178,7 @@ defmodule OpenCV.DNN.Test do
             |> Enum.map(fn {filename, content} -> {List.to_string(filename), content} end)
             |> Enum.reject(&elem(&1, 0) != "ssd_mobilenet_v2_coco_2018_03_29/frozen_inference_graph.pb")
             |> Enum.at(0)
-            |> then(fn {filename, content} ->
-              File.mkdir_p!("models/ssd_mobilenet_v2_coco_2018_03_29")
+            |> then(fn {_, content} ->
               File.write!(model_graph_pb, content)
               :ok
             end)
