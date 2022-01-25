@@ -182,8 +182,8 @@ defmodule OpenCV.DNN.Test do
             |> Enum.reject(&elem(&1, 0) != "ssd_mobilenet_v2_coco_2018_03_29/frozen_inference_graph.pb")
             |> Enum.at(0)
             |> then(fn {filename, content} ->
-              File.mkdir_p!("ssd_mobilenet_v2_coco_2018_03_29")
-              File.write!(filename, content)
+              File.mkdir_p!("models/ssd_mobilenet_v2_coco_2018_03_29")
+              File.write!(model_graph_pb, content)
               :ok
             end)
         else
