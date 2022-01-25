@@ -15,7 +15,7 @@
 # System.cmd("apt", ["update"])
 # System.cmd("apt", ["install", "-y", "unzip", "python3"])
 
-# If you are using the nerves pre-built firmware
+# If you are using the pre-built nerves firmware
 # you can comment out the following installation step
 Mix.install([
   {:torchx, "~> 0.1.0-dev", github: "elixir-nx/nx", sparse: "torchx"},

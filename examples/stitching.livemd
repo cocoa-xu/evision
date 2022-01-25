@@ -7,14 +7,16 @@
 ```elixir
 # a quick fix for the free tier livebook session
 ## allocate 2GB swap
-System.cmd("fallocate", ["-l", "2G", "/swap"])
-System.cmd("chmod", ["400", "/swap"])
-System.cmd("mkswap", ["/swap"])
-System.cmd("swapon", ["/swap"])
+# System.cmd("fallocate", ["-l", "2G", "/swap"])
+# System.cmd("chmod", ["400", "/swap"])
+# System.cmd("mkswap", ["/swap"])
+# System.cmd("swapon", ["/swap"])
 ## need unzip to unzip the source code
-System.cmd("apt", ["update"])
-System.cmd("apt", ["install", "-y", "unzip", "python3"])
+# System.cmd("apt", ["update"])
+# System.cmd("apt", ["install", "-y", "unzip", "python3"])
 
+# If you are using the pre-built nerves firmware
+# you can comment out the following installation step
 Mix.install([
   {:evision, "~> 0.1.0-dev", github: "cocoa-xu/evision", branch: "main"},
   {:kino, "~> 0.3.1"}

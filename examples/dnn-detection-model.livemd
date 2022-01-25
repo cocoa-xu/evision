@@ -15,7 +15,7 @@
 # System.cmd("apt", ["update", "-q", "-y"])
 # System.cmd("apt", ["install", "-y", "unzip", "python3", "cmake"])
 
-# If you are using the nerves pre-built firmware
+# If you are using the pre-built nerves firmware
 # you can comment out the following installation step
 Mix.install([
   {:evision, "~> 0.1.0-dev", github: "cocoa-xu/evision", branch: "main"},
