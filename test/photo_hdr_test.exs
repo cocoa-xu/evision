@@ -73,18 +73,13 @@ defmodule OpenCV.Photo.HDR.Test do
       |> then(&OpenCV.imwrite(output_fusion_file, elem(&1, 1)))
 
     output_ldr_file = Path.join([__DIR__, "photo_hdr_test", "ldr.png"])
-    t =
-      ldr
-      |> OpenCV.Nx.to_nx()
-      |> Nx.multiply(255)
-      |> Nx.clip(0, 255)
-
+    {:ok, f32_shape} = OpenCV.Mat.shape(ldr)
     nan          = << 0, 0, 192, 255 >>
     positive_inf = << 0, 0, 128, 127 >>
     negative_inf = << 0, 0, 128, 255 >>
-    f32_shape = Nx.shape(t)
-    t
-      |> Nx.to_binary()
+    ldr
+      |> OpenCV.Mat.to_binary()
+      |> elem(1)
       |> OpenCV.TestHelper.chunk_binary(4)
       |> Enum.map(fn f32 ->
         case f32 do
@@ -105,6 +100,8 @@ defmodule OpenCV.Photo.HDR.Test do
       |> IO.iodata_to_binary()
       |> Nx.from_binary({:f, 32})
       |> Nx.reshape(f32_shape)
+      |> Nx.multiply(255)
+      |> Nx.clip(0, 255)
       |> Nx.as_type({:u, 8})
       |> OpenCV.Nx.to_mat
       |> then(&OpenCV.imwrite(output_ldr_file, elem(&1, 1)))
