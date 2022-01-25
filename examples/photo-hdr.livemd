@@ -55,6 +55,37 @@ defmodule Helper do
 
     File.write!(save_as, body)
   end
+
+  @doc """
+  This function chunks binary data by every requested `chunk_size`
+
+  To make it more general, this function allows the length of the last chunk
+  to be less than the request `chunk_size`.
+
+  For example, if you have a 7-byte binary data, and you'd like to chunk it by every
+  4 bytes, then this function will return two chunks with the first gives you the
+  byte 0 to 3, and the second one gives byte 4 to 6.
+  """
+  def chunk_binary(binary, chunk_size) when is_binary(binary) do
+    total_bytes = byte_size(binary)
+    full_chunks = div(total_bytes, chunk_size)
+    chunks =
+      if full_chunks > 0 do
+        for i <- 0..(full_chunks-1), reduce: [] do
+          acc -> [:binary.part(binary, chunk_size * i, chunk_size) | acc]
+        end
+      else
+        []
+      end
+    remaining = rem(total_bytes, chunk_size)
+    chunks =
+      if remaining > 0 do
+        [:binary.part(binary, chunk_size * full_chunks, remaining) | chunks]
+      else
+        chunks
+      end
+    Enum.reverse(chunks)
+  end
 end
 ```
 
@@ -118,7 +149,7 @@ images =
   |> Enum.map(&elem(&1, 0))
 
 # `times` HAS to be float32, otherwise OpenCV will crash
-{:ok, times } =
+{:ok, times} =
   exposure_sequences
   |> Enum.map(&elem(&1, 1))
   |> Enum.into(<<>>, fn d -> << d::float()-size(32)-little >> end)
@@ -184,17 +215,38 @@ result
 ### Write LDR image
 ```elixir
 output_ldr_file = Path.join([__DIR__, "photo_hdr_test", "ldr.png"])
-result =
-  ldr
-  |> OpenCV.Nx.to_nx()
+{:ok, f32_shape} = OpenCV.Mat.shape(ldr)
+nan          = << 0, 0, 192, 255 >>
+positive_inf = << 0, 0, 128, 127 >>
+negative_inf = << 0, 0, 128, 255 >>
+result = ldr
+  |> OpenCV.Mat.to_binary()
+  |> elem(1)
+  |> Helper.chunk_binary(4)
+  |> Enum.map(fn f32 ->
+    case f32 do
+      ^nan ->
+        << 0, 0, 0, 0 >>
+
+      ^positive_inf ->
+        << 0, 0, 0, 0 >>
+
+      ^negative_inf ->
+        << 0, 0, 0, 0 >>
+
+      # legal value
+      _ ->
+        f32
+    end
+  end)
+  |> IO.iodata_to_binary()
+  |> Nx.from_binary({:f, 32})
+  |> Nx.reshape(f32_shape)
   |> Nx.multiply(255)
   |> Nx.clip(0, 255)
   |> Nx.as_type({:u, 8})
   |> OpenCV.Nx.to_mat
-  |> then(fn {:ok, result} ->
-    OpenCV.imwrite(output_ldr_file, result)
-    result
-  end)
+  |> elem(1)
 
 {:ok, result} = OpenCV.imencode(".png", result)
 result
