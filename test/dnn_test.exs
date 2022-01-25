@@ -168,31 +168,24 @@ defmodule OpenCV.DNN.Test do
 
       test_setup =
         if not File.exists?(model_graph_pb) do
-          tar = System.find_executable("tar")
+          Helper.download!(
+            "http://download.tensorflow.org/models/object_detection/ssd_mobilenet_v2_coco_2018_03_29.tar.gz",
+            model_tar
+          )
 
-          if is_binary(tar) do
-            OpenCV.TestHelper.download!(
-              "http://download.tensorflow.org/models/object_detection/ssd_mobilenet_v2_coco_2018_03_29.tar.gz",
-              model_tar
-            )
-
-            {stdout, status} =
-              System.cmd("tar", [
-                "-x",
-                "--directory",
-                Path.join(__DIR__, "models"),
-                "-f",
-                model_tar
-              ])
-
-            if status != 0 do
-              {:error, stdout}
-            else
+          model_tar
+            |> File.read!()
+            |> :zlib.gunzip()
+            |> then(&:erl_tar.extract({:binary, &1}, [:memory, :compressed]))
+            |> elem(1)
+            |> Enum.map(fn {filename, content} -> {List.to_string(filename), content} end)
+            |> Enum.reject(&elem(&1, 0) != "ssd_mobilenet_v2_coco_2018_03_29/frozen_inference_graph.pb")
+            |> Enum.at(0)
+            |> then(fn {filename, content} ->
+              File.mkdir_p!("ssd_mobilenet_v2_coco_2018_03_29")
+              File.write!(filename, content)
               :ok
-            end
-          else
-            {:error, "cannot find tar executable"}
-          end
+            end)
         else
           :ok
         end
