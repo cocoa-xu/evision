@@ -19,7 +19,7 @@
 # you can comment out the following installation step
 Mix.install([
   {:evision, "~> 0.1.0-dev", github: "cocoa-xu/evision", branch: "main"},
-  {:kino, "~> 0.3.1"}
+  {:kino, "~> 0.5.1"}
 ])
 ```
 
@@ -166,8 +166,7 @@ defmodule DetectionModel do
     |> String.split("\n")
   end
 
-  def predict(image_file, model, out_names, opts \\ []) do
-    {:ok, mat} = OpenCV.imread(image_file)
+  def predict(mat, model, out_names, opts \\ []) do
     {:ok, blob} = OpenCV.DNN.blobFromImage(mat, opts)
 
     {:ok, model} =
@@ -178,6 +177,11 @@ defmodule DetectionModel do
     end_time = :os.system_time(:millisecond)
     IO.puts("Inference time=>#{end_time - start_time} ms")
     {:ok, mat, detections}
+  end
+
+  def predict_file(image_file, model, out_names, opts \\ []) do
+    {:ok, mat} = OpenCV.imread(image_file)
+    predict(mat, model, out_names, opts)
   end
 
   def get_model(params, config, framework \\ "") do
@@ -207,7 +211,7 @@ Basic steps:
 
 ```elixir
 defmodule SSDMobileNetV2 do
-  def predict_and_show(filename, confidence_threshold \\ 0.5) do
+  defp download_model() do
     Helper.download!(
       "https://raw.githubusercontent.com/opencv/opencv_extra/master/testdata/dnn/ssd_mobilenet_v2_coco_2018_03_29.pbtxt",
       "ssd_mobilenet_v2_coco_2018_03_29.pbtxt"
@@ -218,63 +222,83 @@ defmodule SSDMobileNetV2 do
       "coco_names.txt"
     )
 
-    graph_pb = "frozen_inference_graph.pb"
+    graph_pb = "ssd_mobilenet_v2_coco_2018_03_29/frozen_inference_graph.pb"
 
-    :ok =
-        if !File.exists?(graph_pb) do
-          Helper.download!(
-            "http://download.tensorflow.org/models/object_detection/ssd_mobilenet_v2_coco_2018_03_29.tar.gz",
-            "ssd_mobilenet_v2_coco_2018_03_29.tar.gz"
-          )
+    if !File.exists?(graph_pb) do
+      Helper.download!(
+        "http://download.tensorflow.org/models/object_detection/ssd_mobilenet_v2_coco_2018_03_29.tar.gz",
+        "ssd_mobilenet_v2_coco_2018_03_29.tar.gz"
+      )
 
-          "ssd_mobilenet_v2_coco_2018_03_29.tar.gz"
-            |> File.read!()
-            |> :zlib.gunzip()
-            |> then(&:erl_tar.extract({:binary, &1}, [:memory, :compressed]))
-            |> elem(1)
-            |> Enum.map(fn {filename, content} -> {List.to_string(filename), content} end)
-            |> Enum.reject(&elem(&1, 0) != "ssd_mobilenet_v2_coco_2018_03_29/frozen_inference_graph.pb")
-            |> Enum.at(0)
-            |> then(fn {filename, content} ->
-                 File.mkdir_p!("ssd_mobilenet_v2_coco_2018_03_29")
-                 File.write!(filename, content)
-                 :ok
-              end)
-        else
-          :ok
-        end
-
-    if File.exists?(filename) do
-      {:ok, net, out_names} =
-        DetectionModel.get_model(
-          graph_pb,
-          "ssd_mobilenet_v2_coco_2018_03_29.pbtxt"
-        )
-
-      labels = DetectionModel.get_labels("coco_names.txt")
-
-      {:ok, mat, detections} =
-        DetectionModel.predict(filename, net, out_names,
-          scalefactor: 1,
-          swapRB: true,
-          mean: [0, 0, 0],
-          size: [300, 300]
-        )
-
-      {:ok, translated_outs} =
-        DetectionModel.postprocess(mat, detections, net, confidence_threshold)
-
-      DetectionModel.visualise_pred(mat, labels, translated_outs)
+      "ssd_mobilenet_v2_coco_2018_03_29.tar.gz"
+        |> File.read!()
+        |> :zlib.gunzip()
+        |> then(&:erl_tar.extract({:binary, &1}, [:memory, :compressed]))
+        |> elem(1)
+        |> Enum.map(fn {filename, content} -> {List.to_string(filename), content} end)
+        |> Enum.reject(&elem(&1, 0) != "ssd_mobilenet_v2_coco_2018_03_29/frozen_inference_graph.pb")
+        |> Enum.at(0)
+        |> then(fn {_filename, content} ->
+              File.mkdir_p!("ssd_mobilenet_v2_coco_2018_03_29")
+              File.write!(graph_pb, content)
+              :ok
+          end)
     else
-      {:error, "cannot find #{filename}"}
+      :ok
     end
+  end
+
+  def get_detection_model() do
+    :ok = download_model()
+    graph_pb = "ssd_mobilenet_v2_coco_2018_03_29/frozen_inference_graph.pb"
+    {:ok, net, out_names} =
+      DetectionModel.get_model(
+        graph_pb,
+        "ssd_mobilenet_v2_coco_2018_03_29.pbtxt"
+      )
+
+    labels = DetectionModel.get_labels("coco_names.txt")
+    {net, out_names, labels}
+  end
+
+  def predict_file_and_show(filename, confidence_threshold \\ 0.5) when is_binary(filename) do
+    {net, out_names, labels} = get_detection_model()
+    {:ok, mat, detections} =
+      DetectionModel.predict_file(filename, net, out_names,
+        scalefactor: 1,
+        swapRB: true,
+        mean: [0, 0, 0],
+        size: [300, 300]
+      )
+
+    {:ok, translated_outs} =
+      DetectionModel.postprocess(mat, detections, net, confidence_threshold)
+
+    DetectionModel.visualise_pred(mat, labels, translated_outs)
+  end
+
+  def predict_and_show(net, out_names, labels, mat, confidence_threshold \\ 0.5)
+  when is_reference(mat) do
+    {:ok, mat, detections} =
+      DetectionModel.predict(mat, net, out_names,
+        scalefactor: 1,
+        swapRB: true,
+        mean: [0, 0, 0],
+        size: [300, 300]
+      )
+
+    {:ok, translated_outs} =
+      DetectionModel.postprocess(mat, detections, net, confidence_threshold)
+
+    DetectionModel.visualise_pred(mat, labels, translated_outs)
   end
 end
 ```
 
+### Detect objects in an image file
 ```elixir
 Helper.download!("https://raw.githubusercontent.com/cocoa-xu/evision/main/test/dnn_detection_test.jpg", "dnn_detection_test.jpg")
-{:ok, mat} = SSDMobileNetV2.predict_and_show("dnn_detection_test.jpg")
+{:ok, mat} = SSDMobileNetV2.predict_file_and_show("dnn_detection_test.jpg")
 ```
 
 ```elixir
@@ -282,4 +306,52 @@ OpenCV.imencode(".png", mat)
 |> then(fn {:ok, val} -> val end)
 |> IO.iodata_to_binary()
 |> Kino.Image.new(:png)
+```
+
+### Detect objects in a video stream
+```elixir
+# if you have a camera available
+# uncomment the line below
+# {:ok, video} = OpenCV.VideoCapture.videoCapture(0)
+
+# or the OpenCV library you compiled can decode video files
+# uncomment the line below
+# {:ok, video} = OpenCV.VideoCapture.videoCapture("/path/to/your/video/file")
+```
+
+```elixir
+defmodule VideoDetection do
+  def detect(video, widget, max_frames \\ 30*60)
+  when is_reference(video) and is_integer(max_frames) do
+    {net, out_names, labels} = SSDMobileNetV2.get_detection_model()
+    frame_read = OpenCV.VideoCapture.read(video)
+    _detect(net, out_names, labels, frame_read, video, widget, max_frames)
+  end
+
+  defp _detect(_, _, _, _, _, _, 0), do: :ok
+  defp _detect(net, out_names, labels, {:ok, frame}, video, widget, left_frames) when left_frames > 0 or left_frames < 0 do
+    {:ok, mat} = SSDMobileNetV2.predict_and_show(net, out_names, labels, frame)
+    OpenCV.imencode(".png", mat)
+    |> elem(1)
+    |> IO.iodata_to_binary()
+    |> Kino.Image.new(:png)
+    |> then(&Kino.Frame.render(widget, &1))
+    frame_read = OpenCV.VideoCapture.read(video)
+    if left_frames > 0 do
+      _detect(net, out_names, labels, frame_read, video, widget, left_frames - 1)
+    else
+      _detect(net, out_names, labels, frame_read, video, widget, left_frames)
+    end
+  end
+end
+```
+
+### Run the detection
+```elixir
+widget = Kino.Frame.new() |> Kino.render()
+# read 1,800 frames at most
+# change the number to negative values to
+# detect objects until OpenCV cannot read
+# new frame from the video stream
+VideoDetection.detect(video, widget, 1800)
 ```
