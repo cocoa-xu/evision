@@ -168,7 +168,7 @@ defmodule OpenCV.DNN.Test do
 
       test_setup =
         if not File.exists?(model_graph_pb) do
-          Helper.download!(
+          OpenCV.TestHelper.download!(
             "http://download.tensorflow.org/models/object_detection/ssd_mobilenet_v2_coco_2018_03_29.tar.gz",
             model_tar
           )
