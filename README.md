@@ -146,6 +146,23 @@ def deps do
 end
 ```
 
+Also, please don't forget to copy or merge the config from evision to the top-level project.
+
+If you don't have any other config in the top-level project, then you can just copy the whole `config` directory
+
+```shell
+mix deps.get
+cp -a deps/evision/config config
+```
+
+Otherwise, you can import this config file at the end of existing `config/config.exs`
+
+```shell
+mix deps.get
+cp -f deps/evision/config/config.exs config/evision.exs
+echo -e '\nimport_config "evision.exs"' >> config/config.exs
+```
+
 ### Notes 
 #### Compile-time related
 - How do I specify which OpenCV version to compile?
