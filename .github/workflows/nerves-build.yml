@@ -32,8 +32,8 @@ jobs:
       - uses: actions/checkout@v2
       - uses: erlef/setup-beam@v1
         with:
-          otp-version: "24.1.5"
-          elixir-version: "1.13"
+          otp-version: "24.2"
+          elixir-version: "1.13.2"
 
       - name: Install nerves and system dependecies
         run: |
@@ -59,7 +59,7 @@ jobs:
           mv mix.exs.tmp mix.exs
           cat mix.exs
           export MIX_TARGET=${{ matrix.target }}
-          mix deps.get
+          mix deps.get 1>/dev/null 2>&1
           cp -a ../evision/examples                        ./priv/evision_examples
           sed -i 's/"welcome.livemd"\,/"welcome.livemd"\, "evision_examples",/g' lib/nerves_livebook/application.ex
           export MAKE_BUILD_FLAGS="-j$(nproc)"
