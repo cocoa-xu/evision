@@ -59,7 +59,7 @@ jobs:
           mv mix.exs.tmp mix.exs
           cat mix.exs
           cp -f ../evision/config/config.exs config/evision.exs
-          echo 'import_config "evision.exs"' >> config/config.exs
+          echo -e '\nimport_config "evision.exs"' >> config/config.exs
           export MIX_TARGET=${{ matrix.target }}
           mix deps.get 1>/dev/null 2>&1
           cp -a ../evision/examples                        ./priv/evision_examples
