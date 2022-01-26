@@ -148,10 +148,29 @@ end
 
 ### Notes 
 #### Compile-time related
+- How do I specify which OpenCV version to compile?
+    ```shell
+    # e.g., use OpenCV 4.5.4
+    # current, evision uses 4.5.5 by default 
+    export OPENCV_VER=4.5.4
+    ```
+
 - How do I use my own OpenCV source code on my local disk?
 
     ```shell
     export OPENCV_DIR=/path/to/your/opencv/source/root
+    ```
+
+- How do I use my own OpenCV source code on my git?
+
+    ```shell
+    # use branch
+    export OPENCV_USE_GIT_BRANCH="branch_name"
+    export OPENCV_GIT_REPO="https://github.com/username/opencv.git"
+  
+    # use HEAD
+    export OPENCV_USE_GIT_HEAD=true
+    export OPENCV_GIT_REPO="https://github.com/username/opencv.git"
     ```
 
 - How do I set the number of jobs for compiling?
@@ -183,7 +202,7 @@ Say you have the following MIX environment variables
 ```shell
 # set by MIX
 MIX_ENV=dev
-# set by evision
+# set by evision or you
 OPENCV_VER=4.5.5
 # set by yourself if you're compiling evision to a nerves firmware
 MIX_TARGET=rpi4
