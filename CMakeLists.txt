@@ -13,33 +13,21 @@ else()
     message(FATAL_ERROR "Failed to generate Erlang/Elixir bindings")
 endif()
 
+file(GLOB evision_bindings_main "${C_SRC}/*.hpp" "${C_SRC}/*.h" "${C_SRC}/*.cpp")
+file(GLOB evision_custom_headers "${C_SRC}/evision_custom_headers/*.hpp")
+file(GLOB evision_modules "${C_SRC}/modules/*.hpp" "${C_SRC}/modules/*.h")
+
 add_library(evision SHARED
-    "${C_SRC}/opencv.cpp"
-    "${C_SRC}/nif_utils.hpp"
-    "${C_SRC}/erlcompat.hpp"
-    "${C_SRC}/configuration.private.hpp"
-    "${C_SRC}/evision_generated_enums.h"
-    "${C_SRC}/evision_generated_funcs.h"
-    "${C_SRC}/evision_generated_include.h"
-    "${C_SRC}/evision_generated_modules_content.h"
-    "${C_SRC}/evision_generated_types.h"
-    "${C_SRC}/evision_generated_types_content.h"
-    "${C_SRC}/evision_custom_headers/evision_async.hpp"
-    "${C_SRC}/evision_custom_headers/evision_cuda.hpp"
-    "${C_SRC}/evision_custom_headers/evision_dnn.hpp"
-    "${C_SRC}/evision_custom_headers/evision_features2d.hpp"
-    "${C_SRC}/evision_custom_headers/evision_flann.hpp"
-    "${C_SRC}/evision_custom_headers/evision_ml.hpp"
-    "${C_SRC}/evision_custom_headers/evision_stitching.hpp"
-    "${C_SRC}/evision_custom_headers/evision_umat.hpp"
-    "${C_SRC}/evision_custom_headers/evision_video.hpp"
-    "${C_SRC}/evision_custom_headers/evision_videoio.hpp"
+    ${evision_bindings_main}
+    ${evision_custom_headers}
+    ${evision_modules}
 )
 target_link_libraries(evision "${OpenCV_LIBS}")
 set_property(TARGET evision PROPERTY CXX_STANDARD 14)
 set_target_properties(evision PROPERTIES PREFIX "")
 set_target_properties(evision PROPERTIES SUFFIX ".so")
 
+cmake_policy(SET CMP0068 NEW)
 set_target_properties(evision PROPERTIES
     INSTALL_RPATH_USE_LINK_PATH TRUE
     BUILD_WITH_INSTALL_RPATH TRUE
