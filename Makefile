@@ -96,8 +96,7 @@ $(HEADERS_TXT): $(CONFIGURATION_PRIVATE_HPP)
 	@sh -c "OPENCV_DIR=$(OPENCV_DIR) $(shell pwd)/patches/$(OPENCV_VER)/apply_patch.sh || true"
 	@mkdir -p $(CMAKE_OPENCV_BUILD_DIR) && \
 	cd $(CMAKE_OPENCV_BUILD_DIR) && \
-	cmake -S $(OPENCV_DIR) \
-		-D CMAKE_BUILD_TYPE=RELEASE \
+	cmake -D CMAKE_BUILD_TYPE=RELEASE \
 		-D CMAKE_INSTALL_PREFIX=$(PRIV_DIR) \
 		-D PYTHON3_EXECUTABLE=$(PYTHON3_EXECUTABLE) \
 		-D INSTALL_PYTHON_EXAMPLES=OFF \
@@ -112,7 +111,7 @@ $(HEADERS_TXT): $(CONFIGURATION_PRIVATE_HPP)
 		-D CMAKE_C_FLAGS=-DPNG_ARM_NEON_OPT=0 \
 		-D CMAKE_CXX_FLAGS=-DPNG_ARM_NEON_OPT=0 \
 		-D CMAKE_TOOLCHAIN_FILE="$(TOOLCHAIN_FILE)" \
-		$(CMAKE_OPTIONS) $(CMAKE_CONFIGURE_FLAGS) && \
+		$(CMAKE_OPTIONS) $(CMAKE_CONFIGURE_FLAGS) $(OPENCV_DIR) && \
 	make "$(MAKE_BUILD_FLAGS)" && \
 	cd $(CMAKE_OPENCV_BUILD_DIR) && make install
 
@@ -129,7 +128,7 @@ $(EVISION_SO): $(HEADERS_TXT)
 		  -D PRIV_DIR="$(PRIV_DIR)" \
 		  -D ERTS_INCLUDE_DIR="$(ERTS_INCLUDE_DIR)" \
 		  -D ENABLED_CV_MODULES=$(ENABLED_CV_MODULES) \
-		  -S "$(shell pwd)" $(CMAKE_CONFIGURE_FLAGS) && \
+		  $(CMAKE_CONFIGURE_FLAGS) "$(shell pwd)" && \
 		  make "$(MAKE_BUILD_FLAGS)" \
 		  || { echo "\033[0;31mincomplete build of OpenCV found in '$(CMAKE_OPENCV_BUILD_DIR)', please delete that directory and retry\033[0m" && exit 1 ; } ; } \
 		&& cp "$(CMAKE_EVISION_BUILD_DIR)/evision.so" "$(EVISION_SO)"
