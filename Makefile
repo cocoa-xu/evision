@@ -46,14 +46,6 @@ MAKE_BUILD_FLAGS ?= "-j1"
 .DEFAULT_GLOBAL := build
 
 build: $(EVISION_SO)
-clean_opencv:
-	@ rm -rf "$(OPENCV_DIR)"
-	@ rm -rf "$(CMAKE_OPENCV_BUILD_DIR)"
-	@ rm -f "$(CONFIGURATION_PRIVATE_HPP)"
-clean_evision:
-	@ rm -rf "$(CMAKE_EVISION_BUILD_DIR)"
-	@ rm -f "$(EVISION_SO)"
-clean: clean_opencv clean_evision
 
 # in simple words
 # 1. download "https://github.com/opencv/opencv/archive/$(OPENCV_VER).zip" to "3rd_party/cache/opencv-$(OPENCV_VER).zip"
@@ -112,13 +104,13 @@ $(HEADERS_TXT): $(CONFIGURATION_PRIVATE_HPP)
 		-D CMAKE_CXX_FLAGS=-DPNG_ARM_NEON_OPT=0 \
 		-D CMAKE_TOOLCHAIN_FILE="$(TOOLCHAIN_FILE)" \
 		$(CMAKE_OPTIONS) $(CMAKE_CONFIGURE_FLAGS) $(OPENCV_DIR) && \
-	make "$(MAKE_BUILD_FLAGS)" && \
-	cd $(CMAKE_OPENCV_BUILD_DIR) && make install
+		make "$(MAKE_BUILD_FLAGS)" && \
+		cd $(CMAKE_OPENCV_BUILD_DIR) && make install && \
+		cp "$(HEADERS_TXT)" "$(C_SRC)/headers.txt"
 
 $(EVISION_SO): $(HEADERS_TXT)
 	@ mkdir -p $(PRIV_DIR)
 	@ mkdir -p $(CMAKE_EVISION_BUILD_DIR)
-	@ cp "$(HEADERS_TXT)" "$(C_SRC)/headers.txt"
 	@ mkdir -p "$(GENERATED_ELIXIR_SRC_DIR)"
 	@ cd "$(CMAKE_EVISION_BUILD_DIR)" && \
 		{ cmake -D C_SRC="$(C_SRC)" \
