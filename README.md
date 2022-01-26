@@ -169,7 +169,14 @@ end
     export CMAKE_TOOLCHAIN_FILE="/path/to/toolchain.cmake"
     ```
 
-- Edit `config/config.exs` to enable/disable OpenCV modules and image coders.
+- How do I make my own adjustments to the OpenCV CMake options?
+    ```shell
+    export CMAKE_OPENCV_OPTIONS="YOUR CMAKE OPTIONS FOR OPENCV"
+    ```
+
+- Which ones of OpenCV options are supposed to be specified in `config/config.exs`?
+  1. Enabled and disabled OpenCV modules
+  2. Image codecs (if you enabled related OpenCV modules).
 
 #### Debug related
 Say you have the following MIX environment variables
