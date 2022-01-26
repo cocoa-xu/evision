@@ -27,7 +27,9 @@ set_property(TARGET evision PROPERTY CXX_STANDARD 14)
 set_target_properties(evision PROPERTIES PREFIX "")
 set_target_properties(evision PROPERTIES SUFFIX ".so")
 
-cmake_policy(SET CMP0068 NEW)
+if(${CMAKE_VERSION} VERSION_GREATER "3.9")
+    cmake_policy(SET CMP0068 NEW)
+endif()
 set_target_properties(evision PROPERTIES
     INSTALL_RPATH_USE_LINK_PATH TRUE
     BUILD_WITH_INSTALL_RPATH TRUE
