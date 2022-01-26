@@ -52,7 +52,6 @@ jobs:
           git clone https://github.com/livebook-dev/nerves_livebook.git
           cd nerves_livebook
           git checkout "${NERVES_LIVEBOOK_VER}"
-          mix nerves.new "${NERVES_PROJ_NAME}"
           LINE="$(grep -n 'toolshed' mix.exs | awk -F: '{print $1+1}')"
           head -n "${LINE}" mix.exs > mix.exs.tmp
           echo '      {:evision, "~> 0.1.0-dev", path: "../evision"},' >> mix.exs.tmp
