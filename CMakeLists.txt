@@ -1,9 +1,8 @@
-cmake_minimum_required(VERSION 3.12 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
 project(evision)
 
 find_package(OpenCV REQUIRED PATHS "${PRIV_DIR}/" NO_DEFAULT_PATH)
 include_directories("${OpenCV_INCLUDE_DIRS}")
-file(GLOB evision_sources CONFIGURE_DEPENDS "${C_SRC}/*.cpp" "${C_SRC}/*.hpp" "${C_SRC}/*.h")
 
 execute_process(COMMAND bash -c "rm -rf ${GENERATED_ELIXIR_SRC_DIR} && mkdir -p ${GENERATED_ELIXIR_SRC_DIR}")
 message("enabled modules: ${ENABLED_CV_MODULES}")
@@ -14,12 +13,23 @@ else()
     message(FATAL_ERROR "Failed to generate Erlang/Elixir bindings")
 endif()
 
-add_library(evision SHARED ${evision_sources})
+file(GLOB evision_bindings_main "${C_SRC}/*.hpp" "${C_SRC}/*.h" "${C_SRC}/*.cpp")
+file(GLOB evision_custom_headers "${C_SRC}/evision_custom_headers/*.hpp")
+file(GLOB evision_modules "${C_SRC}/modules/*.hpp" "${C_SRC}/modules/*.h")
+
+add_library(evision SHARED
+    ${evision_bindings_main}
+    ${evision_custom_headers}
+    ${evision_modules}
+)
 target_link_libraries(evision "${OpenCV_LIBS}")
 set_property(TARGET evision PROPERTY CXX_STANDARD 14)
 set_target_properties(evision PROPERTIES PREFIX "")
 set_target_properties(evision PROPERTIES SUFFIX ".so")
 
+if(${CMAKE_VERSION} VERSION_GREATER "3.9")
+    cmake_policy(SET CMP0068 NEW)
+endif()
 set_target_properties(evision PROPERTIES
     INSTALL_RPATH_USE_LINK_PATH TRUE
     BUILD_WITH_INSTALL_RPATH TRUE
