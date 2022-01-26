@@ -113,7 +113,11 @@ sudo apt install -y libavcodec-dev libavformat-dev libavutil-dev libswscale-dev 
   - 3.8.12
   - 3.9.9
   - 3.10.1
-- [CMake](https://cmake.org/) >= 3.1
+- [CMake](https://cmake.org/) >= 3.1 (for this project)
+
+  The minimal version required by OpenCV can vary between versions.
+
+  OpenCV 4.5.5 requires at least CMake 3.5.1.
 - Erlang development library/headers. Tested on OTP/24.
 
 ### Optional
@@ -142,56 +146,90 @@ def deps do
 end
 ```
 
-### Notes
-- Set environment variable `OPENCV_EVISION_DEBUG` to `1` to enable debug logging in the bindings (print to stderr).
-- Use `MAKE_BUILD_FLAGS="-j$(nproc)"` environment variable to set number of jobs for compiling.
-  
-  Default value: `"-j#{System.schedulers_online()}"`. In `mix.exs`.
+### Notes 
+#### Compile-time related
+- How do I use my own OpenCV source code on my local disk?
 
-- Use `CMAKE_TOOLCHAIN_FILE="/path/to/toolchain.cmake"` to set your own toolchain.
+    ```shell
+    export OPENCV_DIR=/path/to/your/opencv/source/root
+    ```
 
-  Default value: `""`.
+- How do I set the number of jobs for compiling?
+    ```shell
+    # use all logical cores, by default
+    # `"-j#{System.schedulers_online()}"`. In `mix.exs`.
+    export MAKE_BUILD_FLAGS="-j$(nproc)"
+    
+    # use 2 cores
+    export MAKE_BUILD_FLAGS="-j2"
+    ```
+
+- How do I set up for cross-compile or specify the toolchain?
+    ```shell
+    export CMAKE_TOOLCHAIN_FILE="/path/to/toolchain.cmake"
+    ```
 
 - Edit `config/config.exs` to enable/disable OpenCV modules and image coders.
 
-- Some useful commands
+#### Debug related
+Say you have the following MIX environment variables
+```shell
+# set by MIX
+MIX_ENV=dev
+# set by evision
+OPENCV_VER=4.5.5
+# set by yourself if you're compiling evision to a nerves firmware
+MIX_TARGET=rpi4
+```
 
-  ```bash
-  MIX_ENV=dev
-  OPENCV_VER=4.5.5
-  MIX_TARGET=rpi4
+- How do I delete OpenCV related CMake build caches?
+    ```shell
+    # delete OpenCV related CMake build caches.
+    rm -rf "_build/${MIX_ENV}/lib/evision/cmake_opencv_${OPENCV_VER}"
+    ## for nerves
+    rm -rf "_build/${MIX_TARGET}_${MIX_ENV}/lib/evision/cmake_opencv_${OPENCV_VER}"
+    ```
   
-  # delete OpenCV related CMake build caches.
-  rm -rf "_build/${MIX_ENV}/lib/evision/cmake_opencv_${OPENCV_VER}"
-  ## for nerves
-  rm -rf "_build/${MIX_TARGET}_${MIX_ENV}/lib/evision/cmake_opencv_${OPENCV_VER}"
-  
-  # remove downloaded OpenCV source zip file.
-  rm -f "3rd_party/cache/opencv-${OPENCV_VER}"
-  
-  # delete evision.so (so that `make` can rebuild it, useful when you manually modified C/C++ source code)
-  rm -f "_build/${MIX_ENV}/lib/evision/priv/evision.so"
-  ## for nerves
-  rm -rf "_build/${MIX_TARGET}_${MIX_ENV}/lib/evision/priv/evision.so"
-  
-  # comment out the following lines in CMakeLists.txt
-  # if you would like to manually modified the generated .ex files and/or .h files
-  # otherwise, your editing will be overwritten by the gen2.py
-  #
-  # execute_process(COMMAND bash -c "rm -rf ${GENERATED_ELIXIR_SRC_DIR} && mkdir -p ${GENERATED_ELIXIR_SRC_DIR}")
-  # message("enabled modules: ${ENABLED_CV_MODULES}")
-  # execute_process(COMMAND bash -c "python3 ${PY_SRC}/gen2.py ${C_SRC} ${GENERATED_ELIXIR_SRC_DIR} ${C_SRC}/headers.txt ${ENABLED_CV_MODULES}" RESULT_VARIABLE STATUS)
-  # if(STATUS STREQUAL "0")
-  #   message("Successfully generated Erlang/Elixir bindings")
-  # else()
-  #   message(FATAL_ERROR "Failed to generate Erlang/Elixir bindings")
-  # endif()
+- How do I remove downloaded OpenCV source zip file.
+    ```shell
+    rm -f "3rd_party/cache/opencv-${OPENCV_VER}"
+    ```
 
-  # delete evision related CMake build caches.
-  rm -rf "_build/${MIX_ENV}/lib/evision/cmake_evision"
-  ## for nerves
-  rm -rf "_build/${MIX_TARGET}_${MIX_ENV}/lib/evision/cmake_evision"
-  ```
+- Can I manually edit the generated files and compile them?
+  1. First, delete evision.so (so that `cmake` can rebuild it)  
+      ```shell
+      # 
+      rm -f "_build/${MIX_ENV}/lib/evision/priv/evision.so"
+      ## if you're building with nerves,
+      ## use this path instead
+      rm -rf "_build/${MIX_TARGET}_${MIX_ENV}/lib/evision/priv/evision.so"
+      ```
+
+  2. Secondly, comment out the following lines in the CMakeLists.txt  
+
+      otherwise, your editing will be overwritten by the `py_src/gen2.py`
+  
+    ```cmake
+    execute_process(COMMAND bash -c "rm -rf ${GENERATED_ELIXIR_SRC_DIR} && mkdir -p ${GENERATED_ELIXIR_SRC_DIR}")
+    message("enabled modules: ${ENABLED_CV_MODULES}")
+    execute_process(COMMAND bash -c "python3 ${PY_SRC}/gen2.py ${C_SRC} ${GENERATED_ELIXIR_SRC_DIR} ${C_SRC}/headers.txt ${ENABLED_CV_MODULES}" RESULT_VARIABLE STATUS)
+    if(STATUS STREQUAL "0")
+      message("Successfully generated Erlang/Elixir bindings")
+    else()
+      message(FATAL_ERROR "Failed to generate Erlang/Elixir bindings")
+    endif()
+    ```  
+
+  3. Lastly, you can edit the source files and recompile the project.
+    ```shell
+    mix compile
+    ```
+
+#### Runtime related
+- How do I enable debug logging for OpenCV (prints to stderr).
+    ```shell
+    export OPENCV_EVISION_DEBUG=1
+    ```
 
 ### Current Status
 Some tiny examples
