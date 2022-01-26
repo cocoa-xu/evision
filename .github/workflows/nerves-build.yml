@@ -26,7 +26,7 @@ jobs:
 
     strategy:
       matrix:
-        target: [rpi4, rpi3a, rpi3, rpi2, rpi0, rpi, bbb, osd32mp1]
+        target: [rpi4, rpi3a, rpi3, rpi2, rpi0, rpi, bbb, osd32mp1, npi_imx6ull]
 
     steps:
       - uses: actions/checkout@v2
