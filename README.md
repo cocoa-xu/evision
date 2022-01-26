@@ -113,7 +113,7 @@ sudo apt install -y libavcodec-dev libavformat-dev libavutil-dev libswscale-dev 
   - 3.8.12
   - 3.9.9
   - 3.10.1
-- [CMake](https://cmake.org/) >= 3.12
+- [CMake](https://cmake.org/) >= 3.1
 - Erlang development library/headers. Tested on OTP/24.
 
 ### Optional
