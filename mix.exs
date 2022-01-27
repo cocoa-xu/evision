@@ -93,7 +93,7 @@ defmodule Evision.MixProject do
         ]
       ],
       _
-    } = Config.Reader.read_imports!("config/config.exs")
+    } = Config.Reader.read_imports!(Path.join([__DIR__, "config", "config.exs"]))
 
     {enabled_modules, disabled_modules, enabled_img_codecs, compile_mode}
   end
@@ -103,10 +103,11 @@ defmodule Evision.MixProject do
   end
 
   defp get_config(false) do
-    enabled_modules = Application.get_env(:evision, :enabled_modules, [])
-    disabled_modules = Application.get_env(:evision, :disabled_modules, [])
-    enabled_img_codecs = Application.get_env(:evision, :enabled_img_codecs, [])
-    compile_mode = Application.get_env(:evision, :compile_mode, "auto")
+    {enabled_modules, disabled_modules, enabled_img_codecs, compile_mode} = read_config()
+    enabled_modules = Application.get_env(:evision, :enabled_modules, enabled_modules)
+    disabled_modules = Application.get_env(:evision, :disabled_modules, disabled_modules)
+    enabled_img_codecs = Application.get_env(:evision, :enabled_img_codecs, enabled_img_codecs)
+    compile_mode = Application.get_env(:evision, :compile_mode, compile_mode)
     {enabled_modules, disabled_modules, enabled_img_codecs, compile_mode}
   end
 
