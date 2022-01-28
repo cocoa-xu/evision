@@ -9,6 +9,7 @@ truck
 boat
 traffic
 fire
+
 stop
 parking
 bench
@@ -22,8 +23,11 @@ elephant
 bear
 zebra
 giraffe
+
 backpack
 umbrella
+
+
 handbag
 tie
 suitcase
@@ -38,6 +42,7 @@ skateboard
 surfboard
 tennis
 bottle
+
 wine
 cup
 fork
@@ -58,8 +63,12 @@ chair
 couch
 potted
 bed
+
 dining
+
+
 toilet
+
 tv
 laptop
 mouse
@@ -71,6 +80,7 @@ oven
 toaster
 sink
 refrigerator
+
 book
 clock
 vase
