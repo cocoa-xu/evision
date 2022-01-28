@@ -151,7 +151,7 @@ defmodule OpenCV.DNN.Test do
         |> Path.join("coco_names.txt")
 
       OpenCV.TestHelper.download!(
-        "https://raw.githubusercontent.com/pjreddie/darknet/master/data/coco.names",
+        "https://raw.githubusercontent.com/cocoa-xu/evision/main/test/models/coco_names.txt",
         model_class_list
       )
 
