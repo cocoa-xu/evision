@@ -104,10 +104,8 @@ defmodule CIFAR10Dataset do
   end
 
   def fetch(backend \\ Torchx.Backend) do
-    Scidata.CIFAR10.download(
-      transform_images: &transform_images(&1, backend),
-      transform_labels: &transform_labels(&1, backend)
-    )
+    {images, labels} = Scidata.CIFAR10.download()
+    {transform_images(images, backend), transform_labels(labels, backend)}
   end
 end
 ```
@@ -219,12 +217,12 @@ defmodule DenseNN do
         epoch_avg_loss =
           epoch_avg_loss
           |> Nx.backend_transfer()
-          |> Nx.to_scalar()
+          |> Nx.to_number()
 
         epoch_avg_acc =
           epoch_avg_acc
           |> Nx.backend_transfer()
-          |> Nx.to_scalar()
+          |> Nx.to_number()
 
         IO.puts(
           "Epoch #{epoch} Time: #{time / 1_000_000}s, loss: #{Float.round(epoch_avg_loss, 3)}, acc: #{Float.round(epoch_avg_acc, 3)}"
@@ -364,7 +362,7 @@ pred =
   params
   |> DenseNN.predict(input_tensor)
   |> Nx.argmax()
-  |> Nx.to_scalar()
+  |> Nx.to_number()
 
 Enum.at(classes, pred)
 ```
