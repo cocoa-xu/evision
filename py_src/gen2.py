@@ -1450,12 +1450,32 @@ class PythonWrapperGenerator(object):
             # name  => prop name
             # func  => ClassProp
             func_name = "evision_" + prop_class.wname + '_get_' + name
-            writer.write(f"  def get_{name}(self) do\n    :erl_cv_nif.{func_name}(self)\n  end\n")
+            writer.write(f"  def get_{name}(self) do\n"
+                         f"    :erl_cv_nif.{func_name}(self)\n"
+                         "  end\n")
+            writer.write(f"  def get_{name}!(self) do\n"
+                         f"    ret = :erl_cv_nif.{func_name}(self)\n"
+                         "    case ret do\n"
+                         "      _ when is_atom(ret) -> ret\n"
+                         "      {:ok, value} -> value\n"
+                         "      {:error, reason} -> raise reason\n"
+                         "      other -> other\n"
+                         "    end\n"
+                         "  end\n")
             self.erl_cv_nif.write(f'  def {func_name}(_self), do: :erlang.nif_error("{wname}::{name} getter not loaded")\n')
             self.code_ns_reg.write(f'    F({func_name}, 1),\n')
             if not func.readonly:
                 func_name = "evision_" + prop_class.wname + '_set_' + name
                 writer.write(f"  def set_{name}(self, opts) do\n    :erl_cv_nif.{func_name}(self, opts)\n  end\n")
+                writer.write(f"  def set_{name}!(self, opts) do\n"
+                             f"    ret = :erl_cv_nif.{func_name}(self, opts)\n"
+                             "    case ret do\n"
+                             "      _ when is_atom(ret) -> ret\n"
+                             "      {:ok, value} -> value\n"
+                             "      {:error, reason} -> raise reason\n"
+                             "      other -> other\n"
+                             "    end\n"
+                             "  end\n")
                 self.erl_cv_nif.write(f'  def {func_name}(_self, _opts), do: :erlang.nif_error("{wname}::{name} setter not loaded")\n')
                 self.code_ns_reg.write(f'    F({func_name}, 2),\n')
             return
@@ -1749,15 +1769,59 @@ class PythonWrapperGenerator(object):
                 if func_name.startswith(evision_nif_prefix + "dnn") and module_func_name == "forward":
                     inline_doc += function_group
                     writer.write(f'{inline_doc}  def {module_func_name}(self, opt \\\\ []) do\n    :erl_cv_nif.{func_name}(self, opt)\n  end\n')
+                    writer.write(f"{inline_doc}  def {module_func_name}!(self, opt \\\\ []) do\n"
+                                 f"    ret = :erl_cv_nif.{func_name}(self, opt)\n"
+                                 "    case ret do\n"
+                                 "      _ when is_atom(ret) -> ret\n"
+                                 "      {:ok, value} -> value\n"
+                                 "      {:error, reason} -> raise reason\n"
+                                 "      other -> other\n"
+                                 "    end\n"
+                                 "  end\n")
                     continue
                 if func_name.startswith(evision_nif_prefix + "dnn_dnn_net") and (module_func_name == "getLayerShapes" or module_func_name == "getLayersShapes"):
                     inline_doc += function_group
                     writer.write(f'{inline_doc}  def {module_func_name}(self, opt \\\\ []) do\n    :erl_cv_nif.{func_name}(self, opt)\n  end\n')
+                    writer.write(f"{inline_doc}  def {module_func_name}!(self, opt \\\\ []) do\n"
+                                 f"    ret = :erl_cv_nif.{func_name}(self, opt)\n"
+                                 "    case ret do\n"
+                                 "      _ when is_atom(ret) -> ret\n"
+                                 "      {:ok, value} -> value\n"
+                                 "      {:error, reason} -> raise reason\n"
+                                 "      other -> other\n"
+                                 "    end\n"
+                                 "  end\n")
                     continue
                 if len(func_args_with_opts) > 0:
                     inline_doc += function_group
-                    writer.write(f'{inline_doc}  def {module_func_name}({module_func_args_with_opts}){when_guard}do\n    {positional}\n    :erl_cv_nif.{func_name}({func_args_with_opts})\n  end\n')
-                writer.write(f'{function_group}  def {module_func_name}({module_func_args}){when_guard}do\n    {positional}\n    :erl_cv_nif.{func_name}({func_args})\n  end\n')
+                    writer.write(f'{inline_doc}  def {module_func_name}({module_func_args_with_opts}){when_guard}do\n'
+                                 f'    {positional}\n'
+                                 f'    :erl_cv_nif.{func_name}({func_args_with_opts})\n'
+                                 '  end\n')
+                    writer.write(f"{inline_doc}  def {module_func_name}!({module_func_args_with_opts}){when_guard}do\n"
+                                 f'    {positional}\n'
+                                 f"    ret = :erl_cv_nif.{func_name}({func_args_with_opts})\n"
+                                 "    case ret do\n"
+                                 "      _ when is_atom(ret) -> ret\n"
+                                 "      {:ok, value} -> value\n"
+                                 "      {:error, reason} -> raise reason\n"
+                                 "      other -> other\n"
+                                 "    end\n"
+                                 "  end\n")
+                writer.write(f'{function_group}  def {module_func_name}({module_func_args}){when_guard}do\n'
+                             f'    {positional}\n'
+                             f'    :erl_cv_nif.{func_name}({func_args})\n'
+                             '  end\n')
+                writer.write(f'{function_group}  def {module_func_name}!({module_func_args}){when_guard}do\n'
+                             f'    {positional}\n'
+                             f'    ret = :erl_cv_nif.{func_name}({func_args})\n'
+                             "    case ret do\n"
+                             "      _ when is_atom(ret) -> ret\n"
+                             "      {:ok, value} -> value\n"
+                             "      {:error, reason} -> raise reason\n"
+                             "      other -> other\n"
+                             "    end\n"
+                             '  end\n')
 
     def gen_namespace(self):
         for ns_name in self.namespaces:
