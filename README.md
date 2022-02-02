@@ -35,10 +35,9 @@ The default password of the livebook is `nerves` (as the time of writing, if it 
 
 ```elixir
 {:ok, mat} = OpenCV.imread("/path/to/image.png")
-# Or you can use the !(bang) version, note that for this function, `mat` will be `nil`  
-# because OpenCV decides to print warnings (tested on OpenCV 4.5.5) if it cannot read the image 
-# instead of reporting error to us, i.e., the NIFs
-mat = OpenCV.imread!("/path/to/non/exist/image.png")
+# Or you can use the !(bang) version, but if the image cannot be read by OpenCV for whatever reason
+# the bang version will raise a RuntimeError exception
+mat = OpenCV.imread!("/path/to/image.png")
 t = OpenCV.Nx.to_nx(mat)
 ```
 
