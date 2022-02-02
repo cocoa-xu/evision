@@ -7,6 +7,8 @@ defmodule OpenCV.Nx do
   list.
   """
 
+  import Errorize
+
   unless Code.ensure_loaded?(Nx) do
     @compile {:no_warn_undefined, Nx}
   end
@@ -42,6 +44,8 @@ defmodule OpenCV.Nx do
     end
   end
 
+  deferror to_nx(mat)
+
   @doc """
   Converts a tensor of `Nx` to `Mat` of evision (OpenCV).
 
@@ -59,6 +63,8 @@ defmodule OpenCV.Nx do
         OpenCV.Mat.from_binary_by_shape(Nx.to_binary(t), Nx.type(t), shape)
     end
   end
+
+  deferror to_mat(t)
 
   @spec to_mat(
           binary(),
