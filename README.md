@@ -31,27 +31,27 @@ The default password of the livebook is `nerves` (as the time of writing, if it 
 
 ## Integration with Nx
 
-`OpenCV.Nx` module converts `OpenCV.Mat` to `Nx.tensor`:
+`Evision.Nx` module converts `Evision.Mat` to `Nx.tensor`:
 
 ```elixir
-{:ok, mat} = OpenCV.imread("/path/to/image.png")
+{:ok, mat} = Evision.imread("/path/to/image.png")
 # Or you can use the !(bang) version, but if the image cannot be read by OpenCV for whatever reason
 # the bang version will raise a RuntimeError exception
-mat = OpenCV.imread!("/path/to/image.png")
-t = OpenCV.Nx.to_nx(mat)
+mat = Evision.imread!("/path/to/image.png")
+t = Evision.Nx.to_nx(mat)
 ```
 
 and vice-versa:
 
 ```elixir
-{:ok, mat} = OpenCV.imread("/path/to/image.png")
-t = OpenCV.Nx.to_nx(mat)
+{:ok, mat} = Evision.imread("/path/to/image.png")
+t = Evision.Nx.to_nx(mat)
 # convert a tensor to a mat
-{:ok, mat_from_tensor} = OpenCV.Nx.to_mat(t)
+{:ok, mat_from_tensor} = Evision.Nx.to_mat(t)
 
 # and it works for tensors with any shapes
 t = Nx.iota({2, 3, 2, 3, 2, 3}, type: {:s, 32})
-{:ok, mat} = OpenCV.Nx.to_mat(t)
+{:ok, mat} = Evision.Nx.to_mat(t)
 ```
 
 ## Description
@@ -335,6 +335,8 @@ alias Evision, as: OpenCV
 Some tiny examples:
 
 ```elixir
+alias Evision, as: OpenCV
+
 ## read image, process image and write image
 {:ok, gray_mat} = OpenCV.imread("/path/to/img.png", flags: OpenCV.cv_IMREAD_GRAYSCALE)
 {:ok, gray_blur_mat} = OpenCV.blur(gray_mat, [10,10], anchor: [1,1])
