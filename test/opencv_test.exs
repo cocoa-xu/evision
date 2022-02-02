@@ -10,7 +10,11 @@ defmodule Evision.Test do
     assert is_binary(reason)
   end
 
-  test "OpenCV.Mat.as_type" do
+  test "imread non-exist image shoud return error message: \"empty matrix\"" do
+    assert {:error, "empty matrix"} == Evision.imread("/dev/null")
+  end
+
+  test "Evision.Mat.as_type" do
     {:ok, mat} = Evision.Mat.from_binary_by_shape(<< 1, 2, 3, 4 >>, {:u, 8}, {2, 2})
     {:ok, mat} = Evision.Mat.as_type(mat, {:f, 32})
     {:ok, {:f, 32}} = Evision.Mat.type(mat)
@@ -19,7 +23,7 @@ defmodule Evision.Test do
   end
 
   @tag :nx
-  test "OpenCV.Mat.as_type and verify value" do
+  test "Evision.Mat.as_type and verify value" do
     {:ok, mat} = Evision.Mat.from_binary_by_shape(<< 1, 2, 3, 4 >>, {:u, 8}, {2, 2})
     {:ok, mat} = Evision.Mat.as_type(mat, {:f, 32})
     {:ok, {:f, 32}} = Evision.Mat.type(mat)
