@@ -29,18 +29,16 @@ project.
 
 The default password of the livebook is `nerves` (as the time of writing, if it does not work, please check the nerves_livebook project). 
 
-## Interact with elixir-nx
-### OpenCV.Mat to Nx.tensor
-`OpenCV.Nx` module detects whether you have `:nx` available or not, if yes, then `OpenCV.Nx.to_nx/1` will try to convert
-`OpenCV.Mat` to `Nx.tensor`; otherwise, it returns `{:error, ":nx is missing"}`.
+## Integration with Nx
+
+`OpenCV.Nx` module converts `OpenCV.Mat` to `Nx.tensor`:
 
 ```elixir
 {:ok, mat} = OpenCV.imread("/path/to/image.png")
 t = OpenCV.Nx.to_nx(mat)
 ```
 
-### Nx.tensor to OpenCV.Mat
-Similarly, we have
+and vice-versa:
 
 ```elixir
 {:ok, mat} = OpenCV.imread("/path/to/image.png")
@@ -95,16 +93,16 @@ Current available modules:
 - video 
 - videoio
 
-Note 1, edit `config/config.exs` to enable/disable OpenCV modules and image coders.
-
-Note 2, to open video files, FFmpeg related libraries should be installed, e.g., on Debian/Ubuntu
+Note: to open video files, FFmpeg related libraries should be installed, e.g., on Debian/Ubuntu
 
 ```shell
 sudo apt install -y libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libavresample-dev ffmpeg
 ```
 
 ## Dependencies
+
 ### Required
+
 - Python3 (Only during the compilation, to generate binding files)
 
   Tested Python verisons (on `ubuntu:20.04`, see [workflow file](https://github.com/cocoa-xu/evision/blob/main/.github/workflows/test-python-compatibility.yml)):
@@ -121,6 +119,7 @@ sudo apt install -y libavcodec-dev libavformat-dev libavutil-dev libswscale-dev 
 - Erlang development library/headers. Tested on OTP/24.
 
 ### Optional
+
 - curl/wget. To download OpenCV source zip file. 
   
   Optional if you put the source zip file to `3rd_party/cache/opencv-${OPENCV_VER}.zip`.
@@ -146,25 +145,54 @@ def deps do
 end
 ```
 
-Also, please don't forget to copy or merge the config from evision to the top-level project.
+### Configuration
 
-If you don't have any other config in the top-level project, then you can just copy the whole `config` directory
+`evision` will compile a subset of OpenCV functionality. You can configure the enabled modules in your `config` files:
 
-```shell
-mix deps.get
-cp -a deps/evision/config config
+```elixir
+config :evision, enabled_modules: [
+  :calib3d,
+  :core,
+  :features2d,
+  :flann,
+  :highgui,
+  :imgcodecs,
+  :imgproc,
+  :ml,
+  :photo,
+  :stitching,
+  :ts,
+  :video,
+  :videoio,
+  :dnn
+]
 ```
 
-Otherwise, you can import this config file at the end of existing `config/config.exs`
+If a module is not specified in `:enabled_modules`, it may still be compiled if all requirements are present in your machine.
+You can enforce only the `:enabled_modules` to be compiled by changing the compilation mode:
 
-```shell
-mix deps.get
-cp -f deps/evision/config/config.exs config/evision.exs
-echo -e '\nimport_config "evision.exs"' >> config/config.exs
+```elixir
+config :evision, :compile_mode, :only_enabled_modules
+```
+
+You can also configure the list of image codecs used:
+
+```elixir
+config :evision, enabled_img_codecs: [
+  :png,
+  :jpeg,
+  :tiff,
+  :webp,
+  :openjpeg,
+  :jasper,
+  :openexr
+]
 ```
 
 ### Notes 
+
 #### Compile-time related
+
 - How do I specify which OpenCV version to compile?
     ```shell
     # e.g., use OpenCV 4.5.4
@@ -215,7 +243,9 @@ echo -e '\nimport_config "evision.exs"' >> config/config.exs
   2. Image codecs (if you enabled related OpenCV modules).
 
 #### Debug related
-Say you have the following MIX environment variables
+
+Say you have the following MIX environment variables:
+
 ```shell
 # set by MIX
 MIX_ENV=dev
@@ -269,13 +299,15 @@ MIX_TARGET=rpi4
     ```
 
 #### Runtime related
+
 - How do I enable debug logging for OpenCV (prints to stderr).
     ```shell
     export OPENCV_EVISION_DEBUG=1
     ```
 
 ### Current Status
-Some tiny examples
+
+Some tiny examples:
 
 ```elixir
 ## read image, process image and write image
