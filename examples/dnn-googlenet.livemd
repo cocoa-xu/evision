@@ -106,7 +106,7 @@ Helper.download!("https://docs.opencv.org/4.5.4/space_shuttle.jpg", "space_shutt
 ```
 
 ## alias
-```
+```elixir
 # alias Evision as OpenCV
 # please see the Namespace section in the README.md for reasons/motivations
 # (in the root directory of the source code)

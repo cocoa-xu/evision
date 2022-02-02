@@ -45,7 +45,7 @@ File.cd!(__DIR__)
 ```
 
 ## alias
-```
+```elixir
 # alias Evision as OpenCV
 # please see the Namespace section in the README.md for reasons/motivations
 # (in the root directory of the source code)

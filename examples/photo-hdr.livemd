@@ -128,7 +128,7 @@ Helper.download!("https://raw.githubusercontent.com/opencv/opencv_extra/4.x/test
 ```
 
 ## alias
-```
+```elixir
 # alias Evision as OpenCV
 # please see the Namespace section in the README.md for reasons/motivations
 # (in the root directory of the source code)

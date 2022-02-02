@@ -66,7 +66,7 @@ Helper.download!("https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/Cat0
 ```
 
 ## alias
-```
+```elixir
 # alias Evision as OpenCV
 # please see the Namespace section in the README.md for reasons/motivations
 # (in the root directory of the source code)
