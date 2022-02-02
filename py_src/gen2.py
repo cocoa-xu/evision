@@ -34,6 +34,7 @@ opencv_ex_fixes = [
     ]
     :erl_cv_nif.evision_cv_imdecode(positional)
   end
+  deferror imdecode(buf, flags)
 """
 ]
 
