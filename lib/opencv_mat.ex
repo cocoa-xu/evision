@@ -1,9 +1,9 @@
-defmodule OpenCV.Mat do
+defmodule Evision.Mat do
   @moduledoc """
   OpenCV Mat
   """
 
-  import OpenCV.Errorize
+  import Evision.Errorize
 
   @typedoc """
   Types for mat

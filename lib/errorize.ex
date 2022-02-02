@@ -1,4 +1,4 @@
-defmodule OpenCV.Errorize do
+defmodule Evision.Errorize do
   @moduledoc false
 
   # Original version by José

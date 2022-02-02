@@ -1,64 +1,64 @@
-defmodule OpenCV.Test do
+defmodule Evision.Test do
   use ExUnit.Case
 
   test "Errors will be {:error, String.t()}" do
     random_ref = :erlang.make_ref()
-    {:error, reason} = OpenCV.Mat.shape(random_ref)
+    {:error, reason} = Evision.Mat.shape(random_ref)
     assert is_binary(reason)
 
-    {:error, reason} = OpenCV.Nx.to_nx(random_ref)
+    {:error, reason} = Evision.Nx.to_nx(random_ref)
     assert is_binary(reason)
   end
 
   test "OpenCV.Mat.as_type" do
-    {:ok, mat} = OpenCV.Mat.from_binary_by_shape(<< 1, 2, 3, 4 >>, {:u, 8}, {2, 2})
-    {:ok, mat} = OpenCV.Mat.as_type(mat, {:f, 32})
-    {:ok, {:f, 32}} = OpenCV.Mat.type(mat)
-    {:ok, mat} = OpenCV.Mat.as_type(mat, {:f, 64})
-    {:ok, {:f, 64}} = OpenCV.Mat.type(mat)
+    {:ok, mat} = Evision.Mat.from_binary_by_shape(<< 1, 2, 3, 4 >>, {:u, 8}, {2, 2})
+    {:ok, mat} = Evision.Mat.as_type(mat, {:f, 32})
+    {:ok, {:f, 32}} = Evision.Mat.type(mat)
+    {:ok, mat} = Evision.Mat.as_type(mat, {:f, 64})
+    {:ok, {:f, 64}} = Evision.Mat.type(mat)
   end
 
   @tag :nx
   test "OpenCV.Mat.as_type and verify value" do
-    {:ok, mat} = OpenCV.Mat.from_binary_by_shape(<< 1, 2, 3, 4 >>, {:u, 8}, {2, 2})
-    {:ok, mat} = OpenCV.Mat.as_type(mat, {:f, 32})
-    {:ok, {:f, 32}} = OpenCV.Mat.type(mat)
-    {:ok, mat} = OpenCV.Mat.as_type(mat, {:f, 64})
-    {:ok, {:f, 64}} = OpenCV.Mat.type(mat)
+    {:ok, mat} = Evision.Mat.from_binary_by_shape(<< 1, 2, 3, 4 >>, {:u, 8}, {2, 2})
+    {:ok, mat} = Evision.Mat.as_type(mat, {:f, 32})
+    {:ok, {:f, 32}} = Evision.Mat.type(mat)
+    {:ok, mat} = Evision.Mat.as_type(mat, {:f, 64})
+    {:ok, {:f, 64}} = Evision.Mat.type(mat)
     assert [1.0, 2.0, 3.0, 4.0] =
       mat
-      |> OpenCV.Nx.to_nx()
+      |> Evision.Nx.to_nx()
       |> Nx.to_flat_list()
   end
 
-  test "OpenCV.Mat.clone" do
-    {:ok, mat} = OpenCV.Mat.from_binary_by_shape(<< 1, 2, 3, 4 >>, {:u, 8}, {2, 2})
-    {:ok, cloned} = OpenCV.Mat.clone(mat)
+  test "Evision.Mat.clone" do
+    {:ok, mat} = Evision.Mat.from_binary_by_shape(<< 1, 2, 3, 4 >>, {:u, 8}, {2, 2})
+    {:ok, cloned} = Evision.Mat.clone(mat)
     assert cloned != mat
-    assert OpenCV.Mat.type(cloned) == OpenCV.Mat.type(mat)
-    assert OpenCV.Mat.shape(cloned) == OpenCV.Mat.shape(mat)
-    assert OpenCV.Mat.to_binary(cloned) == OpenCV.Mat.to_binary(mat)
+    assert Evision.Mat.type(cloned) == Evision.Mat.type(mat)
+    assert Evision.Mat.shape(cloned) == Evision.Mat.shape(mat)
+    assert Evision.Mat.to_binary(cloned) == Evision.Mat.to_binary(mat)
   end
 
   test "decode png from file w/o alpha channel" do
     ret =
       Path.join(__DIR__, ["test.png"])
-      |> OpenCV.imread()
+      |> Evision.imread()
 
     assert :ok == elem(ret, 0)
     mat = elem(ret, 1)
 
-    ret = OpenCV.Mat.type(mat)
+    ret = Evision.Mat.type(mat)
     assert :ok == elem(ret, 0)
     type = elem(ret, 1)
     assert {:u, 8} == type
 
-    ret = OpenCV.Mat.shape(mat)
+    ret = Evision.Mat.shape(mat)
     assert :ok == elem(ret, 0)
     shape = elem(ret, 1)
     assert {2, 3, 3} == shape
 
-    ret = OpenCV.Mat.to_binary(mat)
+    ret = Evision.Mat.to_binary(mat)
     assert :ok == elem(ret, 0)
     img_data = elem(ret, 1)
 
@@ -69,22 +69,22 @@ defmodule OpenCV.Test do
   test "decode png from file w/ alpha channel" do
     ret =
       Path.join(__DIR__, ["test.png"])
-      |> OpenCV.imread(flags: OpenCV.cv_IMREAD_UNCHANGED())
+      |> Evision.imread(flags: Evision.cv_IMREAD_UNCHANGED())
 
     assert :ok == elem(ret, 0)
     mat = elem(ret, 1)
 
-    ret = OpenCV.Mat.type(mat)
+    ret = Evision.Mat.type(mat)
     assert :ok == elem(ret, 0)
     type = elem(ret, 1)
     assert {:u, 8} == type
 
-    ret = OpenCV.Mat.shape(mat)
+    ret = Evision.Mat.shape(mat)
     assert :ok == elem(ret, 0)
     shape = elem(ret, 1)
     assert {2, 3, 4} == shape
 
-    ret = OpenCV.Mat.to_binary(mat)
+    ret = Evision.Mat.to_binary(mat)
     assert :ok == elem(ret, 0)
     img_data = elem(ret, 1)
 
@@ -94,23 +94,23 @@ defmodule OpenCV.Test do
 
   test "decode image from file grayscale" do
     ret =
-      Path.join(__DIR__, ["test.png"])
-      |> OpenCV.imread(flags: OpenCV.cv_IMREAD_GRAYSCALE())
+      Path.join([__DIR__, "test.png"])
+      |> Evision.imread(flags: Evision.cv_IMREAD_GRAYSCALE())
 
     assert :ok == elem(ret, 0)
     mat = elem(ret, 1)
 
-    ret = OpenCV.Mat.type(mat)
+    ret = Evision.Mat.type(mat)
     assert :ok == elem(ret, 0)
     type = elem(ret, 1)
     assert {:u, 8} == type
 
-    ret = OpenCV.Mat.shape(mat)
+    ret = Evision.Mat.shape(mat)
     assert :ok == elem(ret, 0)
     shape = elem(ret, 1)
     assert {2, 3} == shape
 
-    ret = OpenCV.Mat.to_binary(mat)
+    ret = Evision.Mat.to_binary(mat)
     assert :ok == elem(ret, 0)
     img_data = elem(ret, 1)
 
@@ -119,23 +119,23 @@ defmodule OpenCV.Test do
 
   test "decode jpg from file" do
     ret =
-      Path.join(__DIR__, ["test.jpg"])
-      |> OpenCV.imread()
+      Path.join([__DIR__, "test.jpg"])
+      |> Evision.imread()
 
     assert :ok == elem(ret, 0)
     mat = elem(ret, 1)
 
-    ret = OpenCV.Mat.type(mat)
+    ret = Evision.Mat.type(mat)
     assert :ok == elem(ret, 0)
     type = elem(ret, 1)
     assert {:u, 8} == type
 
-    ret = OpenCV.Mat.shape(mat)
+    ret = Evision.Mat.shape(mat)
     assert :ok == elem(ret, 0)
     shape = elem(ret, 1)
     assert {2, 3, 3} == shape
 
-    ret = OpenCV.Mat.to_binary(mat)
+    ret = Evision.Mat.to_binary(mat)
     assert :ok == elem(ret, 0)
     img_data = elem(ret, 1)
 
@@ -143,21 +143,21 @@ defmodule OpenCV.Test do
              img_data
   end
 
-  test "OpenCV.imreadmulti" do
+  test "Evision.imreadmulti" do
     path = Path.join(__DIR__, ["imreadmulti_test.tiff"])
-    ret = OpenCV.imreadmulti(path)
+    ret = Evision.imreadmulti(path)
     assert :ok == elem(ret, 0)
     images = elem(ret, 1)
     assert Enum.count(images) == 2
   end
 
-  test "OpenCV.imwritemulti" do
-    input_path = Path.join(__DIR__, ["imreadmulti_test.tiff"])
-    output_path = Path.join(__DIR__, ["imwritemulti_test.tiff"])
-    {:ok, images} = OpenCV.imreadmulti(input_path)
-    assert :ok = OpenCV.imwritemulti(output_path, images)
+  test "Evision.imwritemulti" do
+    input_path = Path.join([__DIR__, "imreadmulti_test.tiff"])
+    output_path = Path.join([__DIR__, "imwritemulti_test.tiff"])
+    {:ok, images} = Evision.imreadmulti(input_path)
+    assert :ok = Evision.imwritemulti(output_path, images)
 
-    ret = OpenCV.imreadmulti(output_path)
+    ret = Evision.imreadmulti(output_path)
     assert :ok == elem(ret, 0)
     images = elem(ret, 1)
     assert Enum.count(images) == 2
@@ -165,55 +165,54 @@ defmodule OpenCV.Test do
     File.rm!(output_path)
   end
 
-  test "OpenCV.imencode and OpenCV.imdecode" do
+  test "Evision.imencode and Evision.imdecode" do
     {:ok, mat} =
       Path.join(__DIR__, ["test.png"])
-      |> OpenCV.imread()
+      |> Evision.imread()
 
-    ret = OpenCV.imencode(".png", mat)
+    ret = Evision.imencode(".png", mat)
     assert :ok == elem(ret, 0)
     {:ok, encoded} = ret
     encoded = IO.iodata_to_binary(encoded)
 
-    ret = OpenCV.imdecode(encoded, OpenCV.cv_IMREAD_ANYCOLOR())
+    ret = Evision.imdecode(encoded, Evision.cv_IMREAD_ANYCOLOR())
     assert :ok == elem(ret, 0)
     {:ok, decoded_mat} = ret
-    {:ok, {2, 3, 3}} = OpenCV.Mat.shape(decoded_mat)
+    {:ok, {2, 3, 3}} = Evision.Mat.shape(decoded_mat)
   end
 
-  test "OpenCV.resize" do
+  test "Evision.resize" do
     {:ok, mat} =
-      [__DIR__, "test.png"]
-      |> Path.join()
-      |> OpenCV.imread()
+      Path.join([__DIR__, "test.png"])
+      |> Evision.imread()
 
     resize_height = 4
     resize_width = 6
-    {:ok, resized_mat} = OpenCV.resize(mat, [resize_height, resize_width])
-    {:ok, {^resize_width, ^resize_height, 3}} = OpenCV.Mat.shape(resized_mat)
+    {:ok, resized_mat} = Evision.resize(mat, [resize_height, resize_width])
+    {:ok, {^resize_width, ^resize_height, 3}} = Evision.Mat.shape(resized_mat)
   end
 
-  test "OpenCV.imwrite" do
-    input_path = Path.join(__DIR__, ["test.png"])
-    output_path = Path.join(__DIR__, ["imwrite_test.png"])
-    {:ok, mat} = OpenCV.imread(input_path)
-    assert :ok = OpenCV.imwrite(output_path, mat)
+  test "Evision.imwrite" do
+    input_path = Path.join([__DIR__, "test.png"])
+    output_path = Path.join([__DIR__, "imwrite_test.png"])
+    {:ok, mat} = Evision.imread(input_path)
+    assert :ok = Evision.imwrite(output_path, mat)
 
-    ret = OpenCV.imread(output_path)
+    ret = Evision.imread(output_path)
     assert :ok == elem(ret, 0)
     mat = elem(ret, 1)
 
-    ret = OpenCV.Mat.type(mat)
+    ret = Evision.Mat.type(mat)
     assert :ok == elem(ret, 0)
     type = elem(ret, 1)
     assert {:u, 8} == type
 
-    ret = OpenCV.Mat.shape(mat)
+    ret = Evision.Mat.shape(mat)
     assert :ok == elem(ret, 0)
     shape = elem(ret, 1)
     assert {2, 3, 3} == shape
 
-    ret = OpenCV.Mat.to_binary(mat)
+    ret = Evision.Mat.to_binary(mat)
     assert :ok == elem(ret, 0)
     img_data = elem(ret, 1)
 
@@ -223,22 +222,22 @@ defmodule OpenCV.Test do
     File.rm!(output_path)
   end
 
-  test "OpenCV.mean" do
+  test "Evision.mean" do
     {:ok, mat} =
       Path.join(__DIR__, ["test.png"])
-      |> OpenCV.imread(flags: OpenCV.cv_IMREAD_GRAYSCALE())
+      |> Evision.imread(flags: Evision.cv_IMREAD_GRAYSCALE())
 
-    {:ok, bin} = OpenCV.Mat.to_binary(mat)
+    {:ok, bin} = Evision.Mat.to_binary(mat)
     avg = Enum.sum(:binary.bin_to_list(bin)) / byte_size(bin)
-    {:ok, {avg_cv, 0.0, 0.0, 0.0}} = OpenCV.mean(mat)
+    {:ok, {avg_cv, 0.0, 0.0, 0.0}} = Evision.mean(mat)
     assert abs(avg - avg_cv) < 0.00000001
   end
 
-  test "OpenCV.minMaxLoc" do
+  test "Evision.minMaxLoc" do
     {:ok, mat} =
-      Path.join(__DIR__, ["test.png"])
-      |> OpenCV.imread(flags: OpenCV.cv_IMREAD_GRAYSCALE())
+      Path.join([__DIR__, "test.png"])
+      |> Evision.imread(flags: Evision.cv_IMREAD_GRAYSCALE())
 
-    {:ok, {112.0, 209.0, {2, 0}, {0, 1}}} = OpenCV.minMaxLoc(mat)
+    {:ok, {112.0, 209.0, {2, 0}, {0, 1}}} = Evision.minMaxLoc(mat)
   end
 end

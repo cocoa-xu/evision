@@ -58,6 +58,14 @@ defmodule Helper do
 end
 ```
 
+## alias
+```
+# alias Evision as OpenCV
+# please see the Namespace section in the README.md for reasons/motivations
+# (in the root directory of the source code)
+alias Evision, as: OpenCV
+```
+
 ## OpenCV.PCA
 
 ```elixir

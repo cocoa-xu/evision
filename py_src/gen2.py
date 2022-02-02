@@ -1886,9 +1886,9 @@ class PythonWrapperGenerator(object):
         else:
             module_file_writer = StringIO()
             module_file_writer.doc_written = {}
-            module_file_writer.write(f'defmodule OpenCV.{elixir_module_name} do\n')
+            module_file_writer.write(f'defmodule Evision.{elixir_module_name} do\n')
             module_file_writer.write('  import Kernel, except: [apply: 2, apply: 3]\n')
-            module_file_writer.write('  import OpenCV.Errorize\n')
+            module_file_writer.write('  import Evision.Errorize\n')
             module_file_writer.deferror = {}
             self.opencv_modules[opencv_module_file_name] = module_file_writer
             return module_file_writer, inner_ns
@@ -1898,10 +1898,10 @@ class PythonWrapperGenerator(object):
         self.clear()
         self.parser = hdr_parser.CppHeaderParser(generate_umat_decls=True, generate_gpumat_decls=True)
         self.erl_cv_nif.write('defmodule :erl_cv_nif do\n{}\n'.format(gen_erl_cv_nif_load_nif))
-        self.opencv_ex.write('defmodule OpenCV do\n')
+        self.opencv_ex.write('defmodule Evision do\n')
         self.opencv_ex.write('  use Bitwise\n')
         self.opencv_ex.write('  import Kernel, except: [apply: 2, apply: 3, min: 2, max: 2]\n')
-        self.opencv_ex.write('  import OpenCV.Errorize\n')
+        self.opencv_ex.write('  import Evision.Errorize\n')
         self.opencv_ex.deferror = {}
         self.code_ns_reg.write('static ErlNifFunc nif_functions[] = {\n')
 

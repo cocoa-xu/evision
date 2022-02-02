@@ -1,9 +1,9 @@
-defmodule OpenCV.Gui do
+defmodule Evision.Gui do
   @moduledoc """
   OpenCV High-level Graphical User Interface
   """
 
-  import OpenCV.Errorize
+  import Evision.Errorize
 
   @doc """
   Show a mat in a named window
@@ -13,11 +13,11 @@ defmodule OpenCV.Gui do
 
   ## Example
   ```elixir
-  {:ok, mat} = OpenCV.imread("example.jpg")
-  OpenCV.imshow("OpenCV", mat)
+  {:ok, mat} = Evision.imread("example.jpg")
+  Evision.imshow("OpenCV", mat)
   # the following line may be necessary on your system
   # will try to improve this later
-  OpenCV.waitkey(0)
+  Evision.waitkey(0)
   ```
   """
   @doc namespace: :"cv.highgui"

@@ -1,4 +1,4 @@
-defmodule OpenCV.TestHelper do
+defmodule Evision.TestHelper do
   def download!(url, save_as, overwrite \\ false)
 
   def download!(url, save_as, false) do
@@ -58,7 +58,7 @@ defmodule OpenCV.TestHelper do
   end
 end
 
-compiled_modules = OpenCV.__enabled_modules__()
+compiled_modules = Evision.__enabled_modules__()
 
 ExUnit.configure(
   exclude: [

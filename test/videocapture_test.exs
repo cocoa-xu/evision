@@ -1,4 +1,5 @@
-defmodule OpenCV.VideoCapture.Test do
+defmodule Evision.VideoCapture.Test do
+  alias Evision, as: OpenCV
   use ExUnit.Case
 
   @moduletag timeout: 120_000
