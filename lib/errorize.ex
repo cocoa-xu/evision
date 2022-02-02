@@ -1,4 +1,6 @@
-defmodule Errorize do
+defmodule OpenCV.Errorize do
+  @moduledoc false
+
   # Original version by José
   # https://gist.github.com/josevalim/7a5ed50ed86a2260d907603ca8223448
   # modified a tiny bit by Cocoa

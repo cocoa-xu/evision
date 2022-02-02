@@ -3,7 +3,7 @@ defmodule OpenCV.Mat do
   OpenCV Mat
   """
 
-  import Errorize
+  import OpenCV.Errorize
 
   @typedoc """
   Types for mat

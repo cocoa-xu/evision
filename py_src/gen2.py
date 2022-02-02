@@ -1888,7 +1888,7 @@ class PythonWrapperGenerator(object):
             module_file_writer.doc_written = {}
             module_file_writer.write(f'defmodule OpenCV.{elixir_module_name} do\n')
             module_file_writer.write('  import Kernel, except: [apply: 2, apply: 3]\n')
-            module_file_writer.write('  import Errorize\n')
+            module_file_writer.write('  import OpenCV.Errorize\n')
             module_file_writer.deferror = {}
             self.opencv_modules[opencv_module_file_name] = module_file_writer
             return module_file_writer, inner_ns
@@ -1901,7 +1901,7 @@ class PythonWrapperGenerator(object):
         self.opencv_ex.write('defmodule OpenCV do\n')
         self.opencv_ex.write('  use Bitwise\n')
         self.opencv_ex.write('  import Kernel, except: [apply: 2, apply: 3, min: 2, max: 2]\n')
-        self.opencv_ex.write('  import Errorize\n')
+        self.opencv_ex.write('  import OpenCV.Errorize\n')
         self.opencv_ex.deferror = {}
         self.code_ns_reg.write('static ErlNifFunc nif_functions[] = {\n')
 

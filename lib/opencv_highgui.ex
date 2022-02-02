@@ -3,7 +3,7 @@ defmodule OpenCV.Gui do
   OpenCV High-level Graphical User Interface
   """
 
-  import Errorize
+  import OpenCV.Errorize
 
   @doc """
   Show a mat in a named window

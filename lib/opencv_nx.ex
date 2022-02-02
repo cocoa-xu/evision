@@ -7,7 +7,7 @@ defmodule OpenCV.Nx do
   list.
   """
 
-  import Errorize
+  import OpenCV.Errorize
 
   unless Code.ensure_loaded?(Nx) do
     @compile {:no_warn_undefined, Nx}
