@@ -1,7 +1,9 @@
-defmodule OpenCV.Mat do
+defmodule Evision.Mat do
   @moduledoc """
   OpenCV Mat
   """
+
+  import Evision.Errorize
 
   @typedoc """
   Types for mat
@@ -17,10 +19,12 @@ defmodule OpenCV.Mat do
           1 | 3 | 4
 
   @doc namespace: :"cv.Mat"
-  @spec type(reference()) :: {:ok, reference()} | {:error, String.t()}
+  @spec type(reference()) :: {:ok, mat_type()} | {:error, String.t()}
   def type(mat) when is_reference(mat) do
     :erl_cv_nif.evision_cv_mat_type(img: mat)
   end
+
+  deferror type(mat)
 
   @doc namespace: :"cv.Mat"
   @spec as_type(reference(), mat_type()) :: {:ok, reference()} | {:error, String.t()}
@@ -28,10 +32,14 @@ defmodule OpenCV.Mat do
     :erl_cv_nif.evision_cv_mat_as_type(img: mat, t: t, l: l)
   end
 
+  deferror as_type(mat, type)
+
   @doc namespace: :"cv.Mat"
   def shape(mat) when is_reference(mat) do
     :erl_cv_nif.evision_cv_mat_shape(img: mat)
   end
+
+  deferror shape(mat)
 
   @doc namespace: :"cv.Mat"
   @spec clone(reference()) :: {:ok, reference()} | {:error, String.t()}
@@ -39,11 +47,15 @@ defmodule OpenCV.Mat do
     :erl_cv_nif.evision_cv_mat_clone(img: mat)
   end
 
+  deferror clone(mat)
+
   @doc namespace: :"cv.Mat"
-  @spec clone(reference()) :: {:ok, binary()} | {:error, String.t()}
+  @spec to_binary(reference()) :: {:ok, binary()} | {:error, String.t()}
   def to_binary(mat) when is_reference(mat) do
     :erl_cv_nif.evision_cv_mat_to_binary(img: mat)
   end
+
+  deferror to_binary(mat)
 
   @doc """
   Create Mat from binary (pixel) data
@@ -68,6 +80,7 @@ defmodule OpenCV.Mat do
       channels: channels
     )
   end
+  deferror from_binary(binary, type, rows, cols, channels)
 
   @doc namespace: :"cv.Mat"
   def from_binary_by_shape(binary, _type = {t, l}, shape)
@@ -85,4 +98,6 @@ defmodule OpenCV.Mat do
       shape: shape
     )
   end
+
+  deferror from_binary_by_shape(binary, type, shape)
 end

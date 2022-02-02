@@ -1,5 +1,6 @@
-defmodule OpenCV.ML.SVM.Test do
+defmodule Evision.ML.SVM.Test do
   use ExUnit.Case
+  alias Evision, as: OpenCV
 
   @moduletag timeout: 120_000
 

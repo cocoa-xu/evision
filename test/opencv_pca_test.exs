@@ -1,6 +1,7 @@
-defmodule OpenCV.PCA.Test do
+defmodule Evision.PCA.Test do
   use ExUnit.Case
   use Bitwise
+  alias Evision, as: OpenCV
 
   @moduletag timeout: 120_000
 

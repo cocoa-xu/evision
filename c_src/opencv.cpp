@@ -465,7 +465,7 @@ template<>
 ERL_NIF_TERM evision_from(ErlNifEnv *env, const Mat& m)
 {
     if( !m.data )
-        return evision::nif::atom(env, "nil");
+        return evision::nif::error(env, "empty matrix");
 
     evision_res<cv::Mat *> * res;
     if (alloc_resource(&res)) {

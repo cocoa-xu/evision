@@ -1,6 +1,7 @@
-defmodule OpenCV.DNN.Test do
+defmodule Evision.DNN.Test do
   use ExUnit.Case
   import ExUnit.CaptureIO
+  alias Evision, as: OpenCV
 
   @moduletag timeout: 600_000
 

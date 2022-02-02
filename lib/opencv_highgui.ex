@@ -1,7 +1,9 @@
-defmodule OpenCV.Gui do
+defmodule Evision.Gui do
   @moduledoc """
   OpenCV High-level Graphical User Interface
   """
+
+  import Evision.Errorize
 
   @doc """
   Show a mat in a named window
@@ -11,17 +13,19 @@ defmodule OpenCV.Gui do
 
   ## Example
   ```elixir
-  {:ok, mat} = OpenCV.imread("example.jpg")
-  OpenCV.imshow("OpenCV", mat)
+  {:ok, mat} = Evision.imread("example.jpg")
+  Evision.imshow("OpenCV", mat)
   # the following line may be necessary on your system
   # will try to improve this later
-  OpenCV.waitkey(0)
+  Evision.waitkey(0)
   ```
   """
   @doc namespace: :"cv.highgui"
   def imshow(winname, mat) when is_binary(winname) do
     :erl_cv_nif.evision_cv_imshow(winname: winname, mat: mat)
   end
+
+  deferror imshow(winname, mat)
 
   @doc """
   wait for user keyboard event for a `delay` amount of time (ms)
@@ -31,19 +35,25 @@ defmodule OpenCV.Gui do
     :erl_cv_nif.evision_cv_waitKey(delay: delay)
   end
 
+  deferror waitkey(delay)
+
   @doc """
   close a named window
   """
   @doc namespace: :"cv.highgui"
-  def destroy_window(winname) when is_binary(winname) do
+  def destroyWindow(winname) when is_binary(winname) do
     :erl_cv_nif.evision_cv_destroyWindow(winname: winname)
   end
+
+  deferror destroyWindow(winname)
 
   @doc """
   close all windows
   """
   @doc namespace: :"cv.highgui"
-  def destroy_all_windows do
+  def destroyAllWindows do
     :erl_cv_nif.evision_cv_destroyAllWindows()
   end
+
+  deferror destroyAllWindows()
 end

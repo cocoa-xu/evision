@@ -127,6 +127,14 @@ list_txt_file = Path.join([__DIR__, "photo_hdr_test", "list.txt"])
 Helper.download!("https://raw.githubusercontent.com/opencv/opencv_extra/4.x/testdata/cv/hdr/exposures/list.txt", list_txt_file)
 ```
 
+## alias
+```elixir
+# alias Evision as OpenCV
+# please see the Namespace section in the README.md for reasons/motivations
+# (in the root directory of the source code)
+alias Evision, as: OpenCV
+```
+
 ### Load exposure sequences
 ```elixir
 # Firstly we load input images and exposure times from user-defined folder.

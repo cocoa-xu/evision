@@ -1,6 +1,7 @@
-defmodule OpenCV.Photo.HDR.Test do
+defmodule Evision.Photo.HDR.Test do
   use ExUnit.Case
   use Bitwise
+  alias Evision, as: OpenCV
 
   @moduletag timeout: 120_000
 

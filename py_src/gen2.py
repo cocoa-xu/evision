@@ -999,6 +999,10 @@ class FuncInfo(object):
                     aname, argno = v.py_outlist[0]
                     if v.rettype == 'bool':
                         code_ret = "if (%s) {\n                return evision::nif::atom(env, \"ok\");\n            } else {\n                return evision::nif::atom(env, \"error\");\n            }" % (aname,)
+                    elif v.rettype == 'Mat':
+                        code_ret = f"ERL_NIF_TERM mat_ret = evision_from(env, {aname});\n" \
+                                   "            if (enif_is_ref(env, mat_ret)) return evision::nif::ok(env, mat_ret);\n" \
+                                   "            else return mat_ret;"
                     else:
                         code_ret = "return evision::nif::ok(env, evision_from(env, %s))" % (aname,)
             else:
@@ -1183,6 +1187,7 @@ class PythonWrapperGenerator(object):
         self.erl_cv_nif = StringIO()
         self.opencv_ex = StringIO()
         self.opencv_func = StringIO()
+        self.opencv_func.deferror = {}
         self.opencv_func.doc_written = {}
         self.opencv_modules = {}
         self.code_type_publish = StringIO()
@@ -1450,12 +1455,24 @@ class PythonWrapperGenerator(object):
             # name  => prop name
             # func  => ClassProp
             func_name = "evision_" + prop_class.wname + '_get_' + name
-            writer.write(f"  def get_{name}(self) do\n    :erl_cv_nif.{func_name}(self)\n  end\n")
+            writer.write(f"  def get_{name}(self) do\n"
+                         f"    :erl_cv_nif.{func_name}(self)\n"
+                         "  end\n")
+            name_arity = f'get_{name}!/1'
+            if not writer.deferror.get(name_arity, False):
+                writer.write(f"  deferror get_{name}(self)\n")
+                writer.deferror[name_arity] = True
+
             self.erl_cv_nif.write(f'  def {func_name}(_self), do: :erlang.nif_error("{wname}::{name} getter not loaded")\n')
             self.code_ns_reg.write(f'    F({func_name}, 1),\n')
             if not func.readonly:
                 func_name = "evision_" + prop_class.wname + '_set_' + name
                 writer.write(f"  def set_{name}(self, opts) do\n    :erl_cv_nif.{func_name}(self, opts)\n  end\n")
+                name_arity = f'set_{name}!/1'
+                if not writer.deferror.get(name_arity, False):
+                    writer.write(f"  deferror set_{name}(self, opts)\n")
+                    writer.deferror[name_arity] = True
+
                 self.erl_cv_nif.write(f'  def {func_name}(_self, _opts), do: :erlang.nif_error("{wname}::{name} setter not loaded")\n')
                 self.code_ns_reg.write(f'    F({func_name}, 2),\n')
             return
@@ -1749,15 +1766,38 @@ class PythonWrapperGenerator(object):
                 if func_name.startswith(evision_nif_prefix + "dnn") and module_func_name == "forward":
                     inline_doc += function_group
                     writer.write(f'{inline_doc}  def {module_func_name}(self, opt \\\\ []) do\n    :erl_cv_nif.{func_name}(self, opt)\n  end\n')
+                    name_arity = f'{module_func_name}!/2'
+                    if not writer.deferror.get(name_arity, False):
+                        writer.write(f"  deferror {module_func_name}(self, opt)\n")
+                        writer.deferror[name_arity] = True
                     continue
                 if func_name.startswith(evision_nif_prefix + "dnn_dnn_net") and (module_func_name == "getLayerShapes" or module_func_name == "getLayersShapes"):
                     inline_doc += function_group
                     writer.write(f'{inline_doc}  def {module_func_name}(self, opt \\\\ []) do\n    :erl_cv_nif.{func_name}(self, opt)\n  end\n')
+                    name_arity = f'{module_func_name}!/2'
+                    if not writer.deferror.get(name_arity, False):
+                        writer.write(f"  deferror {module_func_name}(self, opt)\n")
+                        writer.deferror[name_arity] = True
                     continue
                 if len(func_args_with_opts) > 0:
                     inline_doc += function_group
-                    writer.write(f'{inline_doc}  def {module_func_name}({module_func_args_with_opts}){when_guard}do\n    {positional}\n    :erl_cv_nif.{func_name}({func_args_with_opts})\n  end\n')
-                writer.write(f'{function_group}  def {module_func_name}({module_func_args}){when_guard}do\n    {positional}\n    :erl_cv_nif.{func_name}({func_args})\n  end\n')
+                    writer.write(f'{inline_doc}  def {module_func_name}({module_func_args_with_opts}){when_guard}do\n'
+                                 f'    {positional}\n'
+                                 f'    :erl_cv_nif.{func_name}({func_args_with_opts})\n'
+                                 '  end\n')
+                    module_func_args_without_opts = module_func_args_with_opts.replace('\\\\ []', '')
+                    name_arity = f'{module_func_name}!/{len(module_func_args_without_opts.split(","))}'
+                    if not writer.deferror.get(name_arity, False):
+                        writer.write(f"  deferror {module_func_name}({module_func_args_without_opts})\n")
+                        writer.deferror[name_arity] = True
+                writer.write(f'{function_group}  def {module_func_name}({module_func_args}){when_guard}do\n'
+                             f'    {positional}\n'
+                             f'    :erl_cv_nif.{func_name}({func_args})\n'
+                             '  end\n')
+                name_arity = f'{module_func_name}!/{len(module_func_args.split(","))}'
+                if not writer.deferror.get(name_arity, False):
+                    writer.write(f'  deferror {module_func_name}({module_func_args})\n')
+                    writer.deferror[name_arity] = True
 
     def gen_namespace(self):
         for ns_name in self.namespaces:
@@ -1850,7 +1890,10 @@ class PythonWrapperGenerator(object):
         else:
             module_file_writer = StringIO()
             module_file_writer.doc_written = {}
-            module_file_writer.write(f'defmodule OpenCV.{elixir_module_name} do\n')
+            module_file_writer.write(f'defmodule Evision.{elixir_module_name} do\n')
+            module_file_writer.write('  import Kernel, except: [apply: 2, apply: 3]\n')
+            module_file_writer.write('  import Evision.Errorize\n')
+            module_file_writer.deferror = {}
             self.opencv_modules[opencv_module_file_name] = module_file_writer
             return module_file_writer, inner_ns
 
@@ -1859,8 +1902,11 @@ class PythonWrapperGenerator(object):
         self.clear()
         self.parser = hdr_parser.CppHeaderParser(generate_umat_decls=True, generate_gpumat_decls=True)
         self.erl_cv_nif.write('defmodule :erl_cv_nif do\n{}\n'.format(gen_erl_cv_nif_load_nif))
-        self.opencv_ex.write('defmodule OpenCV do\n')
+        self.opencv_ex.write('defmodule Evision do\n')
         self.opencv_ex.write('  use Bitwise\n')
+        self.opencv_ex.write('  import Kernel, except: [apply: 2, apply: 3, min: 2, max: 2]\n')
+        self.opencv_ex.write('  import Evision.Errorize\n')
+        self.opencv_ex.deferror = {}
         self.code_ns_reg.write('static ErlNifFunc nif_functions[] = {\n')
 
         # step 1: scan the headers and build more descriptive maps of classes, consts, functions
@@ -2010,6 +2056,7 @@ class PythonWrapperGenerator(object):
             writer = self.opencv_modules[name]
             writer.write('\nend\n')
             self.save(erl_output_path, f"opencv_{name.lower()}.ex", writer)
+
 
 if __name__ == "__main__":
     srcfiles = hdr_parser.opencv_hdr_list

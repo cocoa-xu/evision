@@ -59,6 +59,14 @@ Helper.download!("https://raw.githubusercontent.com/opencv/opencv_extra/master/t
 Helper.download!("https://raw.githubusercontent.com/opencv/opencv_extra/master/testdata/stitching/a3.png", "a3.png")
 ```
 
+## alias
+```elixir
+# alias Evision as OpenCV
+# please see the Namespace section in the README.md for reasons/motivations
+# (in the root directory of the source code)
+alias Evision, as: OpenCV
+```
+
 ## Stitching
 
 ```elixir

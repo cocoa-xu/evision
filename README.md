@@ -35,6 +35,9 @@ The default password of the livebook is `nerves` (as the time of writing, if it 
 
 ```elixir
 {:ok, mat} = OpenCV.imread("/path/to/image.png")
+# Or you can use the !(bang) version, but if the image cannot be read by OpenCV for whatever reason
+# the bang version will raise a RuntimeError exception
+mat = OpenCV.imread!("/path/to/image.png")
 t = OpenCV.Nx.to_nx(mat)
 ```
 
@@ -304,6 +307,28 @@ MIX_TARGET=rpi4
     ```shell
     export OPENCV_EVISION_DEBUG=1
     ```
+
+### Namespace
+`:evision` is just one possible OpenCV-Elixir bindings, and that means I didn't write ANY actual algorithms here. As for
+the reason why I chose `OpenCV` as the namespace in previous commits, that's because I don't want to give a feeling to 
+users that all these functions/algorithms come from `:evision`.
+
+However, as there are more people get interested in this project, I have to think about this question carefully. And after
+various considerations, I decided to use `Evision` as the root namespace for this project. The reasons are
+
+1. The `app` name of this project is `:evision`, therefore, I should use `Evision` so that it's consistent. 
+2. `:evision` is one possible OpenCV-Elixir bindings, so it is better to use `Evision` as the namespace.
+3. Using `OpenCV` as the namespace could be misleading at times if something went wrong in `:evision`'s code.
+4. This leaves the choice to users to choose whether if they would like to alias `Evision` as `OpenCV` or any other names.
+
+Please note that although everything now will be under the `Evision` namespace, the actual algorithms/functions come from
+the OpenCV project.
+
+```elixir
+alias Evision, as: OpenCV
+# Or
+# alias Evision, as: CV
+```
 
 ### Current Status
 
