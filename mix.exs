@@ -10,7 +10,7 @@ defmodule Evision.MixProject do
   @source_url "https://github.com/cocoa-xu/evision/tree/#{@opencv_version}"
 
   def project do
-    {cmake_options, enabled_modules} = generate_cmake_options(Mix.ProjectStack.peek() == nil)
+    {cmake_options, enabled_modules} = generate_cmake_options()
 
     [
       app: @app,
@@ -30,8 +30,7 @@ defmodule Evision.MixProject do
           System.get_env("MAKE_BUILD_FLAGS", "-j#{System.schedulers_online()}"),
         "CMAKE_OPTIONS" => cmake_options,
         "ENABLED_CV_MODULES" => enabled_modules
-      },
-      xref: [exclude: [Nx]]
+      }
     ]
   end
 
@@ -59,65 +58,83 @@ defmodule Evision.MixProject do
 
   defp elixirc_paths(_), do: ~w(lib)
 
-  defp all_opencv_modules do
-    [
-      :calib3d,
-      :core,
-      :features2d,
-      :flann,
-      :highgui,
-      :imgcodecs,
-      :imgproc,
-      :ml,
-      :photo,
-      :stitching,
-      :ts,
-      :video,
-      :videoio,
-      :dnn,
-      :gapi,
-      :world,
-      :python2,
-      :python3
-    ]
-  end
+  @all_modules [
+    :calib3d,
+    :core,
+    :features2d,
+    :flann,
+    :highgui,
+    :imgcodecs,
+    :imgproc,
+    :ml,
+    :photo,
+    :stitching,
+    :ts,
+    :video,
+    :videoio,
+    :dnn,
+    :gapi,
+    :world,
+    :python2,
+    :python3
+  ]
 
-  def read_config do
-    {
-      [
-        evision: [
-          enabled_modules: enabled_modules,
-          disabled_modules: disabled_modules,
-          enabled_img_codecs: enabled_img_codecs,
-          compile_mode: compile_mode
-        ]
-      ],
-      _
-    } = Config.Reader.read_imports!(Path.join([__DIR__, "config", "config.exs"]))
+  @enabled_modules [
+    :calib3d,
+    :core,
+    :features2d,
+    :flann,
+    :highgui,
+    :imgcodecs,
+    :imgproc,
+    :ml,
+    :photo,
+    :stitching,
+    :ts,
+    :video,
+    :videoio,
+    :dnn
+  ]
 
-    {enabled_modules, disabled_modules, enabled_img_codecs, compile_mode}
-  end
+  @disabled_modules [
+    # not supported yet
+    :gapi,
+    # no need for this
+    :world,
+    # no need for this
+    :python2,
+    # no need for this
+    :python3,
+    # no need for this
+    :java
+  ]
 
-  defp get_config(true) do
-    read_config()
-  end
+  @enabled_img_codecs [
+    :png,
+    :jpeg,
+    :tiff,
+    :webp,
+    :openjpeg,
+    :jasper,
+    :openexr
+  ]
 
-  defp get_config(false) do
-    {enabled_modules, disabled_modules, enabled_img_codecs, compile_mode} = read_config()
-    enabled_modules = Application.get_env(:evision, :enabled_modules, enabled_modules)
-    disabled_modules = Application.get_env(:evision, :disabled_modules, disabled_modules)
-    enabled_img_codecs = Application.get_env(:evision, :enabled_img_codecs, enabled_img_codecs)
-    compile_mode = Application.get_env(:evision, :compile_mode, compile_mode)
-    {enabled_modules, disabled_modules, enabled_img_codecs, compile_mode}
-  end
+  # To make things easier, you can set `compile_mode` to `only_enabled_modules` so
+  # that only modules specified in `enabled_modules` will be compiled. Like-wise,
+  # set `except_disabled_modules` to only exclude modules in `disabled_modules`.
+  # By default, the value of `compile_mode` is `auto`, which means to leave unspecified
+  # modules to CMake to decide.
+  @compile_mode :auto
 
-  defp generate_cmake_options(standalone) do
-    {enabled_modules, disabled_modules, enabled_img_codecs, compile_mode} = get_config(standalone)
-    all_modules = all_opencv_modules()
+  defp generate_cmake_options() do
+    enabled_modules = Application.get_env(:evision, :enabled_modules, @enabled_modules)
+    disabled_modules = Application.get_env(:evision, :disabled_modules, @disabled_modules)
+    enabled_img_codecs = Application.get_env(:evision, :enabled_img_codecs, @enabled_img_codecs)
+    compile_mode = Application.get_env(:evision, :compile_mode, @compile_mode)
 
     {cmake_options, enabled_modules} =
       case compile_mode do
-        "auto" ->
+        :auto ->
           cmake_options =
             (enabled_modules
              |> Enum.map(&"-D BUILD_opencv_#{Atom.to_string(&1)}=ON")
@@ -129,7 +146,7 @@ defmodule Evision.MixProject do
 
           {cmake_options, enabled_modules}
 
-        "only_enabled_modules" ->
+        :only_enabled_modules ->
           cmake_options =
             ("-D BUILD_LIST=" <> enabled_modules)
             |> Enum.map(&Atom.to_string(&1))
@@ -137,8 +154,8 @@ defmodule Evision.MixProject do
 
           {cmake_options, enabled_modules}
 
-        "except_disabled_modules" ->
-          enabled_modules = all_modules -- disabled_modules
+        :except_disabled_modules ->
+          enabled_modules = @all_modules -- disabled_modules
 
           cmake_options =
             ("-D BUILD_LIST=" <> enabled_modules)
@@ -148,7 +165,7 @@ defmodule Evision.MixProject do
           {cmake_options, enabled_modules}
 
         unrecognised_mode ->
-          Mix.raise("unrecognised compile_mode for evision: #{unrecognised_mode}")
+          Mix.raise("unrecognised compile_mode for evision: #{inspect(unrecognised_mode)}")
       end
 
     options =
@@ -166,7 +183,7 @@ defmodule Evision.MixProject do
     [
       {:elixir_make, "~> 0.6"},
       {:ex_doc, "~> 0.27", only: :dev, runtime: false},
-      {:nx, "~> 0.1", optional: true},
+      {:nx, "~> 0.1", optional: true}
     ]
   end
 
