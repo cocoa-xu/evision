@@ -55,7 +55,7 @@ jobs:
           set OPENCV_VER=${{ matrix.pair.opencv_ver }}
           set MAKE=nmake
           mix deps.get
-          del /f Makefile
+          Remove-Item Makefile
           mix compile
 
       - name: Mix Test
