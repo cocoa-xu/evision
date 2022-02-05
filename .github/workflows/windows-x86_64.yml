@@ -45,6 +45,10 @@ jobs:
           otp-version: ${{matrix.pair.otp}}
           elixir-version: ${{matrix.pair.elixir}}
 
+      - uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
       - name: Mix Compile
         run: |
           $Env:OPENCV_VER = "${{ matrix.pair.opencv_ver }}"
