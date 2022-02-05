@@ -44,22 +44,17 @@ jobs:
         with:
           otp-version: ${{matrix.pair.otp}}
           elixir-version: ${{matrix.pair.elixir}}
-      
-      - name: Setup dependencies
-        run: |
-          mix local.hex --force
-          mix local.rebar --force
 
       - name: Mix Compile
         run: |
-          set OPENCV_VER=${{ matrix.pair.opencv_ver }}
-          set MAKE=nmake
+          $Env:OPENCV_VER = "${{ matrix.pair.opencv_ver }}"
+          $Env:MAKE = "nmake"
           mix deps.get
           Remove-Item Makefile
           mix compile
 
       - name: Mix Test
         run: |
-          set OPENCV_VER=${{ matrix.pair.opencv_ver }}
-          set MAKE=nmake
+          $Env:OPENCV_VER = "${{ matrix.pair.opencv_ver }}"
+          $Env:MAKE = "nmake"
           mix test --include require_downloading --include require_ffmpeg

@@ -56,6 +56,8 @@ defmodule Evision.MixProject do
       source_url: "https://github.com/cocox-xu/evision",
       description: description(),
       package: package(),
+      make_executable: make_executable(),
+      make_makefile: make_makefile(),
       make_env: %{
         "OPENCV_VER" => opencv_ver,
         "MAKE_BUILD_FLAGS" =>
@@ -64,6 +66,20 @@ defmodule Evision.MixProject do
         "ENABLED_CV_MODULES" => enabled_modules
       }
     ]
+  end
+
+  def make_executable() do
+    case :os.type() do
+      {:win32, _} -> "nmake"
+      _ -> "make"
+    end
+  end
+
+  def make_makefile() do
+    case :os.type() do
+      {:win32, _} -> "Makefile.win"
+      _ -> "Makefile"
+    end
   end
 
   def opencv_versions(version) do
