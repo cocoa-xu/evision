@@ -9,28 +9,31 @@ defmodule Evision.MixProject do
   @compatible_opencv_versions ["4.5.3", "4.5.4", "4.5.5"]
   @source_url "https://github.com/cocoa-xu/evision/tree/#{@opencv_version}"
 
-  @doc """
-  in simple words
-  1. download "https://github.com/opencv/opencv/archive/$(OPENCV_VER).zip" to "3rd_party/cache/opencv-$(OPENCV_VER).zip"
-  2. unzip -o "3rd_party/cache/opencv-$(OPENCV_VER).zip" -d "OPENCV_ROOT_DIR"
-      ```
-      3rd_party
-      ├── cache
-      │   └── opencv_$(OPENCV_VER).zip
-      └── opencv
-          └── opencv-$(OPENCV_VER)
-      ```
-  """
   defp download_opencv_if_needed(opencv_ver) do
+    #  in simple words
+    #  1. download "https://github.com/opencv/opencv/archive/$(OPENCV_VER).zip" to "3rd_party/cache/opencv-$(OPENCV_VER).zip"
+    #  2. unzip -o "3rd_party/cache/opencv-$(OPENCV_VER).zip" -d "OPENCV_ROOT_DIR"
+    #   3rd_party
+    #   ├── cache
+    #   │   └── opencv_$(OPENCV_VER).zip
+    #   └── opencv
+    #       └── opencv-$(OPENCV_VER)
+
     if System.get_env("OPENCV_USE_GIT_HEAD", "false") == "false" do
-      :ssl.start()
-      :inets.start()
       source_zip_url = "https://github.com/opencv/opencv/archive/#{opencv_ver}.zip"
       cache_location = Path.join([__DIR__, "3rd_party", "cache", "opencv-#{opencv_ver}.zip"])
-      download!(source_zip_url, cache_location)
-      source_dir = Path.join([__DIR__, "3rd_party", "opencv"])
-      cache_location = String.to_charlist(cache_location)
-      :zip.unzip(cache_location, [{:cwd, String.to_charlist(source_dir)}])
+      source_root_dir = Path.join([__DIR__, "3rd_party", "opencv"])
+      source_dir = Path.join([__DIR__, "3rd_party", "opencv", "opencv-#{opencv_ver}"])
+
+      if !File.dir?(source_dir) do
+        :ssl.start()
+        :inets.start()
+        download!(source_zip_url, cache_location)
+
+        :zip.unzip(String.to_charlist(cache_location), [
+          {:cwd, String.to_charlist(source_root_dir)}
+        ])
+      end
     end
   end
 

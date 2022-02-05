@@ -123,12 +123,9 @@ sudo apt install -y libavcodec-dev libavformat-dev libavutil-dev libswscale-dev 
 
 ### Optional
 
-- curl/wget. To download OpenCV source zip file. 
-  
-  Optional if you put the source zip file to `3rd_party/cache/opencv-${OPENCV_VER}.zip`.
-- unzip. To unzip the OpenCV source zip file.
-  
-  Optional if you supply OpenCV source code at `3rd_party/opencv/opencv-${OPENCV_VER}`.
+To skip the download process, you can put the source zip file at `3rd_party/cache/opencv-${OPENCV_VER}.zip`.
+
+Or you could supply OpenCV source code at `3rd_party/opencv/opencv-${OPENCV_VER}`.
 
 ## Installation
 
