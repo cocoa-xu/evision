@@ -109,4 +109,4 @@ $(EVISION_SO): $(HEADERS_TXT)
 		  cmake --build . --config Release "$(MAKE_BUILD_FLAGS)" && \
 		  echo "$(CMAKE_EVISION_BUILD_DIR)/Release/evision.so" && \
 		  echo "$(EVISION_SO)" \
-		&& copy "$(CMAKE_EVISION_BUILD_DIR)/Release/evision.so" "$(EVISION_SO)"
+		&& powershell -command copy-item "$(CMAKE_EVISION_BUILD_DIR)/Release/evision.so" -Destination "$(EVISION_SO)"
