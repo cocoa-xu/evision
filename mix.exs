@@ -21,10 +21,12 @@ defmodule Evision.MixProject do
 
     if System.get_env("OPENCV_USE_GIT_HEAD", "false") == "false" do
       source_zip_url = "https://github.com/opencv/opencv/archive/#{opencv_ver}.zip"
+      cache_dir = Path.join([__DIR__, "3rd_party", "cache"])
+      File.mkdir_p!(cache_dir)
       cache_location = Path.join([__DIR__, "3rd_party", "cache", "opencv-#{opencv_ver}.zip"])
       source_root_dir = Path.join([__DIR__, "3rd_party", "opencv"])
+      File.mkdir_p!(source_root_dir)
       source_dir = Path.join([__DIR__, "3rd_party", "opencv", "opencv-#{opencv_ver}"])
-
       if !File.dir?(source_dir) do
         :ssl.start()
         :inets.start()
