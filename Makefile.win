@@ -97,7 +97,8 @@ $(EVISION_SO): $(HEADERS_TXT)
 	@ if not exist "$(CMAKE_EVISION_BUILD_DIR)" mkdir "$(CMAKE_EVISION_BUILD_DIR)"
 	@ if not exist "$(GENERATED_ELIXIR_SRC_DIR)" mkdir "$(GENERATED_ELIXIR_SRC_DIR)"
 	@ cd "$(CMAKE_EVISION_BUILD_DIR)" && \
-		cmake -D C_SRC="$(C_SRC)" \
+		cmake -G "NMake Makefiles" \
+		  -D C_SRC="$(C_SRC)" \
 		  -D CMAKE_TOOLCHAIN_FILE="$(TOOLCHAIN_FILE)" \
 		  -D GENERATED_ELIXIR_SRC_DIR="$(GENERATED_ELIXIR_SRC_DIR)" \
 		  -D PY_SRC="$(PY_SRC)" \

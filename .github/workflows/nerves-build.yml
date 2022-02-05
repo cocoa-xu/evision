@@ -9,6 +9,7 @@ on:
     paths-ignore:
       - '**/README.md'
       - 'examples/**'
+      - 'Makefile.win'
       - '.github/FUNDING.yml'
       - '.github/workflows/linux-*'
       - '.github/workflows/macos-*'
