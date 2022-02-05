@@ -15,7 +15,6 @@ ifneq ($(OPENCV_USE_GIT_HEAD), false)
 	OPENCV_VER=$(OPENCV_USE_GIT_BRANCH)
 endif
 OPENCV_CACHE_DIR = $(shell pwd)/3rd_party/cache
-OPENCV_SOURCE_URL = "https://github.com/opencv/opencv/archive/$(OPENCV_VER).zip"
 OPENCV_SOURCE_ZIP = $(OPENCV_CACHE_DIR)/opencv-$(OPENCV_VER).zip
 OPENCV_ROOT_DIR = $(shell pwd)/3rd_party/opencv
 OPENCV_DIR = $(OPENCV_ROOT_DIR)/opencv-$(OPENCV_VER)
@@ -24,7 +23,6 @@ PYTHON3_EXECUTABLE = $(shell which python3)
 CMAKE_OPENCV_BUILD_DIR = $(MIX_APP_PATH)/cmake_opencv_$(OPENCV_VER)
 CMAKE_OPENCV_MODULE_SELECTION ?= -D BUILD_opencv_python2=OFF \
 -D BUILD_opencv_python3=OFF \
--D BUILD_opencv_dnn=OFF \
 -D BUILD_opencv_gapi=OFF
 CMAKE_OPENCV_IMG_CODER_SELECTION ?= -D BUILD_PNG=ON \
 -D BUILD_JPEG=ON \
@@ -49,36 +47,12 @@ MAKE_BUILD_FLAGS ?= "-j1"
 
 build: $(EVISION_SO)
 
-# in simple words
-# 1. download "https://github.com/opencv/opencv/archive/$(OPENCV_VER).zip" to "3rd_party/cache/opencv-$(OPENCV_VER).zip"
-# 2. unzip -o "3rd_party/cache/opencv-$(OPENCV_VER).zip" -d "OPENCV_ROOT_DIR"
-#    3rd_party
-#    ├── cache
-#    │   └── opencv_$(OPENCV_VER).zip
-#    └── opencv
-#        └── opencv-$(OPENCV_VER)
-
-$(OPENCV_CACHE_DIR):
-	@ mkdir -p "$(OPENCV_CACHE_DIR)"
-
-$(OPENCV_SOURCE_ZIP): $(OPENCV_CACHE_DIR)
-	@ if [ "$(OPENCV_USE_GIT_HEAD)" = "false" ] && [ ! -e "$(OPENCV_SOURCE_ZIP)" ]; then \
-		if [ -e "$(shell which curl)" ]; then \
-			curl -fSL "$(OPENCV_SOURCE_URL)" -o $(OPENCV_SOURCE_ZIP) ; \
-		elif [ -e "$(shell which wget)" ]; then \
-			wget "$(OPENCV_SOURCE_URL)" -O $(OPENCV_SOURCE_ZIP) ; \
-		else \
-			echo "cannot find curl or wget, cannot download opencv source code" ; \
-			exit 1 ; \
-		fi \
-	fi
-
-$(OPENCV_CONFIGURATION_PRIVATE_HPP): $(OPENCV_SOURCE_ZIP)
+$(OPENCV_CONFIGURATION_PRIVATE_HPP):
 	@ if [ ! -e "$(OPENCV_CONFIGURATION_PRIVATE_HPP)" ]; then \
-		rm -rf "$(OPENCV_DIR)" ; \
 		if [ "$(OPENCV_USE_GIT_HEAD)" = "false" ]; then \
-			unzip -qq -o "$(OPENCV_SOURCE_ZIP)" -d "$(OPENCV_ROOT_DIR)" ; \
+			echo "using $(OPENCV_VER)" ; \
 		else \
+		  	rm -rf "$(OPENCV_DIR)" ; \
 			git clone --branch=$(OPENCV_USE_GIT_BRANCH) --depth=1 $(OPENCV_GIT_REPO) "$(OPENCV_DIR)" ; \
 		fi \
 	fi

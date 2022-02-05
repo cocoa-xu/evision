@@ -9,8 +9,35 @@ defmodule Evision.MixProject do
   @compatible_opencv_versions ["4.5.3", "4.5.4", "4.5.5"]
   @source_url "https://github.com/cocoa-xu/evision/tree/#{@opencv_version}"
 
+  @doc """
+  in simple words
+  1. download "https://github.com/opencv/opencv/archive/$(OPENCV_VER).zip" to "3rd_party/cache/opencv-$(OPENCV_VER).zip"
+  2. unzip -o "3rd_party/cache/opencv-$(OPENCV_VER).zip" -d "OPENCV_ROOT_DIR"
+      ```
+      3rd_party
+      ├── cache
+      │   └── opencv_$(OPENCV_VER).zip
+      └── opencv
+          └── opencv-$(OPENCV_VER)
+      ```
+  """
+  defp download_opencv_if_needed(opencv_ver) do
+    if System.get_env("OPENCV_USE_GIT_HEAD", "false") == "false" do
+      :ssl.start()
+      :inets.start()
+      source_zip_url = "https://github.com/opencv/opencv/archive/#{opencv_ver}.zip"
+      cache_location = Path.join([__DIR__, "3rd_party", "cache", "opencv-#{opencv_ver}.zip"])
+      download!(source_zip_url, cache_location)
+      source_dir = Path.join([__DIR__, "3rd_party", "opencv"])
+      cache_location = String.to_charlist(cache_location)
+      :zip.unzip(cache_location, [{:cwd, String.to_charlist(source_dir)}])
+    end
+  end
+
   def project do
     {cmake_options, enabled_modules} = generate_cmake_options()
+    opencv_ver = opencv_versions(System.get_env("OPENCV_VER", @opencv_version))
+    download_opencv_if_needed(opencv_ver)
 
     [
       app: @app,
@@ -25,7 +52,7 @@ defmodule Evision.MixProject do
       description: description(),
       package: package(),
       make_env: %{
-        "OPENCV_VER" => opencv_versions(System.get_env("OPENCV_VER", @opencv_version)),
+        "OPENCV_VER" => opencv_ver,
         "MAKE_BUILD_FLAGS" =>
           System.get_env("MAKE_BUILD_FLAGS", "-j#{System.schedulers_online()}"),
         "CMAKE_OPTIONS" => cmake_options,
@@ -52,7 +79,7 @@ defmodule Evision.MixProject do
 
   def application do
     [
-      extra_applications: [:logger]
+      extra_applications: [:logger, :ssl]
     ]
   end
 
@@ -274,5 +301,32 @@ defmodule Evision.MixProject do
       licenses: ["Apache-2.0"],
       links: %{"GitHub" => "https://github.com/cocoa-xu/evision"}
     ]
+  end
+
+  defp download!(url, save_as, overwrite \\ false)
+
+  defp download!(url, save_as, false) do
+    unless File.exists?(save_as) do
+      download!(url, save_as, true)
+    end
+
+    :ok
+  end
+
+  defp download!(url, save_as, true) do
+    http_opts = []
+    opts = [body_format: :binary]
+    arg = {url, []}
+
+    body =
+      case :httpc.request(:get, arg, http_opts, opts) do
+        {:ok, {{_, 200, _}, _, body}} ->
+          body
+
+        {:error, reason} ->
+          raise inspect(reason)
+      end
+
+    File.write!(save_as, body)
   end
 end
