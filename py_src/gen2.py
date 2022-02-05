@@ -177,13 +177,6 @@ ${getset_code}
 // Methods (${name})
 
 ${methods_code}
-
-// Tables (${name})
-
-static ErlNifFunc evision_${name}_methods[] =
-{
-${methods_inits}
-};
 """)
 
 
