@@ -45,7 +45,6 @@ set_target_properties(evision PROPERTIES
 )
 
 if(UNIX AND NOT APPLE)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -shared")
     set_target_properties(evision PROPERTIES INSTALL_RPATH "\$ORIGIN/lib")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-but-set-variable")
 elseif(UNIX AND APPLE)
