@@ -12,7 +12,7 @@ on:
       - 'nerves/**'
       - 'Makefile'
       - '.github/FUNDING.yml'
-      - '.github/workflows/nerves-*'
+      - '.github/workflows/nerves-*.yml'
       - '.github/workflows/linux-*.yml'
       - '.github/workflows/macos-*.yml'
       - '.github/workflows/test-*.yml'
