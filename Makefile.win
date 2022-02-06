@@ -69,7 +69,7 @@ $(CONFIGURATION_PRIVATE_HPP):
 	@ copy "$(OPENCV_CONFIGURATION_PRIVATE_HPP)" "$(CONFIGURATION_PRIVATE_HPP)"
 
 $(HEADERS_TXT): $(CONFIGURATION_PRIVATE_HPP)
-	@mkdir "$(CMAKE_OPENCV_BUILD_DIR)" && \
+	@ if not exist "$(CMAKE_OPENCV_BUILD_DIR)" mkdir "$(CMAKE_OPENCV_BUILD_DIR)" && \
 	cd $(CMAKE_OPENCV_BUILD_DIR) && \
 	cmake -G "NMake Makefiles" \
 	    -D CMAKE_BUILD_TYPE=Release \
@@ -99,7 +99,7 @@ $(EVISION_SO): $(HEADERS_TXT)
 	@ if not exist "$(GENERATED_ELIXIR_SRC_DIR)" mkdir "$(GENERATED_ELIXIR_SRC_DIR)"
 	@ cd "$(CMAKE_EVISION_BUILD_DIR)" && \
 		cmake -G "NMake Makefiles" \
-                  -D CMAKE_BUILD_TYPE=Release \
+		  -D CMAKE_BUILD_TYPE=Release \
 		  -D C_SRC="$(C_SRC)" \
 		  -D CMAKE_TOOLCHAIN_FILE="$(TOOLCHAIN_FILE)" \
 		  -D GENERATED_ELIXIR_SRC_DIR="$(GENERATED_ELIXIR_SRC_DIR)" \
