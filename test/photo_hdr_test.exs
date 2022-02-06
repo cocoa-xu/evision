@@ -65,7 +65,7 @@ defmodule Evision.Photo.HDR.Test do
       |> Enum.into(<<>>, fn d -> <<d::float()-size(32)-little>> end)
       |> OpenCV.Mat.from_binary_by_shape({:f, 32}, {1, Enum.count(images)})
 
-    calibrate = OpenCV.createCalibrateDebevec!()
+    {:ok, calibrate} = OpenCV.createCalibrateDebevec()
     response = OpenCV.CalibrateDebevec.process!(calibrate, images, times)
 
     merge_debevec = OpenCV.createMergeDebevec!()
@@ -74,7 +74,7 @@ defmodule Evision.Photo.HDR.Test do
     tonemap = OpenCV.createTonemap!(gamma: 2.2)
     ldr = OpenCV.Tonemap.process!(tonemap, hdr)
 
-    merge_mertens = OpenCV.createMergeMertens!()
+    {:ok, merge_mertens} = OpenCV.createMergeMertens()
     fusion = OpenCV.MergeMertens.process!(merge_mertens, images)
 
     output_fusion_file = Path.join([__DIR__, "photo_hdr_test", "fusion.png"])
