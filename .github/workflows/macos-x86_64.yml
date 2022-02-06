@@ -2,6 +2,16 @@ name: macos-x86_64
 
 on:
   pull_request:
+    paths-ignore:
+      - '**/README.md'
+      - 'examples/**'
+      - 'nerves/**'
+      - 'Makefile.win'
+      - '.github/FUNDING.yml'
+      - '.github/workflows/nerves-*.yml'
+      - '.github/workflows/linux-*.yml'
+      - '.github/workflows/windows-*.yml'
+      - '.github/workflows/test-*.yml'
   push:
     branches:
       - main
