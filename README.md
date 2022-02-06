@@ -4,6 +4,7 @@
 |------------------|---------|--------------|
 | Ubuntu 20.04     | x86_64  | [![CI](https://github.com/cocoa-xu/evision/actions/workflows/linux-x86_64.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/linux-x86_64.yml) |
 | macOS 11 Big Sur | x86_64  | [![CI](https://github.com/cocoa-xu/evision/actions/workflows/macos-x86_64.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/macos-x86_64.yml) |
+| Windows 2019     | x86_64  | [![CI](https://github.com/cocoa-xu/evision/actions/workflows/windows-x86_64.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/windows-x86_64.yml) |
 
 `ppc64le` and `s390x` emulators are too slow. Let's focus on x86_64, arm64 and armv7 for now. Furthermore, nerves workflow
 will compile evision to arm64, armv7 and armv6, therefore, `linux-arm64.yml` and `linux-armv7.yml` will now be triggered 
@@ -120,6 +121,13 @@ sudo apt install -y libavcodec-dev libavformat-dev libavutil-dev libswscale-dev 
 
   OpenCV 4.5.5 requires at least CMake 3.5.1.
 - Erlang development library/headers. Tested on OTP/24.
+
+#### Extra Notes for Windows
+Evision on Windows uses `nmake` to handle the `Makefile.win` at the moment. And we also need `powershell` for now. `nmake`
+should be included in Microsoft Visual Studio, and `powershell` should be included in almost all recent version (it was 
+first released in 2007).
+
+Evision is NOT tested in MSYS2, Cygwin, or WSL/WSL2. 
 
 ### Optional
 
