@@ -5,6 +5,7 @@ on:
     paths-ignore:
       - '**/README.md'
       - 'examples/**'
+      - 'test/**'
       - 'Makefile.win'
       - '.github/FUNDING.yml'
       - '.github/workflows/linux-*'
