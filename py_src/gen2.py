@@ -1784,16 +1784,22 @@ class PythonWrapperGenerator(object):
                                  f'    {positional}\n'
                                  f'    :erl_cv_nif.{func_name}({func_args_with_opts})\n'
                                  '  end\n')
-                    module_func_args_without_opts = module_func_args_with_opts.replace('\\\\ []', '')
-                    name_arity = f'{module_func_name}!/{len(module_func_args_without_opts.split(","))}'
+                    module_func_args_without_opts_defaults = module_func_args_with_opts.replace('\\\\ []', '').strip()
+                    if len(module_func_args_without_opts_defaults) > 0:
+                        name_arity = f'{module_func_name}!/{len(module_func_args_without_opts_defaults.split(","))}'
+                    else:
+                        name_arity = f'{module_func_name}!/0'
                     if not writer.deferror.get(name_arity, False):
-                        writer.write(f"  deferror {module_func_name}({module_func_args_without_opts})\n")
+                        writer.write(f"  deferror {module_func_name}({module_func_args_without_opts_defaults})\n")
                         writer.deferror[name_arity] = True
                 writer.write(f'{function_group}  def {module_func_name}({module_func_args}){when_guard}do\n'
                              f'    {positional}\n'
                              f'    :erl_cv_nif.{func_name}({func_args})\n'
                              '  end\n')
-                name_arity = f'{module_func_name}!/{len(module_func_args.split(","))}'
+                if len(module_func_args) > 0:
+                    name_arity = f'{module_func_name}!/{len(module_func_args.split(","))}'
+                else:
+                    name_arity = f'{module_func_name}!/0'
                 if not writer.deferror.get(name_arity, False):
                     writer.write(f'  deferror {module_func_name}({module_func_args})\n')
                     writer.deferror[name_arity] = True
