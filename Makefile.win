@@ -1,5 +1,5 @@
 PRIV_DIR = $(MIX_APP_PATH)/priv
-EVISION_SO = $(PRIV_DIR)/evision.so
+EVISION_SO = $(PRIV_DIR)/evision.dll
 C_SRC = $(MAKEDIR)\c_src
 PY_SRC = $(MAKEDIR)\py_src
 LIB_SRC = $(MAKEDIR)\lib
@@ -90,7 +90,8 @@ $(HEADERS_TXT): $(CONFIGURATION_PRIVATE_HPP)
 		$(CMAKE_WIN_FINAL_OPTIONS) $(OPENCV_DIR) && \
 		cmake --build . --config Release "$(MAKE_BUILD_FLAGS)" && \
 		cd $(CMAKE_OPENCV_BUILD_DIR) && cmake --install . --config Release && \
-		copy "$(HEADERS_TXT)" "$(C_SRC)/headers.txt"
+		copy "$(HEADERS_TXT)" "$(C_SRC)/headers.txt" && \
+		xcopy /Y /Q "$(CMAKE_OPENCV_BUILD_DIR)/bin/Release/*.dll" "$(PRIV_DIR)"
 
 $(EVISION_SO): $(HEADERS_TXT)
 	@ if not exist "$(PRIV_DIR)" mkdir "$(PRIV_DIR)"
