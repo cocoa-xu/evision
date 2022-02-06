@@ -43,6 +43,7 @@ defmodule Evision.MixProject do
     {cmake_options, enabled_modules} = generate_cmake_options()
     opencv_ver = opencv_versions(System.get_env("OPENCV_VER", @opencv_version))
     download_opencv_if_needed(opencv_ver)
+    ninja = System.find_executable("ninja")
 
     [
       app: @app,
@@ -59,6 +60,7 @@ defmodule Evision.MixProject do
       make_executable: make_executable(),
       make_makefile: make_makefile(),
       make_env: %{
+        "HAVE_NINJA" => "#{ninja != nil}",
         "OPENCV_VER" => opencv_ver,
         "MAKE_BUILD_FLAGS" =>
           System.get_env("MAKE_BUILD_FLAGS", "-j#{System.schedulers_online()}"),

@@ -127,6 +127,8 @@ Evision on Windows uses `nmake` to handle the `Makefile.win` at the moment. And 
 should be included in Microsoft Visual Studio, and `powershell` should be included in almost all recent version (it was 
 first released in 2007).
 
+If `ninja` can be found in `%PATH%`, then we will prefer using `ninja` to build everything as it allows parallel building.
+
 Evision is NOT tested in MSYS2, Cygwin, or WSL/WSL2. 
 
 ### Optional
