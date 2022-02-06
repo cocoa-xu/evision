@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 from __future__ import print_function
 
@@ -50,6 +50,11 @@ gen_erl_cv_nif_load_nif = """
   def load_nif do
     require Logger
     nif_file = '#{:code.priv_dir(:evision)}/evision'
+    :ok = 
+      case :os.type() do
+        {:win32, _} -> DLLLoaderHelper.addDLLDirectory("#{:code.priv_dir(:evision)}")
+        _ -> :ok
+      end
 
     case :erlang.load_nif(nif_file, 0) do
       :ok -> :ok
@@ -177,13 +182,6 @@ ${getset_code}
 // Methods (${name})
 
 ${methods_code}
-
-// Tables (${name})
-
-static ErlNifFunc evision_${name}_methods[] =
-{
-${methods_inits}
-};
 """)
 
 
@@ -1851,14 +1849,14 @@ class PythonWrapperGenerator(object):
         self.code_enums.write(code)
 
     def save(self, path, name, buf):
-        with open(path + "/" + name, "wt") as f:
+        with open(path + "/" + name, "wt", encoding='utf-8') as f:
             if not name.endswith(".ex"):
                 f.write("#include <erl_nif.h>\n")
             f.write(buf.getvalue())
 
     def save_json(self, path, name, value):
         import json
-        with open(path + "/" + name, "wt") as f:
+        with open(path + "/" + name, "wt", encoding='utf-8') as f:
             json.dump(value, f)
 
     def make_elixir_module_names(self, module_name=None, separated_ns=None):

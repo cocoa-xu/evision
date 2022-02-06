@@ -9,8 +9,40 @@ defmodule Evision.MixProject do
   @compatible_opencv_versions ["4.5.3", "4.5.4", "4.5.5"]
   @source_url "https://github.com/cocoa-xu/evision/tree/#{@opencv_version}"
 
+  defp download_opencv_if_needed(opencv_ver) do
+    #  in simple words
+    #  1. download "https://github.com/opencv/opencv/archive/$(OPENCV_VER).zip" to "3rd_party/cache/opencv-$(OPENCV_VER).zip"
+    #  2. unzip -o "3rd_party/cache/opencv-$(OPENCV_VER).zip" -d "OPENCV_ROOT_DIR"
+    #   3rd_party
+    #   ├── cache
+    #   │   └── opencv_$(OPENCV_VER).zip
+    #   └── opencv
+    #       └── opencv-$(OPENCV_VER)
+
+    if System.get_env("OPENCV_USE_GIT_HEAD", "false") == "false" do
+      source_zip_url = "https://github.com/opencv/opencv/archive/#{opencv_ver}.zip"
+      cache_dir = Path.join([__DIR__, "3rd_party", "cache"])
+      File.mkdir_p!(cache_dir)
+      cache_location = Path.join([__DIR__, "3rd_party", "cache", "opencv-#{opencv_ver}.zip"])
+      source_root_dir = Path.join([__DIR__, "3rd_party", "opencv"])
+      File.mkdir_p!(source_root_dir)
+      source_dir = Path.join([__DIR__, "3rd_party", "opencv", "opencv-#{opencv_ver}"])
+      if !File.dir?(source_dir) do
+        :ssl.start()
+        :inets.start()
+        download!(source_zip_url, cache_location)
+
+        :zip.unzip(String.to_charlist(cache_location), [
+          {:cwd, String.to_charlist(source_root_dir)}
+        ])
+      end
+    end
+  end
+
   def project do
     {cmake_options, enabled_modules} = generate_cmake_options()
+    opencv_ver = opencv_versions(System.get_env("OPENCV_VER", @opencv_version))
+    download_opencv_if_needed(opencv_ver)
 
     [
       app: @app,
@@ -24,14 +56,30 @@ defmodule Evision.MixProject do
       source_url: "https://github.com/cocox-xu/evision",
       description: description(),
       package: package(),
+      make_executable: make_executable(),
+      make_makefile: make_makefile(),
       make_env: %{
-        "OPENCV_VER" => opencv_versions(System.get_env("OPENCV_VER", @opencv_version)),
+        "OPENCV_VER" => opencv_ver,
         "MAKE_BUILD_FLAGS" =>
           System.get_env("MAKE_BUILD_FLAGS", "-j#{System.schedulers_online()}"),
         "CMAKE_OPTIONS" => cmake_options,
         "ENABLED_CV_MODULES" => enabled_modules
       }
     ]
+  end
+
+  def make_executable() do
+    case :os.type() do
+      {:win32, _} -> "nmake"
+      _ -> "make"
+    end
+  end
+
+  def make_makefile() do
+    case :os.type() do
+      {:win32, _} -> "Makefile.win"
+      _ -> "Makefile"
+    end
   end
 
   def opencv_versions(version) do
@@ -52,7 +100,7 @@ defmodule Evision.MixProject do
 
   def application do
     [
-      extra_applications: [:logger]
+      extra_applications: [:logger, :ssl]
     ]
   end
 
@@ -182,6 +230,7 @@ defmodule Evision.MixProject do
   defp deps do
     [
       {:elixir_make, "~> 0.6"},
+      {:dll_loader_helper, "~> 0.1.0", github: "cocoa-xu/dll_loader_helper", branch: "main"},
       {:ex_doc, "~> 0.27", only: :dev, runtime: false},
       {:nx, "~> 0.1", optional: true}
     ]
@@ -274,5 +323,32 @@ defmodule Evision.MixProject do
       licenses: ["Apache-2.0"],
       links: %{"GitHub" => "https://github.com/cocoa-xu/evision"}
     ]
+  end
+
+  defp download!(url, save_as, overwrite \\ false)
+
+  defp download!(url, save_as, false) do
+    unless File.exists?(save_as) do
+      download!(url, save_as, true)
+    end
+
+    :ok
+  end
+
+  defp download!(url, save_as, true) do
+    http_opts = []
+    opts = [body_format: :binary]
+    arg = {url, []}
+
+    body =
+      case :httpc.request(:get, arg, http_opts, opts) do
+        {:ok, {{_, 200, _}, _, body}} ->
+          body
+
+        {:error, reason} ->
+          raise inspect(reason)
+      end
+
+    File.write!(save_as, body)
   end
 end
