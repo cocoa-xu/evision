@@ -10,15 +10,19 @@ defmodule Evision.PCA.Test do
     hypotenuse = :math.sqrt((py - qy) * (py - qy) + (px - qx) * (px - qx))
     qx = trunc(px - scale * hypotenuse * :math.cos(angle))
     qy = trunc(py - scale * hypotenuse * :math.sin(angle))
-    {:ok, src} = OpenCV.line(src, [px, py], [qx, qy], colour, thickness: 1, style: OpenCV.cv_LINE_AA)
 
-    px = trunc(qx + 9 * :math.cos(angle + :math.pi / 4))
-    py = trunc(qy + 9 * :math.sin(angle + :math.pi / 4))
-    {:ok, src} = OpenCV.line(src, [px, py], [qx, qy], colour, thickness: 1, style: OpenCV.cv_LINE_AA)
+    {:ok, src} =
+      OpenCV.line(src, [px, py], [qx, qy], colour, thickness: 1, style: OpenCV.cv_LINE_AA())
 
-    px = trunc(qx + 9 * :math.cos(angle - :math.pi / 4))
-    py = trunc(qy + 9 * :math.sin(angle - :math.pi / 4))
-    OpenCV.line(src, [px, py], [qx, qy], colour, thickness: 1, style: OpenCV.cv_LINE_AA)
+    px = trunc(qx + 9 * :math.cos(angle + :math.pi() / 4))
+    py = trunc(qy + 9 * :math.sin(angle + :math.pi() / 4))
+
+    {:ok, src} =
+      OpenCV.line(src, [px, py], [qx, qy], colour, thickness: 1, style: OpenCV.cv_LINE_AA())
+
+    px = trunc(qx + 9 * :math.cos(angle - :math.pi() / 4))
+    py = trunc(qy + 9 * :math.sin(angle - :math.pi() / 4))
+    OpenCV.line(src, [px, py], [qx, qy], colour, thickness: 1, style: OpenCV.cv_LINE_AA())
   end
 
   @tag :nx
@@ -40,7 +44,9 @@ defmodule Evision.PCA.Test do
 
     assert [17192.0, 16830.0, 16150.5, 15367.5, 15571.0, 14842.0] ==
              Enum.map(contours, &elem(&1, 0))
+
     contours = Enum.map(contours, &elem(&1, 1))
+
     pca_analysis =
       for c <- contours, reduce: [] do
         acc ->
@@ -72,10 +78,12 @@ defmodule Evision.PCA.Test do
           evec11 = Nx.slice(eigenvectors, [1, 1], [1, 1]) |> Nx.to_flat_list() |> Enum.at(0)
 
           p1 =
-            {trunc(Float.round(centre_x + 0.02 * evec00 * eval00)), trunc(Float.round(centre_y + 0.02 * evec01 * eval00))}
+            {trunc(Float.round(centre_x + 0.02 * evec00 * eval00)),
+             trunc(Float.round(centre_y + 0.02 * evec01 * eval00))}
 
           p2 =
-            {trunc(Float.round(centre_x - 0.02 * evec10 * eval10)), trunc(Float.round(centre_y - 0.02 * evec11 * eval10))}
+            {trunc(Float.round(centre_x - 0.02 * evec10 * eval10)),
+             trunc(Float.round(centre_y - 0.02 * evec11 * eval10))}
 
           cntr = [centre_x, centre_y]
           [{cntr, p1, p2} | acc]
@@ -88,19 +96,21 @@ defmodule Evision.PCA.Test do
       Path.join(__DIR__, "opencv_pca_test.jpg")
       |> OpenCV.imread()
 
-    src = for index <- 0..(Enum.count(contours) - 1), reduce: src do
-      src ->
-        {:ok, src} = OpenCV.drawContours(src, contours, index, [0, 0, 255], thickness: 2)
-        src
-    end
+    src =
+      for index <- 0..(Enum.count(contours) - 1), reduce: src do
+        src ->
+          {:ok, src} = OpenCV.drawContours(src, contours, index, [0, 0, 255], thickness: 2)
+          src
+      end
 
-    src = for {cntr, p1, p2} <- pca_analysis, reduce: src do
-      src ->
-        {:ok, src} = OpenCV.circle(src, cntr, 3, [255, 0, 255], thickness: 2)
-        {:ok, src} = drawAxis(src, List.to_tuple(cntr), p1, [0, 255, 0], 1)
-        {:ok, src} = drawAxis(src, List.to_tuple(cntr), p2, [255, 255, 0], 5)
-        src
-    end
+    src =
+      for {cntr, p1, p2} <- pca_analysis, reduce: src do
+        src ->
+          {:ok, src} = OpenCV.circle(src, cntr, 3, [255, 0, 255], thickness: 2)
+          {:ok, src} = drawAxis(src, List.to_tuple(cntr), p1, [0, 255, 0], 1)
+          {:ok, src} = drawAxis(src, List.to_tuple(cntr), p2, [255, 255, 0], 5)
+          src
+      end
 
     output_path = Path.join(__DIR__, "opencv_pca_test_out.png")
     OpenCV.imwrite(output_path, src)

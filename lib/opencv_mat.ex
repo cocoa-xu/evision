@@ -24,22 +24,22 @@ defmodule Evision.Mat do
     :erl_cv_nif.evision_cv_mat_type(img: mat)
   end
 
-  deferror type(mat)
+  deferror(type(mat))
 
   @doc namespace: :"cv.Mat"
   @spec as_type(reference(), mat_type()) :: {:ok, reference()} | {:error, String.t()}
-  def as_type(mat, _type={t, l}) when is_reference(mat) and is_atom(t) and l > 0 do
+  def as_type(mat, _type = {t, l}) when is_reference(mat) and is_atom(t) and l > 0 do
     :erl_cv_nif.evision_cv_mat_as_type(img: mat, t: t, l: l)
   end
 
-  deferror as_type(mat, type)
+  deferror(as_type(mat, type))
 
   @doc namespace: :"cv.Mat"
   def shape(mat) when is_reference(mat) do
     :erl_cv_nif.evision_cv_mat_shape(img: mat)
   end
 
-  deferror shape(mat)
+  deferror(shape(mat))
 
   @doc namespace: :"cv.Mat"
   @spec clone(reference()) :: {:ok, reference()} | {:error, String.t()}
@@ -47,7 +47,7 @@ defmodule Evision.Mat do
     :erl_cv_nif.evision_cv_mat_clone(img: mat)
   end
 
-  deferror clone(mat)
+  deferror(clone(mat))
 
   @doc namespace: :"cv.Mat"
   @spec to_binary(reference()) :: {:ok, binary()} | {:error, String.t()}
@@ -55,7 +55,7 @@ defmodule Evision.Mat do
     :erl_cv_nif.evision_cv_mat_to_binary(img: mat)
   end
 
-  deferror to_binary(mat)
+  deferror(to_binary(mat))
 
   @doc """
   Create Mat from binary (pixel) data
@@ -67,7 +67,8 @@ defmodule Evision.Mat do
   - **channels**. Number of channels, only valid if in [1, 3, 4]
   """
   @doc namespace: :"cv.Mat"
-  @spec from_binary(binary(), mat_type(), pos_integer(), pos_integer(), channels_from_binary()) :: {:ok, reference()} | {:error, String.t()}
+  @spec from_binary(binary(), mat_type(), pos_integer(), pos_integer(), channels_from_binary()) ::
+          {:ok, reference()} | {:error, String.t()}
   def from_binary(binary, _type = {t, l}, rows, cols, channels)
       when is_binary(binary) and rows > 0 and cols > 0 and channels > 0 and
              is_atom(t) and is_integer(l) do
@@ -80,7 +81,8 @@ defmodule Evision.Mat do
       channels: channels
     )
   end
-  deferror from_binary(binary, type, rows, cols, channels)
+
+  deferror(from_binary(binary, type, rows, cols, channels))
 
   @doc namespace: :"cv.Mat"
   def from_binary_by_shape(binary, _type = {t, l}, shape)
@@ -99,5 +101,5 @@ defmodule Evision.Mat do
     )
   end
 
-  deferror from_binary_by_shape(binary, type, shape)
+  deferror(from_binary_by_shape(binary, type, shape))
 end

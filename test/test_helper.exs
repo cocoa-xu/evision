@@ -39,21 +39,25 @@ defmodule Evision.TestHelper do
   def chunk_binary(binary, chunk_size) when is_binary(binary) do
     total_bytes = byte_size(binary)
     full_chunks = div(total_bytes, chunk_size)
+
     chunks =
       if full_chunks > 0 do
-        for i <- 0..(full_chunks-1), reduce: [] do
+        for i <- 0..(full_chunks - 1), reduce: [] do
           acc -> [:binary.part(binary, chunk_size * i, chunk_size) | acc]
         end
       else
         []
       end
+
     remaining = rem(total_bytes, chunk_size)
+
     chunks =
       if remaining > 0 do
         [:binary.part(binary, chunk_size * full_chunks, remaining) | chunks]
       else
         chunks
       end
+
     Enum.reverse(chunks)
   end
 end
