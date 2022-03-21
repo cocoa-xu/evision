@@ -50,7 +50,7 @@ jobs:
         run: |
           brew install erlang
           brew install elixir
-          brew install ffmpeg
+          brew install ffmpeg@4
           mix local.hex --force
           mix local.rebar --force
 
