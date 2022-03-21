@@ -97,10 +97,16 @@ Current available modules:
 - video 
 - videoio
 
-Note: to open video files, FFmpeg related libraries should be installed, e.g., on Debian/Ubuntu
+Note 1: to open video files, FFmpeg related libraries should be installed, e.g., on Debian/Ubuntu
+Note 2: FFmpeg 5 is not supported by OpenCV yet
 
 ```shell
 sudo apt install -y libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libavresample-dev ffmpeg
+```
+
+on macOS
+```shell
+brew install ffmpeg@4
 ```
 
 ## Dependencies
