@@ -98,6 +98,7 @@ Current available modules:
 - videoio
 
 Note 1: to open video files, FFmpeg related libraries should be installed, e.g., on Debian/Ubuntu
+
 Note 2: FFmpeg 5 is not supported by OpenCV yet
 
 ```shell
