@@ -44,7 +44,7 @@ defmodule Evision.Nx do
     end
   end
 
-  deferror to_nx(mat)
+  deferror(to_nx(mat))
 
   @doc """
   Converts a tensor of `Nx` to `Mat` of evision (OpenCV).
@@ -58,13 +58,13 @@ defmodule Evision.Nx do
     case Nx.shape(t) do
       {height, width, channels} ->
         to_mat(Nx.to_binary(t), Nx.type(t), height, width, channels)
-    
+
       shape ->
         Evision.Mat.from_binary_by_shape(Nx.to_binary(t), Nx.type(t), shape)
     end
   end
 
-  deferror to_mat(t)
+  deferror(to_mat(t))
 
   @spec to_mat(
           binary(),

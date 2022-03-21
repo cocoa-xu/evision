@@ -15,7 +15,7 @@ defmodule Evision.Test do
   end
 
   test "Evision.Mat.as_type" do
-    {:ok, mat} = Evision.Mat.from_binary_by_shape(<< 1, 2, 3, 4 >>, {:u, 8}, {2, 2})
+    {:ok, mat} = Evision.Mat.from_binary_by_shape(<<1, 2, 3, 4>>, {:u, 8}, {2, 2})
     {:ok, mat} = Evision.Mat.as_type(mat, {:f, 32})
     {:ok, {:f, 32}} = Evision.Mat.type(mat)
     {:ok, mat} = Evision.Mat.as_type(mat, {:f, 64})
@@ -24,19 +24,20 @@ defmodule Evision.Test do
 
   @tag :nx
   test "Evision.Mat.as_type and verify value" do
-    {:ok, mat} = Evision.Mat.from_binary_by_shape(<< 1, 2, 3, 4 >>, {:u, 8}, {2, 2})
+    {:ok, mat} = Evision.Mat.from_binary_by_shape(<<1, 2, 3, 4>>, {:u, 8}, {2, 2})
     {:ok, mat} = Evision.Mat.as_type(mat, {:f, 32})
     {:ok, {:f, 32}} = Evision.Mat.type(mat)
     {:ok, mat} = Evision.Mat.as_type(mat, {:f, 64})
     {:ok, {:f, 64}} = Evision.Mat.type(mat)
+
     assert [1.0, 2.0, 3.0, 4.0] =
-      mat
-      |> Evision.Nx.to_nx()
-      |> Nx.to_flat_list()
+             mat
+             |> Evision.Nx.to_nx()
+             |> Nx.to_flat_list()
   end
 
   test "Evision.Mat.clone" do
-    {:ok, mat} = Evision.Mat.from_binary_by_shape(<< 1, 2, 3, 4 >>, {:u, 8}, {2, 2})
+    {:ok, mat} = Evision.Mat.from_binary_by_shape(<<1, 2, 3, 4>>, {:u, 8}, {2, 2})
     {:ok, cloned} = Evision.Mat.clone(mat)
     assert cloned != mat
     assert Evision.Mat.type(cloned) == Evision.Mat.type(mat)

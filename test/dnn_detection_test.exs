@@ -157,7 +157,14 @@ defmodule Evision.DNN.Test do
       )
 
       File.mkdir_p!(Path.join([__DIR__, "models", "ssd_mobilenet_v2_coco_2018_03_29"]))
-      model_graph_pb = Path.join([__DIR__, "models", "ssd_mobilenet_v2_coco_2018_03_29", "frozen_inference_graph.pb"])
+
+      model_graph_pb =
+        Path.join([
+          __DIR__,
+          "models",
+          "ssd_mobilenet_v2_coco_2018_03_29",
+          "frozen_inference_graph.pb"
+        ])
 
       model_tar =
         __DIR__
@@ -172,17 +179,19 @@ defmodule Evision.DNN.Test do
           )
 
           model_tar
-            |> File.read!()
-            |> :zlib.gunzip()
-            |> then(&:erl_tar.extract({:binary, &1}, [:memory, :compressed]))
-            |> elem(1)
-            |> Enum.map(fn {filename, content} -> {List.to_string(filename), content} end)
-            |> Enum.reject(&elem(&1, 0) != "ssd_mobilenet_v2_coco_2018_03_29/frozen_inference_graph.pb")
-            |> Enum.at(0)
-            |> then(fn {_, content} ->
-              File.write!(model_graph_pb, content)
-              :ok
-            end)
+          |> File.read!()
+          |> :zlib.gunzip()
+          |> then(&:erl_tar.extract({:binary, &1}, [:memory, :compressed]))
+          |> elem(1)
+          |> Enum.map(fn {filename, content} -> {List.to_string(filename), content} end)
+          |> Enum.reject(
+            &(elem(&1, 0) != "ssd_mobilenet_v2_coco_2018_03_29/frozen_inference_graph.pb")
+          )
+          |> Enum.at(0)
+          |> then(fn {_, content} ->
+            File.write!(model_graph_pb, content)
+            :ok
+          end)
         else
           :ok
         end

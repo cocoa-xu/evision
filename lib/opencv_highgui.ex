@@ -25,7 +25,7 @@ defmodule Evision.Gui do
     :erl_cv_nif.evision_cv_imshow(winname: winname, mat: mat)
   end
 
-  deferror imshow(winname, mat)
+  deferror(imshow(winname, mat))
 
   @doc """
   wait for user keyboard event for a `delay` amount of time (ms)
@@ -35,7 +35,7 @@ defmodule Evision.Gui do
     :erl_cv_nif.evision_cv_waitKey(delay: delay)
   end
 
-  deferror waitkey(delay)
+  deferror(waitkey(delay))
 
   @doc """
   close a named window
@@ -45,7 +45,7 @@ defmodule Evision.Gui do
     :erl_cv_nif.evision_cv_destroyWindow(winname: winname)
   end
 
-  deferror destroyWindow(winname)
+  deferror(destroyWindow(winname))
 
   @doc """
   close all windows
@@ -55,5 +55,5 @@ defmodule Evision.Gui do
     :erl_cv_nif.evision_cv_destroyAllWindows()
   end
 
-  deferror destroyAllWindows()
+  deferror(destroyAllWindows())
 end

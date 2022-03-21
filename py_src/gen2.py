@@ -418,7 +418,7 @@ class ClassInfo(object):
 
         methods = self.methods.copy()
 
-        if self.base and (self.cname.startswith("cv::ml") or "Calibrate" in self.cname):
+        if self.base and (self.cname.startswith("cv::ml") or "Calibrate" in self.cname or "Feature2D" in self.base):
             if self.base in codegen.classes:
                 base_class = codegen.classes[self.base]
                 for base_method_name in base_class.methods:
@@ -508,7 +508,7 @@ class ClassInfo(object):
         methods_inits = StringIO()
 
         methods = self.methods.copy()
-        if self.base and (self.cname.startswith("cv::ml") or "Calibrate" in self.cname):
+        if self.base and (self.cname.startswith("cv::ml") or "Calibrate" in self.cname or "Feature2D" in self.base):
             if self.base in codegen.classes:
                 base_class = codegen.classes[self.base]
                 for base_method_name in base_class.methods:
@@ -879,7 +879,11 @@ class FuncInfo(object):
 
                 arg_type_info = simple_argtype_mapping.get(tp, ArgTypeInfo(tp, FormatStrings.object, defval0, True, False))
                 if any(tp in codegen.enums.keys() for tp in tp_candidates):
-                    defval = f"static_cast<std::underlying_type_t<{arg_type_info.atype}>>({arg_type_info.default_value})"
+                    defval = None
+                    if len(a.defval) == 0:
+                        defval = f"static_cast<std::underlying_type_t<{arg_type_info.atype}>>({arg_type_info.default_value})"
+                    else:
+                        defval = f"static_cast<std::underlying_type_t<{arg_type_info.atype}>>({a.defval})"
                     arg_type_info = ArgTypeInfo(f"std::underlying_type_t<{arg_type_info.atype}>", arg_type_info.format_str, defval, True, True)
                     a.defval = defval
 
