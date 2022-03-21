@@ -51,6 +51,7 @@ jobs:
           brew install erlang
           brew install elixir
           brew install ffmpeg@4
+          brew link ffmpeg@4
           mix local.hex --force
           mix local.rebar --force
 
