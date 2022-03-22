@@ -418,7 +418,7 @@ class ClassInfo(object):
 
         methods = self.methods.copy()
 
-        if self.base and (self.cname.startswith("cv::ml") or "Calibrate" in self.cname or "Feature2D" in self.base):
+        if self.base and (self.cname.startswith("cv::ml") or "Calibrate" in self.cname or "Feature2D" in self.base or "Matcher" in self.base):
             if self.base in codegen.classes:
                 base_class = codegen.classes[self.base]
                 for base_method_name in base_class.methods:
@@ -508,12 +508,15 @@ class ClassInfo(object):
         methods_inits = StringIO()
 
         methods = self.methods.copy()
-        if self.base and (self.cname.startswith("cv::ml") or "Calibrate" in self.cname or "Feature2D" in self.base):
+        if self.base and (self.cname.startswith("cv::ml") or "Calibrate" in self.cname or "Feature2D" in self.base or "Matcher" in self.base or "Algorithm" in self.base):
             if self.base in codegen.classes:
                 base_class = codegen.classes[self.base]
                 for base_method_name in base_class.methods:
                     if base_method_name not in methods:
                         base_method = base_class.methods[base_method_name].__deepcopy__()
+                        for v in base_method.variants:
+                            v.base_classname = base_method.classname
+                            v.from_base = True
                         base_method.classname = self.name
                         methods[base_method_name] = base_method
                     else:
@@ -605,10 +608,13 @@ class ArgInfo(object):
 class FuncVariant(object):
     def __init__(self, classname, name, decl, isconstructor, isphantom=False):
         self.classname = classname
+        self.from_base = False
+        self.base_classname = None
         self.name = self.wname = name
         self.isconstructor = isconstructor
         self.isphantom = isphantom
 
+        self.decl = decl
         self.docstring = decl[5]
 
         self.rettype = decl[4] or handle_ptr(decl[1])
@@ -964,7 +970,16 @@ class FuncInfo(object):
                     code_decl += "    " + v.rettype + " retval;\n"
                     code_fcall += "retval = "
                 if not v.isphantom and ismethod and not self.is_static:
-                    code_fcall += "_self_->" + self.cname
+                    if self.classname and ("Matcher" in v.classname or "Algorithm" in v.classname) and '/PV' not in v.decl[2]:
+                        cls = v.classname
+                        if self.namespace.startswith('cv.'):
+                            inner = self.namespace[3:]
+                            prefix = f'{inner}_'
+                            if v.classname.startswith(prefix):
+                                cls = f'{inner}::' + v.classname[len(prefix):]
+                        code_fcall += "_self_->" + cls + "::" + self.cname
+                    else:
+                        code_fcall += "_self_->" + self.cname
                 else:
                     code_fcall += self.cname
                 code_fcall += code_args
@@ -1368,7 +1383,7 @@ class PythonWrapperGenerator(object):
         elif argtype[:7] == 'vector_':
             return 'list'
         else:
-            return ''
+            return 't'
 
     def map_argtype_to_guard(self, argname, argtype):
         argname = self.map_erl_argname(argname)
