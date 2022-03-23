@@ -1,62 +1,69 @@
 cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
 project(evision)
 
-find_package(OpenCV REQUIRED PATHS "${PRIV_DIR}/" NO_DEFAULT_PATH)
-include_directories("${OpenCV_INCLUDE_DIRS}")
-
-if(WIN32)
-execute_process(COMMAND "rmdir ${GENERATED_ELIXIR_SRC_DIR} /s /q && mkdir ${GENERATED_ELIXIR_SRC_DIR}")
-message("enabled modules: ${ENABLED_CV_MODULES}")
-execute_process(COMMAND python3.exe "${PY_SRC}\\gen2.py" "${C_SRC}" "${GENERATED_ELIXIR_SRC_DIR}" "${C_SRC}/headers.txt" "${ENABLED_CV_MODULES}" RESULT_VARIABLE STATUS)
+if(EVISION_PREFER_PRECOMPILED STREQUAL "true")
+    message("EVISION_PREFER_PRECOMPILED is true: download the precompiled library")
+    string(TOLOWER "${CMAKE_SYSTEM_NAME}" PRECOMPILED_SYSTEM_NAME)
+    string(TOLOWER "${CMAKE_SYSTEM_PROCESSOR}" PRECOMPILED_PROCESSOR_ARCH)
+    message("precompiled tarball name: evision-${PRECOMPILED_SYSTEM_NAME}-${PRECOMPILED_PROCESSOR_ARCH}-${EVISION_PRECOMPILED_VERSION}.tar.gz")
 else()
-execute_process(COMMAND bash -c "rm -rf ${GENERATED_ELIXIR_SRC_DIR} && mkdir -p ${GENERATED_ELIXIR_SRC_DIR}")
-message("enabled modules: ${ENABLED_CV_MODULES}")
-execute_process(COMMAND bash -c "python3 ${PY_SRC}/gen2.py ${C_SRC} ${GENERATED_ELIXIR_SRC_DIR} ${C_SRC}/headers.txt ${ENABLED_CV_MODULES}" RESULT_VARIABLE STATUS)
-endif()
-if(STATUS STREQUAL "0")
-    message("Successfully generated Erlang/Elixir bindings")
-else()
-    message(FATAL_ERROR "Failed to generate Erlang/Elixir bindings")
-endif()
+    find_package(OpenCV REQUIRED PATHS "${PRIV_DIR}/" NO_DEFAULT_PATH)
+    include_directories("${OpenCV_INCLUDE_DIRS}")
 
-if(WIN32)
-string(REPLACE "\\" "/" C_SRC "${C_SRC}")
-endif()
-file(GLOB evision_bindings_main "${C_SRC}/*.hpp" "${C_SRC}/*.h" "${C_SRC}/*.cpp")
-file(GLOB evision_custom_headers "${C_SRC}/evision_custom_headers/*.hpp")
-file(GLOB evision_modules "${C_SRC}/modules/*.hpp" "${C_SRC}/modules/*.h")
+    if(WIN32)
+    execute_process(COMMAND "rmdir ${GENERATED_ELIXIR_SRC_DIR} /s /q && mkdir ${GENERATED_ELIXIR_SRC_DIR}")
+    message("enabled modules: ${ENABLED_CV_MODULES}")
+    execute_process(COMMAND python3.exe "${PY_SRC}\\gen2.py" "${C_SRC}" "${GENERATED_ELIXIR_SRC_DIR}" "${C_SRC}/headers.txt" "${ENABLED_CV_MODULES}" RESULT_VARIABLE STATUS)
+    else()
+    execute_process(COMMAND bash -c "rm -rf ${GENERATED_ELIXIR_SRC_DIR} && mkdir -p ${GENERATED_ELIXIR_SRC_DIR}")
+    message("enabled modules: ${ENABLED_CV_MODULES}")
+    execute_process(COMMAND bash -c "python3 ${PY_SRC}/gen2.py ${C_SRC} ${GENERATED_ELIXIR_SRC_DIR} ${C_SRC}/headers.txt ${ENABLED_CV_MODULES}" RESULT_VARIABLE STATUS)
+    endif()
+    if(STATUS STREQUAL "0")
+        message("Successfully generated Erlang/Elixir bindings")
+    else()
+        message(FATAL_ERROR "Failed to generate Erlang/Elixir bindings")
+    endif()
 
-add_library(evision SHARED
-    ${evision_bindings_main}
-    ${evision_custom_headers}
-    ${evision_modules}
-)
-target_link_libraries(evision "${OpenCV_LIBS}")
-set_property(TARGET evision PROPERTY CXX_STANDARD 14)
-set_target_properties(evision PROPERTIES PREFIX "")
-set_target_properties(evision PROPERTIES SUFFIX ".so")
+    if(WIN32)
+    string(REPLACE "\\" "/" C_SRC "${C_SRC}")
+    endif()
+    file(GLOB evision_bindings_main "${C_SRC}/*.hpp" "${C_SRC}/*.h" "${C_SRC}/*.cpp")
+    file(GLOB evision_custom_headers "${C_SRC}/evision_custom_headers/*.hpp")
+    file(GLOB evision_modules "${C_SRC}/modules/*.hpp" "${C_SRC}/modules/*.h")
 
-if(${CMAKE_VERSION} VERSION_GREATER "3.9")
-    cmake_policy(SET CMP0068 NEW)
-endif()
-set_target_properties(evision PROPERTIES
-    INSTALL_RPATH_USE_LINK_PATH TRUE
-    BUILD_WITH_INSTALL_RPATH TRUE
-)
+    add_library(evision SHARED
+        ${evision_bindings_main}
+        ${evision_custom_headers}
+        ${evision_modules}
+    )
+    target_link_libraries(evision "${OpenCV_LIBS}")
+    set_property(TARGET evision PROPERTY CXX_STANDARD 14)
+    set_target_properties(evision PROPERTIES PREFIX "")
+    set_target_properties(evision PROPERTIES SUFFIX ".so")
 
-if(UNIX AND NOT APPLE)
-    set_target_properties(evision PROPERTIES INSTALL_RPATH "\$ORIGIN/lib")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-but-set-variable")
-elseif(UNIX AND APPLE)
-    # Although the compiler complains about not using these,
-    # things only work with them set
-    set(CMAKE_SHARED_LINKER_FLAGS "-flat_namespace -undefined suppress -undefined dynamic_lookup")
-    set_target_properties(evision PROPERTIES INSTALL_RPATH "@loader_path/lib")
-endif()
+    if(${CMAKE_VERSION} VERSION_GREATER "3.9")
+        cmake_policy(SET CMP0068 NEW)
+    endif()
+    set_target_properties(evision PROPERTIES
+        INSTALL_RPATH_USE_LINK_PATH TRUE
+        BUILD_WITH_INSTALL_RPATH TRUE
+    )
 
-include_directories(${ERTS_INCLUDE_DIR})
-if(WIN32)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /bigobj /wd4996 /wd4267 /wd4068")
-else()
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -O3 -Wall -Wextra -Wno-unused-parameter -Wno-missing-field-initializers -Wno-deprecated-declarations -Wno-unused-but-set-variable")
+    if(UNIX AND NOT APPLE)
+        set_target_properties(evision PROPERTIES INSTALL_RPATH "\$ORIGIN/lib")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-but-set-variable")
+    elseif(UNIX AND APPLE)
+        # Although the compiler complains about not using these,
+        # things only work with them set
+        set(CMAKE_SHARED_LINKER_FLAGS "-flat_namespace -undefined suppress -undefined dynamic_lookup")
+        set_target_properties(evision PROPERTIES INSTALL_RPATH "@loader_path/lib")
+    endif()
+
+    include_directories(${ERTS_INCLUDE_DIR})
+    if(WIN32)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /bigobj /wd4996 /wd4267 /wd4068")
+    else()
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -O3 -Wall -Wextra -Wno-unused-parameter -Wno-missing-field-initializers -Wno-deprecated-declarations -Wno-unused-but-set-variable")
+    endif()
 endif()

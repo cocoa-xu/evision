@@ -42,47 +42,55 @@ CONFIGURATION_PRIVATE_HPP = $(C_SRC)/configuration.private.hpp
 GENERATED_ELIXIR_SRC_DIR = $(LIB_SRC)/generated
 CMAKE_EVISION_BUILD_DIR = $(MIX_APP_PATH)/cmake_evision
 MAKE_BUILD_FLAGS ?= "-j1"
+EVISION_PREFER_PRECOMPILED ?= false
+EVISION_PRECOMPILED_VERSION ?= "0.1.0-dev"
 
 .DEFAULT_GLOBAL := build
 
 build: $(EVISION_SO)
 
 $(OPENCV_CONFIGURATION_PRIVATE_HPP):
-	@ if [ ! -e "$(OPENCV_CONFIGURATION_PRIVATE_HPP)" ]; then \
-		if [ "$(OPENCV_USE_GIT_HEAD)" = "false" ]; then \
-			echo "using $(OPENCV_VER)" ; \
-		else \
-		  	rm -rf "$(OPENCV_DIR)" ; \
-			git clone --branch=$(OPENCV_USE_GIT_BRANCH) --depth=1 $(OPENCV_GIT_REPO) "$(OPENCV_DIR)" ; \
+	@ if [ "$(EVISION_PREFER_PRECOMPILE)" != "true" ]; then \
+   		if [ ! -e "$(OPENCV_CONFIGURATION_PRIVATE_HPP)" ]; then \
+			if [ "$(OPENCV_USE_GIT_HEAD)" = "false" ]; then \
+				echo "using $(OPENCV_VER)" ; \
+			else \
+		  		rm -rf "$(OPENCV_DIR)" ; \
+				git clone --branch=$(OPENCV_USE_GIT_BRANCH) --depth=1 $(OPENCV_GIT_REPO) "$(OPENCV_DIR)" ; \
+			fi \
 		fi \
 	fi
 
 $(CONFIGURATION_PRIVATE_HPP): $(OPENCV_CONFIGURATION_PRIVATE_HPP)
-	@ cp "$(OPENCV_CONFIGURATION_PRIVATE_HPP)" "$(CONFIGURATION_PRIVATE_HPP)"
+	@ if [ "$(EVISION_PREFER_PRECOMPILE)" != "true" ]; then \
+   		cp "$(OPENCV_CONFIGURATION_PRIVATE_HPP)" "$(CONFIGURATION_PRIVATE_HPP)" ; \
+	fi
 
 $(HEADERS_TXT): $(CONFIGURATION_PRIVATE_HPP)
-	@sh -c "OPENCV_DIR=$(OPENCV_DIR) $(shell pwd)/patches/$(OPENCV_VER)/apply_patch.sh || true"
-	@mkdir -p $(CMAKE_OPENCV_BUILD_DIR) && \
-	cd $(CMAKE_OPENCV_BUILD_DIR) && \
-	cmake -D CMAKE_BUILD_TYPE=RELEASE \
-		-D CMAKE_INSTALL_PREFIX=$(PRIV_DIR) \
-		-D PYTHON3_EXECUTABLE=$(PYTHON3_EXECUTABLE) \
-		-D INSTALL_PYTHON_EXAMPLES=OFF \
-		-D INSTALL_C_EXAMPLES=OFF \
-		-D BUILD_EXAMPLES=OFF \
-		-D BUILD_TESTS=OFF \
-		-D OPENCV_ENABLE_NONFREE=OFF \
-		-D OPENCV_GENERATE_PKGCONFIG=ON \
-		-D OPENCV_PC_FILE_NAME=opencv4.pc \
-		-D BUILD_ZLIB=ON \
-		-D BUILD_opencv_gapi=OFF \
-		-D CMAKE_C_FLAGS=-DPNG_ARM_NEON_OPT=0 \
-		-D CMAKE_CXX_FLAGS=-DPNG_ARM_NEON_OPT=0 \
-		-D CMAKE_TOOLCHAIN_FILE="$(TOOLCHAIN_FILE)" \
-		$(CMAKE_OPTIONS) $(OPENCV_DIR) && \
+	@ if [ "$(EVISION_PREFER_PRECOMPILE)" != "true" ]; then \
+		sh -c "OPENCV_DIR=$(OPENCV_DIR) $(shell pwd)/patches/$(OPENCV_VER)/apply_patch.sh || true" ; \
+		mkdir -p $(CMAKE_OPENCV_BUILD_DIR) && \
+		cd $(CMAKE_OPENCV_BUILD_DIR) && \
+		cmake -D CMAKE_BUILD_TYPE=RELEASE \
+			-D CMAKE_INSTALL_PREFIX=$(PRIV_DIR) \
+			-D PYTHON3_EXECUTABLE=$(PYTHON3_EXECUTABLE) \
+			-D INSTALL_PYTHON_EXAMPLES=OFF \
+			-D INSTALL_C_EXAMPLES=OFF \
+			-D BUILD_EXAMPLES=OFF \
+			-D BUILD_TESTS=OFF \
+			-D OPENCV_ENABLE_NONFREE=OFF \
+			-D OPENCV_GENERATE_PKGCONFIG=ON \
+			-D OPENCV_PC_FILE_NAME=opencv4.pc \
+			-D BUILD_ZLIB=ON \
+			-D BUILD_opencv_gapi=OFF \
+			-D CMAKE_C_FLAGS=-DPNG_ARM_NEON_OPT=0 \
+			-D CMAKE_CXX_FLAGS=-DPNG_ARM_NEON_OPT=0 \
+			-D CMAKE_TOOLCHAIN_FILE="$(TOOLCHAIN_FILE)" \
+			$(CMAKE_OPTIONS) $(OPENCV_DIR) && \
 		make "$(MAKE_BUILD_FLAGS)" && \
 		cd $(CMAKE_OPENCV_BUILD_DIR) && make install && \
-		cp "$(HEADERS_TXT)" "$(C_SRC)/headers.txt"
+		cp "$(HEADERS_TXT)" "$(C_SRC)/headers.txt" ; \
+	fi
 
 $(EVISION_SO): $(HEADERS_TXT)
 	@ mkdir -p $(PRIV_DIR)
@@ -96,7 +104,13 @@ $(EVISION_SO): $(HEADERS_TXT)
 		  -D PRIV_DIR="$(PRIV_DIR)" \
 		  -D ERTS_INCLUDE_DIR="$(ERTS_INCLUDE_DIR)" \
 		  -D ENABLED_CV_MODULES=$(ENABLED_CV_MODULES) \
+		  -D EVISION_PREFER_PRECOMPILED="$(EVISION_PREFER_PRECOMPILED)" \
+		  -D EVISION_PRECOMPILED_VERSION="$(EVISION_PRECOMPILED_VERSION)" \
 		  $(CMAKE_CONFIGURE_FLAGS) "$(shell pwd)" && \
 		  make "$(MAKE_BUILD_FLAGS)" \
 		  || { echo "\033[0;31mincomplete build of OpenCV found in '$(CMAKE_OPENCV_BUILD_DIR)', please delete that directory and retry\033[0m" && exit 1 ; } ; } \
-		&& cp "$(CMAKE_EVISION_BUILD_DIR)/evision.so" "$(EVISION_SO)"
+		&& if [ "$(EVISION_PREFER_PRECOMPILED)" != "true" ]; then \
+			cp "$(CMAKE_EVISION_BUILD_DIR)/evision.so" "$(EVISION_SO)" ; \
+		else \
+			echo "copy from precompiled package" ; \
+		fi
