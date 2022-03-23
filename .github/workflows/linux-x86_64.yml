@@ -55,12 +55,14 @@ jobs:
               opencv_ver: 4.5.5
               upload: false
               mix_env: test
+              evision_version: 0.1.0-dev
           - pair:
               elixir: 1.13.2
               otp: 24.2
               opencv_ver: 4.5.5
               upload: true
               mix_env: dev
+              evision_version: 0.1.0-dev
 
     steps:
       - uses: actions/checkout@v2
@@ -76,12 +78,22 @@ jobs:
           sudo apt-get install -y build-essential automake autoconf pkg-config bc m4 unzip zip curl git libssl-dev gzip libncurses5-dev erlang-inets erlang-os-mon erlang-runtime-tools erlang-ssl erlang-dev python3 ca-certificates
           sudo apt-get install -y libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libavresample-dev ffmpeg
 
-      - name: Mix Compile
+      - name: Mix Compile (dev)
+        if: startsWith(github.ref, 'refs/tags/')
         run: |
           export OPENCV_VER=${{ matrix.pair.opencv_ver }}
           export MIX_ENV=${{ matrix.pair.mix_env }}
           mix deps.get
           MAKE_BUILD_FLAGS="-j$(nproc)" mix compile
+
+      - name: Mix Compile (test)
+        run: |
+          if [ "${{ matrix.pair.mix_env }}" = "test" ]; then
+            export OPENCV_VER=${{ matrix.pair.opencv_ver }}
+            export MIX_ENV=${{ matrix.pair.mix_env }}
+            mix deps.get
+            MAKE_BUILD_FLAGS="-j$(nproc)" mix compile
+          fi
 
       - name: Mix Test
         run: |
@@ -94,12 +106,14 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         run: |
           if [ "${{ matrix.pair.upload }}" = "true" ]; then
-            mkdir -p evision-linux-x86_64 ;
-            cp -a _build/${{ matrix.pair.mix_env }}/lib/evision/priv evision-linux-x86_64 ;
-            cp -a lib/generated evision-linux-x86_64 ;
-            tar -czf evision-linux-x86_64.tar.gz evision-linux-x86_64
-            rm -rf evision-linux-x86_64
-            ls -lah evision-linux-x86_64.tar.gz
+            export PKG_NAME=evision-linux-x86_64-${{ matrix.pair.evision_version }}
+            echo "pkg_name=${PKG_NAME}.tar.gz" >> $GITHUB_ENV
+            mkdir -p "${PKG_NAME}" ;
+            cp -a _build/${{ matrix.pair.mix_env }}/lib/evision/priv "${PKG_NAME}" ;
+            cp -a lib/generated "${PKG_NAME}" ;
+            tar -czf "${PKG_NAME}.tar.gz" "${PKG_NAME}"
+            rm -rf "${PKG_NAME}"
+            ls -lah "${PKG_NAME}.tar.gz"
           else
             echo "skipped"
           fi
@@ -107,4 +121,4 @@ jobs:
       - uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          files: evision-linux-x86_64.tar.gz
+          files: ${{ env.pkg_name }}
