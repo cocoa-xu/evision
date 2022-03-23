@@ -50,7 +50,7 @@ EVISION_PRECOMPILED_VERSION ?= "0.1.0-dev"
 build: $(EVISION_SO)
 
 $(OPENCV_CONFIGURATION_PRIVATE_HPP):
-	@ if [ "$(EVISION_PREFER_PRECOMPILE)" -ne "true" ]; then \
+	@ if [ "$(EVISION_PREFER_PRECOMPILE)" != "true" ]; then \
    		if [ ! -e "$(OPENCV_CONFIGURATION_PRIVATE_HPP)" ]; then \
 			if [ "$(OPENCV_USE_GIT_HEAD)" = "false" ]; then \
 				echo "using $(OPENCV_VER)" ; \
@@ -62,12 +62,12 @@ $(OPENCV_CONFIGURATION_PRIVATE_HPP):
 	fi
 
 $(CONFIGURATION_PRIVATE_HPP): $(OPENCV_CONFIGURATION_PRIVATE_HPP)
-	@ if [ "$(EVISION_PREFER_PRECOMPILE)" -ne "true" ]; then \
+	@ if [ "$(EVISION_PREFER_PRECOMPILE)" != "true" ]; then \
    		cp "$(OPENCV_CONFIGURATION_PRIVATE_HPP)" "$(CONFIGURATION_PRIVATE_HPP)" ; \
 	fi
 
 $(HEADERS_TXT): $(CONFIGURATION_PRIVATE_HPP)
-	@ if [ "$(EVISION_PREFER_PRECOMPILE)" -ne "true" ]; then \
+	@ if [ "$(EVISION_PREFER_PRECOMPILE)" != "true" ]; then \
 		sh -c "OPENCV_DIR=$(OPENCV_DIR) $(shell pwd)/patches/$(OPENCV_VER)/apply_patch.sh || true" ; \
 		mkdir -p $(CMAKE_OPENCV_BUILD_DIR) && \
 		cd $(CMAKE_OPENCV_BUILD_DIR) && \
@@ -109,7 +109,7 @@ $(EVISION_SO): $(HEADERS_TXT)
 		  $(CMAKE_CONFIGURE_FLAGS) "$(shell pwd)" && \
 		  make "$(MAKE_BUILD_FLAGS)" \
 		  || { echo "\033[0;31mincomplete build of OpenCV found in '$(CMAKE_OPENCV_BUILD_DIR)', please delete that directory and retry\033[0m" && exit 1 ; } ; } \
-		&& if [ "${EVISION_PREFER_PRECOMPILED}" != "true" ]; then \
+		&& if [ "$(EVISION_PREFER_PRECOMPILED)" != "true" ]; then \
 			cp "$(CMAKE_EVISION_BUILD_DIR)/evision.so" "$(EVISION_SO)" ; \
 		else \
 			echo "copy from precompiled package" ; \
