@@ -17,6 +17,9 @@ on:
       - '.github/workflows/linux-ppc64le.yml'
       - '.github/workflows/linux-s390x.yml'
   push:
+    tags:
+      - '*-dev'
+      - '*-prod'
     branches:
       - main
       - feature-*
