@@ -71,16 +71,35 @@ Compatible OpenCV versions:
 by compatible, it means these versions can compile successfully, and I tested a small range of functions. Tons of tests
 should be written, and then we can have a list for tested OpenCV versions.
 
+### Use Precompiled Library
+To use precompiled Evision library, the following environment variables should be set
+
+```shell
+# required if prefer to use precompiled library
+export EVISION_PREFER_PRECOMPILED=true
+
+# optional. 
+## currently only "0.1.0-dev" is valid
+export EVISION_PRECOMPILED_VERSION="0.1.0-dev"
+## set the cache directory for the precompiled archive file
+export EVISION_PRECOMPILED_CACHE_DIR="$(pwd)/.cache"
+```
+
+Note that using precompiled library requires installing FFmpeg libraries. See the end of [Available Modules](#available-modules) for more information.
+
+### Compile from Sources
 To obtain and compile OpenCV's source code from git, set the following environment variables
 
 ```shell
-# required
+# required if compile OpenCV from source
 export OPENCV_USE_GIT_HEAD=true
 export OPENCV_USE_GIT_BRANCH=4.x
-# optional. set this if you want to use to your/other fork/mirrors
+# optional.
+## set this if you want to use to your/other fork/mirrors
 export OPENCV_GIT_REPO="https://github.com/opencv/opencv.git"
 ```
 
+### Available modules
 Current available modules:
 - calib3d
 - core
@@ -108,6 +127,7 @@ sudo apt install -y libavcodec-dev libavformat-dev libavutil-dev libswscale-dev 
 on macOS
 ```shell
 brew install ffmpeg@4
+brew link ffmpeg@4
 ```
 
 ## Dependencies
