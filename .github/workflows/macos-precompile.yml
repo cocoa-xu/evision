@@ -38,8 +38,8 @@ jobs:
         run: |
           mix deps.get
           mix compile
-          export PKG_NAME=evision-darwin-${{ matrix.pair.arch_name }}-${EVISION_VERSION}
-          if [ "${{ matrix.pair.arch_name }}" = "arm64" ]; then
+          export PKG_NAME=evision-darwin-${{ matrix.pair.arch }}-${EVISION_VERSION}
+          if [ "${{ matrix.pair.arch }}" = "arm64" ]; then
             export CMAKE_OPENCV_OPTIONS="-D WITH_IPP=OFF -D CMAKE_OSX_ARCHITECTURES=arm64"
             export CMAKE_EVISION_OPTIONS="-D CMAKE_OSX_ARCHITECTURES=arm64"
           fi
