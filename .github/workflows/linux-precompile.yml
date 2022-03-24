@@ -85,7 +85,7 @@ jobs:
             echo "deb [arch=${{ matrix.pair.arch_name }}] https://repo.uwucocoa.moe/ stable main" | tee /etc/apt/sources.list.d/uwucocoa.list
             apt-get update -q -y
             apt-get install cmake-uwu erlang-uwu
-            wget https://github.com/elixir-lang/elixir/releases/download/v1.13.3/Precompiled.zip -O Precompiled.zip
+            wget --no-check-certificate https://github.com/elixir-lang/elixir/releases/download/v1.13.3/Precompiled.zip -O Precompiled.zip
             unzip -o Precompiled.zip
             export PATH="$(pwd)/Precompiled/bin:${PATH}"
             mix local.hex --force
