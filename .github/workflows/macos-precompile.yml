@@ -36,14 +36,14 @@ jobs:
 
       - name: Create precompiled library
         run: |
-          mix deps.get
-          mix compile
-          export PKG_NAME=evision-darwin-${{ matrix.pair.arch }}-${EVISION_VERSION}
           if [ "${{ matrix.pair.arch }}" = "arm64" ]; then
             export CMAKE_OPENCV_OPTIONS="-D WITH_IPP=OFF -D CMAKE_OSX_ARCHITECTURES=arm64"
             export CMAKE_EVISION_OPTIONS="-D CMAKE_OSX_ARCHITECTURES=arm64"
           fi
-          echo "pkg_name=${PKG_NAME}.tar.gz" >> $GITHUB_ENV
+
+          mix deps.get
+          mix compile
+          export PKG_NAME=evision-darwin-${{ matrix.pair.arch }}-${EVISION_VERSION}
           mkdir -p "${PKG_NAME}"
           cp -a _build/${MIX_ENV}/lib/evision/priv "${PKG_NAME}"
           cp -a lib/generated "${PKG_NAME}"
