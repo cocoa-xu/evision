@@ -1423,7 +1423,12 @@ class PythonWrapperGenerator(object):
         elif argtype[:7] == 'vector_':
             return f'is_list({argname})'
         else:
-            return f'is_reference({argname})'
+            if argtype == 'LayerId':
+                return ''
+            elif argtype == 'TermCriteria':
+                return f'is_tuple({argname})'
+            else:
+                return f'is_reference({argname})'
 
     def map_erl_argname(self, argname, ignore_upper_starting=False):
         reserved_keywords = ['end', 'fn']
