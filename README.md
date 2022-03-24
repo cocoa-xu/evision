@@ -87,13 +87,23 @@ export EVISION_PRECOMPILED_CACHE_DIR="$(pwd)/.cache"
 
 Note that using precompiled library requires installing FFmpeg libraries. See the end of [Available Modules](#available-modules) for more information.
 
-### Compile from Sources
+### Compile OpenCV from Sources
+To obtain and compile OpenCV's source code from official releases, the following environment variables can affect the build
+
+```shell
+# optional.
+## set OpenCV version
+export OPENCV_VER="4.5.5"
+```
+
+### Compile OpenCV from Git Repo
 To obtain and compile OpenCV's source code from git, set the following environment variables
 
 ```shell
-# required if compile OpenCV from source
+# required if compile OpenCV from git
 export OPENCV_USE_GIT_HEAD=true
 export OPENCV_USE_GIT_BRANCH=4.x
+
 # optional.
 ## set this if you want to use to your/other fork/mirrors
 export OPENCV_GIT_REPO="https://github.com/opencv/opencv.git"
