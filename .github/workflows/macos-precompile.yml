@@ -13,6 +13,14 @@ jobs:
     env:
       MIX_ENV: dev
       EVISION_VERSION: 0.1.0-dev
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - pair:
+              arch: x86_64
+          - pair:
+              arch: arm64
 
     steps:
       - uses: actions/checkout@v2
@@ -30,7 +38,11 @@ jobs:
         run: |
           mix deps.get
           mix compile
-          export PKG_NAME=evision-darwin-x86_64-${EVISION_VERSION}
+          export PKG_NAME=evision-darwin-${{ matrix.pair.arch_name }}-${EVISION_VERSION}
+          if [ "${{ matrix.pair.arch_name }}" = "arm64" ]; then
+            export CMAKE_OPENCV_OPTIONS="-D WITH_IPP=OFF -D CMAKE_OSX_ARCHITECTURES=arm64"
+            export CMAKE_EVISION_OPTIONS="-D CMAKE_OSX_ARCHITECTURES=arm64"
+          fi
           echo "pkg_name=${PKG_NAME}.tar.gz" >> $GITHUB_ENV
           mkdir -p "${PKG_NAME}"
           cp -a _build/${MIX_ENV}/lib/evision/priv "${PKG_NAME}"

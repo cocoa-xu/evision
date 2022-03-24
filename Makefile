@@ -41,6 +41,7 @@ HEADERS_TXT = $(CMAKE_OPENCV_BUILD_DIR)/modules/python_bindings_generator/header
 CONFIGURATION_PRIVATE_HPP = $(C_SRC)/configuration.private.hpp
 GENERATED_ELIXIR_SRC_DIR = $(LIB_SRC)/generated
 CMAKE_EVISION_BUILD_DIR = $(MIX_APP_PATH)/cmake_evision
+CMAKE_EVISION_OPTIONS ?= ""
 MAKE_BUILD_FLAGS ?= "-j1"
 EVISION_PREFER_PRECOMPILED ?= false
 EVISION_PRECOMPILED_VERSION ?= "0.1.0-dev"
@@ -109,7 +110,7 @@ $(EVISION_SO): $(HEADERS_TXT)
 		  -D EVISION_PREFER_PRECOMPILED="$(EVISION_PREFER_PRECOMPILED)" \
 		  -D EVISION_PRECOMPILED_VERSION="$(EVISION_PRECOMPILED_VERSION)" \
 		  -D EVISION_PRECOMPILED_CACHE_DIR="$(EVISION_PRECOMPILED_CACHE_DIR)" \
-		  $(CMAKE_CONFIGURE_FLAGS) "$(shell pwd)" && \
+		  $(CMAKE_CONFIGURE_FLAGS) $(CMAKE_EVISION_OPTIONS) "$(shell pwd)" && \
 		  make "$(MAKE_BUILD_FLAGS)" \
 		  || { echo "\033[0;31mincomplete build of OpenCV found in '$(CMAKE_OPENCV_BUILD_DIR)', please delete that directory and retry\033[0m" && exit 1 ; } ; } \
 		&& if [ "$(EVISION_PREFER_PRECOMPILED)" != "true" ]; then \
