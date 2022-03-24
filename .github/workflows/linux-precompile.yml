@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-20.04
     env:
       ELIXIR: 1.13.3
-      OTP: 24.2
+      OTP: 24.3
       MIX_ENV: dev
       EVISION_VERSION: 0.1.0-dev
     strategy:
@@ -38,8 +38,8 @@ jobs:
       - uses: erlef/setup-beam@v1
         if: ${{ matrix.pair.arch == 'x86_64' }}
         with:
-          otp-version: ${{matrix.pair.otp}}
-          elixir-version: ${{matrix.pair.elixir}}
+          otp-version: 24.3
+          elixir-version: 1.13.3
 
       - name: Install system dependecies
         if: ${{ matrix.pair.arch == 'x86_64' }}

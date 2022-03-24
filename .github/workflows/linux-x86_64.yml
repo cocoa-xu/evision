@@ -16,6 +16,7 @@ on:
       - '.github/workflows/linux-armv7.yml'
       - '.github/workflows/linux-ppc64le.yml'
       - '.github/workflows/linux-s390x.yml'
+      - '.github/workflows/linux-precompile.yml'
   push:
     branches:
       - main
