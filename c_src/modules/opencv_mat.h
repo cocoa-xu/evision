@@ -6,6 +6,22 @@
 
 int get_binary_type(const std::string& t, int l, int n, int& type);
 
+// @evision c: evision_cv_mat_empty, 0
+// @evision nif: def evision_cv_mat_empty(), do: :erlang.nif_error("Mat::empty not loaded")
+static ERL_NIF_TERM evision_cv_mat_empty(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
+    evision_res<cv::Mat *> * res;
+    if (alloc_resource(&res)) {
+        res->val = new cv::Mat();
+    } else {
+        return evision::nif::error(env, "no memory");
+    }
+
+    ERL_NIF_TERM ret = enif_make_resource(env, res);
+    enif_release_resource(res);
+
+    return evision::nif::ok(env, ret);
+}
+
 // @evision c: evision_cv_mat_type, 1
 // @evision nif: def evision_cv_mat_type(_opts \\ []), do: :erlang.nif_error("Mat::type not loaded")
 static ERL_NIF_TERM evision_cv_mat_type(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {

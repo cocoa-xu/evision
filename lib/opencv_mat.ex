@@ -50,6 +50,14 @@ defmodule Evision.Mat do
   deferror(clone(mat))
 
   @doc namespace: :"cv.Mat"
+  @spec empty() :: :ok, reference()
+  def empty() do
+    :erl_cv_nif.evision_cv_mat_empty()
+  end
+
+  deferror(empty())
+
+  @doc namespace: :"cv.Mat"
   @spec to_binary(reference()) :: {:ok, binary()} | {:error, String.t()}
   def to_binary(mat) when is_reference(mat) do
     :erl_cv_nif.evision_cv_mat_to_binary(img: mat)

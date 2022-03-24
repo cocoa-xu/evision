@@ -58,7 +58,7 @@ defmodule Evision.PCA.Test do
           {:ok, data_pts} = OpenCV.Mat.as_type(data_pts, {:f, 64})
 
           # Perform PCA analysis
-          {:ok, {mean, eigenvectors, eigenvalues}} = OpenCV.pcaCompute2(data_pts, nil)
+          {:ok, {mean, eigenvectors, eigenvalues}} = OpenCV.pcaCompute2(data_pts, OpenCV.Mat.empty!())
           eigenvectors = OpenCV.Nx.to_nx(eigenvectors)
           eigenvalues = OpenCV.Nx.to_nx(eigenvalues)
 
