@@ -45,9 +45,6 @@ on:
 jobs:
   mix_test:
     runs-on: ubuntu-20.04
-    env:
-      MIX_ENV: test
-
     strategy:
       fail-fast: false
       matrix:
@@ -81,7 +78,7 @@ jobs:
           sudo apt-get install -y build-essential automake autoconf pkg-config bc m4 unzip zip curl git libssl-dev gzip libncurses5-dev erlang-inets erlang-os-mon erlang-runtime-tools erlang-ssl erlang-dev python3 ca-certificates
           sudo apt-get install -y libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libavresample-dev ffmpeg
 
-      - name: Mix Compile (dev)
+      - name: Build precompiled library
         if: startsWith(github.ref, 'refs/tags/')
         run: |
           export OPENCV_VER=${{ matrix.pair.opencv_ver }}
@@ -89,7 +86,7 @@ jobs:
           mix deps.get
           MAKE_BUILD_FLAGS="-j$(nproc)" mix compile
 
-      - name: Mix Compile (test)
+      - name: mix compile for CI test
         run: |
           if [ "${{ matrix.pair.mix_env }}" = "test" ]; then
             export OPENCV_VER=${{ matrix.pair.opencv_ver }}
@@ -111,9 +108,9 @@ jobs:
           if [ "${{ matrix.pair.upload }}" = "true" ]; then
             export PKG_NAME=evision-linux-x86_64-${{ matrix.pair.evision_version }}
             echo "pkg_name=${PKG_NAME}.tar.gz" >> $GITHUB_ENV
-            mkdir -p "${PKG_NAME}" ;
-            cp -a _build/${{ matrix.pair.mix_env }}/lib/evision/priv "${PKG_NAME}" ;
-            cp -a lib/generated "${PKG_NAME}" ;
+            mkdir -p "${PKG_NAME}"
+            cp -a _build/${{ matrix.pair.mix_env }}/lib/evision/priv "${PKG_NAME}"
+            cp -a lib/generated "${PKG_NAME}"
             tar -czf "${PKG_NAME}.tar.gz" "${PKG_NAME}"
             rm -rf "${PKG_NAME}"
             ls -lah "${PKG_NAME}.tar.gz"
