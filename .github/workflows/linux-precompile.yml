@@ -9,11 +9,6 @@ on:
 jobs:
   mix_test:
     runs-on: ubuntu-20.04
-    env:
-      ELIXIR: 1.13.3
-      OTP: 24.3
-      MIX_ENV: dev
-      EVISION_VERSION: 0.1.0-dev
     strategy:
       fail-fast: false
       matrix:
@@ -52,9 +47,9 @@ jobs:
         run: |
           mix deps.get
           mix compile
-          export PKG_NAME=evision-linux-${{ matrix.pair.arch_name }}-${EVISION_VERSION}
+          export PKG_NAME=evision-linux-${{ matrix.pair.arch_name }}-0.1.0-dev
           mkdir -p "${PKG_NAME}"
-          cp -a _build/${MIX_ENV}/lib/evision/priv "${PKG_NAME}"
+          cp -a _build/dev/lib/evision/priv "${PKG_NAME}"
           cp -a lib/generated "${PKG_NAME}"
           tar -czf "${PKG_NAME}.tar.gz" "${PKG_NAME}"
           rm -rf "${PKG_NAME}"
@@ -76,10 +71,6 @@ jobs:
           dockerRunArgs: |
             --volume "${PWD}/artifacts:/artifacts"
 
-          env: |
-            EVISION_VERSION: ${EVISION_VERSION}
-            MIX_ENV: ${MIX_ENV}
-
           shell: /bin/bash
           install: |
             apt-get update -q -y
@@ -98,9 +89,9 @@ jobs:
             export PATH="/usr/local/bin:$(pwd)/Precompiled/bin:${PATH}"
             mix deps.get
             mix compile
-            export PKG_NAME=evision-linux-${{ matrix.pair.arch_name }}-${EVISION_VERSION}
+            export PKG_NAME=evision-linux-${{ matrix.pair.arch_name }}-0.1.0-dev
             mkdir -p "${PKG_NAME}"
-            cp -a _build/${MIX_ENV}/lib/evision/priv "${PKG_NAME}"
+            cp -a _build/dev/lib/evision/priv "${PKG_NAME}"
             cp -a lib/generated "${PKG_NAME}"
             tar -czf "${PKG_NAME}.tar.gz" "${PKG_NAME}"
             rm -rf "${PKG_NAME}"
