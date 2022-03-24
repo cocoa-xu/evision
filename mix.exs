@@ -9,7 +9,7 @@ defmodule Evision.MixProject do
   @compatible_opencv_versions ["4.5.3", "4.5.4", "4.5.5"]
   @source_url "https://github.com/cocoa-xu/evision/tree/#{@opencv_version}"
 
-  defp download_opencv_if_needed(opencv_ver) do
+  defp download_opencv_if_needed(opencv_ver, prefer_precompiled) do
     #  in simple words
     #  1. download "https://github.com/opencv/opencv/archive/$(OPENCV_VER).zip" to "3rd_party/cache/opencv-$(OPENCV_VER).zip"
     #  2. unzip -o "3rd_party/cache/opencv-$(OPENCV_VER).zip" -d "OPENCV_ROOT_DIR"
@@ -19,7 +19,7 @@ defmodule Evision.MixProject do
     #   └── opencv
     #       └── opencv-$(OPENCV_VER)
 
-    if System.get_env("OPENCV_USE_GIT_HEAD", "false") == "false" do
+    if prefer_precompiled == "false" and System.get_env("OPENCV_USE_GIT_HEAD", "false") == "false" do
       source_zip_url = "https://github.com/opencv/opencv/archive/#{opencv_ver}.zip"
       cache_dir = Path.join([__DIR__, "3rd_party", "cache"])
       File.mkdir_p!(cache_dir)
@@ -42,7 +42,7 @@ defmodule Evision.MixProject do
   def project do
     {cmake_options, enabled_modules} = generate_cmake_options()
     opencv_ver = opencv_versions(System.get_env("OPENCV_VER", @opencv_version))
-    download_opencv_if_needed(opencv_ver)
+    download_opencv_if_needed(opencv_ver, System.get_env("EVISION_PREFER_PRECOMPILED", "false"))
     ninja = System.find_executable("ninja")
 
     [
