@@ -63,7 +63,7 @@ if(EVISION_PREFER_PRECOMPILED STREQUAL "true")
     endif()
 
     if(PRECOMPILE_PKG_NEEDS_COPY)
-        execute_process(COMMAND bash -c "cp -a ${PRECOMPILE_PKG_PRIV_DIR}/* ${PRIV_DIR} && cp -a ${PRECOMPILE_PKG_GENERATED_ELIXIR_SRC_DIR} ${GENERATED_ELIXIR_SRC_DIR}" RESULT_VARIABLE COPY_STATUS)
+        execute_process(COMMAND bash -c "cp -a ${PRECOMPILE_PKG_PRIV_DIR}/* ${PRIV_DIR} && rm -rf ${GENERATED_ELIXIR_SRC_DIR} && cp -a ${PRECOMPILE_PKG_GENERATED_ELIXIR_SRC_DIR} ${GENERATED_ELIXIR_SRC_DIR}" RESULT_VARIABLE COPY_STATUS)
         if(COPY_STATUS STREQUAL "0")
             message(STATUS "Successfully restored precompiled library")
         else()
