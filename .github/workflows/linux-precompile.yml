@@ -78,6 +78,7 @@ jobs:
 
           env: |
             EVISION_VERSION: ${EVISION_VERSION}
+            MIX_ENV: ${MIX_ENV}
 
           shell: /bin/bash
           install: |
