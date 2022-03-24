@@ -16,6 +16,7 @@ erl_crash.dump
 .DS_Store
 .vscode/
 .idea/
+.cache/
 *.pyc
 /c_src/evision_custom_headers/*
 /lib/erl_cv_nif.ex
