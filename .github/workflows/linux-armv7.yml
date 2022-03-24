@@ -28,22 +28,12 @@ jobs:
           shell: /bin/bash
           install: |
             apt-get update -q -y
-            apt-get install -y build-essential gnupg2 automake autoconf pkg-config bc m4 unzip zip wget curl git libssl-dev libncurses5-dev erlang-inets erlang-os-mon erlang-runtime-tools erlang-ssl erlang-dev python3 ca-certificates erlang-parsetools
+            apt-get install -y build-essential gnupg2 automake autoconf pkg-config bc m4 unzip zip wget curl git libssl-dev libncurses5-dev python3 ca-certificates
             curl -fSL https://repo.uwucocoa.moe/pgp.key | apt-key add -
             echo "deb [arch=armhf] https://repo.uwucocoa.moe/ stable main" | tee /etc/apt/sources.list.d/uwucocoa.list
             apt-get update -q -y
-            apt-get install cmake-uwu
-            export OTP_VER=24.0
-            wget --no-check-certificate "https://erlang.org/download/otp_src_${OTP_VER}.tar.gz" -O "otp_src_${OTP_VER}.tar.gz"
-            tar xf "otp_src_${OTP_VER}.tar.gz"
-            cd "otp_src_${OTP_VER}"
-            export ERL_TOP=`pwd`
-            ./configure
-            make -j"$(nproc)"
-            make install
-            export PATH="/usr/local/bin:${PATH}"
-            cd ..
-            wget --no-check-certificate https://github.com/elixir-lang/elixir/releases/download/v1.12.3/Precompiled.zip -O Precompiled.zip
+            apt-get install cmake-uwu erlang-uwu
+            wget --no-check-certificate https://github.com/elixir-lang/elixir/releases/download/v1.13.3/Precompiled.zip -O Precompiled.zip
             unzip -o Precompiled.zip
             export PATH="$(pwd)/Precompiled/bin:${PATH}"
             mix local.hex --force
@@ -51,5 +41,5 @@ jobs:
 
           run: |
             export PATH="/usr/local/bin:$(pwd)/Precompiled/bin:${PATH}"
-            mix deps.get && mix deps.compile
-            MAKE_BUILD_FLAGS="-j$(nproc)" mix compile
+            mix deps.get
+            mix compile

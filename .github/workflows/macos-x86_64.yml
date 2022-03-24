@@ -13,9 +13,6 @@ on:
       - '.github/workflows/windows-*.yml'
       - '.github/workflows/test-*.yml'
   push:
-    tags:
-      - '*-dev'
-      - '*-prod'
     branches:
       - main
       - test-*
@@ -34,24 +31,10 @@ on:
 jobs:
   mix_test:
     runs-on: macos-11
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - pair:
-              opencv_ver: 4.5.5
-              upload: false
-              mix_env: test
-              evision_version: 0.1.0-dev
-          - pair:
-              opencv_ver: 4.5.5
-              upload: true
-              mix_env: dev
-              evision_version: 0.1.0-dev
 
     steps:
       - uses: actions/checkout@v2
-      
+
       - name: Install Erlang and Elixir
         run: |
           brew install erlang
@@ -61,49 +44,12 @@ jobs:
           mix local.hex --force
           mix local.rebar --force
 
-      - name: Build precompiled library
-        if: startsWith(github.ref, 'refs/tags/')
+      - name: Mix Compile
         run: |
-          export OPENCV_VER=${{ matrix.pair.opencv_ver }}
-          export MIX_ENV=${{ matrix.pair.mix_env }}
+          export MIX_ENV=test
           mix deps.get
-          NPROC="$(sysctl -a | grep 'hw.ncpu' | awk '{print $2}')"
-          MAKE_BUILD_FLAGS="-j${NPROC}" mix compile
-
-      - name: mix compile for CI test
-        run: |
-          if [ "${{ matrix.pair.mix_env }}" = "test" ]; then
-            export OPENCV_VER=${{ matrix.pair.opencv_ver }}
-            export MIX_ENV=${{ matrix.pair.mix_env }}
-            mix deps.get
-            NPROC="$(sysctl -a | grep 'hw.ncpu' | awk '{print $2}')"
-            MAKE_BUILD_FLAGS="-j${NPROC}" mix compile
-          fi
+          mix compile
 
       - name: Mix Test
         run: |
-          if [ "${{ matrix.pair.mix_env }}" = "test" ]; then
-            export OPENCV_VER=${{ matrix.pair.opencv_ver }}
-            mix test --include require_downloading --include require_ffmpeg
-          fi
-
-      - name: Create precompiled package
-        if: startsWith(github.ref, 'refs/tags/')
-        run: |
-          if [ "${{ matrix.pair.upload }}" = "true" ]; then
-            export PKG_NAME=evision-macos-x86_64-${{ matrix.pair.evision_version }}
-            echo "pkg_name=${PKG_NAME}.tar.gz" >> $GITHUB_ENV
-            mkdir -p "${PKG_NAME}"
-            cp -a _build/${{ matrix.pair.mix_env }}/lib/evision/priv "${PKG_NAME}"
-            cp -a lib/generated "${PKG_NAME}"
-            tar -czf "${PKG_NAME}.tar.gz" "${PKG_NAME}"
-            rm -rf "${PKG_NAME}"
-            ls -lah "${PKG_NAME}.tar.gz"
-          else
-            echo "skipped"
-          fi
-
-      - uses: softprops/action-gh-release@v1
-        if: startsWith(github.ref, 'refs/tags/')
-        with:
-          files: ${{ env.pkg_name }}
+          mix test --include require_downloading --include require_ffmpeg
