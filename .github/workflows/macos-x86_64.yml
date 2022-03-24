@@ -45,8 +45,8 @@ jobs:
               evision_version: 0.1.0-dev
           - pair:
               opencv_ver: 4.5.5
-              upload: false
-              mix_env: test
+              upload: true
+              mix_env: dev
               evision_version: 0.1.0-dev
 
     steps:
