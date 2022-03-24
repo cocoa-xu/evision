@@ -1286,7 +1286,7 @@ class PythonWrapperGenerator(object):
                     else:
                         raise "duplicated constant name"
 
-        cname = name.replace('.','::')
+        cname = name.replace('.', '::')
         namespace, classes, name = self.split_decl_name(name)
         namespace = '.'.join(namespace)
         name = '_'.join(classes+[name])
@@ -1423,7 +1423,7 @@ class PythonWrapperGenerator(object):
         elif argtype[:7] == 'vector_':
             return f'is_list({argname})'
         else:
-            return ''
+            return f'is_reference({argname})'
 
     def map_erl_argname(self, argname, ignore_upper_starting=False):
         reserved_keywords = ['end', 'fn']
@@ -1800,23 +1800,28 @@ class PythonWrapperGenerator(object):
                 # this could be better perhaps, but it is hurting my brain...
                 if func_name.startswith(evision_nif_prefix + "dnn") and module_func_name == "forward":
                     inline_doc += function_group
-                    writer.write(f'{inline_doc}  def {module_func_name}(self, opt \\\\ []) do\n    :erl_cv_nif.{func_name}(self, opt)\n  end\n')
+                    writer.write(f'{inline_doc}  def {module_func_name}(self, opts \\\\ []) when is_list(opts) do\n    :erl_cv_nif.{func_name}(self, opts)\n  end\n')
                     name_arity = f'{module_func_name}!/2'
                     if not writer.deferror.get(name_arity, False):
-                        writer.write(f"  deferror {module_func_name}(self, opt)\n")
+                        writer.write(f"  deferror {module_func_name}(self, opts)\n")
                         writer.deferror[name_arity] = True
                     continue
                 if func_name.startswith(evision_nif_prefix + "dnn_dnn_net") and (module_func_name == "getLayerShapes" or module_func_name == "getLayersShapes"):
                     inline_doc += function_group
-                    writer.write(f'{inline_doc}  def {module_func_name}(self, opt \\\\ []) do\n    :erl_cv_nif.{func_name}(self, opt)\n  end\n')
+                    writer.write(f'{inline_doc}  def {module_func_name}(self, opts \\\\ []) when is_list(opts) do\n    :erl_cv_nif.{func_name}(self, opts)\n  end\n')
                     name_arity = f'{module_func_name}!/2'
                     if not writer.deferror.get(name_arity, False):
-                        writer.write(f"  deferror {module_func_name}(self, opt)\n")
+                        writer.write(f"  deferror {module_func_name}(self, opts)\n")
                         writer.deferror[name_arity] = True
                     continue
                 if len(func_args_with_opts) > 0:
                     inline_doc += function_group
-                    writer.write(f'{inline_doc}  def {module_func_name}({module_func_args_with_opts}){when_guard}do\n'
+                    when_guard_with_opts = when_guard
+                    if len(when_guard_with_opts.strip()) > 0:
+                        when_guard_with_opts = f' {when_guard_with_opts.strip()} and is_list(opts)\n  '
+                    else:
+                        when_guard_with_opts = ' when is_list(opts)\n  '
+                    writer.write(f'{inline_doc}  def {module_func_name}({module_func_args_with_opts}){when_guard_with_opts}do\n'
                                  f'    {positional}\n'
                                  f'    :erl_cv_nif.{func_name}({func_args_with_opts})\n'
                                  '  end\n')

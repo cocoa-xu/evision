@@ -44,13 +44,14 @@ CMAKE_EVISION_BUILD_DIR = $(MIX_APP_PATH)/cmake_evision
 MAKE_BUILD_FLAGS ?= "-j1"
 EVISION_PREFER_PRECOMPILED ?= false
 EVISION_PRECOMPILED_VERSION ?= "0.1.0-dev"
+EVISION_PRECOMPILED_CACHE_DIR ?= $(shell pwd)/.cache
 
 .DEFAULT_GLOBAL := build
 
 build: $(EVISION_SO)
 
 $(OPENCV_CONFIGURATION_PRIVATE_HPP):
-	@ if [ "$(EVISION_PREFER_PRECOMPILE)" != "true" ]; then \
+	@ if [ "$(EVISION_PREFER_PRECOMPILED)" != "true" ]; then \
    		if [ ! -e "$(OPENCV_CONFIGURATION_PRIVATE_HPP)" ]; then \
 			if [ "$(OPENCV_USE_GIT_HEAD)" = "false" ]; then \
 				echo "using $(OPENCV_VER)" ; \
@@ -62,12 +63,12 @@ $(OPENCV_CONFIGURATION_PRIVATE_HPP):
 	fi
 
 $(CONFIGURATION_PRIVATE_HPP): $(OPENCV_CONFIGURATION_PRIVATE_HPP)
-	@ if [ "$(EVISION_PREFER_PRECOMPILE)" != "true" ]; then \
+	@ if [ "$(EVISION_PREFER_PRECOMPILED)" != "true" ]; then \
    		cp "$(OPENCV_CONFIGURATION_PRIVATE_HPP)" "$(CONFIGURATION_PRIVATE_HPP)" ; \
 	fi
 
 $(HEADERS_TXT): $(CONFIGURATION_PRIVATE_HPP)
-	@ if [ "$(EVISION_PREFER_PRECOMPILE)" != "true" ]; then \
+	@ if [ "$(EVISION_PREFER_PRECOMPILED)" != "true" ]; then \
 		sh -c "OPENCV_DIR=$(OPENCV_DIR) $(shell pwd)/patches/$(OPENCV_VER)/apply_patch.sh || true" ; \
 		mkdir -p $(CMAKE_OPENCV_BUILD_DIR) && \
 		cd $(CMAKE_OPENCV_BUILD_DIR) && \
@@ -93,6 +94,7 @@ $(HEADERS_TXT): $(CONFIGURATION_PRIVATE_HPP)
 	fi
 
 $(EVISION_SO): $(HEADERS_TXT)
+	@ mkdir -p $(EVISION_PRECOMPILED_CACHE_DIR)
 	@ mkdir -p $(PRIV_DIR)
 	@ mkdir -p $(CMAKE_EVISION_BUILD_DIR)
 	@ mkdir -p "$(GENERATED_ELIXIR_SRC_DIR)"
@@ -106,11 +108,10 @@ $(EVISION_SO): $(HEADERS_TXT)
 		  -D ENABLED_CV_MODULES=$(ENABLED_CV_MODULES) \
 		  -D EVISION_PREFER_PRECOMPILED="$(EVISION_PREFER_PRECOMPILED)" \
 		  -D EVISION_PRECOMPILED_VERSION="$(EVISION_PRECOMPILED_VERSION)" \
+		  -D EVISION_PRECOMPILED_CACHE_DIR="$(EVISION_PRECOMPILED_CACHE_DIR)" \
 		  $(CMAKE_CONFIGURE_FLAGS) "$(shell pwd)" && \
 		  make "$(MAKE_BUILD_FLAGS)" \
 		  || { echo "\033[0;31mincomplete build of OpenCV found in '$(CMAKE_OPENCV_BUILD_DIR)', please delete that directory and retry\033[0m" && exit 1 ; } ; } \
 		&& if [ "$(EVISION_PREFER_PRECOMPILED)" != "true" ]; then \
 			cp "$(CMAKE_EVISION_BUILD_DIR)/evision.so" "$(EVISION_SO)" ; \
-		else \
-			echo "copy from precompiled package" ; \
 		fi
