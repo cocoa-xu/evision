@@ -76,6 +76,9 @@ jobs:
           dockerRunArgs: |
             --volume "${PWD}/artifacts:/artifacts"
 
+          env: |
+            EVISION_VERSION: ${EVISION_VERSION}
+
           shell: /bin/bash
           install: |
             apt-get update -q -y
@@ -92,7 +95,7 @@ jobs:
 
           run: |
             export PATH="/usr/local/bin:$(pwd)/Precompiled/bin:${PATH}"
-            mix deps.get && mix deps.compile
+            mix deps.get
             mix compile
             export PKG_NAME=evision-linux-${{ matrix.pair.arch_name }}-${EVISION_VERSION}
             mkdir -p "${PKG_NAME}"
