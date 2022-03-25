@@ -1,0 +1,56 @@
+name: windows-x86_64
+
+on:
+  push:
+    tags:
+      - '*-dev'
+      - '*-prod'
+      - '*-win-dev'
+
+jobs:
+  mix_test:
+    runs-on: windows-latest
+    env:
+      MIX_ENV: dev
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: erlef/setup-beam@v1
+        with:
+          otp-version: 24.3
+          elixir-version: 1.13.3
+
+      - uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Create precompiled library
+        run: |
+          $Env:MAKE = "nmake"
+          mix deps.get
+          Remove-Item Makefile
+          mix compile
+
+          $Env:PKG_NAME = "evision-windows-x64-${Env:EVISION_VERSION}"
+          if (Test-Path $Env:PKG_NAME) {
+              Remove-Item "$Env:PKG_NAME" -Recurse -Force
+          }
+          New-Item -Path . -Force -Name "$Env:PKG_NAME" -ItemType "directory"
+          $Env:PRIV_DIR = "_build/${Env:MIX_ENV}/lib/evision/priv"
+          if (Test-Path $Env:PRIV_DIR) {
+              Remove-Item "$Env:PRIV_DIR/x64" -Recurse -Force
+          }
+          Copy-Item -Path "$Env:PRIV_DIR" -Destination "$Env:PKG_NAME" -Recurse
+          Copy-Item -Path "lib/generated" -Destination "$Env:PKG_NAME" -Recurse
+
+          tar -czf "${Env:PKG_NAME}.tar.gz" "${Env:PKG_NAME}"
+          if (Test-Path "artifacts") {
+              Remove-Item "artifacts" -Recurse -Force
+          }
+          New-Item -Path . -Force -Name "artifacts" -ItemType "directory"
+          Move-Item -Path "${Env:PKG_NAME}.tar.gz" -Destination "artifacts"
+
+      - uses: softprops/action-gh-release@v1
+        with:
+          files: artifacts/*.tar.gz
