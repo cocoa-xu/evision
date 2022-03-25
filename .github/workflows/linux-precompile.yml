@@ -5,6 +5,7 @@ on:
     tags:
       - '*-dev'
       - '*-prod'
+      - '*-dev-linux'
 
 jobs:
   mix_test:

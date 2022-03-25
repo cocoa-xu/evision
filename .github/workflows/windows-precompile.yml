@@ -5,7 +5,7 @@ on:
     tags:
       - '*-dev'
       - '*-prod'
-      - '*-win-dev'
+      - '*-dev-win'
 
 jobs:
   mix_test:
