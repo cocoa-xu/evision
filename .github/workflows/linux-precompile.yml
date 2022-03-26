@@ -31,7 +31,6 @@ jobs:
       - uses: actions/checkout@v2
 
       - uses: erlef/setup-beam@v1
-        if: ${{ matrix.pair.arch == 'x86_64' }}
         with:
           otp-version: "24.3"
           elixir-version: "1.13.3"
