@@ -12,6 +12,7 @@ on:
       - 'lib/**'
       - 'patches/**'
       - 'nerves/**'
+      - 'cc_toolchain/**'
       - '.github/FUNDING.yml'
       - '.github/workflows/nerves-*'
       - '.github/workflows/macos-*'
