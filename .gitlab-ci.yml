@@ -2,6 +2,7 @@ build linux x86_64:
   image: ubuntu:20.04
   stage: build
   variables:
+    DEBIAN_FRONTEND: noninteractive
     os: linux
     arch: x86_64
     arch_name: x86_64
@@ -34,6 +35,7 @@ build linux arm64:
   image: arm64v8/ubuntu:20.04
   stage: build
   variables:
+    DEBIAN_FRONTEND: noninteractive
     os: linux
     arch: arm64
     arch_name: arm64
@@ -70,6 +72,7 @@ build linux armv7:
   image: arm32v7/ubuntu:20.04
   stage: build
   variables:
+    DEBIAN_FRONTEND: noninteractive
     os: linux
     arch: armv7
     arch_name: armhf
