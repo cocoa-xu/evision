@@ -12,9 +12,10 @@ build linux x86_64:
     - |
       apt-get update
       apt-get install -y build-essential automake autoconf pkg-config bc m4 unzip zip wget curl git libssl-dev libncurses5-dev erlang-inets erlang-os-mon erlang-runtime-tools erlang-ssl erlang-dev python3 ca-certificates cmake
-      wget --no-check-certificate https://github.com/elixir-lang/elixir/releases/download/v${elixir_version}/Precompiled.zip -O Precompiled.zip
-      unzip -o Precompiled.zip
-      export PATH="$(pwd)/Precompiled/bin:${PATH}"
+      mkdir -p ../Precompiled
+      wget --no-check-certificate https://github.com/elixir-lang/elixir/releases/download/v${elixir_version}/Precompiled.zip -O ../Precompiled/Precompiled.zip
+      pushd "../Precompiled" && unzip -o Precompiled.zip && popd
+      export PATH="$(pwd)/../Precompiled/bin:${PATH}"
       mix local.hex --force
       mix local.rebar --force
       mix deps.get
@@ -50,9 +51,10 @@ build linux arm64:
       echo "deb [arch=${arch}] https://repo.uwucocoa.moe/ stable main" | tee /etc/apt/sources.list.d/uwucocoa.list
       apt-get update -q -y
       apt-get install cmake-uwu erlang-uwu
-      wget --no-check-certificate https://github.com/elixir-lang/elixir/releases/download/v${elixir_version}/Precompiled.zip -O Precompiled.zip
-      unzip -o Precompiled.zip
-      export PATH="$(pwd)/Precompiled/bin:${PATH}"
+      mkdir -p ../Precompiled
+      wget --no-check-certificate https://github.com/elixir-lang/elixir/releases/download/v${elixir_version}/Precompiled.zip -O ../Precompiled/Precompiled.zip
+      pushd "../Precompiled" && unzip -o Precompiled.zip && popd
+      export PATH="$(pwd)/../Precompiled/bin:${PATH}"
       mix local.hex --force
       mix local.rebar --force
       mix deps.get
@@ -88,9 +90,10 @@ build linux armv7:
       echo "deb [arch=${arch_name}] https://repo.uwucocoa.moe/ stable main" | tee /etc/apt/sources.list.d/uwucocoa.list
       apt-get update -q -y
       apt-get install cmake-uwu erlang-uwu
-      wget --no-check-certificate https://github.com/elixir-lang/elixir/releases/download/v${elixir_version}/Precompiled.zip -O Precompiled.zip
-      unzip -o Precompiled.zip
-      export PATH="$(pwd)/Precompiled/bin:${PATH}"
+      mkdir -p ../Precompiled
+      wget --no-check-certificate https://github.com/elixir-lang/elixir/releases/download/v${elixir_version}/Precompiled.zip -O ../Precompiled/Precompiled.zip
+      pushd "../Precompiled" && unzip -o Precompiled.zip && popd
+      export PATH="$(pwd)/../Precompiled/bin:${PATH}"
       mix local.hex --force
       mix local.rebar --force
       mix deps.get
