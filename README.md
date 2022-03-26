@@ -158,9 +158,11 @@ Current available modules:
 - video 
 - videoio
 
-Note 1: to open video files, FFmpeg related libraries should be installed, e.g., on Debian/Ubuntu
+Note 1: to be able to encode/decode more video formats, you may compile OpenCV with FFmpeg enabled. 
 
-Note 2: FFmpeg 5 is not supported by OpenCV yet
+However, you should be aware of the license of the FFmpeg components you selected as they could be licensed by LGPL/GPL or other licenses.
+
+Note 2: FFmpeg 5 is not supported by OpenCV yet.
 
 ```shell
 sudo apt install -y libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libavresample-dev ffmpeg
