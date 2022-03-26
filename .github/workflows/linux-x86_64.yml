@@ -4,6 +4,7 @@ on:
   pull_request:
     paths-ignore:
       - '**/README.md'
+      - 'LICENSE*'
       - 'examples/**'
       - 'nerves/**'
       - 'Makefile.win'
@@ -26,6 +27,7 @@ on:
       - fix-*
     paths-ignore:
       - '**/README.md'
+      - 'LICENSE*'
       - 'examples/**'
       - 'nerves/**'
       - 'Makefile.win'
@@ -52,8 +54,8 @@ jobs:
       
       - uses: erlef/setup-beam@v1
         with:
-          otp-version: 24.2
-          elixir-version: 1.13.3
+          otp-version: "24.3"
+          elixir-version: "1.13.3"
 
       - name: Install system dependecies
         run: |

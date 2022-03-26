@@ -29,6 +29,7 @@ jobs:
       - name: Create precompiled library
         run: |
           $Env:MAKE = "nmake"
+          $Env:CMAKE_OPENCV_OPTIONS = "-D WITH_FFMPEG=OFF"
           mix deps.get
           Remove-Item Makefile
           mix compile

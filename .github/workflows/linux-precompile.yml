@@ -17,14 +17,17 @@ jobs:
           - pair:
               arch: x86_64
               arch_name: x86_64
+              deb_arch: amd64
               distro: ubuntu20.04
           - pair:
               arch: aarch64
-              arch_name: arm64
+              arch_name: aarch64
+              deb_arch: arm64
               distro: ubuntu20.04
           - pair:
               arch: armv7
-              arch_name: armhf
+              arch_name: armv7l
+              deb_arch: armhf
               distro: ubuntu20.04
 
     steps:
@@ -33,15 +36,14 @@ jobs:
       - uses: erlef/setup-beam@v1
         if: ${{ matrix.pair.arch == 'x86_64' }}
         with:
-          otp-version: 24.3
-          elixir-version: 1.13.3
+          otp-version: "24.3"
+          elixir-version: "1.13.3"
 
       - name: Install system dependecies
         if: ${{ matrix.pair.arch == 'x86_64' }}
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential automake autoconf pkg-config bc m4 unzip zip curl git libssl-dev gzip libncurses5-dev erlang-inets erlang-os-mon erlang-runtime-tools erlang-ssl erlang-dev python3 ca-certificates
-          sudo apt-get install -y libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libavresample-dev ffmpeg
+          sudo apt-get install -y build-essential automake autoconf pkg-config bc m4 unzip zip curl git libssl-dev gzip libncurses5-dev python3 ca-certificates
 
       - name: Create precompiled library (x86_64)
         if: ${{ matrix.pair.arch == 'x86_64' }}
@@ -77,7 +79,7 @@ jobs:
             apt-get update -q -y
             apt-get install -y build-essential gnupg2 automake autoconf pkg-config bc m4 unzip zip wget curl git libssl-dev libncurses5-dev python3 ca-certificates
             curl -fSL https://repo.uwucocoa.moe/pgp.key | apt-key add -
-            echo "deb [arch=${{ matrix.pair.arch_name }}] https://repo.uwucocoa.moe/ stable main" | tee /etc/apt/sources.list.d/uwucocoa.list
+            echo "deb [arch=${{ matrix.pair.deb_arch }}] https://repo.uwucocoa.moe/ stable main" | tee /etc/apt/sources.list.d/uwucocoa.list
             apt-get update -q -y
             apt-get install cmake-uwu erlang-uwu
             wget --no-check-certificate https://github.com/elixir-lang/elixir/releases/download/v1.13.3/Precompiled.zip -O Precompiled.zip

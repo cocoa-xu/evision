@@ -80,19 +80,23 @@ should be written, and then we can have a list for tested OpenCV versions.
 To use precompiled Evision library, the following environment variables should be set
 
 ```shell
-# required if prefer to use precompiled library
+# required 
+# set this to true if prefer to use precompiled library
 export EVISION_PREFER_PRECOMPILED=true
 
 # optional. 
 ## currently only "0.1.0-dev" is valid
 export EVISION_PRECOMPILED_VERSION="0.1.0-dev"
+
 ## set the cache directory for the precompiled archive file
 export EVISION_PRECOMPILED_CACHE_DIR="$(pwd)/.cache"
 ```
 
-Note 1: using precompiled library requires installing FFmpeg libraries (except on Windows, as OpenCV downloads prebuilt FFmpeg libraries while compiling, and consequently, FFmpeg libraries are included in the precompiled binaries). See the end of [Available Modules](#available-modules) for more information.
+Note 1: Precompiled binaries does not use FFmpeg. If you'd like to use FFmpeg, please compile from source and set corresponding environment variables.
 
-Note 2: this is not enabled by default as Evision is WIP at the moment.
+Note 2: by default, Evision will compile from source as it's WIP at the moment.
+
+Note 3: a copy of OpenCV's license file can be found at `LICENSE-OpenCV`.
 
 ### Compile OpenCV from Sources
 To obtain and compile OpenCV's source code from official releases, the following environment variables can affect the build
@@ -100,20 +104,41 @@ To obtain and compile OpenCV's source code from official releases, the following
 ```shell
 # optional.
 ## set OpenCV version
+##   the corresponding license file should be available at https://github.com/opencv/opencv/blob/${OPENCV_VER}/LICENSE
 export OPENCV_VER="4.5.5"
+
+## enable FFmpeg
+##   this will allow cmake to auto-detect FFmpeg libraries installed on the host
+##   on Windows, OpenCV will download prebuilt FFmpeg libraries
+##   for more information, please visit https://github.com/opencv/opencv/tree/4.x/3rdparty/ffmpeg
+export CMAKE_OPENCV_OPTIONS="-D WITH_FFMPEG=ON"
+
+## disable FFmpeg
+export CMAKE_OPENCV_OPTIONS="-D WITH_FFMPEG=OFF"
 ```
 
 ### Compile OpenCV from Git Repo
 To obtain and compile OpenCV's source code from git, set the following environment variables
 
 ```shell
-# required if compile OpenCV from git
+# required 
+# set those variables if you'd like to compile OpenCV from git
+##   the corresponding license file should be available at https://github.com/opencv/opencv/blob/${OPENCV_USE_GIT_BRANCH}/LICENSE
 export OPENCV_USE_GIT_HEAD=true
 export OPENCV_USE_GIT_BRANCH=4.x
 
 # optional.
 ## set this if you want to use to your/other fork/mirrors
 export OPENCV_GIT_REPO="https://github.com/opencv/opencv.git"
+
+## enable FFmpeg
+##   this will allow cmake to auto-detect FFmpeg libraries installed on the host
+##   on Windows, OpenCV will download prebuilt FFmpeg libraries
+##   for more information, please visit https://github.com/opencv/opencv/tree/4.x/3rdparty/ffmpeg
+export CMAKE_OPENCV_OPTIONS="-D WITH_FFMPEG=ON"
+
+## disable FFmpeg
+export CMAKE_OPENCV_OPTIONS="-D WITH_FFMPEG=OFF"
 ```
 
 ### Available modules

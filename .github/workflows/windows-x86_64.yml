@@ -4,6 +4,7 @@ on:
   pull_request:
     paths-ignore:
       - '**/README.md'
+      - 'LICENSE*'
       - 'examples/**'
       - 'nerves/**'
       - 'Makefile'
@@ -19,6 +20,7 @@ on:
       - test-*
     paths-ignore:
       - '**/README.md'
+      - 'LICENSE*'
       - 'examples/**'
       - 'nerves/**'
       - 'Makefile'
