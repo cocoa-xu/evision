@@ -55,5 +55,5 @@ jobs:
 
       - uses: softprops/action-gh-release@v1
         with:
-          tag_name: ${EVISION_VERSION}
+          tag_name: 0.1.0-dev
           files: artifacts/*.tar.gz
