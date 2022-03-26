@@ -10,7 +10,7 @@ build linux x86_64:
     elixir_version: "1.13.3"
   script:
     - apt-get update
-    - apt-get install -y build-essential automake autoconf pkg-config bc m4 unzip zip curl git libssl-dev libncurses5-dev erlang-inets erlang-os-mon erlang-runtime-tools erlang-ssl erlang-dev python3 ca-certificates cmake
+    - apt-get install -y build-essential automake autoconf pkg-config bc m4 unzip zip wget curl git libssl-dev libncurses5-dev erlang-inets erlang-os-mon erlang-runtime-tools erlang-ssl erlang-dev python3 ca-certificates cmake
     - wget --no-check-certificate https://github.com/elixir-lang/elixir/releases/download/v${elixir_version}/Precompiled.zip -O Precompiled.zip
     - unzip -o Precompiled.zip
     - export PATH="$(pwd)/Precompiled/bin:${PATH}"
@@ -43,7 +43,7 @@ build linux arm64:
     elixir_version: "1.13.3"
   script:
     - apt-get update
-    - apt-get install -y build-essential automake autoconf pkg-config bc m4 unzip zip curl git libssl-dev libncurses5-dev python3 ca-certificates
+    - apt-get install -y build-essential automake autoconf pkg-config bc m4 unzip zip wget curl git libssl-dev libncurses5-dev python3 ca-certificates
     - curl -fSL https://repo.uwucocoa.moe/pgp.key | apt-key add -
     - echo "deb [arch=${arch}] https://repo.uwucocoa.moe/ stable main" | tee /etc/apt/sources.list.d/uwucocoa.list
     - apt-get update -q -y
@@ -80,7 +80,7 @@ build linux armv7:
     elixir_version: "1.13.3"
   script:
     - apt-get update
-    - apt-get install -y build-essential automake autoconf pkg-config bc m4 unzip zip curl git libssl-dev libncurses5-dev python3 ca-certificates
+    - apt-get install -y build-essential automake autoconf pkg-config bc m4 unzip zip wget curl git libssl-dev libncurses5-dev python3 ca-certificates
     - curl -fSL https://repo.uwucocoa.moe/pgp.key | apt-key add -
     - echo "deb [arch=${arch_name}] https://repo.uwucocoa.moe/ stable main" | tee /etc/apt/sources.list.d/uwucocoa.list
     - apt-get update -q -y
