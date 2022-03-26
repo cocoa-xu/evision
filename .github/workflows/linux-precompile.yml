@@ -56,7 +56,9 @@ jobs:
         run: |
           mix deps.get
           mix compile
-          export CMAKE_TOOLCHAIN_FILE=${{ matrix.pair.cmake_toolchain_file }}
+          if [ "${{ matrix.pair.cmake_toolchain_file }}" != "" ]; then
+            export CMAKE_TOOLCHAIN_FILE="$(pwd)/${{ matrix.pair.cmake_toolchain_file }}"
+          fi
           export PKG_NAME=evision-linux-${{ matrix.pair.arch_name }}-0.1.0-dev
           mkdir -p "${PKG_NAME}"
           cp -a _build/dev/lib/evision/priv "${PKG_NAME}"
