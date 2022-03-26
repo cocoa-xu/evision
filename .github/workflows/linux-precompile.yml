@@ -15,20 +15,17 @@ jobs:
       matrix:
         include:
           - pair:
-              arch: x86_64
               arch_name: x86_64
               deb_arch: amd64
-              distro: ubuntu20.04
+              cmake_toolchain_file: ""
           - pair:
-              arch: aarch64
               arch_name: aarch64
               deb_arch: arm64
-              distro: ubuntu20.04
+              cmake_toolchain_file: cc_toolchain/linux-aarch64.cmake
           - pair:
-              arch: armv7
               arch_name: armv7l
               deb_arch: armhf
-              distro: ubuntu20.04
+              cmake_toolchain_file: cc_toolchain/linux-armv7l.cmake
 
     steps:
       - uses: actions/checkout@v2
@@ -40,16 +37,27 @@ jobs:
           elixir-version: "1.13.3"
 
       - name: Install system dependecies
-        if: ${{ matrix.pair.arch == 'x86_64' }}
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential automake autoconf pkg-config bc m4 unzip zip curl git libssl-dev gzip libncurses5-dev python3 ca-certificates
 
-      - name: Create precompiled library (x86_64)
-        if: ${{ matrix.pair.arch == 'x86_64' }}
+      - name: Install system dependecies (aarch64)
+        if: ${{ matrix.pair.arch_name == 'aarch64' }}
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+
+      - name: Install system dependecies (armv7l)
+        if: ${{ matrix.pair.arch_name == 'armv7l' }}
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf
+
+      - name: Create precompiled library
         run: |
           mix deps.get
           mix compile
+          export TOOLCHAIN_FILE=${{ matrix.pair.cmake_toolchain_file }}
           export PKG_NAME=evision-linux-${{ matrix.pair.arch_name }}-0.1.0-dev
           mkdir -p "${PKG_NAME}"
           cp -a _build/dev/lib/evision/priv "${PKG_NAME}"
@@ -59,47 +67,6 @@ jobs:
           ls -lah "${PKG_NAME}.tar.gz"
           mkdir -p artifacts
           mv "${PKG_NAME}.tar.gz" artifacts
-
-      - uses: uraimo/run-on-arch-action@v2.1.1
-        name: Create precompiled library (other)
-        if: ${{ matrix.pair.arch != 'x86_64' }}
-        id: build
-        with:
-          arch: ${{ matrix.pair.arch }}
-          distro: ${{ matrix.pair.distro }}
-
-          setup: |
-            mkdir -p "${PWD}/artifacts"
-
-          dockerRunArgs: |
-            --volume "${PWD}/artifacts:/artifacts"
-
-          shell: /bin/bash
-          install: |
-            apt-get update -q -y
-            apt-get install -y build-essential gnupg2 automake autoconf pkg-config bc m4 unzip zip wget curl git libssl-dev libncurses5-dev python3 ca-certificates
-            curl -fSL https://repo.uwucocoa.moe/pgp.key | apt-key add -
-            echo "deb [arch=${{ matrix.pair.deb_arch }}] https://repo.uwucocoa.moe/ stable main" | tee /etc/apt/sources.list.d/uwucocoa.list
-            apt-get update -q -y
-            apt-get install cmake-uwu erlang-uwu
-            wget --no-check-certificate https://github.com/elixir-lang/elixir/releases/download/v1.13.3/Precompiled.zip -O Precompiled.zip
-            unzip -o Precompiled.zip
-            export PATH="$(pwd)/Precompiled/bin:${PATH}"
-            mix local.hex --force
-            mix local.rebar --force
-
-          run: |
-            export PATH="/usr/local/bin:$(pwd)/Precompiled/bin:${PATH}"
-            mix deps.get
-            mix compile
-            export PKG_NAME=evision-linux-${{ matrix.pair.arch_name }}-0.1.0-dev
-            mkdir -p "${PKG_NAME}"
-            cp -a _build/dev/lib/evision/priv "${PKG_NAME}"
-            cp -a lib/generated "${PKG_NAME}"
-            tar -czf "${PKG_NAME}.tar.gz" "${PKG_NAME}"
-            rm -rf "${PKG_NAME}"
-            ls -lah "${PKG_NAME}.tar.gz"
-            mv "${PKG_NAME}.tar.gz" /artifacts
 
       - uses: softprops/action-gh-release@v1
         with:
