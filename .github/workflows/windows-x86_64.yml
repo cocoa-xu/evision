@@ -36,26 +36,13 @@ jobs:
     env:
       MIX_ENV: test
 
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - pair:
-              elixir: 1.13.2
-              otp: 24.2
-              opencv_ver: 4.5.4
-          - pair:
-              elixir: 1.13.2
-              otp: 24.2
-              opencv_ver: 4.5.5
-
     steps:
       - uses: actions/checkout@v2
       
       - uses: erlef/setup-beam@v1
         with:
-          otp-version: ${{matrix.pair.otp}}
-          elixir-version: ${{matrix.pair.elixir}}
+          otp-version: 24.3
+          elixir-version: 1.13.3
 
       - uses: ilammy/msvc-dev-cmd@v1
         with:
@@ -63,7 +50,6 @@ jobs:
 
       - name: Mix Compile
         run: |
-          $Env:OPENCV_VER = "${{ matrix.pair.opencv_ver }}"
           $Env:MAKE = "nmake"
           mix deps.get
           Remove-Item Makefile
@@ -71,6 +57,5 @@ jobs:
 
       - name: Mix Test
         run: |
-          $Env:OPENCV_VER = "${{ matrix.pair.opencv_ver }}"
           $Env:MAKE = "nmake"
           mix test --include require_downloading --include require_ffmpeg
