@@ -11,7 +11,7 @@ build linux x86_64:
   script:
     - |
       apt-get update
-      apt-get install -y build-essential automake autoconf pkg-config bc m4 unzip zip wget curl git libssl-dev gzip libncurses5-dev python3 ca-certificates
+      apt-get install -y build-essential automake autoconf pkg-config bc m4 unzip zip wget curl git libssl-dev gzip libncurses5-dev python3 ca-certificates cmake
       apt-get install -y libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libavresample-dev ffmpeg
       curl -fSL https://repo.uwucocoa.moe/pgp.key | apt-key add -
       echo "deb [arch=${arch}] https://repo.uwucocoa.moe/ stable main" | tee /etc/apt/sources.list.d/uwucocoa.list
