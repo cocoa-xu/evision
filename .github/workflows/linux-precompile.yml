@@ -29,7 +29,7 @@ jobs:
           - pair:
               arch_name: ppc64le
               deb_arch: ppc64le
-              cmake_toolchain_file: cc_toolchain/linux-ppc64el.cmake
+              cmake_toolchain_file: cc_toolchain/linux-ppc64le.cmake
           - pair:
               arch_name: s390x
               deb_arch: s390x
