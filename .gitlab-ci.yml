@@ -9,23 +9,24 @@ build linux x86_64:
     evision_version: 0.1.0-dev
     elixir_version: "1.13.3"
   script:
-    - apt-get update
-    - apt-get install -y build-essential automake autoconf pkg-config bc m4 unzip zip wget curl git libssl-dev libncurses5-dev erlang-inets erlang-os-mon erlang-runtime-tools erlang-ssl erlang-dev python3 ca-certificates cmake
-    - wget --no-check-certificate https://github.com/elixir-lang/elixir/releases/download/v${elixir_version}/Precompiled.zip -O Precompiled.zip
-    - unzip -o Precompiled.zip
-    - export PATH="$(pwd)/Precompiled/bin:${PATH}"
-    - mix local.hex --force
-    - mix local.rebar --force
-    - mix deps.get
-    - mix compile
-    - export PKG_NAME=evision-${os}-${arch}-${evision_version}
-    - mkdir -p "${PKG_NAME}"
-    - cp -a _build/dev/lib/evision/priv "${PKG_NAME}"
-    - cp -a lib/generated "${PKG_NAME}"
-    - tar -czf "${PKG_NAME}.tar.gz" "${PKG_NAME}"
-    - rm -rf "${PKG_NAME}"
-    - ls -lah "${PKG_NAME}.tar.gz"
-    - mkdir -p artifacts && mv "${PKG_NAME}.tar.gz" artifacts
+    - |
+      apt-get update
+      apt-get install -y build-essential automake autoconf pkg-config bc m4 unzip zip wget curl git libssl-dev libncurses5-dev erlang-inets erlang-os-mon erlang-runtime-tools erlang-ssl erlang-dev python3 ca-certificates cmake
+      wget --no-check-certificate https://github.com/elixir-lang/elixir/releases/download/v${elixir_version}/Precompiled.zip -O Precompiled.zip
+      unzip -o Precompiled.zip
+      export PATH="$(pwd)/Precompiled/bin:${PATH}"
+      mix local.hex --force
+      mix local.rebar --force
+      mix deps.get
+      mix compile
+      export PKG_NAME=evision-${os}-${arch}-${evision_version}
+      mkdir -p "${PKG_NAME}"
+      cp -a _build/dev/lib/evision/priv "${PKG_NAME}"
+      cp -a lib/generated "${PKG_NAME}"
+      tar -czf "${PKG_NAME}.tar.gz" "${PKG_NAME}"
+      rm -rf "${PKG_NAME}"
+      ls -lah "${PKG_NAME}.tar.gz"
+      mkdir -p artifacts && mv "${PKG_NAME}.tar.gz" artifacts
 
   artifacts:
     paths:
@@ -42,27 +43,28 @@ build linux arm64:
     evision_version: 0.1.0-dev
     elixir_version: "1.13.3"
   script:
-    - apt-get update
-    - apt-get install -y build-essential automake autoconf pkg-config bc m4 unzip zip wget curl git libssl-dev libncurses5-dev python3 ca-certificates
-    - curl -fSL https://repo.uwucocoa.moe/pgp.key | apt-key add -
-    - echo "deb [arch=${arch}] https://repo.uwucocoa.moe/ stable main" | tee /etc/apt/sources.list.d/uwucocoa.list
-    - apt-get update -q -y
-    - apt-get install cmake-uwu erlang-uwu
-    - wget --no-check-certificate https://github.com/elixir-lang/elixir/releases/download/v${elixir_version}/Precompiled.zip -O Precompiled.zip
-    - unzip -o Precompiled.zip
-    - export PATH="$(pwd)/Precompiled/bin:${PATH}"
-    - mix local.hex --force
-    - mix local.rebar --force
-    - mix deps.get
-    - mix compile
-    - export PKG_NAME=evision-${os}-${arch_name}-${evision_version}
-    - mkdir -p "${PKG_NAME}"
-    - cp -a _build/dev/lib/evision/priv "${PKG_NAME}"
-    - cp -a lib/generated "${PKG_NAME}"
-    - tar -czf "${PKG_NAME}.tar.gz" "${PKG_NAME}"
-    - rm -rf "${PKG_NAME}"
-    - ls -lah "${PKG_NAME}.tar.gz"
-    - mkdir -p artifacts && mv "${PKG_NAME}.tar.gz" artifacts
+    - |
+      apt-get update
+      apt-get install -y build-essential automake autoconf pkg-config bc m4 unzip zip wget curl git libssl-dev libncurses5-dev python3 ca-certificates
+      curl -fSL https://repo.uwucocoa.moe/pgp.key | apt-key add -
+      echo "deb [arch=${arch}] https://repo.uwucocoa.moe/ stable main" | tee /etc/apt/sources.list.d/uwucocoa.list
+      apt-get update -q -y
+      apt-get install cmake-uwu erlang-uwu
+      wget --no-check-certificate https://github.com/elixir-lang/elixir/releases/download/v${elixir_version}/Precompiled.zip -O Precompiled.zip
+      unzip -o Precompiled.zip
+      export PATH="$(pwd)/Precompiled/bin:${PATH}"
+      mix local.hex --force
+      mix local.rebar --force
+      mix deps.get
+      mix compile
+      export PKG_NAME=evision-${os}-${arch_name}-${evision_version}
+      mkdir -p "${PKG_NAME}"
+      cp -a _build/dev/lib/evision/priv "${PKG_NAME}"
+      cp -a lib/generated "${PKG_NAME}"
+      tar -czf "${PKG_NAME}.tar.gz" "${PKG_NAME}"
+      rm -rf "${PKG_NAME}"
+      ls -lah "${PKG_NAME}.tar.gz"
+      mkdir -p artifacts && mv "${PKG_NAME}.tar.gz" artifacts
 
   artifacts:
     paths:
@@ -79,27 +81,28 @@ build linux armv7:
     evision_version: 0.1.0-dev
     elixir_version: "1.13.3"
   script:
-    - apt-get update
-    - apt-get install -y build-essential automake autoconf pkg-config bc m4 unzip zip wget curl git libssl-dev libncurses5-dev python3 ca-certificates
-    - curl -fSL https://repo.uwucocoa.moe/pgp.key | apt-key add -
-    - echo "deb [arch=${arch_name}] https://repo.uwucocoa.moe/ stable main" | tee /etc/apt/sources.list.d/uwucocoa.list
-    - apt-get update -q -y
-    - apt-get install cmake-uwu erlang-uwu
-    - wget --no-check-certificate https://github.com/elixir-lang/elixir/releases/download/v${elixir_version}/Precompiled.zip -O Precompiled.zip
-    - unzip -o Precompiled.zip
-    - export PATH="$(pwd)/Precompiled/bin:${PATH}"
-    - mix local.hex --force
-    - mix local.rebar --force
-    - mix deps.get
-    - mix compile
-    - export PKG_NAME=evision-${os}-${arch_name}-${evision_version}
-    - mkdir -p "${PKG_NAME}"
-    - cp -a _build/dev/lib/evision/priv "${PKG_NAME}"
-    - cp -a lib/generated "${PKG_NAME}"
-    - tar -czf "${PKG_NAME}.tar.gz" "${PKG_NAME}"
-    - rm -rf "${PKG_NAME}"
-    - ls -lah "${PKG_NAME}.tar.gz"
-    - mkdir -p artifacts && mv "${PKG_NAME}.tar.gz" artifacts
+    - |
+      apt-get update
+      apt-get install -y build-essential automake autoconf pkg-config bc m4 unzip zip wget curl git libssl-dev libncurses5-dev python3 ca-certificates
+      curl -fSL https://repo.uwucocoa.moe/pgp.key | apt-key add -
+      echo "deb [arch=${arch_name}] https://repo.uwucocoa.moe/ stable main" | tee /etc/apt/sources.list.d/uwucocoa.list
+      apt-get update -q -y
+      apt-get install cmake-uwu erlang-uwu
+      wget --no-check-certificate https://github.com/elixir-lang/elixir/releases/download/v${elixir_version}/Precompiled.zip -O Precompiled.zip
+      unzip -o Precompiled.zip
+      export PATH="$(pwd)/Precompiled/bin:${PATH}"
+      mix local.hex --force
+      mix local.rebar --force
+      mix deps.get
+      mix compile
+      export PKG_NAME=evision-${os}-${arch_name}-${evision_version}
+      mkdir -p "${PKG_NAME}"
+      cp -a _build/dev/lib/evision/priv "${PKG_NAME}"
+      cp -a lib/generated "${PKG_NAME}"
+      tar -czf "${PKG_NAME}.tar.gz" "${PKG_NAME}"
+      rm -rf "${PKG_NAME}"
+      ls -lah "${PKG_NAME}.tar.gz"
+      mkdir -p artifacts && mv "${PKG_NAME}.tar.gz" artifacts
 
   artifacts:
     paths:
