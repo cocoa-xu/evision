@@ -6,7 +6,7 @@
 | Ubuntu 20.04     | arm64   | [![CI](https://github.com/cocoa-xu/evision/actions/workflows/linux-precompile.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/linux-precompile.yml) | Yes |
 | Ubuntu 20.04     | armv7   | [![CI](https://github.com/cocoa-xu/evision/actions/workflows/linux-precompile.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/linux-precompile.yml) | Yes |
 | macOS 11 Big Sur | x86_64  | [![CI](https://github.com/cocoa-xu/evision/actions/workflows/macos-x86_64.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/macos-x86_64.yml) | Yes |
-| macOS 11 Big Sur | arm64   | [![CI](https://github.com/cocoa-xu/evision/actions/workflows/macos-precompile.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/macos-precompile.yml) | Yes |
+| macOS 11 Big Sur | arm64   | [![CI](https://github.com/cocoa-xu/evision/actions/workflows/macos-precompile.yml/badge.svg?branch=0.1.0-dev)](https://github.com/cocoa-xu/evision/actions/workflows/macos-precompile.yml) | Yes |
 | Windows 2019     | x86_64  | [![CI](https://github.com/cocoa-xu/evision/actions/workflows/windows-x86_64.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/windows-x86_64.yml) | Yes |
 
 `ppc64le` and `s390x` emulators are too slow. Let's focus on x86_64, arm64 and armv7 for now. Furthermore, nerves workflow
