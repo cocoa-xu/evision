@@ -26,6 +26,14 @@ jobs:
               arch_name: armv7l
               deb_arch: armhf
               cmake_toolchain_file: cc_toolchain/linux-armv7l.cmake
+          - pair:
+              arch_name: ppc64le
+              deb_arch: ppc64le
+              cmake_toolchain_file: cc_toolchain/linux-ppc64el.cmake
+          - pair:
+              arch_name: s390x
+              deb_arch: s390x
+              cmake_toolchain_file: cc_toolchain/linux-s390x.cmake
 
     steps:
       - uses: actions/checkout@v2
@@ -51,6 +59,18 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf
+
+      - name: Install system dependecies (ppc64le)
+        if: ${{ matrix.pair.arch_name == 'ppc64le' }}
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-powerpc64le-linux-gnu g++-powerpc64le-linux-gnu
+
+      - name: Install system dependecies (s390x)
+        if: ${{ matrix.pair.arch_name == 's390x' }}
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-s390x-linux-gnu g++-s390x-linux-gnu
 
       - name: Create precompiled library
         run: |

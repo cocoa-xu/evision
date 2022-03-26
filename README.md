@@ -1,17 +1,15 @@
 # evision [WIP]
 
-| OS               | arch    | Build Status | Has Precompiled Library |
-|------------------|---------|--------------|-------------------------|
-| Ubuntu 20.04     | x86_64  | [![CI](https://github.com/cocoa-xu/evision/actions/workflows/linux-x86_64.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/linux-x86_64.yml) | Yes |
-| Ubuntu 20.04     | arm64   | [![CI](https://github.com/cocoa-xu/evision/actions/workflows/linux-precompile.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/linux-precompile.yml) | Yes |
-| Ubuntu 20.04     | armv7   | [![CI](https://github.com/cocoa-xu/evision/actions/workflows/linux-precompile.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/linux-precompile.yml) | Yes |
-| macOS 11 Big Sur | x86_64  | [![CI](https://github.com/cocoa-xu/evision/actions/workflows/macos-x86_64.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/macos-x86_64.yml) | Yes |
-| macOS 11 Big Sur | arm64   | [![CI](https://github.com/cocoa-xu/evision/actions/workflows/macos-precompile.yml/badge.svg?branch=0.1.0-dev)](https://github.com/cocoa-xu/evision/actions/workflows/macos-precompile.yml) | Yes |
-| Windows 2019     | x86_64  | [![CI](https://github.com/cocoa-xu/evision/actions/workflows/windows-x86_64.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/windows-x86_64.yml) | Yes |
-
-`ppc64le` and `s390x` emulators are too slow. Let's focus on x86_64, arm64 and armv7 for now. Furthermore, nerves workflow
-will compile evision to arm64, armv7 and armv6, therefore, `linux-arm64.yml` and `linux-armv7.yml` will now be triggered 
-manually only.
+| OS               | arch           | Build Status | Has Precompiled Library |
+|------------------|----------------|--------------|-------------------------|
+| Linux            | x86_64         | [![CI](https://github.com/cocoa-xu/evision/actions/workflows/linux-x86_64.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/linux-x86_64.yml) | Yes |
+| Linux            | arm64          | [![CI](https://github.com/cocoa-xu/evision/actions/workflows/linux-precompile.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/linux-precompile.yml) | Yes |
+| Linux            | armv7l (armhf) | [![CI](https://github.com/cocoa-xu/evision/actions/workflows/linux-precompile.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/linux-precompile.yml) | Yes |
+| Linux            | ppc64le        | [![CI](https://github.com/cocoa-xu/evision/actions/workflows/linux-precompile.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/linux-precompile.yml) | Yes |
+| Linux            | s390x          | [![CI](https://github.com/cocoa-xu/evision/actions/workflows/linux-precompile.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/linux-precompile.yml) | Yes |
+| macOS 11 Big Sur | x86_64         | [![CI](https://github.com/cocoa-xu/evision/actions/workflows/macos-x86_64.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/macos-x86_64.yml) | Yes |
+| macOS 11 Big Sur | arm64          | [![CI](https://github.com/cocoa-xu/evision/actions/workflows/macos-precompile.yml/badge.svg?branch=0.1.0-20220326-dev-macos)](https://github.com/cocoa-xu/evision/actions/workflows/macos-precompile.yml) | Yes |
+| Windows 2019     | x86_64         | [![CI](https://github.com/cocoa-xu/evision/actions/workflows/windows-x86_64.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/windows-x86_64.yml) | Yes |
 
 ## Docs
 Online docs is available here, [https://cocoa-xu.github.io/evision](https://cocoa-xu.github.io/evision/doc/OpenCV.html).
