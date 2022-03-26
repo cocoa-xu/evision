@@ -12,6 +12,7 @@ jobs:
     runs-on: windows-latest
     env:
       MIX_ENV: dev
+      EVISION_VERSION: 0.1.0-dev
 
     steps:
       - uses: actions/checkout@v2
@@ -32,7 +33,7 @@ jobs:
           Remove-Item Makefile
           mix compile
 
-          $Env:PKG_NAME = "evision-windows-x64-${Env:EVISION_VERSION}"
+          $Env:PKG_NAME = "evision-windows-amd64-${Env:EVISION_VERSION}"
           if (Test-Path $Env:PKG_NAME) {
               Remove-Item "$Env:PKG_NAME" -Recurse -Force
           }
