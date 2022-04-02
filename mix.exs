@@ -322,7 +322,7 @@ defmodule Evision.MixProject do
       name: "evision",
       # These are the default files included in the package
       files:
-        ~w(lib c_src py_src nerves 3rd_party priv .formatter.exs mix.exs README* readme* LICENSE*
+        ~w(lib c_src py_src 3rd_party priv .formatter.exs mix.exs README* readme* LICENSE*
                 license* CHANGELOG* changelog* src),
       licenses: ["Apache-2.0"],
       links: %{"GitHub" => "https://github.com/cocoa-xu/evision"}
