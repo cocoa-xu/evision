@@ -18,26 +18,38 @@ jobs:
               arch_name: x86_64
               deb_arch: amd64
               cmake_toolchain_file: ""
+              c_compiler: gcc
+              cpp_compiler: g++
           - pair:
               arch_name: aarch64
               deb_arch: arm64
               cmake_toolchain_file: cc_toolchain/linux-aarch64.cmake
+              c_compiler: gcc-aarch64-linux-gnugcc
+              cpp_compiler: g++-aarch64-linux-gnugcc
           - pair:
               arch_name: armv7l
               deb_arch: armhf
               cmake_toolchain_file: cc_toolchain/linux-armv7l.cmake
+              c_compiler: gcc-arm-linux-gnueabihf
+              cpp_compiler: g++-arm-linux-gnueabihf
           - pair:
               arch_name: ppc64le
               deb_arch: ppc64le
               cmake_toolchain_file: cc_toolchain/linux-ppc64le.cmake
+              c_compiler: gcc-powerpc64le-linux-gnu
+              cpp_compiler: g++-powerpc64le-linux-gnu
           - pair:
               arch_name: s390x
               deb_arch: s390x
               cmake_toolchain_file: cc_toolchain/linux-s390x.cmake
+              c_compiler: gcc-s390x-linux-gnu
+              cpp_compiler: g++-s390x-linux-gnu
           - pair:
               arch_name: riscv64
               deb_arch: riscv64
               cmake_toolchain_file: cc_toolchain/linux-riscv64.cmake
+              c_compiler: gcc-riscv64-linux-gnu
+              cpp_compiler: g++-riscv64-linux-gnu
 
     steps:
       - uses: actions/checkout@v2
@@ -50,37 +62,7 @@ jobs:
       - name: Install system dependecies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential automake autoconf pkg-config bc m4 unzip zip curl git libssl-dev gzip libncurses5-dev python3 ca-certificates
-
-      - name: Install system dependecies (aarch64)
-        if: ${{ matrix.pair.arch_name == 'aarch64' }}
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
-
-      - name: Install system dependecies (armv7l)
-        if: ${{ matrix.pair.arch_name == 'armv7l' }}
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf
-
-      - name: Install system dependecies (ppc64le)
-        if: ${{ matrix.pair.arch_name == 'ppc64le' }}
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y gcc-powerpc64le-linux-gnu g++-powerpc64le-linux-gnu
-
-      - name: Install system dependecies (s390x)
-        if: ${{ matrix.pair.arch_name == 's390x' }}
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y gcc-s390x-linux-gnu g++-s390x-linux-gnu
-
-      - name: Install system dependecies (riscv64)
-        if: ${{ matrix.pair.arch_name == 'riscv64' }}
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y gcc-riscv64-linux-gnu g++-riscv64-linux-gnu
+          sudo apt-get install -y build-essential automake autoconf pkg-config bc m4 unzip zip curl git libssl-dev gzip libncurses5-dev python3 ca-certificates ${{ matrix.pair.c_compiler }} ${{ matrix.pair.cpp_compiler }}
 
       - name: Create precompiled library
         run: |
