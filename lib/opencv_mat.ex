@@ -69,12 +69,20 @@ defmodule Evision.Mat do
   deferror(type(mat))
 
   @doc namespace: :"cv.Mat"
-  @spec setTo(reference(), number(), reference()) :: {:ok, mat_type()} | {:error, String.t()}
+  @spec setTo(reference(), number(), reference()) :: {:ok, reference()} | {:error, String.t()}
   def setTo(mat, value, mask) when is_reference(mat) do
     :erl_cv_nif.evision_cv_mat_set_to(img: mat, value: value, mask: mask)
   end
 
   deferror(setTo(mat, value, mask))
+
+  @doc namespace: :"cv.Mat"
+  @spec dot(reference(), reference()) :: {:ok, reference()} | {:error, String.t()}
+  def dot(mat_a, mat_b) when is_reference(mat_a) and is_reference(mat_b) do
+    :erl_cv_nif.evision_cv_mat_dot(a: mat_a, b: mat_b)
+  end
+
+  deferror(dot(mat_a, mat_b))
 
   @doc namespace: :"cv.Mat"
   @spec as_type(reference(), mat_type()) :: {:ok, reference()} | {:error, String.t()}
