@@ -526,4 +526,76 @@ static ERL_NIF_TERM evision_cv_mat_release(ErlNifEnv *env, int argc, const ERL_N
     else return evision::nif::error(env, "overload resolution failed");
 }
 
+// @evision c: evision_cv_mat_at, 1
+// @evision nif: def evision_cv_mat_at(_opts \\ []), do: :erlang.nif_error("Mat::at not loaded")
+static ERL_NIF_TERM evision_cv_mat_at(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
+    using namespace cv;
+    ERL_NIF_TERM error_term = 0;
+    std::map<std::string, ERL_NIF_TERM> erl_terms;
+    int nif_opts_index = 0;
+    evision::nif::parse_arg(env, nif_opts_index, argv, erl_terms);
+
+    {
+        Mat img;
+        size_t pos;
+
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0)) &&
+            evision_to_safe(env, evision_get_kw(env, erl_terms, "pos"), pos, ArgInfo("img", 0))) {
+
+            int type = img.type();
+            uint8_t depth = type & CV_MAT_DEPTH_MASK;
+
+            int i32;
+            double f64;
+            type = -1;
+
+            switch ( depth ) {
+                case CV_8U: {
+                    i32 = ((uint8_t *)img.data)[pos]; type = 0;
+                    break;
+                }
+                case CV_16U: {
+                    i32 = ((uint16_t *)img.data)[pos]; type = 0;
+                    break;
+                }
+                case CV_8S: {
+                    i32 = ((int8_t *)img.data)[pos]; type = 0;
+                    break;
+                }
+                case CV_16S: {
+                    i32 = ((int16_t *)img.data)[pos]; type = 0;
+                    break;
+                }
+                case CV_32S: {
+                    i32 = ((int32_t *)img.data)[pos]; type = 0;
+                    break;
+                }
+
+                case CV_32F: {
+                    f64 = ((float *)img.data)[pos]; type = 1;
+                    break;
+                }
+                case CV_64F: {
+                    f64 = ((double *)img.data)[pos]; type = 1;
+                    break;
+                }
+            }
+
+            ERL_NIF_TERM ret;
+            if (type == 0) {
+                ret = evision::nif::ok(env, enif_make_int(env, i32));
+            } else if (type == 1) {
+                ret = evision::nif::ok(env, enif_make_double(env, f64));
+            } else {
+                ret = evision::nif::error(env, "unknown data type");
+            }
+
+            return ret;
+        }
+    }
+
+    if (error_term != 0) return error_term;
+    else return evision::nif::error(env, "overload resolution failed");
+}
+
 #endif // EVISION_OPENCV_MAT_H

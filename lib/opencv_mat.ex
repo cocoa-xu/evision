@@ -20,6 +20,21 @@ defmodule Evision.Mat do
           1 | 3 | 4
 
   @doc namespace: :"cv.Mat"
+  def number(number, type) do
+    Evision.Mat.full({1, 1}, number, type)
+  end
+
+  deferror(number(number, type))
+
+  @doc namespace: :"cv.Mat"
+  @spec at(reference(), non_neg_integer()) :: {:ok, number()} | {:error, String.t()}
+  def at(mat, position) when is_reference(mat) and is_integer(position) and position >= 0 do
+    :erl_cv_nif.evision_cv_mat_at(img: mat, pos: position)
+  end
+
+  deferror(at(mat, position))
+
+  @doc namespace: :"cv.Mat"
   @spec type(reference()) :: {:ok, mat_type()} | {:error, String.t()}
   def type(mat) when is_reference(mat) do
     :erl_cv_nif.evision_cv_mat_type(img: mat)
@@ -89,7 +104,6 @@ defmodule Evision.Mat do
       t: t,
       l: l
     ) do
-      {length, _} = Evision.Mat.shape!(mat)
       Evision.Mat.reshape(mat, shape)
     else
       error -> error

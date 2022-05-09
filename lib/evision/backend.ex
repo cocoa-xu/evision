@@ -9,8 +9,7 @@ defmodule Evision.Backend do
 
   @impl true
   def constant(%T{shape: {}, type: type} = out, scalar, backend_options) do
-    {1, 1}
-    |> Evision.Mat.full!(scalar, type)
+    Evision.Mat.number!(scalar, type)
     |> to_nx(out)
   end
 
@@ -78,6 +77,25 @@ defmodule Evision.Backend do
     to_nx(aten, %T{out | shape: reshape})
     # Now broadcast the tensor using the original shape
     # Evision.Mat.broadcast_to!(aten, shape) |> to_nx(out)
+  end
+
+  @impl true
+  def random_uniform(%T{type: {s, _} = type, shape: shape} = out, min, max, backend_options)
+      when s in [:u, :s, :f] do
+    min = to_number(min)
+    max = to_number(max)
+
+    Evision.randu!(
+      Evision.Mat.zeros!(shape, type),
+      Evision.Mat.number!(min, type),
+      Evision.Mat.number!(max, type)
+    )
+    |> Evision.Mat.as_type!(type)
+    |> to_nx(out)
+  end
+
+  def random_uniform(%T{type: {:c, s}, shape: _shape} = _out, _min, _max, _backend_options) do
+    raise ArgumentError, "Complex number is not support at Evision.Backend"
   end
 
   @impl true
@@ -156,6 +174,9 @@ defmodule Evision.Backend do
       when is_reference(mat_ref) do
     %{t | data: %__MODULE__{ref: check_shape_and_type!(mat_ref, shape, type)}}
   end
+
+  defp to_number(n) when is_number(n), do: n
+  defp to_number(%T{} = t), do: t |> from_nx() |> Evision.Mat.at!(0)
 
   if Application.compile_env(:evision, :check_shape_and_type, false) do
     defp check_shape_and_type!(mat_ref, shape, type) do
