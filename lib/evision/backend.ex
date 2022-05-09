@@ -81,6 +81,11 @@ defmodule Evision.Backend do
   end
 
   @impl true
+  def backend_deallocate(%T{data: %EB{ref: mat}} = t) do
+    Evision.Mat.release(mat)
+  end
+
+  @impl true
   def to_binary(%T{data: %EB{ref: mat}} = tensor, limit) when is_reference(mat) and is_integer(limit) and limit >= 0 do
     Evision.Mat.to_binary!(mat, limit)
   end
