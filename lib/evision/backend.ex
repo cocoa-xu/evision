@@ -99,6 +99,13 @@ defmodule Evision.Backend do
   end
 
   @impl true
+  def backend_transfer(tensor, backend, opts) do
+    backend_copy(tensor, backend, opts)
+  after
+    backend_deallocate(tensor)
+  end
+
+  @impl true
   def to_binary(%T{data: %EB{ref: mat}} = tensor, limit) when is_reference(mat) and is_integer(limit) and limit >= 0 do
     Evision.Mat.to_binary!(mat, limit)
   end
