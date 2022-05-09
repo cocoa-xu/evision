@@ -26,6 +26,45 @@ defmodule Evision.Backend do
   end
 
   @impl true
+  def iota(%T{shape: {}, type: type} = out, nil, backend_options) do
+    Evision.Mat.arange!(0, 1, 1, type)
+    |> to_nx(out)
+  end
+
+  def iota(%T{shape: shape, type: type} = out, nil, backend_options) do
+    Evision.Mat.arange!(
+      0,
+      Nx.size(shape),
+      1,
+      type,
+      shape
+    )
+    |> to_nx(out)
+  end
+
+  @impl true
+  def iota(%T{shape: {n}, type: type} = out, 0, backend_options) do
+    Evision.Mat.arange!(0, n, 1, type) |> to_nx(out)
+  end
+
+  def iota(%T{shape: shape, type: type} = out, axis, backend_options) do
+    # gets the size of iota
+    dim = elem(shape, axis)
+
+    # build the iota in one dimension
+    aten = Evision.Mat.arange!(0, dim, 1, type)
+
+    # reshape the tensor above to be have shape where everything is 1, except for dim
+    reshape = Tuple.duplicate(1, Nx.rank(shape)) |> put_elem(axis, dim)
+    aten = Evision.Mat.reshape!(aten, reshape)
+
+    # todo: implement Evision.Mat.broadcast_to
+    to_nx(aten, %T{out | shape: reshape})
+    # Now broadcast the tensor using the original shape
+    # Evision.Mat.broadcast_to!(aten, shape) |> to_nx(out)
+  end
+
+  @impl true
   def to_binary(%T{data: %EB{ref: mat}} = tensor, limit) when is_reference(mat) and is_integer(limit) and limit >= 0 do
     Evision.Mat.to_binary!(mat, limit)
   end
@@ -54,6 +93,18 @@ defmodule Evision.Backend do
   def squeeze(out, %T{data: %EB{ref: mat}} = t, _axes) do
     Evision.Mat.squeeze!(mat) |> to_nx(out)
   end
+
+  @impl true
+  def broadcast(out, %T{} = t, shape, axes) do
+    %T{data: %EB{ref: mat}} = maybe_reshape(t, shape, axes)
+
+    # todo: implement Evision.Mat.broadcast_to
+    Evision.Mat.broadcast_to!(mat, shape)
+    |> to_nx(out)
+  end
+
+  defp maybe_reshape(%T{shape: {n}} = t, {n, _}, [0]), do: Nx.reshape(t, {n, 1})
+  defp maybe_reshape(%T{} = t, _, _), do: t
 
   @doc false
   def to_nx(mat_ref, %T{type: type, shape: shape} = t)

@@ -64,6 +64,40 @@ defmodule Evision.Mat do
 
   deferror(ones(shape, type))
 
+  def arange(from, to, step, _type = {t, l}) when step != 0 do
+    with {:ok, mat} <- :erl_cv_nif.evision_cv_mat_arange(
+      from: from,
+      to: to,
+      step: step,
+      t: t,
+      l: l
+    ) do
+      {length, _} = Evision.Mat.shape!(mat)
+      Evision.Mat.reshape(mat, {1, length})
+    else
+      error -> error
+    end
+  end
+
+  deferror(arange(from, to, step, type))
+
+  def arange(from, to, step, _type = {t, l}, shape) when step != 0 do
+    with {:ok, mat} <- :erl_cv_nif.evision_cv_mat_arange(
+      from: from,
+      to: to,
+      step: step,
+      t: t,
+      l: l
+    ) do
+      {length, _} = Evision.Mat.shape!(mat)
+      Evision.Mat.reshape(mat, shape)
+    else
+      error -> error
+    end
+  end
+
+  deferror(arange(from, to, step, type, shape))
+
   @doc namespace: :"cv.Mat"
   @spec clone(reference()) :: {:ok, reference()} | {:error, String.t()}
   def clone(mat) when is_reference(mat) do
