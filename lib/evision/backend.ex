@@ -99,6 +99,25 @@ defmodule Evision.Backend do
   end
 
   @impl true
+  def random_normal(%T{type: {s, _} = type, shape: shape} = out, mu, sigma, backend_options)
+      when s in [:u, :s, :f] do
+    mu = to_number(mu)
+    sigma = to_number(sigma)
+
+    Evision.randn!(
+      Evision.Mat.zeros!(shape, type),
+      Evision.Mat.number!(mu, type),
+      Evision.Mat.number!(sigma, type)
+    )
+    |> Evision.Mat.as_type!(type)
+    |> to_nx(out)
+  end
+
+  def random_normal(%T{type: {:c, s}, shape: _shape} = _out, _min, _max, _backend_options) do
+    raise ArgumentError, "Complex number is not support at Evision.Backend"
+  end
+
+  @impl true
   def backend_deallocate(%T{data: %EB{ref: mat}} = t) do
     Evision.Mat.release(mat)
   end
