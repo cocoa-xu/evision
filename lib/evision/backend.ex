@@ -184,6 +184,30 @@ defmodule Evision.Backend do
   defp maybe_reshape(%T{shape: {n}} = t, {n, _}, [0]), do: Nx.reshape(t, {n, 1})
   defp maybe_reshape(%T{} = t, _, _), do: t
 
+  @impl true
+  def abs(%T{type: type} = out, tensor) do
+    Evision.Mat.abs!(from_nx(tensor))
+    |> to_nx(out)
+  end
+
+  @impl true
+  def exp(%T{type: type} = out, tensor) do
+    Evision.exp!(from_nx(tensor))
+    |> to_nx(out)
+  end
+
+  @impl true
+  def expm1(%T{type: type} = out, tensor) do
+    Evision.Mat.expm1!(from_nx(tensor))
+    |> to_nx(out)
+  end
+
+  @impl true
+  def log(%T{type: type} = out, tensor) do
+    Evision.log!(from_nx(tensor))
+    |> to_nx(out)
+  end
+
   @doc false
   def from_nx(%T{data: %EB{ref: mat_ref}}), do: mat_ref
   def from_nx(%T{} = tensor), do: Nx.backend_transfer(tensor, EB) |> from_nx()

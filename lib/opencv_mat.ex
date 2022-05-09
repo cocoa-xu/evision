@@ -4,6 +4,7 @@ defmodule Evision.Mat do
   """
 
   import Evision.Errorize
+  import Kernel, except: [abs: 1]
 
   @typedoc """
   Types for mat
@@ -33,6 +34,22 @@ defmodule Evision.Mat do
   end
 
   deferror(at(mat, position))
+
+  @doc namespace: :"cv.Mat"
+  @spec abs(reference()) :: {:ok, reference()} | {:error, String.t()}
+  def abs(mat) when is_reference(mat) do
+    :erl_cv_nif.evision_cv_mat_abs(img: mat)
+  end
+
+  deferror(abs(mat))
+
+  @doc namespace: :"cv.Mat"
+  @spec expm1(reference()) :: {:ok, reference()} | {:error, String.t()}
+  def expm1(mat) when is_reference(mat) do
+    :erl_cv_nif.evision_cv_mat_expm1(img: mat)
+  end
+
+  deferror(expm1(mat))
 
   @doc namespace: :"cv.Mat"
   @spec type(reference()) :: {:ok, mat_type()} | {:error, String.t()}
