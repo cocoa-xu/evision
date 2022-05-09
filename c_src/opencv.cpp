@@ -658,6 +658,27 @@ bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, int& value, const ArgInfo& inf
     return true;
 }
 
+template<>
+bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, uint64_t& value, const ArgInfo& info)
+{
+    if (evision::nif::check_nil(env, obj)) {
+        return true;
+    }
+
+    ErlNifUInt64 u64;
+
+    if (enif_get_uint64(env, obj, (ErlNifUInt64 *)&u64))
+    {
+        value = u64;
+    }
+    else
+    {
+        failmsg(env, "Argument '%s' is required to be an integer", info.name);
+        return false;
+    }
+    return true;
+}
+
 // There is conflict between "size_t" and "unsigned int".
 // They are the same type on some 32-bit platforms.
 template<typename T>

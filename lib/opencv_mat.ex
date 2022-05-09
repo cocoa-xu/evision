@@ -58,12 +58,12 @@ defmodule Evision.Mat do
   deferror(empty())
 
   @doc namespace: :"cv.Mat"
-  @spec to_binary(reference()) :: {:ok, binary()} | {:error, String.t()}
-  def to_binary(mat) when is_reference(mat) do
-    :erl_cv_nif.evision_cv_mat_to_binary(img: mat)
+  @spec to_binary(reference(), non_neg_integer()) :: {:ok, binary()} | {:error, String.t()}
+  def to_binary(mat, limit \\ 0) when is_reference(mat) and is_integer(limit) and limit >= 0 do
+    :erl_cv_nif.evision_cv_mat_to_binary(img: mat, limit: limit)
   end
 
-  deferror(to_binary(mat))
+  deferror(to_binary(mat, limit))
 
   @doc """
   Create Mat from binary (pixel) data
@@ -110,4 +110,24 @@ defmodule Evision.Mat do
   end
 
   deferror(from_binary_by_shape(binary, type, shape))
+
+  @doc namespace: :"cv.Mat"
+  def eye(n, _type = {t, l}) when is_integer(n) and n > 0 do
+    :erl_cv_nif.evision_cv_mat_eye(
+      n: n,
+      t: t,
+      l: l
+    )
+  end
+
+  deferror(eye(n, type))
+
+  @doc namespace: :"cv.Mat"
+  def arange(from, to, step, _type = {t, l})
+      when is_integer(from) and is_integer(from) and is_integer(to) and is_integer(to) and
+           is_integer(step) and is_integer(step) do
+
+  end
+
+  deferror(arange(from, to, step, type))
 end

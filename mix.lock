@@ -1,4 +1,5 @@
 %{
+  "complex": {:hex, :complex, "0.4.0", "c4e0402efb587011cdbd73b3f188ec5a3dbd4d516530bedfb041b6d58ea0baea", [:mix], [], "hexpm", "ba7b7547a647dfc907cf0c50c906d16dd1ae879f7ec0d61786962c9cb41f793a"},
   "dll_loader_helper": {:hex, :dll_loader_helper, "0.1.0", "904c3cec32e6e0fc5914e41989ce9350d2bfd06b32f952a658fe63342b993e83", [:make, :mix], [{:elixir_make, "~> 0.6", [hex: :elixir_make, repo: "hexpm", optional: false]}], "hexpm", "b9db9151af610a2db375af543e912b3dd9cad87377d829328888386c65681473"},
   "earmark_parser": {:hex, :earmark_parser, "1.4.19", "de0d033d5ff9fc396a24eadc2fcf2afa3d120841eb3f1004d138cbf9273210e8", [:mix], [], "hexpm", "527ab6630b5c75c3a3960b75844c314ec305c76d9899bb30f71cb85952a9dc45"},
   "elixir_make": {:hex, :elixir_make, "0.6.3", "bc07d53221216838d79e03a8019d0839786703129599e9619f4ab74c8c096eac", [:mix], [], "hexpm", "f5cbd651c5678bcaabdbb7857658ee106b12509cd976c2c2fca99688e1daf716"},
@@ -7,5 +8,5 @@
   "makeup_elixir": {:hex, :makeup_elixir, "0.15.2", "dc72dfe17eb240552857465cc00cce390960d9a0c055c4ccd38b70629227e97c", [:mix], [{:makeup, "~> 1.0", [hex: :makeup, repo: "hexpm", optional: false]}, {:nimble_parsec, "~> 1.1", [hex: :nimble_parsec, repo: "hexpm", optional: false]}], "hexpm", "fd23ae48d09b32eff49d4ced2b43c9f086d402ee4fd4fcb2d7fad97fa8823e75"},
   "makeup_erlang": {:hex, :makeup_erlang, "0.1.1", "3fcb7f09eb9d98dc4d208f49cc955a34218fc41ff6b84df7c75b3e6e533cc65f", [:mix], [{:makeup, "~> 1.0", [hex: :makeup, repo: "hexpm", optional: false]}], "hexpm", "174d0809e98a4ef0b3309256cbf97101c6ec01c4ab0b23e926a9e17df2077cbb"},
   "nimble_parsec": {:hex, :nimble_parsec, "1.2.0", "b44d75e2a6542dcb6acf5d71c32c74ca88960421b6874777f79153bbbbd7dccc", [:mix], [], "hexpm", "52b2871a7515a5ac49b00f214e4165a40724cf99798d8e4a65e4fd64ebd002c1"},
-  "nx": {:hex, :nx, "0.1.0", "8f8a047dc0fd2b1798406edf828b43c46cca648b13c58fd5abd52285316b3d86", [:mix], [], "hexpm", "24ce6e184dc9c7b7c6c247923bfbe994101a7fe049bd3fd376b5b0512f787256"},
+  "nx": {:hex, :nx, "0.2.0", "ae550cd72bca2e56f90fc63d59f2f11ac17ed3c4a9cd0968397f4ef9b795b3d6", [:mix], [{:complex, "~> 0.4.0", [hex: :complex, repo: "hexpm", optional: false]}], "hexpm", "31d4936d2cf78a0b147830f0e6fca45bd3ed4b1e592e2bcd61a85f81e892617c"},
 }

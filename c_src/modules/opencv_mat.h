@@ -155,11 +155,19 @@ static ERL_NIF_TERM evision_cv_mat_to_binary(ErlNifEnv *env, int argc, const ERL
 
     {
         Mat img;
+        uint64_t limit;
 
         // const char *keywords[] = {"img", NULL};
-        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0))) {
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0)) &&
+            evision_to_safe(env, evision_get_kw(env, erl_terms, "limit"), limit, ArgInfo("limit", 0))) {
             ErlNifBinary bin_data;
-            size_t bin_size = img.total() * img.elemSize();
+            size_t bin_size;
+            if (limit == 0) {
+                bin_size = img.total() * img.elemSize();
+            } else {
+                bin_size = limit * img.elemSize();
+            }
+
             if (!enif_alloc_binary(bin_size, &bin_data))
                 return evision::nif::error(env, "alloc_failed");
 
@@ -303,6 +311,34 @@ static ERL_NIF_TERM evision_cv_mat_from_binary_by_shape(ErlNifEnv *env, int argc
                 // invalid binary data
                 return enif_make_badarg(env);
             }
+        }
+    }
+
+    if (error_term != 0) return error_term;
+    else return evision::nif::error(env, "overload resolution failed");
+}
+
+// @evision c: evision_cv_mat_eye, 1
+// @evision nif: def evision_cv_mat_eye(_opts \\ []), do: :erlang.nif_error("Mat::eye not loaded")
+static ERL_NIF_TERM evision_cv_mat_eye(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
+    using namespace cv;
+    ERL_NIF_TERM error_term = 0;
+    std::map<std::string, ERL_NIF_TERM> erl_terms;
+    int nif_opts_index = 0;
+    evision::nif::parse_arg(env, nif_opts_index, argv, erl_terms);
+
+    {
+        std::string t;
+        int l = 0;
+        uint64_t n;
+
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "n"), n, ArgInfo("n", 0)) &&
+            evision_to_safe(env, evision_get_kw(env, erl_terms, "t"), t, ArgInfo("t", 0)) &&
+            evision_to_safe(env, evision_get_kw(env, erl_terms, "l"), l, ArgInfo("l", 0))) {
+            int type = 0;
+            if (!get_binary_type(t, l, 1, type)) return evision::nif::error(env, "not implemented for the given type");
+            Mat out = Mat::eye(n, n, type);
+            return evision::nif::ok(env, evision_from(env, out));
         }
     }
 
