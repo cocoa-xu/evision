@@ -86,6 +86,19 @@ defmodule Evision.Backend do
   end
 
   @impl true
+  def backend_copy(tensor, Nx.Tensor, opts) do
+    backend_copy(tensor, Nx.BinaryBackend, opts)
+  end
+
+  def backend_copy(tensor, Evision.Backend, _opts) do
+    Evision.Mat.clone!(from_nx(tensor)) |> to_nx(tensor)
+  end
+
+  def backend_copy(tensor, backend, opts) do
+    backend.from_binary(tensor, Evision.Mat.to_binary!(from_nx(tensor), 0), opts)
+  end
+
+  @impl true
   def to_binary(%T{data: %EB{ref: mat}} = tensor, limit) when is_reference(mat) and is_integer(limit) and limit >= 0 do
     Evision.Mat.to_binary!(mat, limit)
   end
@@ -126,6 +139,10 @@ defmodule Evision.Backend do
 
   defp maybe_reshape(%T{shape: {n}} = t, {n, _}, [0]), do: Nx.reshape(t, {n, 1})
   defp maybe_reshape(%T{} = t, _, _), do: t
+
+  @doc false
+  def from_nx(%T{data: %EB{ref: mat_ref}}), do: mat_ref
+  def from_nx(%T{} = tensor), do: Nx.backend_transfer(tensor, EB) |> from_nx()
 
   @doc false
   def to_nx(mat_ref, %T{type: type, shape: shape} = t)
