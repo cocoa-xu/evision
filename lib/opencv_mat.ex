@@ -13,6 +13,7 @@ defmodule Evision.Mat do
           | {:u, 16}
           | {:s, 8}
           | {:s, 16}
+          | {:s, 32}
           | {:f, 32}
           | {:f, 64}
   @type channels_from_binary ::
@@ -40,6 +41,28 @@ defmodule Evision.Mat do
   end
 
   deferror(shape(mat))
+
+  @doc namespace: :"cv.Mat"
+  def zeros(shape, _type = {t, l}) when is_tuple(shape) do
+    :erl_cv_nif.evision_cv_mat_zeros(
+      shape: Tuple.to_list(shape),
+      t: t,
+      l: l
+    )
+  end
+
+  deferror(zeros(shape, type))
+
+  @doc namespace: :"cv.Mat"
+  def ones(shape, _type = {t, l}) when is_tuple(shape) do
+    :erl_cv_nif.evision_cv_mat_ones(
+      shape: Tuple.to_list(shape),
+      t: t,
+      l: l
+    )
+  end
+
+  deferror(ones(shape, type))
 
   @doc namespace: :"cv.Mat"
   @spec clone(reference()) :: {:ok, reference()} | {:error, String.t()}

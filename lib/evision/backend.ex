@@ -16,10 +16,6 @@ defmodule Evision.Backend do
     Evision.Mat.from_binary!(binary, type, rows, cols, 1) |> to_nx(out)
   end
 
-  def from_binary(%T{shape: {rows, cols, channels}, type: type} = out, binary, _backend_options) when is_binary(binary) do
-    Evision.Mat.from_binary!(binary, type, rows, cols, channels) |> to_nx(out)
-  end
-
   def from_binary(%T{shape: shape, type: type} = out, binary, _backend_options) when is_binary(binary) do
     Evision.Mat.from_binary_by_shape!(binary, type, shape) |> to_nx(out)
   end

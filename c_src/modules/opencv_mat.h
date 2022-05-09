@@ -360,7 +360,7 @@ static ERL_NIF_TERM evision_cv_mat_reshape(ErlNifEnv *env, int argc, const ERL_N
         std::vector<int> shape;
 
         if (evision_to_safe(env, evision_get_kw(env, erl_terms, "mat"), mat, ArgInfo("mat", 0)) &&
-            evision_to_safe(env, evision_get_kw(env, erl_terms, "shape"), shape, ArgInfo("t", 0))) {
+            evision_to_safe(env, evision_get_kw(env, erl_terms, "shape"), shape, ArgInfo("shape", 0))) {
             Mat out = mat.reshape(0, shape);
             return evision::nif::ok(env, evision_from(env, out));
         }
@@ -370,5 +370,60 @@ static ERL_NIF_TERM evision_cv_mat_reshape(ErlNifEnv *env, int argc, const ERL_N
     else return evision::nif::error(env, "overload resolution failed");
 }
 
+// @evision c: evision_cv_mat_zeros, 1
+// @evision nif: def evision_cv_mat_zeros(_opts \\ []), do: :erlang.nif_error("Mat::reshape not loaded")
+static ERL_NIF_TERM evision_cv_mat_zeros(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
+    using namespace cv;
+    ERL_NIF_TERM error_term = 0;
+    std::map<std::string, ERL_NIF_TERM> erl_terms;
+    int nif_opts_index = 0;
+    evision::nif::parse_arg(env, nif_opts_index, argv, erl_terms);
+
+    {
+        std::vector<int> shape;
+        std::string t;
+        int l = 0;
+
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "shape"), shape, ArgInfo("shape", 0)) &&
+            evision_to_safe(env, evision_get_kw(env, erl_terms, "t"), t, ArgInfo("t", 0)) &&
+            evision_to_safe(env, evision_get_kw(env, erl_terms, "l"), l, ArgInfo("l", 0))) {
+            int type;
+            if (!get_binary_type(t, l, 0, type)) return evision::nif::error(env, "not implemented for the given type");
+            Mat out = Mat(Mat::zeros(shape.size(), shape.data(), type));
+            return evision::nif::ok(env, evision_from(env, out));
+        }
+    }
+
+    if (error_term != 0) return error_term;
+    else return evision::nif::error(env, "overload resolution failed");
+}
+
+// @evision c: evision_cv_mat_ones, 1
+// @evision nif: def evision_cv_mat_ones(_opts \\ []), do: :erlang.nif_error("Mat::reshape not loaded")
+static ERL_NIF_TERM evision_cv_mat_ones(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
+    using namespace cv;
+    ERL_NIF_TERM error_term = 0;
+    std::map<std::string, ERL_NIF_TERM> erl_terms;
+    int nif_opts_index = 0;
+    evision::nif::parse_arg(env, nif_opts_index, argv, erl_terms);
+
+    {
+        std::vector<int> shape;
+        std::string t;
+        int l = 0;
+
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "shape"), shape, ArgInfo("shape", 0)) &&
+            evision_to_safe(env, evision_get_kw(env, erl_terms, "t"), t, ArgInfo("t", 0)) &&
+            evision_to_safe(env, evision_get_kw(env, erl_terms, "l"), l, ArgInfo("l", 0))) {
+            int type;
+            if (!get_binary_type(t, l, 0, type)) return evision::nif::error(env, "not implemented for the given type");
+            Mat out = Mat(Mat::ones(shape.size(), shape.data(), type));
+            return evision::nif::ok(env, evision_from(env, out));
+        }
+    }
+
+    if (error_term != 0) return error_term;
+    else return evision::nif::error(env, "overload resolution failed");
+}
 
 #endif // EVISION_OPENCV_MAT_H
