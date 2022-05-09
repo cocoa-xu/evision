@@ -52,12 +52,29 @@ defmodule Evision.Mat do
   deferror(expm1(mat))
 
   @doc namespace: :"cv.Mat"
+  @spec clip(reference(), number(), number()) :: {:ok, reference()} | {:error, String.t()}
+  def clip(mat, lower, upper) when is_reference(mat) and is_number(lower) and
+                                   is_number(upper) and lower <= upper do
+    :erl_cv_nif.evision_cv_mat_clip(img: mat, lower: lower, upper: upper)
+  end
+
+  deferror(clip(mat, lower, upper))
+
+  @doc namespace: :"cv.Mat"
   @spec type(reference()) :: {:ok, mat_type()} | {:error, String.t()}
   def type(mat) when is_reference(mat) do
     :erl_cv_nif.evision_cv_mat_type(img: mat)
   end
 
   deferror(type(mat))
+
+  @doc namespace: :"cv.Mat"
+  @spec setTo(reference(), number(), reference()) :: {:ok, mat_type()} | {:error, String.t()}
+  def setTo(mat, value, mask) when is_reference(mat) do
+    :erl_cv_nif.evision_cv_mat_set_to(img: mat, value: value, mask: mask)
+  end
+
+  deferror(setTo(mat, value, mask))
 
   @doc namespace: :"cv.Mat"
   @spec as_type(reference(), mat_type()) :: {:ok, reference()} | {:error, String.t()}

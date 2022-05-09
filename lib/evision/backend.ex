@@ -185,6 +185,15 @@ defmodule Evision.Backend do
   defp maybe_reshape(%T{} = t, _, _), do: t
 
   @impl true
+  def clip(%T{} = out, %T{} = t, %T{} = min, %T{} = max) do
+    t
+    |> Nx.as_type(out.type)
+    |> from_nx()
+    |> Evision.Mat.clip!(to_number(min), to_number(max))
+    |> to_nx(out)
+  end
+
+  @impl true
   def abs(%T{type: type} = out, tensor) do
     Evision.Mat.abs!(from_nx(tensor))
     |> to_nx(out)
