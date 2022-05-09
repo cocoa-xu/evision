@@ -8,6 +8,22 @@ defmodule Evision.Backend do
   ## Creation
 
   @impl true
+  def constant(%T{shape: {}, type: type} = out, scalar, backend_options) do
+    {1, 1}
+    |> Evision.Mat.full!(scalar, type)
+    |> to_nx(out)
+  end
+
+  def constant(%T{shape: shape, type: type} = out, scalar, backend_options) do
+    shape
+    |> Evision.Mat.full!(
+         scalar,
+         type
+       )
+    |> to_nx(out)
+  end
+
+  @impl true
   def from_binary(%T{shape: {count}, type: type} = out, binary, _backend_options) when is_binary(binary) do
       Evision.Mat.from_binary!(binary, type, 1, count, 1) |> to_nx(out)
   end

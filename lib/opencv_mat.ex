@@ -98,6 +98,17 @@ defmodule Evision.Mat do
 
   deferror(arange(from, to, step, type, shape))
 
+  def full(shape, number, _type = {t, l}) do
+    :erl_cv_nif.evision_cv_mat_full(
+      number: number,
+      t: t,
+      l: l,
+      shape: Tuple.to_list(shape)
+    )
+  end
+
+  deferror(full(shape, number, type))
+
   @doc namespace: :"cv.Mat"
   @spec clone(reference()) :: {:ok, reference()} | {:error, String.t()}
   def clone(mat) when is_reference(mat) do
