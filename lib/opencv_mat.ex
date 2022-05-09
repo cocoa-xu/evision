@@ -123,11 +123,26 @@ defmodule Evision.Mat do
   deferror(eye(n, type))
 
   @doc namespace: :"cv.Mat"
-  def arange(from, to, step, _type = {t, l})
-      when is_integer(from) and is_integer(from) and is_integer(to) and is_integer(to) and
-           is_integer(step) and is_integer(step) do
-
+  def reshape(mat, shape) when is_reference(mat) and is_tuple(shape) do
+    :erl_cv_nif.evision_cv_mat_reshape(
+      mat: mat,
+      shape: Tuple.to_list(shape)
+    )
   end
 
-  deferror(arange(from, to, step, type))
+  def reshape(mat, shape) when is_reference(mat) and is_list(shape) do
+    :erl_cv_nif.evision_cv_mat_reshape(
+      mat: mat,
+      shape: shape
+    )
+  end
+
+  deferror(reshape(mat, shape))
+
+  def squeeze(mat) when is_reference(mat) do
+    shape = Tuple.to_list(Evision.Mat.shape!(mat))
+    Evision.Mat.reshape(mat, Enum.reject(shape, fn d -> d == 1 end))
+  end
+
+  deferror(squeeze(mat))
 end
