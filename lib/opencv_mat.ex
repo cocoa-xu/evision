@@ -4,7 +4,7 @@ defmodule Evision.Mat do
   """
 
   import Evision.Errorize
-  import Kernel, except: [abs: 1]
+  import Kernel, except: [abs: 1, floor: 1, ceil: 1, round: 1]
 
   @typedoc """
   Types for mat
@@ -67,6 +67,59 @@ defmodule Evision.Mat do
   end
 
   deferror(type(mat))
+
+  @doc namespace: :"cv.Mat"
+  @spec bitwise_not(reference()) :: {:ok, reference()} | {:error, String.t()}
+  def bitwise_not(mat) when is_reference(mat) do
+    type = {s, _} = Evision.Mat.type!(mat)
+    if s in [:s, :u] do
+      :erl_cv_nif.evision_cv_mat_bitwise_not(img: mat)
+    else
+      {:error, "bitwise operators expect integer tensors as inputs and outputs an integer tensor, got: #{inspect(type)}"}
+    end
+  end
+
+  deferror(bitwise_not(mat))
+
+  @doc namespace: :"cv.Mat"
+  @spec ceil(reference()) :: {:ok, reference()} | {:error, String.t()}
+  def ceil(mat) when is_reference(mat) do
+    :erl_cv_nif.evision_cv_mat_ceil(img: mat)
+  end
+
+  deferror(ceil(mat))
+
+  @doc namespace: :"cv.Mat"
+  @spec floor(reference()) :: {:ok, reference()} | {:error, String.t()}
+  def floor(mat) when is_reference(mat) do
+    :erl_cv_nif.evision_cv_mat_floor(img: mat)
+  end
+
+  deferror(floor(mat))
+
+  @doc namespace: :"cv.Mat"
+  @spec negate(reference()) :: {:ok, reference()} | {:error, String.t()}
+  def negate(mat) when is_reference(mat) do
+    :erl_cv_nif.evision_cv_mat_negate(img: mat)
+  end
+
+  deferror(negate(mat))
+
+  @doc namespace: :"cv.Mat"
+  @spec round(reference()) :: {:ok, reference()} | {:error, String.t()}
+  def round(mat) when is_reference(mat) do
+    :erl_cv_nif.evision_cv_mat_round(img: mat)
+  end
+
+  deferror(round(mat))
+
+  @doc namespace: :"cv.Mat"
+  @spec sign(reference()) :: {:ok, reference()} | {:error, String.t()}
+  def sign(mat) when is_reference(mat) do
+    :erl_cv_nif.evision_cv_mat_sign(img: mat)
+  end
+
+  deferror(sign(mat))
 
   @doc namespace: :"cv.Mat"
   @spec setTo(reference(), number(), reference()) :: {:ok, reference()} | {:error, String.t()}

@@ -200,6 +200,59 @@ defmodule Evision.Backend do
   end
 
   @impl true
+  def bitwise_not(%T{type: {s, _}} = out, tensor) when s in [:s, :u] do
+    Evision.Mat.bitwise_not!(from_nx(tensor))
+    |> to_nx(out)
+  end
+
+  def bitwise_not(%T{type: type} = out, tensor) do
+    raise ArgumentError, "bitwise operators expect integer tensors as inputs " <>
+                         "and outputs an integer tensor, got: #{inspect(type)}"
+  end
+
+  @impl true
+  def ceil(%T{type: {s, _}} = out, tensor) when s == :f do
+    Evision.Mat.ceil!(from_nx(tensor))
+    |> to_nx(out)
+  end
+
+  def ceil(%T{} = out, tensor) do
+    to_nx(from_nx(tensor), out)
+  end
+
+  @impl true
+  def floor(%T{type: {s, _}} = out, tensor) when s == :f do
+    Evision.Mat.floor!(from_nx(tensor))
+    |> to_nx(out)
+  end
+
+  def floor(%T{} = out, tensor) do
+    to_nx(from_nx(tensor), out)
+  end
+
+  @impl true
+  def negate(%T{} = out, tensor) do
+    Evision.Mat.negate!(from_nx(tensor))
+    |> to_nx(out)
+  end
+
+  @impl true
+  def round(%T{type: {s, _}} = out, tensor) when s == :f do
+    Evision.Mat.round!(from_nx(tensor))
+    |> to_nx(out)
+  end
+
+  def round(%T{} = out, tensor) do
+    to_nx(from_nx(tensor), out)
+  end
+
+  @impl true
+  def sign(%T{} = out, tensor) do
+    Evision.Mat.sign!(from_nx(tensor))
+    |> to_nx(out)
+  end
+
+  @impl true
   def exp(%T{type: type} = out, tensor) do
     Evision.exp!(from_nx(tensor))
     |> to_nx(out)
