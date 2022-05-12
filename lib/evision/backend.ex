@@ -73,10 +73,8 @@ defmodule Evision.Backend do
     reshape = Tuple.duplicate(1, Nx.rank(shape)) |> put_elem(axis, dim)
     aten = Evision.Mat.reshape!(aten, reshape)
 
-    # todo: implement Evision.Mat.broadcast_to
-    to_nx(aten, %T{out | shape: reshape})
     # Now broadcast the tensor using the original shape
-    # Evision.Mat.broadcast_to!(aten, shape) |> to_nx(out)
+    Evision.Mat.broadcast_to!(aten, shape) |> to_nx(out)
   end
 
   @impl true
@@ -174,15 +172,39 @@ defmodule Evision.Backend do
 
   @impl true
   def broadcast(out, %T{} = t, shape, axes) do
-    %T{data: %EB{ref: mat}} = maybe_reshape(t, shape, axes)
-
-    # todo: implement Evision.Mat.broadcast_to
-    Evision.Mat.broadcast_to!(mat, shape)
+    {tensor, reshape} = maybe_reshape(t, shape, axes)
+    Evision.Mat.broadcast_to!(tensor |> from_nx(), shape, reshape)
     |> to_nx(out)
   end
 
-  defp maybe_reshape(%T{shape: {n}} = t, {n, _}, [0]), do: Nx.reshape(t, {n, 1})
-  defp maybe_reshape(%T{} = t, _, _), do: t
+  defp maybe_reshape(%T{shape: {n}} = t, {n, _}, [0]), do: {Nx.reshape(t, {n, 1}), {n, 1}}
+  defp maybe_reshape(%T{shape: shape} = t, to_shape, axes) do
+    l_shape = Tuple.to_list(shape)
+    l_to_shape = Tuple.to_list(to_shape)
+
+    if length(l_shape) != length(l_to_shape) do
+      src_shape_axis = length(l_shape) - 1
+      {src_shape_axis, force_shape} =
+        for axis <- Enum.to_list(length(l_to_shape)-1..0), reduce: {src_shape_axis, []} do
+          {src_shape_axis, acc} ->
+            if src_shape_axis == -1 do
+              {src_shape_axis, [1 | acc]}
+            else
+              case {elem(shape, src_shape_axis), elem(to_shape, axis)} do
+                {1, _d} ->
+                  {src_shape_axis - 1, [1 | acc]}
+                {d, d} ->
+                  {src_shape_axis - 1, [d | acc]}
+              end
+            end
+        end
+      force_shape = List.to_tuple(force_shape)
+
+      {Nx.reshape(t, force_shape), force_shape}
+    else
+      {t, shape}
+    end
+  end
 
   @impl true
   def clip(%T{} = out, %T{} = t, %T{} = min, %T{} = max) do
