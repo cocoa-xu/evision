@@ -328,4 +328,25 @@ defmodule Evision.Mat do
   end
 
   deferror(squeeze(mat))
+
+  def broadcast_to(mat, to_shape) do
+    :erl_cv_nif.evision_cv_mat_broadcast_to(
+      img: mat,
+      to_shape: Tuple.to_list(to_shape),
+      force_src_shape: []
+    )
+  end
+
+  deferror(broadcast_to(mat, to_shape))
+
+  def broadcast_to(mat, to_shape, force_src_shape) do
+    :erl_cv_nif.evision_cv_mat_broadcast_to(
+      img: mat,
+      to_shape: Tuple.to_list(to_shape),
+      force_src_shape: Tuple.to_list(force_src_shape)
+    )
+  end
+
+  deferror(broadcast_to(mat, to_shape, force_src_shape))
+
 end
