@@ -54,6 +54,40 @@ int alloc_resource(evision_res<R> **res) {
     return (*res != nullptr);
 }
 
+template<>
+struct evision_res<cv::Mat *> {
+    cv::Mat * val;
+
+    // https://github.com/akash-akya/zero_copy/blob/master/c_src/zero_copy.c
+    // pointer to input data
+    unsigned char *in_buf;
+    // input data specific opaque obj, this will be passed during unref
+    void *in_ref = nullptr;
+    // function to be called to unref input data
+    void (*in_unref)(void *, void *) = nullptr;
+
+    static ErlNifResourceType * type;
+};
+ErlNifResourceType * evision_res<cv::Mat *>::type = nullptr;
+
+template<>
+int alloc_resource(evision_res<cv::Mat *> **res) {
+    evision_res<cv::Mat *> * tmp = (evision_res<cv::Mat *> *)enif_alloc_resource(evision_res<cv::Mat *>::type, sizeof(evision_res<cv::Mat *>));
+
+    if (tmp != nullptr) {
+        tmp->in_buf = nullptr;
+        tmp->in_ref = nullptr;
+        tmp->in_unref = nullptr;
+        *res = tmp;
+
+        // 1: ok
+        return 1;
+    }
+
+    // 0: failed
+    return 0;
+}
+
 #define CV_HAS_CONVERSION_ERROR(x) (((x) == -1))
 
 class ArgInfo
@@ -1925,6 +1959,13 @@ static void destruct_Mat(ErlNifEnv *env, void *args) {
     if (res->val) {
         delete res->val;
         res->val = nullptr;
+    }
+
+    // unref input if we no longer need it
+    if (res->in_buf != nullptr) {
+        (res->in_unref)(res->in_buf, res->in_ref);
+        res->in_ref = nullptr;
+        res->in_buf = nullptr;
     }
 }
 
