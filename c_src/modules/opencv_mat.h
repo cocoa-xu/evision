@@ -154,17 +154,13 @@ static ERL_NIF_TERM evision_cv_mat_to_binary(ErlNifEnv *env, int argc, const ERL
     evision::nif::parse_arg(env, nif_opts_index, argv, erl_terms);
 
     {
-        Mat img;
-
         // const char *keywords[] = {"img", NULL};
-        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0))) {
-            ErlNifBinary bin_data;
-            size_t bin_size = img.total() * img.elemSize();
-            if (!enif_alloc_binary(bin_size, &bin_data))
-                return evision::nif::error(env, "alloc_failed");
-
-            memcpy(bin_data.data, img.data, bin_size);
-            return evision::nif::ok(env, enif_make_binary(env, &bin_data));
+        // zero-copy to_binary
+        evision_res<cv::Mat *> * res;
+        if( enif_get_resource(env, evision_get_kw(env, erl_terms, "img"), evision_res<cv::Mat *>::type, (void **)&res) ) {
+            size_t bin_size = res->val->total() * res->val->elemSize();
+            ERL_NIF_TERM out_bin_term = enif_make_resource_binary(env, res, res->val->data, bin_size);
+            return evision::nif::ok(env, out_bin_term);
         }
     }
 
