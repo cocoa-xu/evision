@@ -225,7 +225,6 @@ static ERL_NIF_TERM _evision_binary_ref(ERL_NIF_TERM bin_term, evision_res<cv::M
     ErlNifEnv *new_env;
 
     zero_copy_mat->in_buf = nullptr;
-    zero_copy_mat->in_size = 0;
     zero_copy_mat->in_ref = nullptr;
 
     // keep reference to binary by creating new nif-env and copying
@@ -240,7 +239,6 @@ static ERL_NIF_TERM _evision_binary_ref(ERL_NIF_TERM bin_term, evision_res<cv::M
 
     // Note that we are *NOT* copying the binary data
     zero_copy_mat->in_buf = bin.data;
-    zero_copy_mat->in_size = bin.size;
 
     // input buffer specific opaque data which will be passed as second
     // argument to finalizer during unref
