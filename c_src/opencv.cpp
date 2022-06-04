@@ -4,7 +4,6 @@
 #define HAVE_ROUND 1
 #pragma warning(push)
 #pragma warning(disable:5033)  // 'register' is no longer a supported storage class
-typedef SSIZE_T ssize_t;
 #endif
 
 #include <cmath>
@@ -62,7 +61,6 @@ struct evision_res<cv::Mat *> {
     // https://github.com/akash-akya/zero_copy/blob/master/c_src/zero_copy.c
     // pointer to input data
     unsigned char *in_buf;
-    ssize_t in_size;
     // input data specific opaque obj, this will be passed during unref
     void *in_ref = nullptr;
     // function to be called to unref input data
@@ -78,10 +76,8 @@ int alloc_resource(evision_res<cv::Mat *> **res) {
 
     if (tmp != nullptr) {
         tmp->in_buf = nullptr;
-        tmp->in_size = 0;
         tmp->in_ref = nullptr;
         tmp->in_unref = nullptr;
-
         *res = tmp;
 
         // 1: ok
