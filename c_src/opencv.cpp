@@ -4,6 +4,7 @@
 #define HAVE_ROUND 1
 #pragma warning(push)
 #pragma warning(disable:5033)  // 'register' is no longer a supported storage class
+typedef SSIZE_T ssize_t;
 #endif
 
 #include <cmath>
