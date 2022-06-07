@@ -611,27 +611,6 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const size_t& value)
 }
 
 template<>
-bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, size_t& value, const ArgInfo& info)
-{
-    if (evision::nif::check_nil(env, obj)) {
-        return true;
-    }
-
-    ErlNifUInt64 u64;
-
-    if (enif_get_uint64(env, obj, &u64))
-    {
-        value = u64;
-    }
-    else
-    {
-        failmsg(env, "Argument '%s' is required to be an integer", info.name);
-        return false;
-    }
-    return true;
-}
-
-template<>
 ERL_NIF_TERM evision_from(ErlNifEnv *env, const int& value)
 {
     return enif_make_int(env, value);
