@@ -156,7 +156,7 @@ static ERL_NIF_TERM evision_cv_mat_to_binary(ErlNifEnv *env, int argc, const ERL
 
     {
         Mat img;
-        uint64_t limit;
+        uint64_t limit = 0;
 
         // const char *keywords[] = {"img", NULL};
         if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0)) &&
@@ -331,7 +331,7 @@ static ERL_NIF_TERM evision_cv_mat_eye(ErlNifEnv *env, int argc, const ERL_NIF_T
     {
         std::string t;
         int l = 0;
-        uint64_t n;
+        uint64_t n = 0;
 
         if (evision_to_safe(env, evision_get_kw(env, erl_terms, "n"), n, ArgInfo("n", 0)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "t"), t, ArgInfo("t", 0)) &&
@@ -437,7 +437,7 @@ static ERL_NIF_TERM evision_cv_mat_arange(ErlNifEnv *env, int argc, const ERL_NI
     evision::nif::parse_arg(env, nif_opts_index, argv, erl_terms);
 
     {
-        int64_t from, to, step;
+        int64_t from = 0, to = 0, step = 0;
         std::string t;
         int l = 0;
 
