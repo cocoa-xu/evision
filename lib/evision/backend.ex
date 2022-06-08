@@ -161,6 +161,9 @@ defmodule Evision.Backend do
   end
 
   @impl true
+  def bitcast(out, tensor), do: from_binary(out, Evision.Mat.to_binary!(from_nx(tensor), 0), [])
+
+  @impl true
   def reshape(%T{shape: shape} = out, %T{data: %EB{ref: mat}} = t) do
     Evision.Mat.reshape!(mat, Tuple.to_list(shape)) |> to_nx(out)
   end
