@@ -554,6 +554,22 @@ bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, void*& ptr, const ArgInfo& inf
     return ptr != nullptr;
 }
 
+template<>
+bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, unsigned long &val, const ArgInfo& info)
+{
+    if (evision::nif::check_nil(env, obj)) {
+        return true;
+    }
+
+    CV_UNUSED(info);
+
+    ErlNifUInt64 u64;
+    if (!enif_get_uint64(env, obj, (ErlNifUInt64 *)&u64))
+        return false;
+    val = u64;
+    return 1;
+}
+
 static ERL_NIF_TERM evision_from(ErlNifEnv *env, void*& ptr)
 {
     return enif_make_int64(env, (int64_t)(int64_t*)ptr);

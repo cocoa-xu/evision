@@ -37,6 +37,14 @@ defmodule Evision.Mat do
   deferror(at(mat, position))
 
   @doc namespace: :"cv.Mat"
+  @spec cmp(reference(), reference(), atom()) :: {:ok, reference()} | {:error, String.t()}
+  def cmp(lhs, rhs, op) when is_reference(lhs) and is_reference(rhs) and op in [:eq, :gt, :ge, :lt, :le, :ne] do
+    :erl_cv_nif.evision_cv_mat_cmp(l: lhs, r: rhs, type: op)
+  end
+
+  deferror(cmp(lhs, rhs, op))
+
+  @doc namespace: :"cv.Mat"
   @spec abs(reference()) :: {:ok, reference()} | {:error, String.t()}
   def abs(mat) when is_reference(mat) do
     :erl_cv_nif.evision_cv_mat_abs(img: mat)

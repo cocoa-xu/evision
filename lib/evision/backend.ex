@@ -232,6 +232,66 @@ defmodule Evision.Backend do
   end
 
   @impl true
+  def equal(%T{type: type} = out, l, r) do
+    {l, r} = ensure_cmp_shape(l, r)
+    from_nx(l)
+    |> Evision.Mat.cmp!(from_nx(r), :eq)
+    |> to_nx(out)
+  end
+
+  @impl true
+  def not_equal(%T{type: type} = out, l, r) do
+    {l, r} = ensure_cmp_shape(l, r)
+    from_nx(l)
+    |> Evision.Mat.cmp!(from_nx(r), :ne)
+    |> to_nx(out)
+  end
+
+  @impl true
+  def greater(%T{type: type} = out, l, r) do
+    {l, r} = ensure_cmp_shape(l, r)
+    from_nx(l)
+    |> Evision.Mat.cmp!(from_nx(r), :gt)
+    |> to_nx(out)
+  end
+
+  @impl true
+  def less(%T{type: type} = out, l, r) do
+    {l, r} = ensure_cmp_shape(l, r)
+    from_nx(l)
+    |> Evision.Mat.cmp!(from_nx(r), :lt)
+    |> to_nx(out)
+  end
+
+  @impl true
+  def greater_equal(%T{type: type} = out, l, r) do
+    {l, r} = ensure_cmp_shape(l, r)
+    from_nx(l)
+    |> Evision.Mat.cmp!(from_nx(r), :ge)
+    |> to_nx(out)
+  end
+
+  @impl true
+  def less_equal(%T{type: type} = out, l, r) do
+    {l, r} = ensure_cmp_shape(l, r)
+    from_nx(l)
+    |> Evision.Mat.cmp!(from_nx(r), :le)
+    |> to_nx(out)
+  end
+
+  defp ensure_cmp_shape(%T{shape: shape}=l, %T{shape: shape}=r), do: {l, r}
+  defp ensure_cmp_shape(%T{shape: lshape}=l, %T{shape: rshape}=r) do
+    try do
+      bl = Nx.broadcast(l, rshape)
+      {bl, r}
+    rescue
+      e in ArgumentError ->
+        br = Nx.broadcast(r, lshape)
+        {l, br}
+    end
+  end
+
+  @impl true
   def abs(%T{type: type} = out, tensor) do
     Evision.Mat.abs!(from_nx(tensor))
     |> to_nx(out)
