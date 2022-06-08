@@ -37,6 +37,30 @@ defmodule Evision.Mat do
   deferror(at(mat, position))
 
   @doc namespace: :"cv.Mat"
+  @spec bitwise_and(reference(), reference()) :: {:ok, reference()} | {:error, String.t()}
+  def bitwise_and(lhs, rhs) when is_reference(lhs) and is_reference(rhs) do
+    :erl_cv_nif.evision_cv_mat_bitwise_and(l: lhs, r: rhs)
+  end
+
+  deferror(bitwise_and(lhs, rhs))
+
+  @doc namespace: :"cv.Mat"
+  @spec bitwise_or(reference(), reference()) :: {:ok, reference()} | {:error, String.t()}
+  def bitwise_or(lhs, rhs) when is_reference(lhs) and is_reference(rhs) do
+    :erl_cv_nif.evision_cv_mat_bitwise_or(l: lhs, r: rhs)
+  end
+
+  deferror(bitwise_or(lhs, rhs))
+
+  @doc namespace: :"cv.Mat"
+  @spec bitwise_xor(reference(), reference()) :: {:ok, reference()} | {:error, String.t()}
+  def bitwise_xor(lhs, rhs) when is_reference(lhs) and is_reference(rhs) do
+    :erl_cv_nif.evision_cv_mat_bitwise_xor(l: lhs, r: rhs)
+  end
+
+  deferror(bitwise_xor(lhs, rhs))
+
+  @doc namespace: :"cv.Mat"
   @spec cmp(reference(), reference(), atom()) :: {:ok, reference()} | {:error, String.t()}
   def cmp(lhs, rhs, op) when is_reference(lhs) and is_reference(rhs) and op in [:eq, :gt, :ge, :lt, :le, :ne] do
     :erl_cv_nif.evision_cv_mat_cmp(l: lhs, r: rhs, type: op)

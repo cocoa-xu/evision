@@ -232,6 +232,86 @@ defmodule Evision.Backend do
   end
 
   @impl true
+  def pad(out, tensor, constant, config) do
+    config =
+      config
+      |> Enum.map(fn {a, b, c} ->
+        if a < 0 or b < 0 or c != 0 do
+          raise ArgumentError, "{#{a}, #{b}, #{c}} padding is not supported"
+        end
+
+        [a, b]
+      end)
+      |> Enum.reverse()
+      |> List.flatten()
+
+    constant = Nx.to_number(constant)
+
+    {config, constant}
+    #    tensor
+    #    |> from_nx()
+    #    |> Torchx.pad(config, constant)
+    #    |> to_nx(out)
+  end
+
+  @impl true
+  def bitwise_and(out, l, r) do
+    {left, right} = maybe_cast_u8(l, r)
+
+    %T{type: {_, size_left}} = left
+    %T{type: {_, size_right}} = right
+
+    if size_left >= size_right do
+      Evision.Mat.bitwise_and!(from_nx(left), from_nx(right))
+    else
+      Evision.Mat.bitwise_and!(from_nx(right), from_nx(left))
+    end
+    |> to_nx(out)
+  end
+
+  @impl true
+  def bitwise_or(out, l, r) do
+    {left, right} = maybe_cast_u8(l, r)
+
+    %T{type: {_, size_left}} = left
+    %T{type: {_, size_right}} = right
+
+    if size_left >= size_right do
+      Evision.Mat.bitwise_or!(from_nx(left), from_nx(right))
+    else
+      Evision.Mat.bitwise_or!(from_nx(right), from_nx(left))
+    end
+    |> to_nx(out)
+  end
+
+  @impl true
+  def bitwise_xor(out, l, r) do
+    {left, right} = maybe_cast_u8(l, r)
+
+    %T{type: {_, size_left}} = left
+    %T{type: {_, size_right}} = right
+
+    if size_left >= size_right do
+      Evision.Mat.bitwise_xor!(from_nx(left), from_nx(right))
+    else
+      Evision.Mat.bitwise_xor!(from_nx(right), from_nx(left))
+    end
+    |> to_nx(out)
+  end
+
+  defp maybe_cast_u8(%T{type: {t, _}} = left, %T{type: {t, _}} = right),
+       do: {left, right}
+
+  defp maybe_cast_u8(%T{type: {:u, 8}} = left, %T{} = right),
+       do: {Nx.as_type(left, {:s, 16}), right}
+
+  defp maybe_cast_u8(%T{} = left, %T{type: {:u, 8}} = right),
+       do: {left, Nx.as_type(right, {:s, 16})}
+
+  defp maybe_cast_u8(left, right),
+       do: {left, right}
+
+  @impl true
   def equal(%T{type: type} = out, l, r) do
     {l, r} = ensure_cmp_shape(l, r)
     from_nx(l)
