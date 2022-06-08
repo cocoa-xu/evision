@@ -58,7 +58,8 @@ defmodule Evision.Nx do
     case Nx.shape(t) do
       {height, width, channels} ->
         to_mat(Nx.to_binary(t), Nx.type(t), height, width, channels)
-
+      {} ->
+        Evision.Mat.from_binary_by_shape(Nx.to_binary(t), Nx.type(t), {1})
       shape ->
         Evision.Mat.from_binary_by_shape(Nx.to_binary(t), Nx.type(t), shape)
     end
