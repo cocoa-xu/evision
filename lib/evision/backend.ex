@@ -8,7 +8,20 @@ defmodule Evision.Backend do
   ## Creation
 
   @impl true
-  def constant(%T{shape: {}, type: type} = out, scalar, backend_options) do
+  @doc """
+  Tensor with constant values.
+
+  ## Example
+
+      Nx.tensor(1.0, backend: Evision.Backend)
+      #Nx.Tensor<
+        f32
+        Evision.Backend
+        1.0
+      >
+
+  """
+  def constant(%T{shape: {}, type: type} = out, scalar, _backend_options) do
     Evision.Mat.number!(scalar, type)
     |> to_nx(out)
   end
@@ -302,7 +315,8 @@ defmodule Evision.Backend do
   @doc false
   def to_nx(mat_ref, %T{type: type, shape: shape} = t)
       when is_reference(mat_ref) do
-    %{t | data: %__MODULE__{ref: check_shape_and_type!(mat_ref, shape, type)}}
+    type = Evision.Mat.type!(mat_ref)
+    %{t | type: type, data: %__MODULE__{ref: check_shape_and_type!(mat_ref, shape, type)}}
   end
 
   defp to_number(n) when is_number(n), do: n

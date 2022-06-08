@@ -22,6 +22,7 @@ defmodule Evision.Mat do
 
   @doc namespace: :"cv.Mat"
   def number(number, type) do
+    type = check_unsupported_type(type)
     Evision.Mat.full({1, 1}, number, type)
   end
 
@@ -153,7 +154,8 @@ defmodule Evision.Mat do
   deferror(shape(mat))
 
   @doc namespace: :"cv.Mat"
-  def zeros(shape, _type = {t, l}) when is_tuple(shape) do
+  def zeros(shape, type) when is_tuple(shape) do
+    {t, l} = check_unsupported_type(type)
     :erl_cv_nif.evision_cv_mat_zeros(
       shape: Tuple.to_list(shape),
       t: t,
@@ -164,7 +166,8 @@ defmodule Evision.Mat do
   deferror(zeros(shape, type))
 
   @doc namespace: :"cv.Mat"
-  def ones(shape, _type = {t, l}) when is_tuple(shape) do
+  def ones(shape, type) when is_tuple(shape) do
+    {t, l} = check_unsupported_type(type)
     :erl_cv_nif.evision_cv_mat_ones(
       shape: Tuple.to_list(shape),
       t: t,
@@ -174,7 +177,8 @@ defmodule Evision.Mat do
 
   deferror(ones(shape, type))
 
-  def arange(from, to, step, _type = {t, l}) when step != 0 do
+  def arange(from, to, step, type) when step != 0 do
+    {t, l} = check_unsupported_type(type)
     with {:ok, mat} <- :erl_cv_nif.evision_cv_mat_arange(
       from: from,
       to: to,
@@ -191,7 +195,8 @@ defmodule Evision.Mat do
 
   deferror(arange(from, to, step, type))
 
-  def arange(from, to, step, _type = {t, l}, shape) when step != 0 do
+  def arange(from, to, step, type, shape) when step != 0 do
+    {t, l} = check_unsupported_type(type)
     with {:ok, mat} <- :erl_cv_nif.evision_cv_mat_arange(
       from: from,
       to: to,
@@ -207,7 +212,8 @@ defmodule Evision.Mat do
 
   deferror(arange(from, to, step, type, shape))
 
-  def full(shape, number, _type = {t, l}) do
+  def full(shape, number, type) do
+    {t, l} = check_unsupported_type(type)
     :erl_cv_nif.evision_cv_mat_full(
       number: number,
       t: t,
@@ -275,6 +281,30 @@ defmodule Evision.Mat do
 
   deferror(from_binary(binary, type, rows, cols, channels))
 
+  defp check_unsupported_type({:f, 32}=type), do: type
+  defp check_unsupported_type({:f, 64}=type), do: type
+  defp check_unsupported_type({:u, 8}=type), do: type
+  defp check_unsupported_type({:u, 16}=type), do: type
+  defp check_unsupported_type({:s, 8}=type), do: type
+  defp check_unsupported_type({:s, 16}=type), do: type
+  defp check_unsupported_type({:s, 32}=type), do: type
+
+  defp check_unsupported_type(type = {t, l}) when is_atom(t) and l > 0 do
+    new_type =
+      with {:ok, unsupported_type_map} <- Application.fetch_env(:evision, :unsupported_type_map) do
+        Map.get(unsupported_type_map, type, :error)
+      else
+        _ -> :error
+      end
+    if new_type == :error do
+      raise ArgumentError, "#{inspect(type)} is not supported by OpenCV. However, it is possible to set an " <>
+                           "`unsupported_type_map` in config/config.exs to allow evision do type conversion automatically. " <>
+                           "Please see https://github.com/cocoa-xu/evision#unsupported-type-map for more details and examples."
+    else
+      check_unsupported_type(new_type)
+    end
+  end
+
   @doc namespace: :"cv.Mat"
   def from_binary_by_shape(binary, _type = {t, l}, shape)
       when is_binary(binary) and is_atom(t) and is_integer(l) and is_tuple(shape) do
@@ -295,7 +325,8 @@ defmodule Evision.Mat do
   deferror(from_binary_by_shape(binary, type, shape))
 
   @doc namespace: :"cv.Mat"
-  def eye(n, _type = {t, l}) when is_integer(n) and n > 0 do
+  def eye(n, type) when is_integer(n) and n > 0 do
+    {t, l} = check_unsupported_type(type)
     :erl_cv_nif.evision_cv_mat_eye(
       n: n,
       t: t,
