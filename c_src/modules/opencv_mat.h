@@ -155,25 +155,13 @@ static ERL_NIF_TERM evision_cv_mat_to_binary(ErlNifEnv *env, int argc, const ERL
     evision::nif::parse_arg(env, nif_opts_index, argv, erl_terms);
 
     {
-        Mat img;
-        uint64_t limit = 0;
-
         // const char *keywords[] = {"img", NULL};
-        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0)) &&
-            evision_to_safe(env, evision_get_kw(env, erl_terms, "limit"), limit, ArgInfo("limit", 0))) {
-            ErlNifBinary bin_data;
-            size_t bin_size;
-            if (limit == 0) {
-                bin_size = img.total() * img.elemSize();
-            } else {
-                bin_size = limit * img.elemSize();
-            }
-
-            if (!enif_alloc_binary(bin_size, &bin_data))
-                return evision::nif::error(env, "alloc_failed");
-
-            memcpy(bin_data.data, img.data, bin_size);
-            return evision::nif::ok(env, enif_make_binary(env, &bin_data));
+        // zero-copy to_binary
+        evision_res<cv::Mat *> * res;
+        if( enif_get_resource(env, evision_get_kw(env, erl_terms, "img"), evision_res<cv::Mat *>::type, (void **)&res) ) {
+            size_t bin_size = res->val->total() * res->val->elemSize();
+            ERL_NIF_TERM out_bin_term = enif_make_resource_binary(env, res, res->val->data, bin_size);
+            return evision::nif::ok(env, out_bin_term);
         }
     }
 
@@ -224,6 +212,44 @@ int get_binary_type(const std::string& t, int l, int n, int& type) {
     return false;
 }
 
+static void _evision_binary_unref(void *buf, ErlNifEnv *env) {
+    // enif_fprintf(stderr, "freed nif_env\n");
+    // freeing env frees unref all terms it contains
+    enif_free_env(env);
+    return;
+}
+
+static ERL_NIF_TERM _evision_binary_ref(ERL_NIF_TERM bin_term, evision_res<cv::Mat *> * zero_copy_mat) {
+    // adapted from https://github.com/akash-akya/zero_copy/blob/master/c_src/zero_copy.c
+    ErlNifBinary bin;
+    ERL_NIF_TERM term;
+    ErlNifEnv *new_env;
+
+    zero_copy_mat->in_buf = nullptr;
+    zero_copy_mat->in_ref = nullptr;
+
+    // keep reference to binary by creating new nif-env and copying
+    // binary-term reference to it
+    new_env = enif_alloc_env();
+    term = enif_make_copy(new_env, bin_term);
+
+    if (!enif_inspect_binary(new_env, term, &bin)) {
+        enif_free_env(new_env);
+        return 1;
+    }
+
+    // Note that we are *NOT* copying the binary data
+    zero_copy_mat->in_buf = bin.data;
+
+    // input buffer specific opaque data which will be passed as second
+    // argument to finalizer during unref
+    zero_copy_mat->in_ref = (void *)new_env;
+    // function to be called to unref the input data
+    zero_copy_mat->in_unref = (void (*)(void *, void *))_evision_binary_unref;
+
+    return 0;
+}
+
 // @evision c: evision_cv_mat_from_binary, 1
 // @evision nif: def evision_cv_mat_from_binary(_opts \\ []), do: :erlang.nif_error("Mat::from_binary not loaded")
 static ERL_NIF_TERM evision_cv_mat_from_binary(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
@@ -249,6 +275,7 @@ static ERL_NIF_TERM evision_cv_mat_from_binary(ErlNifEnv *env, int argc, const E
             evision_to_safe(env, evision_get_kw(env, erl_terms, "channels"), img_channels, ArgInfo("channels", 0)))
         {
             ERL_NIF_TERM erl_binary = evision_get_kw(env, erl_terms, "binary");
+
             ErlNifBinary data;
             if (enif_inspect_binary(env, erl_binary, &data)) {
                 // validate binary data
@@ -256,9 +283,32 @@ static ERL_NIF_TERM evision_cv_mat_from_binary(ErlNifEnv *env, int argc, const E
                 if (!get_binary_type(t, l, img_channels, type)) return evision::nif::error(env, "not implemented for the given type");
                 size_t declared_size = img_rows * img_cols * img_channels * (l/8);
                 if (declared_size != data.size) return evision::nif::error(env, "size mismatch");
-                Mat tmp = Mat(img_rows, img_cols, type, (void *)data.data);
-                retval = tmp.clone();
-                return evision::nif::ok(env, evision_from(env, retval));
+
+                evision_res<cv::Mat *> * res;
+                if (alloc_resource(&res)) {
+                    if (_evision_binary_ref(erl_binary, res)) {
+                        enif_release_resource(res);
+                        return enif_make_badarg(env);
+                    }
+                    // https://docs.opencv.org/4.5.5/d3/d63/classcv_1_1Mat.html#a51615ebf17a64c968df0bf49b4de6a3a
+                    // ...
+                    // @param data 	Pointer to the user data.
+                    // 	Matrix constructors that take data and step parameters do not allocate matrix data.
+                    // 	Instead, they just initialize the matrix header that points to the specified data,
+                    // 	which means that no data is copied. This operation is very efficient and can be used
+                    // 	to process external data using OpenCV functions. The external data is not automatically
+                    // 	deallocated, so you should take care of it.
+                    res->val = new Mat(img_rows, img_cols, type, (void *)res->in_buf);
+
+                    // transfer ownership to ERTS
+                    ERL_NIF_TERM term = enif_make_resource(env, res);
+                    enif_release_resource(res);
+                    return evision::nif::ok(env, term);
+                } else {
+                    return evision::nif::error(env, "no memory");
+                }
+
+                // return evision::nif::ok(env, evision_from(env, retval));
             } else {
                 // invalid binary data
                 return enif_make_badarg(env);
@@ -295,19 +345,40 @@ static ERL_NIF_TERM evision_cv_mat_from_binary_by_shape(ErlNifEnv *env, int argc
                 int ndims = (int)shape.size();
                 if (!get_binary_type(t, l, 1, type)) return evision::nif::error(env, "not implemented for the given type");
 
-                // Mat(int ndims, const int* sizes, int type, void* data, const size_t* steps=0);
-                int * sizes = (int *)enif_alloc(sizeof(int) * ndims);
-                for (int i = 0; i < ndims; i++) {
-                    sizes[i] = shape[i];
+                evision_res<cv::Mat *> * res;
+                if (alloc_resource(&res)) {
+                    if (_evision_binary_ref(erl_binary, res)) {
+                        enif_release_resource(res);
+                        return enif_make_badarg(env);
+                    }
+
+                    // Mat(int ndims, const int* sizes, int type, void* data, const size_t* steps=0);
+                    int * sizes = (int *)enif_alloc(sizeof(int) * ndims);
+                    for (int i = 0; i < ndims; i++) {
+                        sizes[i] = shape[i];
+                    }
+
+                    // https://docs.opencv.org/4.5.5/d3/d63/classcv_1_1Mat.html#a5fafc033e089143062fd31015b5d0f40
+                    // ...
+                    // @param data 	Pointer to the user data.
+                    // 	Matrix constructors that take data and step parameters do not allocate matrix data.
+                    // 	Instead, they just initialize the matrix header that points to the specified data,
+                    // 	which means that no data is copied. This operation is very efficient and can be used
+                    // 	to process external data using OpenCV functions. The external data is not automatically
+                    // 	deallocated, so you should take care of it.
+                    res->val = new Mat(ndims, sizes, type, (void *)res->in_buf);
+
+                    enif_free((void *)sizes);
+
+                    // transfer ownership to ERTS
+                    ERL_NIF_TERM term = enif_make_resource(env, res);
+                    enif_release_resource(res);
+                    return evision::nif::ok(env, term);
+                } else {
+                    return evision::nif::error(env, "no memory");
                 }
-                Mat tmp = Mat(ndims, sizes, type, (void *)data.data);
-                // clone here because
-                //  @param data Pointer to the user data. Matrix constructors that take data and step parameters do not
-                //    allocate matrix data. Instead, they just initialize the matrix header that points to the specified
-                //    data, which means that no data is copied.
-                Mat retval = tmp.clone();
-                enif_free((void *)sizes);
-                return evision::nif::ok(env, evision_from(env, retval));
+
+                // return evision::nif::ok(env, evision_from(env, retval));
             } else {
                 // invalid binary data
                 return enif_make_badarg(env);
