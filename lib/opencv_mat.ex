@@ -37,6 +37,82 @@ defmodule Evision.Mat do
   deferror(at(mat, position))
 
   @doc namespace: :"cv.Mat"
+  @spec add(reference(), reference()) :: {:ok, reference()} | {:error, String.t()}
+  def add(lhs, rhs) when is_reference(lhs) and is_reference(rhs) do
+    :erl_cv_nif.evision_cv_mat_add(l: lhs, r: rhs)
+  end
+
+  deferror(add(lhs, rhs))
+
+  @doc namespace: :"cv.Mat"
+  @spec add(reference(), reference(), mat_type()) :: {:ok, reference()} | {:error, String.t()}
+  def add(lhs, rhs, type) when is_reference(lhs) and is_reference(rhs) do
+    {t, l} = check_unsupported_type(type)
+    :erl_cv_nif.evision_cv_mat_add_typed(lhs: lhs, rhs: rhs, t: t, l: l)
+  end
+
+  deferror(add(lhs, rhs, type))
+
+  @doc namespace: :"cv.Mat"
+  @spec subtract(reference(), reference()) :: {:ok, reference()} | {:error, String.t()}
+  def subtract(lhs, rhs) when is_reference(lhs) and is_reference(rhs) do
+    :erl_cv_nif.evision_cv_mat_subtract(l: lhs, r: rhs)
+  end
+
+  deferror(subtract(lhs, rhs))
+
+  @doc namespace: :"cv.Mat"
+  @spec subtract(reference(), reference(), mat_type()) :: {:ok, reference()} | {:error, String.t()}
+  def subtract(lhs, rhs, type) when is_reference(lhs) and is_reference(rhs) do
+    {t, l} = check_unsupported_type(type)
+    :erl_cv_nif.evision_cv_mat_subtract_typed(lhs: lhs, rhs: rhs, t: t, l: l)
+  end
+
+  deferror(subtract(lhs, rhs, type))
+
+  @doc namespace: :"cv.Mat"
+  @spec multiply(reference(), reference()) :: {:ok, reference()} | {:error, String.t()}
+  def multiply(lhs, rhs) when is_reference(lhs) and is_reference(rhs) do
+    :erl_cv_nif.evision_cv_mat_multiply(l: lhs, r: rhs)
+  end
+
+  deferror(multiply(lhs, rhs))
+
+  @doc namespace: :"cv.Mat"
+  @spec multiply(reference(), reference(), mat_type()) :: {:ok, reference()} | {:error, String.t()}
+  def multiply(lhs, rhs, type) when is_reference(lhs) and is_reference(rhs) do
+    {t, l} = check_unsupported_type(type)
+    :erl_cv_nif.evision_cv_mat_multiply_typed(lhs: lhs, rhs: rhs, t: t, l: l)
+  end
+
+  deferror(multiply(lhs, rhs, type))
+
+  @doc namespace: :"cv.Mat"
+  @spec matrix_multiply(reference(), reference()) :: {:ok, reference()} | {:error, String.t()}
+  def matrix_multiply(lhs, rhs) when is_reference(lhs) and is_reference(rhs) do
+    :erl_cv_nif.evision_cv_mat_matrix_multiply(l: lhs, r: rhs)
+  end
+
+  deferror(matrix_multiply(lhs, rhs))
+
+  @doc namespace: :"cv.Mat"
+  @spec divide(reference(), reference()) :: {:ok, reference()} | {:error, String.t()}
+  def divide(lhs, rhs) when is_reference(lhs) and is_reference(rhs) do
+    :erl_cv_nif.evision_cv_mat_divide(l: lhs, r: rhs)
+  end
+
+  deferror(divide(lhs, rhs))
+
+  @doc namespace: :"cv.Mat"
+  @spec divide(reference(), reference(), mat_type()) :: {:ok, reference()} | {:error, String.t()}
+  def divide(lhs, rhs, type) when is_reference(lhs) and is_reference(rhs) do
+    {t, l} = check_unsupported_type(type)
+    :erl_cv_nif.evision_cv_mat_divide_typed(lhs: lhs, rhs: rhs, t: t, l: l)
+  end
+
+  deferror(divide(lhs, rhs, type))
+
+  @doc namespace: :"cv.Mat"
   @spec bitwise_and(reference(), reference()) :: {:ok, reference()} | {:error, String.t()}
   def bitwise_and(lhs, rhs) when is_reference(lhs) and is_reference(rhs) do
     :erl_cv_nif.evision_cv_mat_bitwise_and(l: lhs, r: rhs)

@@ -255,6 +255,72 @@ defmodule Evision.Backend do
   end
 
   @impl true
+  def add(%T{type: type, shape: shape}=out, l, r) do
+    {l, r} = ensure_lhs_rhs_shape(l, r)
+    l = Evision.Mat.reshape!(from_nx(l), shape)
+    r = Evision.Mat.reshape!(from_nx(r), shape)
+    Evision.Mat.add!(l, r, type)
+    |> to_nx(out)
+  end
+
+  @impl true
+  def subtract(%T{type: type, shape: shape}=out, l, r) do
+    {l, r} = ensure_lhs_rhs_shape(l, r)
+    l = Evision.Mat.reshape!(from_nx(l), shape)
+    r = Evision.Mat.reshape!(from_nx(r), shape)
+    Evision.Mat.subtract!(l, r, type)
+    |> to_nx(out)
+  end
+
+  @impl true
+  def multiply(%T{type: type, shape: shape}=out, %T{shape: lshape}=l, %T{shape: rshape}=r) do
+    case check_mul_div_kind(l, r) do
+      :per_element ->
+        Evision.Mat.multiply!(from_nx(l), from_nx(r), type)
+
+      :matrix ->
+        l = maybe_cast_type_for_matrix_mul_div(l)
+        r = maybe_cast_type_for_matrix_mul_div(r)
+        Evision.Mat.matrix_multiply!(l, r)
+        |> Evision.Mat.as_type!(type)
+    end
+    |> to_nx(out)
+  end
+
+  @impl true
+  def divide(%T{type: type, shape: shape}=out, l, r) do
+    case check_mul_div_kind(l, r) do
+      :per_element ->
+        Evision.Mat.divide!(from_nx(l), from_nx(r), type)
+
+      :matrix ->
+        l = Nx.broadcast(l, shape)
+        r = Nx.broadcast(r, shape)
+        l = maybe_cast_type_for_matrix_mul_div(l)
+        r = maybe_cast_type_for_matrix_mul_div(r)
+        Evision.Mat.divide!(l, r, type)
+    end
+    |> to_nx(out)
+  end
+
+  defp check_mul_div_kind(%T{shape: {}}=l, r) do
+    :per_element
+  end
+  defp check_mul_div_kind(l, %T{shape: {}}=r) do
+    :per_element
+  end
+  defp check_mul_div_kind(_l, _r) do
+    :matrix
+  end
+
+  defp maybe_cast_type_for_matrix_mul_div(%T{type: {:f, _}}=tensor) do
+    from_nx(tensor)
+  end
+  defp maybe_cast_type_for_matrix_mul_div(tensor) do
+    Evision.Mat.as_type!(from_nx(tensor), {:f, 64})
+  end
+
+  @impl true
   def bitwise_and(out, l, r) do
     {left, right} = maybe_cast_u8(l, r)
 
@@ -313,7 +379,7 @@ defmodule Evision.Backend do
 
   @impl true
   def equal(%T{type: type} = out, l, r) do
-    {l, r} = ensure_cmp_shape(l, r)
+    {l, r} = ensure_lhs_rhs_shape(l, r)
     from_nx(l)
     |> Evision.Mat.cmp!(from_nx(r), :eq)
     |> to_nx(out)
@@ -321,7 +387,7 @@ defmodule Evision.Backend do
 
   @impl true
   def not_equal(%T{type: type} = out, l, r) do
-    {l, r} = ensure_cmp_shape(l, r)
+    {l, r} = ensure_lhs_rhs_shape(l, r)
     from_nx(l)
     |> Evision.Mat.cmp!(from_nx(r), :ne)
     |> to_nx(out)
@@ -329,7 +395,7 @@ defmodule Evision.Backend do
 
   @impl true
   def greater(%T{type: type} = out, l, r) do
-    {l, r} = ensure_cmp_shape(l, r)
+    {l, r} = ensure_lhs_rhs_shape(l, r)
     from_nx(l)
     |> Evision.Mat.cmp!(from_nx(r), :gt)
     |> to_nx(out)
@@ -337,7 +403,7 @@ defmodule Evision.Backend do
 
   @impl true
   def less(%T{type: type} = out, l, r) do
-    {l, r} = ensure_cmp_shape(l, r)
+    {l, r} = ensure_lhs_rhs_shape(l, r)
     from_nx(l)
     |> Evision.Mat.cmp!(from_nx(r), :lt)
     |> to_nx(out)
@@ -345,7 +411,7 @@ defmodule Evision.Backend do
 
   @impl true
   def greater_equal(%T{type: type} = out, l, r) do
-    {l, r} = ensure_cmp_shape(l, r)
+    {l, r} = ensure_lhs_rhs_shape(l, r)
     from_nx(l)
     |> Evision.Mat.cmp!(from_nx(r), :ge)
     |> to_nx(out)
@@ -353,14 +419,14 @@ defmodule Evision.Backend do
 
   @impl true
   def less_equal(%T{type: type} = out, l, r) do
-    {l, r} = ensure_cmp_shape(l, r)
+    {l, r} = ensure_lhs_rhs_shape(l, r)
     from_nx(l)
     |> Evision.Mat.cmp!(from_nx(r), :le)
     |> to_nx(out)
   end
 
-  defp ensure_cmp_shape(%T{shape: shape}=l, %T{shape: shape}=r), do: {l, r}
-  defp ensure_cmp_shape(%T{shape: lshape}=l, %T{shape: rshape}=r) do
+  defp ensure_lhs_rhs_shape(%T{shape: shape}=l, %T{shape: shape}=r), do: {l, r}
+  defp ensure_lhs_rhs_shape(%T{shape: lshape}=l, %T{shape: rshape}=r) do
     try do
       bl = Nx.broadcast(l, rshape)
       {bl, r}
