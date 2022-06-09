@@ -255,19 +255,15 @@ defmodule Evision.Backend do
   end
 
   @impl true
-  def add(%T{type: type, shape: shape}=out, l, r) do
-    {l, r} = ensure_lhs_rhs_shape(l, r)
-    l = Evision.Mat.reshape!(from_nx(l), shape)
-    r = Evision.Mat.reshape!(from_nx(r), shape)
+  def add(%T{type: type, shape: out_shape}=out, l, r) do
+    {l, r} = enforce_same_shape(l, r, out_shape)
     Evision.Mat.add!(l, r, type)
     |> to_nx(out)
   end
 
   @impl true
-  def subtract(%T{type: type, shape: shape}=out, l, r) do
-    {l, r} = ensure_lhs_rhs_shape(l, r)
-    l = Evision.Mat.reshape!(from_nx(l), shape)
-    r = Evision.Mat.reshape!(from_nx(r), shape)
+  def subtract(%T{type: type, shape: out_shape}=out, l, r) do
+    {l, r} = enforce_same_shape(l, r, out_shape)
     Evision.Mat.subtract!(l, r, type)
     |> to_nx(out)
   end
@@ -467,63 +463,90 @@ defmodule Evision.Backend do
        do: {left, right}
 
   @impl true
-  def equal(%T{type: type} = out, l, r) do
-    {l, r} = ensure_lhs_rhs_shape(l, r)
+  def equal(%T{type: type, shape: out_shape} = out, l, r) do
+    {l, r} = enforce_same_shape(l, r, out_shape)
+    {l, r} = enforce_same_type(l, r)
     from_nx(l)
     |> Evision.Mat.cmp!(from_nx(r), :eq)
     |> to_nx(out)
   end
 
   @impl true
-  def not_equal(%T{type: type} = out, l, r) do
-    {l, r} = ensure_lhs_rhs_shape(l, r)
+  def not_equal(%T{type: type, shape: out_shape} = out, l, r) do
+    {l, r} = enforce_same_shape(l, r, out_shape)
+    {l, r} = enforce_same_type(l, r)
     from_nx(l)
     |> Evision.Mat.cmp!(from_nx(r), :ne)
     |> to_nx(out)
   end
 
   @impl true
-  def greater(%T{type: type} = out, l, r) do
-    {l, r} = ensure_lhs_rhs_shape(l, r)
+  def greater(%T{type: type, shape: out_shape} = out, l, r) do
+    {l, r} = enforce_same_shape(l, r, out_shape)
+    {l, r} = enforce_same_type(l, r)
     from_nx(l)
     |> Evision.Mat.cmp!(from_nx(r), :gt)
     |> to_nx(out)
   end
 
   @impl true
-  def less(%T{type: type} = out, l, r) do
-    {l, r} = ensure_lhs_rhs_shape(l, r)
+  def less(%T{type: type, shape: out_shape} = out, l, r) do
+    {l, r} = enforce_same_shape(l, r, out_shape)
+    {l, r} = enforce_same_type(l, r)
     from_nx(l)
     |> Evision.Mat.cmp!(from_nx(r), :lt)
     |> to_nx(out)
   end
 
   @impl true
-  def greater_equal(%T{type: type} = out, l, r) do
-    {l, r} = ensure_lhs_rhs_shape(l, r)
+  def greater_equal(%T{type: type, shape: out_shape} = out, l, r) do
+    {l, r} = enforce_same_shape(l, r, out_shape)
+    {l, r} = enforce_same_type(l, r)
     from_nx(l)
     |> Evision.Mat.cmp!(from_nx(r), :ge)
     |> to_nx(out)
   end
 
   @impl true
-  def less_equal(%T{type: type} = out, l, r) do
-    {l, r} = ensure_lhs_rhs_shape(l, r)
+  def less_equal(%T{type: type, shape: out_shape} = out, l, r) do
+    {l, r} = enforce_same_shape(l, r, out_shape)
+    {l, r} = enforce_same_type(l, r)
     from_nx(l)
     |> Evision.Mat.cmp!(from_nx(r), :le)
     |> to_nx(out)
   end
 
-  defp ensure_lhs_rhs_shape(%T{shape: shape}=l, %T{shape: shape}=r), do: {l, r}
-  defp ensure_lhs_rhs_shape(%T{shape: lshape}=l, %T{shape: rshape}=r) do
-    try do
-      bl = Nx.broadcast(l, rshape)
-      {bl, r}
-    rescue
-      e in ArgumentError ->
-        br = Nx.broadcast(r, lshape)
-        {l, br}
-    end
+  defp enforce_same_shape(l, r, out_shape) do
+    l_mat = Evision.Mat.reshape!(from_nx(Nx.broadcast(l, out_shape)), out_shape)
+    b_mat = Evision.Mat.reshape!(from_nx(Nx.broadcast(r, out_shape)), out_shape)
+    {to_nx(l_mat, %T{l | shape: out_shape}), to_nx(b_mat, %T{r | shape: out_shape})}
+  end
+
+  @impl true
+  def logical_and(%T{shape: out_shape} = out, l, r) do
+    {l, r} = enforce_same_shape(l, r, out_shape)
+    {l, r} = enforce_same_type(l, r)
+    Evision.Mat.logical_and!(from_nx(l), from_nx(r))
+    |> to_nx(out)
+    |> Nx.not_equal(0)
+  end
+
+  @impl true
+  def logical_or(%T{shape: out_shape} = out, l, r) do
+    {l, r} = enforce_same_shape(l, r, out_shape)
+    {l, r} = enforce_same_type(l, r)
+    Evision.Mat.logical_or!(from_nx(l), from_nx(r))
+    |> to_nx(out)
+    |> Nx.not_equal(0)
+  end
+
+  @impl true
+  def logical_xor(%T{shape: out_shape} =out, l, r) do
+    {l, r} = enforce_same_shape(l, r, out_shape)
+    {l, r} = enforce_same_type(l, r)
+    Evision.Mat.logical_xor!(from_nx(l), from_nx(r))
+    |> to_nx(out)
+    |> Nx.not_equal(0)
   end
 
   @impl true

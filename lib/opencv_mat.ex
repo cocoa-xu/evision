@@ -145,6 +145,30 @@ defmodule Evision.Mat do
   deferror(cmp(lhs, rhs, op))
 
   @doc namespace: :"cv.Mat"
+  @spec logical_and(reference(), reference()) :: {:ok, reference()} | {:error, String.t()}
+  def logical_and(lhs, rhs) when is_reference(lhs) and is_reference(rhs) do
+    :erl_cv_nif.evision_cv_mat_logical_and(l: lhs, r: rhs)
+  end
+
+  deferror(logical_and(lhs, rhs))
+
+  @doc namespace: :"cv.Mat"
+  @spec logical_or(reference(), reference()) :: {:ok, reference()} | {:error, String.t()}
+  def logical_or(lhs, rhs) when is_reference(lhs) and is_reference(rhs) do
+    :erl_cv_nif.evision_cv_mat_logical_or(l: lhs, r: rhs)
+  end
+
+  deferror(logical_or(lhs, rhs))
+
+  @doc namespace: :"cv.Mat"
+  @spec logical_xor(reference(), reference()) :: {:ok, reference()} | {:error, String.t()}
+  def logical_xor(lhs, rhs) when is_reference(lhs) and is_reference(rhs) do
+    :erl_cv_nif.evision_cv_mat_logical_xor(l: lhs, r: rhs)
+  end
+
+  deferror(logical_xor(lhs, rhs))
+
+  @doc namespace: :"cv.Mat"
   @spec abs(reference()) :: {:ok, reference()} | {:error, String.t()}
   def abs(mat) when is_reference(mat) do
     :erl_cv_nif.evision_cv_mat_abs(img: mat)
