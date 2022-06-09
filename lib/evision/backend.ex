@@ -321,6 +321,95 @@ defmodule Evision.Backend do
   end
 
   @impl true
+  def min(%T{type: type, shape: out_shape}=out, l, r) do
+    shape =
+      case out_shape do
+        {} -> {1}
+        _ -> out_shape
+      end
+    l = Nx.broadcast(l, shape)
+    r = Nx.broadcast(r, shape)
+    {l, r} = enforce_same_type(l, r)
+    l = Evision.Mat.reshape!(from_nx(l), shape)
+    r = Evision.Mat.reshape!(from_nx(r), shape)
+    ret = Evision.min!(l, r)
+    to_nx(ret, %T{out | type: Evision.Mat.type!(ret)})
+  end
+
+  @impl true
+  def max(%T{type: type, shape: out_shape}=out, l, r) do
+    shape =
+      case out_shape do
+        {} -> {1}
+        _ -> out_shape
+      end
+    l = Nx.broadcast(l, shape)
+    r = Nx.broadcast(r, shape)
+    {l, r} = enforce_same_type(l, r)
+    l = Evision.Mat.reshape!(from_nx(l), shape)
+    r = Evision.Mat.reshape!(from_nx(r), shape)
+    ret = Evision.max!(l, r)
+    to_nx(ret, %T{out | type: Evision.Mat.type!(ret)})
+  end
+
+  defp enforce_same_type(%T{type: type}=a, %T{type: type}=b), do: {a, b}
+  defp enforce_same_type(%T{type: a_type={:f, 64}}=a, %T{type: b_type}=b) do
+    new_type = Evision.Mat.as_type!(from_nx(b), a_type)
+    b = %T{b | type: a_type}
+    {a, to_nx(new_type, b)}
+  end
+  defp enforce_same_type(%T{type: a_type}=a, %T{type: b_type={:f, 64}}=b) do
+    new_type = Evision.Mat.as_type!(from_nx(a), b_type)
+    a = %T{a | type: b_type}
+    {to_nx(new_type, a), b}
+  end
+
+  defp enforce_same_type(%T{type: a_type={:f, 32}}=a, %T{type: b_type}=b) do
+    new_type = Evision.Mat.as_type!(from_nx(b), a_type)
+    b = %T{b | type: a_type}
+    {a, to_nx(new_type, b)}
+  end
+  defp enforce_same_type(%T{type: a_type}=a, %T{type: b_type={:f, 32}}=b) do
+    new_type = Evision.Mat.as_type!(from_nx(a), b_type)
+    a = %T{a | type: b_type}
+    {to_nx(new_type, a), b}
+  end
+
+  defp enforce_same_type(%T{type: {:u, a_bits}}=a, %T{type: {:u, b_bits}}=b) do
+    new_type = {:u, Kernel.max(a_bits, b_bits)}
+    new_typed_a = Evision.Mat.as_type!(from_nx(a), new_type)
+    a = %T{a | type: new_type}
+    new_typed_b = Evision.Mat.as_type!(from_nx(b), new_type)
+    b = %T{b | type: new_type}
+    {to_nx(new_typed_a, a), to_nx(new_typed_b, b)}
+  end
+  defp enforce_same_type(%T{type: {:s, a_bits}}=a, %T{type: {:s, b_bits}}=b) do
+    new_type = {:s, Kernel.max(a_bits, b_bits)}
+    new_typed_a = Evision.Mat.as_type!(from_nx(a), new_type)
+    a = %T{a | type: new_type}
+    new_typed_b = Evision.Mat.as_type!(from_nx(b), new_type)
+    b = %T{b | type: new_type}
+    {to_nx(new_typed_a, a), to_nx(new_typed_b, b)}
+  end
+
+  defp enforce_same_type(%T{type: {:s, a_bits}}=a, %T{type: {:u, b_bits}}=b) do
+    new_type = {:s, Kernel.max(a_bits, b_bits)}
+    new_typed_a = Evision.Mat.as_type!(from_nx(a), new_type)
+    a = %T{a | type: new_type}
+    new_typed_b = Evision.Mat.as_type!(from_nx(b), new_type)
+    b = %T{b | type: new_type}
+    {to_nx(new_typed_a, a), to_nx(new_typed_b, b)}
+  end
+  defp enforce_same_type(%T{type: {:u, a_bits}}=a, %T{type: {:s, b_bits}}=b) do
+    new_type = {:s, Kernel.max(a_bits, b_bits)}
+    new_typed_a = Evision.Mat.as_type!(from_nx(a), new_type)
+    a = %T{a | type: new_type}
+    new_typed_b = Evision.Mat.as_type!(from_nx(b), new_type)
+    b = %T{b | type: new_type}
+    {to_nx(new_typed_a, a), to_nx(new_typed_b, b)}
+  end
+
+  @impl true
   def bitwise_and(out, l, r) do
     {left, right} = maybe_cast_u8(l, r)
 
