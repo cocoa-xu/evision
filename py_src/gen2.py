@@ -25,25 +25,26 @@ special_handling_funcs = ["{}{}".format(evision_nif_prefix, name) for name in [
 ]
 io_bound_funcs = [
     # read
-    'imread',
-    'imreadmulti',
-    'readOpticalFlow',
-    'readFromModelOptimizer',
-    'readNet',
-    'readNetFromCaffe',
-    'readNetFromDarknet',
-    'readNetFromModelOptimizer',
-    'readNetFromONNX',
-    'readNetFromTensorflow',
-    'readNetFromTorch',
-    'readTensorFromONNX',
-    'readTorchBlob',
-    'load_static',
+    'evision_cv_dnn_dnn_Net_readFromModelOptimizer_static',
+    'evision_cv_imread',
+    'evision_cv_imreadmulti',
+    'evision_cv_readOpticalFlow',
+    'evision_cv_dnn_Net_readFromModelOptimizer',
+    'evision_cv_dnn_readNet',
+    'evision_cv_dnn_readNetFromCaffe',
+    'evision_cv_dnn_readNetFromDarknet',
+    'evision_cv_dnn_readNetFromModelOptimizer',
+    'evision_cv_dnn_readNetFromONNX',
+    'evision_cv_dnn_readNetFromTensorflow',
+    'evision_cv_dnn_readNetFromTorch',
+    'evision_cv_dnn_readTensorFromONNX',
+    'evision_cv_dnn_readTorchBlob',
     # write
-    'write',
-    'imwrite',
-    'imwritemulti',
-    'writeOpticalFlow'
+    'evision_cv_FileStorage_writeComment',
+    'evision_cv_imwrite',
+    'evision_cv_imwritemulti',
+    'evision_cv_writeOpticalFlow',
+    'evision_cv_dnn_writeTextGraph',
 ]
 opencv_ex_fixes = [
   """
@@ -828,7 +829,9 @@ class FuncInfo(object):
         fname = self.get_wrapper_name()
         if fname in special_handling_funcs:
             return ""
-        if 'read' in fname or 'write' in fname or fname in io_bound_funcs:
+        if fname.endswith('_read') or fname.endswith('_load_static') or \
+                fname.endswith('_write') or fname.endswith('_save') or \
+                fname in io_bound_funcs:
             nif_function_decl = f'    F_IO({fname}, {func_arity}),\n'
         else:
             nif_function_decl = f'    F_CPU({fname}, {func_arity}),\n'
