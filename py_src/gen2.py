@@ -1906,7 +1906,9 @@ class PythonWrapperGenerator(object):
                             parts = line[len("// @evision c: "):].split(',')
                             if len(parts) == 2:
                                 func_name = parts[0].strip()
-                                if 'read' in func_name or 'write' in func_name or func_name in io_bound_funcs:
+                                if func_name.endswith('_read') or func_name.endswith('_load_static') or \
+                                        func_name.endswith('_write') or func_name.endswith('_save') or \
+                                        func_name in io_bound_funcs:
                                     self.code_ns_reg.write(f'    F_IO({func_name}, {parts[1].strip()}),\n')
                                 else:
                                     self.code_ns_reg.write(f'    F_CPU({func_name}, {parts[1].strip()}),\n')
