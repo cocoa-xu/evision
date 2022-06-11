@@ -23,6 +23,28 @@ special_handling_funcs = ["{}{}".format(evision_nif_prefix, name) for name in [
     'destroyAllWindows',
     'imdecode']
 ]
+io_bound_funcs = [
+    # read
+    'imread',
+    'imreadmulti',
+    'readOpticalFlow',
+    'readFromModelOptimizer',
+    'readNet',
+    'readNetFromCaffe',
+    'readNetFromDarknet',
+    'readNetFromModelOptimizer',
+    'readNetFromONNX',
+    'readNetFromTensorflow',
+    'readNetFromTorch',
+    'readTensorFromONNX',
+    'readTorchBlob',
+    'load_static',
+    # write
+    'write',
+    'imwrite',
+    'imwritemulti',
+    'writeOpticalFlow'
+]
 opencv_ex_fixes = [
   """
   @doc namespace: :cv
@@ -806,7 +828,10 @@ class FuncInfo(object):
         fname = self.get_wrapper_name()
         if fname in special_handling_funcs:
             return ""
-        nif_function_decl = f'    F({fname}, {func_arity}),\n'
+        if 'read' in fname or 'write' in fname or fname in io_bound_funcs:
+            nif_function_decl = f'    F_IO({fname}, {func_arity}),\n'
+        else:
+            nif_function_decl = f'    F_CPU({fname}, {func_arity}),\n'
         return nif_function_decl
 
     def map_erl_argname(self, argname, ignore_upper_starting=False):
@@ -1877,7 +1902,11 @@ class PythonWrapperGenerator(object):
                         if line.startswith("// @evision c: "):
                             parts = line[len("// @evision c: "):].split(',')
                             if len(parts) == 2:
-                                self.code_ns_reg.write(f'    F({parts[0].strip()}, {parts[1].strip()}),\n')
+                                func_name = parts[0].strip()
+                                if 'read' in func_name or 'write' in func_name or func_name in io_bound_funcs:
+                                    self.code_ns_reg.write(f'    F_IO({func_name}, {parts[1].strip()}),\n')
+                                else:
+                                    self.code_ns_reg.write(f'    F_CPU({func_name}, {parts[1].strip()}),\n')
                         elif line.startswith("// @evision nif: "):
                             line = line[len("// @evision nif: "):].strip()
                             self.erl_cv_nif.write(f'  {line}\n')

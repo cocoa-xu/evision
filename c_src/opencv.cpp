@@ -23,6 +23,10 @@
 
 #define F(NAME, ARITY)    \
   {#NAME, ARITY, NAME, 0}
+#define F_CPU(NAME, ARITY)    \
+  {#NAME, ARITY, NAME, ERL_NIF_DIRTY_JOB_CPU_BOUND}
+#define F_IO(NAME, ARITY)    \
+  {#NAME, ARITY, NAME, ERL_NIF_DIRTY_JOB_IO_BOUND}
 
 #include "opencv2/opencv_modules.hpp"
 #include "opencv2/core.hpp"
