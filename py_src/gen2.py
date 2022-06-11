@@ -23,6 +23,29 @@ special_handling_funcs = ["{}{}".format(evision_nif_prefix, name) for name in [
     'destroyAllWindows',
     'imdecode']
 ]
+io_bound_funcs = [
+    # read
+    'evision_cv_dnn_dnn_Net_readFromModelOptimizer_static',
+    'evision_cv_imread',
+    'evision_cv_imreadmulti',
+    'evision_cv_readOpticalFlow',
+    'evision_cv_dnn_Net_readFromModelOptimizer',
+    'evision_cv_dnn_readNet',
+    'evision_cv_dnn_readNetFromCaffe',
+    'evision_cv_dnn_readNetFromDarknet',
+    'evision_cv_dnn_readNetFromModelOptimizer',
+    'evision_cv_dnn_readNetFromONNX',
+    'evision_cv_dnn_readNetFromTensorflow',
+    'evision_cv_dnn_readNetFromTorch',
+    'evision_cv_dnn_readTensorFromONNX',
+    'evision_cv_dnn_readTorchBlob',
+    # write
+    'evision_cv_FileStorage_writeComment',
+    'evision_cv_imwrite',
+    'evision_cv_imwritemulti',
+    'evision_cv_writeOpticalFlow',
+    'evision_cv_dnn_writeTextGraph',
+]
 opencv_ex_fixes = [
   """
   @doc namespace: :cv
@@ -806,7 +829,12 @@ class FuncInfo(object):
         fname = self.get_wrapper_name()
         if fname in special_handling_funcs:
             return ""
-        nif_function_decl = f'    F({fname}, {func_arity}),\n'
+        if fname.endswith('_read') or fname.endswith('_load_static') or \
+                fname.endswith('_write') or fname.endswith('_save') or \
+                fname in io_bound_funcs:
+            nif_function_decl = f'    F_IO({fname}, {func_arity}),\n'
+        else:
+            nif_function_decl = f'    F_CPU({fname}, {func_arity}),\n'
         return nif_function_decl
 
     def map_erl_argname(self, argname, ignore_upper_starting=False):
@@ -1877,7 +1905,13 @@ class PythonWrapperGenerator(object):
                         if line.startswith("// @evision c: "):
                             parts = line[len("// @evision c: "):].split(',')
                             if len(parts) == 2:
-                                self.code_ns_reg.write(f'    F({parts[0].strip()}, {parts[1].strip()}),\n')
+                                func_name = parts[0].strip()
+                                if func_name.endswith('_read') or func_name.endswith('_load_static') or \
+                                        func_name.endswith('_write') or func_name.endswith('_save') or \
+                                        func_name in io_bound_funcs:
+                                    self.code_ns_reg.write(f'    F_IO({func_name}, {parts[1].strip()}),\n')
+                                else:
+                                    self.code_ns_reg.write(f'    F_CPU({func_name}, {parts[1].strip()}),\n')
                         elif line.startswith("// @evision nif: "):
                             line = line[len("// @evision nif: "):].strip()
                             self.erl_cv_nif.write(f'  {line}\n')
