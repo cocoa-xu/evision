@@ -27,6 +27,7 @@ defmodule Evision.MixProject do
       source_root_dir = Path.join([__DIR__, "3rd_party", "opencv"])
       File.mkdir_p!(source_root_dir)
       source_dir = Path.join([__DIR__, "3rd_party", "opencv", "opencv-#{opencv_ver}"])
+
       if !File.dir?(source_dir) do
         :ssl.start()
         :inets.start()
@@ -200,9 +201,9 @@ defmodule Evision.MixProject do
 
         :only_enabled_modules ->
           cmake_options =
-            ("-D BUILD_LIST=" <> enabled_modules)
+            "-D BUILD_LIST=" <> (enabled_modules
             |> Enum.map(&Atom.to_string(&1))
-            |> Enum.join(",")
+            |> Enum.join(","))
 
           {cmake_options, enabled_modules}
 
@@ -210,9 +211,9 @@ defmodule Evision.MixProject do
           enabled_modules = @all_modules -- disabled_modules
 
           cmake_options =
-            ("-D BUILD_LIST=" <> enabled_modules)
+            "-D BUILD_LIST=" <> (enabled_modules
             |> Enum.map(&Atom.to_string(&1))
-            |> Enum.join(",")
+            |> Enum.join(","))
 
           {cmake_options, enabled_modules}
 
@@ -321,8 +322,7 @@ defmodule Evision.MixProject do
     [
       name: "evision",
       # These are the default files included in the package
-      files:
-        ~w(lib c_src py_src 3rd_party priv .formatter.exs mix.exs README* readme* LICENSE*
+      files: ~w(lib c_src py_src 3rd_party priv .formatter.exs mix.exs README* readme* LICENSE*
                 license* CHANGELOG* changelog* src),
       licenses: ["Apache-2.0"],
       links: %{"GitHub" => "https://github.com/cocoa-xu/evision"}
