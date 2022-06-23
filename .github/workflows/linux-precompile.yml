@@ -24,8 +24,8 @@ jobs:
               arch_name: aarch64
               deb_arch: arm64
               cmake_toolchain_file: cc_toolchain/linux-aarch64.cmake
-              c_compiler: gcc-aarch64-linux-gnugcc
-              cpp_compiler: g++-aarch64-linux-gnugcc
+              c_compiler: gcc-aarch64-linux-gnu
+              cpp_compiler: g++-aarch64-linux-gnu
           - pair:
               arch_name: armv7l
               deb_arch: armhf
