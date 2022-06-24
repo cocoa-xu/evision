@@ -38,7 +38,7 @@ jobs:
       MIX_ENV: prod
       NERVES_PROJ_NAME: nerves_evision
       OPENCV_VER: "4.5.5"
-      NERVES_LIVEBOOK_VER: "v0.5.0"
+      NERVES_LIVEBOOK_VER: "v0.6.2"
 
     strategy:
       matrix:
