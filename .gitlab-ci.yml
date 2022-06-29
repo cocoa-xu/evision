@@ -6,8 +6,8 @@ build linux x86_64:
     os: linux
     arch: amd64
     arch_name: x86_64
-    evision_version: 0.1.0-dev
-    elixir_version: "1.13.3"
+    evision_version: "0.1.0"
+    elixir_version: "1.13.4"
   script:
     - |
       apt-get update
@@ -46,8 +46,8 @@ build linux arm64:
     os: linux
     arch: arm64
     arch_name: arm64
-    evision_version: 0.1.0-dev
-    elixir_version: "1.13.3"
+    evision_version: "0.1.0"
+    elixir_version: "1.13.4"
   script:
     - |
       apt-get update
@@ -86,8 +86,8 @@ build linux armv7:
     os: linux
     arch: armv7
     arch_name: armhf
-    evision_version: 0.1.0-dev
-    elixir_version: "1.13.3"
+    evision_version: "0.1.0"
+    elixir_version: "1.13.4"
   script:
     - |
       apt-get update

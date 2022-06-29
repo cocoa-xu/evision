@@ -12,7 +12,6 @@ jobs:
     runs-on: macos-11
     env:
       MIX_ENV: dev
-      EVISION_VERSION: 0.1.0-dev
     strategy:
       fail-fast: false
       matrix:
@@ -41,7 +40,7 @@ jobs:
 
           mix deps.get
           mix compile
-          export PKG_NAME=evision-darwin-${{ matrix.pair.arch }}-${EVISION_VERSION}
+          export PKG_NAME=evision-darwin-${{ matrix.pair.arch }}-${GITHUB_REF##*/}
           mkdir -p "${PKG_NAME}"
           cp -a _build/${MIX_ENV}/lib/evision/priv "${PKG_NAME}"
           cp -a lib/generated "${PKG_NAME}"
@@ -53,5 +52,4 @@ jobs:
 
       - uses: softprops/action-gh-release@v1
         with:
-          tag_name: 0.1.0-dev
           files: artifacts/*.tar.gz

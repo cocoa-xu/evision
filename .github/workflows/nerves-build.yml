@@ -70,7 +70,7 @@ jobs:
           git checkout "${NERVES_LIVEBOOK_VER}"
           LINE="$(grep -n 'toolshed' mix.exs | awk -F: '{print $1+1}')"
           head -n "${LINE}" mix.exs > mix.exs.tmp
-          echo '      {:evision, "~> 0.1.0-dev", path: "../evision"},' >> mix.exs.tmp
+          echo '      {:evision, "~> 0.1.0", path: "../evision"},' >> mix.exs.tmp
           tail -n "+${LINE}" mix.exs >> mix.exs.tmp
           mv mix.exs.tmp mix.exs
           cat mix.exs

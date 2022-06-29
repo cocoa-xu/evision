@@ -3,11 +3,12 @@ defmodule Evision.MixProject do
   require Logger
 
   @app :evision
-  @version "0.1.0-dev"
+  @version "0.1.0"
+  @github_url "https://github.com/cocoa-xu/evision"
   @opencv_version "4.5.5"
   # only means compatible. need to write more tests
   @compatible_opencv_versions ["4.5.3", "4.5.4", "4.5.5"]
-  @source_url "https://github.com/cocoa-xu/evision/tree/#{@opencv_version}"
+  @source_url "#{@github_url}/tree/#{@opencv_version}"
 
   defp download_opencv_if_needed(opencv_ver, prefer_precompiled) do
     #  in simple words
@@ -235,8 +236,8 @@ defmodule Evision.MixProject do
   defp deps do
     [
       {:elixir_make, "~> 0.6"},
-      {:dll_loader_helper, "~> 0.1.0"},
-      {:ex_doc, "~> 0.27", only: :dev, runtime: false},
+      {:dll_loader_helper, "~> 0.1"},
+      {:ex_doc, "~> 0.27", only: :docs, runtime: false},
       {:nx, "~> 0.1", optional: true}
     ]
   end
@@ -315,7 +316,7 @@ defmodule Evision.MixProject do
   defp before_closing_body_tag(_), do: ""
 
   defp description() do
-    "OpenCV-Erlang/Elixir bindings."
+    "OpenCV-Erlang/Elixir binding."
   end
 
   defp package() do
@@ -323,9 +324,9 @@ defmodule Evision.MixProject do
       name: "evision",
       # These are the default files included in the package
       files: ~w(lib c_src py_src 3rd_party priv .formatter.exs mix.exs README* readme* LICENSE*
-                license* CHANGELOG* changelog* src),
+                license* CHANGELOG* changelog* src rebar.config),
       licenses: ["Apache-2.0"],
-      links: %{"GitHub" => "https://github.com/cocoa-xu/evision"}
+      links: %{"GitHub" => @github_url}
     ]
   end
 

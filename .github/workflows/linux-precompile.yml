@@ -6,6 +6,7 @@ on:
       - '*-dev'
       - '*-prod'
       - '*-dev-linux'
+      - 'v*'
 
 jobs:
   mix_test:
@@ -56,8 +57,8 @@ jobs:
 
       - uses: erlef/setup-beam@v1
         with:
-          otp-version: "24.3"
-          elixir-version: "1.13.3"
+          otp-version: "25.0.2"
+          elixir-version: "1.13.4"
 
       - name: Install system dependecies
         run: |
@@ -72,7 +73,7 @@ jobs:
           echo "CMAKE_TOOLCHAIN_FILE: ${CMAKE_TOOLCHAIN_FILE}"
           mix deps.get
           mix compile
-          export PKG_NAME=evision-linux-${{ matrix.pair.arch_name }}-0.1.0-dev
+          export PKG_NAME=evision-linux-${{ matrix.pair.arch_name }}-${GITHUB_REF##*/}
           mkdir -p "${PKG_NAME}"
           cp -a _build/dev/lib/evision/priv "${PKG_NAME}"
           cp -a lib/generated "${PKG_NAME}"
@@ -84,5 +85,4 @@ jobs:
 
       - uses: softprops/action-gh-release@v1
         with:
-          tag_name: 0.1.0-dev
           files: artifacts/*.tar.gz

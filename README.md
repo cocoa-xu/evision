@@ -84,8 +84,8 @@ To use precompiled Evision library, the following environment variables should b
 export EVISION_PREFER_PRECOMPILED=true
 
 # optional. 
-## currently only "0.1.0-dev" is valid
-export EVISION_PRECOMPILED_VERSION="0.1.0-dev"
+## currently only "0.1.0" is valid
+export EVISION_PRECOMPILED_VERSION="0.1.0"
 
 ## set the cache directory for the precompiled archive file
 export EVISION_PRECOMPILED_CACHE_DIR="$(pwd)/.cache"
@@ -220,7 +220,7 @@ Then you can add `evision` as dependency in your `mix.exs`. At the moment you wi
 ```elixir
 def deps do
   [
-    {:evision, "~> 0.1.0-dev", github: "cocoa-xu/evision", branch: "main"}
+    {:evision, "~> 0.1.0", github: "cocoa-xu/evision", branch: "main"}
   ]
 end
 ```

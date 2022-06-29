@@ -12,15 +12,15 @@ jobs:
     runs-on: windows-latest
     env:
       MIX_ENV: dev
-      EVISION_VERSION: 0.1.0-dev
+      EVISION_VERSION: "0.1.0"
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - uses: erlef/setup-beam@v1
         with:
-          otp-version: 24.3
-          elixir-version: 1.13.3
+          otp-version: 25.0.2
+          elixir-version: 1.13.4
 
       - uses: ilammy/msvc-dev-cmd@v1
         with:
@@ -55,5 +55,4 @@ jobs:
 
       - uses: softprops/action-gh-release@v1
         with:
-          tag_name: 0.1.0-dev
           files: artifacts/*.tar.gz
