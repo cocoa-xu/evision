@@ -49,7 +49,7 @@ io_bound_funcs = [
     'evision_cv_writeOpticalFlow',
     'evision_cv_dnn_writeTextGraph',
 ]
-opencv_ex_fixes = [
+evision_ex_fixes = [
   """
   @doc namespace: :cv
   def imdecode(buf, flags) when is_integer(flags)
@@ -61,6 +61,12 @@ opencv_ex_fixes = [
     :evision.evision_cv_imdecode(positional)
   end
   deferror imdecode(buf, flags)
+"""
+]
+evision_erlang_fixes = [
+"""
+imdecode(Buf, Flags) ->
+  evision:imdecode([{buf, Buf}, {flags, Flags}]).
 """
 ]
 
@@ -128,6 +134,10 @@ enabled_modules_code = Template("""
   def __enabled_modules__ do
     [${enabled_modules}]
   end
+""")
+enabled_modules_code_erlang = Template("""
+enabled_modules() ->
+    [${enabled_modules}].
 """)
 
 gen_template_check_self = Template("""
@@ -1230,6 +1240,7 @@ class Namespace(object):
 class ErlEnumExpressionGenerator(ast.NodeVisitor):
     def __init__(self):
         self.expression = ''
+        self.expression_erlang = ''
         self.skip_this = False
 
     def generic_visit(self, node):
@@ -1237,14 +1248,17 @@ class ErlEnumExpressionGenerator(ast.NodeVisitor):
             self.visit(node.body)
         elif type(node) is ast.Constant:
             self.expression = f'{node.value}'
+            self.expression_erlang = f'{node.value}'
         elif type(node) is ast.UnaryOp:
             op = ErlEnumExpressionGenerator()
             op.visit(node.op)
             operand = ErlEnumExpressionGenerator()
             operand.visit(node.operand)
             self.expression = op.expression.format(operand.expression)
+            self.expression_erlang = op.expression_erlang.format(operand.expression_erlang)
         elif type(node) is ast.USub:
             self.expression = '-{}'
+            self.expression_erlang = '-{}'
         elif type(node) is ast.BinOp:
             op = ErlEnumExpressionGenerator()
             op.visit(node.op)
@@ -1253,28 +1267,39 @@ class ErlEnumExpressionGenerator(ast.NodeVisitor):
             rhs = ErlEnumExpressionGenerator()
             rhs.visit(node.right)
             self.expression = op.expression.format(lhs.expression, rhs.expression)
+            self.expression_erlang = op.expression_erlang.format(lhs.expression_erlang, rhs.expression_erlang)
         elif type(node) is ast.LShift:
             self.expression = 'bsl({}, {})'
+            self.expression_erlang = '({} bsl {})'
         elif type(node) is ast.RShift:
             self.expression = 'bsr({}, {})'
+            self.expression_erlang = '({} bsr {})'
         elif type(node) is ast.Name:
             if node.id[:3] == 'CV_':
                 if node.id == 'CV_8U':
                     self.expression = '0'
+                    self.expression_erlang = '0'
                 elif node.id == 'CV_8S':
                     self.expression = '1'
+                    self.expression_erlang = '1'
                 elif node.id == 'CV_16U':
                     self.expression = '2'
+                    self.expression_erlang = '2'
                 elif node.id == 'CV_16S':
                     self.expression = '3'
+                    self.expression_erlang = '3'
                 elif node.id == 'CV_32S':
                     self.expression = '4'
+                    self.expression_erlang = '4'
                 elif node.id == 'CV_32F':
                     self.expression = '5'
+                    self.expression_erlang = '5'
                 elif node.id == 'CV_64F':
                     self.expression = '6'
+                    self.expression_erlang = '6'
                 elif node.id == 'CV_16F':
                     self.expression = '7'
+                    self.expression_erlang = '7'
                 elif node.id == 'CV_MAT_CONT_FLAG':
                     self.skip_this = True
                 elif node.id == 'CV_SUBMAT_FLAG':
@@ -1285,23 +1310,31 @@ class ErlEnumExpressionGenerator(ast.NodeVisitor):
                     sys.exit(1)
             else:
                 self.expression = f'cv_{node.id}()'
+                self.expression_erlang = f'cv_{node.id}()'
         elif type(node) is ast.Mult:
             self.expression = '({} * {})'
+            self.expression_erlang = '({} * {})'
         elif type(node) is ast.Add:
             self.expression = '({} + {})'
+            self.expression_erlang = '({} + {})'
         elif type(node) is ast.Sub:
             self.expression = '({} - {})'
+            self.expression_erlang = '({} - {})'
         elif type(node) is ast.BitAnd:
             self.expression = 'band({}, {})'
+            self.expression_erlang = '({} band {})'
         elif type(node) is ast.Invert:
             self.expression = 'bnot({})'
+            self.expression_erlang = 'bnot({})'
         elif type(node) is ast.BitOr:
             self.expression = 'bor({}, {})'
+            self.expression_erlang = '({} bor {})'
         else:
             import sys
             if sys.version_info.minor < 8:
                 if type(node) is ast.Num:
                     self.expression = f'{node.n}'
+                    self.expression_erlang = f'{node.n}'
                 else:
                     print(type(node), "not implemented yet")
                     sys.exit(1)
@@ -1325,6 +1358,7 @@ class PythonWrapperGenerator(object):
         self.enums = {}
         self.enum_names = {}
         self.enum_names_io = StringIO()
+        self.enum_names_io_erlang = StringIO()
         self.code_include = StringIO()
         self.code_enums = StringIO()
         self.code_types = StringIO()
@@ -1332,10 +1366,14 @@ class PythonWrapperGenerator(object):
         self.code_ns_reg = StringIO()
         self.erl_cv_nif = StringIO()
         self.erl_cv_nif_erlang = StringIO()
-        self.opencv_ex = StringIO()
+        self.evision_ex = StringIO()
+        self.evision_erlang = StringIO()
         self.opencv_func = StringIO()
         self.opencv_func.deferror = {}
         self.opencv_func.doc_written = {}
+        self.opencv_func_erlang = StringIO()
+        self.opencv_func_erlang.deferror = {}
+        self.opencv_func_erlang.doc_written = {}
         self.opencv_modules = {}
         self.code_type_publish = StringIO()
         self.py_signatures = dict()
@@ -1383,18 +1421,21 @@ class PythonWrapperGenerator(object):
         val_gen.visit(val_tree)
         if not val_gen.skip_this:
             val = val_gen.expression
+            val_erlang = val_gen.expression_erlang
             erl_const_name = self.map_erl_argname(erl_const_name, ignore_upper_starting=True)
             if self.enum_names.get(val, None) is not None:
                 val = f'cv_{val}()'
             if self.enum_names.get(erl_const_name, None) is None:
                 self.enum_names[erl_const_name] = val
                 self.enum_names_io.write(f"  @doc type: :constants\n  def cv_{erl_const_name}, do: {val}\n")
+                self.enum_names_io_erlang.write(f"cv_{erl_const_name}() ->\n    {val_erlang}.\n")
             else:
                 if self.enum_names[erl_const_name] != val:
                     erl_const_name = self.map_erl_argname(f'{module_name}_{erl_const_name}', ignore_upper_starting=True)
                     if self.enum_names.get(erl_const_name, None) is None:
                         self.enum_names[erl_const_name] = val
                         self.enum_names_io.write(f"  def cv_{erl_const_name}, do: {val}\n")
+                        self.enum_names_io_erlang.write(f"cv_{erl_const_name}() ->\n    {val_erlang}.\n")
                     else:
                         raise "duplicated constant name"
 
@@ -2091,13 +2132,17 @@ class PythonWrapperGenerator(object):
         self.output_path = output_path
         self.clear()
         self.parser = hdr_parser.CppHeaderParser(generate_umat_decls=True, generate_gpumat_decls=True)
-        self.erl_cv_nif.write('defmodule :evision do\n{}\n'.format(gen_erl_cv_nif_load_nif))
-        self.erl_cv_nif_erlang.write('-module(evision).\n-compile([export_all]).\n{}\n'.format(gen_erl_cv_nif_load_nif_erlang))
-        self.opencv_ex.write('defmodule Evision do\n')
-        self.opencv_ex.write('  use Bitwise\n')
-        self.opencv_ex.write('  import Kernel, except: [apply: 2, apply: 3, min: 2, max: 2]\n')
-        self.opencv_ex.write('  import Evision.Errorize\n')
-        self.opencv_ex.deferror = {}
+
+        self.erl_cv_nif.write('defmodule :evision_nif do\n{}\n'.format(gen_erl_cv_nif_load_nif))
+        self.evision_ex.write('defmodule Evision do\n')
+        self.evision_ex.write('  use Bitwise\n')
+        self.evision_ex.write('  import Kernel, except: [apply: 2, apply: 3, min: 2, max: 2]\n')
+        self.evision_ex.write('  import Evision.Errorize\n')
+        self.evision_ex.deferror = {}
+
+        self.erl_cv_nif_erlang.write('-module(evision_nif).\n-compile([export_all]).\n{}\n'.format(gen_erl_cv_nif_load_nif_erlang))
+        self.evision_erlang.write('-module(evision).\n-compile([export_all]).\n')
+        
         self.code_ns_reg.write('static ErlNifFunc nif_functions[] = {\n')
 
         # step 1: scan the headers and build more descriptive maps of classes, consts, functions
@@ -2221,17 +2266,27 @@ class PythonWrapperGenerator(object):
         for name, constinfo in constlist:
             self.gen_const_reg(constinfo)
 
-        # end 'opencv.ex'
-        self.opencv_ex.write(self.enum_names_io.getvalue())
-        self.opencv_ex.write(self.opencv_func.getvalue())
-        for fix in opencv_ex_fixes:
-            self.opencv_ex.write(fix)
-            self.opencv_ex.write("\n")
-        self.opencv_ex.write(enabled_modules_code.substitute(
+        # end 'evision.ex'
+        self.evision_ex.write(self.enum_names_io.getvalue())
+        for fix in evision_ex_fixes:
+            self.evision_ex.write(fix)
+            self.evision_ex.write("\n")
+        self.evision_ex.write(enabled_modules_code.substitute(
             enabled_modules=",".join([f'\n      "{m}"' for m in self.enabled_modules]))
         )
-        self.opencv_ex.write('\nend\n')
-        # end 'erl_cv_nif.ex'
+        self.evision_ex.write('\nend\n')
+
+        # end 'evision.erl'
+        self.evision_erlang.write(self.enum_names_io_erlang.getvalue())
+        self.evision_erlang.write(self.opencv_func_erlang.getvalue())
+        for fix in evision_erlang_fixes:
+            self.evision_erlang.write(fix)
+            self.evision_erlang.write("\n")
+        self.evision_erlang.write(enabled_modules_code_erlang.substitute(
+            enabled_modules=",".join([f'\'{m}\'' for m in self.enabled_modules]))
+        )
+
+        # end 'evision_nif.ex'
         self.erl_cv_nif.write('\nend\n')
 
         # That's it. Now save all the files
@@ -2241,9 +2296,10 @@ class PythonWrapperGenerator(object):
         self.save(output_path, "evision_generated_types.h", self.code_type_publish)
         self.save(output_path, "evision_generated_types_content.h", self.code_types)
         self.save(output_path, "evision_generated_modules_content.h", self.code_ns_reg)
-        self.save(erl_output_path, "evision.ex", self.erl_cv_nif)
-        self.save(erl_output_path, "opencv.ex", self.opencv_ex)
-        self.save(erlang_output_path, "evision.erl", self.erl_cv_nif_erlang)
+        self.save(erl_output_path, "evision_nif.ex", self.erl_cv_nif)
+        self.save(erl_output_path, "evision.ex", self.evision_ex)
+        self.save(erlang_output_path, "evision_nif.erl", self.erl_cv_nif_erlang)
+        self.save(erlang_output_path, "evision.erl", self.evision_erlang)
         for name in self.opencv_modules:
             writer = self.opencv_modules[name]
             writer.write('\nend\n')
