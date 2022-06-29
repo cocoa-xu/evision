@@ -1,5 +1,6 @@
 PRIV_DIR = $(MIX_APP_PATH)/priv
 EVISION_SO = $(PRIV_DIR)/evision.so
+SRC = $(shell pwd)/src
 C_SRC = $(shell pwd)/c_src
 PY_SRC = $(shell pwd)/py_src
 LIB_SRC = $(shell pwd)/lib
@@ -40,6 +41,7 @@ ENABLED_CV_MODULES ?= ""
 HEADERS_TXT = $(CMAKE_OPENCV_BUILD_DIR)/modules/python_bindings_generator/headers.txt
 CONFIGURATION_PRIVATE_HPP = $(C_SRC)/configuration.private.hpp
 GENERATED_ELIXIR_SRC_DIR = $(LIB_SRC)/generated
+GENERATED_ERLANG_SRC_DIR = $(SRC)/generated
 CMAKE_EVISION_BUILD_DIR = $(MIX_APP_PATH)/cmake_evision
 CMAKE_EVISION_OPTIONS ?= ""
 MAKE_BUILD_FLAGS ?= "-j1"
@@ -96,14 +98,16 @@ $(HEADERS_TXT): $(CONFIGURATION_PRIVATE_HPP)
 	fi
 
 $(EVISION_SO): $(HEADERS_TXT)
-	@ mkdir -p $(EVISION_PRECOMPILED_CACHE_DIR)
-	@ mkdir -p $(PRIV_DIR)
-	@ mkdir -p $(CMAKE_EVISION_BUILD_DIR)
+	@ mkdir -p "$(EVISION_PRECOMPILED_CACHE_DIR)"
+	@ mkdir -p "$(PRIV_DIR)"
+	@ mkdir -p "$(CMAKE_EVISION_BUILD_DIR)"
 	@ mkdir -p "$(GENERATED_ELIXIR_SRC_DIR)"
+	@ mkdir -p "$(GENERATED_ERLANG_SRC_DIR)"
 	@ cd "$(CMAKE_EVISION_BUILD_DIR)" && \
 		{ cmake -D C_SRC="$(C_SRC)" \
 		  -D CMAKE_TOOLCHAIN_FILE="$(TOOLCHAIN_FILE)" \
 		  -D GENERATED_ELIXIR_SRC_DIR="$(GENERATED_ELIXIR_SRC_DIR)" \
+		  -D GENERATED_ERLANG_SRC_DIR="$(GENERATED_ERLANG_SRC_DIR)" \
 		  -D PY_SRC="$(PY_SRC)" \
 		  -D PRIV_DIR="$(PRIV_DIR)" \
 		  -D ERTS_INCLUDE_DIR="$(ERTS_INCLUDE_DIR)" \

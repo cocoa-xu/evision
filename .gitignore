@@ -19,8 +19,8 @@ erl_crash.dump
 .cache/
 *.pyc
 /c_src/evision_custom_headers/*
-/lib/erl_cv_nif.ex
-/c_src/erl_cv_nif.ex
+/lib/evision.ex
+/src/evision.erl
 3rd_party/cache
 3rd_party/opencv
 /lib/generated

@@ -22,7 +22,7 @@ defmodule Evision.Gui do
   """
   @doc namespace: :"cv.highgui"
   def imshow(winname, mat) when is_binary(winname) do
-    :erl_cv_nif.evision_cv_imshow(winname: winname, mat: mat)
+    :evision.imshow(winname: winname, mat: mat)
   end
 
   deferror(imshow(winname, mat))
@@ -32,7 +32,7 @@ defmodule Evision.Gui do
   """
   @doc namespace: :"cv.highgui"
   def waitkey(delay) when is_integer(delay) do
-    :erl_cv_nif.evision_cv_waitKey(delay: delay)
+    :evision.waitKey(delay: delay)
   end
 
   deferror(waitkey(delay))
@@ -42,7 +42,7 @@ defmodule Evision.Gui do
   """
   @doc namespace: :"cv.highgui"
   def destroyWindow(winname) when is_binary(winname) do
-    :erl_cv_nif.evision_cv_destroyWindow(winname: winname)
+    :evision.destroyWindow(winname: winname)
   end
 
   deferror(destroyWindow(winname))
@@ -52,7 +52,7 @@ defmodule Evision.Gui do
   """
   @doc namespace: :"cv.highgui"
   def destroyAllWindows do
-    :erl_cv_nif.evision_cv_destroyAllWindows()
+    :evision.destroyAllWindows()
   end
 
   deferror(destroyAllWindows())
