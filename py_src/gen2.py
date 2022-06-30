@@ -439,7 +439,7 @@ class BeamWrapperGenerator(object):
                 func_args_with_opts_erlang = '{}{}'.format(", ".join(['{}'.format(self.map_erlang_argname(arg_name)) for (arg_name, _, argtype) in arglist[:pos_end]]), opt_args_erlang)
             module_func_name = func_name
             if is_ns:
-                if module_func_name == f'{evision_nif_prefix()}{name}':
+                if module_func_name != f'{evision_nif_prefix()}{name}':
                     module_func_name = module_func_name[len(evision_nif_prefix()):]
                 else:
                     module_func_name = name
@@ -560,13 +560,10 @@ class BeamWrapperGenerator(object):
                                 return
                         module_func_name = module_func_name.lower()
 
-            if module_func_name == "readNet":
-                read_net_var = arglist[0][0]
-                module_func_name = f"readNet{read_net_var[0].upper()}{read_net_var[1:]}"
             if func_name.startswith(evision_nif_prefix() + "dnn") and module_func_name == "forward":
-                sign = evision_nif_prefix() + "forward"
-            if func_name.startswith(evision_nif_prefix() + "dnn_dnn_net") and (module_func_name == "getLayerShapes" or module_func_name == "getLayersShapes"):
-                sign = evision_nif_prefix() + "dnn_dnn_net_" + module_func_name
+                sign = evision_nif_prefix() + "_dnn_forward"
+            if func_name.startswith(evision_nif_prefix() + "dnn_dnn_Net") and (module_func_name == "getLayerShapes" or module_func_name == "getLayersShapes"):
+                sign = evision_nif_prefix() + "dnn_dnn_Net_" + module_func_name
             if unique_signatures.get(sign, None) is True:
                 elixir_function.write('\n'.join(["  # {}".format(line.strip()) for line in opt_doc.split("\n")]))
                 elixir_function.write(f'  # def {module_func_name}({func_args}) do\n  #   :evision_nif.{erl_name}({func_args})\n  # end\n')
@@ -699,38 +696,43 @@ class BeamWrapperGenerator(object):
                     name_arity_elixir_identifier = f'{module_func_name}!/2'
                     name_arity_elixir = f'{module_func_name}!/1'
                     elixir_function.write(f'{inline_doc}  def {module_func_name}(self, opts \\\\ []) when is_list(opts) do\n    :evision_nif.{erl_name}(self, opts)\n  end\n')
-                    # writer.write(f'{inline_doc}  def {module_func_name}(self, opts \\\\ []) when is_list(opts) do\n    :evision_nif.{erl_name}(self, opts)\n  end\n')
                     
                     name_arity_erlang = f'{module_func_name}!/1'
                     name_arity_erlang_opt = f'{module_func_name}!/2'
                     erlang_function.write(f'{module_func_name}(Self) ->\n  evision_nif:{erl_name}(Self).\n')
                     erlang_function_opt.write(f'{module_func_name}(Self, Options) when is_list(Options) ->\n  evision_nif:{erl_name}(Self, Options).\n')
-                    # writer_erlang.write(f'{module_func_name}(Self) when is_list(Options) ->\n  evision_nif:{erl_name}(Self, Options).\n')
-                    # writer_erlang.write(f'{module_func_name}(Self, Options) ->\n  evision_nif:{erl_name}(Self, Options).\n')
                     if not writer.deferror.get(name_arity_elixir_identifier, False):
                         elixir_function.write(f"  deferror {module_func_name}(self, opts)\n")
-                        # writer.write(f"  deferror {module_func_name}(self, opts)\n")
                         writer.deferror[name_arity_elixir_identifier] = True
+
+                    push_to_function_group(name_arity_elixir, guarded_elixir_function_groups, elixir_function)
+                    push_to_function_group(name_arity_erlang, guarded_erlang_function_groups, erlang_function)
+                    push_to_function_group(name_arity_erlang_opt, guarded_erlang_function_groups, erlang_function_opt)
+                    
                     continue
-                if func_name.startswith(evision_nif_prefix() + "dnn_dnn_net") and (module_func_name == "getLayerShapes" or module_func_name == "getLayersShapes"):
+
+                if func_name.startswith(evision_nif_prefix() + "dnn_dnn_Net") and (module_func_name == "getLayerShapes" or module_func_name == "getLayersShapes"):
                     inline_doc += function_group
                     name_arity_elixir_identifier = f'{module_func_name}!/2'
                     name_arity_elixir = f'{module_func_name}!/1'
                     elixir_function.write(f'{inline_doc}  def {module_func_name}(self, opts \\\\ []) when is_list(opts) do\n    :evision_nif.{erl_name}(self, opts)\n  end\n')
-                    # writer.write(f'{inline_doc}  def {module_func_name}(self, opts \\\\ []) when is_list(opts) do\n    :evision_nif.{erl_name}(self, opts)\n  end\n')
                     
                     name_arity_erlang = f'{module_func_name}!/1'
                     name_arity_erlang_opt = f'{module_func_name}!/2'
-                    elixir_function.write(f'{module_func_name}(Self) ->\n  evision_nif:{erl_name}(Self).\n')
+                    erlang_function.write(f'{module_func_name}(Self) ->\n  evision_nif:{erl_name}(Self).\n')
                     erlang_function_opt.write(f'{module_func_name}(Self, Options) ->\n  evision_nif:{erl_name}(Self, Options).\n')
-                    # writer_erlang.write(f'{module_func_name}(Self) ->\n  evision_nif:{erl_name}(Self).\n')
-                    # writer_erlang.write(f'{module_func_name}(Self, Options) ->\n  evision_nif:{erl_name}(Self, Options).\n')
                     
                     if not writer.deferror.get(name_arity_elixir_identifier, False):
                         elixir_function.write(f"  deferror {module_func_name}(self, opts)\n")
                         # writer.write(f"  deferror {module_func_name}(self, opts)\n")
                         writer.deferror[name_arity_elixir_identifier] = True
+                    
+                    push_to_function_group(name_arity_elixir, guarded_elixir_function_groups, elixir_function)
+                    push_to_function_group(name_arity_erlang, guarded_erlang_function_groups, erlang_function)
+                    push_to_function_group(name_arity_erlang_opt, guarded_erlang_function_groups, erlang_function_opt)
+                    
                     continue
+
                 if len(func_args_with_opts) > 0:
                     inline_doc += function_group
                     when_guard_with_opts = when_guard
@@ -783,19 +785,10 @@ class BeamWrapperGenerator(object):
                 if not writer.deferror.get(name_arity_elixir, False):
                     elixir_function.write(f'  deferror {module_func_name}({module_func_args})\n')
                     writer.deferror[name_arity_elixir] = True
-            if name_arity_elixir:
-                if guarded_elixir_function_groups.get(name_arity_elixir, None) is None:
-                    guarded_elixir_function_groups[name_arity_elixir] = []
-                guarded_elixir_function_groups[name_arity_elixir].append(elixir_function.getvalue())
 
-            if name_arity_erlang is not None:
-                if guarded_erlang_function_groups.get(name_arity_erlang, None) is None:
-                    guarded_erlang_function_groups[name_arity_erlang] = []
-                guarded_erlang_function_groups[name_arity_erlang].append(erlang_function.getvalue())
-            if name_arity_erlang_opt is not None:
-                if guarded_erlang_function_groups.get(name_arity_erlang_opt, None) is None:
-                    guarded_erlang_function_groups[name_arity_erlang_opt] = []
-                guarded_erlang_function_groups[name_arity_erlang_opt].append(erlang_function_opt.getvalue())
+            push_to_function_group(name_arity_elixir, guarded_elixir_function_groups, elixir_function)
+            push_to_function_group(name_arity_erlang, guarded_erlang_function_groups, erlang_function)
+            push_to_function_group(name_arity_erlang_opt, guarded_erlang_function_groups, erlang_function_opt)
 
         for name_arity in sorted(guarded_elixir_function_groups.keys()):
             for guarded_function in guarded_elixir_function_groups[name_arity]:

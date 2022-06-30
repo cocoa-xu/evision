@@ -147,3 +147,10 @@ def map_uppercase_to_erlang_name(name):
 
 def __LINE__(): 
     return inspect.stack()[1].lineno
+
+
+def push_to_function_group(name, group, value):
+    if name:
+        if name not in group:
+            group[name] = []
+        group[name].append(value.getvalue())
