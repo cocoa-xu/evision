@@ -7,6 +7,7 @@ import sys
 from collections import namedtuple
 from string import Template
 import inspect
+from pathlib import Path
 
 import hdr_parser
 import re
@@ -49,7 +50,7 @@ io_bound_funcs = [
     'evision_cv_writeOpticalFlow',
     'evision_cv_dnn_writeTextGraph',
 ]
-evision_ex_fixes = [
+evision_elixir_fixes = [
   """
   @doc namespace: :cv
   def imdecode(buf, flags) when is_integer(flags)
@@ -58,7 +59,7 @@ evision_ex_fixes = [
       buf: buf,
       flags: flags
     ]
-    :evision.evision_cv_imdecode(positional)
+    :evision_nif.evision_cv_imdecode(positional)
   end
   deferror imdecode(buf, flags)
 """
@@ -77,7 +78,7 @@ ignored_arg_types = ["RNG*"]
 pass_by_val_types = ["Point*", "Point2f*", "Rect*", "String*", "double*", "float*", "int*"]
 
 # template for Elixir
-gen_erl_cv_nif_load_nif = """
+gen_evision_nif_load_nif = """
   @moduledoc false
   @on_load :load_nif
   def load_nif do
@@ -98,7 +99,7 @@ gen_erl_cv_nif_load_nif = """
 """
 
 # template for Erlang
-gen_erl_cv_nif_load_nif_erlang = """
+gen_evision_nif_load_nif_erlang = """
 -on_load(init/0).
 
 -define(APPNAME, evision).
@@ -501,27 +502,27 @@ class ClassInfo(object):
 
         # generate functions for constructor
         if self.constructor is not None:
-            module_file_writer, separated_ns = codegen.get_module_writer(
+            (module_file_writer, module_file_writer_erlang), separated_ns = codegen.get_module_writer(
                 self.name, wname=self.cname, name=self.name, is_ns=False)
             codegen.gen_erl_declaration(
-                self.cname, self.name, self.constructor, module_file_writer,
+                self.cname, self.name, self.constructor, module_file_writer, module_file_writer_erlang,
                 is_constructor=True, separated_ns=separated_ns)
 
         # generate functions for methods
         for mname, m in sorted_methods:
             codegen.code_ns_reg.write(m.get_tab_entry())
-            module_file_writer, separated_ns = codegen.get_module_writer(
+            (module_file_writer, module_file_writer_erlang), separated_ns = codegen.get_module_writer(
                 self.name, wname=self.cname, name=mname, is_ns=False)
             codegen.gen_erl_declaration(
-                self.cname, mname, m, module_file_writer,
+                self.cname, mname, m, module_file_writer, module_file_writer_erlang,
                 is_constructor=False, separated_ns=separated_ns)
 
         # generate functions for properties
         for pname, m in sorted_props:
-            module_file_writer, separated_ns = codegen.get_module_writer(
+            (module_file_writer, module_file_writer_erlang), separated_ns = codegen.get_module_writer(
                 self.name, wname=self.cname, name=pname, is_ns=False)
             codegen.gen_erl_declaration(
-                self.cname, pname, m, module_file_writer,
+                self.cname, pname, m, module_file_writer, module_file_writer_erlang,
                 is_constructor=False, is_prop=True, prop_class=self, separated_ns=separated_ns)
 
     def gen_code(self, codegen):
@@ -930,7 +931,7 @@ class FuncInfo(object):
             nif_function_decl = f'    F_CPU({erl_name}, {fname}, {func_arity}),\n'
         return nif_function_decl
 
-    def map_erl_argname(self, argname, ignore_upper_starting=False):
+    def map_elixir_argname(self, argname, ignore_upper_starting=False):
         reserved_keywords = ['end', 'fn']
         name = ""
         if argname in reserved_keywords:
@@ -945,6 +946,10 @@ class FuncInfo(object):
         if ignore_upper_starting:
             return name
         return f"{name[0:1].lower()}{name[1:]}"
+    
+    def map_erlang_argname(self, argname):
+        name = self.argname_prefix_re.sub('', argname)
+        return f"{name[0:1].upper()}{name[1:]}"
 
     def gen_code(self, codegen):
         all_classes = codegen.classes
@@ -1034,7 +1039,7 @@ class FuncInfo(object):
                 parse_name = a.name
                 if a.py_inputarg:
                     parse_name = "erl_term_" + a.name
-                    erl_term = "evision_get_kw(env, erl_terms, \"%s\")" % (self.map_erl_argname(a.name),)
+                    erl_term = "evision_get_kw(env, erl_terms, \"%s\")" % (self.map_elixir_argname(a.name),)
                     self_offset = 0
                     if self.classname and not self.is_static and not self.isconstructor:
                         self_offset = 1
@@ -1364,9 +1369,9 @@ class PythonWrapperGenerator(object):
         self.code_types = StringIO()
         self.code_funcs = StringIO()
         self.code_ns_reg = StringIO()
-        self.erl_cv_nif = StringIO()
-        self.erl_cv_nif_erlang = StringIO()
-        self.evision_ex = StringIO()
+        self.evision_nif = StringIO()
+        self.evision_nif_erlang = StringIO()
+        self.evision_elixir = StringIO()
         self.evision_erlang = StringIO()
         self.opencv_func = StringIO()
         self.opencv_func.deferror = {}
@@ -1378,7 +1383,7 @@ class PythonWrapperGenerator(object):
         self.code_type_publish = StringIO()
         self.py_signatures = dict()
         self.class_idx = 0
-        self.erl_cv_nif_names = dict()
+        self.evision_nif_names = dict()
 
     def add_class(self, stype, name, decl):
         classinfo = ClassInfo(name, decl)
@@ -1422,7 +1427,7 @@ class PythonWrapperGenerator(object):
         if not val_gen.skip_this:
             val = val_gen.expression
             val_erlang = val_gen.expression_erlang
-            erl_const_name = self.map_erl_argname(erl_const_name, ignore_upper_starting=True)
+            erl_const_name = self.map_elixir_argname(erl_const_name, ignore_upper_starting=True)
             if self.enum_names.get(val, None) is not None:
                 val = f'cv_{val}()'
             if self.enum_names.get(erl_const_name, None) is None:
@@ -1431,7 +1436,7 @@ class PythonWrapperGenerator(object):
                 self.enum_names_io_erlang.write(f"cv_{erl_const_name}() ->\n    {val_erlang}.\n")
             else:
                 if self.enum_names[erl_const_name] != val:
-                    erl_const_name = self.map_erl_argname(f'{module_name}_{erl_const_name}', ignore_upper_starting=True)
+                    erl_const_name = self.map_elixir_argname(f'{module_name}_{erl_const_name}', ignore_upper_starting=True)
                     if self.enum_names.get(erl_const_name, None) is None:
                         self.enum_names[erl_const_name] = val
                         self.enum_names_io.write(f"  def cv_{erl_const_name}, do: {val}\n")
@@ -1556,7 +1561,6 @@ class PythonWrapperGenerator(object):
             return 't'
 
     def map_argtype_to_guard(self, argname, argtype):
-        argname = self.map_erl_argname(argname)
         if argtype == 'int' or argtype == 'size_t':
             return f'is_integer({argname})'
         elif argtype == 'bool':
@@ -1583,7 +1587,7 @@ class PythonWrapperGenerator(object):
             else:
                 return f'is_reference({argname})'
 
-    def map_erl_argname(self, argname, ignore_upper_starting=False):
+    def map_elixir_argname(self, argname, ignore_upper_starting=False):
         reserved_keywords = ['end', 'fn']
         name = ""
         if argname in reserved_keywords:
@@ -1598,7 +1602,10 @@ class PythonWrapperGenerator(object):
         if ignore_upper_starting:
             return name
         return f"{name[0:1].lower()}{name[1:]}"
-
+    
+    def map_erlang_argname(self, argname):
+        name = self.argname_prefix_re.sub('', argname)
+        return f"{name[0:1].upper()}{name[1:]}"
 
     def handle_inline_math_escaping(self, text, start_pos=0):
         processed = text[:start_pos]
@@ -1638,9 +1645,9 @@ class PythonWrapperGenerator(object):
         else:
             return text
 
-    def gen_erl_declaration(self, wname, name, func, writer=None, is_ns=False, is_constructor=False, is_prop=False, prop_class=None, separated_ns=None):
-        # functions in namespaces goes to 'erl_cv_nif.ex' and 'opencv_{module}.ex'
-        # 'erl_cv_nif.ex' contains the declarations of all NIFs
+    def gen_erl_declaration(self, wname, name, func, writer=None, writer_erlang=None, is_ns=False, is_constructor=False, is_prop=False, prop_class=None, separated_ns=None):
+        # functions in namespaces goes to 'evision_nif.ex' and 'opencv_{module}.ex'
+        # 'evision_nif.ex' contains the declarations of all NIFs
         # 'opencv_{module}.ex' contains readable/friendly function names
 
         if is_prop:
@@ -1653,29 +1660,33 @@ class PythonWrapperGenerator(object):
 
             func_name = "evision_" + prop_class.wname + '_get_' + name
             writer.write(f"  def get_{name}(self) do\n"
-                         f"    :evision.{erl_name}(self)\n"
+                         f"    :evision_nif.{erl_name}(self)\n"
                          "  end\n")
-            name_arity = f'get_{name}!/1'
-            if not writer.deferror.get(name_arity, False):
+            name_arity_elixir = f'get_{name}!/1'
+            name_arity_erlang = f'get_{name}!/1'
+            name_arity_erlang_opt = None
+            if not writer.deferror.get(name_arity_elixir, False):
                 writer.write(f"  deferror get_{name}(self)\n")
-                writer.deferror[name_arity] = True
+                writer.deferror[name_arity_elixir] = True
 
-            self.erl_cv_nif.write(f'  def {erl_name}(_self), do: :erlang.nif_error("{wname}::{name} getter not loaded")\n')
-            self.erl_cv_nif_erlang.write(f'{erl_name}(_self) ->\n    not_loaded(?LINE).\n')
+            self.evision_nif.write(f'  def {erl_name}(_self), do: :erlang.nif_error("{wname}::{name} getter not loaded")\n')
+            self.evision_nif_erlang.write(f'{erl_name}(_self) ->\n    not_loaded(?LINE).\n')
             self.code_ns_reg.write(f'    F({erl_name}, {func_name}, 1),\n')
             if not func.readonly:
                 erl_name = prop_class.wname + '_set_' + name
                 if erl_name[0].isupper():
                     erl_name = map_uppercase_to_erlang_name(erl_name)
                 func_name = "evision_" + prop_class.wname + '_set_' + name
-                writer.write(f"  def set_{name}(self, opts) do\n    :evision.{erl_name}(self, opts)\n  end\n")
-                name_arity = f'set_{name}!/1'
-                if not writer.deferror.get(name_arity, False):
+                writer.write(f"  def set_{name}(self, opts) do\n    :evision_nif.{erl_name}(self, opts)\n  end\n")
+                name_arity_elixir = f'set_{name}!/2'
+                name_arity_erlang = None
+                name_arity_erlang_opt = f'set_{name}!/2'
+                if not writer.deferror.get(name_arity_elixir, False):
                     writer.write(f"  deferror set_{name}(self, opts)\n")
-                    writer.deferror[name_arity] = True
+                    writer.deferror[name_arity_elixir] = True
 
-                self.erl_cv_nif.write(f'  def {erl_name}(_self, _opts), do: :erlang.nif_error("{wname}::{name} setter not loaded")\n')
-                self.erl_cv_nif_erlang.write(f'{erl_name}(_self, _opts) ->\n    not_loaded(?LINE).\n')
+                self.evision_nif.write(f'  def {erl_name}(_self, _opts), do: :erlang.nif_error("{wname}::{name} setter not loaded")\n')
+                self.evision_nif_erlang.write(f'{erl_name}(_self, _opts) ->\n    not_loaded(?LINE).\n')
                 self.code_ns_reg.write(f'    F({erl_name}, {func_name}, 2),\n')
             return
 
@@ -1686,34 +1697,49 @@ class PythonWrapperGenerator(object):
             func_name = func_name.lower()
             erl_name = erl_name.lower()
 
-        if self.erl_cv_nif_names.get(erl_name) != True:
-            self.erl_cv_nif_names[erl_name] = True
+        if self.evision_nif_names.get(erl_name) != True:
+            self.evision_nif_names[erl_name] = True
             nif_args = '_opts \\\\ []'
             nif_args_erlang = '_opts'
             if not is_ns and func.classname and not func.is_static and not is_constructor:
                 nif_args = f'_self, {nif_args}'
                 nif_args_erlang = f'_self, {nif_args_erlang}'
-            self.erl_cv_nif.write(f'  def {erl_name}({nif_args}), do: :erlang.nif_error("{wname}::{name} not loaded")\n')
-            self.erl_cv_nif_erlang.write(f'{erl_name}({nif_args_erlang}) ->\n    not_loaded(?LINE).\n')
+            self.evision_nif.write(f'  def {erl_name}({nif_args}), do: :erlang.nif_error("{wname}::{name} not loaded")\n')
+            self.evision_nif_erlang.write(f'{erl_name}({nif_args_erlang}) ->\n    not_loaded(?LINE).\n')
 
         if writer is None:
             return
 
         erl_signatures = []
         func_guards = []
+        func_guards_erlang = []
         for i in range(len(func.variants)):
             pos_end = -func.variants[i].py_noptargs
             if pos_end == 0:
                 pos_end = len(func.variants[i].py_arglist)
-            func_guards.append(list(filter(lambda x: x != '', [self.map_argtype_to_guard(argname, argtype) for argname, _, argtype in func.variants[i].py_arglist[:pos_end]])))
+            func_guards.append(list(filter(lambda x: x != '', [self.map_argtype_to_guard(self.map_elixir_argname(argname), argtype) for argname, _, argtype in func.variants[i].py_arglist[:pos_end]])))
+            func_guards_erlang.append(list(filter(lambda x: x != '', [self.map_argtype_to_guard(self.map_erlang_argname(argname), argtype) for argname, _, argtype in func.variants[i].py_arglist[:pos_end]])))
             erl_signatures.append(''.join(filter(lambda x: x != '', [self.map_argtype_to_type(argtype) for _, _, argtype in func.variants[i].py_arglist[:pos_end]])))
 
         func_guards_len_desc = reversed(argsort([len(g) for g in func_guards]))
         unique_signatures = {}
+
+        guarded_elixir_function_groups = {}
+        guarded_erlang_function_groups = {}
         for i in func_guards_len_desc:
+            name_arity_elixir = None
+            elixir_function = StringIO()
+            elixir_function_opt = StringIO()
+            
+            name_arity_erlang = None
+            name_arity_erlang_opt = None
+            erlang_function = StringIO()
+            erlang_function_opt = StringIO()
+
             i = int(i)
             sign = erl_signatures[i]
             func_guard = func_guards[i]
+            func_guard_erlang = func_guards_erlang[i]
             current_func = func.variants[i]
             arglist = current_func.py_arglist
             noptargs = current_func.py_noptargs
@@ -1721,16 +1747,22 @@ class PythonWrapperGenerator(object):
             has_opts = noptargs > 0
             pos_end = len(arglist) if not has_opts else -noptargs
             opt_args = ''
+            opt_args_erlang = ''
             opt_doc = ''
             prototype = f'    Python prototype (for reference): {current_func.py_prototype}'
             if has_opts:
                 opt_args = 'opts' if min_args == 0 else ', opts'
+                opt_args_erlang = 'Options' if min_args == 0 else ', Options'
                 opt_doc = '\n'.join(['    @optional {}: {}'.format(arg_name, argtype) for (arg_name, _, argtype) in arglist[-noptargs:]])
                 opt_doc += '\n'
-            func_args = '{}'.format(", ".join(['{}'.format(self.map_erl_argname(arg_name)) for (arg_name, _, argtype) in arglist[:pos_end]]))
+            
+            func_args = '{}'.format(", ".join(['{}'.format(self.map_elixir_argname(arg_name)) for (arg_name, _, argtype) in arglist[:pos_end]]))
+            func_args_erlang = '{}'.format(", ".join(['{}'.format(self.map_erlang_argname(arg_name)) for (arg_name, _, argtype) in arglist[:pos_end]]))
             func_args_with_opts = ''
+            func_args_with_opts_erlang = ''
             if has_opts:
-                func_args_with_opts = '{}{}'.format(", ".join(['{}'.format(self.map_erl_argname(arg_name)) for (arg_name, _, argtype) in arglist[:pos_end]]), opt_args)
+                func_args_with_opts = '{}{}'.format(", ".join(['{}'.format(self.map_elixir_argname(arg_name)) for (arg_name, _, argtype) in arglist[:pos_end]]), opt_args)
+                func_args_with_opts_erlang = '{}{}'.format(", ".join(['{}'.format(self.map_erlang_argname(arg_name)) for (arg_name, _, argtype) in arglist[:pos_end]]), opt_args_erlang)
             module_func_name = func_name
             if is_ns:
                 if module_func_name == f'{evision_nif_prefix}{name}':
@@ -1762,13 +1794,18 @@ class PythonWrapperGenerator(object):
                 if not is_ns and func.classname and not func.is_static and not is_constructor:
                     if len(func_args) > 0:
                         func_args = f'self, {func_args}'
+                        func_args_erlang = f'Self, {func_args_erlang}'
                         if len(func_args_with_opts) > 0:
                             func_args_with_opts = f'self, {func_args_with_opts}'
+                            func_args_with_opts_erlang = f'Self, {func_args_with_opts_erlang}'
                     else:
                         func_args = 'self'
                         func_args_with_opts = ''
+
+                        func_args_erlang = 'Self'
+                        func_args_with_opts_erlang = ''
             if is_ns and wname != 'cv':
-                writer, _ = self.get_module_writer(wname, wname=wname, name=name, is_ns=is_ns)
+                (writer, writer_erlang), _ = self.get_module_writer(wname, wname=wname, name=name, is_ns=is_ns)
                 if module_func_name.startswith(wname+'_'):
                     module_func_name = module_func_name[len(wname)+1:]
                 if '_' in module_func_name:
@@ -1857,10 +1894,13 @@ class PythonWrapperGenerator(object):
             if func_name.startswith(evision_nif_prefix + "dnn_dnn_net") and (module_func_name == "getLayerShapes" or module_func_name == "getLayersShapes"):
                 sign = evision_nif_prefix + "dnn_dnn_net_" + module_func_name
             if unique_signatures.get(sign, None) is True:
-                writer.write('\n'.join(["  # {}".format(line.strip()) for line in opt_doc.split("\n")]))
-                writer.write(f'  # def {module_func_name}({func_args}) do\n  #   :evision.{erl_name}({func_args})\n  # end\n')
+                elixir_function.write('\n'.join(["  # {}".format(line.strip()) for line in opt_doc.split("\n")]))
+                elixir_function.write(f'  # def {module_func_name}({func_args}) do\n  #   :evision_nif.{erl_name}({func_args})\n  # end\n')
+                # writer.write('\n'.join(["  # {}".format(line.strip()) for line in opt_doc.split("\n")]))
+                # writer.write(f'  # def {module_func_name}({func_args}) do\n  #   :evision_nif.{erl_name}({func_args})\n  # end\n')
                 if len(func_args_with_opts) > 0:
-                    writer.write(f'  # def {module_func_name}({func_args_with_opts}) do\n  #   :evision.{erl_name}({func_args_with_opts})\n  # end\n')
+                    elixir_function.write(f'  # def {module_func_name}({func_args_with_opts}) do\n  #   :evision_nif.{erl_name}({func_args_with_opts})\n  # end\n')
+                    # writer.write(f'  # def {module_func_name}({func_args_with_opts}) do\n  #   :evision_nif.{erl_name}({func_args_with_opts})\n  # end\n')
             else:
                 unique_signatures[sign] = True
 
@@ -1905,7 +1945,7 @@ class PythonWrapperGenerator(object):
                                     # @param <ARG_NAME>[ <DESCRIPTION GOES HERE>]
                                     # @optional <ARG_NAME>[ <DESCRIPTION GOES HERE>]
                                     arg_desc = strip_line.split(' ', 3)
-                                    normalized_arg_name = self.map_erl_argname(arg_desc[1])
+                                    normalized_arg_name = self.map_elixir_argname(arg_desc[1])
                                     normalized_arg_name = normalized_arg_name.replace(":", "")
                                     if len(arg_desc) == 3:
                                         inline_doc1 += "  - **{}** : {}\n".format(normalized_arg_name, arg_desc[2])
@@ -1945,21 +1985,32 @@ class PythonWrapperGenerator(object):
                     inline_doc = ''.join(['  # {}\n'.format(line.strip()) for line in inline_doc.split("\n")])
 
                 when_guard = ' '
+                when_guard_erlang = ' '
                 if len(func_guard) > 0:
                     when_guard = ' when '
                     when_guard += ' and '.join(func_guard) + '\n  '
+                    when_guard_erlang = ' when '
+                    when_guard_erlang += ', '.join(func_guard_erlang)
 
                 opt_args = '' if not has_opts else ' ++ opts'
+                opt_args_erlang = '' if not has_opts else ' ++ Options'
                 module_func_args = func_args
+                module_func_args_erlang = func_args_erlang
                 module_func_args_with_opts = func_args_with_opts
-                positional = 'positional = [{}\n    ]'.format(",".join(['\n      {}: {}'.format(self.map_erl_argname(arg_name), self.map_erl_argname(arg_name)) for (arg_name, _, argtype) in arglist[:pos_end]]))
-                func_args = f'positional'
+                module_func_args_with_opts_erlang = func_args_with_opts_erlang
+                positional = 'positional = [{}\n    ]'.format(",".join(['\n      {}: {}'.format(self.map_elixir_argname(arg_name), self.map_elixir_argname(arg_name)) for (arg_name, _, argtype) in arglist[:pos_end]]))
+                positional_erlang = 'Positional = [{}\n  ]'.format(",".join(['\n    {}, {}'.format('{' + self.map_elixir_argname(arg_name), self.map_erlang_argname(arg_name) + '}') for (arg_name, _, argtype) in arglist[:pos_end]]))
+                func_args = 'positional'
+                func_args_erlang = 'Positional'
                 if len(func_args_with_opts) > 0:
                     func_args_with_opts = f'positional{opt_args}'
+                    func_args_with_opts_erlang = f'Positional{opt_args_erlang}'
                 if not is_ns and func.classname and not func.is_static and not is_constructor:
                     func_args = f'self, {func_args}'
+                    func_args_erlang = f'Self, {func_args_erlang}'
                     if len(func_args_with_opts) > 0:
                         func_args_with_opts = f'self, {func_args_with_opts}'
+                        func_args_with_opts_erlang = f'Self, {func_args_with_opts_erlang}'
 
                 function_group = ""
                 if len(func.namespace) > 0:
@@ -1971,60 +2022,146 @@ class PythonWrapperGenerator(object):
                 # this could be better perhaps, but it is hurting my brain...
                 if func_name.startswith(evision_nif_prefix + "dnn") and module_func_name == "forward":
                     inline_doc += function_group
-                    writer.write(f'{inline_doc}  def {module_func_name}(self, opts \\\\ []) when is_list(opts) do\n    :evision.{erl_name}(self, opts)\n  end\n')
-                    name_arity = f'{module_func_name}!/2'
-                    if not writer.deferror.get(name_arity, False):
-                        writer.write(f"  deferror {module_func_name}(self, opts)\n")
-                        writer.deferror[name_arity] = True
+                    name_arity_elixir_identifier = f'{module_func_name}!/2'
+                    name_arity_elixir = f'{module_func_name}!/1'
+                    elixir_function.write(f'{inline_doc}  def {module_func_name}(self, opts \\\\ []) when is_list(opts) do\n    :evision_nif.{erl_name}(self, opts)\n  end\n')
+                    # writer.write(f'{inline_doc}  def {module_func_name}(self, opts \\\\ []) when is_list(opts) do\n    :evision_nif.{erl_name}(self, opts)\n  end\n')
+                    
+                    name_arity_erlang = f'{module_func_name}!/1'
+                    name_arity_erlang_opt = f'{module_func_name}!/2'
+                    erlang_function.write(f'{module_func_name}(Self) ->\n  evision_nif:{erl_name}(Self).\n')
+                    erlang_function_opt.write(f'{module_func_name}(Self, Options) when is_list(Options) ->\n  evision_nif:{erl_name}(Self, Options).\n')
+                    # writer_erlang.write(f'{module_func_name}(Self) when is_list(Options) ->\n  evision_nif:{erl_name}(Self, Options).\n')
+                    # writer_erlang.write(f'{module_func_name}(Self, Options) ->\n  evision_nif:{erl_name}(Self, Options).\n')
+                    if not writer.deferror.get(name_arity_elixir_identifier, False):
+                        elixir_function.write(f"  deferror {module_func_name}(self, opts)\n")
+                        # writer.write(f"  deferror {module_func_name}(self, opts)\n")
+                        writer.deferror[name_arity_elixir_identifier] = True
                     continue
                 if func_name.startswith(evision_nif_prefix + "dnn_dnn_net") and (module_func_name == "getLayerShapes" or module_func_name == "getLayersShapes"):
                     inline_doc += function_group
-                    writer.write(f'{inline_doc}  def {module_func_name}(self, opts \\\\ []) when is_list(opts) do\n    :evision.{erl_name}(self, opts)\n  end\n')
-                    name_arity = f'{module_func_name}!/2'
-                    if not writer.deferror.get(name_arity, False):
-                        writer.write(f"  deferror {module_func_name}(self, opts)\n")
-                        writer.deferror[name_arity] = True
+                    name_arity_elixir_identifier = f'{module_func_name}!/2'
+                    name_arity_elixir = f'{module_func_name}!/1'
+                    elixir_function.write(f'{inline_doc}  def {module_func_name}(self, opts \\\\ []) when is_list(opts) do\n    :evision_nif.{erl_name}(self, opts)\n  end\n')
+                    # writer.write(f'{inline_doc}  def {module_func_name}(self, opts \\\\ []) when is_list(opts) do\n    :evision_nif.{erl_name}(self, opts)\n  end\n')
+                    
+                    name_arity_erlang = f'{module_func_name}!/1'
+                    name_arity_erlang_opt = f'{module_func_name}!/2'
+                    elixir_function.write(f'{module_func_name}(Self) ->\n  evision_nif:{erl_name}(Self).\n')
+                    erlang_function_opt.write(f'{module_func_name}(Self, Options) ->\n  evision_nif:{erl_name}(Self, Options).\n')
+                    # writer_erlang.write(f'{module_func_name}(Self) ->\n  evision_nif:{erl_name}(Self).\n')
+                    # writer_erlang.write(f'{module_func_name}(Self, Options) ->\n  evision_nif:{erl_name}(Self, Options).\n')
+                    
+                    if not writer.deferror.get(name_arity_elixir_identifier, False):
+                        elixir_function.write(f"  deferror {module_func_name}(self, opts)\n")
+                        # writer.write(f"  deferror {module_func_name}(self, opts)\n")
+                        writer.deferror[name_arity_elixir_identifier] = True
                     continue
                 if len(func_args_with_opts) > 0:
                     inline_doc += function_group
                     when_guard_with_opts = when_guard
+                    when_guard_with_opts_erlang = when_guard_erlang
                     if len(when_guard_with_opts.strip()) > 0:
                         when_guard_with_opts = f' {when_guard_with_opts.strip()} and is_list(opts)\n  '
+                        when_guard_with_opts_erlang = f' {when_guard_with_opts_erlang.strip()}, is_list(Options)'
                     else:
                         when_guard_with_opts = ' when is_list(opts)\n  '
+                        when_guard_with_opts_erlang = ' when is_list(Options)'
 
-                    writer.write(f'{inline_doc}  def {module_func_name}({module_func_args_with_opts}){when_guard_with_opts}do\n'
+                    elixir_function.write(f'{inline_doc}  def {module_func_name}({module_func_args_with_opts}){when_guard_with_opts}do\n'
                                  f'    {positional}\n'
-                                 f'    :evision.{erl_name}({func_args_with_opts})\n'
+                                 f'    :evision_nif.{erl_name}({func_args_with_opts})\n'
                                  '  end\n')
+                    # writer.write(f'{inline_doc}  def {module_func_name}({module_func_args_with_opts}){when_guard_with_opts}do\n'
+                    #              f'    {positional}\n'
+                    #              f'    :evision_nif.{erl_name}({func_args_with_opts})\n'
+                    #              '  end\n')
+                    
+                    erlang_function_opt.write(f'{module_func_name}({module_func_args_with_opts_erlang}){when_guard_with_opts_erlang} ->\n'
+                                        f'  {positional_erlang},\n'
+                                        f'  evision_nif:{erl_name}({func_args_with_opts_erlang}).\n\n'
+                    )
+                    # writer_erlang.write(f'{module_func_name}({module_func_args_with_opts_erlang}){when_guard_with_opts_erlang} ->\n'
+                    #                     f'  {positional_erlang},\n'
+                    #                     f'  evision_nif:{erl_name}({func_args_with_opts_erlang}).\n\n'
+                    # )
                     module_func_args_without_opts_defaults = module_func_args_with_opts.replace('\\\\ []', '').strip()
                     if len(module_func_args_without_opts_defaults) > 0:
-                        name_arity = f'{module_func_name}!/{len(module_func_args_without_opts_defaults.split(","))}'
+                        num_args = len(module_func_args_without_opts_defaults.split(","))
+                        name_arity_elixir_identifier = f'{module_func_name}!/{num_args}'
+                        if '\\\\ []' in module_func_args_with_opts:
+                            name_arity_elixir = f'{module_func_name}!/{num_args}'
+                        else:
+                            name_arity_elixir = f'{module_func_name}!/{num_args}'
                     else:
-                        name_arity = f'{module_func_name}!/0'
-                    if not writer.deferror.get(name_arity, False):
-                        writer.write(f"  deferror {module_func_name}({module_func_args_without_opts_defaults})\n")
-                        writer.deferror[name_arity] = True
-                writer.write(f'{function_group}  def {module_func_name}({module_func_args}){when_guard}do\n'
+                        name_arity_elixir_identifier = f'{module_func_name}!/0'
+                        name_arity_elixir = f'{module_func_name}!/0'
+                    if not writer.deferror.get(name_arity_elixir_identifier, False):
+                        elixir_function.write(f"  deferror {module_func_name}({module_func_args_without_opts_defaults})\n")
+                        # writer.write(f"  deferror {module_func_name}({module_func_args_without_opts_defaults})\n")
+                        writer.deferror[name_arity_elixir_identifier] = True
+                elixir_function.write(f'{function_group}  def {module_func_name}({module_func_args}){when_guard}do\n'
                              f'    {positional}\n'
-                             f'    :evision.{erl_name}({func_args})\n'
+                             f'    :evision_nif.{erl_name}({func_args})\n'
                              '  end\n')
+                # writer.write(f'{function_group}  def {module_func_name}({module_func_args}){when_guard}do\n'
+                #              f'    {positional}\n'
+                #              f'    :evision_nif.{erl_name}({func_args})\n'
+                #              '  end\n')
+
+                erlang_function.write(f'{module_func_name}({module_func_args_erlang}){when_guard_erlang} ->\n'
+                             f'  {positional_erlang},\n'
+                             f'  evision_nif:{erl_name}({func_args_erlang}).\n\n'
+                )
+                # writer_erlang.write(f'{module_func_name}({module_func_args_erlang}){when_guard_erlang} ->\n'
+                #              f'  {positional_erlang},\n'
+                #              f'  evision_nif:{erl_name}({func_args_erlang}).\n\n'
+                # )
                 if len(module_func_args) > 0:
-                    name_arity = f'{module_func_name}!/{len(module_func_args.split(","))}'
+                    name_arity_elixir = f'{module_func_name}!/{len(module_func_args.split(","))}'
+                    name_arity_erlang = f'{module_func_name}!/{len(module_func_args.split(","))}'
                 else:
-                    name_arity = f'{module_func_name}!/0'
-                if not writer.deferror.get(name_arity, False):
-                    writer.write(f'  deferror {module_func_name}({module_func_args})\n')
-                    writer.deferror[name_arity] = True
+                    name_arity_elixir = f'{module_func_name}!/0'
+                    name_arity_erlang = f'{module_func_name}!/0'
+                if not writer.deferror.get(name_arity_elixir, False):
+                    elixir_function.write(f'  deferror {module_func_name}({module_func_args})\n')
+                    # writer.write(f'  deferror {module_func_name}({module_func_args})\n')
+                    writer.deferror[name_arity_elixir] = True
+            if name_arity_elixir:
+                if guarded_elixir_function_groups.get(name_arity_elixir, None) is None:
+                    guarded_elixir_function_groups[name_arity_elixir] = []
+                guarded_elixir_function_groups[name_arity_elixir].append(elixir_function.getvalue())
+
+            if name_arity_erlang is not None:
+                if guarded_erlang_function_groups.get(name_arity_erlang, None) is None:
+                    guarded_erlang_function_groups[name_arity_erlang] = []
+                guarded_erlang_function_groups[name_arity_erlang].append(erlang_function.getvalue())
+            if name_arity_erlang_opt is not None:
+                if guarded_erlang_function_groups.get(name_arity_erlang_opt, None) is None:
+                    guarded_erlang_function_groups[name_arity_erlang_opt] = []
+                guarded_erlang_function_groups[name_arity_erlang_opt].append(erlang_function_opt.getvalue())
+
+        for name_arity in sorted(guarded_elixir_function_groups.keys()):
+            for guarded_function in guarded_elixir_function_groups[name_arity]:
+                writer.write(guarded_function)
+
+        for name_arity in sorted(guarded_erlang_function_groups.keys()):
+            guarded_functions = guarded_erlang_function_groups[name_arity]
+            if len(guarded_functions) == 1:
+                writer_erlang.write(guarded_functions[0])
+            else:
+                for guarded_function in guarded_functions[:-1]:
+                    writer_erlang.write(guarded_function[:-3] + ';\n')
+                writer_erlang.write(guarded_functions[-1])
 
     def gen_namespace(self):
         for ns_name in self.namespaces:
             ns = self.namespaces[ns_name]
             wname = normalize_class_name(ns_name)
             for name, func in sorted(ns.funcs.items()):
-                self.gen_erl_declaration(wname, name, func, self.opencv_func, is_ns=True)
+                self.gen_erl_declaration(wname, name, func, self.opencv_func, self.opencv_func_erlang, is_ns=True)
                 self.code_ns_reg.write(func.get_tab_entry())
-        from pathlib import Path
+
         modules_dir = Path(self.output_path) / 'modules'
         for module_text in modules_dir.glob('*.h'):
             check_defs = None
@@ -2055,12 +2192,12 @@ class PythonWrapperGenerator(object):
                             else:
                                 self.code_ns_reg.write(f'    F_CPU({erl_name}, {func_name}, {func_arity}),\n')
                             if int(func_arity) > 0:
-                                self.erl_cv_nif_erlang.write(f'{erl_name}(_opts) ->\n    not_loaded(?LINE).\n')
+                                self.evision_nif_erlang.write(f'{erl_name}(_opts) ->\n    not_loaded(?LINE).\n')
                             else:
-                                self.erl_cv_nif_erlang.write(f'{erl_name}() ->\n    not_loaded(?LINE).\n')
+                                self.evision_nif_erlang.write(f'{erl_name}() ->\n    not_loaded(?LINE).\n')
                         elif line.startswith("// @evision nif: "):
                             line = line[len("// @evision nif: "):].strip()
-                            self.erl_cv_nif.write(f'  {line}\n')
+                            self.evision_nif.write(f'  {line}\n')
 
         self.code_ns_reg.write('\n};\n\n')
 
@@ -2116,6 +2253,7 @@ class PythonWrapperGenerator(object):
             elixir_module_name = self.make_elixir_module_names(separated_ns=inner_ns)
         elixir_module_name = elixir_module_name.replace('_', '')
         opencv_module_file_name = elixir_module_name.replace('.', '_')
+
         if opencv_module_file_name in self.opencv_modules:
             return self.opencv_modules[opencv_module_file_name], inner_ns
         else:
@@ -2125,23 +2263,32 @@ class PythonWrapperGenerator(object):
             module_file_writer.write('  import Kernel, except: [apply: 2, apply: 3]\n')
             module_file_writer.write('  import Evision.Errorize\n')
             module_file_writer.deferror = {}
-            self.opencv_modules[opencv_module_file_name] = module_file_writer
-            return module_file_writer, inner_ns
+
+            module_file_writer_erlang = StringIO()
+            module_file_writer_erlang.doc_written = {}
+            if not opencv_module_file_name.startswith("evision_"):
+                module_file_writer_erlang.write(f'-module(evision_{opencv_module_file_name.lower()}).\n-compile([export_all]).\n\n')
+            else:
+                module_file_writer_erlang.write(f'-module({opencv_module_file_name.lower()}).\n-compile([export_all]).\n\n')
+            module_file_writer_erlang.deferror = {}
+
+            self.opencv_modules[opencv_module_file_name] = (module_file_writer, module_file_writer_erlang)
+            return self.opencv_modules[opencv_module_file_name], inner_ns
 
     def gen(self, srcfiles, output_path, erl_output_path, erlang_output_path):
         self.output_path = output_path
         self.clear()
         self.parser = hdr_parser.CppHeaderParser(generate_umat_decls=True, generate_gpumat_decls=True)
 
-        self.erl_cv_nif.write('defmodule :evision_nif do\n{}\n'.format(gen_erl_cv_nif_load_nif))
-        self.evision_ex.write('defmodule Evision do\n')
-        self.evision_ex.write('  use Bitwise\n')
-        self.evision_ex.write('  import Kernel, except: [apply: 2, apply: 3, min: 2, max: 2]\n')
-        self.evision_ex.write('  import Evision.Errorize\n')
-        self.evision_ex.deferror = {}
+        self.evision_nif.write('defmodule :evision_nif do\n{}\n'.format(gen_evision_nif_load_nif))
+        self.evision_elixir.write('defmodule Evision do\n')
+        self.evision_elixir.write('  use Bitwise\n')
+        self.evision_elixir.write('  import Kernel, except: [apply: 2, apply: 3, min: 2, max: 2]\n')
+        self.evision_elixir.write('  import Evision.Errorize\n')
+        self.evision_elixir.deferror = {}
 
-        self.erl_cv_nif_erlang.write('-module(evision_nif).\n-compile([export_all]).\n{}\n'.format(gen_erl_cv_nif_load_nif_erlang))
-        self.evision_erlang.write('-module(evision).\n-compile([export_all]).\n')
+        self.evision_nif_erlang.write('-module(evision_nif).\n-compile([export_all]).\n\n{}\n'.format(gen_evision_nif_load_nif_erlang))
+        self.evision_erlang.write('-module(evision).\n-compile([export_all]).\n\n')
         
         self.code_ns_reg.write('static ErlNifFunc nif_functions[] = {\n')
 
@@ -2267,14 +2414,14 @@ class PythonWrapperGenerator(object):
             self.gen_const_reg(constinfo)
 
         # end 'evision.ex'
-        self.evision_ex.write(self.enum_names_io.getvalue())
-        for fix in evision_ex_fixes:
-            self.evision_ex.write(fix)
-            self.evision_ex.write("\n")
-        self.evision_ex.write(enabled_modules_code.substitute(
+        self.evision_elixir.write(self.enum_names_io.getvalue())
+        for fix in evision_elixir_fixes:
+            self.evision_elixir.write(fix)
+            self.evision_elixir.write("\n")
+        self.evision_elixir.write(enabled_modules_code.substitute(
             enabled_modules=",".join([f'\n      "{m}"' for m in self.enabled_modules]))
         )
-        self.evision_ex.write('\nend\n')
+        self.evision_elixir.write('\nend\n')
 
         # end 'evision.erl'
         self.evision_erlang.write(self.enum_names_io_erlang.getvalue())
@@ -2287,7 +2434,7 @@ class PythonWrapperGenerator(object):
         )
 
         # end 'evision_nif.ex'
-        self.erl_cv_nif.write('\nend\n')
+        self.evision_nif.write('\nend\n')
 
         # That's it. Now save all the files
         self.save(output_path, "evision_generated_include.h", self.code_include)
@@ -2296,14 +2443,19 @@ class PythonWrapperGenerator(object):
         self.save(output_path, "evision_generated_types.h", self.code_type_publish)
         self.save(output_path, "evision_generated_types_content.h", self.code_types)
         self.save(output_path, "evision_generated_modules_content.h", self.code_ns_reg)
-        self.save(erl_output_path, "evision_nif.ex", self.erl_cv_nif)
-        self.save(erl_output_path, "evision.ex", self.evision_ex)
-        self.save(erlang_output_path, "evision_nif.erl", self.erl_cv_nif_erlang)
+
+        self.save(erl_output_path, "evision_nif.ex", self.evision_nif)
+        self.save(erl_output_path, "evision.ex", self.evision_elixir)
+
+        self.save(erlang_output_path, "evision_nif.erl", self.evision_nif_erlang)
         self.save(erlang_output_path, "evision.erl", self.evision_erlang)
+
         for name in self.opencv_modules:
-            writer = self.opencv_modules[name]
-            writer.write('\nend\n')
-            self.save(erl_output_path, f"opencv_{name.lower()}.ex", writer)
+            (elixir_writer, erlang_writer) = self.opencv_modules[name]
+            elixir_writer.write('\nend\n')
+            self.save(erl_output_path, f"evision_{name.lower()}.ex", elixir_writer)
+            self.save(erlang_output_path, f"evision_{name.lower()}.erl", erlang_writer)
+
 
 
 if __name__ == "__main__":
