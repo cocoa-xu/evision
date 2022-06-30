@@ -1997,7 +1997,7 @@ static int on_upgrade(ErlNifEnv*, void**, void**, ERL_NIF_TERM)
     return 0;
 }
 
-ERL_NIF_INIT(evision, nif_functions, on_load, on_reload, on_upgrade, NULL);
+ERL_NIF_INIT(evision_nif, nif_functions, on_load, on_reload, on_upgrade, NULL);
 
 #if defined(__GNUC__)
 #pragma GCC visibility push(default)

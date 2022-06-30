@@ -1,4 +1,4 @@
-defmodule Evision.Gui do
+defmodule Evision.HighGui do
   @moduledoc """
   OpenCV High-level Graphical User Interface
   """
@@ -22,7 +22,7 @@ defmodule Evision.Gui do
   """
   @doc namespace: :"cv.highgui"
   def imshow(winname, mat) when is_binary(winname) do
-    :evision.imshow(winname: winname, mat: mat)
+    :evision_nif.imshow(winname: winname, mat: mat)
   end
 
   deferror(imshow(winname, mat))
@@ -32,7 +32,7 @@ defmodule Evision.Gui do
   """
   @doc namespace: :"cv.highgui"
   def waitkey(delay) when is_integer(delay) do
-    :evision.waitKey(delay: delay)
+    :evision_nif.waitKey(delay: delay)
   end
 
   deferror(waitkey(delay))
@@ -42,7 +42,7 @@ defmodule Evision.Gui do
   """
   @doc namespace: :"cv.highgui"
   def destroyWindow(winname) when is_binary(winname) do
-    :evision.destroyWindow(winname: winname)
+    :evision_nif.destroyWindow(winname: winname)
   end
 
   deferror(destroyWindow(winname))
@@ -52,7 +52,7 @@ defmodule Evision.Gui do
   """
   @doc namespace: :"cv.highgui"
   def destroyAllWindows do
-    :evision.destroyAllWindows()
+    :evision_nif.destroyAllWindows()
   end
 
   deferror(destroyAllWindows())
