@@ -42,7 +42,15 @@ jobs:
       MIX_ENV: "test"
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
+
+      - name: Cache brew packages (with FFmpeg)
+        id: cache-brew-packages-ffmpeg
+        uses: actions/cache@v3
+        with:
+          key: brew-ffmpeg-${{ runner.os }}-${{ env.OPENCV_VER }}
+          path: |
+            ~/Library/Caches/Homebrew/
 
       - name: Install Erlang and Elixir
         run: |

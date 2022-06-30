@@ -23,7 +23,15 @@ jobs:
               arch: arm64
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
+
+      - name: Cache brew packages
+        id: cache-brew-packages
+        uses: actions/cache@v3
+        with:
+          key: brew-${{ runner.os }}-${{ env.OPENCV_VER }}
+          path: |
+            ~/Library/Caches/Homebrew/
 
       - name: Install Erlang and Elixir
         run: |
