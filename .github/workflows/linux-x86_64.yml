@@ -85,7 +85,7 @@ jobs:
         id: cache-mix-compile
         uses: actions/cache@v3
         with:
-          key: compile-ffmpeg-${{ runner.os }}-${{ hashFiles('cc_toolchain/**') }}-${{ hashFiles('c_src/**') }}-${{ env.OPENCV_VER }}
+          key: compile-ffmpeg-${{ runner.os }}-${{ hashFiles('cc_toolchain/**') }}-${{ hashFiles('c_src/**') }}-${{ hashFiles('CMakeLists.txt') }}-${{ hashFiles('Makefile') }}-${{ env.OPENCV_VER }}
           path: |
             ./_build
 
