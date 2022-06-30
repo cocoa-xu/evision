@@ -95,7 +95,7 @@ $(HEADERS_TXT): $(CONFIGURATION_PRIVATE_HPP)
 			-D CMAKE_TOOLCHAIN_FILE="$(TOOLCHAIN_FILE)" \
 			$(CMAKE_OPTIONS) $(OPENCV_DIR) && \
 		make "$(MAKE_BUILD_FLAGS)" && \
-		cd $(CMAKE_OPENCV_BUILD_DIR) && make install && \
+		cd $(CMAKE_OPENCV_BUILD_DIR) && make install; \
 		cp "$(HEADERS_TXT)" "$(C_SRC)/headers.txt" ; \
 	fi
 
