@@ -203,8 +203,8 @@ defmodule Evision.MixProject do
 
   defp deps do
     [
-      {:elixir_make, "~> 0.6"},
       {:dll_loader_helper, "~> 0.1"},
+      {:elixir_make, "~> 0.6", runtime: false},
       {:ex_doc, "~> 0.27", only: :docs, runtime: false},
       {:nx, "~> 0.1", optional: true}
     ]
@@ -291,8 +291,10 @@ defmodule Evision.MixProject do
     [
       name: "evision",
       # These are the default files included in the package
-      files: ~w(lib c_src py_src 3rd_party priv .formatter.exs mix.exs README* readme* LICENSE*
-                license* CHANGELOG* changelog* src rebar.config),
+      files: ~w(c_src py_src 3rd_party scripts patches cc_toolchain priv Makefile Makefile.win CMakeLists.txt
+                lib .formatter.exs mix.exs
+                src rebar.config
+                README* readme* LICENSE* license* CHANGELOG* changelog*),
       licenses: ["Apache-2.0"],
       links: %{"GitHub" => @github_url}
     ]
