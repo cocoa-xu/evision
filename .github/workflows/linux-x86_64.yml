@@ -90,7 +90,9 @@ jobs:
             ./_build
 
       - name: Mix Compile
-        run: mix compile
+        run: |
+          rm -f _build/test/lib/evision/priv/evision.so
+          mix compile
 
       - name: Mix Test
         run: |
