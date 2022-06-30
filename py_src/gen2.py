@@ -916,9 +916,9 @@ class BeamWrapperGenerator(object):
             module_file_writer_erlang = StringIO()
             module_file_writer_erlang.doc_written = {}
             if not opencv_module_file_name.startswith("evision_"):
-                module_file_writer_erlang.write(f'-module(evision_{opencv_module_file_name.lower()}).\n-compile([export_all]).\n\n')
+                module_file_writer_erlang.write(f'-module(evision_{opencv_module_file_name.lower()}).\n-compile(nowarn_export_all).\n-compile([export_all]).\n\n')
             else:
-                module_file_writer_erlang.write(f'-module({opencv_module_file_name.lower()}).\n-compile([export_all]).\n\n')
+                module_file_writer_erlang.write(f'-module({opencv_module_file_name.lower()}).\n--compile(nowarn_export_all).\ncompile([export_all]).\n\n')
             module_file_writer_erlang.deferror = {}
 
             self.opencv_modules[opencv_module_file_name] = (module_file_writer, module_file_writer_erlang)
@@ -936,8 +936,8 @@ class BeamWrapperGenerator(object):
         self.evision_elixir.write('  import Evision.Errorize\n')
         self.evision_elixir.deferror = {}
 
-        self.evision_nif_erlang.write('-module(evision_nif).\n-compile([export_all]).\n\n{}\n'.format(ET.gen_evision_nif_load_nif_erlang))
-        self.evision_erlang.write('-module(evision).\n-compile([export_all]).\n\n')
+        self.evision_nif_erlang.write('-module(evision_nif).\n-compile(nowarn_export_all).\n-compile([export_all]).\n\n{}\n'.format(ET.gen_evision_nif_load_nif_erlang))
+        self.evision_erlang.write('-module(evision).\n-compile(nowarn_export_all).\n-compile([export_all]).\n\n')
         
         self.code_ns_reg.write('static ErlNifFunc nif_functions[] = {\n')
 
