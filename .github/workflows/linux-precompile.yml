@@ -11,6 +11,8 @@ on:
 jobs:
   mix_test:
     runs-on: ubuntu-20.04
+    env:
+      OPENCV_VER: "4.5.5"
     strategy:
       fail-fast: false
       matrix:
@@ -64,6 +66,29 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential automake autoconf pkg-config bc m4 unzip zip curl git libssl-dev gzip libncurses5-dev python3 ca-certificates ${{ matrix.pair.c_compiler }} ${{ matrix.pair.cpp_compiler }}
+      
+      - name: Cache mix packages and OpenCV
+        id: cache-mix-and-opencv
+        uses: actions/cache@v3
+        with:
+          key: deps-${{ hashFiles('mix.lock') }}-${{ env.OPENCV_VER }}
+          path: |
+            ./deps
+            ./3rd_party
+
+      - name: Get mix deps and download OpenCV
+        if: steps.cache-mix-and-opencv.outputs.cache-hit != 'true'
+        run: |
+          mix deps.get
+          bash scripts/download_opencv.sh ${OPENCV_VER} 3rd_party/cache 3rd_party/opencv/
+
+      - name: Cache compiled OpenCV
+        id: cache-mix-compile
+        uses: actions/cache@v3
+        with:
+          key: compile-${{ runner.os }}-${{ hashFiles('cc_toolchain/**') }}-${{ hashFiles('c_src/**') }}-${{ env.OPENCV_VER }}
+          path: |
+            ./_build
 
       - name: Create precompiled library
         run: |
@@ -71,7 +96,6 @@ jobs:
             export CMAKE_TOOLCHAIN_FILE="$(pwd)/${{ matrix.pair.cmake_toolchain_file }}"
           fi
           echo "CMAKE_TOOLCHAIN_FILE: ${CMAKE_TOOLCHAIN_FILE}"
-          mix deps.get
           mix compile
           export PKG_NAME=evision-linux-${{ matrix.pair.arch_name }}-${GITHUB_REF##*/}
           mkdir -p "${PKG_NAME}"

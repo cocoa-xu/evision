@@ -58,16 +58,52 @@ jobs:
           sudo apt-get update && sudo apt-get install -y build-essential automake autoconf pkg-config bc m4 unzip zip curl git libssl-dev libncurses5-dev python3 ca-certificates squashfs-tools ssh-askpass libmnl-dev
           mix local.hex --force
           mix local.rebar --force
+      
+      - name: Cache mix packages and OpenCV
+        id: cache-mix-and-opencv
+        uses: actions/cache@v3
+        with:
+          key: deps-${{ hashFiles('mix.lock') }}-${{ env.OPENCV_VER }}
+          path: |
+            ./deps
+            ./3rd_party
+
+      - name: Get mix deps and download OpenCV
+        if: steps.cache-mix-and-opencv.outputs.cache-hit != 'true'
+        run: |
+          mix deps.get
+          bash scripts/download_opencv.sh ${OPENCV_VER} 3rd_party/cache 3rd_party/opencv/
+
+      - name: Cahche nerves
+        id: cache-nerves
+        uses: actions/cache@3
+        with:
+          key: nerves
+          path: |
+            ~/.nerves
+
+      - name: Install Nerves
+        if: steps.cache-nerves.outputs.cache-hit != 'true'
+        run: |
           mix archive.install hex nerves_bootstrap --force || true
-          wget -k https://github.com/fwup-home/fwup/releases/download/v1.9.0/fwup_1.9.0_amd64.deb -O fwup_1.9.0_amd64.deb
-          sudo dpkg -i fwup_1.9.0_amd64.deb
+          wget -k https://github.com/fwup-home/fwup/releases/download/v1.9.0/fwup_1.9.0_amd64.deb -O ~/.nerves/fwup_1.9.0_amd64.deb
+
+      - name: Cache nerves builds
+        id: cache-nerves-builds
+        uses: actions/cache@v3
+        with:
+          key: compile-nerves-${{ runner.os }}-${{ hashFiles('cc_toolchain/**') }}-${{ hashFiles('c_src/**') }}-${{ env.OPENCV_VER }}-${{ env.NERVES_LIVEBOOK_VER }}
+          path: |
+            ../nerves_livebook
 
       - name: Make a nerves project
         run: |
+          sudo dpkg -i ~/.nerevs/fwup_1.9.0_amd64.deb || true
           cd ../
           git clone https://github.com/livebook-dev/nerves_livebook.git
           cd nerves_livebook
           git checkout "${NERVES_LIVEBOOK_VER}"
+          git checkout mix.exs
           LINE="$(grep -n 'toolshed' mix.exs | awk -F: '{print $1+1}')"
           head -n "${LINE}" mix.exs > mix.exs.tmp
           echo '      {:evision, "~> 0.1.0", path: "../evision"},' >> mix.exs.tmp

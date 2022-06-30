@@ -4,6 +4,7 @@ SRC = $(shell pwd)/src
 C_SRC = $(shell pwd)/c_src
 PY_SRC = $(shell pwd)/py_src
 LIB_SRC = $(shell pwd)/lib
+SCRIPTS = $(shell pwd)/scripts
 ifdef CMAKE_TOOLCHAIN_FILE
 	CMAKE_CONFIGURE_FLAGS=-D CMAKE_TOOLCHAIN_FILE="$(CMAKE_TOOLCHAIN_FILE)"
 endif
@@ -58,6 +59,7 @@ $(OPENCV_CONFIGURATION_PRIVATE_HPP):
    		if [ ! -e "$(OPENCV_CONFIGURATION_PRIVATE_HPP)" ]; then \
 			if [ "$(OPENCV_USE_GIT_HEAD)" = "false" ]; then \
 				echo "using $(OPENCV_VER)" ; \
+				bash $(SCRIPTS)/download_opencv.sh $(OPENCV_VER) "$(OPENCV_CACHE_DIR)" "$(OPENCV_ROOT_DIR)"; \
 			else \
 		  		rm -rf "$(OPENCV_DIR)" ; \
 				git clone --branch=$(OPENCV_USE_GIT_BRANCH) --depth=1 $(OPENCV_GIT_REPO) "$(OPENCV_DIR)" ; \

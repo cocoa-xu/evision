@@ -10,41 +10,9 @@ defmodule Evision.MixProject do
   @compatible_opencv_versions ["4.5.3", "4.5.4", "4.5.5"]
   @source_url "#{@github_url}/tree/#{@opencv_version}"
 
-  defp download_opencv_if_needed(opencv_ver, prefer_precompiled) do
-    #  in simple words
-    #  1. download "https://github.com/opencv/opencv/archive/$(OPENCV_VER).zip" to "3rd_party/cache/opencv-$(OPENCV_VER).zip"
-    #  2. unzip -o "3rd_party/cache/opencv-$(OPENCV_VER).zip" -d "OPENCV_ROOT_DIR"
-    #   3rd_party
-    #   ├── cache
-    #   │   └── opencv_$(OPENCV_VER).zip
-    #   └── opencv
-    #       └── opencv-$(OPENCV_VER)
-
-    if prefer_precompiled == "false" and System.get_env("OPENCV_USE_GIT_HEAD", "false") == "false" do
-      source_zip_url = "https://github.com/opencv/opencv/archive/#{opencv_ver}.zip"
-      cache_dir = Path.join([__DIR__, "3rd_party", "cache"])
-      File.mkdir_p!(cache_dir)
-      cache_location = Path.join([__DIR__, "3rd_party", "cache", "opencv-#{opencv_ver}.zip"])
-      source_root_dir = Path.join([__DIR__, "3rd_party", "opencv"])
-      File.mkdir_p!(source_root_dir)
-      source_dir = Path.join([__DIR__, "3rd_party", "opencv", "opencv-#{opencv_ver}"])
-
-      if !File.dir?(source_dir) do
-        :ssl.start()
-        :inets.start()
-        download!(source_zip_url, cache_location)
-
-        :zip.unzip(String.to_charlist(cache_location), [
-          {:cwd, String.to_charlist(source_root_dir)}
-        ])
-      end
-    end
-  end
-
   def project do
     {cmake_options, enabled_modules} = generate_cmake_options()
     opencv_ver = opencv_versions(System.get_env("OPENCV_VER", @opencv_version))
-    download_opencv_if_needed(opencv_ver, System.get_env("EVISION_PREFER_PRECOMPILED", "false"))
     ninja = System.find_executable("ninja")
 
     [
@@ -328,32 +296,5 @@ defmodule Evision.MixProject do
       licenses: ["Apache-2.0"],
       links: %{"GitHub" => @github_url}
     ]
-  end
-
-  defp download!(url, save_as, overwrite \\ false)
-
-  defp download!(url, save_as, false) do
-    unless File.exists?(save_as) do
-      download!(url, save_as, true)
-    end
-
-    :ok
-  end
-
-  defp download!(url, save_as, true) do
-    http_opts = []
-    opts = [body_format: :binary]
-    arg = {url, []}
-
-    body =
-      case :httpc.request(:get, arg, http_opts, opts) do
-        {:ok, {{_, 200, _}, _, body}} ->
-          body
-
-        {:error, reason} ->
-          raise inspect(reason)
-      end
-
-    File.write!(save_as, body)
   end
 end
