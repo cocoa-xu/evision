@@ -50,6 +50,7 @@ jobs:
     runs-on: ubuntu-20.04
     env:
       MIX_ENV: test
+      OPENCV_VER: "4.5.5"
 
     steps:
       - uses: actions/checkout@v2
@@ -84,14 +85,12 @@ jobs:
         id: cache-mix-compile
         uses: actions/cache@v3
         with:
-          key: compile-ffmpeg-${{ hashFiles('cc_toolchain/**') }}-${{ hashFiles('c_src/**') }}-${{ env.OPENCV_VER }}
+          key: compile-ffmpeg-${{ runner.os }}-${{ hashFiles('cc_toolchain/**') }}-${{ hashFiles('c_src/**') }}-${{ env.OPENCV_VER }}
           path: |
             ./_build
 
       - name: Mix Compile
-        run: |
-          mix deps.get
-          mix compile
+        run: mix compile
 
       - name: Mix Test
         run: |

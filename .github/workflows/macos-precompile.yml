@@ -12,6 +12,7 @@ jobs:
     runs-on: macos-11
     env:
       MIX_ENV: dev
+      OPENCV_VER: "4.5.5"
     strategy:
       fail-fast: false
       matrix:

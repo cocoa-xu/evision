@@ -37,6 +37,9 @@ on:
 jobs:
   mix_test:
     runs-on: macos-11
+    env:
+      OPENCV_VER: "4.5.5"
+      MIX_ENV: "test"
 
     steps:
       - uses: actions/checkout@v2
@@ -69,15 +72,12 @@ jobs:
         id: cache-mix-compile
         uses: actions/cache@v3
         with:
-          key: compile-ff${{ runner.os }}-${{ hashFiles('cc_toolchain/**') }}-${{ hashFiles('c_src/**') }}-${{ env.OPENCV_VER }}
+          key: compile-ffmpeg-${{ runner.os }}-${{ hashFiles('cc_toolchain/**') }}-${{ hashFiles('c_src/**') }}-${{ env.OPENCV_VER }}
           path: |
             ./_build
 
       - name: Mix Compile
-        run: |
-          export MIX_ENV=test
-          mix deps.get
-          mix compile
+        run: mix compile
 
       - name: Mix Test
         run: |
