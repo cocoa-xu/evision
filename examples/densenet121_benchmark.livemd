@@ -53,89 +53,25 @@ end
 
 ```elixir
 defmodule DetectionModel do
-  def postprocess(mat, detections, net, confidence_threshold) do
-    {:ok, out_layers} = Cv.DNN.Net.getUnconnectedOutLayers(net)
-    {:ok, out_layer} = Cv.DNN.Net.getLayer(net, Enum.at(out_layers, 0))
-    out_layer_type = Cv.DNN.Layer.get_type(out_layer) |> IO.iodata_to_binary()
-    _postprocess(mat, detections, net, confidence_threshold, out_layer_type, [])
-  end
+  def benchmark(times, mat, model, out_names, opts \\ []) do
+    mean = opts[:mean] || [0, 0, 0]
+    scalefactor = opts[:scalefactor] || 1.0
 
-  defp _postprocess(_mat, [], _net, _confidence_threshold, <<"DetectionOutput">>, acc),
-    do: {:ok, Enum.reverse(acc)}
+    for _ <- 1..times, reduce: {[], []} do
+      {forward_only, all} ->
+        start_time_1 = :os.system_time(:millisecond)
+        blob = Cv.DNN.blobFromImage!(mat, opts)
+        model = Cv.DNN.Net.setInput!(model, blob, name: "", scalefactor: scalefactor, mean: mean)
 
-  defp _postprocess(
-         mat,
-         [outs | detections],
-         net,
-         confidence_threshold,
-         <<"DetectionOutput">>,
-         acc
-       ) do
-    {:ok, data} = Cv.Mat.to_binary(outs)
-    {:ok, {h, w, _}} = Cv.Mat.shape(mat)
-    {:ok, translated_outs} = _translate_outs(confidence_threshold, data, h, w, [])
+        start_time_2 = :os.system_time(:millisecond)
+        _detections = Cv.DNN.Net.forward!(model, outBlobNames: out_names)
+        end_time = :os.system_time(:millisecond)
 
-    _postprocess(mat, detections, net, confidence_threshold, "DetectionOutput", [
-      translated_outs | acc
-    ])
-  end
-
-  defp _translate_outs(_confidence_threshold, <<>>, _h, _w, acc), do: {:ok, acc}
-
-  defp _translate_outs(
-         confidence_threshold,
-         <<_batch_id::float-size(32)-little, class_id::float-size(32)-little,
-           confidence::float-size(32)-little, left::float-size(32)-little,
-           top::float-size(32)-little, right::float-size(32)-little,
-           bottom::float-size(32)-little, rest::binary>>,
-         h,
-         w,
-         acc
-       ) do
-    if confidence > confidence_threshold do
-      [class_id, l, t, r, b] =
-        Enum.map([class_id, left, top, right, bottom], fn f -> trunc(f) end)
-
-      width = r - l + 1
-      height = b - t + 1
-
-      [l, t, r, b] =
-        if width <= 2 or height <= 2 do
-          Enum.map([left * w, top * h, right * w, bottom * h], fn f -> trunc(f) end)
-        else
-          [l, t, r, b]
-        end
-
-      _translate_outs(confidence_threshold, rest, h, w, [
-        {class_id - 1, confidence, l, t, r, b} | acc
-      ])
-    else
-      _translate_outs(confidence_threshold, rest, h, w, acc)
+        inference_time_1 = end_time - start_time_1
+        inference_time_2 = end_time - start_time_2
+        IO.puts("Inference time=>#{inference_time_2} ms")
+        {[inference_time_2 | forward_only], [inference_time_1 | all]}
     end
-  end
-
-  def get_labels(class_label_file) do
-    class_label_file
-    |> File.read!()
-    |> String.split("\n")
-  end
-
-  def predict(mat, model, out_names, opts \\ []) do
-    {:ok, blob} = Cv.DNN.blobFromImage(mat, opts)
-
-    {:ok, model} = Cv.DNN.Net.setInput(model, blob, name: "", scalefactor: 1.0, mean: [0, 0, 0])
-
-    start_time = :os.system_time(:millisecond)
-    {:ok, detections} = Cv.DNN.Net.forward(model, outBlobNames: out_names)
-    end_time = :os.system_time(:millisecond)
-    inference_time = end_time - start_time
-    IO.puts("Inference time=>#{inference_time} ms")
-    {:ok, mat, detections, inference_time}
-  end
-
-  def predict_file(image_file, model, out_names, opts \\ []) do
-    {:ok, mat} = Cv.imread(image_file)
-    predict(mat, model, out_names, opts)
   end
 
   def get_model(filename) do
@@ -148,7 +84,7 @@ end
 
 ```elixir
 defmodule DenseNet121 do
-  defp download_model(opset_version \\ 12) when opset_version in [3, 6, 7, 8, 9, 12] do
+  defp download_model(opset_version) when opset_version in [3, 6, 7, 8, 9, 12] do
     onnx_filename = "densenet-#{opset_version}.onnx"
     test_filename = "CyprusShorthair.jpg"
 
@@ -175,26 +111,19 @@ defmodule DenseNet121 do
   def benchmark(times, opset_version \\ 12) do
     {net, out_names, test_mat} = get_detection_model(opset_version)
 
-    inference_times =
-      for _ <- 1..times, reduce: [] do
-        inference_times ->
-          {:ok, _mat, _detections, inference_time} =
-            DetectionModel.predict(test_mat, net, out_names,
-              scalefactor: 1,
-              swapRB: true,
-              mean: [128, 128, 128],
-              size: [224, 224]
-            )
-
-          [inference_time | inference_times]
-      end
-
-    inference_times
+    DetectionModel.benchmark(times, test_mat, net, out_names,
+      scalefactor: 1,
+      swapRB: true,
+      mean: [128, 128, 128],
+      size: [224, 224]
+    )
   end
 end
 ```
 
 ```elixir
-inference_times = DenseNet121.benchmark(50)
-Enum.sum(inference_times) / Enum.count(inference_times)
+{forward_only, all} = DenseNet121.benchmark(50)
+avg_forward_only = Enum.sum(forward_only) / Enum.count(forward_only)
+avg_all = Enum.sum(all) / Enum.count(all)
+{avg_forward_only, avg_all}
 ```
