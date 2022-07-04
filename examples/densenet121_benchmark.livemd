@@ -172,16 +172,22 @@ defmodule DenseNet121 do
     {net, out_names, test_mat}
   end
 
-  def benchmark(opset_version \\ 12) do
+  def benchmark(times, opset_version \\ 12) do
     {net, out_names, test_mat} = get_detection_model(opset_version)
 
-    {:ok, _mat, _detections, inference_times} =
-      DetectionModel.predict(test_mat, net, out_names,
-        scalefactor: 1,
-        swapRB: true,
-        mean: [128, 128, 128],
-        size: [224, 224]
-      )
+    inference_times =
+      for _ <- 1..times, reduce: [] do
+        inference_times ->
+          {:ok, _mat, _detections, inference_time} =
+            DetectionModel.predict(test_mat, net, out_names,
+              scalefactor: 1,
+              swapRB: true,
+              mean: [128, 128, 128],
+              size: [224, 224]
+            )
+
+          [inference_time | inference_times]
+      end
 
     inference_times
   end
@@ -189,11 +195,6 @@ end
 ```
 
 ```elixir
-inference_times =
-  for _ <- 0..50, reduce: [] do
-    inference_times ->
-      [DenseNet121.benchmark() | inference_times]
-  end
-
+inference_times = DenseNet121.benchmark(50)
 Enum.sum(inference_times) / Enum.count(inference_times)
 ```
