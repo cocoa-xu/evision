@@ -203,10 +203,10 @@ defmodule Evision.MixProject do
 
   defp deps do
     [
-      {:dll_loader_helper, "~> 0.1"},
       {:elixir_make, "~> 0.6", runtime: false},
-      {:ex_doc, "~> 0.27", only: :docs, runtime: false},
-      {:nx, "~> 0.1", optional: true}
+      {:dll_loader_helper, "~> 0.1"},
+      {:ex_doc, "~> 0.28", only: :docs, runtime: false},
+      {:nx, "~> 0.2", optional: true}
     ]
   end
 
