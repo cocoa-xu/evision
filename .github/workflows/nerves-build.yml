@@ -76,7 +76,7 @@ jobs:
 
       - name: Cahche nerves
         id: cache-nerves
-        uses: actions/cache@3
+        uses: actions/cache@v3
         with:
           key: nerves
           path: |
