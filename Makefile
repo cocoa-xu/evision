@@ -1,3 +1,7 @@
+ifndef MIX_APP_PATH
+	MIX_APP_PATH=$(shell pwd)
+endif
+
 PRIV_DIR = $(MIX_APP_PATH)/priv
 EVISION_SO = $(PRIV_DIR)/evision.so
 SRC = $(shell pwd)/src

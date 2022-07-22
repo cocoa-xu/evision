@@ -1,6 +1,17 @@
 cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
 project(evision)
 
+if(NOT DEFINED CMAKE_BUILD_TYPE OR "${CMAKE_BUILD_TYPE}" STREQUAL "")
+    set(CMAKE_BUILD_TYPE "Release")
+endif()
+
+if(DEFINED MIX_APP_PATH AND NOT "${MIX_APP_PATH}" STREQUAL "")
+    set(PRIV_DIR "${MIX_APP_PATH}/priv")
+else()
+    set(PRIV_DIR "${CMAKE_CURRENT_SOURCE_DIR}/priv")
+endif()
+message(STATUS "Using PRIV_DIR: ${PRIV_DIR}")
+
 if(EVISION_PREFER_PRECOMPILED STREQUAL "true")
     message(STATUS "EVISION_PREFER_PRECOMPILED is true: try to download and use the precompiled library")
 
@@ -96,6 +107,18 @@ if(EVISION_PREFER_PRECOMPILED STREQUAL "true")
         endif()
     endif()
 else()
+    if(DEFINED ERTS_INCLUDE_DIR AND NOT "${ERTS_INCLUDE_DIR}" STREQUAL "")
+        set(ERTS_INCLUDE_DIR "${ERTS_INCLUDE_DIR}")
+    else()
+        if(WIN32)
+            execute_process(COMMAND powershell -command "erl -noshell -s init stop -eval \"io:format('~ts/erts-~ts/include/', [code:root_dir(), erlang:system_info(version)]).\"" OUTPUT_VARIABLE ERTS_INCLUDE_DIR)
+        else()
+            execute_process(COMMAND bash -c "erl -noshell -s init stop -eval \"io:format('~ts/erts-~ts/include/', [code:root_dir(), erlang:system_info(version)]).\"" OUTPUT_VARIABLE ERTS_INCLUDE_DIR)
+        endif()
+        set(ERTS_INCLUDE_DIR "${ERTS_INCLUDE_DIR}")
+    endif()
+    message(STATUS "Using ERTS_INCLUDE_DIR: ${ERTS_INCLUDE_DIR}")
+
     find_package(OpenCV REQUIRED PATHS "${PRIV_DIR}/" NO_DEFAULT_PATH)
     include_directories("${OpenCV_INCLUDE_DIRS}")
 
