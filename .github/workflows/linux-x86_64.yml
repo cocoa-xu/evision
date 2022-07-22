@@ -90,6 +90,8 @@ jobs:
             ./_build
             ./c_src/headers.txt
             ./c_src/configuration.private.hpp
+            ./lib
+            ./src
 
       - name: Mix Compile
         run: |

@@ -136,3 +136,4 @@ $(EVISION_SO): $(HEADERS_TXT)
 !IF "$(EVISION_PREFER_PRECOMPILED)" != "true"
     @ powershell -command Copy-Item -Path (Get-ChildItem -Path "*evision.so" -Recurse).FullName -Destination "$(EVISION_SO)"
 !ENDIF
+

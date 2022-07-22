@@ -128,3 +128,4 @@ $(EVISION_SO): $(HEADERS_TXT)
 		&& if [ "$(EVISION_PREFER_PRECOMPILED)" != "true" ]; then \
 			cp "$(CMAKE_EVISION_BUILD_DIR)/evision.so" "$(EVISION_SO)" ; \
 		fi
+
