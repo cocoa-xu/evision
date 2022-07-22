@@ -17,6 +17,8 @@ erl_crash.dump
 .vscode/
 .idea/
 .cache/
+/cmake_*/
+/priv/
 *.pyc
 /c_src/evision_custom_headers/*
 /lib/evision.ex
