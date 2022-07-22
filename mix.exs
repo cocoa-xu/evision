@@ -3,59 +3,28 @@ defmodule Evision.MixProject do
   require Logger
 
   @app :evision
-  @version "0.1.0-dev"
+  @version "0.1.0"
+  @github_url "https://github.com/cocoa-xu/evision"
   @opencv_version "4.5.5"
   # only means compatible. need to write more tests
   @compatible_opencv_versions ["4.5.3", "4.5.4", "4.5.5"]
-  @source_url "https://github.com/cocoa-xu/evision/tree/#{@opencv_version}"
-
-  defp download_opencv_if_needed(opencv_ver, prefer_precompiled) do
-    #  in simple words
-    #  1. download "https://github.com/opencv/opencv/archive/$(OPENCV_VER).zip" to "3rd_party/cache/opencv-$(OPENCV_VER).zip"
-    #  2. unzip -o "3rd_party/cache/opencv-$(OPENCV_VER).zip" -d "OPENCV_ROOT_DIR"
-    #   3rd_party
-    #   ├── cache
-    #   │   └── opencv_$(OPENCV_VER).zip
-    #   └── opencv
-    #       └── opencv-$(OPENCV_VER)
-
-    if prefer_precompiled == "false" and System.get_env("OPENCV_USE_GIT_HEAD", "false") == "false" do
-      source_zip_url = "https://github.com/opencv/opencv/archive/#{opencv_ver}.zip"
-      cache_dir = Path.join([__DIR__, "3rd_party", "cache"])
-      File.mkdir_p!(cache_dir)
-      cache_location = Path.join([__DIR__, "3rd_party", "cache", "opencv-#{opencv_ver}.zip"])
-      source_root_dir = Path.join([__DIR__, "3rd_party", "opencv"])
-      File.mkdir_p!(source_root_dir)
-      source_dir = Path.join([__DIR__, "3rd_party", "opencv", "opencv-#{opencv_ver}"])
-
-      if !File.dir?(source_dir) do
-        :ssl.start()
-        :inets.start()
-        download!(source_zip_url, cache_location)
-
-        :zip.unzip(String.to_charlist(cache_location), [
-          {:cwd, String.to_charlist(source_root_dir)}
-        ])
-      end
-    end
-  end
+  @source_url "#{@github_url}/tree/#{@opencv_version}"
 
   def project do
     {cmake_options, enabled_modules} = generate_cmake_options()
     opencv_ver = opencv_versions(System.get_env("OPENCV_VER", @opencv_version))
-    download_opencv_if_needed(opencv_ver, System.get_env("EVISION_PREFER_PRECOMPILED", "false"))
     ninja = System.find_executable("ninja")
 
     [
       app: @app,
       name: "Evision",
       version: @version,
-      elixir: "~> 1.11-dev",
+      elixir: "~> 1.11",
       deps: deps(),
       docs: docs(),
       compilers: [:elixir_make] ++ Mix.compilers(),
       elixirc_paths: elixirc_paths(Mix.env()),
-      source_url: "https://github.com/cocox-xu/evision",
+      source_url: @github_url,
       description: description(),
       package: package(),
       make_executable: make_executable(),
@@ -315,44 +284,19 @@ defmodule Evision.MixProject do
   defp before_closing_body_tag(_), do: ""
 
   defp description() do
-    "OpenCV-Erlang/Elixir bindings."
+    "OpenCV-Erlang/Elixir binding."
   end
 
   defp package() do
     [
       name: "evision",
       # These are the default files included in the package
-      files: ~w(lib c_src py_src 3rd_party priv .formatter.exs mix.exs README* readme* LICENSE*
-                license* CHANGELOG* changelog* src),
+      files: ~w(c_src py_src 3rd_party scripts patches cc_toolchain priv Makefile Makefile.win CMakeLists.txt
+                lib .formatter.exs mix.exs
+                src rebar.config
+                README* readme* LICENSE* license* CHANGELOG* changelog*),
       licenses: ["Apache-2.0"],
-      links: %{"GitHub" => "https://github.com/cocoa-xu/evision"}
+      links: %{"GitHub" => @github_url}
     ]
-  end
-
-  defp download!(url, save_as, overwrite \\ false)
-
-  defp download!(url, save_as, false) do
-    unless File.exists?(save_as) do
-      download!(url, save_as, true)
-    end
-
-    :ok
-  end
-
-  defp download!(url, save_as, true) do
-    http_opts = []
-    opts = [body_format: :binary]
-    arg = {url, []}
-
-    body =
-      case :httpc.request(:get, arg, http_opts, opts) do
-        {:ok, {{_, 200, _}, _, body}} ->
-          body
-
-        {:error, reason} ->
-          raise inspect(reason)
-      end
-
-    File.write!(save_as, body)
   end
 end

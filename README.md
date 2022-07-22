@@ -84,8 +84,8 @@ To use precompiled Evision library, the following environment variables should b
 export EVISION_PREFER_PRECOMPILED=true
 
 # optional. 
-## currently only "0.1.0-dev" is valid
-export EVISION_PRECOMPILED_VERSION="0.1.0-dev"
+## currently only "0.1.0" is valid
+export EVISION_PRECOMPILED_VERSION="0.1.0"
 
 ## set the cache directory for the precompiled archive file
 export EVISION_PRECOMPILED_CACHE_DIR="$(pwd)/.cache"
@@ -220,7 +220,7 @@ Then you can add `evision` as dependency in your `mix.exs`. At the moment you wi
 ```elixir
 def deps do
   [
-    {:evision, "~> 0.1.0-dev", github: "cocoa-xu/evision", branch: "main"}
+    {:evision, "~> 0.1.0", github: "cocoa-xu/evision", branch: "main"}
   ]
 end
 ```
@@ -402,9 +402,7 @@ Please note that although everything now will be under the `Evision` namespace, 
 the OpenCV project.
 
 ```elixir
-alias Evision, as: OpenCV
-# Or
-# alias Evision, as: CV
+alias Evision, as: Cv
 ```
 
 ### Current Status
@@ -412,28 +410,28 @@ alias Evision, as: OpenCV
 Some tiny examples:
 
 ```elixir
-alias Evision, as: OpenCV
+alias Evision, as: Cv
 
 ## read image, process image and write image
-{:ok, gray_mat} = OpenCV.imread("/path/to/img.png", flags: OpenCV.cv_IMREAD_GRAYSCALE)
-{:ok, gray_blur_mat} = OpenCV.blur(gray_mat, [10,10], anchor: [1,1])
-{:ok, colour_mat} = OpenCV.imread("/path/to/img.png")
-{:ok, colour_blur_mat} = OpenCV.blur(colour_mat, [10,10], anchor: [1,1])
-:ok = OpenCV.imwrite("/path/to/img-gray-and-blur.png", gray_blur_mat)
-:ok = OpenCV.imwrite("/path/to/img-colour-and-blur.png", colour_blur_mat)
+gray_mat = Cv.imread!("/path/to/img.png", flags: Cv.cv_IMREAD_GRAYSCALE)
+gray_blur_mat = Cv.blur!(gray_mat, [10,10], anchor: [1,1])
+colour_mat = Cv.imread!("/path/to/img.png")
+colour_blur_mat = Cv.blur!(colour_mat, [10,10], anchor: [1,1])
+:ok = Cv.imwrite("/path/to/img-gray-and-blur.png", gray_blur_mat)
+:ok = Cv.imwrite("/path/to/img-colour-and-blur.png", colour_blur_mat)
 
 ## capture from video file/camera
-{:ok, cap} = OpenCV.VideoCapture.videoCapture(0)
-{:ok, cap_mat} = OpenCV.VideoCapture.read(cap)
+cap = Cv.VideoCapture.videoCapture!(0)
+cap_mat = Cv.VideoCapture.read!(cap)
 :ok = OpenCV.imwrite("/path/exists/capture-mat.png", cap_mat)
 :error = OpenCV.imwrite("/path/not/exists/capture-mat.png", cap_mat)
 
 ## to_binary/from_binary
-{:ok, mat} = OpenCV.imread("/path/to/img.jpg")
-{:ok, type} = OpenCV.Mat.type(mat)
-{:ok, {rows, cols, channels}} = OpenCV.Mat.shape(mat)
-{:ok, binary_data} = OpenCV.Mat.to_binary(mat)
-OpenCV.Mat.from_binary(binary_data, type, cols, rows, channels)
+mat = Cv.imread!("/path/to/img.jpg")
+type = Cv.Mat.type!(mat)
+{rows, cols, channels} = Cv.Mat.shape!(mat)
+binary_data = Cv.Mat.to_binary!(mat)
+Cv.Mat.from_binary(binary_data, type, cols, rows, channels)
 ```
 
 Some other [examples](https://github.com/cocoa-xu/evision/tree/main/examples).
@@ -441,40 +439,40 @@ Some other [examples](https://github.com/cocoa-xu/evision/tree/main/examples).
 ### Todo
 
 - [x] Update `.py` files in `py_src` so that they output header files for Erlang bindings.
-- [x] Automatically generate `erl_cv_nif.ex`.
-- [x] Automatically generate `opencv_*.ex` files using Python.
+- [x] Automatically generate `evision_nif.ex` and `evision_nif.erl`.
+- [x] Automatically generate `evision_*.ex` and `evision_*.erl` files using Python.
 - [x] Automatically convert enum constants in C++ to "constants" in Elixir
 - [x] When a C++ function's return value's type is `bool`, map `true` to `:ok` and `false` to `:error`.
 
    ```elixir
    # not this
-   {:ok, true} = OpenCV.imwrite("/path/to/save.png", mat, [])
+   {:ok, true} = Cv.imwrite("/path/to/save.png", mat, [])
    # but this
-   :ok = OpenCV.imwrite("/path/to/save.png", mat, [])
+   :ok = Cv.imwrite("/path/to/save.png", mat, [])
    ```
 - [x] Make optional parameters truly optional.
 
    ```elixir
    # not this
-   {:ok, cap} = OpenCV.VideoCapture.videoCapture(0, [])
+   {:ok, cap} = Cv.VideoCapture.videoCapture(0, [])
    # but this
-   {:ok, cap} = OpenCV.VideoCapture.videoCapture(0)
+   {:ok, cap} = Cv.VideoCapture.videoCapture(0)
    # this also changes the above example to
-   :ok = OpenCV.imwrite("/path/to/save.png", mat)
+   :ok = Cv.imwrite("/path/to/save.png", mat)
    ```
 - [x] Nerves support (rpi4 for now).
-- [x] Add `OpenCV.Mat` module.
+- [x] Add `Evision.Mat` module.
 
    ```elixir
-   {:ok, type} = OpenCV.Mat.type(mat)
+   {:ok, type} = Cv.Mat.type(mat)
    {:ok, {:u, 8}}
    
-   {:ok, {height, weight, channel}} = OpenCV.Mat.shape(mat)
+   {:ok, {height, weight, channel}} = Cv.Mat.shape(mat)
    {:ok, {1080, 1920, 3}}
-   {:ok, {height, weight}} = OpenCV.Mat.shape(gray_mat)
+   {:ok, {height, weight}} = Cv.Mat.shape(gray_mat)
    {:ok, {1080, 1920}}
   
-   {:ok, bin_data} = OpenCV.Mat.to_binary(mat)
+   {:ok, bin_data} = Cv.Mat.to_binary(mat)
    {:ok, << ... binary data ... >>}
    ```
 - [x] Edit `config/config.exs` to enable/disable OpenCV modules and image coders.

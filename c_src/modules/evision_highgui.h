@@ -190,8 +190,8 @@ void *evision_main_loop(void * _unused)
     }
 }
 
-// @evision c: evision_cv_imshow, 1
-// @evision nif: def evision_cv_imshow(_opts \\ []), do: :erlang.nif_error("cv::imshow not loaded")
+// @evision c: imshow,evision_cv_imshow,1
+// @evision nif: def imshow(_opts \\ []), do: :erlang.nif_error("cv::imshow not loaded")
 static ERL_NIF_TERM evision_cv_imshow(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
     using namespace cv;
@@ -285,8 +285,8 @@ static ERL_NIF_TERM evision_cv_imshow(ErlNifEnv *env, int argc, const ERL_NIF_TE
     else return evision::nif::error(env, "overload resolution failed");
 }
 
-// @evision c: evision_cv_waitKey, 1
-// @evision nif: def evision_cv_waitKey(_opts \\ []), do: :erlang.nif_error("cv::waitkey not loaded")
+// @evision c: waitKey,evision_cv_waitKey,1
+// @evision nif: def waitKey(_opts \\ []), do: :erlang.nif_error("cv::waitkey not loaded")
 static ERL_NIF_TERM evision_cv_waitKey(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
     using namespace cv;
@@ -318,8 +318,8 @@ static ERL_NIF_TERM evision_cv_waitKey(ErlNifEnv *env, int argc, const ERL_NIF_T
     else return evision::nif::error(env, "overload resolution failed");
 }
 
-// @evision c: evision_cv_destroyWindow, 1
-// @evision nif: def evision_cv_destroyWindow(_opts \\ []), do: :erlang.nif_error("cv::destroy_window not loaded")
+// @evision c: destroyWindow,evision_cv_destroyWindow,1
+// @evision nif: def destroyWindow(_opts \\ []), do: :erlang.nif_error("cv::destroy_window not loaded")
 static ERL_NIF_TERM evision_cv_destroyWindow(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
     using namespace cv;
@@ -351,8 +351,8 @@ static ERL_NIF_TERM evision_cv_destroyWindow(ErlNifEnv *env, int argc, const ERL
     else return evision::nif::error(env, "overload resolution failed");
 }
 
-// @evision c: evision_cv_destroyAllWindows, 1
-// @evision nif: def evision_cv_destroyAllWindows(_opts \\ []), do: :erlang.nif_error("cv::destroy_all_windows not loaded")
+// @evision c: destroyAllWindows,evision_cv_destroyAllWindows,1
+// @evision nif: def destroyAllWindows(_opts \\ []), do: :erlang.nif_error("cv::destroy_all_windows not loaded")
 static ERL_NIF_TERM evision_cv_destroyAllWindows(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
     struct destroy_all_windows_cmd * cmd = new destroy_all_windows_cmd;

@@ -12,25 +12,52 @@ jobs:
     runs-on: windows-latest
     env:
       MIX_ENV: dev
-      EVISION_VERSION: 0.1.0-dev
+      EVISION_VERSION: "0.1.0"
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - uses: erlef/setup-beam@v1
         with:
-          otp-version: 24.3
-          elixir-version: 1.13.3
+          otp-version: 25.0.2
+          elixir-version: 1.13.4
 
       - uses: ilammy/msvc-dev-cmd@v1
         with:
           arch: x64
+      
+      - name: Cache mix packages and OpenCV
+        id: cache-mix-and-opencv
+        uses: actions/cache@v3
+        with:
+          key: deps-${{ hashFiles('mix.lock') }}-${{ env.OPENCV_VER }}
+          path: |
+            ./deps
+            ./3rd_party
+      
+      - name: Get mix deps and download OpenCV
+        if: steps.cache-mix-and-opencv.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          mix deps.get
+          bash scripts/download_opencv.sh ${OPENCV_VER} 3rd_party/cache 3rd_party/opencv/
+      
+      - name: Cache compiled OpenCV
+        id: cache-mix-compile
+        uses: actions/cache@v3
+        with:
+          key: precompile-${{ runner.os }}-${{ hashFiles('cc_toolchain/**') }}-${{ hashFiles('c_src/**') }}-${{ hashFiles('CMakeLists.txt') }}-${{ hashFiles('Makefile.win') }}-${{ env.OPENCV_VER }}
+          path: |
+            ./_build
+            ./c_src/headers.txt
+            ./c_src/configuration.private.hpp
+            ./lib
+            ./src
 
       - name: Create precompiled library
         run: |
           $Env:MAKE = "nmake"
           $Env:CMAKE_OPENCV_OPTIONS = "-D WITH_FFMPEG=OFF"
-          mix deps.get
           Remove-Item Makefile
           mix compile
 
@@ -55,5 +82,4 @@ jobs:
 
       - uses: softprops/action-gh-release@v1
         with:
-          tag_name: 0.1.0-dev
           files: artifacts/*.tar.gz

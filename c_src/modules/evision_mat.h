@@ -6,8 +6,8 @@
 
 int get_binary_type(const std::string& t, int l, int n, int& type);
 
-// @evision c: evision_cv_mat_empty, 0
-// @evision nif: def evision_cv_mat_empty(), do: :erlang.nif_error("Mat::empty not loaded")
+// @evision c: mat_empty,evision_cv_mat_empty,0
+// @evision nif: def mat_empty(), do: :erlang.nif_error("Mat::empty not loaded")
 static ERL_NIF_TERM evision_cv_mat_empty(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     evision_res<cv::Mat *> * res;
     if (alloc_resource(&res)) {
@@ -22,8 +22,8 @@ static ERL_NIF_TERM evision_cv_mat_empty(ErlNifEnv *env, int argc, const ERL_NIF
     return evision::nif::ok(env, ret);
 }
 
-// @evision c: evision_cv_mat_type, 1
-// @evision nif: def evision_cv_mat_type(_opts \\ []), do: :erlang.nif_error("Mat::type not loaded")
+// @evision c: mat_type,evision_cv_mat_type,1
+// @evision nif: def mat_type(_opts \\ []), do: :erlang.nif_error("Mat::type not loaded")
 static ERL_NIF_TERM evision_cv_mat_type(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;
@@ -55,8 +55,8 @@ static ERL_NIF_TERM evision_cv_mat_type(ErlNifEnv *env, int argc, const ERL_NIF_
     else return evision::nif::error(env, "overload resolution failed");
 }
 
-// @evision c: evision_cv_mat_as_type, 1
-// @evision nif: def evision_cv_mat_as_type(_opts \\ []), do: :erlang.nif_error("Mat::as_type not loaded")
+// @evision c: mat_as_type,evision_cv_mat_as_type,1
+// @evision nif: def mat_as_type(_opts \\ []), do: :erlang.nif_error("Mat::as_type not loaded")
 static ERL_NIF_TERM evision_cv_mat_as_type(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;
@@ -87,8 +87,8 @@ static ERL_NIF_TERM evision_cv_mat_as_type(ErlNifEnv *env, int argc, const ERL_N
     else return evision::nif::error(env, "overload resolution failed");
 }
 
-// @evision c: evision_cv_mat_shape, 1
-// @evision nif: def evision_cv_mat_shape(_opts \\ []), do: :erlang.nif_error("Mat::shape not loaded")
+// @evision c: mat_shape,evision_cv_mat_shape,1
+// @evision nif: def mat_shape(_opts \\ []), do: :erlang.nif_error("Mat::shape not loaded")
 static ERL_NIF_TERM evision_cv_mat_shape(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;
@@ -121,8 +121,8 @@ static ERL_NIF_TERM evision_cv_mat_shape(ErlNifEnv *env, int argc, const ERL_NIF
     else return evision::nif::error(env, "overload resolution failed");
 }
 
-// @evision c: evision_cv_mat_clone, 1
-// @evision nif: def evision_cv_mat_clone(_opts \\ []), do: :erlang.nif_error("Mat::clone not loaded")
+// @evision c: mat_clone,evision_cv_mat_clone,1
+// @evision nif: def mat_clone(_opts \\ []), do: :erlang.nif_error("Mat::clone not loaded")
 static ERL_NIF_TERM evision_cv_mat_clone(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;
@@ -144,8 +144,8 @@ static ERL_NIF_TERM evision_cv_mat_clone(ErlNifEnv *env, int argc, const ERL_NIF
     else return evision::nif::error(env, "overload resolution failed");
 }
 
-// @evision c: evision_cv_mat_to_binary, 1
-// @evision nif: def evision_cv_mat_to_binary(_opts \\ []), do: :erlang.nif_error("Mat::to_binary not loaded")
+// @evision c: mat_to_binary,evision_cv_mat_to_binary,1
+// @evision nif: def mat_to_binary(_opts \\ []), do: :erlang.nif_error("Mat::to_binary not loaded")
 static ERL_NIF_TERM evision_cv_mat_to_binary(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;
@@ -249,8 +249,8 @@ static ERL_NIF_TERM _evision_binary_ref(ERL_NIF_TERM bin_term, evision_res<cv::M
     return 0;
 }
 
-// @evision c: evision_cv_mat_from_binary, 1
-// @evision nif: def evision_cv_mat_from_binary(_opts \\ []), do: :erlang.nif_error("Mat::from_binary not loaded")
+// @evision c: mat_from_binary,evision_cv_mat_from_binary,1
+// @evision nif: def mat_from_binary(_opts \\ []), do: :erlang.nif_error("Mat::from_binary not loaded")
 static ERL_NIF_TERM evision_cv_mat_from_binary(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;
@@ -319,8 +319,8 @@ static ERL_NIF_TERM evision_cv_mat_from_binary(ErlNifEnv *env, int argc, const E
     else return evision::nif::error(env, "overload resolution failed");
 }
 
-// @evision c: evision_cv_mat_from_binary_by_shape, 1
-// @evision nif: def evision_cv_mat_from_binary_by_shape(_opts \\ []), do: :erlang.nif_error("Mat::from_binary_by_shape not loaded")
+// @evision c: mat_from_binary_by_shape,evision_cv_mat_from_binary_by_shape,1
+// @evision nif: def mat_from_binary_by_shape(_opts \\ []), do: :erlang.nif_error("Mat::from_binary_by_shape not loaded")
 static ERL_NIF_TERM evision_cv_mat_from_binary_by_shape(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;

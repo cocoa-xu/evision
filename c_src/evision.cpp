@@ -21,12 +21,12 @@
 #  pragma GCC diagnostic ignored "-Wunused-function"
 #endif
 
-#define F(NAME, ARITY)    \
-  {#NAME, ARITY, NAME, 0}
-#define F_CPU(NAME, ARITY)    \
-  {#NAME, ARITY, NAME, ERL_NIF_DIRTY_JOB_CPU_BOUND}
-#define F_IO(NAME, ARITY)    \
-  {#NAME, ARITY, NAME, ERL_NIF_DIRTY_JOB_IO_BOUND}
+#define F(ERL_NAME, C_NAME, ARITY)    \
+  {#ERL_NAME, ARITY, C_NAME, 0}
+#define F_CPU(ERL_NAME, C_NAME, ARITY)    \
+  {#ERL_NAME, ARITY, C_NAME, ERL_NIF_DIRTY_JOB_CPU_BOUND}
+#define F_IO(ERL_NAME, C_NAME, ARITY)    \
+  {#ERL_NAME, ARITY, C_NAME, ERL_NIF_DIRTY_JOB_IO_BOUND}
 
 #include "opencv2/opencv_modules.hpp"
 #include "opencv2/core.hpp"
@@ -1944,9 +1944,9 @@ static int convert_to_char(ErlNifEnv *env, ERL_NIF_TERM o, char *dst, const ArgI
 /************************************************************************/
 
 // manually coded modules
-#include "modules/opencv_mat.h"
-#include "modules/opencv_highgui.h"
-#include "modules/opencv_imdecode.h"
+#include "modules/evision_mat.h"
+#include "modules/evision_highgui.h"
+#include "modules/evision_imdecode.h"
 
 /************************************************************************/
 
@@ -1981,7 +1981,7 @@ on_load(ErlNifEnv* env, void**, ERL_NIF_TERM)
 #define CV_ERL_TYPE(WNAME, NAME, STORAGE, _1, BASE, CONSTRUCTOR) CV_ERL_TYPE_INIT_DYNAMIC(WNAME, NAME, STORAGE, return -1)
 #include "evision_generated_types.h"
 #undef CV_ERL_TYPE
-    rt = enif_open_resource_type(env, "erl_cv_nif", "erl_cv_Mat_type", destruct_Mat, ERL_NIF_RT_CREATE, NULL);                                                             \
+    rt = enif_open_resource_type(env, "evision", "erl_cv_Mat_type", destruct_Mat, ERL_NIF_RT_CREATE, NULL);                                                             \
     if (!rt) return -1;
     evision_res<cv::Mat *>::type = rt;
     return 0;
@@ -1997,7 +1997,7 @@ static int on_upgrade(ErlNifEnv*, void**, void**, ERL_NIF_TERM)
     return 0;
 }
 
-ERL_NIF_INIT(erl_cv_nif, nif_functions, on_load, on_reload, on_upgrade, NULL);
+ERL_NIF_INIT(evision_nif, nif_functions, on_load, on_reload, on_upgrade, NULL);
 
 #if defined(__GNUC__)
 #pragma GCC visibility push(default)

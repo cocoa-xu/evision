@@ -50,6 +50,7 @@ jobs:
     runs-on: ubuntu-20.04
     env:
       MIX_ENV: test
+      OPENCV_VER: "4.5.5"
 
     steps:
       - uses: actions/checkout@v2
@@ -64,10 +65,37 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y build-essential automake autoconf pkg-config bc m4 unzip zip curl git libssl-dev gzip libncurses5-dev erlang-inets erlang-os-mon erlang-runtime-tools erlang-ssl erlang-dev python3 ca-certificates
           sudo apt-get install -y libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libavresample-dev ffmpeg
+      
+      - name: Cache mix packages and OpenCV
+        id: cache-mix-and-opencv
+        uses: actions/cache@v3
+        with:
+          key: deps-${{ hashFiles('mix.lock') }}-${{ env.OPENCV_VER }}
+          path: |
+            ./deps
+            ./3rd_party
+
+      - name: Get mix deps and download OpenCV
+        if: steps.cache-mix-and-opencv.outputs.cache-hit != 'true'
+        run: |
+          mix deps.get
+          bash scripts/download_opencv.sh ${OPENCV_VER} 3rd_party/cache 3rd_party/opencv/
+
+      - name: Cache compiled OpenCV
+        id: cache-mix-compile
+        uses: actions/cache@v3
+        with:
+          key: compile-ffmpeg-${{ runner.os }}-${{ hashFiles('cc_toolchain/**') }}-${{ hashFiles('c_src/**') }}-${{ hashFiles('CMakeLists.txt') }}-${{ hashFiles('Makefile') }}-${{ env.OPENCV_VER }}
+          path: |
+            ./_build
+            ./c_src/headers.txt
+            ./c_src/configuration.private.hpp
+            ./lib
+            ./src
 
       - name: Mix Compile
         run: |
-          mix deps.get
+          rm -f _build/test/lib/evision/priv/evision.so
           mix compile
 
       - name: Mix Test
