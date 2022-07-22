@@ -86,7 +86,6 @@ jobs:
         if: steps.cache-nerves.outputs.cache-hit != 'true'
         run: |
           mix archive.install hex nerves_bootstrap --force || true
-          wget -k https://github.com/fwup-home/fwup/releases/download/v1.9.0/fwup_1.9.0_amd64.deb -O ~/.nerves/fwup_1.9.0_amd64.deb
 
       - name: Cache nerves builds
         id: cache-nerves-builds
@@ -98,6 +97,7 @@ jobs:
 
       - name: Make a nerves project
         run: |
+          wget -k https://github.com/fwup-home/fwup/releases/download/v1.9.0/fwup_1.9.0_amd64.deb -O ~/.nerves/fwup_1.9.0_amd64.deb
           sudo dpkg -i ~/.nerevs/fwup_1.9.0_amd64.deb || true
           cd ../
           git clone https://github.com/livebook-dev/nerves_livebook.git
