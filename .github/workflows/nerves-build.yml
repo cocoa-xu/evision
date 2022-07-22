@@ -97,9 +97,8 @@ jobs:
 
       - name: Make a nerves project
         run: |
-          mkdir -p ~/.nerves/
-          wget -k https://github.com/fwup-home/fwup/releases/download/v1.9.0/fwup_1.9.0_amd64.deb -O ~/.nerves/fwup_1.9.0_amd64.deb
-          sudo dpkg -i ~/.nerevs/fwup_1.9.0_amd64.deb || true
+          wget -k https://github.com/fwup-home/fwup/releases/download/v1.9.0/fwup_1.9.0_amd64.deb -O ./fwup_1.9.0_amd64.deb
+          sudo dpkg -i ./fwup_1.9.0_amd64.deb
           cd ../
           git clone https://github.com/livebook-dev/nerves_livebook.git
           cd nerves_livebook
