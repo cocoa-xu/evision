@@ -263,6 +263,33 @@ class BeamWrapperGenerator(object):
             else:
                 return f'is_reference({argname})'
 
+    def map_argtype_to_guard_erlang(self, argname, argtype):
+        if argtype == 'int' or argtype == 'size_t':
+            return f'is_integer({argname})'
+        elif argtype == 'bool':
+            return f'is_boolean({argname})'
+        elif argtype == 'double':
+            return f'is_number({argname})'
+        elif argtype == 'float':
+            return f'is_float({argname})'
+        elif argtype == 'String' or argtype == 'c_string':
+            return f'is_list({argname})'
+        elif argtype == 'char':
+            return f'is_list({argname})'
+        elif argtype == 'Size' or argtype == 'Scalar':
+            return f'is_list({argname})'
+        elif argtype == 'Point2f' or argtype == 'Point':
+            return f'is_list({argname})'
+        elif argtype[:7] == 'vector_':
+            return f'is_list({argname})'
+        else:
+            if argtype == 'LayerId':
+                return ''
+            elif argtype == 'TermCriteria':
+                return f'is_tuple({argname})'
+            else:
+                return f'is_reference({argname})'
+
     def map_elixir_argname(self, argname, ignore_upper_starting=False):
         name = ""
         if argname in reserved_keywords():
@@ -393,7 +420,7 @@ class BeamWrapperGenerator(object):
             if pos_end == 0:
                 pos_end = len(func.variants[i].py_arglist)
             func_guards.append(list(filter(lambda x: x != '', [self.map_argtype_to_guard(self.map_elixir_argname(argname), argtype) for argname, _, argtype in func.variants[i].py_arglist[:pos_end]])))
-            func_guards_erlang.append(list(filter(lambda x: x != '', [self.map_argtype_to_guard(self.map_erlang_argname(argname), argtype) for argname, _, argtype in func.variants[i].py_arglist[:pos_end]])))
+            func_guards_erlang.append(list(filter(lambda x: x != '', [self.map_argtype_to_guard_erlang(self.map_erlang_argname(argname), argtype) for argname, _, argtype in func.variants[i].py_arglist[:pos_end]])))
             erl_signatures.append(''.join(filter(lambda x: x != '', [self.map_argtype_to_type(argtype) for _, _, argtype in func.variants[i].py_arglist[:pos_end]])))
 
         func_guards_len_desc = reversed(argsort([len(g) for g in func_guards]))
@@ -699,7 +726,7 @@ class BeamWrapperGenerator(object):
                     
                     name_arity_erlang = f'{module_func_name}!/1'
                     name_arity_erlang_opt = f'{module_func_name}!/2'
-                    erlang_function.write(f'{module_func_name}(Self) ->\n  evision_nif:{erl_name}(Self).\n')
+                    erlang_function.write(f'{module_func_name}(Self) ->\n  evision_nif:{erl_name}(Self, []).\n')
                     erlang_function_opt.write(f'{module_func_name}(Self, Options) when is_list(Options) ->\n  evision_nif:{erl_name}(Self, Options).\n')
                     if not writer.deferror.get(name_arity_elixir_identifier, False):
                         elixir_function.write(f"  deferror {module_func_name}(self, opts)\n")
@@ -719,7 +746,7 @@ class BeamWrapperGenerator(object):
                     
                     name_arity_erlang = f'{module_func_name}!/1'
                     name_arity_erlang_opt = f'{module_func_name}!/2'
-                    erlang_function.write(f'{module_func_name}(Self) ->\n  evision_nif:{erl_name}(Self).\n')
+                    erlang_function.write(f'{module_func_name}(Self) ->\n  evision_nif:{erl_name}(Self, []).\n')
                     erlang_function_opt.write(f'{module_func_name}(Self, Options) ->\n  evision_nif:{erl_name}(Self, Options).\n')
                     
                     if not writer.deferror.get(name_arity_elixir_identifier, False):
@@ -773,15 +800,20 @@ class BeamWrapperGenerator(object):
                              '  end\n')
 
                 erlang_function.write(f'{module_func_name}({module_func_args_erlang}){when_guard_erlang} ->\n'
-                             f'  {positional_erlang},\n'
-                             f'  evision_nif:{erl_name}({func_args_erlang}).\n\n'
+                            f'  {positional_erlang},\n'
+                            f'  evision_nif:{erl_name}({func_args_erlang}).\n\n'
                 )
+
                 if len(module_func_args) > 0:
                     name_arity_elixir = f'{module_func_name}!/{len(module_func_args.split(","))}'
                     name_arity_erlang = f'{module_func_name}!/{len(module_func_args.split(","))}'
+                    if len(erlang_function_opt.getvalue()) > 0:
+                        name_arity_erlang_opt = f'{module_func_name}!/{len(module_func_args.split(","))+1}'
                 else:
                     name_arity_elixir = f'{module_func_name}!/0'
                     name_arity_erlang = f'{module_func_name}!/0'
+                    if len(erlang_function_opt.getvalue()) > 0:
+                        name_arity_erlang_opt = f'{module_func_name}!/1'
                 if not writer.deferror.get(name_arity_elixir, False):
                     elixir_function.write(f'  deferror {module_func_name}({module_func_args})\n')
                     writer.deferror[name_arity_elixir] = True
@@ -938,7 +970,7 @@ class BeamWrapperGenerator(object):
 
         self.evision_nif_erlang.write('-module(evision_nif).\n-compile(nowarn_export_all).\n-compile([export_all]).\n\n{}\n'.format(ET.gen_evision_nif_load_nif_erlang))
         self.evision_erlang.write('-module(evision).\n-compile(nowarn_export_all).\n-compile([export_all]).\n\n')
-        
+
         self.code_ns_reg.write('static ErlNifFunc nif_functions[] = {\n')
 
         # step 1: scan the headers and build more descriptive maps of classes, consts, functions
