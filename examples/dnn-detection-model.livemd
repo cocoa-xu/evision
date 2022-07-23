@@ -194,7 +194,7 @@ defmodule DetectionModel do
 
   def get_model(params, config, framework \\ "") do
     {:ok, net} =
-      OpenCV.DNN.readNetModel(params,
+      OpenCV.DNN.readNet(params,
         config: config,
         framework: framework
       )

@@ -151,7 +151,7 @@ classes =
 
 ```elixir
 {:ok, model} =
-  OpenCV.DNN.readNetModel("bvlc_googlenet.caffemodel",
+  OpenCV.DNN.readNet("bvlc_googlenet.caffemodel",
     config: "bvlc_googlenet.prototxt",
     framework: ""
   )
