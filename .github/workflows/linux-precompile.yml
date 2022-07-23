@@ -12,7 +12,7 @@ jobs:
   mix_test:
     runs-on: ubuntu-20.04
     env:
-      OPENCV_VER: "4.5.5"
+      OPENCV_VER: "4.6.0"
     strategy:
       fail-fast: false
       matrix:

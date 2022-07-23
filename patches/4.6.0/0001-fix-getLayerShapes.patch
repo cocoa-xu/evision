@@ -1,0 +1,19 @@
+--- modules/dnn/include/opencv2/dnn/dnn.hpp
++++ modules/dnn/include/opencv2/dnn/dnn_fixed.hpp
+@@ -705,13 +705,13 @@ CV__DNN_INLINE_NS_BEGIN
+          *  @param outLayerShapes output parameter for output layers shapes;
+          * order is the same as in layersIds
+          */
+-        void getLayerShapes(const MatShape& netInputShape,
++        CV_WRAP void getLayerShapes(const MatShape& netInputShape,
+                                     const int layerId,
+                                     CV_OUT std::vector<MatShape>& inLayerShapes,
+                                     CV_OUT std::vector<MatShape>& outLayerShapes) const; // FIXIT: CV_WRAP
+ 
+         /** @overload */
+-        void getLayerShapes(const std::vector<MatShape>& netInputShapes,
++        CV_WRAP void getLayerShapes(const std::vector<MatShape>& netInputShapes,
+                                     const int layerId,
+                                     CV_OUT std::vector<MatShape>& inLayerShapes,
+                                     CV_OUT std::vector<MatShape>& outLayerShapes) const; // FIXIT: CV_WRAP
+
