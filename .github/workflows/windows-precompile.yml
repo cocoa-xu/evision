@@ -71,7 +71,8 @@ jobs:
               Remove-Item "$Env:PRIV_DIR/x64" -Recurse -Force
           }
           Copy-Item -Path "$Env:PRIV_DIR" -Destination "$Env:PKG_NAME" -Recurse
-          Copy-Item -Path "lib/generated" -Destination "$Env:PKG_NAME" -Recurse
+          Copy-Item -Path "lib/generated" -Destination "${Env:PKG_NAME}/elixir_generated" -Recurse
+          Copy-Item -Path "src/generated" -Destination "${Env:PKG_NAME}/erlang_generated" -Recurse
 
           tar -czf "${Env:PKG_NAME}.tar.gz" "${Env:PKG_NAME}"
           if (Test-Path "artifacts") {

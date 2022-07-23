@@ -364,6 +364,10 @@ class BeamWrapperGenerator(object):
             writer.write(f"  def get_{name}(self) do\n"
                          f"    :evision_nif.{erl_name}(self)\n"
                          "  end\n")
+
+            writer_erlang.write(f"get_{name}(Self) -> \n"
+                         f"    evision_nif:{erl_name}(Self).\n\n")
+
             name_arity_elixir = f'get_{name}!/1'
             name_arity_erlang = f'get_{name}!/1'
             name_arity_erlang_opt = None
@@ -380,6 +384,7 @@ class BeamWrapperGenerator(object):
                     erl_name = map_uppercase_to_erlang_name(erl_name)
                 func_name = "evision_" + prop_class.wname + '_set_' + name
                 writer.write(f"  def set_{name}(self, opts) do\n    :evision_nif.{erl_name}(self, opts)\n  end\n")
+                writer_erlang.write(f"set_{name}(Self, Options) when is_list(Options), is_tuple(hd(Options)), tuple_size(hd(Options)) == 2 ->\n    evision_nif:{erl_name}(Self, Options).\n\n")
                 name_arity_elixir = f'set_{name}!/2'
                 name_arity_erlang = None
                 name_arity_erlang_opt = f'set_{name}!/2'
@@ -594,11 +599,8 @@ class BeamWrapperGenerator(object):
             if unique_signatures.get(sign, None) is True:
                 elixir_function.write('\n'.join(["  # {}".format(line.strip()) for line in opt_doc.split("\n")]))
                 elixir_function.write(f'  # def {module_func_name}({func_args}) do\n  #   :evision_nif.{erl_name}({func_args})\n  # end\n')
-                # writer.write('\n'.join(["  # {}".format(line.strip()) for line in opt_doc.split("\n")]))
-                # writer.write(f'  # def {module_func_name}({func_args}) do\n  #   :evision_nif.{erl_name}({func_args})\n  # end\n')
                 if len(func_args_with_opts) > 0:
                     elixir_function.write(f'  # def {module_func_name}({func_args_with_opts}) do\n  #   :evision_nif.{erl_name}({func_args_with_opts})\n  # end\n')
-                    # writer.write(f'  # def {module_func_name}({func_args_with_opts}) do\n  #   :evision_nif.{erl_name}({func_args_with_opts})\n  # end\n')
             else:
                 unique_signatures[sign] = True
 
@@ -727,7 +729,7 @@ class BeamWrapperGenerator(object):
                     name_arity_erlang = f'{module_func_name}!/1'
                     name_arity_erlang_opt = f'{module_func_name}!/2'
                     erlang_function.write(f'{module_func_name}(Self) ->\n  evision_nif:{erl_name}(Self, []).\n')
-                    erlang_function_opt.write(f'{module_func_name}(Self, Options) when is_list(Options) ->\n  evision_nif:{erl_name}(Self, Options).\n')
+                    erlang_function_opt.write(f'{module_func_name}(Self, Options) when is_list(Options), is_tuple(hd(Options)), tuple_size(hd(Options)) == 2 ->\n  evision_nif:{erl_name}(Self, Options).\n')
                     if not writer.deferror.get(name_arity_elixir_identifier, False):
                         elixir_function.write(f"  deferror {module_func_name}(self, opts)\n")
                         writer.deferror[name_arity_elixir_identifier] = True
@@ -747,7 +749,7 @@ class BeamWrapperGenerator(object):
                     name_arity_erlang = f'{module_func_name}!/1'
                     name_arity_erlang_opt = f'{module_func_name}!/2'
                     erlang_function.write(f'{module_func_name}(Self) ->\n  evision_nif:{erl_name}(Self, []).\n')
-                    erlang_function_opt.write(f'{module_func_name}(Self, Options) ->\n  evision_nif:{erl_name}(Self, Options).\n')
+                    erlang_function_opt.write(f'{module_func_name}(Self, Options) when is_list(Options), is_tuple(hd(Options)), tuple_size(hd(Options)) == 2 ->\n  evision_nif:{erl_name}(Self, Options).\n')
                     
                     if not writer.deferror.get(name_arity_elixir_identifier, False):
                         elixir_function.write(f"  deferror {module_func_name}(self, opts)\n")
@@ -766,10 +768,10 @@ class BeamWrapperGenerator(object):
                     when_guard_with_opts_erlang = when_guard_erlang
                     if len(when_guard_with_opts.strip()) > 0:
                         when_guard_with_opts = f' {when_guard_with_opts.strip()} and is_list(opts)\n  '
-                        when_guard_with_opts_erlang = f' {when_guard_with_opts_erlang.strip()}, is_list(Options)'
+                        when_guard_with_opts_erlang = f' {when_guard_with_opts_erlang.strip()}, is_list(Options), is_tuple(hd(Options)), tuple_size(hd(Options)) == 2'
                     else:
                         when_guard_with_opts = ' when is_list(opts)\n  '
-                        when_guard_with_opts_erlang = ' when is_list(Options)'
+                        when_guard_with_opts_erlang = ' when is_list(Options), is_tuple(hd(Options)), tuple_size(hd(Options)) == 2'
 
                     elixir_function.write(f'{inline_doc}  def {module_func_name}({module_func_args_with_opts}){when_guard_with_opts}do\n'
                                  f'    {positional}\n'
@@ -813,7 +815,7 @@ class BeamWrapperGenerator(object):
                     name_arity_elixir = f'{module_func_name}!/0'
                     name_arity_erlang = f'{module_func_name}!/0'
                     if len(erlang_function_opt.getvalue()) > 0:
-                        name_arity_erlang_opt = f'{module_func_name}!/1'
+                        name_arity_erlang_opt = f'{module_func_name}!/1{module_func_args}'
                 if not writer.deferror.get(name_arity_elixir, False):
                     elixir_function.write(f'  deferror {module_func_name}({module_func_args})\n')
                     writer.deferror[name_arity_elixir] = True

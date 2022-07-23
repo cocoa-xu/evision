@@ -105,7 +105,8 @@ jobs:
           export PKG_NAME=evision-linux-${{ matrix.pair.arch_name }}-${GITHUB_REF##*/}
           mkdir -p "${PKG_NAME}"
           cp -a _build/dev/lib/evision/priv "${PKG_NAME}"
-          cp -a lib/generated "${PKG_NAME}"
+          cp -a lib/generated "${PKG_NAME}/elixir_generated"
+          cp -a src/generated "${PKG_NAME}/erlang_generated"
           tar -czf "${PKG_NAME}.tar.gz" "${PKG_NAME}"
           rm -rf "${PKG_NAME}"
           ls -lah "${PKG_NAME}.tar.gz"
