@@ -102,7 +102,7 @@ jobs:
           echo "CMAKE_TOOLCHAIN_FILE: ${CMAKE_TOOLCHAIN_FILE}"
           rm -f _build/dev/lib/evision/priv/evision.so
           mix compile
-          export PKG_NAME=evision-linux-${{ matrix.pair.arch_name }}-${GITHUB_REF##*/}
+          export PKG_NAME=evision-linux-${{ matrix.pair.arch_name }}-${GITHUB_REF##*/v}
           mkdir -p "${PKG_NAME}"
           cp -a _build/dev/lib/evision/priv "${PKG_NAME}"
           cp -a lib/generated "${PKG_NAME}/elixir_generated"

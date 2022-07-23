@@ -6,6 +6,7 @@ on:
       - '*-dev'
       - '*-prod'
       - '*-dev-win'
+      - 'v*'
 
 jobs:
   mix_test:
