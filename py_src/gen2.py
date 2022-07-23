@@ -727,7 +727,7 @@ class BeamWrapperGenerator(object):
                     name_arity_erlang = f'{module_func_name}!/1'
                     name_arity_erlang_opt = f'{module_func_name}!/2'
                     erlang_function.write(f'{module_func_name}(Self) ->\n  evision_nif:{erl_name}(Self, []).\n')
-                    erlang_function_opt.write(f'{module_func_name}(Self, Options) when is_list(Options) ->\n  evision_nif:{erl_name}(Self, Options).\n')
+                    erlang_function_opt.write(f'{module_func_name}(Self, Options) when is_list(Options), is_tuple(hd(Options)), tuple_size(hd(Options)) == 2 ->\n  evision_nif:{erl_name}(Self, Options).\n')
                     if not writer.deferror.get(name_arity_elixir_identifier, False):
                         elixir_function.write(f"  deferror {module_func_name}(self, opts)\n")
                         writer.deferror[name_arity_elixir_identifier] = True
@@ -747,7 +747,7 @@ class BeamWrapperGenerator(object):
                     name_arity_erlang = f'{module_func_name}!/1'
                     name_arity_erlang_opt = f'{module_func_name}!/2'
                     erlang_function.write(f'{module_func_name}(Self) ->\n  evision_nif:{erl_name}(Self, []).\n')
-                    erlang_function_opt.write(f'{module_func_name}(Self, Options) ->\n  evision_nif:{erl_name}(Self, Options).\n')
+                    erlang_function_opt.write(f'{module_func_name}(Self, Options) when is_list(Options), is_tuple(hd(Options)), tuple_size(hd(Options)) == 2 ->\n  evision_nif:{erl_name}(Self, Options).\n')
                     
                     if not writer.deferror.get(name_arity_elixir_identifier, False):
                         elixir_function.write(f"  deferror {module_func_name}(self, opts)\n")
@@ -766,10 +766,10 @@ class BeamWrapperGenerator(object):
                     when_guard_with_opts_erlang = when_guard_erlang
                     if len(when_guard_with_opts.strip()) > 0:
                         when_guard_with_opts = f' {when_guard_with_opts.strip()} and is_list(opts)\n  '
-                        when_guard_with_opts_erlang = f' {when_guard_with_opts_erlang.strip()}, is_list(Options)'
+                        when_guard_with_opts_erlang = f' {when_guard_with_opts_erlang.strip()}, is_list(Options), is_tuple(hd(Options)), tuple_size(hd(Options)) == 2'
                     else:
                         when_guard_with_opts = ' when is_list(opts)\n  '
-                        when_guard_with_opts_erlang = ' when is_list(Options)'
+                        when_guard_with_opts_erlang = ' when is_list(Options), is_tuple(hd(Options)), tuple_size(hd(Options)) == 2'
 
                     elixir_function.write(f'{inline_doc}  def {module_func_name}({module_func_args_with_opts}){when_guard_with_opts}do\n'
                                  f'    {positional}\n'
@@ -813,7 +813,7 @@ class BeamWrapperGenerator(object):
                     name_arity_elixir = f'{module_func_name}!/0'
                     name_arity_erlang = f'{module_func_name}!/0'
                     if len(erlang_function_opt.getvalue()) > 0:
-                        name_arity_erlang_opt = f'{module_func_name}!/1'
+                        name_arity_erlang_opt = f'{module_func_name}!/1{module_func_args}'
                 if not writer.deferror.get(name_arity_elixir, False):
                     elixir_function.write(f'  deferror {module_func_name}({module_func_args})\n')
                     writer.deferror[name_arity_elixir] = True
