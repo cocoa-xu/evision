@@ -5,9 +5,9 @@ defmodule Evision.MixProject do
   @app :evision
   @version "0.1.0"
   @github_url "https://github.com/cocoa-xu/evision"
-  @opencv_version "4.5.5"
+  @opencv_version "4.6.0"
   # only means compatible. need to write more tests
-  @compatible_opencv_versions ["4.5.3", "4.5.4", "4.5.5"]
+  @compatible_opencv_versions ["4.5.3", "4.5.4", "4.5.5", "4.6.0"]
   @source_url "#{@github_url}/tree/#{@opencv_version}"
 
   def project do

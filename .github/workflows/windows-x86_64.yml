@@ -39,7 +39,7 @@ jobs:
     runs-on: windows-latest
     env:
       MIX_ENV: test
-      OPENCV_VER: "4.5.5"
+      OPENCV_VER: "4.6.0"
 
     steps:
       - uses: actions/checkout@v2

@@ -38,7 +38,7 @@ jobs:
   mix_test:
     runs-on: macos-11
     env:
-      OPENCV_VER: "4.5.5"
+      OPENCV_VER: "4.6.0"
       MIX_ENV: "test"
 
     steps:

@@ -71,6 +71,7 @@ Compatible OpenCV versions:
 - 4.5.3
 - 4.5.4
 - 4.5.5
+- 4.6.0
 
 by compatible, it means these versions can compile successfully, and I tested a small range of functions. Tons of tests
 should be written, and then we can have a list for tested OpenCV versions.
@@ -84,7 +85,9 @@ To use precompiled Evision library, the following environment variables should b
 export EVISION_PREFER_PRECOMPILED=true
 
 # optional. 
-## currently only "0.1.0" is valid
+## currently "0.1.0" is used by default
+## for other available versions, please check the GitHub release page
+## https://github.com/cocoa-xu/evision/releases
 export EVISION_PRECOMPILED_VERSION="0.1.0"
 
 ## set the cache directory for the precompiled archive file
@@ -104,7 +107,7 @@ To obtain and compile OpenCV's source code from official releases, the following
 # optional.
 ## set OpenCV version
 ##   the corresponding license file should be available at https://github.com/opencv/opencv/blob/${OPENCV_VER}/LICENSE
-export OPENCV_VER="4.5.5"
+export OPENCV_VER="4.6.0"
 
 ## enable FFmpeg
 ##   this will allow cmake to auto-detect FFmpeg libraries installed on the host
@@ -220,7 +223,7 @@ Then you can add `evision` as dependency in your `mix.exs`. At the moment you wi
 ```elixir
 def deps do
   [
-    {:evision, "~> 0.1.0", github: "cocoa-xu/evision", branch: "main"}
+    {:evision, "~> 0.1.0", github: "cocoa-xu/evision"}
   ]
 end
 ```
@@ -275,9 +278,9 @@ config :evision, enabled_img_codecs: [
 
 - How do I specify which OpenCV version to compile?
     ```shell
-    # e.g., use OpenCV 4.5.4
-    # current, evision uses 4.5.5 by default 
-    export OPENCV_VER=4.5.4
+    # e.g., use OpenCV 4.5.5
+    # current, evision uses 4.6.0 by default 
+    export OPENCV_VER=4.5.5
     ```
 
 - How do I use my own OpenCV source code on my local disk?
