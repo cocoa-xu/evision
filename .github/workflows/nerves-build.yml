@@ -74,29 +74,9 @@ jobs:
           mix deps.get
           bash scripts/download_opencv.sh ${OPENCV_VER} 3rd_party/cache 3rd_party/opencv/
 
-      - name: Cahche nerves
-        id: cache-nerves
-        uses: actions/cache@v3
-        with:
-          key: nerves
-          path: |
-            ~/.nerves
-
-      - name: Install Nerves
-        if: steps.cache-nerves.outputs.cache-hit != 'true'
-        run: |
-          mix archive.install hex nerves_bootstrap --force || true
-
-      - name: Cache nerves builds
-        id: cache-nerves-builds
-        uses: actions/cache@v3
-        with:
-          key: compile-nerves-${{ runner.os }}-${{ hashFiles('cc_toolchain/**') }}-${{ hashFiles('c_src/**') }}-${{ hashFiles('CMakeLists.txt') }}-${{ hashFiles('Makefile') }}-${{ env.OPENCV_VER }}-${{ env.NERVES_LIVEBOOK_VER }}
-          path: |
-            ../nerves_livebook
-
       - name: Make a nerves project
         run: |
+          mix archive.install hex nerves_bootstrap --force || true
           wget -k https://github.com/fwup-home/fwup/releases/download/v1.9.0/fwup_1.9.0_amd64.deb -O ./fwup_1.9.0_amd64.deb
           sudo dpkg -i ./fwup_1.9.0_amd64.deb
           cd ../
