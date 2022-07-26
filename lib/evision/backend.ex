@@ -223,6 +223,12 @@ defmodule Evision.Backend do
   end
 
   @impl true
+  def dot(%T{} = out, a, _axes, _, b, _, _) do
+    Evision.Mat.matrix_multiply!(from_nx(a), from_nx(b))
+    |> to_nx(out)
+  end
+
+  @impl true
   def clip(%T{} = out, %T{} = t, %T{} = min, %T{} = max) do
     t
     |> Nx.as_type(out.type)

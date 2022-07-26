@@ -31,7 +31,7 @@ defmodule Evision.Mat do
   @doc namespace: :"cv.Mat"
   @spec at(reference(), non_neg_integer()) :: {:ok, number()} | {:error, String.t()}
   def at(mat, position) when is_reference(mat) and is_integer(position) and position >= 0 do
-    :erl_cv_nif.evision_cv_mat_at(img: mat, pos: position)
+    :evision_nif.mat_at(img: mat, pos: position)
   end
 
   deferror(at(mat, position))
@@ -39,7 +39,7 @@ defmodule Evision.Mat do
   @doc namespace: :"cv.Mat"
   @spec add(reference(), reference()) :: {:ok, reference()} | {:error, String.t()}
   def add(lhs, rhs) when is_reference(lhs) and is_reference(rhs) do
-    :erl_cv_nif.evision_cv_mat_add(l: lhs, r: rhs)
+    :evision_nif.mat_add(l: lhs, r: rhs)
   end
 
   deferror(add(lhs, rhs))
@@ -48,7 +48,7 @@ defmodule Evision.Mat do
   @spec add(reference(), reference(), mat_type()) :: {:ok, reference()} | {:error, String.t()}
   def add(lhs, rhs, type) when is_reference(lhs) and is_reference(rhs) do
     {t, l} = check_unsupported_type(type)
-    :erl_cv_nif.evision_cv_mat_add_typed(lhs: lhs, rhs: rhs, t: t, l: l)
+    :evision_nif.mat_add_typed(lhs: lhs, rhs: rhs, t: t, l: l)
   end
 
   deferror(add(lhs, rhs, type))
@@ -56,7 +56,7 @@ defmodule Evision.Mat do
   @doc namespace: :"cv.Mat"
   @spec subtract(reference(), reference()) :: {:ok, reference()} | {:error, String.t()}
   def subtract(lhs, rhs) when is_reference(lhs) and is_reference(rhs) do
-    :erl_cv_nif.evision_cv_mat_subtract(l: lhs, r: rhs)
+    :evision_nif.mat_subtract(l: lhs, r: rhs)
   end
 
   deferror(subtract(lhs, rhs))
@@ -65,7 +65,7 @@ defmodule Evision.Mat do
   @spec subtract(reference(), reference(), mat_type()) :: {:ok, reference()} | {:error, String.t()}
   def subtract(lhs, rhs, type) when is_reference(lhs) and is_reference(rhs) do
     {t, l} = check_unsupported_type(type)
-    :erl_cv_nif.evision_cv_mat_subtract_typed(lhs: lhs, rhs: rhs, t: t, l: l)
+    :evision_nif.mat_subtract_typed(lhs: lhs, rhs: rhs, t: t, l: l)
   end
 
   deferror(subtract(lhs, rhs, type))
@@ -73,7 +73,7 @@ defmodule Evision.Mat do
   @doc namespace: :"cv.Mat"
   @spec multiply(reference(), reference()) :: {:ok, reference()} | {:error, String.t()}
   def multiply(lhs, rhs) when is_reference(lhs) and is_reference(rhs) do
-    :erl_cv_nif.evision_cv_mat_multiply(l: lhs, r: rhs)
+    :evision_nif.mat_multiply(l: lhs, r: rhs)
   end
 
   deferror(multiply(lhs, rhs))
@@ -82,7 +82,7 @@ defmodule Evision.Mat do
   @spec multiply(reference(), reference(), mat_type()) :: {:ok, reference()} | {:error, String.t()}
   def multiply(lhs, rhs, type) when is_reference(lhs) and is_reference(rhs) do
     {t, l} = check_unsupported_type(type)
-    :erl_cv_nif.evision_cv_mat_multiply_typed(lhs: lhs, rhs: rhs, t: t, l: l)
+    :evision_nif.mat_multiply_typed(lhs: lhs, rhs: rhs, t: t, l: l)
   end
 
   deferror(multiply(lhs, rhs, type))
@@ -90,7 +90,7 @@ defmodule Evision.Mat do
   @doc namespace: :"cv.Mat"
   @spec matrix_multiply(reference(), reference()) :: {:ok, reference()} | {:error, String.t()}
   def matrix_multiply(lhs, rhs) when is_reference(lhs) and is_reference(rhs) do
-    :erl_cv_nif.evision_cv_mat_matrix_multiply(l: lhs, r: rhs)
+    :evision_nif.mat_matrix_multiply(l: lhs, r: rhs)
   end
 
   deferror(matrix_multiply(lhs, rhs))
@@ -98,7 +98,7 @@ defmodule Evision.Mat do
   @doc namespace: :"cv.Mat"
   @spec divide(reference(), reference()) :: {:ok, reference()} | {:error, String.t()}
   def divide(lhs, rhs) when is_reference(lhs) and is_reference(rhs) do
-    :erl_cv_nif.evision_cv_mat_divide(l: lhs, r: rhs)
+    :evision_nif.mat_divide(l: lhs, r: rhs)
   end
 
   deferror(divide(lhs, rhs))
@@ -107,7 +107,7 @@ defmodule Evision.Mat do
   @spec divide(reference(), reference(), mat_type()) :: {:ok, reference()} | {:error, String.t()}
   def divide(lhs, rhs, type) when is_reference(lhs) and is_reference(rhs) do
     {t, l} = check_unsupported_type(type)
-    :erl_cv_nif.evision_cv_mat_divide_typed(lhs: lhs, rhs: rhs, t: t, l: l)
+    :evision_nif.mat_divide_typed(lhs: lhs, rhs: rhs, t: t, l: l)
   end
 
   deferror(divide(lhs, rhs, type))
@@ -115,7 +115,7 @@ defmodule Evision.Mat do
   @doc namespace: :"cv.Mat"
   @spec bitwise_and(reference(), reference()) :: {:ok, reference()} | {:error, String.t()}
   def bitwise_and(lhs, rhs) when is_reference(lhs) and is_reference(rhs) do
-    :erl_cv_nif.evision_cv_mat_bitwise_and(l: lhs, r: rhs)
+    :evision_nif.mat_bitwise_and(l: lhs, r: rhs)
   end
 
   deferror(bitwise_and(lhs, rhs))
@@ -123,7 +123,7 @@ defmodule Evision.Mat do
   @doc namespace: :"cv.Mat"
   @spec bitwise_or(reference(), reference()) :: {:ok, reference()} | {:error, String.t()}
   def bitwise_or(lhs, rhs) when is_reference(lhs) and is_reference(rhs) do
-    :erl_cv_nif.evision_cv_mat_bitwise_or(l: lhs, r: rhs)
+    :evision_nif.mat_bitwise_or(l: lhs, r: rhs)
   end
 
   deferror(bitwise_or(lhs, rhs))
@@ -131,7 +131,7 @@ defmodule Evision.Mat do
   @doc namespace: :"cv.Mat"
   @spec bitwise_xor(reference(), reference()) :: {:ok, reference()} | {:error, String.t()}
   def bitwise_xor(lhs, rhs) when is_reference(lhs) and is_reference(rhs) do
-    :erl_cv_nif.evision_cv_mat_bitwise_xor(l: lhs, r: rhs)
+    :evision_nif.mat_bitwise_xor(l: lhs, r: rhs)
   end
 
   deferror(bitwise_xor(lhs, rhs))
@@ -139,7 +139,7 @@ defmodule Evision.Mat do
   @doc namespace: :"cv.Mat"
   @spec cmp(reference(), reference(), atom()) :: {:ok, reference()} | {:error, String.t()}
   def cmp(lhs, rhs, op) when is_reference(lhs) and is_reference(rhs) and op in [:eq, :gt, :ge, :lt, :le, :ne] do
-    :erl_cv_nif.evision_cv_mat_cmp(l: lhs, r: rhs, type: op)
+    :evision_nif.mat_cmp(l: lhs, r: rhs, type: op)
   end
 
   deferror(cmp(lhs, rhs, op))
@@ -147,7 +147,7 @@ defmodule Evision.Mat do
   @doc namespace: :"cv.Mat"
   @spec logical_and(reference(), reference()) :: {:ok, reference()} | {:error, String.t()}
   def logical_and(lhs, rhs) when is_reference(lhs) and is_reference(rhs) do
-    :erl_cv_nif.evision_cv_mat_logical_and(l: lhs, r: rhs)
+    :evision_nif.mat_logical_and(l: lhs, r: rhs)
   end
 
   deferror(logical_and(lhs, rhs))
@@ -155,7 +155,7 @@ defmodule Evision.Mat do
   @doc namespace: :"cv.Mat"
   @spec logical_or(reference(), reference()) :: {:ok, reference()} | {:error, String.t()}
   def logical_or(lhs, rhs) when is_reference(lhs) and is_reference(rhs) do
-    :erl_cv_nif.evision_cv_mat_logical_or(l: lhs, r: rhs)
+    :evision_nif.mat_logical_or(l: lhs, r: rhs)
   end
 
   deferror(logical_or(lhs, rhs))
@@ -163,7 +163,7 @@ defmodule Evision.Mat do
   @doc namespace: :"cv.Mat"
   @spec logical_xor(reference(), reference()) :: {:ok, reference()} | {:error, String.t()}
   def logical_xor(lhs, rhs) when is_reference(lhs) and is_reference(rhs) do
-    :erl_cv_nif.evision_cv_mat_logical_xor(l: lhs, r: rhs)
+    :evision_nif.mat_logical_xor(l: lhs, r: rhs)
   end
 
   deferror(logical_xor(lhs, rhs))
@@ -171,7 +171,7 @@ defmodule Evision.Mat do
   @doc namespace: :"cv.Mat"
   @spec abs(reference()) :: {:ok, reference()} | {:error, String.t()}
   def abs(mat) when is_reference(mat) do
-    :erl_cv_nif.evision_cv_mat_abs(img: mat)
+    :evision_nif.mat_abs(img: mat)
   end
 
   deferror(abs(mat))
@@ -179,7 +179,7 @@ defmodule Evision.Mat do
   @doc namespace: :"cv.Mat"
   @spec expm1(reference()) :: {:ok, reference()} | {:error, String.t()}
   def expm1(mat) when is_reference(mat) do
-    :erl_cv_nif.evision_cv_mat_expm1(img: mat)
+    :evision_nif.mat_expm1(img: mat)
   end
 
   deferror(expm1(mat))
@@ -188,7 +188,7 @@ defmodule Evision.Mat do
   @spec clip(reference(), number(), number()) :: {:ok, reference()} | {:error, String.t()}
   def clip(mat, lower, upper) when is_reference(mat) and is_number(lower) and
                                    is_number(upper) and lower <= upper do
-    :erl_cv_nif.evision_cv_mat_clip(img: mat, lower: lower, upper: upper)
+    :evision_nif.mat_clip(img: mat, lower: lower, upper: upper)
   end
 
   deferror(clip(mat, lower, upper))
@@ -206,7 +206,7 @@ defmodule Evision.Mat do
   def bitwise_not(mat) when is_reference(mat) do
     type = {s, _} = Evision.Mat.type!(mat)
     if s in [:s, :u] do
-      :erl_cv_nif.evision_cv_mat_bitwise_not(img: mat)
+      :evision_nif.mat_bitwise_not(img: mat)
     else
       {:error, "bitwise operators expect integer tensors as inputs and outputs an integer tensor, got: #{inspect(type)}"}
     end
@@ -217,7 +217,7 @@ defmodule Evision.Mat do
   @doc namespace: :"cv.Mat"
   @spec ceil(reference()) :: {:ok, reference()} | {:error, String.t()}
   def ceil(mat) when is_reference(mat) do
-    :erl_cv_nif.evision_cv_mat_ceil(img: mat)
+    :evision_nif.mat_ceil(img: mat)
   end
 
   deferror(ceil(mat))
@@ -225,7 +225,7 @@ defmodule Evision.Mat do
   @doc namespace: :"cv.Mat"
   @spec floor(reference()) :: {:ok, reference()} | {:error, String.t()}
   def floor(mat) when is_reference(mat) do
-    :erl_cv_nif.evision_cv_mat_floor(img: mat)
+    :evision_nif.mat_floor(img: mat)
   end
 
   deferror(floor(mat))
@@ -233,7 +233,7 @@ defmodule Evision.Mat do
   @doc namespace: :"cv.Mat"
   @spec negate(reference()) :: {:ok, reference()} | {:error, String.t()}
   def negate(mat) when is_reference(mat) do
-    :erl_cv_nif.evision_cv_mat_negate(img: mat)
+    :evision_nif.mat_negate(img: mat)
   end
 
   deferror(negate(mat))
@@ -241,7 +241,7 @@ defmodule Evision.Mat do
   @doc namespace: :"cv.Mat"
   @spec round(reference()) :: {:ok, reference()} | {:error, String.t()}
   def round(mat) when is_reference(mat) do
-    :erl_cv_nif.evision_cv_mat_round(img: mat)
+    :evision_nif.mat_round(img: mat)
   end
 
   deferror(round(mat))
@@ -249,7 +249,7 @@ defmodule Evision.Mat do
   @doc namespace: :"cv.Mat"
   @spec sign(reference()) :: {:ok, reference()} | {:error, String.t()}
   def sign(mat) when is_reference(mat) do
-    :erl_cv_nif.evision_cv_mat_sign(img: mat)
+    :evision_nif.mat_sign(img: mat)
   end
 
   deferror(sign(mat))
@@ -257,7 +257,7 @@ defmodule Evision.Mat do
   @doc namespace: :"cv.Mat"
   @spec setTo(reference(), number(), reference()) :: {:ok, reference()} | {:error, String.t()}
   def setTo(mat, value, mask) when is_reference(mat) do
-    :erl_cv_nif.evision_cv_mat_set_to(img: mat, value: value, mask: mask)
+    :evision_nif.mat_set_to(img: mat, value: value, mask: mask)
   end
 
   deferror(setTo(mat, value, mask))
@@ -265,7 +265,7 @@ defmodule Evision.Mat do
   @doc namespace: :"cv.Mat"
   @spec dot(reference(), reference()) :: {:ok, reference()} | {:error, String.t()}
   def dot(mat_a, mat_b) when is_reference(mat_a) and is_reference(mat_b) do
-    :erl_cv_nif.evision_cv_mat_dot(a: mat_a, b: mat_b)
+    :evision_nif.mat_dot(a: mat_a, b: mat_b)
   end
 
   deferror(dot(mat_a, mat_b))
@@ -288,7 +288,7 @@ defmodule Evision.Mat do
   @doc namespace: :"cv.Mat"
   def zeros(shape, type) when is_tuple(shape) do
     {t, l} = check_unsupported_type(type)
-    :erl_cv_nif.evision_cv_mat_zeros(
+    :evision_nif.mat_zeros(
       shape: Tuple.to_list(shape),
       t: t,
       l: l
@@ -300,7 +300,7 @@ defmodule Evision.Mat do
   @doc namespace: :"cv.Mat"
   def ones(shape, type) when is_tuple(shape) do
     {t, l} = check_unsupported_type(type)
-    :erl_cv_nif.evision_cv_mat_ones(
+    :evision_nif.mat_ones(
       shape: Tuple.to_list(shape),
       t: t,
       l: l
@@ -311,7 +311,7 @@ defmodule Evision.Mat do
 
   def arange(from, to, step, type) when step != 0 do
     {t, l} = check_unsupported_type(type)
-    with {:ok, mat} <- :erl_cv_nif.evision_cv_mat_arange(
+    with {:ok, mat} <- :evision_nif.mat_arange(
       from: from,
       to: to,
       step: step,
@@ -329,7 +329,7 @@ defmodule Evision.Mat do
 
   def arange(from, to, step, type, shape) when step != 0 do
     {t, l} = check_unsupported_type(type)
-    with {:ok, mat} <- :erl_cv_nif.evision_cv_mat_arange(
+    with {:ok, mat} <- :evision_nif.mat_arange(
       from: from,
       to: to,
       step: step,
@@ -346,7 +346,7 @@ defmodule Evision.Mat do
 
   def full(shape, number, type) do
     {t, l} = check_unsupported_type(type)
-    :erl_cv_nif.evision_cv_mat_full(
+    :evision_nif.mat_full(
       number: number,
       t: t,
       l: l,
@@ -359,7 +359,7 @@ defmodule Evision.Mat do
   @doc namespace: :"cv.Mat"
   @spec release(reference()) :: :ok
   def release(mat) when is_reference(mat) do
-    :erl_cv_nif.evision_cv_mat_release(img: mat)
+    :evision_nif.mat_release(img: mat)
   end
 
   @doc namespace: :"cv.Mat"
@@ -381,7 +381,7 @@ defmodule Evision.Mat do
   @doc namespace: :"cv.Mat"
   @spec to_binary(reference(), non_neg_integer()) :: {:ok, binary()} | {:error, String.t()}
   def to_binary(mat, limit \\ 0) when is_reference(mat) and is_integer(limit) and limit >= 0 do
-    :erl_cv_nif.evision_cv_mat_to_binary(img: mat, limit: limit)
+    :evision_nif.mat_to_binary(img: mat, limit: limit)
   end
 
   deferror(to_binary(mat, limit))
@@ -459,7 +459,7 @@ defmodule Evision.Mat do
   @doc namespace: :"cv.Mat"
   def eye(n, type) when is_integer(n) and n > 0 do
     {t, l} = check_unsupported_type(type)
-    :erl_cv_nif.evision_cv_mat_eye(
+    :evision_nif.mat_eye(
       n: n,
       t: t,
       l: l
@@ -470,14 +470,14 @@ defmodule Evision.Mat do
 
   @doc namespace: :"cv.Mat"
   def reshape(mat, shape) when is_reference(mat) and is_tuple(shape) do
-    :erl_cv_nif.evision_cv_mat_reshape(
+    :evision_nif.mat_reshape(
       mat: mat,
       shape: Tuple.to_list(shape)
     )
   end
 
   def reshape(mat, shape) when is_reference(mat) and is_list(shape) do
-    :erl_cv_nif.evision_cv_mat_reshape(
+    :evision_nif.mat_reshape(
       mat: mat,
       shape: shape
     )
@@ -493,7 +493,7 @@ defmodule Evision.Mat do
   deferror(squeeze(mat))
 
   def broadcast_to(mat, to_shape) do
-    :erl_cv_nif.evision_cv_mat_broadcast_to(
+    :evision_nif.mat_broadcast_to(
       img: mat,
       to_shape: Tuple.to_list(to_shape),
       force_src_shape: []
@@ -503,7 +503,7 @@ defmodule Evision.Mat do
   deferror(broadcast_to(mat, to_shape))
 
   def broadcast_to(mat, to_shape, force_src_shape) do
-    :erl_cv_nif.evision_cv_mat_broadcast_to(
+    :evision_nif.mat_broadcast_to(
       img: mat,
       to_shape: Tuple.to_list(to_shape),
       force_src_shape: Tuple.to_list(force_src_shape)

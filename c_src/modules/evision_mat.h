@@ -390,8 +390,8 @@ static ERL_NIF_TERM evision_cv_mat_from_binary_by_shape(ErlNifEnv *env, int argc
     else return evision::nif::error(env, "overload resolution failed");
 }
 
-// @evision c: evision_cv_mat_eye, 1
-// @evision nif: def evision_cv_mat_eye(_opts \\ []), do: :erlang.nif_error("Mat::eye not loaded")
+// @evision c: mat_eye,evision_cv_mat_eye,1
+// @evision nif: def mat_eye(_opts \\ []), do: :erlang.nif_error("Mat::eye not loaded")
 static ERL_NIF_TERM evision_cv_mat_eye(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;
@@ -418,8 +418,8 @@ static ERL_NIF_TERM evision_cv_mat_eye(ErlNifEnv *env, int argc, const ERL_NIF_T
     else return evision::nif::error(env, "overload resolution failed");
 }
 
-// @evision c: evision_cv_mat_reshape, 1
-// @evision nif: def evision_cv_mat_reshape(_opts \\ []), do: :erlang.nif_error("Mat::reshape not loaded")
+// @evision c: mat_reshape, evision_cv_mat_reshape, 1
+// @evision nif: def mat_reshape(_opts \\ []), do: :erlang.nif_error("Mat::reshape not loaded")
 static ERL_NIF_TERM evision_cv_mat_reshape(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;
@@ -442,8 +442,8 @@ static ERL_NIF_TERM evision_cv_mat_reshape(ErlNifEnv *env, int argc, const ERL_N
     else return evision::nif::error(env, "overload resolution failed");
 }
 
-// @evision c: evision_cv_mat_zeros, 1
-// @evision nif: def evision_cv_mat_zeros(_opts \\ []), do: :erlang.nif_error("Mat::zeros not loaded")
+// @evision c: mat_zeros, evision_cv_mat_zeros, 1
+// @evision nif: def mat_zeros(_opts \\ []), do: :erlang.nif_error("Mat::zeros not loaded")
 static ERL_NIF_TERM evision_cv_mat_zeros(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;
@@ -470,8 +470,8 @@ static ERL_NIF_TERM evision_cv_mat_zeros(ErlNifEnv *env, int argc, const ERL_NIF
     else return evision::nif::error(env, "overload resolution failed");
 }
 
-// @evision c: evision_cv_mat_ones, 1
-// @evision nif: def evision_cv_mat_ones(_opts \\ []), do: :erlang.nif_error("Mat::ones not loaded")
+// @evision c: mat_ones, evision_cv_mat_ones, 1
+// @evision nif: def mat_ones(_opts \\ []), do: :erlang.nif_error("Mat::ones not loaded")
 static ERL_NIF_TERM evision_cv_mat_ones(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;
@@ -498,8 +498,8 @@ static ERL_NIF_TERM evision_cv_mat_ones(ErlNifEnv *env, int argc, const ERL_NIF_
     else return evision::nif::error(env, "overload resolution failed");
 }
 
-// @evision c: evision_cv_mat_arange, 1
-// @evision nif: def evision_cv_mat_arange(_opts \\ []), do: :erlang.nif_error("Mat::arange not loaded")
+// @evision c: mat_arange, evision_cv_mat_arange, 1
+// @evision nif: def mat_arange(_opts \\ []), do: :erlang.nif_error("Mat::arange not loaded")
 static ERL_NIF_TERM evision_cv_mat_arange(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;
@@ -543,8 +543,8 @@ static ERL_NIF_TERM evision_cv_mat_arange(ErlNifEnv *env, int argc, const ERL_NI
     else return evision::nif::error(env, "overload resolution failed");
 }
 
-// @evision c: evision_cv_mat_full, 1
-// @evision nif: def evision_cv_mat_full(_opts \\ []), do: :erlang.nif_error("Mat::full not loaded")
+// @evision c: mat_full, evision_cv_mat_full, 1
+// @evision nif: def mat_full(_opts \\ []), do: :erlang.nif_error("Mat::full not loaded")
 static ERL_NIF_TERM evision_cv_mat_full(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;
@@ -576,8 +576,8 @@ static ERL_NIF_TERM evision_cv_mat_full(ErlNifEnv *env, int argc, const ERL_NIF_
     else return evision::nif::error(env, "overload resolution failed");
 }
 
-// @evision c: evision_cv_mat_release, 1
-// @evision nif: def evision_cv_mat_release(_opts \\ []), do: :erlang.nif_error("Mat::release not loaded")
+// @evision c: mat_release, evision_cv_mat_release, 1
+// @evision nif: def mat_release(_opts \\ []), do: :erlang.nif_error("Mat::release not loaded")
 static ERL_NIF_TERM evision_cv_mat_release(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;
@@ -598,8 +598,8 @@ static ERL_NIF_TERM evision_cv_mat_release(ErlNifEnv *env, int argc, const ERL_N
     else return evision::nif::error(env, "overload resolution failed");
 }
 
-// @evision c: evision_cv_mat_at, 1
-// @evision nif: def evision_cv_mat_at(_opts \\ []), do: :erlang.nif_error("Mat::at not loaded")
+// @evision c: mat_at, evision_cv_mat_at, 1
+// @evision nif: def mat_at(_opts \\ []), do: :erlang.nif_error("Mat::at not loaded")
 static ERL_NIF_TERM evision_cv_mat_at(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;
@@ -670,8 +670,8 @@ static ERL_NIF_TERM evision_cv_mat_at(ErlNifEnv *env, int argc, const ERL_NIF_TE
     else return evision::nif::error(env, "overload resolution failed");
 }
 
-// @evision c: evision_cv_mat_add, 1
-// @evision nif: def evision_cv_mat_add(_opts \\ []), do: :erlang.nif_error("Mat::add not loaded")
+// @evision c: mat_add, evision_cv_mat_add, 1
+// @evision nif: def mat_add(_opts \\ []), do: :erlang.nif_error("Mat::add not loaded")
 static ERL_NIF_TERM evision_cv_mat_add(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;
@@ -695,8 +695,8 @@ static ERL_NIF_TERM evision_cv_mat_add(ErlNifEnv *env, int argc, const ERL_NIF_T
     else return evision::nif::error(env, "overload resolution failed");
 }
 
-// @evision c: evision_cv_mat_add_typed, 1
-// @evision nif: def evision_cv_mat_add_typed(_opts \\ []), do: :erlang.nif_error("Mat::add not loaded")
+// @evision c: mat_add_typed, evision_cv_mat_add_typed, 1
+// @evision nif: def mat_add_typed(_opts \\ []), do: :erlang.nif_error("Mat::add not loaded")
 static ERL_NIF_TERM evision_cv_mat_add_typed(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;
@@ -726,8 +726,8 @@ static ERL_NIF_TERM evision_cv_mat_add_typed(ErlNifEnv *env, int argc, const ERL
     else return evision::nif::error(env, "overload resolution failed");
 }
 
-// @evision c: evision_cv_mat_subtract, 1
-// @evision nif: def evision_cv_mat_subtract(_opts \\ []), do: :erlang.nif_error("Mat::subtract not loaded")
+// @evision c: mat_subtract, evision_cv_mat_subtract, 1
+// @evision nif: def mat_subtract(_opts \\ []), do: :erlang.nif_error("Mat::subtract not loaded")
 static ERL_NIF_TERM evision_cv_mat_subtract(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;
@@ -751,8 +751,8 @@ static ERL_NIF_TERM evision_cv_mat_subtract(ErlNifEnv *env, int argc, const ERL_
     else return evision::nif::error(env, "overload resolution failed");
 }
 
-// @evision c: evision_cv_mat_subtract_typed, 1
-// @evision nif: def evision_cv_mat_subtract_typed(_opts \\ []), do: :erlang.nif_error("Mat::subtract not loaded")
+// @evision c: mat_subtract_typed,evision_cv_mat_subtract_typed,1
+// @evision nif: def mat_subtract_typed(_opts \\ []), do: :erlang.nif_error("Mat::subtract not loaded")
 static ERL_NIF_TERM evision_cv_mat_subtract_typed(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;
@@ -782,8 +782,8 @@ static ERL_NIF_TERM evision_cv_mat_subtract_typed(ErlNifEnv *env, int argc, cons
     else return evision::nif::error(env, "overload resolution failed");
 }
 
-// @evision c: evision_cv_mat_multiply, 1
-// @evision nif: def evision_cv_mat_multiply(_opts \\ []), do: :erlang.nif_error("Mat::multiply not loaded")
+// @evision c: mat_multiply, evision_cv_mat_multiply, 1
+// @evision nif: def mat_multiply(_opts \\ []), do: :erlang.nif_error("Mat::multiply not loaded")
 static ERL_NIF_TERM evision_cv_mat_multiply(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;
@@ -807,8 +807,8 @@ static ERL_NIF_TERM evision_cv_mat_multiply(ErlNifEnv *env, int argc, const ERL_
     else return evision::nif::error(env, "overload resolution failed");
 }
 
-// @evision c: evision_cv_mat_multiply_typed, 1
-// @evision nif: def evision_cv_mat_multiply_typed(_opts \\ []), do: :erlang.nif_error("Mat::multiply not loaded")
+// @evision c: mat_multiply_typed,evision_cv_mat_multiply_typed,1
+// @evision nif: def mat_multiply_typed(_opts \\ []), do: :erlang.nif_error("Mat::multiply not loaded")
 static ERL_NIF_TERM evision_cv_mat_multiply_typed(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;
@@ -838,8 +838,8 @@ static ERL_NIF_TERM evision_cv_mat_multiply_typed(ErlNifEnv *env, int argc, cons
     else return evision::nif::error(env, "overload resolution failed");
 }
 
-// @evision c: evision_cv_mat_matrix_multiply, 1
-// @evision nif: def evision_cv_mat_matrix_multiply(_opts \\ []), do: :erlang.nif_error("Mat::matrix_multiply not loaded")
+// @evision c: mat_matrix_multiply, evision_cv_mat_matrix_multiply, 1
+// @evision nif: def mat_matrix_multiply(_opts \\ []), do: :erlang.nif_error("Mat::matrix_multiply not loaded")
 static ERL_NIF_TERM evision_cv_mat_matrix_multiply(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;
@@ -861,8 +861,8 @@ static ERL_NIF_TERM evision_cv_mat_matrix_multiply(ErlNifEnv *env, int argc, con
     else return evision::nif::error(env, "overload resolution failed");
 }
 
-// @evision c: evision_cv_mat_divide, 1
-// @evision nif: def evision_cv_mat_divide(_opts \\ []), do: :erlang.nif_error("Mat::divide not loaded")
+// @evision c: mat_divide, evision_cv_mat_divide, 1
+// @evision nif: def mat_divide(_opts \\ []), do: :erlang.nif_error("Mat::divide not loaded")
 static ERL_NIF_TERM evision_cv_mat_divide(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;
@@ -886,8 +886,8 @@ static ERL_NIF_TERM evision_cv_mat_divide(ErlNifEnv *env, int argc, const ERL_NI
     else return evision::nif::error(env, "overload resolution failed");
 }
 
-// @evision c: evision_cv_mat_divide_typed, 1
-// @evision nif: def evision_cv_mat_divide_typed(_opts \\ []), do: :erlang.nif_error("Mat::divide not loaded")
+// @evision c: mat_divide_typed, evision_cv_mat_divide_typed, 1
+// @evision nif: def mat_divide_typed(_opts \\ []), do: :erlang.nif_error("Mat::divide not loaded")
 static ERL_NIF_TERM evision_cv_mat_divide_typed(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;
@@ -917,8 +917,8 @@ static ERL_NIF_TERM evision_cv_mat_divide_typed(ErlNifEnv *env, int argc, const 
     else return evision::nif::error(env, "overload resolution failed");
 }
 
-// @evision c: evision_cv_mat_bitwise_and, 1
-// @evision nif: def evision_cv_mat_bitwise_and(_opts \\ []), do: :erlang.nif_error("Mat::bitwise_and not loaded")
+// @evision c: mat_bitwise_and, evision_cv_mat_bitwise_and, 1
+// @evision nif: def mat_bitwise_and(_opts \\ []), do: :erlang.nif_error("Mat::bitwise_and not loaded")
 static ERL_NIF_TERM evision_cv_mat_bitwise_and(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;
@@ -942,8 +942,8 @@ static ERL_NIF_TERM evision_cv_mat_bitwise_and(ErlNifEnv *env, int argc, const E
     else return evision::nif::error(env, "overload resolution failed");
 }
 
-// @evision c: evision_cv_mat_bitwise_or, 1
-// @evision nif: def evision_cv_mat_bitwise_or(_opts \\ []), do: :erlang.nif_error("Mat::bitwise_or not loaded")
+// @evision c: mat_bitwise_or, evision_cv_mat_bitwise_or, 1
+// @evision nif: def mat_bitwise_or(_opts \\ []), do: :erlang.nif_error("Mat::bitwise_or not loaded")
 static ERL_NIF_TERM evision_cv_mat_bitwise_or(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;
@@ -967,8 +967,8 @@ static ERL_NIF_TERM evision_cv_mat_bitwise_or(ErlNifEnv *env, int argc, const ER
     else return evision::nif::error(env, "overload resolution failed");
 }
 
-// @evision c: evision_cv_mat_bitwise_xor, 1
-// @evision nif: def evision_cv_mat_bitwise_xor(_opts \\ []), do: :erlang.nif_error("Mat::bitwise_xor not loaded")
+// @evision c: mat_bitwise_xor, evision_cv_mat_bitwise_xor, 1
+// @evision nif: def mat_bitwise_xor(_opts \\ []), do: :erlang.nif_error("Mat::bitwise_xor not loaded")
 static ERL_NIF_TERM evision_cv_mat_bitwise_xor(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;
@@ -992,8 +992,8 @@ static ERL_NIF_TERM evision_cv_mat_bitwise_xor(ErlNifEnv *env, int argc, const E
     else return evision::nif::error(env, "overload resolution failed");
 }
 
-// @evision c: evision_cv_mat_cmp, 1
-// @evision nif: def evision_cv_mat_cmp(_opts \\ []), do: :erlang.nif_error("Mat::greater not loaded")
+// @evision c: mat_cmp, evision_cv_mat_cmp, 1
+// @evision nif: def mat_cmp(_opts \\ []), do: :erlang.nif_error("Mat::greater not loaded")
 static ERL_NIF_TERM evision_cv_mat_cmp(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;
@@ -1032,8 +1032,8 @@ static ERL_NIF_TERM evision_cv_mat_cmp(ErlNifEnv *env, int argc, const ERL_NIF_T
     else return evision::nif::error(env, "overload resolution failed");
 }
 
-// @evision c: evision_cv_mat_logical_and, 1
-// @evision nif: def evision_cv_mat_logical_and(_opts \\ []), do: :erlang.nif_error("Mat::logical_and not loaded")
+// @evision c: mat_logical_and, evision_cv_mat_logical_and, 1
+// @evision nif: def mat_logical_and(_opts \\ []), do: :erlang.nif_error("Mat::logical_and not loaded")
 static ERL_NIF_TERM evision_cv_mat_logical_and(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;
@@ -1056,8 +1056,8 @@ static ERL_NIF_TERM evision_cv_mat_logical_and(ErlNifEnv *env, int argc, const E
     else return evision::nif::error(env, "overload resolution failed");
 }
 
-// @evision c: evision_cv_mat_logical_or, 1
-// @evision nif: def evision_cv_mat_logical_or(_opts \\ []), do: :erlang.nif_error("Mat::logical_or not loaded")
+// @evision c: mat_logical_or, evision_cv_mat_logical_or, 1
+// @evision nif: def mat_logical_or(_opts \\ []), do: :erlang.nif_error("Mat::logical_or not loaded")
 static ERL_NIF_TERM evision_cv_mat_logical_or(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;
@@ -1080,8 +1080,8 @@ static ERL_NIF_TERM evision_cv_mat_logical_or(ErlNifEnv *env, int argc, const ER
     else return evision::nif::error(env, "overload resolution failed");
 }
 
-// @evision c: evision_cv_mat_logical_xor, 1
-// @evision nif: def evision_cv_mat_logical_xor(_opts \\ []), do: :erlang.nif_error("Mat::bitwise_xor not loaded")
+// @evision c: mat_logical_xor, evision_cv_mat_logical_xor, 1
+// @evision nif: def mat_logical_xor(_opts \\ []), do: :erlang.nif_error("Mat::bitwise_xor not loaded")
 static ERL_NIF_TERM evision_cv_mat_logical_xor(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;
@@ -1104,8 +1104,8 @@ static ERL_NIF_TERM evision_cv_mat_logical_xor(ErlNifEnv *env, int argc, const E
     else return evision::nif::error(env, "overload resolution failed");
 }
 
-// @evision c: evision_cv_mat_abs, 1
-// @evision nif: def evision_cv_mat_abs(_opts \\ []), do: :erlang.nif_error("Mat::abs not loaded")
+// @evision c: mat_abs, evision_cv_mat_abs, 1
+// @evision nif: def mat_abs(_opts \\ []), do: :erlang.nif_error("Mat::abs not loaded")
 static ERL_NIF_TERM evision_cv_mat_abs(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;
@@ -1125,8 +1125,8 @@ static ERL_NIF_TERM evision_cv_mat_abs(ErlNifEnv *env, int argc, const ERL_NIF_T
     else return evision::nif::error(env, "overload resolution failed");
 }
 
-// @evision c: evision_cv_mat_expm1, 1
-// @evision nif: def evision_cv_mat_expm1(_opts \\ []), do: :erlang.nif_error("Mat::expm1 not loaded")
+// @evision c: mat_expm1, evision_cv_mat_expm1, 1
+// @evision nif: def mat_expm1(_opts \\ []), do: :erlang.nif_error("Mat::expm1 not loaded")
 static ERL_NIF_TERM evision_cv_mat_expm1(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;
@@ -1148,8 +1148,8 @@ static ERL_NIF_TERM evision_cv_mat_expm1(ErlNifEnv *env, int argc, const ERL_NIF
     else return evision::nif::error(env, "overload resolution failed");
 }
 
-// @evision c: evision_cv_mat_clip, 1
-// @evision nif: def evision_cv_mat_clip(_opts \\ []), do: :erlang.nif_error("Mat::clip not loaded")
+// @evision c: mat_clip, evision_cv_mat_clip, 1
+// @evision nif: def mat_clip(_opts \\ []), do: :erlang.nif_error("Mat::clip not loaded")
 static ERL_NIF_TERM evision_cv_mat_clip(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;
@@ -1175,8 +1175,8 @@ static ERL_NIF_TERM evision_cv_mat_clip(ErlNifEnv *env, int argc, const ERL_NIF_
     else return evision::nif::error(env, "overload resolution failed");
 }
 
-// @evision c: evision_cv_mat_set_to, 1
-// @evision nif: def evision_cv_mat_set_to(_opts \\ []), do: :erlang.nif_error("Mat::setTo not loaded")
+// @evision c: mat_set_to, evision_cv_mat_set_to, 1
+// @evision nif: def mat_set_to(_opts \\ []), do: :erlang.nif_error("Mat::setTo not loaded")
 static ERL_NIF_TERM evision_cv_mat_set_to(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;
@@ -1201,8 +1201,8 @@ static ERL_NIF_TERM evision_cv_mat_set_to(ErlNifEnv *env, int argc, const ERL_NI
     else return evision::nif::error(env, "overload resolution failed");
 }
 
-// @evision c: evision_cv_mat_dot, 1
-// @evision nif: def evision_cv_mat_dot(_opts \\ []), do: :erlang.nif_error("Mat::dot not loaded")
+// @evision c: mat_dot, evision_cv_mat_dot, 1
+// @evision nif: def mat_dot(_opts \\ []), do: :erlang.nif_error("Mat::dot not loaded")
 static ERL_NIF_TERM evision_cv_mat_dot(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;
@@ -1224,8 +1224,8 @@ static ERL_NIF_TERM evision_cv_mat_dot(ErlNifEnv *env, int argc, const ERL_NIF_T
     else return evision::nif::error(env, "overload resolution failed");
 }
 
-// @evision c: evision_cv_mat_bitwise_not, 1
-// @evision nif: def evision_cv_mat_bitwise_not(_opts \\ []), do: :erlang.nif_error("Mat::bitwise_not not loaded")
+// @evision c: mat_bitwise_not, evision_cv_mat_bitwise_not, 1
+// @evision nif: def mat_bitwise_not(_opts \\ []), do: :erlang.nif_error("Mat::bitwise_not not loaded")
 static ERL_NIF_TERM evision_cv_mat_bitwise_not(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;
@@ -1246,8 +1246,8 @@ static ERL_NIF_TERM evision_cv_mat_bitwise_not(ErlNifEnv *env, int argc, const E
     else return evision::nif::error(env, "overload resolution failed");
 }
 
-// @evision c: evision_cv_mat_ceil, 1
-// @evision nif: def evision_cv_mat_ceil(_opts \\ []), do: :erlang.nif_error("Mat::ceil not loaded")
+// @evision c: mat_ceil, evision_cv_mat_ceil, 1
+// @evision nif: def mat_ceil(_opts \\ []), do: :erlang.nif_error("Mat::ceil not loaded")
 static ERL_NIF_TERM evision_cv_mat_ceil(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;
@@ -1285,8 +1285,8 @@ static ERL_NIF_TERM evision_cv_mat_ceil(ErlNifEnv *env, int argc, const ERL_NIF_
     else return evision::nif::error(env, "overload resolution failed");
 }
 
-// @evision c: evision_cv_mat_floor, 1
-// @evision nif: def evision_cv_mat_floor(_opts \\ []), do: :erlang.nif_error("Mat::floor not loaded")
+// @evision c: mat_floor, evision_cv_mat_floor, 1
+// @evision nif: def mat_floor(_opts \\ []), do: :erlang.nif_error("Mat::floor not loaded")
 static ERL_NIF_TERM evision_cv_mat_floor(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;
@@ -1324,8 +1324,8 @@ static ERL_NIF_TERM evision_cv_mat_floor(ErlNifEnv *env, int argc, const ERL_NIF
     else return evision::nif::error(env, "overload resolution failed");
 }
 
-// @evision c: evision_cv_mat_negate, 1
-// @evision nif: def evision_cv_mat_negate(_opts \\ []), do: :erlang.nif_error("Mat::negate not loaded")
+// @evision c: mat_negate, evision_cv_mat_negate, 1
+// @evision nif: def mat_negate(_opts \\ []), do: :erlang.nif_error("Mat::negate not loaded")
 static ERL_NIF_TERM evision_cv_mat_negate(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;
@@ -1365,8 +1365,8 @@ static ERL_NIF_TERM evision_cv_mat_negate(ErlNifEnv *env, int argc, const ERL_NI
     else return evision::nif::error(env, "overload resolution failed");
 }
 
-// @evision c: evision_cv_mat_round, 1
-// @evision nif: def evision_cv_mat_round(_opts \\ []), do: :erlang.nif_error("Mat::round not loaded")
+// @evision c: mat_round, evision_cv_mat_round, 1
+// @evision nif: def mat_round(_opts \\ []), do: :erlang.nif_error("Mat::round not loaded")
 static ERL_NIF_TERM evision_cv_mat_round(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;
@@ -1404,8 +1404,8 @@ static ERL_NIF_TERM evision_cv_mat_round(ErlNifEnv *env, int argc, const ERL_NIF
     else return evision::nif::error(env, "overload resolution failed");
 }
 
-// @evision c: evision_cv_mat_sign, 1
-// @evision nif: def evision_cv_mat_sign(_opts \\ []), do: :erlang.nif_error("Mat::sign not loaded")
+// @evision c: mat_sign, evision_cv_mat_sign, 1
+// @evision nif: def mat_sign(_opts \\ []), do: :erlang.nif_error("Mat::sign not loaded")
 static ERL_NIF_TERM evision_cv_mat_sign(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;
@@ -1481,8 +1481,8 @@ static void broadcast(
     }
 }
 
-// @evision c: evision_cv_mat_broadcast_to, 1
-// @evision nif: def evision_cv_mat_broadcast_to(_opts \\ []), do: :erlang.nif_error("Mat::broadcast_to not loaded")
+// @evision c: mat_broadcast_to, evision_cv_mat_broadcast_to, 1
+// @evision nif: def mat_broadcast_to(_opts \\ []), do: :erlang.nif_error("Mat::broadcast_to not loaded")
 static ERL_NIF_TERM evision_cv_mat_broadcast_to(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;

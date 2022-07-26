@@ -868,6 +868,7 @@ class BeamWrapperGenerator(object):
                             erl_name = parts[0].strip()
                             func_name = parts[1].strip()
                             func_arity = parts[2].strip()
+
                             if func_name.endswith('_read') or func_name.endswith('_load_static') or \
                                     func_name.endswith('_write') or func_name.endswith('_save') or \
                                     func_name in io_bound_funcs():
