@@ -88,12 +88,17 @@ defmodule Evision.Mat do
   deferror(multiply(lhs, rhs, type))
 
   @doc namespace: :"cv.Mat"
-  @spec matrix_multiply(reference(), reference()) :: {:ok, reference()} | {:error, String.t()}
-  def matrix_multiply(lhs, rhs) when is_reference(lhs) and is_reference(rhs) do
-    :evision_nif.mat_matrix_multiply(l: lhs, r: rhs)
+  @spec matrix_multiply(reference(), reference(), mat_type()|nil) :: {:ok, reference()} | {:error, String.t()}
+  def matrix_multiply(lhs, rhs, out_type = {t, l} \\ nil) when is_reference(lhs) and is_reference(rhs) do
+    if out_type == nil do
+      :evision_nif.mat_matrix_multiply(lhs: lhs, rhs: rhs, t: nil, l: 0)
+    else
+      :evision_nif.mat_matrix_multiply(lhs: lhs, rhs: rhs, t: t, l: l)
+    end
   end
 
   deferror(matrix_multiply(lhs, rhs))
+  deferror(matrix_multiply(lhs, rhs, out_type))
 
   @doc namespace: :"cv.Mat"
   @spec divide(reference(), reference()) :: {:ok, reference()} | {:error, String.t()}

@@ -227,8 +227,7 @@ defmodule Evision.Backend do
     %T{type: out_type} = out,
     a, left_axes, [],
     b, right_axes, []) do
-    Evision.Mat.matrix_multiply!(from_nx(a), from_nx(b))
-    |> Evision.Mat.as_type!(out_type)
+    Evision.Mat.matrix_multiply!(from_nx(a), from_nx(b), out_type)
     |> to_nx(out)
   end
 

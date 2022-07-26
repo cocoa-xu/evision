@@ -424,6 +424,9 @@ static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Mat& m, const ArgInfo& in
     evision_res<cv::Mat *> * in_res;
     if( enif_get_resource(env, o, evision_res<cv::Mat *>::type, (void **)&in_res) ) {
         if (in_res->val) {
+            // should we copy the matrix?
+            // probably yes so that the original matrix is not modified
+            // because erlang/elixir users would expect that the original matrix to be unchanged
             in_res->val->copyTo(m);
             return true;
         }
@@ -506,7 +509,10 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const Mat& m)
     evision_res<cv::Mat *> * res;
     if (alloc_resource(&res)) {
         res->val = new cv::Mat();
-        *res->val = m.clone();
+        // should we copy the matrix?
+        // probably no, because all input matrice are copied when calling `evision_to`
+        // and this function returns the output/result matrix, which should already be a new matrix
+        *res->val = m;
     } else {
         return evision::nif::error(env, "no memory");
     }
@@ -554,6 +560,22 @@ bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, void*& ptr, const ArgInfo& inf
         return false;
     ptr = reinterpret_cast<void *>(i64);
     return ptr != nullptr;
+}
+
+template<>
+bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, unsigned long &val, const ArgInfo& info)
+{
+    if (evision::nif::check_nil(env, obj)) {
+        return true;
+    }
+
+    CV_UNUSED(info);
+
+    ErlNifUInt64 u64;
+    if (!enif_get_uint64(env, obj, (ErlNifUInt64 *)&u64))
+        return false;
+    val = u64;
+    return 1;
 }
 
 static ERL_NIF_TERM evision_from(ErlNifEnv *env, void*& ptr)

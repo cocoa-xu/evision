@@ -848,12 +848,23 @@ static ERL_NIF_TERM evision_cv_mat_matrix_multiply(ErlNifEnv *env, int argc, con
     evision::nif::parse_arg(env, nif_opts_index, argv, erl_terms);
 
     {
-        Mat l;
-        Mat r;
+        Mat lhs;
+        Mat rhs;
+        std::string t;
+        int l = 0;
 
-        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "l"), l, ArgInfo("l", 0)) &&
-            evision_to_safe(env, evision_get_kw(env, erl_terms, "r"), r, ArgInfo("r", 0))) {
-            return evision::nif::ok(env, evision_from(env, Mat(l * r)));
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "lhs"), lhs, ArgInfo("lhs", 0)) &&
+            evision_to_safe(env, evision_get_kw(env, erl_terms, "rhs"), rhs, ArgInfo("rhs", 0)) &&
+            evision_to_safe(env, evision_get_kw(env, erl_terms, "t"), t, ArgInfo("t", 0)) &&
+            evision_to_safe(env, evision_get_kw(env, erl_terms, "l"), l, ArgInfo("l", 0))) {
+            int type;
+            if (get_binary_type(t, l, 0, type)) {
+                Mat ret = lhs * rhs;
+                ret.convertTo(ret, type);
+                return evision::nif::ok(env, evision_from(env, ret));
+            } else {
+                return evision::nif::ok(env, evision_from(env, Mat(lhs * rhs)));
+            }
         }
     }
 
