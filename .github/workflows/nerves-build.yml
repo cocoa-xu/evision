@@ -1,7 +1,5 @@
 name: nerves-build
 
-name: nerves-build
-
 on:
   pull_request:
     paths-ignore:
