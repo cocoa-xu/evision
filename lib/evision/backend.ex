@@ -223,8 +223,12 @@ defmodule Evision.Backend do
   end
 
   @impl true
-  def dot(%T{} = out, a, _axes, _, b, _, _) do
+  def dot(
+    %T{type: out_type} = out,
+    a, left_axes, [],
+    b, right_axes, []) do
     Evision.Mat.matrix_multiply!(from_nx(a), from_nx(b))
+    |> Evision.Mat.as_type!(out_type)
     |> to_nx(out)
   end
 
@@ -270,7 +274,7 @@ defmodule Evision.Backend do
   @impl true
   def subtract(%T{type: type, shape: out_shape}=out, l, r) do
     {l, r} = enforce_same_shape(l, r, out_shape)
-    Evision.Mat.subtract!(l, r, type)
+    Evision.Mat.subtract!(from_nx(l), from_nx(r), type)
     |> to_nx(out)
   end
 
