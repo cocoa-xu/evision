@@ -43,8 +43,6 @@
 
 using namespace cv;
 
-#pragma mark - Resource Types
-
 template<typename R>
 struct evision_res {
     R val;
