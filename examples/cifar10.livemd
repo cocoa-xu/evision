@@ -18,11 +18,11 @@
 # If you are using the pre-built nerves firmware
 # you can comment out the following installation step
 Mix.install([
-  {:torchx, "~> 0.1.0-dev", github: "elixir-nx/nx", sparse: "torchx"},
-  {:nx, "~> 0.1.0-dev", github: "elixir-nx/nx", sparse: "nx", override: true},
-  {:evision, "~> 0.1.0-dev", github: "cocoa-xu/evision", branch: "main"},
-  {:kino, "~> 0.5.1"},
-  {:scidata, "~> 0.1.1"}
+  {:torchx, "~> 0.2"},
+  {:nx, "~> 0.2", override: true},
+  {:evision, "~> 0.1.0", github: "cocoa-xu/evision", branch: "main"},
+  {:kino, "~> 0.6"},
+  {:scidata, "~> 0.1"}
 ])
 ```
 

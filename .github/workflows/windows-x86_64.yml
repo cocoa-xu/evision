@@ -39,24 +39,53 @@ jobs:
     runs-on: windows-latest
     env:
       MIX_ENV: test
+      OPENCV_VER: "4.6.0"
 
     steps:
       - uses: actions/checkout@v2
       
       - uses: erlef/setup-beam@v1
         with:
-          otp-version: 24.3
-          elixir-version: 1.13.3
+          otp-version: 25.0.2
+          elixir-version: 1.13.4
 
       - uses: ilammy/msvc-dev-cmd@v1
         with:
           arch: x64
 
+      - name: Cache mix packages and OpenCV
+        id: cache-mix-and-opencv
+        uses: actions/cache@v3
+        with:
+          key: deps-${{ hashFiles('mix.lock') }}-${{ env.OPENCV_VER }}
+          path: |
+            ./deps
+            ./3rd_party
+
+      - name: Get mix deps and download OpenCV
+        if: steps.cache-mix-and-opencv.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          mix deps.get
+          bash scripts/download_opencv.sh ${OPENCV_VER} 3rd_party/cache 3rd_party/opencv/
+
+      - name: Cache compiled OpenCV
+        id: cache-mix-compile
+        uses: actions/cache@v3
+        with:
+          key: compile-test-${{ runner.os }}-${{ hashFiles('cc_toolchain/**') }}-${{ hashFiles('c_src/**') }}-${{ hashFiles('CMakeLists.txt') }}-${{ hashFiles('Makefile.win') }}-${{ env.OPENCV_VER }}
+          path: |
+            ./_build
+            ./c_src/headers.txt
+            ./c_src/configuration.private.hpp
+            ./lib
+            ./src
+
       - name: Mix Compile
         run: |
           $Env:MAKE = "nmake"
-          mix deps.get
           Remove-Item Makefile
+          if (Test-Path "_build/dev/lib/evision/priv/evision.dll") { Remove-Item _build/dev/lib/evision/priv/evision.dll }
           mix compile
 
       - name: Mix Test

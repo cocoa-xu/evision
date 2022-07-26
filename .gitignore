@@ -17,12 +17,24 @@ erl_crash.dump
 .vscode/
 .idea/
 .cache/
+/cmake_*/
+/priv/
 *.pyc
 /c_src/evision_custom_headers/*
-/lib/erl_cv_nif.ex
-/c_src/erl_cv_nif.ex
+/lib/evision.ex
+/src/evision.erl
 3rd_party/cache
 3rd_party/opencv
 /lib/generated
+/src/generated
 test/models/
 test/photo_hdr_test/
+
+# examples
+/examples/Lenna_test_image.png
+/examples/classification_classes_ILSVRC2012.txt
+/examples/coco_names.txt
+/examples/dnn_detection_test.jpg
+/examples/space_shuttle.jpg
+/examples/ssd_mobilenet_v2_coco_2018_03_29**
+/examples/test.png

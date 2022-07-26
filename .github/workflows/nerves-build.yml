@@ -38,18 +38,18 @@ jobs:
       MIX_ENV: prod
       NERVES_PROJ_NAME: nerves_evision
       OPENCV_VER: "4.5.5"
-      NERVES_LIVEBOOK_VER: "v0.5.0"
+      NERVES_LIVEBOOK_VER: "v0.6.2"
 
     strategy:
       matrix:
-        target: [rpi4, rpi3a, rpi3, rpi2, rpi0, rpi, bbb, osd32mp1, npi_imx6ull]
+        target: [rpi4, rpi3a, rpi3, rpi2, rpi0, rpi, bbb, osd32mp1, npi_imx6ull, grisp2]
 
     steps:
       - uses: actions/checkout@v2
       - uses: erlef/setup-beam@v1
         with:
-          otp-version: "24.2"
-          elixir-version: "1.13.2"
+          otp-version: "25.0.2"
+          elixir-version: "1.13.4"
 
       - name: Install nerves and system dependecies
         run: |
@@ -58,24 +58,40 @@ jobs:
           sudo apt-get update && sudo apt-get install -y build-essential automake autoconf pkg-config bc m4 unzip zip curl git libssl-dev libncurses5-dev python3 ca-certificates squashfs-tools ssh-askpass libmnl-dev
           mix local.hex --force
           mix local.rebar --force
-          mix archive.install hex nerves_bootstrap --force || true
-          wget -k https://github.com/fwup-home/fwup/releases/download/v1.9.0/fwup_1.9.0_amd64.deb -O fwup_1.9.0_amd64.deb
-          sudo dpkg -i fwup_1.9.0_amd64.deb
+      
+      - name: Cache mix packages and OpenCV
+        id: cache-mix-and-opencv
+        uses: actions/cache@v3
+        with:
+          key: deps-${{ hashFiles('mix.lock') }}-${{ env.OPENCV_VER }}
+          path: |
+            ./deps
+            ./3rd_party
+
+      - name: Get mix deps and download OpenCV
+        if: steps.cache-mix-and-opencv.outputs.cache-hit != 'true'
+        run: |
+          mix deps.get
+          bash scripts/download_opencv.sh ${OPENCV_VER} 3rd_party/cache 3rd_party/opencv/
 
       - name: Make a nerves project
         run: |
+          mix archive.install hex nerves_bootstrap --force || true
+          wget -k https://github.com/fwup-home/fwup/releases/download/v1.9.0/fwup_1.9.0_amd64.deb -O ./fwup_1.9.0_amd64.deb
+          sudo dpkg -i ./fwup_1.9.0_amd64.deb
           cd ../
           git clone https://github.com/livebook-dev/nerves_livebook.git
           cd nerves_livebook
           git checkout "${NERVES_LIVEBOOK_VER}"
+          git checkout mix.exs
           LINE="$(grep -n 'toolshed' mix.exs | awk -F: '{print $1+1}')"
           head -n "${LINE}" mix.exs > mix.exs.tmp
-          echo '      {:evision, "~> 0.1.0-dev", path: "../evision"},' >> mix.exs.tmp
+          echo '      {:evision, "~> 0.1.0", path: "../evision"},' >> mix.exs.tmp
           tail -n "+${LINE}" mix.exs >> mix.exs.tmp
           mv mix.exs.tmp mix.exs
           cat mix.exs
           export MIX_TARGET=${{ matrix.target }}
-          mix deps.get 1>/dev/null 2>&1
+          mix deps.get
           cp -a ../evision/examples                        ./priv/evision_examples
           sed -i 's/"welcome.livemd"\,/"welcome.livemd"\, "evision_examples",/g' lib/nerves_livebook/application.ex
           export MAKE_BUILD_FLAGS="-j$(nproc)"

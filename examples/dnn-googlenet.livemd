@@ -20,8 +20,8 @@
 # If you are using the pre-built nerves firmware
 # you can comment out the following installation step
 Mix.install([
-  {:nx, "~> 0.1.0-dev", github: "elixir-nx/nx", sparse: "nx"},
-  {:evision, "~> 0.1.0-dev", github: "cocoa-xu/evision", branch: "main"}
+  {:nx, "~> 0.2"},
+  {:evision, "~> 0.1.0", github: "cocoa-xu/evision"}
 ])
 ```
 
@@ -151,7 +151,7 @@ classes =
 
 ```elixir
 {:ok, model} =
-  OpenCV.DNN.readNetModel("bvlc_googlenet.caffemodel",
+  OpenCV.DNN.readNet("bvlc_googlenet.caffemodel",
     config: "bvlc_googlenet.prototxt",
     framework: ""
   )

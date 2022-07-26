@@ -196,7 +196,7 @@ defmodule Evision.Mat do
   @doc namespace: :"cv.Mat"
   @spec type(reference()) :: {:ok, mat_type()} | {:error, String.t()}
   def type(mat) when is_reference(mat) do
-    :erl_cv_nif.evision_cv_mat_type(img: mat)
+    :evision_nif.mat_type(img: mat)
   end
 
   deferror(type(mat))
@@ -273,14 +273,14 @@ defmodule Evision.Mat do
   @doc namespace: :"cv.Mat"
   @spec as_type(reference(), mat_type()) :: {:ok, reference()} | {:error, String.t()}
   def as_type(mat, _type = {t, l}) when is_reference(mat) and is_atom(t) and l > 0 do
-    :erl_cv_nif.evision_cv_mat_as_type(img: mat, t: t, l: l)
+    :evision_nif.mat_as_type(img: mat, t: t, l: l)
   end
 
   deferror(as_type(mat, type))
 
   @doc namespace: :"cv.Mat"
   def shape(mat) when is_reference(mat) do
-    :erl_cv_nif.evision_cv_mat_shape(img: mat)
+    :evision_nif.mat_shape(img: mat)
   end
 
   deferror(shape(mat))
@@ -365,7 +365,7 @@ defmodule Evision.Mat do
   @doc namespace: :"cv.Mat"
   @spec clone(reference()) :: {:ok, reference()} | {:error, String.t()}
   def clone(mat) when is_reference(mat) do
-    :erl_cv_nif.evision_cv_mat_clone(img: mat)
+    :evision_nif.mat_clone(img: mat)
   end
 
   deferror(clone(mat))
@@ -373,7 +373,7 @@ defmodule Evision.Mat do
   @doc namespace: :"cv.Mat"
   @spec empty() :: :ok, reference()
   def empty() do
-    :erl_cv_nif.evision_cv_mat_empty()
+    :evision_nif.mat_empty()
   end
 
   deferror(empty())
@@ -401,7 +401,7 @@ defmodule Evision.Mat do
   def from_binary(binary, _type = {t, l}, rows, cols, channels)
       when is_binary(binary) and rows > 0 and cols > 0 and channels > 0 and
              is_atom(t) and is_integer(l) do
-    :erl_cv_nif.evision_cv_mat_from_binary(
+    :evision_nif.mat_from_binary(
       binary: binary,
       t: t,
       l: l,
@@ -446,7 +446,7 @@ defmodule Evision.Mat do
   @doc namespace: :"cv.Mat"
   def from_binary_by_shape(binary, _type = {t, l}, shape)
       when is_binary(binary) and is_atom(t) and is_integer(l) and is_list(shape) do
-    :erl_cv_nif.evision_cv_mat_from_binary_by_shape(
+    :evision_nif.mat_from_binary_by_shape(
       binary: binary,
       t: t,
       l: l,

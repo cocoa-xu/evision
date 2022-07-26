@@ -37,9 +37,12 @@ on:
 jobs:
   mix_test:
     runs-on: macos-11
+    env:
+      OPENCV_VER: "4.6.0"
+      MIX_ENV: "test"
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Install Erlang and Elixir
         run: |
@@ -50,10 +53,36 @@ jobs:
           mix local.hex --force
           mix local.rebar --force
 
+      - name: Cache mix packages and OpenCV
+        id: cache-mix-and-opencv
+        uses: actions/cache@v3
+        with:
+          key: deps-${{ hashFiles('mix.lock') }}-${{ env.OPENCV_VER }}
+          path: |
+            ./deps
+            ./3rd_party
+
+      - name: Get mix deps and download OpenCV
+        if: steps.cache-mix-and-opencv.outputs.cache-hit != 'true'
+        run: |
+          mix deps.get
+          bash scripts/download_opencv.sh ${OPENCV_VER} 3rd_party/cache 3rd_party/opencv/
+
+      - name: Cache compiled OpenCV
+        id: cache-mix-compile
+        uses: actions/cache@v3
+        with:
+          key: compile-ffmpeg-${{ runner.os }}-${{ hashFiles('cc_toolchain/**') }}-${{ hashFiles('c_src/**') }}-${{ hashFiles('CMakeLists.txt') }}-${{ hashFiles('Makefile') }}-${{ env.OPENCV_VER }}
+          path: |
+            ./_build
+            ./c_src/headers.txt
+            ./c_src/configuration.private.hpp
+            ./lib
+            ./src
+
       - name: Mix Compile
         run: |
-          export MIX_ENV=test
-          mix deps.get
+          rm -f _build/dev/lib/evision/priv/evision.so
           mix compile
 
       - name: Mix Test

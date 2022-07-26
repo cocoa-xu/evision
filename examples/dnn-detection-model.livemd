@@ -18,8 +18,8 @@
 # If you are using the pre-built nerves firmware
 # you can comment out the following installation step
 Mix.install([
-  {:evision, "~> 0.1.0-dev", github: "cocoa-xu/evision", branch: "main"},
-  {:kino, "~> 0.5.1"}
+  {:evision, "~> 0.1.0", github: "cocoa-xu/evision"},
+  {:kino, "~> 0.6"}
 ])
 ```
 
@@ -194,7 +194,7 @@ defmodule DetectionModel do
 
   def get_model(params, config, framework \\ "") do
     {:ok, net} =
-      OpenCV.DNN.readNetModel(params,
+      OpenCV.DNN.readNet(params,
         config: config,
         framework: framework
       )

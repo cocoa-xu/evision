@@ -1,7 +1,7 @@
 defmodule Evision.DNN.Test do
   use ExUnit.Case
   import ExUnit.CaptureIO
-  alias Evision, as: OpenCV
+  alias Evision, as: Cv
 
   @moduletag timeout: 600_000
 
@@ -19,32 +19,32 @@ defmodule Evision.DNN.Test do
       confidence = "#{Float.round(confidence, 2)}"
       label = Enum.at(labels, class_id)
       text = "#{label}: #{confidence}"
-      {:ok, mat} = OpenCV.rectangle(mat, [l, t], [r, b], [255, 0, 0])
+      {:ok, mat} = Cv.rectangle(mat, [l, t], [r, b], [255, 0, 0])
 
       {:ok, {{label_weight, label_height}, baseline}} =
-        OpenCV.getTextSize(text, OpenCV.cv_FONT_HERSHEY_SIMPLEX(), 0.5, 1)
+        Cv.getTextSize(text, Cv.cv_FONT_HERSHEY_SIMPLEX(), 0.5, 1)
 
       label_weight = trunc(label_weight)
       label_height = trunc(label_height)
       top = max(t, label_height)
 
       {:ok, mat} =
-        OpenCV.rectangle(mat, [l, top - label_height], [l + label_weight, top + baseline], [
+        Cv.rectangle(mat, [l, top - label_height], [l + label_weight, top + baseline], [
           255,
           255,
           255
         ])
 
       {:ok, mat} =
-        OpenCV.putText(mat, text, [l, top], OpenCV.cv_FONT_HERSHEY_SIMPLEX(), 0.5, [0, 0, 255])
+        Cv.putText(mat, text, [l, top], Cv.cv_FONT_HERSHEY_SIMPLEX(), 0.5, [0, 0, 255])
 
       _visualise_pred(mat, labels, outs)
     end
 
     def postprocess(mat, detections, net, confidence_threshold) do
-      {:ok, out_layers} = OpenCV.DNN.Net.getUnconnectedOutLayers(net)
-      {:ok, out_layer} = OpenCV.DNN.Net.getLayer(net, Enum.at(out_layers, 0))
-      out_layer_type = OpenCV.DNN.Layer.get_type(out_layer) |> IO.iodata_to_binary()
+      {:ok, out_layers} = Cv.DNN.Net.getUnconnectedOutLayers(net)
+      {:ok, out_layer} = Cv.DNN.Net.getLayer(net, Enum.at(out_layers, 0))
+      out_layer_type = Cv.DNN.Layer.get_type(out_layer) |> IO.iodata_to_binary()
       _postprocess(mat, detections, net, confidence_threshold, out_layer_type, [])
     end
 
@@ -59,8 +59,8 @@ defmodule Evision.DNN.Test do
            <<"DetectionOutput">>,
            acc
          ) do
-      {:ok, data} = OpenCV.Mat.to_binary(outs)
-      {:ok, {h, w, _}} = OpenCV.Mat.shape(mat)
+      {:ok, data} = Cv.Mat.to_binary(outs)
+      {:ok, {h, w, _}} = Cv.Mat.shape(mat)
       {:ok, translated_outs} = _translate_outs(confidence_threshold, data, h, w, [])
 
       _postprocess(mat, detections, net, confidence_threshold, "DetectionOutput", [
@@ -109,14 +109,14 @@ defmodule Evision.DNN.Test do
     end
 
     def predict(image_file, model, out_names, opts \\ []) do
-      {:ok, mat} = OpenCV.imread(image_file)
-      {:ok, blob} = OpenCV.DNN.blobFromImage(mat, opts)
+      {:ok, mat} = Cv.imread(image_file)
+      {:ok, blob} = Cv.DNN.blobFromImage(mat, opts)
 
       {:ok, model} =
-        OpenCV.DNN.Net.setInput(model, blob, name: "", scalefactor: 1.0, mean: [0, 0, 0])
+        Cv.DNN.Net.setInput(model, blob, name: "", scalefactor: 1.0, mean: [0, 0, 0])
 
       start_time = :os.system_time(:millisecond)
-      {:ok, detections} = OpenCV.DNN.Net.forward(model, outBlobNames: out_names)
+      {:ok, detections} = Cv.DNN.Net.forward(model, outBlobNames: out_names)
       end_time = :os.system_time(:millisecond)
       IO.puts("Inference time=>#{end_time - start_time} ms")
       {:ok, mat, detections}
@@ -124,12 +124,12 @@ defmodule Evision.DNN.Test do
 
     def get_model(params, config, framework \\ "") do
       {:ok, net} =
-        OpenCV.DNN.readNetModel(params,
+        Cv.DNN.readNet(params,
           config: config,
           framework: framework
         )
 
-      {:ok, out_names} = OpenCV.DNN.Net.getUnconnectedOutLayersNames(net)
+      {:ok, out_names} = Cv.DNN.Net.getUnconnectedOutLayersNames(net)
       {:ok, net, out_names}
     end
   end
@@ -141,7 +141,7 @@ defmodule Evision.DNN.Test do
         |> Path.join("models")
         |> Path.join("ssd_mobilenet_v2_coco_2018_03_29.pbtxt")
 
-      OpenCV.TestHelper.download!(
+      Cv.TestHelper.download!(
         "https://raw.githubusercontent.com/opencv/opencv_extra/master/testdata/dnn/ssd_mobilenet_v2_coco_2018_03_29.pbtxt",
         model_config
       )
@@ -151,7 +151,7 @@ defmodule Evision.DNN.Test do
         |> Path.join("models")
         |> Path.join("coco_names.txt")
 
-      OpenCV.TestHelper.download!(
+      Cv.TestHelper.download!(
         "https://raw.githubusercontent.com/cocoa-xu/evision/main/test/models/coco_names.txt",
         model_class_list
       )
@@ -173,7 +173,7 @@ defmodule Evision.DNN.Test do
 
       test_setup =
         if not File.exists?(model_graph_pb) do
-          OpenCV.TestHelper.download!(
+          Cv.TestHelper.download!(
             "http://download.tensorflow.org/models/object_detection/ssd_mobilenet_v2_coco_2018_03_29.tar.gz",
             model_tar
           )

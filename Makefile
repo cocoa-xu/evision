@@ -1,8 +1,14 @@
+ifndef MIX_APP_PATH
+	MIX_APP_PATH=$(shell pwd)
+endif
+
 PRIV_DIR = $(MIX_APP_PATH)/priv
 EVISION_SO = $(PRIV_DIR)/evision.so
+SRC = $(shell pwd)/src
 C_SRC = $(shell pwd)/c_src
 PY_SRC = $(shell pwd)/py_src
 LIB_SRC = $(shell pwd)/lib
+SCRIPTS = $(shell pwd)/scripts
 ifdef CMAKE_TOOLCHAIN_FILE
 	CMAKE_CONFIGURE_FLAGS=-D CMAKE_TOOLCHAIN_FILE="$(CMAKE_TOOLCHAIN_FILE)"
 endif
@@ -10,7 +16,7 @@ endif
 # OpenCV
 OPENCV_USE_GIT_HEAD ?= false
 OPENCV_GIT_REPO ?= "https://github.com/opencv/opencv.git"
-OPENCV_VER ?= 4.5.5
+OPENCV_VER ?= 4.6.0
 ifneq ($(OPENCV_USE_GIT_HEAD), false)
 	OPENCV_VER=$(OPENCV_USE_GIT_BRANCH)
 endif
@@ -40,11 +46,12 @@ ENABLED_CV_MODULES ?= ""
 HEADERS_TXT = $(CMAKE_OPENCV_BUILD_DIR)/modules/python_bindings_generator/headers.txt
 CONFIGURATION_PRIVATE_HPP = $(C_SRC)/configuration.private.hpp
 GENERATED_ELIXIR_SRC_DIR = $(LIB_SRC)/generated
+GENERATED_ERLANG_SRC_DIR = $(SRC)/generated
 CMAKE_EVISION_BUILD_DIR = $(MIX_APP_PATH)/cmake_evision
 CMAKE_EVISION_OPTIONS ?= ""
 MAKE_BUILD_FLAGS ?= "-j1"
 EVISION_PREFER_PRECOMPILED ?= false
-EVISION_PRECOMPILED_VERSION ?= "0.1.0-dev"
+EVISION_PRECOMPILED_VERSION ?= "0.1.0"
 EVISION_PRECOMPILED_CACHE_DIR ?= $(shell pwd)/.cache
 
 .DEFAULT_GLOBAL := build
@@ -56,6 +63,7 @@ $(OPENCV_CONFIGURATION_PRIVATE_HPP):
    		if [ ! -e "$(OPENCV_CONFIGURATION_PRIVATE_HPP)" ]; then \
 			if [ "$(OPENCV_USE_GIT_HEAD)" = "false" ]; then \
 				echo "using $(OPENCV_VER)" ; \
+				bash $(SCRIPTS)/download_opencv.sh $(OPENCV_VER) "$(OPENCV_CACHE_DIR)" "$(OPENCV_ROOT_DIR)"; \
 			else \
 		  		rm -rf "$(OPENCV_DIR)" ; \
 				git clone --branch=$(OPENCV_USE_GIT_BRANCH) --depth=1 $(OPENCV_GIT_REPO) "$(OPENCV_DIR)" ; \
@@ -91,20 +99,23 @@ $(HEADERS_TXT): $(CONFIGURATION_PRIVATE_HPP)
 			-D CMAKE_TOOLCHAIN_FILE="$(TOOLCHAIN_FILE)" \
 			$(CMAKE_OPTIONS) $(OPENCV_DIR) && \
 		make "$(MAKE_BUILD_FLAGS)" && \
-		cd $(CMAKE_OPENCV_BUILD_DIR) && make install && \
+		cd $(CMAKE_OPENCV_BUILD_DIR) && make install; \
 		cp "$(HEADERS_TXT)" "$(C_SRC)/headers.txt" ; \
 	fi
 
 $(EVISION_SO): $(HEADERS_TXT)
-	@ mkdir -p $(EVISION_PRECOMPILED_CACHE_DIR)
-	@ mkdir -p $(PRIV_DIR)
-	@ mkdir -p $(CMAKE_EVISION_BUILD_DIR)
+	@ mkdir -p "$(EVISION_PRECOMPILED_CACHE_DIR)"
+	@ mkdir -p "$(PRIV_DIR)"
+	@ mkdir -p "$(CMAKE_EVISION_BUILD_DIR)"
 	@ mkdir -p "$(GENERATED_ELIXIR_SRC_DIR)"
+	@ mkdir -p "$(GENERATED_ERLANG_SRC_DIR)"
 	@ cd "$(CMAKE_EVISION_BUILD_DIR)" && \
 		{ cmake -D C_SRC="$(C_SRC)" \
 		  -D CMAKE_TOOLCHAIN_FILE="$(TOOLCHAIN_FILE)" \
 		  -D GENERATED_ELIXIR_SRC_DIR="$(GENERATED_ELIXIR_SRC_DIR)" \
+		  -D GENERATED_ERLANG_SRC_DIR="$(GENERATED_ERLANG_SRC_DIR)" \
 		  -D PY_SRC="$(PY_SRC)" \
+		  -D MIX_APP_PATH="$(MIX_APP_PATH)" \
 		  -D PRIV_DIR="$(PRIV_DIR)" \
 		  -D ERTS_INCLUDE_DIR="$(ERTS_INCLUDE_DIR)" \
 		  -D ENABLED_CV_MODULES=$(ENABLED_CV_MODULES) \
@@ -117,3 +128,4 @@ $(EVISION_SO): $(HEADERS_TXT)
 		&& if [ "$(EVISION_PREFER_PRECOMPILED)" != "true" ]; then \
 			cp "$(CMAKE_EVISION_BUILD_DIR)/evision.so" "$(EVISION_SO)" ; \
 		fi
+

@@ -1,0 +1,8 @@
+{"1.2.0",
+[{<<"dll_loader_helper">>,{pkg,<<"dll_loader_helper">>,<<"0.1.6">>},0}]}.
+[
+{pkg_hash,[
+ {<<"dll_loader_helper">>, <<"CE21E04FA7219DA6FB102A7691D3BDEBD56841E8EF22917992FA61348B27F846">>}]},
+{pkg_hash_ext,[
+ {<<"dll_loader_helper">>, <<"8EE68AF4549DD064DE264D7BC7C2F9E4A67BAAB3F5742E5DE04A89A8B67CA94A">>}]}
+].
