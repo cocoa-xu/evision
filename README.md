@@ -3,13 +3,13 @@
 | OS               | arch           | Build Status | Has Precompiled Library |
 |------------------|----------------|--------------|-------------------------|
 | Linux            | x86_64         | [![CI](https://github.com/cocoa-xu/evision/actions/workflows/linux-x86_64.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/linux-x86_64.yml) | Yes |
-| Linux            | arm64          | [![CI](https://github.com/cocoa-xu/evision/actions/workflows/linux-precompile.yml/badge.svg?branch=main)](https://github.com/cocoa-xu/evision/actions/workflows/linux-precompile.yml) | Yes |
-| Linux            | armv7l (armhf) | [![CI](https://github.com/cocoa-xu/evision/actions/workflows/linux-precompile.yml/badge.svg?branch=main)](https://github.com/cocoa-xu/evision/actions/workflows/linux-precompile.yml) | Yes |
-| Linux            | ppc64le        | [![CI](https://github.com/cocoa-xu/evision/actions/workflows/linux-precompile.yml/badge.svg?branch=main)](https://github.com/cocoa-xu/evision/actions/workflows/linux-precompile.yml) | Yes |
-| Linux            | s390x          | [![CI](https://github.com/cocoa-xu/evision/actions/workflows/linux-precompile.yml/badge.svg?branch=main)](https://github.com/cocoa-xu/evision/actions/workflows/linux-precompile.yml) | Yes |
-| Linux            | riscv64        | [![CI](https://github.com/cocoa-xu/evision/actions/workflows/linux-precompile.yml/badge.svg?branch=main)](https://github.com/cocoa-xu/evision/actions/workflows/linux-precompile.yml) | Yes |
+| Linux            | arm64          | [![linux-precompile](https://github.com/cocoa-xu/evision/actions/workflows/linux-precompile.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/linux-precompile.yml) | Yes |
+| Linux            | armv7l (armhf) | [![linux-precompile](https://github.com/cocoa-xu/evision/actions/workflows/linux-precompile.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/linux-precompile.yml) | Yes |
+| Linux            | ppc64le        | [![linux-precompile](https://github.com/cocoa-xu/evision/actions/workflows/linux-precompile.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/linux-precompile.yml) | Yes |
+| Linux            | s390x          | [![linux-precompile](https://github.com/cocoa-xu/evision/actions/workflows/linux-precompile.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/linux-precompile.yml) | Yes |
+| Linux            | riscv64        | [![linux-precompile](https://github.com/cocoa-xu/evision/actions/workflows/linux-precompile.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/linux-precompile.yml) | Yes |
 | macOS 11 Big Sur | x86_64         | [![CI](https://github.com/cocoa-xu/evision/actions/workflows/macos-x86_64.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/macos-x86_64.yml) | Yes |
-| macOS 11 Big Sur | arm64          | [![CI](https://github.com/cocoa-xu/evision/actions/workflows/macos-precompile.yml/badge.svg?branch=main)](https://github.com/cocoa-xu/evision/actions/workflows/macos-precompile.yml) | Yes |
+| macOS 11 Big Sur | arm64          | [![macos-precompile](https://github.com/cocoa-xu/evision/actions/workflows/macos-precompile.yml/badge.svg?branch=v0.1.0)](https://github.com/cocoa-xu/evision/actions/workflows/macos-precompile.yml) | Yes |
 | Windows 2019     | x86_64         | [![CI](https://github.com/cocoa-xu/evision/actions/workflows/windows-x86_64.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/windows-x86_64.yml) | Yes |
 
 ## Docs
