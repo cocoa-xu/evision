@@ -362,12 +362,6 @@ defmodule Evision.Mat do
   deferror(full(shape, number, type))
 
   @doc namespace: :"cv.Mat"
-  @spec release(reference()) :: :ok
-  def release(mat) when is_reference(mat) do
-    :evision_nif.mat_release(img: mat)
-  end
-
-  @doc namespace: :"cv.Mat"
   @spec clone(reference()) :: {:ok, reference()} | {:error, String.t()}
   def clone(mat) when is_reference(mat) do
     :evision_nif.mat_clone(img: mat)

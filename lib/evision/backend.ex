@@ -129,11 +129,6 @@ defmodule Evision.Backend do
   end
 
   @impl true
-  def backend_deallocate(%T{data: %EB{ref: mat}} = t) do
-    Evision.Mat.release(mat)
-  end
-
-  @impl true
   def backend_copy(tensor, Nx.Tensor, opts) do
     backend_copy(tensor, Nx.BinaryBackend, opts)
   end
@@ -151,6 +146,11 @@ defmodule Evision.Backend do
     backend_copy(tensor, backend, opts)
   after
     backend_deallocate(tensor)
+  end
+
+  @impl true
+  def backend_deallocate(_tensor) do
+    :ok
   end
 
   @impl true
