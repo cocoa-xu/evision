@@ -5,37 +5,6 @@
 #include <map>
 #include <string>
 
-#define GET(ARGN, VAR)                      \
-  if (!evision::nif::get(env, argv[ARGN], &VAR)) \
-    return evision::nif::error(env, "Unable to get " #VAR " param.");
-
-#define PARAM(ARGN, TYPE, VAR) \
-  TYPE VAR;                    \
-  GET(ARGN, VAR)
-
-#define ATOM_PARAM(ARGN, VAR)                   \
-  std::string VAR;                              \
-  if (!evision::nif::get_atom(env, argv[ARGN], VAR)) \
-    return evision::nif::error(env, "Unable to get " #VAR " atom param.");
-
-#define TUPLE_PARAM(ARGN, TYPE, VAR)                 \
-  TYPE VAR;                                          \
-  if (!evision::nif::get_tuple(env, argv[ARGN], VAR))  {  \
-    std::ostringstream msg;                          \
-    msg << "Unable to get " #VAR " tuple param in NIF." << __func__ << "/" << argc; \
-    return evision::nif::error(env, msg.str().c_str());    \
-  }
-
-#define LIST_PARAM(ARGN, TYPE, VAR)             \
-  TYPE VAR;                                      \
-  if (!evision::nif::get_list(env, argv[ARGN], VAR)) \
-    return evision::nif::error(env, "Unable to get " #VAR " list param.");
-
-#define BINARY_PARAM(ARGN, VAR)                    \
-  ErlNifBinary VAR;                                \
-  if (!enif_inspect_binary(env, argv[ARGN], &VAR)) \
-    return evision::nif::error(env, "Unable to get " #VAR " binary param.");
-
 namespace evision
 {
   namespace nif
@@ -346,11 +315,6 @@ namespace evision
           }
           return 1;
       }
-
-    inline int allowed_spec(char t) {
-        return (t == 's' || t == 'b' || t == 'h' || t == 'i' || t == 'I' || t == 'l' || t == 'L' \
-                || t == 'k' || t == 'K' || t == 'n' || t == 'f' || t == 'd' || t == 'O');
-    }
 
     inline int parse_arg(ErlNifEnv *env, int opt_arg_index, const ERL_NIF_TERM * argv, std::map<std::string, ERL_NIF_TERM>& erl_terms) {
         ERL_NIF_TERM opts = argv[opt_arg_index];

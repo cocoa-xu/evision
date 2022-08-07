@@ -148,11 +148,13 @@ else()
     file(GLOB evision_bindings_main "${C_SRC}/*.hpp" "${C_SRC}/*.h" "${C_SRC}/*.cpp")
     file(GLOB evision_custom_headers "${C_SRC}/evision_custom_headers/*.hpp")
     file(GLOB evision_modules "${C_SRC}/modules/*.hpp" "${C_SRC}/modules/*.h")
+    file(GLOB evision_backend "${C_SRC}/modules/evision_backend/*.h")
 
     add_library(evision SHARED
         ${evision_bindings_main}
         ${evision_custom_headers}
         ${evision_modules}
+        ${evision_backend}
     )
     target_link_libraries(evision "${OpenCV_LIBS}")
     set_property(TARGET evision PROPERTY CXX_STANDARD 14)

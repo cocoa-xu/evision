@@ -837,6 +837,43 @@ class BeamWrapperGenerator(object):
                     writer_erlang.write(guarded_function[:-3] + ';\n')
                 writer_erlang.write(guarded_functions[-1])
 
+    def handle_custom_file(self, module_text):
+        check_defs = None
+        with open(module_text, "rt") as f:
+            for line in f:
+                if line.startswith("// @evision enable_with: "):
+                    with_module = line[len("// @evision enable_with: "):].strip()
+                    if check_defs is None:
+                        check_defs = with_module in self.enabled_modules
+                    else:
+                        check_defs = check_defs and (with_module in self.enabled_modules)
+
+        if check_defs is True or check_defs is None:
+            with open(module_text, "rt") as f:
+                for line in f:
+                    line = line.strip()
+                    if line.startswith("// @evision c: "):
+                        parts = line[len("// @evision c: "):].split(',')
+                        if len(parts) != 3:
+                            raise Exception(f'Invalid comment: {line}')
+                        erl_name = parts[0].strip()
+                        func_name = parts[1].strip()
+                        func_arity = parts[2].strip()
+
+                        if func_name.endswith('_read') or func_name.endswith('_load_static') or \
+                                func_name.endswith('_write') or func_name.endswith('_save') or \
+                                func_name in io_bound_funcs():
+                            self.code_ns_reg.write(f'    F_IO({erl_name}, {func_name}, {func_arity}),\n')
+                        else:
+                            self.code_ns_reg.write(f'    F_CPU({erl_name}, {func_name}, {func_arity}),\n')
+                        if int(func_arity) > 0:
+                            self.evision_nif_erlang.write(f'{erl_name}(_opts) ->\n    not_loaded(?LINE).\n')
+                        else:
+                            self.evision_nif_erlang.write(f'{erl_name}() ->\n    not_loaded(?LINE).\n')
+                    elif line.startswith("// @evision nif: "):
+                        line = line[len("// @evision nif: "):].strip()
+                        self.evision_nif.write(f'  {line}\n')
+
     def gen_namespace(self):
         for ns_name in self.namespaces:
             ns = self.namespaces[ns_name]
@@ -847,41 +884,10 @@ class BeamWrapperGenerator(object):
 
         modules_dir = Path(self.output_path) / 'modules'
         for module_text in modules_dir.glob('*.h'):
-            check_defs = None
-            with open(module_text, "rt") as f:
-                for line in f:
-                    if line.startswith("// @evision enable_with: "):
-                        with_module = line[len("// @evision enable_with: "):].strip()
-                        if check_defs is None:
-                            check_defs = with_module in self.enabled_modules
-                        else:
-                            check_defs = check_defs and (with_module in self.enabled_modules)
-
-            if check_defs is True or check_defs is None:
-                with open(module_text, "rt") as f:
-                    for line in f:
-                        line = line.strip()
-                        if line.startswith("// @evision c: "):
-                            parts = line[len("// @evision c: "):].split(',')
-                            if len(parts) != 3:
-                                raise Exception(f'Invalid comment: {line}')
-                            erl_name = parts[0].strip()
-                            func_name = parts[1].strip()
-                            func_arity = parts[2].strip()
-
-                            if func_name.endswith('_read') or func_name.endswith('_load_static') or \
-                                    func_name.endswith('_write') or func_name.endswith('_save') or \
-                                    func_name in io_bound_funcs():
-                                self.code_ns_reg.write(f'    F_IO({erl_name}, {func_name}, {func_arity}),\n')
-                            else:
-                                self.code_ns_reg.write(f'    F_CPU({erl_name}, {func_name}, {func_arity}),\n')
-                            if int(func_arity) > 0:
-                                self.evision_nif_erlang.write(f'{erl_name}(_opts) ->\n    not_loaded(?LINE).\n')
-                            else:
-                                self.evision_nif_erlang.write(f'{erl_name}() ->\n    not_loaded(?LINE).\n')
-                        elif line.startswith("// @evision nif: "):
-                            line = line[len("// @evision nif: "):].strip()
-                            self.evision_nif.write(f'  {line}\n')
+            self.handle_custom_file(module_text)
+        backend_dir = Path(self.output_path) / 'modules' / 'evision_backend'
+        for module_text in backend_dir.glob('*.h'):
+            self.handle_custom_file(module_text)
 
         self.code_ns_reg.write('\n};\n\n')
 
@@ -905,6 +911,8 @@ class BeamWrapperGenerator(object):
         with open(path + "/" + name, "wt", encoding='utf-8') as f:
             if name.endswith(".h"):
                 f.write("#include <erl_nif.h>\n")
+                f.write('#include "nif_utils.hpp"\n')
+                f.write('using namespace evision::nif;\n')
             f.write(buf.getvalue())
 
     def save_json(self, path, name, value):

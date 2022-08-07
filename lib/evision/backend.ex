@@ -266,7 +266,7 @@ defmodule Evision.Backend do
   @impl true
   def add(%T{type: type, shape: out_shape}=out, l, r) do
     {l, r} = enforce_same_shape(l, r, out_shape)
-    Evision.Mat.add!(l, r, type)
+    Evision.Mat.add!(from_nx(l), from_nx(r), type)
     |> to_nx(out)
   end
 

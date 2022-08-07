@@ -13,6 +13,8 @@
 #include "opencv2/core.hpp"
 #include "../nif_utils.hpp"
 
+using namespace evision::nif;
+
 #define IMSHOW_TYPE_MAT     1
 #define IMSHOW_TYPE_GPU_MAT 2
 #define IMSHOW_TYPE_UMAT    3
