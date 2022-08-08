@@ -26,6 +26,7 @@
 #include "round.h"
 #include "sign.h"
 #include "subtract.h"
+#include "to_batched_list.h"
 #include "to_binary.h"
 
 #endif // EVISION_BACKEND_BACKEND_H

@@ -154,6 +154,14 @@ defmodule Evision.Backend do
   end
 
   @impl true
+  def to_batched_list(out, %T{shape: shape} = tensor, opts) do
+    leftover = opts[:leftover]
+    batch_size = elem(out.shape, 0)
+    Evision.Mat.to_batched_list!(from_nx(tensor), batch_size, shape, leftover: leftover)
+    |> Enum.map(&to_nx(&1, out))
+  end
+
+  @impl true
   def to_binary(%T{data: %EB{ref: mat}} = tensor, limit) when is_reference(mat) and is_integer(limit) and limit >= 0 do
     Evision.Mat.to_binary!(mat, limit)
   end
