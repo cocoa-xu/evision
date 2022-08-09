@@ -75,7 +75,6 @@ void weighted_traverse(uint64_t dim, uint64_t dim_size, const std::vector<transp
 }
 
 void weighted_traverse(const std::vector<transpose_shape_info>& traverse_list, size_t start_at, void * chunk, size_t read_size, void * out, size_t chunk_offset, size_t& out_offset) {
-
     if (start_at < traverse_list.size()) {
         auto& info = traverse_list[start_at];
         weighted_traverse(info.entries, info.weight, traverse_list, start_at + 1, chunk, read_size, out, chunk_offset, out_offset);
@@ -85,6 +84,13 @@ void weighted_traverse(const std::vector<transpose_shape_info>& traverse_list, s
     }
 }
 
+/// Transpose a matrix
+/// @param original matrix data starting address, data must be continous
+/// @param out transposed matrix, buffer must be preallocated with sufficient space to hold the result matrix
+/// @param ndims number of dimensions
+/// @param shape the shape of the original matrix, a list of positive integers
+/// @param new_axes the new arrangement of the axes, a list of non-negative integers, 0 <= i < ndims.
+/// @param elem_size element size in bytes.
 void transpose(void * original, void * out, uint64_t ndims, int * shape, size_t * new_axes, size_t elem_size) {
     if (original == nullptr || out == nullptr) return;
     if (ndims == 0 || shape == nullptr || new_axes == nullptr) return;
@@ -141,6 +147,11 @@ static ERL_NIF_TERM evision_cv_mat_transpose(ErlNifEnv *env, int argc, const ERL
             new_shape[i] = as_shape[axes[i]];
         }
         cv::Mat ret = cv::Mat::zeros(ndims, new_shape.data(), img.type());
+        // the data of img must be countinous
+        if (!img.isContinuous()) {
+            // if not, call clone to force opencv make a continuous matrix for us
+            img = img.clone();
+        }
         transpose(img.data, ret.data, ndims, as_shape.data(), axes.data(), img.elemSize());
         return evision::nif::ok(env, evision_from(env, ret));
     }

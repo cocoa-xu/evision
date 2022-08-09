@@ -198,6 +198,25 @@ defmodule Evision.Mat do
 
   deferror(clip(mat, lower, upper))
 
+  @doc """
+  Transpose a matrix
+
+  ## Parameters
+
+    - `mat`. The matrix.
+    - `axes`. list of ints.
+        It must be a list which contains a permutation of [0,1,..,N-1]
+        where N is the number of axes of `mat`. The i’th axis of the returned array will correspond to the
+        axis numbered axes[i] of the input.
+
+    - `opts`. Keyword options.
+        - `as_shape`. A tuple or list which overwrites the shape of the matrix (the total number of elements
+          must be equal to the one as in its original shape). For example, a 4x4 matrix can be treated as a
+          2x2x2x2 matrix and transposed with `axes=[2,1,3,0]` in a single call.
+
+          When specified, it combines the reshape and transpose operation in a single NIF call.
+
+  """
   @spec transpose(reference(), [non_neg_integer()], keyword()) :: {:ok, reference()} | {:error, String.t()}
   def transpose(mat, axes, opts \\ []) do
     as_shape = opts[:as_shape] || shape(mat)
@@ -221,6 +240,24 @@ defmodule Evision.Mat do
     end
   end
   deferror(transpose(mat, axes, opts))
+
+  @doc """
+  Transpose a matrix
+
+  ## Parameters
+
+    - `mat`. The matrix.
+      by default it reverses the order of the axes.
+
+  """
+  @spec transpose(reference(), keyword()) :: {:ok, reference()} | {:error, String.t()}
+  def transpose(mat) do
+    as_shape = shape(mat)
+    ndims = Enum.count(as_shape)
+    uniq_axes = Enum.reverse(0..ndims-1)
+    :evision_nif.mat_transpose(img: mat, axes: uniq_axes, as_shape: as_shape)
+  end
+  deferror(transpose(mat))
 
   @doc namespace: :"cv.Mat"
   @spec type(reference()) :: {:ok, mat_type()} | {:error, String.t()}
