@@ -198,6 +198,30 @@ defmodule Evision.Mat do
 
   deferror(clip(mat, lower, upper))
 
+  @spec transpose(reference(), [non_neg_integer()], keyword()) :: {:ok, reference()} | {:error, String.t()}
+  def transpose(mat, axes, opts \\ []) do
+    as_shape = opts[:as_shape] || shape(mat)
+    as_shape =
+      case is_tuple(as_shape) do
+        true ->
+          Tuple.to_list(as_shape)
+        _ ->
+          as_shape
+      end
+    ndims = Enum.count(as_shape)
+    uniq_axes =
+      Enum.uniq(axes)
+      |> Enum.reject(fn axis ->
+        axis < 0 or axis > ndims
+      end)
+    if Enum.count(uniq_axes) != ndims do
+      {:error, "invalid transpose axes #{inspect(axes)} for shape #{inspect(as_shape)}"}
+    else
+      :evision_nif.mat_transpose(img: mat, axes: uniq_axes, as_shape: as_shape)
+    end
+  end
+  deferror(transpose(mat, axes, opts))
+
   @doc namespace: :"cv.Mat"
   @spec type(reference()) :: {:ok, mat_type()} | {:error, String.t()}
   def type(mat) when is_reference(mat) do

@@ -41,7 +41,7 @@ defmodule Evision.Backend do
   end
 
   def from_binary(%T{shape: {rows, cols}, type: type} = out, binary, _backend_options) when is_binary(binary) do
-    Evision.Mat.from_binary!(binary, type, rows, cols, 1) |> to_nx(out)
+    Evision.Mat.from_binary_by_shape!(binary, type, {rows, cols}) |> to_nx(out)
   end
 
   def from_binary(%T{shape: shape, type: type} = out, binary, _backend_options) when is_binary(binary) do
@@ -249,26 +249,22 @@ defmodule Evision.Backend do
   end
 
   @impl true
+  def transpose(out, %T{shape: shape, type: {_, size}} = tensor, axes) do
+    Evision.Mat.transpose!(from_nx(tensor), axes, as_shape: shape)
+    |> to_nx(out)
+  end
+
+  @impl true
   def pad(out, tensor, constant, config) do
-    config =
-      config
-      |> Enum.map(fn {a, b, c} ->
-        if a < 0 or b < 0 or c != 0 do
-          raise ArgumentError, "{#{a}, #{b}, #{c}} padding is not supported"
-        end
-
-        [a, b]
-      end)
-      |> Enum.reverse()
-      |> List.flatten()
-
-    constant = Nx.to_number(constant)
-
-    {config, constant}
-    #    tensor
-    #    |> from_nx()
-    #    |> Torchx.pad(config, constant)
-    #    |> to_nx(out)
+    case tensor.shape do
+      {} ->
+        tensor
+      {_} ->
+        [{edge_low, edge_high, interior}] = config
+      _ ->
+        permutation = for i <- 0..(Nx.rank(tensor) - 2), do: i
+        permutation = [Nx.rank(tensor) - 1 | permutation]
+    end
   end
 
   @impl true
