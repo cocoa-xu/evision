@@ -84,12 +84,12 @@ To use precompiled Evision library, the following environment variables should b
 # set this to true if prefer to use precompiled library
 export EVISION_PREFER_PRECOMPILED=true
 
-# optional. 
-## currently "0.1.0" is used by default
+## currently "0.1.0" is available
 ## for other available versions, please check the GitHub release page
 ## https://github.com/cocoa-xu/evision/releases
 export EVISION_PRECOMPILED_VERSION="0.1.0"
 
+# optional.
 ## set the cache directory for the precompiled archive file
 export EVISION_PRECOMPILED_CACHE_DIR="$(pwd)/.cache"
 ```
