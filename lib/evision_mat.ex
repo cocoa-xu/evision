@@ -461,6 +461,7 @@ defmodule Evision.Mat do
   end
 
   deferror(to_binary(mat, limit))
+  deferror(to_binary(mat))
 
   @doc """
   Create Mat from binary (pixel) data
