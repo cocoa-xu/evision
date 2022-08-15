@@ -438,21 +438,21 @@ defmodule Evision.Mat do
 
   deferror(empty())
 
-  @spec to_batched_list(reference(), pos_integer(), keyword()) :: {:ok, [reference()]} | {:error,  String.t()}
-  def to_batched_list(mat, batch_size, opts) when is_integer(batch_size) and batch_size >= 1 and is_list(opts) do
+  @spec to_batched(reference(), pos_integer(), keyword()) :: {:ok, [reference()]} | {:error,  String.t()}
+  def to_batched(mat, batch_size, opts) when is_integer(batch_size) and batch_size >= 1 and is_list(opts) do
     leftover = opts[:leftover] || :repeat
-    :evision_nif.mat_to_batched_list(img: mat, batch_size: batch_size, as_shape: shape!(mat), leftover: leftover)
+    :evision_nif.mat_to_batched(img: mat, batch_size: batch_size, as_shape: shape!(mat), leftover: leftover)
   end
 
-  deferror(to_batched_list(mat, batch_size, opts))
+  deferror(to_batched(mat, batch_size, opts))
 
-  @spec to_batched_list(reference(), pos_integer(), keyword()) :: {:ok, [reference()]} | {:error,  String.t()}
-  def to_batched_list(mat, batch_size, as_shape, opts) when is_integer(batch_size) and batch_size >= 1 and is_tuple(as_shape) and is_list(opts) do
+  @spec to_batched(reference(), pos_integer(), keyword()) :: {:ok, [reference()]} | {:error,  String.t()}
+  def to_batched(mat, batch_size, as_shape, opts) when is_integer(batch_size) and batch_size >= 1 and is_tuple(as_shape) and is_list(opts) do
     leftover = opts[:leftover] || :repeat
-    :evision_nif.mat_to_batched_list(img: mat, batch_size: batch_size, as_shape: Tuple.to_list(as_shape), leftover: leftover)
+    :evision_nif.mat_to_batched(img: mat, batch_size: batch_size, as_shape: Tuple.to_list(as_shape), leftover: leftover)
   end
 
-  deferror(to_batched_list(mat, batch_size, as_shape, opts))
+  deferror(to_batched(mat, batch_size, as_shape, opts))
 
   @doc namespace: :"cv.Mat"
   @spec to_binary(reference(), non_neg_integer()) :: {:ok, binary()} | {:error, String.t()}

@@ -26,7 +26,7 @@
 #include "round.h"
 #include "sign.h"
 #include "subtract.h"
-#include "to_batched_list.h"
+#include "to_batched.h"
 #include "to_binary.h"
 #include "transpose.h"
 

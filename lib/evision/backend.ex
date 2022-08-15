@@ -154,10 +154,10 @@ defmodule Evision.Backend do
   end
 
   @impl true
-  def to_batched_list(out, %T{shape: shape} = tensor, opts) do
+  def to_batched(out, %T{shape: shape} = tensor, opts) do
     leftover = opts[:leftover]
     batch_size = elem(out.shape, 0)
-    Evision.Mat.to_batched_list!(from_nx(tensor), batch_size, shape, leftover: leftover)
+    Evision.Mat.to_batched!(from_nx(tensor), batch_size, shape, leftover: leftover)
     |> Enum.map(&to_nx(&1, out))
   end
 
