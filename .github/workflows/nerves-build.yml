@@ -91,6 +91,7 @@ jobs:
           mv mix.exs.tmp mix.exs
           cat mix.exs
           export MIX_TARGET=${{ matrix.target }}
+          sed -i 's/nx, "~> 0.2.0/nx, "~> 0.3/g' mix.exs
           mix deps.get
           mix deps.update nx
           cp -a ../evision/examples                        ./priv/evision_examples
