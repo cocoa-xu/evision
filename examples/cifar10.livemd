@@ -301,13 +301,13 @@ defmodule Demo do
       |> Nx.as_type({:f, 32})
       # flatten
       |> Nx.reshape({:auto, 3072})
-      |> Nx.to_batched_list(batch_size)
+      |> Nx.to_batched(batch_size)
 
     y_training_batched =
       y_training
       |> Helper.to_onehot(unique_classes)
       |> Nx.as_type({:f, 32})
-      |> Nx.to_batched_list(batch_size)
+      |> Nx.to_batched(batch_size)
 
     {x_training_batched, y_training_batched}
   end

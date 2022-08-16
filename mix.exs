@@ -60,11 +60,11 @@ defmodule Evision.MixProject do
     if Enum.member?(@compatible_opencv_versions, version) do
       version
     else
-      Logger.warn(
+      Logger.warning(
         "OpenCV version #{version} is not in the compatible list, you may encounter compile errors"
       )
 
-      Logger.warn(
+      Logger.warning(
         "Compatible OpenCV versions: " <> (@compatible_opencv_versions |> Enum.join(", "))
       )
 
@@ -206,7 +206,8 @@ defmodule Evision.MixProject do
       {:elixir_make, "~> 0.6", runtime: false},
       {:dll_loader_helper, "~> 0.1"},
       {:ex_doc, "~> 0.28", only: :docs, runtime: false},
-      {:nx, "~> 0.2", optional: true}
+      {:nx, "~> 0.3", optional: true},
+      {:nx_scaffolding, "~> 0.1", github: "cocoa-xu/nx_scaffolding", runtime: false, only: [:dev, :test]}
     ]
   end
 

@@ -8,6 +8,8 @@
 #include <erl_nif.h>
 #include "../nif_utils.hpp"
 
+using namespace evision::nif;
+
 // @evision c: imdecode,evision_cv_imdecode,1
 // @evision nif: def imdecode(_opts \\ []), do: :erlang.nif_error("imdecode not loaded")
 static ERL_NIF_TERM evision_cv_imdecode(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])

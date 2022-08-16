@@ -37,13 +37,12 @@
 #include "evision_generated_include.h"
 #include "opencv2/core/types_c.h"
 #include "erlcompat.hpp"
+#include "ArgInfo.hpp"
 #include <map>
 
 #include <type_traits>  // std::enable_if
 
 using namespace cv;
-
-#pragma mark - Resource Types
 
 template<typename R>
 struct evision_res {
@@ -94,20 +93,6 @@ int alloc_resource(evision_res<cv::Mat *> **res) {
 
 #define CV_HAS_CONVERSION_ERROR(x) (((x) == -1))
 
-class ArgInfo
-{
-public:
-    const char* name;
-    bool outputarg;
-    // more fields may be added if necessary
-
-    ArgInfo(const char* name_, bool outputarg_) : name(name_), outputarg(outputarg_) {}
-
-private:
-    ArgInfo(const ArgInfo&) = delete;
-    ArgInfo& operator=(const ArgInfo&) = delete;
-};
-
 template<typename T, class TEnable = void>  // TEnable is used for SFINAE checks
 struct Evision_Converter
 {
@@ -135,7 +120,7 @@ bool evision_to_safe(ErlNifEnv *env, ERL_NIF_TERM obj, _Tp& value, const ArgInfo
     }
 }
 
-static
+static inline
 ERL_NIF_TERM evision_get_kw(ErlNifEnv *env, const std::map<std::string, ERL_NIF_TERM>& erl_terms, const std::string& key) {
     auto iter = erl_terms.find(key);
     if (iter == erl_terms.end()) {
@@ -426,6 +411,9 @@ static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Mat& m, const ArgInfo& in
     evision_res<cv::Mat *> * in_res;
     if( enif_get_resource(env, o, evision_res<cv::Mat *>::type, (void **)&in_res) ) {
         if (in_res->val) {
+            // should we copy the matrix?
+            // probably yes so that the original matrix is not modified
+            // because erlang/elixir users would expect that the original matrix to be unchanged
             in_res->val->copyTo(m);
             return true;
         }
@@ -508,7 +496,10 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const Mat& m)
     evision_res<cv::Mat *> * res;
     if (alloc_resource(&res)) {
         res->val = new cv::Mat();
-        *res->val = m.clone();
+        // should we copy the matrix?
+        // probably no, because all input matrice are copied when calling `evision_to`
+        // and this function returns the output/result matrix, which should already be a new matrix
+        *res->val = m;
     } else {
         return evision::nif::error(env, "no memory");
     }
@@ -649,27 +640,6 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const size_t& value)
 }
 
 template<>
-bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, size_t& value, const ArgInfo& info)
-{
-    if (evision::nif::check_nil(env, obj)) {
-        return true;
-    }
-
-    ErlNifUInt64 u64;
-
-    if (enif_get_uint64(env, obj, &u64))
-    {
-        value = u64;
-    }
-    else
-    {
-        failmsg(env, "Argument '%s' is required to be an integer", info.name);
-        return false;
-    }
-    return true;
-}
-
-template<>
 ERL_NIF_TERM evision_from(ErlNifEnv *env, const int& value)
 {
     return enif_make_int(env, value);
@@ -687,6 +657,64 @@ bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, int& value, const ArgInfo& inf
     if (enif_get_int(env, obj, &i32))
     {
         value = i32;
+    }
+    else
+    {
+        failmsg(env, "Argument '%s' is required to be an integer", info.name);
+        return false;
+    }
+    return true;
+}
+
+template<>
+bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, unsigned long &val, const ArgInfo& info)
+{
+    if (evision::nif::check_nil(env, obj)) {
+        return true;
+    }
+
+    CV_UNUSED(info);
+
+    ErlNifUInt64 u64;
+    if (!enif_get_uint64(env, obj, (ErlNifUInt64 *)&u64))
+        return false;
+    val = (unsigned long)u64;
+    return 1;
+}
+
+template<>
+bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, unsigned long long & value, const ArgInfo& info)
+{
+    if (evision::nif::check_nil(env, obj)) {
+        return true;
+    }
+
+    ErlNifUInt64 u64;
+
+    if (enif_get_uint64(env, obj, (ErlNifUInt64 *)&u64))
+    {
+        value = u64;
+    }
+    else
+    {
+        failmsg(env, "Argument '%s' is required to be an integer", info.name);
+        return false;
+    }
+    return true;
+}
+
+template<>
+bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, int64_t& value, const ArgInfo& info)
+{
+    if (evision::nif::check_nil(env, obj)) {
+        return true;
+    }
+
+    ErlNifSInt64 i64;
+
+    if (enif_get_int64(env, obj, (ErlNifSInt64 *)&i64))
+    {
+        value = i64;
     }
     else
     {
@@ -1947,6 +1975,7 @@ static int convert_to_char(ErlNifEnv *env, ERL_NIF_TERM o, char *dst, const ArgI
 #include "modules/evision_mat.h"
 #include "modules/evision_highgui.h"
 #include "modules/evision_imdecode.h"
+#include "modules/evision_backend/backend.h"
 
 /************************************************************************/
 
