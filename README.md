@@ -76,6 +76,19 @@ Compatible OpenCV versions:
 by compatible, it means these versions can compile successfully, and I tested a small range of functions. Tons of tests
 should be written, and then we can have a list for tested OpenCV versions.
 
+## Usage
+In general, you can add `evision` to `deps` with the following settings.
+
+```elixir
+def deps do
+  [
+    {:evision, "~> 0.1.0", github: "cocoa-xu/evision", tag: "v0.1.0"}
+  ]
+end
+```
+
+Early versions (v0.1.x) of `evision` will be available on hex.pm soon.
+
 ### Use Precompiled Library
 To use precompiled Evision library, the following environment variables should be set
 
