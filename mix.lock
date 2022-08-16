@@ -9,4 +9,8 @@
   "makeup_erlang": {:hex, :makeup_erlang, "0.1.1", "3fcb7f09eb9d98dc4d208f49cc955a34218fc41ff6b84df7c75b3e6e533cc65f", [:mix], [{:makeup, "~> 1.0", [hex: :makeup, repo: "hexpm", optional: false]}], "hexpm", "174d0809e98a4ef0b3309256cbf97101c6ec01c4ab0b23e926a9e17df2077cbb"},
   "nimble_parsec": {:hex, :nimble_parsec, "1.2.3", "244836e6e3f1200c7f30cb56733fd808744eca61fd182f731eac4af635cc6d0b", [:mix], [], "hexpm", "c8d789e39b9131acf7b99291e93dae60ab48ef14a7ee9d58c6964f59efb570b0"},
   "nx": {:hex, :nx, "0.3.0", "12448769619ed1442e22bd198faf4629ae3d0ee3ed565e42be49829cc42bf35f", [:mix], [{:complex, "~> 0.4.2", [hex: :complex, repo: "hexpm", optional: false]}], "hexpm", "d08d8962f4379ade54281aad84c45cb7eb0118b406fc836f07b94acc40df5859"},
+  "nx_scaffolding": {:git, "https://github.com/cocoa-xu/nx_scaffolding.git", "a381207b199630070efc4c517317113f5b178b37", []},
+  "pane": {:hex, :pane, "0.4.1", "ca4275b5799066d52c857e7b0deb2feaba409d607419fe54cde056329d247a89", [:mix], [], "hexpm", "27a292ca86f52d4777422930c17fd4a12eaa930d86a6193665c452f94a04ff8a"},
+  "scribe": {:hex, :scribe, "0.10.0", "90e61b21fee884f58b955d1f45d7fa3e75f161ecb62bad8af6087aef3955c74f", [:mix], [{:pane, "~> 0.2", [hex: :pane, repo: "hexpm", optional: false]}], "hexpm", "3829da9c6a28b2105f0ec50e40f447bf768fb7d96717fbfceb602573f1a3c62e"},
+  "torchx": {:hex, :torchx, "0.3.0", "9efbb094ba1ce905655b731ecd733fede0413933c200116c20dbae14c1f6d985", [:make, :mix], [{:dll_loader_helper, "~> 0.1.0", [hex: :dll_loader_helper, repo: "hexpm", optional: false]}, {:elixir_make, "~> 0.6", [hex: :elixir_make, repo: "hexpm", optional: false]}, {:nx, "~> 0.3.0", [hex: :nx, repo: "hexpm", optional: false]}], "hexpm", "ef06f9eb807f1a60d98c94249190107ec21f2f5f7ec16e5ecbf7262d5e8c0ec2"},
 }

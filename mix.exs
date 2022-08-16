@@ -206,7 +206,9 @@ defmodule Evision.MixProject do
       {:elixir_make, "~> 0.6", runtime: false},
       {:dll_loader_helper, "~> 0.1"},
       {:ex_doc, "~> 0.28", only: :docs, runtime: false},
-      {:nx, "~> 0.3", optional: true}
+      {:nx, "~> 0.3", optional: true},
+      {:torchx, "~> 0.3"},
+      {:nx_scaffolding, "~> 0.1", github: "cocoa-xu/nx_scaffolding", runtime: false, only: [:dev, :test]}
     ]
   end
 
