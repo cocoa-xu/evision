@@ -675,10 +675,10 @@ bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, unsigned long &val, const ArgI
 
     CV_UNUSED(info);
 
-    ErlNifUInt u32;
-    if (!enif_get_uint64(env, obj, (ErlNifUInt64 *)&u32))
+    ErlNifUInt64 u64;
+    if (!enif_get_uint64(env, obj, (ErlNifUInt64 *)&u64))
         return false;
-    val = u32;
+    val = (unsigned long)u64;
     return 1;
 }
 

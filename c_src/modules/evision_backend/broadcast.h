@@ -27,7 +27,7 @@ static void broadcast(
         memcpy(dst_data, tmp.data, num_subgroups * subgroup_bytes);
     }
 
-    for (ssize_t dim = ndims - 1; dim >= 0; --dim) {
+    for (int64_t dim = ndims - 1; dim >= 0; --dim) {
         size_t elem_per_subgroup = src_shape[dim];
         size_t elem_per_group = to_shape[dim];
         size_t num_groups = num_subgroups / elem_per_subgroup;
@@ -74,7 +74,7 @@ static ERL_NIF_TERM evision_cv_mat_broadcast_to(ErlNifEnv *env, int argc, const 
         if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "to_shape"), to_shape, ArgInfo("to_shape", 0)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "force_src_shape"), force_src_shape, ArgInfo("force_src_shape", 0))) {
-            ssize_t ndims = to_shape.size();
+            int64_t ndims = to_shape.size();
             std::vector<int> src_shape(ndims);
 
             int diff_dims = ndims;
@@ -92,7 +92,7 @@ static ERL_NIF_TERM evision_cv_mat_broadcast_to(ErlNifEnv *env, int argc, const 
             }
 
             // align shapes with 1s
-            for (ssize_t i = 0; i < ndims; ++i) {
+            for (int64_t i = 0; i < ndims; ++i) {
                 if (i < diff_dims) {
                     src_shape[i] = 1;
                 } else {
@@ -107,7 +107,7 @@ static ERL_NIF_TERM evision_cv_mat_broadcast_to(ErlNifEnv *env, int argc, const 
             // calculate number of elements in the new shape
             const size_t elem_size = img.elemSize();
             size_t count_new_elem = 1;
-            for (ssize_t i = 0; i < ndims; i++) {
+            for (int64_t i = 0; i < ndims; i++) {
                 count_new_elem *= to_shape[i];
             }
 
