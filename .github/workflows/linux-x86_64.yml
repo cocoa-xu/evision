@@ -53,12 +53,12 @@ jobs:
       OPENCV_VER: "4.6.0"
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       
       - uses: erlef/setup-beam@v1
         with:
-          otp-version: "24.3"
-          elixir-version: "1.13.3"
+          otp-version: "25.0.4"
+          elixir-version: "1.13.4"
 
       - name: Install system dependecies
         run: |
