@@ -13,15 +13,15 @@ jobs:
     runs-on: windows-latest
     env:
       MIX_ENV: dev
-      EVISION_VERSION: "0.1.1-dev"
-      OPENCV_VER: "4.5.5"
+      EVISION_VERSION: "0.1.1"
+      OPENCV_VER: "4.6.0"
 
     steps:
       - uses: actions/checkout@v3
 
       - uses: erlef/setup-beam@v1
         with:
-          otp-version: 25.0.2
+          otp-version: 25.0.4
           elixir-version: 1.13.4
 
       - uses: ilammy/msvc-dev-cmd@v1
@@ -69,7 +69,7 @@ jobs:
           }
           New-Item -Path . -Force -Name "$Env:PKG_NAME" -ItemType "directory"
           $Env:PRIV_DIR = "_build/${Env:MIX_ENV}/lib/evision/priv"
-          if (Test-Path $Env:PRIV_DIR) {
+          if (Test-Path "$Env:PRIV_DIR/x64") {
               Remove-Item "$Env:PRIV_DIR/x64" -Recurse -Force
           }
           Copy-Item -Path "$Env:PRIV_DIR" -Destination "$Env:PKG_NAME" -Recurse
