@@ -54,13 +54,19 @@ jobs:
       OPENCV_VER: "4.6.0"
     steps:
       - uses: actions/checkout@v3
-      - uses: erlef/setup-beam@v1
-        with:
-          otp-version: "25.0.4"
-          elixir-version: "1.13.4"
       - name: Install system dependecies
         run: |
-          apk add cmake make python3 bash curl unzip gcc g++ ncurses-dev openssl-dev linux-headers perl git ffmpeg ffmpeg-dev
+          apk add cmake make python3 bash curl unzip gcc g++ ncurses-dev openssl-dev linux-headers perl git ffmpeg ffmpeg-dev dpkg
+          curl -fSL https://repo.uwucocoa.moe/pool/main/erlang_25.0.4_musl-linux-amd64.deb -o erlang_25.0.4_musl-linux-amd64.deb
+          dpkg -i erlang_25.0.4_musl-linux-amd64.deb
+      - name: Install elixir
+        run: |
+          export ELIXIR_VER=1.13.4
+          mkdir -p "${HOME}/.elixir/v${ELIXIR_VER}"
+          cd "${HOME}/.elixir/v${ELIXIR_VER}"
+          curl -fSL "https://github.com/elixir-lang/elixir/releases/download/v${ELIXIR_VER}/Precompiled.zip" -o "elixir-${ELIXIR_VER}.zip"
+          unzip "elixir-${ELIXIR_VER}.zip"
+          rm -f "elixir-${ELIXIR_VER}.zip"
       - name: Cache mix packages and OpenCV
         id: cache-mix-and-opencv
         uses: actions/cache@v3
@@ -72,6 +78,7 @@ jobs:
       - name: Get mix deps and download OpenCV
         if: steps.cache-mix-and-opencv.outputs.cache-hit != 'true'
         run: |
+          export PATH="${PATH}:${HOME}/.elixir/v${ELIXIR_VER}/bin"
           mix deps.get
           bash scripts/download_opencv.sh ${OPENCV_VER} 3rd_party/cache 3rd_party/opencv/
       - name: Mix Compile
