@@ -78,6 +78,7 @@ jobs:
       - name: Get mix deps and download OpenCV
         if: steps.cache-mix-and-opencv.outputs.cache-hit != 'true'
         run: |
+          export ELIXIR_VER=1.13.4
           export PATH="${PATH}:${HOME}/.elixir/v${ELIXIR_VER}/bin"
           mix deps.get
           bash scripts/download_opencv.sh ${OPENCV_VER} 3rd_party/cache 3rd_party/opencv/
