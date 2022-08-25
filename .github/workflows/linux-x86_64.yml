@@ -65,7 +65,9 @@ jobs:
           mkdir -p "${HOME}/.elixir"
           cd "${HOME}/.elixir"
           curl -fSL https://github.com/elixir-lang/elixir/archive/refs/tags/v${ELIXIR_VER}.tar.gz -o v${ELIXIR_VER}.tar.gz
+          ls -la
           tar xf "v${ELIXIR_VER}.tar.gz"
+          ls -la
           rm -f "v${ELIXIR_VER}.tar.gz"
           cd "elixir-v${ELIXIR_VER}"
           make clean
