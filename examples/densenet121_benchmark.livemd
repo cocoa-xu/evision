@@ -3,7 +3,7 @@
 ```elixir
 Mix.install(
   [
-    {:evision, "~> 0.1.0-dev", github: "cocoa-xu/evision"}
+    {:evision, "~> 0.1.1", github: "cocoa-xu/evision", tag: "v0.1.1"}
   ],
   system_env: [
     {"EVISION_PREFER_PRECOMPILED", "true"}

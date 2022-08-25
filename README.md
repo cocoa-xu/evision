@@ -9,7 +9,7 @@
 | Linux            | s390x          | [![linux-precompile](https://github.com/cocoa-xu/evision/actions/workflows/linux-precompile.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/linux-precompile.yml) | Yes |
 | Linux            | riscv64        | [![linux-precompile](https://github.com/cocoa-xu/evision/actions/workflows/linux-precompile.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/linux-precompile.yml) | Yes |
 | macOS 11 Big Sur | x86_64         | [![CI](https://github.com/cocoa-xu/evision/actions/workflows/macos-x86_64.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/macos-x86_64.yml) | Yes |
-| macOS 11 Big Sur | arm64          | [![macos-precompile](https://github.com/cocoa-xu/evision/actions/workflows/macos-precompile.yml/badge.svg?branch=v0.1.0)](https://github.com/cocoa-xu/evision/actions/workflows/macos-precompile.yml) | Yes |
+| macOS 11 Big Sur | arm64          | [![macos-precompile](https://github.com/cocoa-xu/evision/actions/workflows/macos-precompile.yml/badge.svg?branch=v0.1.1)](https://github.com/cocoa-xu/evision/actions/workflows/macos-precompile.yml) | Yes |
 | Windows 2019     | x86_64         | [![CI](https://github.com/cocoa-xu/evision/actions/workflows/windows-x86_64.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/windows-x86_64.yml) | Yes |
 
 ## Docs
@@ -82,7 +82,7 @@ In general, you can add `evision` to `deps` with the following settings.
 ```elixir
 def deps do
   [
-    {:evision, "~> 0.1.0", github: "cocoa-xu/evision", tag: "v0.1.0"}
+    {:evision, "~> 0.1.1", github: "cocoa-xu/evision", tag: "v0.1.1"}
   ]
 end
 ```
@@ -97,10 +97,10 @@ To use precompiled Evision library, the following environment variables should b
 # set this to true if prefer to use precompiled library
 export EVISION_PREFER_PRECOMPILED=true
 
-## currently "0.1.0" is available
+## currently "0.1.1" is available
 ## for other available versions, please check the GitHub release page
 ## https://github.com/cocoa-xu/evision/releases
-export EVISION_PRECOMPILED_VERSION="0.1.0"
+export EVISION_PRECOMPILED_VERSION="0.1.1"
 
 # optional.
 ## set the cache directory for the precompiled archive file
@@ -236,7 +236,7 @@ Then you can add `evision` as dependency in your `mix.exs`. At the moment you wi
 ```elixir
 def deps do
   [
-    {:evision, "~> 0.1.0", github: "cocoa-xu/evision"}
+    {:evision, "~> 0.1.1", github: "cocoa-xu/evision"}
   ]
 end
 ```

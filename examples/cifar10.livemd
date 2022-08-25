@@ -20,7 +20,7 @@
 Mix.install([
   {:torchx, "~> 0.2"},
   {:nx, "~> 0.2", override: true},
-  {:evision, "~> 0.1.0", github: "cocoa-xu/evision", branch: "main"},
+  {:evision, "~> 0.1.1", github: "cocoa-xu/evision", branch: "main"},
   {:kino, "~> 0.6"},
   {:scidata, "~> 0.1"}
 ])

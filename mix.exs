@@ -3,7 +3,8 @@ defmodule Evision.MixProject do
   require Logger
 
   @app :evision
-  @version "0.1.1-dev"
+  @version "0.1.1"
+  @last_released_version "0.1.1"
   @github_url "https://github.com/cocoa-xu/evision"
   @opencv_version "4.6.0"
   # only means compatible. need to write more tests
@@ -37,7 +38,7 @@ defmodule Evision.MixProject do
         "CMAKE_OPTIONS" => cmake_options,
         "ENABLED_CV_MODULES" => enabled_modules,
         "EVISION_PREFER_PRECOMPILED" => System.get_env("EVISION_PREFER_PRECOMPILED", "false"),
-        "EVISION_PRECOMPILED_VERSION" => System.get_env("EVISION_PRECOMPILED_VERSION", "0.1.0")
+        "EVISION_PRECOMPILED_VERSION" => System.get_env("EVISION_PRECOMPILED_VERSION", @last_released_version)
       }
     ]
   end
@@ -206,8 +207,7 @@ defmodule Evision.MixProject do
       {:elixir_make, "~> 0.6", runtime: false},
       {:dll_loader_helper, "~> 0.1"},
       {:ex_doc, "~> 0.28", only: :docs, runtime: false},
-      {:nx, "~> 0.3", optional: true},
-      {:nx_scaffolding, "~> 0.1", github: "cocoa-xu/nx_scaffolding", runtime: false, only: [:dev, :test]}
+      {:nx, "~> 0.3", optional: true}
     ]
   end
 
