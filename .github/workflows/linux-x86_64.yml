@@ -46,7 +46,45 @@ on:
   workflow_dispatch:
 
 jobs:
-  mix_test:
+  musl:
+    runs-on: ubuntu-latest
+    container: alpine:latest
+    env:
+      MIX_ENV: test
+      OPENCV_VER: "4.6.0"
+    steps:
+      - uses: actions/checkout@v3
+      - uses: erlef/setup-beam@v1
+        with:
+          otp-version: "25.0.4"
+          elixir-version: "1.13.4"
+      - name: Install system dependecies
+        run: |
+          apk add cmake make python3 bash curl unzip gcc g++ ncurses-dev openssl-dev linux-headers perl git ffmpeg ffmpeg-dev
+      - name: Cache mix packages and OpenCV
+        id: cache-mix-and-opencv
+        uses: actions/cache@v3
+        with:
+          key: deps-${{ hashFiles('mix.lock') }}-${{ env.OPENCV_VER }}
+          path: |
+            ./deps
+            ./3rd_party
+      - name: Get mix deps and download OpenCV
+        if: steps.cache-mix-and-opencv.outputs.cache-hit != 'true'
+        run: |
+          mix deps.get
+          bash scripts/download_opencv.sh ${OPENCV_VER} 3rd_party/cache 3rd_party/opencv/
+      - name: Mix Compile
+        run: |
+          rm -f _build/test/lib/evision/priv/evision.so
+          echo "MIX_ENV: ${MIX_ENV}"
+          export MIX_ENV=test
+          mix compile
+      - name: Mix Test
+        run: |
+          mix test --include require_downloading --include require_ffmpeg
+
+  gnu:
     runs-on: ubuntu-20.04
     env:
       MIX_ENV: test
