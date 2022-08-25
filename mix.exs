@@ -38,7 +38,7 @@ defmodule Evision.MixProject do
         "CMAKE_OPTIONS" => cmake_options,
         "ENABLED_CV_MODULES" => enabled_modules,
         "EVISION_PREFER_PRECOMPILED" => System.get_env("EVISION_PREFER_PRECOMPILED", "false"),
-        "EVISION_PRECOMPILED_VERSION" => System.get_env("EVISION_PRECOMPILED_VERSION", @last_released_version)
+        "EVISION_PRECOMPILED_VERSION" => @last_released_version
       }
     ]
   end
