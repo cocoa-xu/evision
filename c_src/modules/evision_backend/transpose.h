@@ -18,7 +18,7 @@ std::vector<size_t> transpose_axes(uint64_t ndims, size_t * axes,
     }
 
     max_axis = ndims;
-    for (uint64_t i = ndims - 1; i >= 0; i--) {
+    for (int64_t i = ndims - 1; i >= 0; i--) {
         if (axes[i] == i) {
             max_axis = i;
         } else {
