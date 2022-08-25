@@ -65,11 +65,9 @@ jobs:
           mkdir -p "${HOME}/.elixir"
           cd "${HOME}/.elixir"
           curl -fSL https://github.com/elixir-lang/elixir/archive/refs/tags/v${ELIXIR_VER}.tar.gz -o v${ELIXIR_VER}.tar.gz
-          ls -la
           tar xf "v${ELIXIR_VER}.tar.gz"
-          ls -la
           rm -f "v${ELIXIR_VER}.tar.gz"
-          cd "elixir-v${ELIXIR_VER}"
+          cd "elixir-${ELIXIR_VER}"
           make clean
           make install
       - name: Cache mix packages and OpenCV
@@ -84,7 +82,7 @@ jobs:
         if: steps.cache-mix-and-opencv.outputs.cache-hit != 'true'
         run: |
           export ELIXIR_VER=1.13.4
-          export PATH="${PATH}:${HOME}/.elixir/elixir-v${ELIXIR_VER}/bin"
+          export PATH="${PATH}:${HOME}/.elixir/elixir-${ELIXIR_VER}/bin"
           mix deps.get
           bash scripts/download_opencv.sh ${OPENCV_VER} 3rd_party/cache 3rd_party/opencv/
       - name: Mix Compile
@@ -93,7 +91,7 @@ jobs:
           echo "MIX_ENV: ${MIX_ENV}"
           export MIX_ENV=test
           export ELIXIR_VER=1.13.4
-          export PATH="${PATH}:${HOME}/.elixir/elixir-v${ELIXIR_VER}/bin"
+          export PATH="${PATH}:${HOME}/.elixir/elixir-${ELIXIR_VER}/bin"
           mix compile
       - name: Mix Test
         run: |
