@@ -497,8 +497,24 @@ defmodule Evision.Mat do
   defp check_unsupported_type({:s, 8}=type), do: type
   defp check_unsupported_type({:s, 16}=type), do: type
   defp check_unsupported_type({:s, 32}=type), do: type
+  defp check_unsupported_type(:f32), do: {:f, 32}
+  defp check_unsupported_type(:f64), do: {:f, 64}
+  defp check_unsupported_type(:u8), do: {:u, 8}
+  defp check_unsupported_type(:u16), do: {:u, 16}
+  defp check_unsupported_type(:s8), do: {:s, 8}
+  defp check_unsupported_type(:s16), do: {:s, 16}
+  defp check_unsupported_type(:s32), do: {:s, 32}
 
-  defp check_unsupported_type(type = {t, l}) when is_atom(t) and l > 0 do
+  defp check_unsupported_type(type) do
+    case type do
+      {t, l} when is_atom(t) and l > 0 ->
+        :ok
+      type when is_atom(type) ->
+        :ok
+      true ->
+        raise_unsupported_type(type)
+    end
+
     new_type =
       with {:ok, unsupported_type_map} <- Application.fetch_env(:evision, :unsupported_type_map) do
         Map.get(unsupported_type_map, type, :error)
@@ -506,12 +522,16 @@ defmodule Evision.Mat do
         _ -> :error
       end
     if new_type == :error do
-      raise ArgumentError, "#{inspect(type)} is not supported by OpenCV. However, it is possible to set an " <>
-                           "`unsupported_type_map` in config/config.exs to allow evision do type conversion automatically. " <>
-                           "Please see https://github.com/cocoa-xu/evision#unsupported-type-map for more details and examples."
+      raise_unsupported_type(type)
     else
       check_unsupported_type(new_type)
     end
+  end
+
+  defp raise_unsupported_type(type) do
+    raise ArgumentError, "#{inspect(type)} is not supported by OpenCV. However, it is possible to set an " <>
+                           "`unsupported_type_map` in config/config.exs to allow evision do type conversion automatically. " <>
+                           "Please see https://github.com/cocoa-xu/evision#unsupported-type-map for more details and examples."
   end
 
   @doc namespace: :"cv.Mat"
