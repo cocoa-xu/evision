@@ -10,13 +10,13 @@ jobs:
     runs-on: ubuntu-20.04
     container: alpine:latest
     env:
-      MIX_ENV: test
+      MIX_ENV: dev
       OPENCV_VER: "4.6.0"
     steps:
       - uses: actions/checkout@v3
       - name: Install system dependecies
         run: |
-          apk add cmake make python3 bash curl unzip gcc g++ ncurses-dev openssl-dev linux-headers perl git ffmpeg ffmpeg-dev dpkg
+          apk add cmake make python3 bash curl unzip gcc g++ ncurses-dev openssl-dev linux-headers perl git ffmpeg ffmpeg-dev dpkg patch
           curl -fSL https://repo.uwucocoa.moe/pool/main/erlang_25.0.4_musl-linux-amd64.deb -o erlang_25.0.4_musl-linux-amd64.deb
           dpkg -i erlang_25.0.4_musl-linux-amd64.deb
 
@@ -76,7 +76,7 @@ jobs:
           export PKG_NAME=evision-x86_64-linux-musl-${GITHUB_REF##*/v}
           export PATH="${PATH}:${HOME}/.elixir/elixir-${ELIXIR_VER}/bin"
           mkdir -p "${PKG_NAME}"
-          cp -a _build/dev/lib/evision/priv "${PKG_NAME}"
+          cp -a _build/prod/lib/evision/priv "${PKG_NAME}"
           cp -a lib/generated "${PKG_NAME}/elixir_generated"
           cp -a src/generated "${PKG_NAME}/erlang_generated"
           tar -czf "${PKG_NAME}.tar.gz" "${PKG_NAME}"
