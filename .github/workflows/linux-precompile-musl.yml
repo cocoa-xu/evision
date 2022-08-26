@@ -1,0 +1,79 @@
+name: linux-precompile-musl
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  mix_test:
+    runs-on: ubuntu-20.04
+    env:
+      OPENCV_VER: "4.6.0"
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x86_64-linux-musl, aarch64-linux-musl, armv7l-linux-musleabihf, ppc64le-linux-musl, s390x-linux-musl, riscv64-linux-musl]
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: erlef/setup-beam@v1
+        with:
+          otp-version: "25.0.4"
+          elixir-version: "1.13.4"
+      
+      - uses: goto-bus-stop/setup-zig@v1
+
+      - name: Install system dependecies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential automake autoconf pkg-config bc m4 unzip zip curl git libssl-dev gzip libncurses5-dev python3 ca-certificates
+
+      - name: Cache mix packages and OpenCV
+        id: cache-mix-and-opencv
+        uses: actions/cache@v3
+        with:
+          key: deps-${{ hashFiles('mix.lock') }}-${{ env.OPENCV_VER }}
+          path: |
+            ./deps
+            ./3rd_party
+
+      - name: Get mix deps and download OpenCV
+        if: steps.cache-mix-and-opencv.outputs.cache-hit != 'true'
+        run: |
+          mix deps.get
+          bash scripts/download_opencv.sh ${OPENCV_VER} 3rd_party/cache 3rd_party/opencv/
+
+      - name: Cache compiled OpenCV
+        id: cache-mix-compile
+        uses: actions/cache@v3
+        with:
+          key: precompile-${{ runner.os }}-${{ matrix.arch }}-${{ hashFiles('cc_toolchain/**') }}-${{ hashFiles('c_src/**') }}-${{ hashFiles('CMakeLists.txt') }}-${{ hashFiles('Makefile') }}-${{ env.OPENCV_VER }}
+          path: |
+            ./_build
+            ./c_src/headers.txt
+            ./c_src/configuration.private.hpp
+            ./lib
+            ./src
+
+      - name: Create precompiled library
+        run: |
+          export CMAKE_TOOLCHAIN_FILE="$(pwd)/cc_toolchain/${{ matrix.arch }}.cmake"
+          echo "CMAKE_TOOLCHAIN_FILE: ${CMAKE_TOOLCHAIN_FILE}"
+          rm -f _build/dev/lib/evision/priv/evision.so
+          mix compile
+          export PKG_NAME=evision-${{ matrix.arch }}-${GITHUB_REF##*/v}
+          mkdir -p "${PKG_NAME}"
+          cp -a _build/dev/lib/evision/priv "${PKG_NAME}"
+          cp -a lib/generated "${PKG_NAME}/elixir_generated"
+          cp -a src/generated "${PKG_NAME}/erlang_generated"
+          tar -czf "${PKG_NAME}.tar.gz" "${PKG_NAME}"
+          rm -rf "${PKG_NAME}"
+          ls -lah "${PKG_NAME}.tar.gz"
+          mkdir -p artifacts
+          mv "${PKG_NAME}.tar.gz" artifacts
+
+      - uses: softprops/action-gh-release@v1
+        with:
+          files: artifacts/*.tar.gz
