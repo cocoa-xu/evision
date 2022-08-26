@@ -62,7 +62,7 @@ defmodule Evision.Photo.HDR.Test do
     {:ok, times} =
       exposure_sequences
       |> Enum.map(&elem(&1, 1))
-      |> Enum.into(<<>>, fn d -> <<d::float()-size(32)-little>> end)
+      |> Enum.into(<<>>, fn d -> <<d::float-size(32)-little>> end)
       |> OpenCV.Mat.from_binary_by_shape({:f, 32}, {1, Enum.count(images)})
 
     {:ok, calibrate} = OpenCV.createCalibrateDebevec()

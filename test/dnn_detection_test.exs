@@ -72,10 +72,10 @@ defmodule Evision.DNN.Test do
 
     defp _translate_outs(
            confidence_threshold,
-           <<_batch_id::float()-size(32)-little, class_id::float()-size(32)-little,
-             confidence::float()-size(32)-little, left::float()-size(32)-little,
-             top::float()-size(32)-little, right::float()-size(32)-little,
-             bottom::float()-size(32)-little, rest::binary>>,
+           <<_batch_id::float-size(32)-little, class_id::float-size(32)-little,
+             confidence::float-size(32)-little, left::float-size(32)-little,
+             top::float-size(32)-little, right::float-size(32)-little,
+             bottom::float-size(32)-little, rest::binary>>,
            h,
            w,
            acc

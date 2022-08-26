@@ -63,7 +63,7 @@ defmodule Evision.PCA.Test do
           eigenvalues = OpenCV.Nx.to_nx(eigenvalues)
 
           {:ok,
-           <<centre_x::float()-size(64)-little, centre_y::float()-size(64)-little, _::binary>>} =
+           <<centre_x::float-size(64)-little, centre_y::float-size(64)-little, _::binary>>} =
             OpenCV.Mat.to_binary(mean)
 
           centre_x = trunc(centre_x)

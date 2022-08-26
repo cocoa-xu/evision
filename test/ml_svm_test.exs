@@ -11,7 +11,7 @@ defmodule Evision.ML.SVM.Test do
 
     {:ok, labels_mat} =
       OpenCV.Mat.from_binary(
-        Enum.into(labels, <<>>, fn d -> <<d::integer()-size(32)-little>> end),
+        Enum.into(labels, <<>>, fn d -> <<d::integer-size(32)-little>> end),
         {:s, 32},
         4,
         1,
@@ -20,7 +20,7 @@ defmodule Evision.ML.SVM.Test do
 
     {:ok, training_data_mat} =
       OpenCV.Mat.from_binary(
-        Enum.into(List.flatten(training_data), <<>>, fn d -> <<d::float()-size(32)-little>> end),
+        Enum.into(List.flatten(training_data), <<>>, fn d -> <<d::float-size(32)-little>> end),
         {:f, 32},
         4,
         2,
@@ -45,7 +45,7 @@ defmodule Evision.ML.SVM.Test do
           current_vector =
             for j <- (cols - 1)..0, reduce: [] do
               vec ->
-                <<float_data::float()-size(32)-little>> =
+                <<float_data::float-size(32)-little>> =
                   :binary.part(sv_binary, (i * cols + j) * float_bytes, 4)
 
                 [trunc(float_data) | vec]
@@ -66,7 +66,7 @@ defmodule Evision.ML.SVM.Test do
         acc ->
           {:ok, sample} =
             OpenCV.Mat.from_binary(
-              <<y::float()-size(32)-little, x::float()-size(32)-little>>,
+              <<y::float-size(32)-little, x::float-size(32)-little>>,
               {:f, 32},
               1,
               2,
@@ -75,7 +75,7 @@ defmodule Evision.ML.SVM.Test do
 
           {:ok, {_, response_mat}} = OpenCV.ML.SVM.predict(svm, sample)
           assert {:ok, {1, 1}} = OpenCV.Mat.shape(response_mat)
-          {:ok, <<response::float()-size(32)-little>>} = OpenCV.Mat.to_binary(response_mat)
+          {:ok, <<response::float-size(32)-little>>} = OpenCV.Mat.to_binary(response_mat)
           response = trunc(response)
           assert response == 1 or response == -1
 
