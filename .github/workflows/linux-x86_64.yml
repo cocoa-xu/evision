@@ -49,7 +49,7 @@ on:
 
 jobs:
   musl:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     container: alpine:latest
     env:
       MIX_ENV: test
@@ -122,7 +122,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y build-essential automake autoconf pkg-config bc m4 unzip zip curl git libssl-dev gzip libncurses5-dev erlang-inets erlang-os-mon erlang-runtime-tools erlang-ssl erlang-dev python3 ca-certificates
           sudo apt-get install -y libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libavresample-dev ffmpeg
-      
+
       - name: Cache mix packages and OpenCV
         id: cache-mix-and-opencv
         uses: actions/cache@v3
@@ -151,6 +151,7 @@ jobs:
             ./src
 
       - name: Mix Compile
+        if: steps.cache-mix-compile.outputs.cache-hit != 'true'
         run: |
           rm -f _build/test/lib/evision/priv/evision.so
           mix compile

@@ -83,6 +83,7 @@ jobs:
             ./src
 
       - name: Mix Compile
+        if: steps.cache-mix-compile.outputs.cache-hit != 'true'
         run: |
           rm -f _build/dev/lib/evision/priv/evision.so
           mix compile

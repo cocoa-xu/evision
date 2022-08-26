@@ -84,6 +84,7 @@ jobs:
             ./src
 
       - name: Mix Compile
+        if: steps.cache-mix-compile.outputs.cache-hit != 'true'
         run: |
           $Env:MAKE = "nmake"
           Remove-Item Makefile

@@ -57,7 +57,8 @@ jobs:
             ./lib
             ./src
 
-      - name: Create precompiled library
+      - name: Mix compile
+        if: steps.cache-mix-compile.outputs.cache-hit != 'true'
         run: |
           if [ "${{ matrix.pair.arch }}" = "arm64" ]; then
             export CMAKE_OPENCV_OPTIONS="-D WITH_IPP=OFF -D CMAKE_OSX_ARCHITECTURES=arm64"
@@ -66,6 +67,8 @@ jobs:
 
           mix deps.get
           mix compile
+
+      - name: Create precompiled library
           export PKG_NAME=evision-${{ matrix.pair.arch }}-apple-darwin-${GITHUB_REF##*/v}
           mkdir -p "${PKG_NAME}"
           cp -a _build/${MIX_ENV}/lib/evision/priv "${PKG_NAME}"
