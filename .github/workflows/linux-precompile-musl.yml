@@ -56,7 +56,7 @@ jobs:
         id: cache-mix-compile
         uses: actions/cache@v3
         with:
-          key: precompile-${{ runner.os }}-x86_64-linux-musl-${{ hashFiles('cc_toolchain/**') }}-${{ hashFiles('c_src/**') }}-${{ hashFiles('CMakeLists.txt') }}-${{ hashFiles('Makefile') }}-${{ env.OPENCV_VER }}
+          key: precompile-${{ env.MIX_ENV }}-${{ runner.os }}-x86_64-linux-musl-${{ hashFiles('cc_toolchain/**') }}-${{ hashFiles('c_src/**') }}-${{ hashFiles('CMakeLists.txt') }}-${{ hashFiles('Makefile') }}-${{ env.OPENCV_VER }}
           path: |
             ./_build
             ./c_src/headers.txt
@@ -137,7 +137,7 @@ jobs:
         id: cache-mix-compile
         uses: actions/cache@v3
         with:
-          key: precompile-prod-${{ runner.os }}-${{ matrix.arch }}-${{ hashFiles('cc_toolchain/**') }}-${{ hashFiles('c_src/**') }}-${{ hashFiles('CMakeLists.txt') }}-${{ hashFiles('Makefile') }}-${{ env.OPENCV_VER }}
+          key: precompile-${{ env.MIX_ENV }}-${{ runner.os }}-${{ matrix.arch }}-${{ hashFiles('cc_toolchain/**') }}-${{ hashFiles('c_src/**') }}-${{ hashFiles('CMakeLists.txt') }}-${{ hashFiles('Makefile') }}-${{ env.OPENCV_VER }}
           path: |
             ./_build
             ./c_src/headers.txt
