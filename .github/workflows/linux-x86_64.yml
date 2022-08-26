@@ -61,6 +61,7 @@ jobs:
           apk add cmake make python3 bash curl unzip gcc g++ ncurses-dev openssl-dev linux-headers perl git ffmpeg ffmpeg-dev dpkg
           curl -fSL https://repo.uwucocoa.moe/pool/main/erlang_25.0.4_musl-linux-amd64.deb -o erlang_25.0.4_musl-linux-amd64.deb
           dpkg -i erlang_25.0.4_musl-linux-amd64.deb
+
       - name: Install elixir
         run: |
           export ELIXIR_VER=1.13.4
@@ -72,6 +73,10 @@ jobs:
           cd "elixir-${ELIXIR_VER}"
           make clean
           make install
+          export PATH="${PATH}:${HOME}/.elixir/elixir-${ELIXIR_VER}/bin"
+          mix local.hex --force
+          mix local.rebar --force
+
       - name: Cache mix packages and OpenCV
         id: cache-mix-and-opencv
         uses: actions/cache@v3
@@ -80,25 +85,37 @@ jobs:
           path: |
             ./deps
             ./3rd_party
+
       - name: Get mix deps and download OpenCV
         if: steps.cache-mix-and-opencv.outputs.cache-hit != 'true'
         run: |
           export ELIXIR_VER=1.13.4
           export PATH="${PATH}:${HOME}/.elixir/elixir-${ELIXIR_VER}/bin"
-          mix local.hex --force
-          mix local.rebar --force
           mix deps.get
           bash scripts/download_opencv.sh ${OPENCV_VER} 3rd_party/cache 3rd_party/opencv/
+
+      - name: Cache compiled OpenCV
+        id: cache-mix-compile
+        uses: actions/cache@v3
+        with:
+          key: compile-ffmpeg-x86_64-linux-musl-${{ hashFiles('cc_toolchain/**') }}-${{ hashFiles('c_src/**') }}-${{ hashFiles('CMakeLists.txt') }}-${{ hashFiles('Makefile') }}-${{ env.OPENCV_VER }}
+          path: |
+            ./_build
+            ./c_src/headers.txt
+            ./c_src/configuration.private.hpp
+            ./lib
+            ./src
+
       - name: Mix Compile
+        if: steps.cache-mix-compile.outputs.cache-hit != 'true'
         run: |
-          rm -f _build/test/lib/evision/priv/evision.so
           echo "MIX_ENV: ${MIX_ENV}"
           export MIX_ENV=test
           export ELIXIR_VER=1.13.4
           export PATH="${PATH}:${HOME}/.elixir/elixir-${ELIXIR_VER}/bin"
-          mix local.hex --force
-          mix local.rebar --force
+          rm -f _build/test/lib/evision/priv/evision.so
           mix compile
+
       - name: Mix Test
         run: |
           mix test --include require_downloading --include require_ffmpeg
