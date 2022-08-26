@@ -31,6 +31,9 @@ jobs:
           cd "elixir-${ELIXIR_VER}"
           make clean
           make install
+          export PATH="${PATH}:${HOME}/.elixir/elixir-${ELIXIR_VER}/bin"
+          mix local.hex --force
+          mix local.rebar --force
 
       - name: Cache mix packages and OpenCV
         id: cache-mix-and-opencv
@@ -46,8 +49,6 @@ jobs:
         run: |
           export ELIXIR_VER=1.13.4
           export PATH="${PATH}:${HOME}/.elixir/elixir-${ELIXIR_VER}/bin"
-          mix local.hex --force
-          mix local.rebar --force
           mix deps.get
           bash scripts/download_opencv.sh ${OPENCV_VER} 3rd_party/cache 3rd_party/opencv/
 
