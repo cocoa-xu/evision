@@ -15,15 +15,25 @@ defmodule Evision.MixProject do
     {cmake_options, enabled_modules} = generate_cmake_options()
     opencv_ver = opencv_versions(System.get_env("OPENCV_VER", @opencv_version))
     ninja = System.find_executable("ninja")
-    {compiler, _} = :erlang.system_info(:c_compiler_used)
+
     target_abi =
-      case compiler do
-        :gnuc ->
-          "gnu"
-        :msc ->
-          "msvc"
+      List.last(String.split(to_string(:erlang.system_info(:system_architecture)), "-"))
+
+    target_abi =
+      case target_abi do
+        "darwin" <> _ ->
+          "darwin"
+
+        "win32" ->
+          {compiler_id, _} = :erlang.system_info(:c_compiler_used)
+
+          case compiler_id do
+            :msc -> "msvc"
+            _ -> to_string(compiler_id)
+          end
+
         _ ->
-          to_string(compiler)
+          target_abi
       end
 
     [
@@ -179,9 +189,10 @@ defmodule Evision.MixProject do
 
         :only_enabled_modules ->
           cmake_options =
-            "-D BUILD_LIST=" <> (enabled_modules
-            |> Enum.map(&Atom.to_string(&1))
-            |> Enum.join(","))
+            "-D BUILD_LIST=" <>
+              (enabled_modules
+               |> Enum.map(&Atom.to_string(&1))
+               |> Enum.join(","))
 
           {cmake_options, enabled_modules}
 
@@ -189,9 +200,10 @@ defmodule Evision.MixProject do
           enabled_modules = @all_modules -- disabled_modules
 
           cmake_options =
-            "-D BUILD_LIST=" <> (enabled_modules
-            |> Enum.map(&Atom.to_string(&1))
-            |> Enum.join(","))
+            "-D BUILD_LIST=" <>
+              (enabled_modules
+               |> Enum.map(&Atom.to_string(&1))
+               |> Enum.join(","))
 
           {cmake_options, enabled_modules}
 
@@ -300,7 +312,8 @@ defmodule Evision.MixProject do
     [
       name: "evision",
       # These are the default files included in the package
-      files: ~w(c_src py_src 3rd_party scripts patches cc_toolchain priv Makefile Makefile.win CMakeLists.txt
+      files:
+        ~w(c_src py_src 3rd_party scripts patches cc_toolchain priv Makefile Makefile.win CMakeLists.txt
                 lib .formatter.exs mix.exs
                 src rebar.config
                 README* readme* LICENSE* license* CHANGELOG* changelog*),

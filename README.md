@@ -121,15 +121,17 @@ export TARGET_ABI=musleabihf
 The default value for the `TARGET_ABI` env var is set using the following elixir code
 
 ```elixir
-{compiler, _} = :erlang.system_info(:c_compiler_used)
+target_abi = List.last(String.split(to_string(:erlang.system_info(:system_architecture)), "-"))
 target_abi =
-  case compiler do
-    :gnuc ->
-      "gnu"
-    :msc ->
-      "msvc"
-    _ ->
-      to_string(compiler)
+  case target_abi do
+    "darwin" <> _ -> "darwin"
+    "win32" ->
+      {compiler_id, _} = :erlang.system_info(:c_compiler_used)
+      case compiler_id do
+        :msc -> "msvc"
+        _ -> to_string(compiler_id)
+      end
+    _ -> target_abi
   end
 ```
 

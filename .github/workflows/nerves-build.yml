@@ -111,3 +111,8 @@ jobs:
         with:
           name: ${{ env.NERVES_PROJ_NAME }}_${{ matrix.target }}_${{ env.MIX_ENV }}.fw
           path: /tmp/firmware/${{ env.NERVES_PROJ_NAME }}_${{ matrix.target }}_${{ env.MIX_ENV }}.fw
+      
+      - uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: /tmp/firmware/${{ env.NERVES_PROJ_NAME }}_${{ matrix.target }}_${{ env.MIX_ENV }}.fw
