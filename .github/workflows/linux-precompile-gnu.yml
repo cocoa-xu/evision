@@ -1,11 +1,8 @@
-name: linux-precompile
+name: linux-precompile-gnu
 
 on:
   push:
     tags:
-      - '*-dev'
-      - '*-prod'
-      - '*-dev-linux'
       - 'v*'
 
 jobs:
@@ -18,39 +15,33 @@ jobs:
       matrix:
         include:
           - pair:
-              arch_name: x86_64
-              deb_arch: amd64
+              arch: x86_64-linux-gnu
               cmake_toolchain_file: ""
               c_compiler: gcc
               cpp_compiler: g++
           - pair:
-              arch_name: aarch64
-              deb_arch: arm64
-              cmake_toolchain_file: cc_toolchain/linux-aarch64.cmake
+              arch: aarch64-linux-gnu
+              cmake_toolchain_file: cc_toolchain/aarch64-linux-gnu.cmake
               c_compiler: gcc-aarch64-linux-gnu
               cpp_compiler: g++-aarch64-linux-gnu
           - pair:
-              arch_name: armv7l
-              deb_arch: armhf
-              cmake_toolchain_file: cc_toolchain/linux-armv7l.cmake
+              arch: armv7l-linux-gnueabihf
+              cmake_toolchain_file: cc_toolchain/armv7l-linux-gnu.cmake
               c_compiler: gcc-arm-linux-gnueabihf
               cpp_compiler: g++-arm-linux-gnueabihf
           - pair:
-              arch_name: ppc64le
-              deb_arch: ppc64le
-              cmake_toolchain_file: cc_toolchain/linux-ppc64le.cmake
+              arch: ppc64le-linux-gnu
+              cmake_toolchain_file: cc_toolchain/ppc64le-linux-gnu.cmake
               c_compiler: gcc-powerpc64le-linux-gnu
               cpp_compiler: g++-powerpc64le-linux-gnu
           - pair:
-              arch_name: s390x
-              deb_arch: s390x
-              cmake_toolchain_file: cc_toolchain/linux-s390x.cmake
+              arch: s390x-linux-gnu
+              cmake_toolchain_file: cc_toolchain/s390x-linux-gnu.cmake
               c_compiler: gcc-s390x-linux-gnu
               cpp_compiler: g++-s390x-linux-gnu
           - pair:
-              arch_name: riscv64
-              deb_arch: riscv64
-              cmake_toolchain_file: cc_toolchain/linux-riscv64.cmake
+              arch: riscv64-linux-gnu
+              cmake_toolchain_file: cc_toolchain/riscv64-linux-gnu.cmake
               c_compiler: gcc-riscv64-linux-gnu
               cpp_compiler: g++-riscv64-linux-gnu
 
@@ -59,7 +50,7 @@ jobs:
 
       - uses: erlef/setup-beam@v1
         with:
-          otp-version: "25.0.2"
+          otp-version: "25.0.4"
           elixir-version: "1.13.4"
 
       - name: Install system dependecies
@@ -86,7 +77,7 @@ jobs:
         id: cache-mix-compile
         uses: actions/cache@v3
         with:
-          key: precompile-${{ runner.os }}-${{ matrix.pair.arch_name }}-${{ hashFiles('cc_toolchain/**') }}-${{ hashFiles('c_src/**') }}-${{ hashFiles('CMakeLists.txt') }}-${{ hashFiles('Makefile') }}-${{ env.OPENCV_VER }}
+          key: precompile-${{ runner.os }}-${{ matrix.pair.arch }}-${{ hashFiles('cc_toolchain/**') }}-${{ hashFiles('c_src/**') }}-${{ hashFiles('CMakeLists.txt') }}-${{ hashFiles('Makefile') }}-${{ env.OPENCV_VER }}
           path: |
             ./_build
             ./c_src/headers.txt
@@ -102,7 +93,7 @@ jobs:
           echo "CMAKE_TOOLCHAIN_FILE: ${CMAKE_TOOLCHAIN_FILE}"
           rm -f _build/dev/lib/evision/priv/evision.so
           mix compile
-          export PKG_NAME=evision-linux-${{ matrix.pair.arch_name }}-${GITHUB_REF##*/v}
+          export PKG_NAME=evision-${{ matrix.pair.arch }}-${GITHUB_REF##*/v}
           mkdir -p "${PKG_NAME}"
           cp -a _build/dev/lib/evision/priv "${PKG_NAME}"
           cp -a lib/generated "${PKG_NAME}/elixir_generated"

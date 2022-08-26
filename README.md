@@ -1,16 +1,22 @@
 # evision [WIP]
 
-| OS               | arch           | Build Status | Has Precompiled Library |
-|------------------|----------------|--------------|-------------------------|
-| Linux            | x86_64         | [![CI](https://github.com/cocoa-xu/evision/actions/workflows/linux-x86_64.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/linux-x86_64.yml) | Yes |
-| Linux            | arm64          | [![linux-precompile](https://github.com/cocoa-xu/evision/actions/workflows/linux-precompile.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/linux-precompile.yml) | Yes |
-| Linux            | armv7l (armhf) | [![linux-precompile](https://github.com/cocoa-xu/evision/actions/workflows/linux-precompile.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/linux-precompile.yml) | Yes |
-| Linux            | ppc64le        | [![linux-precompile](https://github.com/cocoa-xu/evision/actions/workflows/linux-precompile.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/linux-precompile.yml) | Yes |
-| Linux            | s390x          | [![linux-precompile](https://github.com/cocoa-xu/evision/actions/workflows/linux-precompile.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/linux-precompile.yml) | Yes |
-| Linux            | riscv64        | [![linux-precompile](https://github.com/cocoa-xu/evision/actions/workflows/linux-precompile.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/linux-precompile.yml) | Yes |
-| macOS 11 Big Sur | x86_64         | [![CI](https://github.com/cocoa-xu/evision/actions/workflows/macos-x86_64.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/macos-x86_64.yml) | Yes |
-| macOS 11 Big Sur | arm64          | [![macos-precompile](https://github.com/cocoa-xu/evision/actions/workflows/macos-precompile.yml/badge.svg?branch=v0.1.1)](https://github.com/cocoa-xu/evision/actions/workflows/macos-precompile.yml) | Yes |
-| Windows 2019     | x86_64         | [![CI](https://github.com/cocoa-xu/evision/actions/workflows/windows-x86_64.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/windows-x86_64.yml) | Yes |
+| OS               | Arch           | ABI  | Build Status | Has Precompiled Library |
+|------------------|----------------|------|--------------|-------------------------|
+| Linux            | x86_64         | gnu  |[![CI](https://github.com/cocoa-xu/evision/actions/workflows/linux-x86_64.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/linux-x86_64.yml) | Yes |
+| Linux            | x86_64         | musl |[![CI](https://github.com/cocoa-xu/evision/actions/workflows/linux-precompile-musl.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/linux-precompile-musl.yml) | Yes |
+| Linux            | arm64          | gnu  |[![linux-precompile](https://github.com/cocoa-xu/evision/actions/workflows/linux-precompile-gnu.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/linux-precompile-gnu.yml) | Yes |
+| Linux            | arm64          | musl |[![linux-precompile](https://github.com/cocoa-xu/evision/actions/workflows/linux-precompile-musl.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/linux-precompile-musl.yml) | Yes |
+| Linux            | armv7l (armhf) | gnu  |[![linux-precompile](https://github.com/cocoa-xu/evision/actions/workflows/linux-precompile-gnu.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/linux-precompile-gnu.yml) | Yes |
+| Linux            | armv7l (armhf) | musl |[![linux-precompile](https://github.com/cocoa-xu/evision/actions/workflows/linux-precompile-musl.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/linux-precompile-musl.yml) | Yes |
+| Linux            | ppc64le        | gnu  |[![linux-precompile](https://github.com/cocoa-xu/evision/actions/workflows/linux-precompile-gnu.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/linux-precompile-gnu.yml) | Yes |
+| Linux            | ppc64le        | musl |[![linux-precompile](https://github.com/cocoa-xu/evision/actions/workflows/linux-precompile-musl.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/linux-precompile-musl.yml) | Yes |
+| Linux            | s390x          | gnu  |[![linux-precompile](https://github.com/cocoa-xu/evision/actions/workflows/linux-precompile-gnu.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/linux-precompile-gnu.yml) | Yes |
+| Linux            | s390x          | musl |[![linux-precompile](https://github.com/cocoa-xu/evision/actions/workflows/linux-precompile-musl.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/linux-precompile-musl.yml) | Yes |
+| Linux            | riscv64        | gnu  |[![linux-precompile](https://github.com/cocoa-xu/evision/actions/workflows/linux-precompile-gnu.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/linux-precompile-gnu.yml) | Yes |
+| Linux            | riscv64        | musl |[![linux-precompile](https://github.com/cocoa-xu/evision/actions/workflows/linux-precompile-musl.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/linux-precompile-musl.yml) | Yes |
+| macOS 11 Big Sur | x86_64         | darwin |[![CI](https://github.com/cocoa-xu/evision/actions/workflows/macos-x86_64.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/macos-x86_64.yml) | Yes |
+| macOS 11 Big Sur | arm64          | darwin |[![macos-precompile](https://github.com/cocoa-xu/evision/actions/workflows/macos-precompile.yml/badge.svg?branch=v0.1.1)](https://github.com/cocoa-xu/evision/actions/workflows/macos-precompile.yml) | Yes |
+| Windows 2019     | x86_64         | msvc |[![CI](https://github.com/cocoa-xu/evision/actions/workflows/windows-x86_64.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/windows-x86_64.yml) | Yes |
 
 ## Docs
 Online docs is available here, [https://cocoa-xu.github.io/evision](https://cocoa-xu.github.io/evision/doc/OpenCV.html).
@@ -106,6 +112,13 @@ export EVISION_PREFER_PRECOMPILED=true
 # optional.
 ## set the cache directory for the precompiled archive file
 export EVISION_PRECOMPILED_CACHE_DIR="$(pwd)/.cache"
+
+# optional.
+## for linux system with musl libc only:
+## for nerves project, this environment variable is set by nerves
+export TARGET_ABI=musl
+## (for armv7l which uses hard-float ABI (armhf))
+export TARGET_ABI=musleabihf
 ```
 
 Note 1: Precompiled binaries does not use FFmpeg. If you'd like to use FFmpeg, please compile from source and set corresponding environment variables.
@@ -370,7 +383,7 @@ Say you have the following MIX environment variables:
 # set by MIX
 MIX_ENV=dev
 # set by evision or you
-OPENCV_VER=4.5.5
+OPENCV_VER=4.6.0
 # set by yourself if you're compiling evision to a nerves firmware
 MIX_TARGET=rpi4
 ```
@@ -463,8 +476,8 @@ colour_blur_mat = Cv.blur!(colour_mat, [10,10], anchor: [1,1])
 ## capture from video file/camera
 cap = Cv.VideoCapture.videoCapture!(0)
 cap_mat = Cv.VideoCapture.read!(cap)
-:ok = OpenCV.imwrite("/path/exists/capture-mat.png", cap_mat)
-:error = OpenCV.imwrite("/path/not/exists/capture-mat.png", cap_mat)
+:ok = Cv.imwrite("/path/exists/capture-mat.png", cap_mat)
+:error = Cv.imwrite("/path/not/exists/capture-mat.png", cap_mat)
 
 ## to_binary/from_binary
 mat = Cv.imread!("/path/to/img.jpg")

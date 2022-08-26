@@ -1,37 +1,34 @@
-name: macos-precompile
+name: linux-precompile-musl
 
 on:
   push:
     tags:
-      - '*-dev'
-      - '*-prod'
-      - '*-dev-macos'
       - 'v*'
 
 jobs:
   mix_test:
-    runs-on: macos-11
+    runs-on: ubuntu-20.04
     env:
-      MIX_ENV: dev
-      OPENCV_VER: "4.5.5"
+      OPENCV_VER: "4.6.0"
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - pair:
-              arch: x86_64
-          - pair:
-              arch: arm64
+        arch: [x86_64-linux-musl, aarch64-linux-musl, armv7l-linux-musleabihf, ppc64le-linux-musl, s390x-linux-musl, riscv64-linux-musl]
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v2
 
-      - name: Install Erlang and Elixir
+      - uses: erlef/setup-beam@v1
+        with:
+          otp-version: "25.0.4"
+          elixir-version: "1.13.4"
+      
+      - uses: goto-bus-stop/setup-zig@v1
+
+      - name: Install system dependecies
         run: |
-          brew install erlang
-          brew install elixir
-          mix local.hex --force
-          mix local.rebar --force
+          sudo apt-get update
+          sudo apt-get install -y build-essential automake autoconf pkg-config bc m4 unzip zip curl git libssl-dev gzip libncurses5-dev python3 ca-certificates
 
       - name: Cache mix packages and OpenCV
         id: cache-mix-and-opencv
@@ -52,7 +49,7 @@ jobs:
         id: cache-mix-compile
         uses: actions/cache@v3
         with:
-          key: precompile-${{ runner.os }}-${{ matrix.pair.arch }}-${{ hashFiles('cc_toolchain/**') }}-${{ hashFiles('c_src/**') }}-${{ hashFiles('CMakeLists.txt') }}-${{ hashFiles('Makefile') }}-${{ env.OPENCV_VER }}
+          key: precompile-${{ runner.os }}-${{ matrix.arch }}-${{ hashFiles('cc_toolchain/**') }}-${{ hashFiles('c_src/**') }}-${{ hashFiles('CMakeLists.txt') }}-${{ hashFiles('Makefile') }}-${{ env.OPENCV_VER }}
           path: |
             ./_build
             ./c_src/headers.txt
@@ -62,16 +59,13 @@ jobs:
 
       - name: Create precompiled library
         run: |
-          if [ "${{ matrix.pair.arch }}" = "arm64" ]; then
-            export CMAKE_OPENCV_OPTIONS="-D WITH_IPP=OFF -D CMAKE_OSX_ARCHITECTURES=arm64"
-            export CMAKE_EVISION_OPTIONS="-D CMAKE_OSX_ARCHITECTURES=arm64"
-          fi
-
-          mix deps.get
+          export CMAKE_TOOLCHAIN_FILE="$(pwd)/cc_toolchain/${{ matrix.arch }}.cmake"
+          echo "CMAKE_TOOLCHAIN_FILE: ${CMAKE_TOOLCHAIN_FILE}"
+          rm -f _build/dev/lib/evision/priv/evision.so
           mix compile
-          export PKG_NAME=evision-${{ matrix.pair.arch }}-apple-darwin-${GITHUB_REF##*/v}
+          export PKG_NAME=evision-${{ matrix.arch }}-${GITHUB_REF##*/v}
           mkdir -p "${PKG_NAME}"
-          cp -a _build/${MIX_ENV}/lib/evision/priv "${PKG_NAME}"
+          cp -a _build/dev/lib/evision/priv "${PKG_NAME}"
           cp -a lib/generated "${PKG_NAME}/elixir_generated"
           cp -a src/generated "${PKG_NAME}/erlang_generated"
           tar -czf "${PKG_NAME}.tar.gz" "${PKG_NAME}"

@@ -1,5 +1,5 @@
 #
-# CMake Toolchain file for cross-compiling for s390x on Linux (ubuntu 20.04).
+# CMake Toolchain file for cross-compiling for s390x-linux-gnu.
 #
 set(CMAKE_SYSTEM_NAME Linux)
 set(CMAKE_SYSTEM_PROCESSOR s390x)
