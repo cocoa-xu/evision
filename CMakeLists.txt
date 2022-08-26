@@ -188,7 +188,6 @@ else()
 
     if(UNIX AND NOT APPLE)
         set_target_properties(evision PROPERTIES INSTALL_RPATH "\$ORIGIN/lib")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-but-set-variable")
     elseif(UNIX AND APPLE)
         # Although the compiler complains about not using these,
         # things only work with them set
