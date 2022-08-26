@@ -85,15 +85,20 @@ jobs:
             ./c_src/configuration.private.hpp
             ./lib
             ./src
-
-      - name: Create precompiled library
+      
+      - name: Mix compile
+        if: steps.cache-mix-compile.outputs.cache-hit != 'true'
         run: |
           if [ "${{ matrix.pair.cmake_toolchain_file }}" != "" ]; then
             export CMAKE_TOOLCHAIN_FILE="$(pwd)/${{ matrix.pair.cmake_toolchain_file }}"
           fi
           echo "CMAKE_TOOLCHAIN_FILE: ${CMAKE_TOOLCHAIN_FILE}"
           rm -f _build/${MIX_ENV}/lib/evision/priv/evision.so
+          mix deps.get
           mix compile
+
+      - name: Create precompiled library
+        run: |
           export PKG_NAME=evision-${{ matrix.pair.arch }}-${GITHUB_REF##*/v}
           mkdir -p "${PKG_NAME}"
           cp -a _build/${MIX_ENV}/lib/evision/priv "${PKG_NAME}"
