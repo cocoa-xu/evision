@@ -9,12 +9,22 @@ defmodule Evision.MixProject do
   @opencv_version "4.6.0"
   # only means compatible. need to write more tests
   @compatible_opencv_versions ["4.5.3", "4.5.4", "4.5.5", "4.6.0"]
-  @source_url "#{@github_url}/tree/#{@opencv_version}"
+  @source_url "#{@github_url}/tree/v#{@last_released_version}"
 
   def project do
     {cmake_options, enabled_modules} = generate_cmake_options()
     opencv_ver = opencv_versions(System.get_env("OPENCV_VER", @opencv_version))
     ninja = System.find_executable("ninja")
+    {compiler, _} = :erlang.system_info(:c_compiler_used)
+    target_abi =
+      case compiler do
+        :gnuc ->
+          "gnu"
+        :msc ->
+          "msvc"
+        _ ->
+          to_string(compiler)
+      end
 
     [
       app: @app,
@@ -24,7 +34,6 @@ defmodule Evision.MixProject do
       deps: deps(),
       docs: docs(),
       compilers: [:elixir_make] ++ Mix.compilers(),
-      elixirc_paths: elixirc_paths(Mix.env()),
       source_url: @github_url,
       description: description(),
       package: package(),
@@ -38,7 +47,8 @@ defmodule Evision.MixProject do
         "CMAKE_OPTIONS" => cmake_options,
         "ENABLED_CV_MODULES" => enabled_modules,
         "EVISION_PREFER_PRECOMPILED" => System.get_env("EVISION_PREFER_PRECOMPILED", "false"),
-        "EVISION_PRECOMPILED_VERSION" => @last_released_version
+        "EVISION_PRECOMPILED_VERSION" => @last_released_version,
+        "TARGET_ABI" => System.get_env("TARGET_ABI", target_abi)
       }
     ]
   end
@@ -75,11 +85,9 @@ defmodule Evision.MixProject do
 
   def application do
     [
-      extra_applications: [:logger, :ssl]
+      extra_applications: [:logger]
     ]
   end
-
-  defp elixirc_paths(_), do: ~w(lib)
 
   @all_modules [
     :calib3d,
