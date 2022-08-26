@@ -19,7 +19,7 @@ std::vector<size_t> transpose_axes(uint64_t ndims, size_t * axes,
 
     max_axis = ndims;
     for (int64_t i = ndims - 1; i >= 0; i--) {
-        if (axes[i] == i) {
+        if ((int64_t)axes[i] == i) {
             max_axis = i;
         } else {
             max_axis -= 1;

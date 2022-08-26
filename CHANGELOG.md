@@ -2,7 +2,7 @@
 
 ## v0.1.2-dev
 - Added x86_64 musl compilation CI test.
-- Fix transpose.
+- Fixed transpose.
 - Added a few precompilation musl targets:
   - x86_64-linux-musl
   - aarch64-linux-musl
