@@ -121,6 +121,21 @@ export TARGET_ABI=musl
 export TARGET_ABI=musleabihf
 ```
 
+The default value for the `TARGET_ABI` env var is set using the following elixir code
+
+```elixir
+{compiler, _} = :erlang.system_info(:c_compiler_used)
+target_abi =
+  case compiler do
+    :gnuc ->
+      "gnu"
+    :msc ->
+      "msvc"
+    _ ->
+      to_string(compiler)
+  end
+```
+
 Note 1: Precompiled binaries does not use FFmpeg. If you'd like to use FFmpeg, please compile from source and set corresponding environment variables.
 
 Note 2: by default, Evision will compile from source as it's WIP at the moment.
