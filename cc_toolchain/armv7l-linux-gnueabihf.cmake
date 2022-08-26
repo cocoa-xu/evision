@@ -1,5 +1,5 @@
 #
-# CMake Toolchain file for cross-compiling for armv7l on Linux (ubuntu 20.04).
+# CMake Toolchain file for cross-compiling for armv7l-linux-gnueabihf.
 #
 set(CMAKE_SYSTEM_NAME Linux)
 set(CMAKE_SYSTEM_PROCESSOR armv7l)

@@ -1,5 +1,5 @@
 #
-# CMake Toolchain file for cross-compiling for ppc64le on Linux (ubuntu 20.04).
+# CMake Toolchain file for cross-compiling for ppc64le-linux-gnu.
 #
 set(CMAKE_SYSTEM_NAME Linux)
 set(CMAKE_SYSTEM_PROCESSOR ppc64le)
