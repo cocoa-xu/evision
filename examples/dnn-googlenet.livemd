@@ -21,7 +21,7 @@
 # you can comment out the following installation step
 Mix.install([
   {:nx, "~> 0.3"},
-  {:evision, "~> 0.1.1", github: "cocoa-xu/evision", tag: "v0.1.1"}
+  {:evision, "~> 0.1.2", github: "cocoa-xu/evision", tag: "v0.1.2"}
 ])
 ```
 

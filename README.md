@@ -88,7 +88,7 @@ In general, you can add `evision` to `deps` with the following settings.
 ```elixir
 def deps do
   [
-    {:evision, "~> 0.1.1", github: "cocoa-xu/evision", tag: "v0.1.1"}
+    {:evision, "~> 0.1.2", github: "cocoa-xu/evision", tag: "v0.1.2"}
   ]
 end
 ```
@@ -102,9 +102,9 @@ To use precompiled Evision library, the following environment variables should b
 # required 
 # set this to true if prefer to use precompiled library
 #
-# currently "0.1.1" is available
-# the version is implied by the tag:
-#   {:evision, "~> 0.1.1", github: "cocoa-xu/evision", tag: "v0.1.1"}
+# currently "0.1.1" and "0.1.2" are available
+# the version is implied by the tag in deps:
+#   {:evision, "~> 0.1.2", github: "cocoa-xu/evision", tag: "v0.1.2"}
 # for other available versions, please check the GitHub release page
 # https://github.com/cocoa-xu/evision/releases
 export EVISION_PREFER_PRECOMPILED=true
@@ -265,7 +265,7 @@ Then you can add `evision` as dependency in your `mix.exs`. At the moment you wi
 ```elixir
 def deps do
   [
-    {:evision, "~> 0.1.1", github: "cocoa-xu/evision", tag: "v0.1.1"}
+    {:evision, "~> 0.1.2", github: "cocoa-xu/evision", tag: "v0.1.2"}
   ]
 end
 ```

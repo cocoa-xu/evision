@@ -9,8 +9,8 @@ jobs:
   mix_test:
     runs-on: windows-latest
     env:
-      MIX_ENV: dev
-      EVISION_VERSION: "0.1.1"
+      MIX_ENV: prod
+      EVISION_VERSION: "0.1.2"
       OPENCV_VER: "4.6.0"
 
     steps:

@@ -3,6 +3,7 @@ name: linux-x86_64
 on:
   pull_request:
     paths-ignore:
+      - '*.md'
       - '**/*.md'
       - 'LICENSE*'
       - 'examples/**'
@@ -27,6 +28,7 @@ on:
       - test-*
       - fix-*
     paths-ignore:
+      - '*.md'
       - '**/*.md'
       - 'LICENSE*'
       - 'examples/**'

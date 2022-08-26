@@ -3,6 +3,7 @@ name: nerves-build
 on:
   pull_request:
     paths-ignore:
+      - '*.md'
       - '**/*.md'
       - 'LICENSE*'
       - 'examples/**'
@@ -19,6 +20,7 @@ on:
       - main
       - nerves-*
     paths-ignore:
+      - '*.md'
       - '**/*.md'
       - 'LICENSE*'
       - 'examples/**'

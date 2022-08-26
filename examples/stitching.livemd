@@ -18,7 +18,7 @@
 # If you are using the pre-built nerves firmware
 # you can comment out the following installation step
 Mix.install([
-  {:evision, "~> 0.1.1", github: "cocoa-xu/evision", tag: "v0.1.1"}
+  {:evision, "~> 0.1.2", github: "cocoa-xu/evision", tag: "v0.1.2"}
   {:kino, "~> 0.6"}
 ])
 ```

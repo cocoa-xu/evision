@@ -1,6 +1,6 @@
 # Changelog
 
-## v0.1.2-dev
+## v0.1.2 (2022-08-26)
 - Added x86_64 musl compilation CI test.
 - Fixed transpose.
 - Added a few precompilation musl targets:
