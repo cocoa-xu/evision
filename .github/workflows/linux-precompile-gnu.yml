@@ -10,6 +10,7 @@ jobs:
     runs-on: ubuntu-20.04
     env:
       OPENCV_VER: "4.6.0"
+      MIX_ENV: prod
     strategy:
       fail-fast: false
       matrix:
@@ -91,11 +92,11 @@ jobs:
             export CMAKE_TOOLCHAIN_FILE="$(pwd)/${{ matrix.pair.cmake_toolchain_file }}"
           fi
           echo "CMAKE_TOOLCHAIN_FILE: ${CMAKE_TOOLCHAIN_FILE}"
-          rm -f _build/dev/lib/evision/priv/evision.so
+          rm -f _build/${MIX_ENV}/lib/evision/priv/evision.so
           mix compile
           export PKG_NAME=evision-${{ matrix.pair.arch }}-${GITHUB_REF##*/v}
           mkdir -p "${PKG_NAME}"
-          cp -a _build/dev/lib/evision/priv "${PKG_NAME}"
+          cp -a _build/${MIX_ENV}/lib/evision/priv "${PKG_NAME}"
           cp -a lib/generated "${PKG_NAME}/elixir_generated"
           cp -a src/generated "${PKG_NAME}/erlang_generated"
           tar -czf "${PKG_NAME}.tar.gz" "${PKG_NAME}"

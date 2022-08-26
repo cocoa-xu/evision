@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-20.04
     container: alpine:latest
     env:
-      MIX_ENV: dev
+      MIX_ENV: prod
       OPENCV_VER: "4.6.0"
     steps:
       - uses: actions/checkout@v3
@@ -76,7 +76,7 @@ jobs:
           export PKG_NAME=evision-x86_64-linux-musl-${GITHUB_REF##*/v}
           export PATH="${PATH}:${HOME}/.elixir/elixir-${ELIXIR_VER}/bin"
           mkdir -p "${PKG_NAME}"
-          cp -a _build/prod/lib/evision/priv "${PKG_NAME}"
+          cp -a _build/${MIX_ENV}/lib/evision/priv "${PKG_NAME}"
           cp -a lib/generated "${PKG_NAME}/elixir_generated"
           cp -a src/generated "${PKG_NAME}/erlang_generated"
           tar -czf "${PKG_NAME}.tar.gz" "${PKG_NAME}"
@@ -93,6 +93,7 @@ jobs:
     runs-on: ubuntu-20.04
     env:
       OPENCV_VER: "4.6.0"
+      MIX_ENV: prod
     strategy:
       fail-fast: false
       matrix:
@@ -150,14 +151,14 @@ jobs:
           export CMAKE_TOOLCHAIN_FILE="$(pwd)/cc_toolchain/${{ matrix.arch }}.cmake"
           echo "CMAKE_TOOLCHAIN_FILE: ${CMAKE_TOOLCHAIN_FILE}"
           export ZIG_TOOLCHAIN_PATH="$(which zig)"
-          rm -f _build/dev/lib/evision/priv/evision.so
+          rm -f _build/${MIX_ENV}/lib/evision/priv/evision.so
           mix compile
 
       - name: Create precompiled library
         run: |
           export PKG_NAME=evision-${{ matrix.arch }}-${GITHUB_REF##*/v}
           mkdir -p "${PKG_NAME}"
-          cp -a _build/dev/lib/evision/priv "${PKG_NAME}"
+          cp -a _build/${MIX_ENV}/lib/evision/priv "${PKG_NAME}"
           cp -a lib/generated "${PKG_NAME}/elixir_generated"
           cp -a src/generated "${PKG_NAME}/erlang_generated"
           tar -czf "${PKG_NAME}.tar.gz" "${PKG_NAME}"
