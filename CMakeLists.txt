@@ -143,6 +143,10 @@ else()
     find_package(OpenCV REQUIRED PATHS "${PRIV_DIR}/" NO_DEFAULT_PATH)
     include_directories("${OpenCV_INCLUDE_DIRS}")
 
+    if(POLICY CMP0068)
+        cmake_policy(SET CMP0068 NEW)
+    endif()
+
     if(WIN32)
         execute_process(COMMAND "rmdir ${GENERATED_ELIXIR_SRC_DIR} /s /q && rmdir ${GENERATED_ERLANG_SRC_DIR} /s /q  && mkdir ${GENERATED_ELIXIR_SRC_DIR} && mkdir ${GENERATED_ERLANG_SRC_DIR}")
         message("enabled modules: ${ENABLED_CV_MODULES}")
@@ -177,9 +181,6 @@ else()
     set_target_properties(evision PROPERTIES PREFIX "")
     set_target_properties(evision PROPERTIES SUFFIX ".so")
 
-    if(${CMAKE_VERSION} VERSION_GREATER "3.9")
-        cmake_policy(SET CMP0068 NEW)
-    endif()
     set_target_properties(evision PROPERTIES
         INSTALL_RPATH_USE_LINK_PATH TRUE
         BUILD_WITH_INSTALL_RPATH TRUE
