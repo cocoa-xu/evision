@@ -1,8 +1,15 @@
 # Changelog
 
 ## v0.1.2-dev
-- Add x86_64 musl compilation CI test.
+- Added x86_64 musl compilation CI test.
 - Fix transpose.
+- Added a few precompilation musl targets:
+  - x86_64-linux-musl
+  - aarch64-linux-musl
+  - armv7l-linux-musleabihf
+  - riscv64-linux-musl
+  - ppc64le-linux-musl
+  - s390x-linux-musl
 
 ## v0.1.1 (2022-08-25)
 - Use OpenCV 4.6.0 by default.
