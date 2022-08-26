@@ -35,8 +35,7 @@ defmodule Evision.DNN.Test do
           255
         ])
 
-      {:ok, mat} =
-        Cv.putText(mat, text, [l, top], Cv.cv_FONT_HERSHEY_SIMPLEX(), 0.5, [0, 0, 255])
+      {:ok, mat} = Cv.putText(mat, text, [l, top], Cv.cv_FONT_HERSHEY_SIMPLEX(), 0.5, [0, 0, 255])
 
       _visualise_pred(mat, labels, outs)
     end
@@ -112,8 +111,7 @@ defmodule Evision.DNN.Test do
       {:ok, mat} = Cv.imread(image_file)
       {:ok, blob} = Cv.DNN.blobFromImage(mat, opts)
 
-      {:ok, model} =
-        Cv.DNN.Net.setInput(model, blob, name: "", scalefactor: 1.0, mean: [0, 0, 0])
+      {:ok, model} = Cv.DNN.Net.setInput(model, blob, name: "", scalefactor: 1.0, mean: [0, 0, 0])
 
       start_time = :os.system_time(:millisecond)
       {:ok, detections} = Cv.DNN.Net.forward(model, outBlobNames: out_names)

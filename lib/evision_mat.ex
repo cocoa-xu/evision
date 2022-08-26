@@ -62,7 +62,8 @@ defmodule Evision.Mat do
   deferror(subtract(lhs, rhs))
 
   @doc namespace: :"cv.Mat"
-  @spec subtract(reference(), reference(), mat_type()) :: {:ok, reference()} | {:error, String.t()}
+  @spec subtract(reference(), reference(), mat_type()) ::
+          {:ok, reference()} | {:error, String.t()}
   def subtract(lhs, rhs, type) when is_reference(lhs) and is_reference(rhs) do
     {t, l} = check_unsupported_type(type)
     :evision_nif.mat_subtract_typed(lhs: lhs, rhs: rhs, t: t, l: l)
@@ -79,7 +80,8 @@ defmodule Evision.Mat do
   deferror(multiply(lhs, rhs))
 
   @doc namespace: :"cv.Mat"
-  @spec multiply(reference(), reference(), mat_type()) :: {:ok, reference()} | {:error, String.t()}
+  @spec multiply(reference(), reference(), mat_type()) ::
+          {:ok, reference()} | {:error, String.t()}
   def multiply(lhs, rhs, type) when is_reference(lhs) and is_reference(rhs) do
     {t, l} = check_unsupported_type(type)
     :evision_nif.mat_multiply_typed(lhs: lhs, rhs: rhs, t: t, l: l)
@@ -88,8 +90,10 @@ defmodule Evision.Mat do
   deferror(multiply(lhs, rhs, type))
 
   @doc namespace: :"cv.Mat"
-  @spec matrix_multiply(reference(), reference(), mat_type()|nil) :: {:ok, reference()} | {:error, String.t()}
-  def matrix_multiply(lhs, rhs, out_type = {t, l} \\ nil) when is_reference(lhs) and is_reference(rhs) do
+  @spec matrix_multiply(reference(), reference(), mat_type() | nil) ::
+          {:ok, reference()} | {:error, String.t()}
+  def matrix_multiply(lhs, rhs, out_type = {t, l} \\ nil)
+      when is_reference(lhs) and is_reference(rhs) do
     if out_type == nil do
       :evision_nif.mat_matrix_multiply(lhs: lhs, rhs: rhs, t: nil, l: 0)
     else
@@ -143,7 +147,8 @@ defmodule Evision.Mat do
 
   @doc namespace: :"cv.Mat"
   @spec cmp(reference(), reference(), atom()) :: {:ok, reference()} | {:error, String.t()}
-  def cmp(lhs, rhs, op) when is_reference(lhs) and is_reference(rhs) and op in [:eq, :gt, :ge, :lt, :le, :ne] do
+  def cmp(lhs, rhs, op)
+      when is_reference(lhs) and is_reference(rhs) and op in [:eq, :gt, :ge, :lt, :le, :ne] do
     :evision_nif.mat_cmp(l: lhs, r: rhs, type: op)
   end
 
@@ -191,8 +196,9 @@ defmodule Evision.Mat do
 
   @doc namespace: :"cv.Mat"
   @spec clip(reference(), number(), number()) :: {:ok, reference()} | {:error, String.t()}
-  def clip(mat, lower, upper) when is_reference(mat) and is_number(lower) and
-                                   is_number(upper) and lower <= upper do
+  def clip(mat, lower, upper)
+      when is_reference(mat) and is_number(lower) and
+             is_number(upper) and lower <= upper do
     :evision_nif.mat_clip(img: mat, lower: lower, upper: upper)
   end
 
@@ -217,28 +223,35 @@ defmodule Evision.Mat do
           When specified, it combines the reshape and transpose operation in a single NIF call.
 
   """
-  @spec transpose(reference(), [non_neg_integer()], keyword()) :: {:ok, reference()} | {:error, String.t()}
+  @spec transpose(reference(), [non_neg_integer()], keyword()) ::
+          {:ok, reference()} | {:error, String.t()}
   def transpose(mat, axes, opts \\ []) do
     as_shape = opts[:as_shape] || shape(mat)
+
     as_shape =
       case is_tuple(as_shape) do
         true ->
           Tuple.to_list(as_shape)
+
         _ ->
           as_shape
       end
+
     ndims = Enum.count(as_shape)
+
     uniq_axes =
       Enum.uniq(axes)
       |> Enum.reject(fn axis ->
         axis < 0 or axis > ndims
       end)
+
     if Enum.count(uniq_axes) != ndims do
       {:error, "invalid transpose axes #{inspect(axes)} for shape #{inspect(as_shape)}"}
     else
       :evision_nif.mat_transpose(img: mat, axes: uniq_axes, as_shape: as_shape)
     end
   end
+
   deferror(transpose(mat, axes, opts))
 
   @doc """
@@ -254,9 +267,10 @@ defmodule Evision.Mat do
   def transpose(mat) do
     as_shape = shape(mat)
     ndims = Enum.count(as_shape)
-    uniq_axes = Enum.reverse(0..ndims-1)
+    uniq_axes = Enum.reverse(0..(ndims - 1))
     :evision_nif.mat_transpose(img: mat, axes: uniq_axes, as_shape: as_shape)
   end
+
   deferror(transpose(mat))
 
   @doc namespace: :"cv.Mat"
@@ -271,10 +285,12 @@ defmodule Evision.Mat do
   @spec bitwise_not(reference()) :: {:ok, reference()} | {:error, String.t()}
   def bitwise_not(mat) when is_reference(mat) do
     type = {s, _} = Evision.Mat.type!(mat)
+
     if s in [:s, :u] do
       :evision_nif.mat_bitwise_not(img: mat)
     else
-      {:error, "bitwise operators expect integer tensors as inputs and outputs an integer tensor, got: #{inspect(type)}"}
+      {:error,
+       "bitwise operators expect integer tensors as inputs and outputs an integer tensor, got: #{inspect(type)}"}
     end
   end
 
@@ -354,6 +370,7 @@ defmodule Evision.Mat do
   @doc namespace: :"cv.Mat"
   def zeros(shape, type) when is_tuple(shape) do
     {t, l} = check_unsupported_type(type)
+
     :evision_nif.mat_zeros(
       shape: Tuple.to_list(shape),
       t: t,
@@ -366,6 +383,7 @@ defmodule Evision.Mat do
   @doc namespace: :"cv.Mat"
   def ones(shape, type) when is_tuple(shape) do
     {t, l} = check_unsupported_type(type)
+
     :evision_nif.mat_ones(
       shape: Tuple.to_list(shape),
       t: t,
@@ -377,13 +395,15 @@ defmodule Evision.Mat do
 
   def arange(from, to, step, type) when step != 0 do
     {t, l} = check_unsupported_type(type)
-    with {:ok, mat} <- :evision_nif.mat_arange(
-      from: from,
-      to: to,
-      step: step,
-      t: t,
-      l: l
-    ) do
+
+    with {:ok, mat} <-
+           :evision_nif.mat_arange(
+             from: from,
+             to: to,
+             step: step,
+             t: t,
+             l: l
+           ) do
       {length, _} = Evision.Mat.shape!(mat)
       Evision.Mat.reshape(mat, {1, length})
     else
@@ -395,13 +415,15 @@ defmodule Evision.Mat do
 
   def arange(from, to, step, type, shape) when step != 0 do
     {t, l} = check_unsupported_type(type)
-    with {:ok, mat} <- :evision_nif.mat_arange(
-      from: from,
-      to: to,
-      step: step,
-      t: t,
-      l: l
-    ) do
+
+    with {:ok, mat} <-
+           :evision_nif.mat_arange(
+             from: from,
+             to: to,
+             step: step,
+             t: t,
+             l: l
+           ) do
       Evision.Mat.reshape(mat, shape)
     else
       error -> error
@@ -412,6 +434,7 @@ defmodule Evision.Mat do
 
   def full(shape, number, type) do
     {t, l} = check_unsupported_type(type)
+
     :evision_nif.mat_full(
       number: number,
       t: t,
@@ -431,25 +454,41 @@ defmodule Evision.Mat do
   deferror(clone(mat))
 
   @doc namespace: :"cv.Mat"
-  @spec empty() :: :ok, reference()
+  @spec(empty() :: :ok, reference())
   def empty() do
     :evision_nif.mat_empty()
   end
 
   deferror(empty())
 
-  @spec to_batched(reference(), pos_integer(), keyword()) :: {:ok, [reference()]} | {:error,  String.t()}
-  def to_batched(mat, batch_size, opts) when is_integer(batch_size) and batch_size >= 1 and is_list(opts) do
+  @spec to_batched(reference(), pos_integer(), keyword()) ::
+          {:ok, [reference()]} | {:error, String.t()}
+  def to_batched(mat, batch_size, opts)
+      when is_integer(batch_size) and batch_size >= 1 and is_list(opts) do
     leftover = opts[:leftover] || :repeat
-    :evision_nif.mat_to_batched(img: mat, batch_size: batch_size, as_shape: shape!(mat), leftover: leftover)
+
+    :evision_nif.mat_to_batched(
+      img: mat,
+      batch_size: batch_size,
+      as_shape: shape!(mat),
+      leftover: leftover
+    )
   end
 
   deferror(to_batched(mat, batch_size, opts))
 
-  @spec to_batched(reference(), pos_integer(), keyword()) :: {:ok, [reference()]} | {:error,  String.t()}
-  def to_batched(mat, batch_size, as_shape, opts) when is_integer(batch_size) and batch_size >= 1 and is_tuple(as_shape) and is_list(opts) do
+  @spec to_batched(reference(), pos_integer(), keyword()) ::
+          {:ok, [reference()]} | {:error, String.t()}
+  def to_batched(mat, batch_size, as_shape, opts)
+      when is_integer(batch_size) and batch_size >= 1 and is_tuple(as_shape) and is_list(opts) do
     leftover = opts[:leftover] || :repeat
-    :evision_nif.mat_to_batched(img: mat, batch_size: batch_size, as_shape: Tuple.to_list(as_shape), leftover: leftover)
+
+    :evision_nif.mat_to_batched(
+      img: mat,
+      batch_size: batch_size,
+      as_shape: Tuple.to_list(as_shape),
+      leftover: leftover
+    )
   end
 
   deferror(to_batched(mat, batch_size, as_shape, opts))
@@ -490,13 +529,13 @@ defmodule Evision.Mat do
 
   deferror(from_binary(binary, type, rows, cols, channels))
 
-  defp check_unsupported_type({:f, 32}=type), do: type
-  defp check_unsupported_type({:f, 64}=type), do: type
-  defp check_unsupported_type({:u, 8}=type), do: type
-  defp check_unsupported_type({:u, 16}=type), do: type
-  defp check_unsupported_type({:s, 8}=type), do: type
-  defp check_unsupported_type({:s, 16}=type), do: type
-  defp check_unsupported_type({:s, 32}=type), do: type
+  defp check_unsupported_type({:f, 32} = type), do: type
+  defp check_unsupported_type({:f, 64} = type), do: type
+  defp check_unsupported_type({:u, 8} = type), do: type
+  defp check_unsupported_type({:u, 16} = type), do: type
+  defp check_unsupported_type({:s, 8} = type), do: type
+  defp check_unsupported_type({:s, 16} = type), do: type
+  defp check_unsupported_type({:s, 32} = type), do: type
   defp check_unsupported_type(:f32), do: {:f, 32}
   defp check_unsupported_type(:f64), do: {:f, 64}
   defp check_unsupported_type(:u8), do: {:u, 8}
@@ -509,8 +548,10 @@ defmodule Evision.Mat do
     case type do
       {t, l} when is_atom(t) and l > 0 ->
         :ok
+
       type when is_atom(type) ->
         :ok
+
       true ->
         raise_unsupported_type(type)
     end
@@ -521,6 +562,7 @@ defmodule Evision.Mat do
       else
         _ -> :error
       end
+
     if new_type == :error do
       raise_unsupported_type(type)
     else
@@ -529,9 +571,10 @@ defmodule Evision.Mat do
   end
 
   defp raise_unsupported_type(type) do
-    raise ArgumentError, "#{inspect(type)} is not supported by OpenCV. However, it is possible to set an " <>
-                           "`unsupported_type_map` in config/config.exs to allow evision do type conversion automatically. " <>
-                           "Please see https://github.com/cocoa-xu/evision#unsupported-type-map for more details and examples."
+    raise ArgumentError,
+          "#{inspect(type)} is not supported by OpenCV. However, it is possible to set an " <>
+            "`unsupported_type_map` in config/config.exs to allow evision do type conversion automatically. " <>
+            "Please see https://github.com/cocoa-xu/evision#unsupported-type-map for more details and examples."
   end
 
   @doc namespace: :"cv.Mat"
@@ -556,6 +599,7 @@ defmodule Evision.Mat do
   @doc namespace: :"cv.Mat"
   def eye(n, type) when is_integer(n) and n > 0 do
     {t, l} = check_unsupported_type(type)
+
     :evision_nif.mat_eye(
       n: n,
       t: t,
@@ -608,5 +652,4 @@ defmodule Evision.Mat do
   end
 
   deferror(broadcast_to(mat, to_shape, force_src_shape))
-
 end
