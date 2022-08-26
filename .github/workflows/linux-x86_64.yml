@@ -46,7 +46,62 @@ on:
   workflow_dispatch:
 
 jobs:
-  mix_test:
+  musl:
+    runs-on: ubuntu-latest
+    container: alpine:latest
+    env:
+      MIX_ENV: test
+      OPENCV_VER: "4.6.0"
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install system dependecies
+        run: |
+          apk add cmake make python3 bash curl unzip gcc g++ ncurses-dev openssl-dev linux-headers perl git ffmpeg ffmpeg-dev dpkg
+          curl -fSL https://repo.uwucocoa.moe/pool/main/erlang_25.0.4_musl-linux-amd64.deb -o erlang_25.0.4_musl-linux-amd64.deb
+          dpkg -i erlang_25.0.4_musl-linux-amd64.deb
+      - name: Install elixir
+        run: |
+          export ELIXIR_VER=1.13.4
+          mkdir -p "${HOME}/.elixir"
+          cd "${HOME}/.elixir"
+          curl -fSL https://github.com/elixir-lang/elixir/archive/refs/tags/v${ELIXIR_VER}.tar.gz -o v${ELIXIR_VER}.tar.gz
+          tar xf "v${ELIXIR_VER}.tar.gz"
+          rm -f "v${ELIXIR_VER}.tar.gz"
+          cd "elixir-${ELIXIR_VER}"
+          make clean
+          make install
+      - name: Cache mix packages and OpenCV
+        id: cache-mix-and-opencv
+        uses: actions/cache@v3
+        with:
+          key: deps-${{ hashFiles('mix.lock') }}-${{ env.OPENCV_VER }}
+          path: |
+            ./deps
+            ./3rd_party
+      - name: Get mix deps and download OpenCV
+        if: steps.cache-mix-and-opencv.outputs.cache-hit != 'true'
+        run: |
+          export ELIXIR_VER=1.13.4
+          export PATH="${PATH}:${HOME}/.elixir/elixir-${ELIXIR_VER}/bin"
+          mix local.hex --force
+          mix local.rebar --force
+          mix deps.get
+          bash scripts/download_opencv.sh ${OPENCV_VER} 3rd_party/cache 3rd_party/opencv/
+      - name: Mix Compile
+        run: |
+          rm -f _build/test/lib/evision/priv/evision.so
+          echo "MIX_ENV: ${MIX_ENV}"
+          export MIX_ENV=test
+          export ELIXIR_VER=1.13.4
+          export PATH="${PATH}:${HOME}/.elixir/elixir-${ELIXIR_VER}/bin"
+          mix local.hex --force
+          mix local.rebar --force
+          mix compile
+      - name: Mix Test
+        run: |
+          mix test --include require_downloading --include require_ffmpeg
+
+  gnu:
     runs-on: ubuntu-20.04
     env:
       MIX_ENV: test
