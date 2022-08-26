@@ -26,7 +26,7 @@ jobs:
               cpp_compiler: g++-aarch64-linux-gnu
           - pair:
               arch: armv7l-linux-gnueabihf
-              cmake_toolchain_file: cc_toolchain/armv7l-linux-gnu.cmake
+              cmake_toolchain_file: cc_toolchain/armv7l-linux-gnueabihf.cmake
               c_compiler: gcc-arm-linux-gnueabihf
               cpp_compiler: g++-arm-linux-gnueabihf
           - pair:
