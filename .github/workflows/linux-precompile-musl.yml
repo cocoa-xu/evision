@@ -18,12 +18,16 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - uses: erlef/setup-beam@v1
+      - name: Install OTP and Elixir
+        uses: erlef/setup-beam@v1
         with:
           otp-version: "25.0.4"
           elixir-version: "1.13.4"
-      
-      - uses: goto-bus-stop/setup-zig@v1
+
+      - name: Install Zig
+        uses: goto-bus-stop/setup-zig@v1
+        with:
+          version: "0.8.0"
 
       - name: Install system dependecies
         run: |
@@ -61,6 +65,7 @@ jobs:
         run: |
           export CMAKE_TOOLCHAIN_FILE="$(pwd)/cc_toolchain/${{ matrix.arch }}.cmake"
           echo "CMAKE_TOOLCHAIN_FILE: ${CMAKE_TOOLCHAIN_FILE}"
+          export ZIG_TOOLCHAIN_PATH="$(which zig)"
           rm -f _build/dev/lib/evision/priv/evision.so
           mix compile
           export PKG_NAME=evision-${{ matrix.arch }}-${GITHUB_REF##*/v}
