@@ -69,7 +69,7 @@ jobs:
 
           mix deps.get
           mix compile
-          export PKG_NAME=evision-darwin-${{ matrix.pair.arch }}-${GITHUB_REF##*/v}
+          export PKG_NAME=evision-${{ matrix.pair.arch }}-apple-darwin-${GITHUB_REF##*/v}
           mkdir -p "${PKG_NAME}"
           cp -a _build/${MIX_ENV}/lib/evision/priv "${PKG_NAME}"
           cp -a lib/generated "${PKG_NAME}/elixir_generated"

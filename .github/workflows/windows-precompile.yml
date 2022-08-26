@@ -63,7 +63,7 @@ jobs:
           Remove-Item Makefile
           mix compile
 
-          $Env:PKG_NAME = "evision-windows-amd64-${Env:EVISION_VERSION}"
+          $Env:PKG_NAME = "evision-amd64-windows-msvc-${Env:EVISION_VERSION}"
           if (Test-Path $Env:PKG_NAME) {
               Remove-Item "$Env:PKG_NAME" -Recurse -Force
           }

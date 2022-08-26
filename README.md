@@ -370,7 +370,7 @@ Say you have the following MIX environment variables:
 # set by MIX
 MIX_ENV=dev
 # set by evision or you
-OPENCV_VER=4.5.5
+OPENCV_VER=4.6.0
 # set by yourself if you're compiling evision to a nerves firmware
 MIX_TARGET=rpi4
 ```
@@ -463,8 +463,8 @@ colour_blur_mat = Cv.blur!(colour_mat, [10,10], anchor: [1,1])
 ## capture from video file/camera
 cap = Cv.VideoCapture.videoCapture!(0)
 cap_mat = Cv.VideoCapture.read!(cap)
-:ok = OpenCV.imwrite("/path/exists/capture-mat.png", cap_mat)
-:error = OpenCV.imwrite("/path/not/exists/capture-mat.png", cap_mat)
+:ok = Cv.imwrite("/path/exists/capture-mat.png", cap_mat)
+:error = Cv.imwrite("/path/not/exists/capture-mat.png", cap_mat)
 
 ## to_binary/from_binary
 mat = Cv.imread!("/path/to/img.jpg")
