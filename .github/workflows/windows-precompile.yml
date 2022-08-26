@@ -3,9 +3,6 @@ name: windows-precompile
 on:
   push:
     tags:
-      - '*-dev'
-      - '*-prod'
-      - '*-dev-win'
       - 'v*'
 
 jobs:

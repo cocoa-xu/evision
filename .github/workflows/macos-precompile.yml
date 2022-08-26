@@ -3,9 +3,6 @@ name: macos-precompile
 on:
   push:
     tags:
-      - '*-dev'
-      - '*-prod'
-      - '*-dev-macos'
       - 'v*'
 
 jobs:

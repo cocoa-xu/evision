@@ -3,7 +3,7 @@ name: nerves-build
 on:
   pull_request:
     paths-ignore:
-      - '**/README.md'
+      - '**/*.md'
       - 'LICENSE*'
       - 'examples/**'
       - 'test/**'
@@ -19,7 +19,7 @@ on:
       - main
       - nerves-*
     paths-ignore:
-      - '**/README.md'
+      - '**/*.md'
       - 'LICENSE*'
       - 'examples/**'
       - 'Makefile.win'

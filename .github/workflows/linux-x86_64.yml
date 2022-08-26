@@ -3,7 +3,7 @@ name: linux-x86_64
 on:
   pull_request:
     paths-ignore:
-      - '**/README.md'
+      - '**/*.md'
       - 'LICENSE*'
       - 'examples/**'
       - 'nerves/**'
@@ -27,7 +27,7 @@ on:
       - test-*
       - fix-*
     paths-ignore:
-      - '**/README.md'
+      - '**/*.md'
       - 'LICENSE*'
       - 'examples/**'
       - 'nerves/**'

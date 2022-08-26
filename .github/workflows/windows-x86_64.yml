@@ -3,7 +3,7 @@ name: windows-x86_64
 on:
   pull_request:
     paths-ignore:
-      - '**/README.md'
+      - '**/*.md'
       - 'LICENSE*'
       - 'examples/**'
       - 'nerves/**'
@@ -20,7 +20,7 @@ on:
       - main
       - test-*
     paths-ignore:
-      - '**/README.md'
+      - '**/*.md'
       - 'LICENSE*'
       - 'examples/**'
       - 'nerves/**'
