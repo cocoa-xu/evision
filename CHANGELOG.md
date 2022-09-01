@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.1.3 (2022-09-01)
+- Fix issues in restoring files from precompiled package for macOS and Linux.
+  - Paths are now quoted. 
+  - Using `cp -RPf` instead of `cp -a` (i.e., `cp -RpP`).
+
 ## v0.1.2 (2022-08-26)
 - Added x86_64 musl compilation CI test.
 - Fixed transpose.
@@ -24,7 +29,7 @@
   
   The value of the environment variable `EVISION_PREFER_PRECOMPILED` decides whether the precompiled artefacts will be used or not.
 
-  From the next version (>=0.1.2), `evision` will set `EVISION_PREFER_PRECOMPILED` to `true` by default.
+  ~~From the next version (>=0.1.2), `evision` will set `EVISION_PREFER_PRECOMPILED` to `true` by default.~~
 
 ## v0.1.0 (2022-07-23)
 First release.
