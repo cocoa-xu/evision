@@ -1,10 +1,6 @@
 defmodule Evision.Nx do
   @moduledoc """
-  OpenCV mat to Nx tensor. 
-
-  `:nx` is an optional dependency, so if you want to use
-  functions in `OpenCV.Nx`, you need to add it to the dependency
-  list.
+  OpenCV's cv::mat to Nx tensor.
   """
 
   import Evision.Errorize

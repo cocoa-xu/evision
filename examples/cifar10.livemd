@@ -67,10 +67,7 @@ Helper.download!("https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/Cat0
 
 ## alias
 ```elixir
-# alias Evision as OpenCV
-# please see the Namespace section in the README.md for reasons/motivations
-# (in the root directory of the source code)
-alias Evision, as: OpenCV
+alias Evision, as: Cv
 ```
 
 ## Get input from OpenCV
@@ -78,10 +75,10 @@ alias Evision, as: OpenCV
 ```elixir
 # in real-life use cases, the input source might be a camera
 # instead of downloading a file and reading it
-{:ok, img} = OpenCV.imread("cat.jpg", flags: OpenCV.cv_IMREAD_ANYCOLOR())
-{:ok, resized_img} = OpenCV.resize(img, [128, 128])
+{:ok, img} = Cv.imread("cat.jpg", flags: Cv.cv_IMREAD_ANYCOLOR())
+{:ok, resized_img} = Cv.resize(img, [128, 128])
 
-OpenCV.imencode(".png", resized_img)
+Cv.imencode(".png", resized_img)
 |> elem(1)
 |> IO.iodata_to_binary()
 |> Kino.Image.new(:png)
@@ -347,9 +344,9 @@ params = Demo.run(backend: Torchx.Backend, epochs: 50)
 ## Test
 
 ```elixir
-{:ok, resized_img} = OpenCV.resize(img, [128, 128])
+{:ok, resized_img} = Cv.resize(img, [128, 128])
 
-OpenCV.imencode(".png", resized_img)
+Cv.imencode(".png", resized_img)
 |> then(fn {:ok, val} -> val end)
 |> IO.iodata_to_binary()
 |> Kino.Image.new(:png)
@@ -360,9 +357,9 @@ classes = [:airplane, :automobile, :bird, :cat, :deer, :dog, :frog, :horse, :shi
 
 input_tensor =
   img
-  |> OpenCV.resize([32, 32])
+  |> Cv.resize([32, 32])
   |> then(fn {:ok, val} -> val end)
-  |> OpenCV.Nx.to_nx()
+  |> Cv.Nx.to_nx()
   |> Nx.backend_transfer(Torchx.Backend)
   |> Nx.flatten()
 

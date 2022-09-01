@@ -1,6 +1,6 @@
 defmodule Evision.ML.SVM.Test do
   use ExUnit.Case
-  alias Evision, as: OpenCV
+  alias Evision, as: Cv
 
   @moduletag timeout: 120_000
 
@@ -10,7 +10,7 @@ defmodule Evision.ML.SVM.Test do
     training_data = [[501, 10], [255, 10], [501, 255], [10, 501]]
 
     {:ok, labels_mat} =
-      OpenCV.Mat.from_binary(
+      Cv.Mat.from_binary(
         Enum.into(labels, <<>>, fn d -> <<d::integer-size(32)-little>> end),
         {:s, 32},
         4,
@@ -19,7 +19,7 @@ defmodule Evision.ML.SVM.Test do
       )
 
     {:ok, training_data_mat} =
-      OpenCV.Mat.from_binary(
+      Cv.Mat.from_binary(
         Enum.into(List.flatten(training_data), <<>>, fn d -> <<d::float-size(32)-little>> end),
         {:f, 32},
         4,
@@ -27,16 +27,16 @@ defmodule Evision.ML.SVM.Test do
         1
       )
 
-    {:ok, svm} = OpenCV.ML.SVM.create()
-    {:ok, svm} = OpenCV.ML.SVM.setType(svm, OpenCV.cv_C_SVC())
-    {:ok, svm} = OpenCV.ML.SVM.setKernel(svm, OpenCV.cv_LINEAR())
-    {:ok, svm} = OpenCV.ML.SVM.setTermCriteria(svm, {OpenCV.cv_MAX_ITER(), 100, 0.000001})
-    assert :ok = OpenCV.ML.SVM.train(svm, training_data_mat, OpenCV.cv_ROW_SAMPLE(), labels_mat)
-    assert :ok = OpenCV.ML.SVM.isTrained(svm)
+    {:ok, svm} = Cv.ML.SVM.create()
+    {:ok, svm} = Cv.ML.SVM.setType(svm, Cv.cv_C_SVC())
+    {:ok, svm} = Cv.ML.SVM.setKernel(svm, Cv.cv_LINEAR())
+    {:ok, svm} = Cv.ML.SVM.setTermCriteria(svm, {Cv.cv_MAX_ITER(), 100, 0.000001})
+    assert :ok = Cv.ML.SVM.train(svm, training_data_mat, Cv.cv_ROW_SAMPLE(), labels_mat)
+    assert :ok = Cv.ML.SVM.isTrained(svm)
 
-    {:ok, sv} = OpenCV.ML.SVM.getUncompressedSupportVectors(svm)
-    {:ok, {rows, cols}} = OpenCV.Mat.shape(sv)
-    {:ok, sv_binary} = OpenCV.Mat.to_binary(sv)
+    {:ok, sv} = Cv.ML.SVM.getUncompressedSupportVectors(svm)
+    {:ok, {rows, cols}} = Cv.Mat.shape(sv)
+    {:ok, sv_binary} = Cv.Mat.to_binary(sv)
     float_bytes = 4
 
     support_vector =
@@ -65,7 +65,7 @@ defmodule Evision.ML.SVM.Test do
       for x <- (width - 1)..0, y <- (height - 1)..0, reduce: [] do
         acc ->
           {:ok, sample} =
-            OpenCV.Mat.from_binary(
+            Cv.Mat.from_binary(
               <<y::float-size(32)-little, x::float-size(32)-little>>,
               {:f, 32},
               1,
@@ -73,9 +73,9 @@ defmodule Evision.ML.SVM.Test do
               1
             )
 
-          {:ok, {_, response_mat}} = OpenCV.ML.SVM.predict(svm, sample)
-          assert {:ok, {1, 1}} = OpenCV.Mat.shape(response_mat)
-          {:ok, <<response::float-size(32)-little>>} = OpenCV.Mat.to_binary(response_mat)
+          {:ok, {_, response_mat}} = Cv.ML.SVM.predict(svm, sample)
+          assert {:ok, {1, 1}} = Cv.Mat.shape(response_mat)
+          {:ok, <<response::float-size(32)-little>>} = Cv.Mat.to_binary(response_mat)
           response = trunc(response)
           assert response == 1 or response == -1
 
@@ -90,8 +90,8 @@ defmodule Evision.ML.SVM.Test do
 
     response_data = response_data |> List.flatten() |> IO.iodata_to_binary()
 
-    {:ok, mat} = OpenCV.imread(Path.join(__DIR__, ["svm_test.png"]))
-    {:ok, expected} = OpenCV.Mat.to_binary(mat)
+    {:ok, mat} = Cv.imread(Path.join(__DIR__, ["svm_test.png"]))
+    {:ok, expected} = Cv.Mat.to_binary(mat)
     assert expected == response_data
   end
 end

@@ -22,7 +22,7 @@ Mix.install([
   {:kino, "~> 0.6"}
 ])
 
-# this example is based on https://docs.opencv.org/4.x/d3/db7/tutorial_hdr_imaging.html
+# this example is based on https://docs.Cv.org/4.x/d3/db7/tutorial_hdr_imaging.html
 ```
 
 ## Helper Function
@@ -116,7 +116,7 @@ exposure_file_save_paths =
 
 exposure_file_urls
   |> Enum.zip(exposure_file_save_paths)
-  |> Enum.map(fn {url, save_as} -> OpenCV.TestHelper.download!(url, save_as) end)
+  |> Enum.map(fn {url, save_as} -> Cv.TestHelper.download!(url, save_as) end)
   |> Enum.all?(&:ok = &1)
 ```
 
@@ -129,10 +129,7 @@ Helper.download!("https://raw.githubusercontent.com/opencv/opencv_extra/4.x/test
 
 ## alias
 ```elixir
-# alias Evision as OpenCV
-# please see the Namespace section in the README.md for reasons/motivations
-# (in the root directory of the source code)
-alias Evision, as: OpenCV
+alias Evision, as: Cv
 ```
 
 ### Load exposure sequences
@@ -147,7 +144,7 @@ exposure_sequences =
   |> Enum.map(&String.split(&1, " "))
   |> Enum.map(&List.to_tuple(&1))
   |> Enum.map(fn {image_filename, times} ->
-    {:ok, mat} = OpenCV.imread(Path.join([__DIR__, "photo_hdr_test", image_filename]))
+    {:ok, mat} = Cv.imread(Path.join([__DIR__, "photo_hdr_test", image_filename]))
     {val, ""} = Float.parse(times)
     {mat, 1/val}
   end)
@@ -161,23 +158,23 @@ images =
   exposure_sequences
   |> Enum.map(&elem(&1, 1))
   |> Enum.into(<<>>, fn d -> << d::float()-size(32)-little >> end)
-  |> OpenCV.Mat.from_binary_by_shape({:f, 32}, {1, Enum.count(images)})
+  |> Cv.Mat.from_binary_by_shape({:f, 32}, {1, Enum.count(images)})
 ```
 
 ### Estimate camera response
 ```elixir
 # It is necessary to know camera response function (CRF) for a lot of HDR construction algorithms.
 # We use one of the calibration algorithms to estimate inverse CRF for all 256 pixel values.
-{:ok, calibrate} = OpenCV.createCalibrateDebevec()
-{:ok, response} = OpenCV.CalibrateDebevec.process(calibrate, images, times)
+{:ok, calibrate} = Cv.createCalibrateDebevec()
+{:ok, response} = Cv.CalibrateDebevec.process(calibrate, images, times)
 ```
 
 ### Make HDR image
 ```
 # We use Debevec's weighting scheme to construct HDR image
 # using response calculated in the previous item.
-{:ok, merge_debevec} = OpenCV.createMergeDebevec()
-{:ok, hdr} = OpenCV.MergeDebevec.process(merge_debevec, images, times, response: response)
+{:ok, merge_debevec} = Cv.createMergeDebevec()
+{:ok, hdr} = Cv.MergeDebevec.process(merge_debevec, images, times, response: response)
 ```
 
 ### Tonemap HDR image
@@ -186,8 +183,8 @@ images =
 # preserving most details.
 # It is the main goal of tonemapping methods.
 # We use tonemapper with bilateral filtering and set 2.2 as the value for gamma correction.
-{:ok, tonemap} = OpenCV.createTonemap(gamma: 2.2)
-{:ok, ldr} = OpenCV.Tonemap.process(tonemap, hdr)
+{:ok, tonemap} = Cv.createTonemap(gamma: 2.2)
+{:ok, ldr} = Cv.Tonemap.process(tonemap, hdr)
 ```
 
 ### Perform exposure fusions
@@ -195,8 +192,8 @@ images =
 # There is an alternative way to merge our exposures in case when we don't need HDR image.
 # This process is called exposure fusion and produces LDR image that doesn't require gamma correction.
 # It also doesn't use exposure values of the photographs.
-{:ok, merge_mertens} = OpenCV.createMergeMertens()
-{:ok, fusion} = OpenCV.MergeMertens.process(merge_mertens, images)
+{:ok, merge_mertens} = Cv.createMergeMertens()
+{:ok, fusion} = Cv.MergeMertens.process(merge_mertens, images)
 ```
 
 ### Write fusion
@@ -204,17 +201,17 @@ images =
 output_fusion_file = Path.join([__DIR__, "photo_hdr_test", "fusion.png"])
 result =
   fusion
-  |> OpenCV.Nx.to_nx()
+  |> Cv.Nx.to_nx()
   |> Nx.multiply(255)
   |> Nx.clip(0, 255)
   |> Nx.as_type({:u, 8})
-  |> OpenCV.Nx.to_mat
+  |> Cv.Nx.to_mat
   |> then(fn {:ok, result} ->
-    OpenCV.imwrite(output_fusion_file, result)
+    Cv.imwrite(output_fusion_file, result)
     result
   end)
 
-{:ok, result} = OpenCV.imencode(".png", result)
+{:ok, result} = Cv.imencode(".png", result)
 result
 |> IO.iodata_to_binary()
 |> Kino.Image.new(:png)
@@ -223,12 +220,12 @@ result
 ### Write LDR image
 ```elixir
 output_ldr_file = Path.join([__DIR__, "photo_hdr_test", "ldr.png"])
-{:ok, f32_shape} = OpenCV.Mat.shape(ldr)
+{:ok, f32_shape} = Cv.Mat.shape(ldr)
 nan          = << 0, 0, 192, 255 >>
 positive_inf = << 0, 0, 128, 127 >>
 negative_inf = << 0, 0, 128, 255 >>
 result = ldr
-  |> OpenCV.Mat.to_binary()
+  |> Cv.Mat.to_binary()
   |> elem(1)
   |> Helper.chunk_binary(4)
   |> Enum.map(fn f32 ->
@@ -253,10 +250,10 @@ result = ldr
   |> Nx.multiply(255)
   |> Nx.clip(0, 255)
   |> Nx.as_type({:u, 8})
-  |> OpenCV.Nx.to_mat
+  |> Cv.Nx.to_mat
   |> elem(1)
 
-{:ok, result} = OpenCV.imencode(".png", result)
+{:ok, result} = Cv.imencode(".png", result)
 result
 |> IO.iodata_to_binary()
 |> Kino.Image.new(:png)
@@ -265,5 +262,5 @@ result
 ### Write HDR image
 ```elixir
 output_hdr_file = Path.join([__DIR__, "photo_hdr_test", "hdr.hdr"])
-OpenCV.imwrite(output_hdr_file, hdr)
+Cv.imwrite(output_hdr_file, hdr)
 ```

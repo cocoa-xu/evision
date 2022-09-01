@@ -1,34 +1,34 @@
 defmodule Evision.VideoWriter.Test do
-  alias Evision, as: OpenCV
+  alias Evision, as: Cv
   use ExUnit.Case
 
   @moduletag timeout: 120_000
 
   defmodule WriteVideo do
     def given(input_video_file, output_video_file, output_fps, output_seconds) do
-      {:ok, reader} = OpenCV.VideoCapture.videoCapture(input_video_file)
-      {:ok, fourcc} = OpenCV.VideoWriter.fourcc("m", "p", "4", "v")
-      {:ok, height} = OpenCV.VideoCapture.get(reader, OpenCV.cv_CAP_PROP_FRAME_HEIGHT())
-      {:ok, width} = OpenCV.VideoCapture.get(reader, OpenCV.cv_CAP_PROP_FRAME_WIDTH())
+      {:ok, reader} = Cv.VideoCapture.videoCapture(input_video_file)
+      {:ok, fourcc} = Cv.VideoWriter.fourcc("m", "p", "4", "v")
+      {:ok, height} = Cv.VideoCapture.get(reader, Cv.cv_CAP_PROP_FRAME_HEIGHT())
+      {:ok, width} = Cv.VideoCapture.get(reader, Cv.cv_CAP_PROP_FRAME_WIDTH())
       height = trunc(height)
       width = trunc(width)
 
       {:ok, writer} =
-        OpenCV.VideoWriter.videoWriter(output_video_file, fourcc, output_fps / 1, [width, height])
+        Cv.VideoWriter.videoWriter(output_video_file, fourcc, output_fps / 1, [width, height])
 
-      assert :ok == OpenCV.VideoWriter.isOpened(writer)
-      {:ok, frame} = OpenCV.VideoCapture.read(reader)
-      OpenCV.VideoCapture.release(reader)
+      assert :ok == Cv.VideoWriter.isOpened(writer)
+      {:ok, frame} = Cv.VideoCapture.read(reader)
+      Cv.VideoCapture.release(reader)
       encode(frame, writer, output_fps * output_seconds)
 
       # verify
-      {:ok, reader} = OpenCV.VideoCapture.videoCapture(output_video_file)
-      {:ok, w_fourcc} = OpenCV.VideoWriter.fourcc("m", "p", "4", "v")
-      {:ok, w_frames_count} = OpenCV.VideoCapture.get(reader, OpenCV.cv_CAP_PROP_FRAME_COUNT())
-      {:ok, w_fps} = OpenCV.VideoCapture.get(reader, OpenCV.cv_CAP_PROP_FPS())
-      {:ok, w_height} = OpenCV.VideoCapture.get(reader, OpenCV.cv_CAP_PROP_FRAME_HEIGHT())
-      {:ok, w_width} = OpenCV.VideoCapture.get(reader, OpenCV.cv_CAP_PROP_FRAME_WIDTH())
-      OpenCV.VideoCapture.release(reader)
+      {:ok, reader} = Cv.VideoCapture.videoCapture(output_video_file)
+      {:ok, w_fourcc} = Cv.VideoWriter.fourcc("m", "p", "4", "v")
+      {:ok, w_frames_count} = Cv.VideoCapture.get(reader, Cv.cv_CAP_PROP_FRAME_COUNT())
+      {:ok, w_fps} = Cv.VideoCapture.get(reader, Cv.cv_CAP_PROP_FPS())
+      {:ok, w_height} = Cv.VideoCapture.get(reader, Cv.cv_CAP_PROP_FRAME_HEIGHT())
+      {:ok, w_width} = Cv.VideoCapture.get(reader, Cv.cv_CAP_PROP_FRAME_WIDTH())
+      Cv.VideoCapture.release(reader)
 
       assert w_fourcc == fourcc
       assert w_frames_count == output_fps * output_seconds
@@ -38,11 +38,11 @@ defmodule Evision.VideoWriter.Test do
     end
 
     defp encode(_, writer, 0) do
-      OpenCV.VideoWriter.release(writer)
+      Cv.VideoWriter.release(writer)
     end
 
     defp encode(frame, writer, frames_count) do
-      {:ok, writer} = OpenCV.VideoWriter.write(writer, frame)
+      {:ok, writer} = Cv.VideoWriter.write(writer, frame)
       encode(frame, writer, frames_count - 1)
     end
   end

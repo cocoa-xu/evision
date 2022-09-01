@@ -77,7 +77,7 @@ ExUnit.configure(
     # exclude dnn tests by default as it will download a large (~200 MB) model file
     dnn: !Enum.member?(compiled_modules, "dnn"),
     ml: !Enum.member?(compiled_modules, "ml"),
-    # test OpenCV.Nx module if we have Nx module
+    # test Cv.Nx module if we have Nx module
     nx: !Code.ensure_loaded?(Nx),
     photo: !Enum.member?(compiled_modules, "photo"),
     video: !Enum.member?(compiled_modules, "video")

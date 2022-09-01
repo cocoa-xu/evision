@@ -58,10 +58,7 @@ end
 
 ## alias
 ```elixir
-# alias Evision as OpenCV
-# please see the Namespace section in the README.md for reasons/motivations
-# (in the root directory of the source code)
-alias Evision, as: OpenCV
+alias Evision, as: Cv
 ```
 
 ## Detection Model Module
@@ -85,32 +82,32 @@ defmodule DetectionModel do
     confidence = "#{Float.round(confidence, 2)}"
     label = Enum.at(labels, class_id)
     text = "#{label}: #{confidence}"
-    {:ok, mat} = OpenCV.rectangle(mat, [l, t], [r, b], [255, 0, 0])
+    {:ok, mat} = Cv.rectangle(mat, [l, t], [r, b], [255, 0, 0])
 
     {:ok, {{label_weight, label_height}, baseline}} =
-      OpenCV.getTextSize(text, OpenCV.cv_FONT_HERSHEY_SIMPLEX(), 0.5, 1)
+      Cv.getTextSize(text, Cv.cv_FONT_HERSHEY_SIMPLEX(), 0.5, 1)
 
     label_weight = trunc(label_weight)
     label_height = trunc(label_height)
     top = max(t, label_height)
 
     {:ok, mat} =
-      OpenCV.rectangle(mat, [l, top - label_height], [l + label_weight, top + baseline], [
+      Cv.rectangle(mat, [l, top - label_height], [l + label_weight, top + baseline], [
         255,
         255,
         255
       ])
 
     {:ok, mat} =
-      OpenCV.putText(mat, text, [l, top], OpenCV.cv_FONT_HERSHEY_SIMPLEX(), 0.5, [0, 0, 255])
+      Cv.putText(mat, text, [l, top], Cv.cv_FONT_HERSHEY_SIMPLEX(), 0.5, [0, 0, 255])
 
     _visualise_pred(mat, labels, outs)
   end
 
   def postprocess(mat, detections, net, confidence_threshold) do
-    {:ok, out_layers} = OpenCV.DNN.Net.getUnconnectedOutLayers(net)
-    {:ok, out_layer} = OpenCV.DNN.Net.getLayer(net, Enum.at(out_layers, 0))
-    out_layer_type = OpenCV.DNN.Layer.get_type(out_layer) |> IO.iodata_to_binary()
+    {:ok, out_layers} = Cv.DNN.Net.getUnconnectedOutLayers(net)
+    {:ok, out_layer} = Cv.DNN.Net.getLayer(net, Enum.at(out_layers, 0))
+    out_layer_type = Cv.DNN.Layer.get_type(out_layer) |> IO.iodata_to_binary()
     _postprocess(mat, detections, net, confidence_threshold, out_layer_type, [])
   end
 
@@ -125,8 +122,8 @@ defmodule DetectionModel do
          <<"DetectionOutput">>,
          acc
        ) do
-    {:ok, data} = OpenCV.Mat.to_binary(outs)
-    {:ok, {h, w, _}} = OpenCV.Mat.shape(mat)
+    {:ok, data} = Cv.Mat.to_binary(outs)
+    {:ok, {h, w, _}} = Cv.Mat.shape(mat)
     {:ok, translated_outs} = _translate_outs(confidence_threshold, data, h, w, [])
 
     _postprocess(mat, detections, net, confidence_threshold, "DetectionOutput", [
@@ -175,31 +172,31 @@ defmodule DetectionModel do
   end
 
   def predict(mat, model, out_names, opts \\ []) do
-    {:ok, blob} = OpenCV.DNN.blobFromImage(mat, opts)
+    {:ok, blob} = Cv.DNN.blobFromImage(mat, opts)
 
     {:ok, model} =
-      OpenCV.DNN.Net.setInput(model, blob, name: "", scalefactor: 1.0, mean: [0, 0, 0])
+      Cv.DNN.Net.setInput(model, blob, name: "", scalefactor: 1.0, mean: [0, 0, 0])
 
     start_time = :os.system_time(:millisecond)
-    {:ok, detections} = OpenCV.DNN.Net.forward(model, outBlobNames: out_names)
+    {:ok, detections} = Cv.DNN.Net.forward(model, outBlobNames: out_names)
     end_time = :os.system_time(:millisecond)
     IO.puts("Inference time=>#{end_time - start_time} ms")
     {:ok, mat, detections}
   end
 
   def predict_file(image_file, model, out_names, opts \\ []) do
-    {:ok, mat} = OpenCV.imread(image_file)
+    {:ok, mat} = Cv.imread(image_file)
     predict(mat, model, out_names, opts)
   end
 
   def get_model(params, config, framework \\ "") do
     {:ok, net} =
-      OpenCV.DNN.readNet(params,
+      Cv.DNN.readNet(params,
         config: config,
         framework: framework
       )
 
-    {:ok, out_names} = OpenCV.DNN.Net.getUnconnectedOutLayersNames(net)
+    {:ok, out_names} = Cv.DNN.Net.getUnconnectedOutLayersNames(net)
     {:ok, net, out_names}
   end
 end
@@ -310,7 +307,7 @@ Helper.download!("https://raw.githubusercontent.com/cocoa-xu/evision/main/test/d
 ```
 
 ```elixir
-OpenCV.imencode(".png", mat)
+Cv.imencode(".png", mat)
 |> then(fn {:ok, val} -> val end)
 |> IO.iodata_to_binary()
 |> Kino.Image.new(:png)
@@ -320,11 +317,11 @@ OpenCV.imencode(".png", mat)
 ```elixir
 # if you have a camera available
 # uncomment the line below
-# {:ok, video} = OpenCV.VideoCapture.videoCapture(0)
+# {:ok, video} = Cv.VideoCapture.videoCapture(0)
 
 # or the OpenCV library you compiled can decode video files
 # uncomment the line below
-# {:ok, video} = OpenCV.VideoCapture.videoCapture("/path/to/your/video/file")
+# {:ok, video} = Cv.VideoCapture.videoCapture("/path/to/your/video/file")
 ```
 
 ```elixir
@@ -332,19 +329,19 @@ defmodule VideoDetection do
   def detect(video, widget, max_frames \\ 30*60)
   when is_reference(video) and is_integer(max_frames) do
     {net, out_names, labels} = SSDMobileNetV2.get_detection_model()
-    frame_read = OpenCV.VideoCapture.read(video)
+    frame_read = Cv.VideoCapture.read(video)
     _detect(net, out_names, labels, frame_read, video, widget, max_frames)
   end
 
   defp _detect(_, _, _, _, _, _, 0), do: :ok
   defp _detect(net, out_names, labels, {:ok, frame}, video, widget, left_frames) when left_frames > 0 or left_frames < 0 do
     {:ok, mat} = SSDMobileNetV2.predict_and_show(net, out_names, labels, frame)
-    OpenCV.imencode(".png", mat)
+    Cv.imencode(".png", mat)
     |> elem(1)
     |> IO.iodata_to_binary()
     |> Kino.Image.new(:png)
     |> then(&Kino.Frame.render(widget, &1))
-    frame_read = OpenCV.VideoCapture.read(video)
+    frame_read = Cv.VideoCapture.read(video)
     if left_frames > 0 do
       _detect(net, out_names, labels, frame_read, video, widget, left_frames - 1)
     else

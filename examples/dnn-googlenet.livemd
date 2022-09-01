@@ -98,7 +98,7 @@ Helper.download!(
   "classification_classes_ILSVRC2012.txt"
 )
 
-Helper.download!("https://docs.opencv.org/4.5.4/space_shuttle.jpg", "space_shuttle.jpg")
+Helper.download!("https://docs.Cv.org/4.5.4/space_shuttle.jpg", "space_shuttle.jpg")
 ```
 
 ```output
@@ -107,10 +107,7 @@ Helper.download!("https://docs.opencv.org/4.5.4/space_shuttle.jpg", "space_shutt
 
 ## alias
 ```elixir
-# alias Evision as OpenCV
-# please see the Namespace section in the README.md for reasons/motivations
-# (in the root directory of the source code)
-alias Evision, as: OpenCV
+alias Evision, as: Cv
 ```
 
 ## Read class names
@@ -151,7 +148,7 @@ classes =
 
 ```elixir
 {:ok, model} =
-  OpenCV.DNN.readNet("bvlc_googlenet.caffemodel",
+  Cv.DNN.readNet("bvlc_googlenet.caffemodel",
     config: "bvlc_googlenet.prototxt",
     framework: ""
   )
@@ -170,7 +167,7 @@ classes =
 # "3: OpenCV implementation, "
 # "4: VKCOM, "
 # "5: CUDA
-{:ok, model} = OpenCV.DNN.Net.setPreferableBackend(model, 0)
+{:ok, model} = Cv.DNN.Net.setPreferableBackend(model, 0)
 
 # "0: CPU target (by default), "
 # "1: OpenCL, "
@@ -179,7 +176,7 @@ classes =
 # "4: Vulkan, "
 # "6: CUDA, "
 # "7: CUDA fp16 (half-float preprocess)
-{:ok, model} = OpenCV.DNN.Net.setPreferableTarget(model, 0)
+{:ok, model} = Cv.DNN.Net.setPreferableTarget(model, 0)
 ```
 
 ```output
@@ -189,17 +186,17 @@ classes =
 ## Read the test image and set as input
 
 ```elixir
-{:ok, mat} = OpenCV.imread("space_shuttle.jpg")
+{:ok, mat} = Cv.imread("space_shuttle.jpg")
 
 {:ok, blob} =
-  OpenCV.DNN.blobFromImage(mat,
+  Cv.DNN.blobFromImage(mat,
     scalefactor: 1,
     swapRB: true,
     mean: [-104, -117, -123],
     size: [224, 224]
   )
 
-{:ok, model} = OpenCV.DNN.Net.setInput(model, blob, name: "", scalefactor: 1.0, mean: [0, 0, 0])
+{:ok, model} = Cv.DNN.Net.setInput(model, blob, name: "", scalefactor: 1.0, mean: [0, 0, 0])
 ```
 
 ```output
@@ -210,7 +207,7 @@ classes =
 
 ```elixir
 start_time = :os.system_time(:millisecond)
-{:ok, pred} = OpenCV.DNN.Net.forward(model, outputName: "")
+{:ok, pred} = Cv.DNN.Net.forward(model, outputName: "")
 end_time = :os.system_time(:millisecond)
 "Inference time=>#{end_time - start_time} ms"
 ```
@@ -220,7 +217,7 @@ end_time = :os.system_time(:millisecond)
 ```
 
 ```elixir
-pred = pred |> OpenCV.Nx.to_nx()
+pred = pred |> Cv.Nx.to_nx()
 pred_class_id = pred |> Nx.argmax() |> Nx.to_flat_list() |> Enum.at(0)
 
 confidence =

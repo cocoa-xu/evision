@@ -1,7 +1,7 @@
 defmodule Evision.PCA.Test do
   use ExUnit.Case
   use Bitwise
-  alias Evision, as: OpenCV
+  alias Evision, as: Cv
 
   @moduletag timeout: 120_000
 
@@ -12,34 +12,34 @@ defmodule Evision.PCA.Test do
     qy = trunc(py - scale * hypotenuse * :math.sin(angle))
 
     {:ok, src} =
-      OpenCV.line(src, [px, py], [qx, qy], colour, thickness: 1, style: OpenCV.cv_LINE_AA())
+      Cv.line(src, [px, py], [qx, qy], colour, thickness: 1, style: Cv.cv_LINE_AA())
 
     px = trunc(qx + 9 * :math.cos(angle + :math.pi() / 4))
     py = trunc(qy + 9 * :math.sin(angle + :math.pi() / 4))
 
     {:ok, src} =
-      OpenCV.line(src, [px, py], [qx, qy], colour, thickness: 1, style: OpenCV.cv_LINE_AA())
+      Cv.line(src, [px, py], [qx, qy], colour, thickness: 1, style: Cv.cv_LINE_AA())
 
     px = trunc(qx + 9 * :math.cos(angle - :math.pi() / 4))
     py = trunc(qy + 9 * :math.sin(angle - :math.pi() / 4))
-    OpenCV.line(src, [px, py], [qx, qy], colour, thickness: 1, style: OpenCV.cv_LINE_AA())
+    Cv.line(src, [px, py], [qx, qy], colour, thickness: 1, style: Cv.cv_LINE_AA())
   end
 
   @tag :nx
-  test "Use the OpenCV class OpenCV.PCA to calculate the orientation of an object." do
+  test "Use the OpenCV class Cv.PCA to calculate the orientation of an object." do
     {:ok, gray} =
       Path.join(__DIR__, "opencv_pca_test.jpg")
-      |> OpenCV.imread(flags: OpenCV.cv_IMREAD_GRAYSCALE())
+      |> Cv.imread(flags: Cv.cv_IMREAD_GRAYSCALE())
 
     {:ok, {_, bw}} =
-      OpenCV.threshold(gray, 50, 255, OpenCV.cv_THRESH_BINARY() ||| OpenCV.cv_THRESH_OTSU())
+      Cv.threshold(gray, 50, 255, Cv.cv_THRESH_BINARY() ||| Cv.cv_THRESH_OTSU())
 
     {:ok, {contours, _}} =
-      OpenCV.findContours(bw, OpenCV.cv_RETR_LIST(), OpenCV.cv_CHAIN_APPROX_NONE())
+      Cv.findContours(bw, Cv.cv_RETR_LIST(), Cv.cv_CHAIN_APPROX_NONE())
 
     contours =
       contours
-      |> Enum.map(&{elem(OpenCV.contourArea(&1), 1), &1})
+      |> Enum.map(&{elem(Cv.contourArea(&1), 1), &1})
       |> Enum.reject(fn {area, _c} -> area < 100 or area > 100_000 end)
 
     assert [17192.0, 16830.0, 16150.5, 15367.5, 15571.0, 14842.0] ==
@@ -50,22 +50,22 @@ defmodule Evision.PCA.Test do
     pca_analysis =
       for c <- contours, reduce: [] do
         acc ->
-          {:ok, shape} = OpenCV.Mat.shape(c)
+          {:ok, shape} = Cv.Mat.shape(c)
           sz = elem(shape, 0)
-          {:ok, pts_binary} = OpenCV.Mat.to_binary(c)
-          {:ok, type} = OpenCV.Mat.type(c)
-          {:ok, data_pts} = OpenCV.Mat.from_binary(pts_binary, type, sz, 2, 1)
-          {:ok, data_pts} = OpenCV.Mat.as_type(data_pts, {:f, 64})
+          {:ok, pts_binary} = Cv.Mat.to_binary(c)
+          {:ok, type} = Cv.Mat.type(c)
+          {:ok, data_pts} = Cv.Mat.from_binary(pts_binary, type, sz, 2, 1)
+          {:ok, data_pts} = Cv.Mat.as_type(data_pts, {:f, 64})
 
           # Perform PCA analysis
           {:ok, {mean, eigenvectors, eigenvalues}} =
-            OpenCV.pcaCompute2(data_pts, OpenCV.Mat.empty!())
+            Cv.pcaCompute2(data_pts, Cv.Mat.empty!())
 
-          eigenvectors = OpenCV.Nx.to_nx(eigenvectors)
-          eigenvalues = OpenCV.Nx.to_nx(eigenvalues)
+          eigenvectors = Cv.Nx.to_nx(eigenvectors)
+          eigenvalues = Cv.Nx.to_nx(eigenvalues)
 
           {:ok, <<centre_x::float-size(64)-little, centre_y::float-size(64)-little, _::binary>>} =
-            OpenCV.Mat.to_binary(mean)
+            Cv.Mat.to_binary(mean)
 
           centre_x = trunc(centre_x)
           centre_y = trunc(centre_y)
@@ -95,26 +95,26 @@ defmodule Evision.PCA.Test do
 
     {:ok, src} =
       Path.join(__DIR__, "opencv_pca_test.jpg")
-      |> OpenCV.imread()
+      |> Cv.imread()
 
     src =
       for index <- 0..(Enum.count(contours) - 1), reduce: src do
         src ->
-          {:ok, src} = OpenCV.drawContours(src, contours, index, [0, 0, 255], thickness: 2)
+          {:ok, src} = Cv.drawContours(src, contours, index, [0, 0, 255], thickness: 2)
           src
       end
 
     src =
       for {cntr, p1, p2} <- pca_analysis, reduce: src do
         src ->
-          {:ok, src} = OpenCV.circle(src, cntr, 3, [255, 0, 255], thickness: 2)
+          {:ok, src} = Cv.circle(src, cntr, 3, [255, 0, 255], thickness: 2)
           {:ok, src} = drawAxis(src, List.to_tuple(cntr), p1, [0, 255, 0], 1)
           {:ok, src} = drawAxis(src, List.to_tuple(cntr), p2, [255, 255, 0], 5)
           src
       end
 
     output_path = Path.join(__DIR__, "opencv_pca_test_out.png")
-    OpenCV.imwrite(output_path, src)
+    Cv.imwrite(output_path, src)
     File.rm!(output_path)
   end
 end

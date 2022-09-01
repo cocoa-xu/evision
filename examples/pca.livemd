@@ -22,7 +22,7 @@ Mix.install([
   {:kino, "~> 0.6"}
 ])
 
-# this example is based on https://docs.opencv.org/4.x/d1/dee/tutorial_introduction_to_pca.html
+# this example is based on https://docs.Cv.org/4.x/d1/dee/tutorial_introduction_to_pca.html
 ```
 
 ## Helper Function
@@ -60,13 +60,10 @@ end
 
 ## alias
 ```elixir
-# alias Evision as OpenCV
-# please see the Namespace section in the README.md for reasons/motivations
-# (in the root directory of the source code)
-alias Evision, as: OpenCV
+alias Evision, as: Cv
 ```
 
-## OpenCV.PCA
+## Cv.PCA
 
 ```elixir
 # change to the file's directory
@@ -80,27 +77,27 @@ File.cd!(__DIR__)
 
 Download the test image
 ```elixir
-Helper.download!("https://docs.opencv.org/4.x/pca_test1.jpg", "opencv_pca_test.jpg")
+Helper.download!("https://docs.Cv.org/4.x/pca_test1.jpg", "opencv_pca_test.jpg")
 ```
 
 ```elixir
 # Load image in grayscale
 {:ok, gray} =
   Path.join(__DIR__, "opencv_pca_test.jpg")
-  |> OpenCV.imread(flags: OpenCV.cv_IMREAD_GRAYSCALE())
+  |> Cv.imread(flags: Cv.cv_IMREAD_GRAYSCALE())
 
 # Convert image to binary
 {:ok, {_, bw}} =
-  OpenCV.threshold(gray, 50, 255, OpenCV.cv_THRESH_BINARY() ||| OpenCV.cv_THRESH_OTSU())
+  Cv.threshold(gray, 50, 255, Cv.cv_THRESH_BINARY() ||| Cv.cv_THRESH_OTSU())
 
 # Find all the contours in the thresholded image
 {:ok, {contours, _}} =
-  OpenCV.findContours(bw, OpenCV.cv_RETR_LIST(), OpenCV.cv_CHAIN_APPROX_NONE())
+  Cv.findContours(bw, Cv.cv_RETR_LIST(), Cv.cv_CHAIN_APPROX_NONE())
 
 contours =
   contours
   # Calculate the area of each contour
-  |> Enum.map(&{elem(OpenCV.contourArea(&1), 1), &1})
+  |> Enum.map(&{elem(Cv.contourArea(&1), 1), &1})
   # Ignore contours that are too small or too large
   |> Enum.reject(fn {area, _c} -> area < 100 or area > 100_000 end)
 
@@ -116,22 +113,22 @@ pca_analysis =
   for c <- contours, reduce: [] do
     acc ->
       # Construct a buffer used by the pca analysis
-      {:ok, shape} = OpenCV.Mat.shape(c)
+      {:ok, shape} = Cv.Mat.shape(c)
       sz = elem(shape, 0)
-      {:ok, pts_binary} = OpenCV.Mat.to_binary(c)
-      {:ok, type} = OpenCV.Mat.type(c)
-      {:ok, data_pts} = OpenCV.Mat.from_binary(pts_binary, type, sz, 2, 1)
-      {:ok, data_pts} = OpenCV.Mat.as_type(data_pts, {:f, 64})
+      {:ok, pts_binary} = Cv.Mat.to_binary(c)
+      {:ok, type} = Cv.Mat.type(c)
+      {:ok, data_pts} = Cv.Mat.from_binary(pts_binary, type, sz, 2, 1)
+      {:ok, data_pts} = Cv.Mat.as_type(data_pts, {:f, 64})
 
       # Perform PCA analysis
-      {:ok, {mean, eigenvectors, eigenvalues}} = OpenCV.pcaCompute2(data_pts, OpenCV.Mat.empty!())
-      eigenvectors = OpenCV.Nx.to_nx(eigenvectors)
-      eigenvalues = OpenCV.Nx.to_nx(eigenvalues)
+      {:ok, {mean, eigenvectors, eigenvalues}} = Cv.pcaCompute2(data_pts, Cv.Mat.empty!())
+      eigenvectors = Cv.Nx.to_nx(eigenvectors)
+      eigenvalues = Cv.Nx.to_nx(eigenvalues)
 
       # Store the center of the object
       {:ok,
        <<centre_x::float()-size(64)-little, centre_y::float()-size(64)-little, _::binary>>} =
-        OpenCV.Mat.to_binary(mean)
+        Cv.Mat.to_binary(mean)
 
       centre_x = trunc(centre_x)
       centre_y = trunc(centre_y)
@@ -162,12 +159,12 @@ pca_analysis = Enum.reverse(pca_analysis)
 ```elixir
 {:ok, src} =
   Path.join(__DIR__, "opencv_pca_test.jpg")
-  |> OpenCV.imread()
+  |> Cv.imread()
 
 # Draw each contour
 src = for index <- 0..(Enum.count(contours) - 1), reduce: src do
   src ->
-    {:ok, src} = OpenCV.drawContours(src, contours, index, [0, 0, 255], thickness: 2)
+    {:ok, src} = Cv.drawContours(src, contours, index, [0, 0, 255], thickness: 2)
     src
 end
 ```
@@ -181,15 +178,15 @@ defmodule PACHelper do
         hypotenuse = :math.sqrt((py - qy) * (py - qy) + (px - qx) * (px - qx))
         qx = trunc(px - scale * hypotenuse * :math.cos(angle))
         qy = trunc(py - scale * hypotenuse * :math.sin(angle))
-        {:ok, src} = OpenCV.line(src, [px, py], [qx, qy], colour, thickness: 1, style: OpenCV.cv_LINE_AA)
+        {:ok, src} = Cv.line(src, [px, py], [qx, qy], colour, thickness: 1, style: Cv.cv_LINE_AA)
 
         px = trunc(qx + 9 * :math.cos(angle + :math.pi / 4))
         py = trunc(qy + 9 * :math.sin(angle + :math.pi / 4))
-        {:ok, src} = OpenCV.line(src, [px, py], [qx, qy], colour, thickness: 1, style: OpenCV.cv_LINE_AA)
+        {:ok, src} = Cv.line(src, [px, py], [qx, qy], colour, thickness: 1, style: Cv.cv_LINE_AA)
 
         px = trunc(qx + 9 * :math.cos(angle - :math.pi / 4))
         py = trunc(qy + 9 * :math.sin(angle - :math.pi / 4))
-        OpenCV.line(src, [px, py], [qx, qy], colour, thickness: 1, style: OpenCV.cv_LINE_AA)
+        Cv.line(src, [px, py], [qx, qy], colour, thickness: 1, style: Cv.cv_LINE_AA)
     end
 end
 ```
@@ -198,13 +195,13 @@ end
 ```elixir
 src = for {cntr, p1, p2} <- pca_analysis, reduce: src do
   src ->
-    {:ok, src} = OpenCV.circle(src, cntr, 3, [255, 0, 255], thickness: 2)
+    {:ok, src} = Cv.circle(src, cntr, 3, [255, 0, 255], thickness: 2)
     {:ok, src} = PACHelper.drawAxis(src, List.to_tuple(cntr), p1, [0, 255, 0], 1)
     {:ok, src} = PACHelper.drawAxis(src, List.to_tuple(cntr), p2, [255, 255, 0], 5)
     src
 end
 
-{:ok, result} = OpenCV.imencode(".png", src)
+{:ok, result} = Cv.imencode(".png", src)
 
 result
 |> IO.iodata_to_binary()

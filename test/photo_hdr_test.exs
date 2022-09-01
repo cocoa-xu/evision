@@ -1,7 +1,7 @@
 defmodule Evision.Photo.HDR.Test do
   use ExUnit.Case
   use Bitwise
-  alias Evision, as: OpenCV
+  alias Evision, as: Cv
 
   @moduletag timeout: 120_000
 
@@ -28,13 +28,13 @@ defmodule Evision.Photo.HDR.Test do
     assert true =
              exposure_file_urls
              |> Enum.zip(exposure_file_save_paths)
-             |> Enum.map(fn {url, save_as} -> OpenCV.TestHelper.download!(url, save_as) end)
+             |> Enum.map(fn {url, save_as} -> Cv.TestHelper.download!(url, save_as) end)
              |> Enum.all?(&(:ok = &1))
 
     list_txt_file = Path.join([__DIR__, "photo_hdr_test", "list.txt"])
 
     assert :ok =
-             OpenCV.TestHelper.download!(
+             Cv.TestHelper.download!(
                "https://raw.githubusercontent.com/opencv/opencv_extra/4.x/testdata/cv/hdr/exposures/list.txt",
                list_txt_file
              )
@@ -50,7 +50,7 @@ defmodule Evision.Photo.HDR.Test do
       |> Enum.map(&String.split(&1, " "))
       |> Enum.map(&List.to_tuple(&1))
       |> Enum.map(fn {image_filename, times} ->
-        mat = OpenCV.imread!(Path.join([__DIR__, "photo_hdr_test", image_filename]))
+        mat = Cv.imread!(Path.join([__DIR__, "photo_hdr_test", image_filename]))
         {val, ""} = Float.parse(times)
         {mat, 1 / val}
       end)
@@ -63,39 +63,39 @@ defmodule Evision.Photo.HDR.Test do
       exposure_sequences
       |> Enum.map(&elem(&1, 1))
       |> Enum.into(<<>>, fn d -> <<d::float-size(32)-little>> end)
-      |> OpenCV.Mat.from_binary_by_shape({:f, 32}, {1, Enum.count(images)})
+      |> Cv.Mat.from_binary_by_shape({:f, 32}, {1, Enum.count(images)})
 
-    {:ok, calibrate} = OpenCV.createCalibrateDebevec()
-    response = OpenCV.CalibrateDebevec.process!(calibrate, images, times)
+    {:ok, calibrate} = Cv.createCalibrateDebevec()
+    response = Cv.CalibrateDebevec.process!(calibrate, images, times)
 
-    merge_debevec = OpenCV.createMergeDebevec!()
-    hdr = OpenCV.MergeDebevec.process!(merge_debevec, images, times, response: response)
+    merge_debevec = Cv.createMergeDebevec!()
+    hdr = Cv.MergeDebevec.process!(merge_debevec, images, times, response: response)
 
-    tonemap = OpenCV.createTonemap!(gamma: 2.2)
-    ldr = OpenCV.Tonemap.process!(tonemap, hdr)
+    tonemap = Cv.createTonemap!(gamma: 2.2)
+    ldr = Cv.Tonemap.process!(tonemap, hdr)
 
-    {:ok, merge_mertens} = OpenCV.createMergeMertens()
-    fusion = OpenCV.MergeMertens.process!(merge_mertens, images)
+    {:ok, merge_mertens} = Cv.createMergeMertens()
+    fusion = Cv.MergeMertens.process!(merge_mertens, images)
 
     output_fusion_file = Path.join([__DIR__, "photo_hdr_test", "fusion.png"])
 
     fusion
-    |> OpenCV.Nx.to_nx()
+    |> Cv.Nx.to_nx()
     |> Nx.multiply(255)
     |> Nx.clip(0, 255)
     |> Nx.as_type({:u, 8})
-    |> OpenCV.Nx.to_mat!()
-    |> then(&OpenCV.imwrite(output_fusion_file, &1))
+    |> Cv.Nx.to_mat!()
+    |> then(&Cv.imwrite(output_fusion_file, &1))
 
     output_ldr_file = Path.join([__DIR__, "photo_hdr_test", "ldr.png"])
-    f32_shape = OpenCV.Mat.shape!(ldr)
+    f32_shape = Cv.Mat.shape!(ldr)
     nan = <<0, 0, 192, 255>>
     positive_inf = <<0, 0, 128, 127>>
     negative_inf = <<0, 0, 128, 255>>
 
     ldr
-    |> OpenCV.Mat.to_binary!()
-    |> OpenCV.TestHelper.chunk_binary(4)
+    |> Cv.Mat.to_binary!()
+    |> Cv.TestHelper.chunk_binary(4)
     |> Enum.map(fn f32 ->
       case f32 do
         ^nan ->
@@ -118,10 +118,10 @@ defmodule Evision.Photo.HDR.Test do
     |> Nx.multiply(255)
     |> Nx.clip(0, 255)
     |> Nx.as_type({:u, 8})
-    |> OpenCV.Nx.to_mat!()
-    |> then(&OpenCV.imwrite(output_ldr_file, &1))
+    |> Cv.Nx.to_mat!()
+    |> then(&Cv.imwrite(output_ldr_file, &1))
 
     output_hdr_file = Path.join([__DIR__, "photo_hdr_test", "hdr.hdr"])
-    OpenCV.imwrite(output_hdr_file, hdr)
+    Cv.imwrite(output_hdr_file, hdr)
   end
 end
