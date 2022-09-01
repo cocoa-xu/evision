@@ -134,3 +134,8 @@ $(EVISION_SO): $(HEADERS_TXT)
 			cp "$(CMAKE_EVISION_BUILD_DIR)/evision.so" "$(EVISION_SO)" ; \
 		fi
 
+clean_dev:
+	@echo "rm -rf src/generated"
+	@echo "rm -rf lib/generated"
+	@echo "rm -f c_src/headers.txt"
+	@echo "rm -rf _build/dev/lib/evision"
