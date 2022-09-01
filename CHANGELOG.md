@@ -3,7 +3,7 @@
 ## v0.1.3 (2022-09-01)
 - Fix issues in restoring files from precompiled package for macOS and Linux.
   - Paths are now quoted. 
-  - Using `cp -RPf` instead of `cp -a` (i.e., `cp -RpP`).
+  - using `cp -RPf` on macOS while `cp -a` on Linux.
 
 ## v0.1.2 (2022-08-26)
 - Added x86_64 musl compilation CI test.
