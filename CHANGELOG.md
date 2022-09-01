@@ -4,6 +4,8 @@
 - Fix issues in restoring files from precompiled package for macOS and Linux.
   - Paths are now quoted. 
   - using `cp -RPf` on macOS while `cp -a` on Linux.
+- Fix `destroyAllWindows` in NIF.
+  It was generated as 'erlang:destroyAllWindows/1' but it should be 'erlang:destroyAllWindows/0'.
 
 ## v0.1.2 (2022-08-26)
 - Added x86_64 musl compilation CI test.

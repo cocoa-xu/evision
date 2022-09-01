@@ -353,8 +353,8 @@ static ERL_NIF_TERM evision_cv_destroyWindow(ErlNifEnv *env, int argc, const ERL
     else return evision::nif::error(env, "overload resolution failed");
 }
 
-// @evision c: destroyAllWindows,evision_cv_destroyAllWindows,1
-// @evision nif: def destroyAllWindows(_opts \\ []), do: :erlang.nif_error("cv::destroy_all_windows not loaded")
+// @evision c: destroyAllWindows,evision_cv_destroyAllWindows,0
+// @evision nif: def destroyAllWindows(), do: :erlang.nif_error("cv::destroyAllWindows not loaded")
 static ERL_NIF_TERM evision_cv_destroyAllWindows(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
     struct destroy_all_windows_cmd * cmd = new destroy_all_windows_cmd;
