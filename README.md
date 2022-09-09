@@ -145,18 +145,22 @@ Note 3: a copy of OpenCV's license file can be found at `LICENSE-OpenCV`.
 To obtain and compile OpenCV's source code from official releases, the following environment variables can affect the build
 
 ```shell
-# optional.
+# optional
 ## set OpenCV version
 ##   the corresponding license file should be available at https://github.com/opencv/opencv/blob/${OPENCV_VER}/LICENSE
 export OPENCV_VER="4.6.0"
 
+# optional
+## Use Debug build
+export CMAKE_BUILD_TYPE=Debug
+
+# optional
 ## enable FFmpeg
 ##   this will allow cmake to auto-detect FFmpeg libraries installed on the host
 ##   on Windows, OpenCV will download prebuilt FFmpeg libraries
 ##   for more information, please visit https://github.com/opencv/opencv/tree/4.x/3rdparty/ffmpeg
 export CMAKE_OPENCV_OPTIONS="-D WITH_FFMPEG=ON"
-
-## disable FFmpeg
+## or disable FFmpeg
 export CMAKE_OPENCV_OPTIONS="-D WITH_FFMPEG=OFF"
 ```
 
