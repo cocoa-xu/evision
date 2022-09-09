@@ -80,7 +80,7 @@ defmodule Evision.Photo.HDR.Test do
     output_fusion_file = Path.join([__DIR__, "photo_hdr_test", "fusion.png"])
 
     fusion
-    |> Cv.Nx.to_nx()
+    |> Cv.Nx.to_nx(Nx.BinaryBackend)
     |> Nx.multiply(255)
     |> Nx.clip(0, 255)
     |> Nx.as_type({:u, 8})

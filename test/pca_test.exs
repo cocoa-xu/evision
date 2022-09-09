@@ -61,8 +61,8 @@ defmodule Evision.PCA.Test do
           {:ok, {mean, eigenvectors, eigenvalues}} =
             Cv.pcaCompute2(data_pts, Cv.Mat.empty!())
 
-          eigenvectors = Cv.Nx.to_nx(eigenvectors)
-          eigenvalues = Cv.Nx.to_nx(eigenvalues)
+          eigenvectors = Cv.Nx.to_nx(eigenvectors, Nx.BinaryBackend)
+          eigenvalues = Cv.Nx.to_nx(eigenvalues, Nx.BinaryBackend)
 
           {:ok, <<centre_x::float-size(64)-little, centre_y::float-size(64)-little, _::binary>>} =
             Cv.Mat.to_binary(mean)

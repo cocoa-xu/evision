@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.1.4-dev
+- Default to `Evision.Backend` for `Evision.Nx.to_nx/2`.
+- Fix class inheritance issue in `py_src/class_info.py`.
+
 ## v0.1.3 (2022-09-01)
 - Fix issues in restoring files from precompiled package for macOS and Linux.
   - Paths are now quoted. 

@@ -80,17 +80,26 @@ class ClassInfo(object):
 
         methods = self.methods.copy()
 
-        if self.base and (self.cname.startswith("cv::ml") or "Calibrate" in self.cname or "Feature2D" in self.base or "Matcher" in self.base):
-            if self.base in codegen.classes:
-                base_class = codegen.classes[self.base]
-                for base_method_name in base_class.methods:
-                    if base_method_name not in methods:
-                        base_method = base_class.methods[base_method_name].__deepcopy__()
-                        base_method.classname = self.name
-                        methods[base_method_name] = base_method
-                    else:
-                        # print(self.cname, "overrides base method:", base_method_name)
-                        _ = 0
+        base_class = self.base
+        current_class = self
+        while base_class is not None:
+            if base_class and (current_class.cname.startswith("cv::ml") or "Calibrate" in current_class.cname or (current_class.base is not None and "Feature2D" in current_class.base) or (current_class.base is not None and "Matcher" in current_class.base)):
+                if base_class in codegen.classes:
+                    base_class = codegen.classes[current_class.base]
+                    for base_method_name in base_class.methods:
+                        if base_method_name not in methods:
+                            base_method = base_class.methods[base_method_name].__deepcopy__()
+                            base_method.classname = self.name
+                            methods[base_method_name] = base_method
+                        else:
+                            # print(self.cname, "overrides base method:", base_method_name)
+                            _ = 0
+                    base_class, current_class = current_class.base, base_class
+                else:
+                    break
+            else:
+                break
+
         sorted_methods = list(methods.items())
         sorted_methods.sort()
 
@@ -170,20 +179,29 @@ class ClassInfo(object):
         methods_inits = StringIO()
 
         methods = self.methods.copy()
-        if self.base and (self.cname.startswith("cv::ml") or "Calibrate" in self.cname or "Feature2D" in self.base or "Matcher" in self.base or "Algorithm" in self.base):
-            if self.base in codegen.classes:
-                base_class = codegen.classes[self.base]
-                for base_method_name in base_class.methods:
-                    if base_method_name not in methods:
-                        base_method = base_class.methods[base_method_name].__deepcopy__()
-                        for v in base_method.variants:
-                            v.base_classname = base_method.classname
-                            v.from_base = True
-                        base_method.classname = self.name
-                        methods[base_method_name] = base_method
-                    else:
-                        # print(self.cname, "overrides base method:", base_method_name)
-                        _ = 0
+        base_class = self.base
+        current_class = self
+        while base_class is not None:
+            if base_class and (current_class.cname.startswith("cv::ml") or "Calibrate" in current_class.cname or (current_class.base is not None and "Feature2D" in current_class.base) or (current_class.base is not None and "Matcher" in current_class.base) or (current_class.base is not None and "Algorithm" in current_class.base)):
+                if base_class in codegen.classes:
+                    base_class = codegen.classes[current_class.base]
+                    for base_method_name in base_class.methods:
+                        if base_method_name not in methods:
+                            base_method = base_class.methods[base_method_name].__deepcopy__()
+                            for v in base_method.variants:
+                                v.base_classname = base_method.classname
+                                v.from_base = True
+                            base_method.classname = self.name
+                            methods[base_method_name] = base_method
+                        else:
+                            # print(self.cname, "overrides base method:", base_method_name)
+                            _ = 0
+                    base_class, current_class = current_class.base, base_class
+                else:
+                    break
+            else:
+                break
+
         sorted_methods = list(methods.items())
         sorted_methods.sort()
 
