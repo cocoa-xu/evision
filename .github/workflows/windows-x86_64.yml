@@ -92,6 +92,8 @@ jobs:
           mix compile
 
       - name: Mix Test
+        shell: bash
         run: |
-          $Env:MAKE = "nmake"
+          ls -la _build/test/lib/castore
+          ls -la _build/test/lib/castore/priv
           mix test --include require_downloading --include require_ffmpeg
