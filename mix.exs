@@ -227,7 +227,9 @@ defmodule Evision.MixProject do
       {:elixir_make, "~> 0.6", runtime: false},
       {:dll_loader_helper, "~> 0.1"},
       {:ex_doc, "~> 0.28", only: :docs, runtime: false},
-      {:nx, "~> 0.3"}
+      {:nx, "~> 0.3"},
+      {:scidata, "~> 0.1", only: :test},
+      {:scholar, "~> 0.1", only: :test, github: "elixir-nx/scholar"}
     ]
   end
 

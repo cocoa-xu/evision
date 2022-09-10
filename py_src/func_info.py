@@ -186,7 +186,7 @@ class FuncInfo(object):
                 code_args += "_self_"
 
             # declare all the C function arguments,
-            # add necessary conversions from Python objects to code_cvt_list,
+            # add necessary conversions from Erlang objects to code_cvt_list,
             # form the function/method call,
             # for the list of type mappings
             for a_index, a in enumerate(v.args):
@@ -263,7 +263,10 @@ class FuncInfo(object):
                     else:
                         code_decl += "    %s %s=%s;\n" % (arg_type_info.atype, a.name, defval)
                 else:
-                    code_decl += "    %s %s;\n" % (arg_type_info.atype, a.name)
+                    if a.name == "nodeName":
+                        code_decl += "    %s %s = String();\n" % (arg_type_info.atype, a.name)
+                    else:
+                        code_decl += "    %s %s;\n" % (arg_type_info.atype, a.name)
 
                 if not code_args.endswith("("):
                     code_args += ", "

@@ -26,13 +26,13 @@ defmodule Evision.Nx do
   ```
   """
   @doc namespace: :external
-  @spec to_nx(reference()) :: {:ok, reference()} | {:error, String.t()}
-  def to_nx(mat) do
+  @spec to_nx(reference(), module()) :: {:ok, reference()} | {:error, String.t()}
+  def to_nx(mat, backend \\ Evision.Backend) do
     with {:ok, mat_type} <- Evision.Mat.type(mat),
          {:ok, mat_shape} <- Evision.Mat.shape(mat),
          {:ok, bin} <- Evision.Mat.to_binary(mat) do
       bin
-      |> Nx.from_binary(mat_type)
+      |> Nx.from_binary(mat_type, backend: backend)
       |> Nx.reshape(mat_shape)
     else
       {:error, reason} ->
@@ -41,6 +41,7 @@ defmodule Evision.Nx do
   end
 
   deferror(to_nx(mat))
+  deferror(to_nx(mat, backend))
 
   @doc """
   Converts a tensor of `Nx` to `Mat` of evision (OpenCV).

@@ -875,6 +875,9 @@ template<>
 bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, String &value, const ArgInfo& info)
 {
     if (evision::nif::check_nil(env, obj)) {
+        if (strncmp(info.name, "nodeName", 8) == 0) {
+            return true;
+        }
         return false;
     }
 
