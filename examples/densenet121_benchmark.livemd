@@ -1,14 +1,13 @@
 # Evision Benchmark - Densenet121
 
 ```elixir
-Mix.install(
-  [
-    {:evision, "~> 0.1.3", github: "cocoa-xu/evision", tag: "v0.1.3"}
-  ],
-  system_env: [
-    {"EVISION_PREFER_PRECOMPILED", "true"}
-  ]
-)
+# remove the following line (or set to `false`) to compile evision from source
+# note that to compile from source, you may need at least 1GB RAM
+System.put_env("EVISION_PREFER_PRECOMPILED", "true")
+
+Mix.install([
+  {:evision, "~> 0.1", github: "cocoa-xu/evision", tag: "v0.1.4"},
+])
 ```
 
 ## Section

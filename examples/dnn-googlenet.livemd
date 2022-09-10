@@ -7,21 +7,12 @@
 ## Setup
 
 ```elixir
-# # a quick fix for the free tier livebook session
-# ## allocate 2GB swap
-# System.cmd("fallocate", ["-l", "2G", "/swap"])
-# System.cmd("chmod", ["400", "/swap"])
-# System.cmd("mkswap", ["/swap"])
-# System.cmd("swapon", ["/swap"])
-# ## need unzip to unzip the source code
-# System.cmd("apt", ["update", "-q", "-y"])
-# System.cmd("apt", ["install", "-y", "unzip", "python3", "cmake"])
+# remove the following line (or set to `false`) to compile evision from source
+# note that to compile from source, you may need at least 1GB RAM
+System.put_env("EVISION_PREFER_PRECOMPILED", "true")
 
-# If you are using the pre-built nerves firmware
-# you can comment out the following installation step
 Mix.install([
-  {:nx, "~> 0.3"},
-  {:evision, "~> 0.1.3", github: "cocoa-xu/evision", tag: "v0.1.3"}
+  {:evision, "~> 0.1", github: "cocoa-xu/evision", tag: "v0.1.4"}
 ])
 ```
 
