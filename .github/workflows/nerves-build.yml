@@ -42,7 +42,7 @@ jobs:
       MIX_ENV: prod
       NERVES_PROJ_NAME: nerves_evision
       OPENCV_VER: "4.6.0"
-      NERVES_LIVEBOOK_VER: "v0.6.4"
+      NERVES_LIVEBOOK_VER: "v0.6.5"
       OTP_VERSION: "25.0.4"
       ELIXIR_VERSION: "1.14.0"
 
