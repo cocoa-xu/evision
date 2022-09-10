@@ -108,4 +108,5 @@ jobs:
       - name: Mix Test
         shell: bash
         run: |
+          rm -rf _build/test/lib/castore
           mix test --include require_downloading --include require_ffmpeg
