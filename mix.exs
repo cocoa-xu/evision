@@ -229,7 +229,8 @@ defmodule Evision.MixProject do
       {:ex_doc, "~> 0.28", only: :docs, runtime: false},
       {:nx, "~> 0.3"},
       {:scidata, "~> 0.1", only: :test},
-      {:scholar, "~> 0.1", only: :test, github: "elixir-nx/scholar"}
+      {:scholar, "~> 0.1", only: :test, github: "elixir-nx/scholar"},
+      {:castore, "~> 0.1", only: :test, override: true}
     ]
   end
 
