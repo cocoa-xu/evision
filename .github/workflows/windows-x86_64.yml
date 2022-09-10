@@ -48,8 +48,8 @@ jobs:
       
       - uses: erlef/setup-beam@v1
         with:
-          otp-version: 25.0.2
-          elixir-version: 1.13.4
+          otp-version: 25.0.4
+          elixir-version: 1.14.0
 
       - uses: ilammy/msvc-dev-cmd@v1
         with:
@@ -96,4 +96,5 @@ jobs:
         run: |
           ls -la _build/test/lib/castore
           ls -la _build/test/lib/castore/priv
+          ls -la /d/a/evision/evision/deps/castore/priv
           mix test --include require_downloading --include require_ffmpeg
