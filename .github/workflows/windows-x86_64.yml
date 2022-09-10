@@ -91,6 +91,12 @@ jobs:
           if (Test-Path "_build/dev/lib/evision/priv/evision.dll") { Remove-Item _build/dev/lib/evision/priv/evision.dll }
           mix compile
 
+      - name: clean CAStore
+        shell: bash
+        run: |
+          rm -rf _build/test/lib/castore
+          mix compile
+
       - name: Mix Test
         shell: bash
         run: |
