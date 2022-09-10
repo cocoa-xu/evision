@@ -11,6 +11,8 @@ jobs:
     env:
       OPENCV_VER: "4.6.0"
       MIX_ENV: prod
+      OTP_VERSION: "25.0.4"
+      ELIXIR_VERSION: "1.14.0"
     strategy:
       fail-fast: false
       matrix:
@@ -51,34 +53,45 @@ jobs:
 
       - uses: erlef/setup-beam@v1
         with:
-          otp-version: "25.0.4"
-          elixir-version: "1.13.4"
+          otp-version: ${{ env.OTP_VERSION }}
+          elixir-version: ${{ env.ELIXIR_VERSION }}
 
       - name: Install system dependecies
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential automake autoconf pkg-config bc m4 unzip zip curl git libssl-dev gzip libncurses5-dev python3 ca-certificates ${{ matrix.pair.c_compiler }} ${{ matrix.pair.cpp_compiler }}
       
-      - name: Cache mix packages and OpenCV
-        id: cache-mix-and-opencv
+      - name: Cache mix packages
+        id: cache-mix-deps
         uses: actions/cache@v3
         with:
-          key: deps-${{ hashFiles('mix.lock') }}-${{ env.OPENCV_VER }}
+          key: deps-${{ hashFiles('mix.lock') }}-${{ env.OTP_VERSION }}-${{ env.ELIXIR_VERSION }}
           path: |
             ./deps
-            ./3rd_party
 
-      - name: Get mix deps and download OpenCV
-        if: steps.cache-mix-and-opencv.outputs.cache-hit != 'true'
+      - name: Get mix deps
+        if: steps.cache-mix-deps.outputs.cache-hit != 'true'
         run: |
           mix deps.get
+
+      - name: Cache OpenCV
+        id: cache-opencv
+        uses: actions/cache@v3
+        with:
+          key: opencv-${{ env.OPENCV_VER }}
+          path: |
+            ./3rd_party
+
+      - name: Download OpenCV
+        if: steps.cache-opencv.outputs.cache-hit != 'true'
+        run: |
           bash scripts/download_opencv.sh ${OPENCV_VER} 3rd_party/cache 3rd_party/opencv/
 
       - name: Cache compiled OpenCV
         id: cache-mix-compile
         uses: actions/cache@v3
         with:
-          key: precompile-${{ env.MIX_ENV }}-${{ runner.os }}-${{ matrix.pair.arch }}-${{ hashFiles('cc_toolchain/**') }}-${{ hashFiles('c_src/**') }}-${{ hashFiles('CMakeLists.txt') }}-${{ hashFiles('Makefile') }}-${{ env.OPENCV_VER }}
+          key: precompile-${{ env.MIX_ENV }}-${{ runner.os }}-${{ matrix.pair.arch }}-${{ hashFiles('cc_toolchain/**') }}-${{ hashFiles('c_src/**') }}-${{ hashFiles('CMakeLists.txt') }}-${{ hashFiles('Makefile') }}-${{ env.OPENCV_VER }}--${{ env.OTP_VERSION }}-${{ env.ELIXIR_VERSION }}
           path: |
             ./_build
             ./c_src/headers.txt

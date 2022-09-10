@@ -54,51 +54,62 @@ jobs:
     env:
       MIX_ENV: test
       OPENCV_VER: "4.6.0"
+      OTP_VERSION: "25.0.4"
+      ELIXIR_VERSION: "1.14.0"
     steps:
       - uses: actions/checkout@v3
       - name: Install system dependecies
         run: |
           apk add cmake make python3 bash curl unzip gcc g++ ncurses-dev openssl-dev linux-headers perl git ffmpeg ffmpeg-dev dpkg
-          curl -fSL https://repo.uwucocoa.moe/pool/main/erlang_25.0.4_musl-linux-amd64.deb -o erlang_25.0.4_musl-linux-amd64.deb
-          dpkg -i erlang_25.0.4_musl-linux-amd64.deb
+          curl -fSL "https://repo.uwucocoa.moe/pool/main/erlang_${OTP_VERSION}_musl-linux-amd64.deb" -o "erlang_${OTP_VERSION}_musl-linux-amd64.deb"
+          dpkg -i "erlang_${OTP_VERSION}_musl-linux-amd64.deb"
 
       - name: Install elixir
         run: |
-          export ELIXIR_VER=1.13.4
           mkdir -p "${HOME}/.elixir"
           cd "${HOME}/.elixir"
-          curl -fSL https://github.com/elixir-lang/elixir/archive/refs/tags/v${ELIXIR_VER}.tar.gz -o v${ELIXIR_VER}.tar.gz
-          tar xf "v${ELIXIR_VER}.tar.gz"
-          rm -f "v${ELIXIR_VER}.tar.gz"
-          cd "elixir-${ELIXIR_VER}"
+          curl -fSL https://github.com/elixir-lang/elixir/archive/refs/tags/v${ELIXIR_VERSION}.tar.gz -o v${ELIXIR_VERSION}.tar.gz
+          tar xf "v${ELIXIR_VERSION}.tar.gz"
+          rm -f "v${ELIXIR_VERSION}.tar.gz"
+          cd "elixir-${ELIXIR_VERSION}"
           make clean
           make install
-          export PATH="${PATH}:${HOME}/.elixir/elixir-${ELIXIR_VER}/bin"
+          export PATH="${PATH}:${HOME}/.elixir/elixir-${ELIXIR_VERSION}/bin"
           mix local.hex --force
           mix local.rebar --force
 
-      - name: Cache mix packages and OpenCV
-        id: cache-mix-and-opencv
+      - name: Cache mix packages
+        id: cache-mix-deps
         uses: actions/cache@v3
         with:
-          key: deps-${{ hashFiles('mix.lock') }}-${{ env.OPENCV_VER }}
+          key: deps-${{ hashFiles('mix.lock') }}-${{ env.OTP_VERSION }}-${{ env.ELIXIR_VERSION }}
           path: |
             ./deps
+
+      - name: Get mix deps
+        if: steps.cache-mix-deps.outputs.cache-hit != 'true'
+        run: |
+          export PATH="${PATH}:${HOME}/.elixir/elixir-${ELIXIR_VERSION}/bin"
+          mix deps.get
+
+      - name: Cache OpenCV
+        id: cache-opencv
+        uses: actions/cache@v3
+        with:
+          key: opencv-${{ env.OPENCV_VER }}
+          path: |
             ./3rd_party
 
-      - name: Get mix deps and download OpenCV
-        if: steps.cache-mix-and-opencv.outputs.cache-hit != 'true'
+      - name: Download OpenCV
+        if: steps.cache-opencv.outputs.cache-hit != 'true'
         run: |
-          export ELIXIR_VER=1.13.4
-          export PATH="${PATH}:${HOME}/.elixir/elixir-${ELIXIR_VER}/bin"
-          mix deps.get
           bash scripts/download_opencv.sh ${OPENCV_VER} 3rd_party/cache 3rd_party/opencv/
 
       - name: Cache compiled OpenCV
         id: cache-mix-compile
         uses: actions/cache@v3
         with:
-          key: compile-ffmpeg-x86_64-linux-musl-${{ hashFiles('cc_toolchain/**') }}-${{ hashFiles('c_src/**') }}-${{ hashFiles('CMakeLists.txt') }}-${{ hashFiles('Makefile') }}-${{ env.OPENCV_VER }}
+          key: compile-ffmpeg-x86_64-linux-musl-${{ hashFiles('cc_toolchain/**') }}-${{ hashFiles('c_src/**') }}-${{ hashFiles('CMakeLists.txt') }}-${{ hashFiles('Makefile') }}-${{ env.OPENCV_VER }}-${{ env.OTP_VERSION }}-${{ env.ELIXIR_VERSION }}
           path: |
             ./_build
             ./c_src/headers.txt
@@ -109,10 +120,7 @@ jobs:
       - name: Mix Compile
         if: steps.cache-mix-compile.outputs.cache-hit != 'true'
         run: |
-          echo "MIX_ENV: ${MIX_ENV}"
-          export MIX_ENV=test
-          export ELIXIR_VER=1.13.4
-          export PATH="${PATH}:${HOME}/.elixir/elixir-${ELIXIR_VER}/bin"
+          export PATH="${PATH}:${HOME}/.elixir/elixir-${ELIXIR_VERSION}/bin"
           rm -f _build/test/lib/evision/priv/evision.so
           mix compile
 
@@ -125,14 +133,16 @@ jobs:
     env:
       MIX_ENV: test
       OPENCV_VER: "4.6.0"
+      OTP_VERSION: "25.0.4"
+      ELIXIR_VERSION: "1.14.0"
 
     steps:
       - uses: actions/checkout@v3
       
       - uses: erlef/setup-beam@v1
         with:
-          otp-version: "25.0.4"
-          elixir-version: "1.13.4"
+          otp-version: ${{ env.OTP_VERSION }}
+          elixir-version: ${{ env.ELIXIR_VERSION }}
 
       - name: Install system dependecies
         run: |
@@ -140,26 +150,37 @@ jobs:
           sudo apt-get install -y build-essential automake autoconf pkg-config bc m4 unzip zip curl git libssl-dev gzip libncurses5-dev erlang-inets erlang-os-mon erlang-runtime-tools erlang-ssl erlang-dev python3 ca-certificates
           sudo apt-get install -y libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libavresample-dev ffmpeg
 
-      - name: Cache mix packages and OpenCV
-        id: cache-mix-and-opencv
+      - name: Cache mix packages
+        id: cache-mix-deps
         uses: actions/cache@v3
         with:
-          key: deps-${{ hashFiles('mix.lock') }}-${{ env.OPENCV_VER }}
+          key: deps-${{ hashFiles('mix.lock') }}-${{ env.OTP_VERSION }}-${{ env.ELIXIR_VERSION }}
           path: |
             ./deps
-            ./3rd_party
 
-      - name: Get mix deps and download OpenCV
-        if: steps.cache-mix-and-opencv.outputs.cache-hit != 'true'
+      - name: Get mix deps
+        if: steps.cache-mix-deps.outputs.cache-hit != 'true'
         run: |
           mix deps.get
+
+      - name: Cache OpenCV
+        id: cache-opencv
+        uses: actions/cache@v3
+        with:
+          key: opencv-${{ env.OPENCV_VER }}
+          path: |
+            ./3rd_party
+
+      - name: Download OpenCV
+        if: steps.cache-opencv.outputs.cache-hit != 'true'
+        run: |
           bash scripts/download_opencv.sh ${OPENCV_VER} 3rd_party/cache 3rd_party/opencv/
 
       - name: Cache compiled OpenCV
         id: cache-mix-compile
         uses: actions/cache@v3
         with:
-          key: compile-ffmpeg-${{ runner.os }}-${{ hashFiles('cc_toolchain/**') }}-${{ hashFiles('c_src/**') }}-${{ hashFiles('CMakeLists.txt') }}-${{ hashFiles('Makefile') }}-${{ env.OPENCV_VER }}
+          key: compile-ffmpeg-${{ runner.os }}-${{ hashFiles('cc_toolchain/**') }}-${{ hashFiles('c_src/**') }}-${{ hashFiles('CMakeLists.txt') }}-${{ hashFiles('Makefile') }}-${{ env.OPENCV_VER }}-${{ env.OTP_VERSION }}-${{ env.ELIXIR_VERSION }}
           path: |
             ./_build
             ./c_src/headers.txt

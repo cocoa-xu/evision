@@ -55,19 +55,30 @@ jobs:
           mix local.hex --force
           mix local.rebar --force
 
-      - name: Cache mix packages and OpenCV
-        id: cache-mix-and-opencv
+      - name: Cache mix packages
+        id: cache-mix-deps
         uses: actions/cache@v3
         with:
-          key: deps-${{ hashFiles('mix.lock') }}-${{ env.OPENCV_VER }}
+          key: deps-${{ hashFiles('mix.lock') }}
           path: |
             ./deps
-            ./3rd_party
 
-      - name: Get mix deps and download OpenCV
-        if: steps.cache-mix-and-opencv.outputs.cache-hit != 'true'
+      - name: Get mix deps
+        if: steps.cache-mix-deps.outputs.cache-hit != 'true'
         run: |
           mix deps.get
+
+      - name: Cache OpenCV
+        id: cache-opencv
+        uses: actions/cache@v3
+        with:
+          key: opencv-${{ env.OPENCV_VER }}
+          path: |
+            ./3rd_party
+
+      - name: Download OpenCV
+        if: steps.cache-opencv.outputs.cache-hit != 'true'
+        run: |
           bash scripts/download_opencv.sh ${OPENCV_VER} 3rd_party/cache 3rd_party/opencv/
 
       - name: Cache compiled OpenCV

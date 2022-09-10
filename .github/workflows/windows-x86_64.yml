@@ -42,8 +42,8 @@ jobs:
     env:
       MIX_ENV: test
       OPENCV_VER: "4.6.0"
-      OTP_VERSION: 25.0.4
-      ELIXIR_VERSION: 1.14.0
+      OTP_VERSION: "25.0.4"
+      ELIXIR_VERSION: "1.14.0"
 
     steps:
       - uses: actions/checkout@v2
@@ -57,20 +57,32 @@ jobs:
         with:
           arch: x64
 
-      - name: Cache mix packages and OpenCV
-        id: cache-mix-and-opencv
+      - name: Cache mix packages
+        id: cache-mix-deps
         uses: actions/cache@v3
         with:
-          key: deps-${{ hashFiles('mix.lock') }}-${{ env.OPENCV_VER }}-${{ env.OTP_VERSION }}-${{ env.ELIXIR_VERSION }}
+          key: deps-${{ hashFiles('mix.lock') }}-${{ env.OTP_VERSION }}-${{ env.ELIXIR_VERSION }}
           path: |
             ./deps
-            ./3rd_party
 
-      - name: Get mix deps and download OpenCV
-        if: steps.cache-mix-and-opencv.outputs.cache-hit != 'true'
+      - name: Get mix deps
+        if: steps.cache-mix-deps.outputs.cache-hit != 'true'
         shell: bash
         run: |
           mix deps.get
+
+      - name: Cache OpenCV
+        id: cache-opencv
+        uses: actions/cache@v3
+        with:
+          key: opencv-${{ env.OPENCV_VER }}
+          path: |
+            ./3rd_party
+
+      - name: Download OpenCV
+        if: steps.cache-opencv.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
           bash scripts/download_opencv.sh ${OPENCV_VER} 3rd_party/cache 3rd_party/opencv/
 
       - name: Cache compiled OpenCV
@@ -96,7 +108,4 @@ jobs:
       - name: Mix Test
         shell: bash
         run: |
-          ls -la _build/test/lib/castore
-          ls -la _build/test/lib/castore/priv
-          ls -la /d/a/evision/evision/deps/castore/priv
           mix test --include require_downloading --include require_ffmpeg

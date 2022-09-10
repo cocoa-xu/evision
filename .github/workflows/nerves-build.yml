@@ -43,6 +43,8 @@ jobs:
       NERVES_PROJ_NAME: nerves_evision
       OPENCV_VER: "4.6.0"
       NERVES_LIVEBOOK_VER: "v0.6.4"
+      OTP_VERSION: "25.0.4"
+      ELIXIR_VERSION: "1.14.0"
 
     strategy:
       matrix:
@@ -52,8 +54,8 @@ jobs:
       - uses: actions/checkout@v3
       - uses: erlef/setup-beam@v1
         with:
-          otp-version: "25.0.4"
-          elixir-version: "1.13.4"
+          otp-version: ${{ env.OTP_VERSION }}
+          elixir-version: ${{ env.ELIXIR_VERSION }}
 
       - name: Install nerves and system dependecies
         run: |
@@ -63,19 +65,30 @@ jobs:
           mix local.hex --force
           mix local.rebar --force
       
-      - name: Cache mix packages and OpenCV
-        id: cache-mix-and-opencv
+      - name: Cache mix packages
+        id: cache-mix-deps
         uses: actions/cache@v3
         with:
-          key: deps-${{ hashFiles('mix.lock') }}-${{ env.OPENCV_VER }}
+          key: deps-${{ hashFiles('mix.lock') }}-${{ env.OTP_VERSION }}-${{ env.ELIXIR_VERSION }}
           path: |
             ./deps
-            ./3rd_party
 
-      - name: Get mix deps and download OpenCV
-        if: steps.cache-mix-and-opencv.outputs.cache-hit != 'true'
+      - name: Get mix deps
+        if: steps.cache-mix-deps.outputs.cache-hit != 'true'
         run: |
           mix deps.get
+
+      - name: Cache OpenCV
+        id: cache-opencv
+        uses: actions/cache@v3
+        with:
+          key: opencv-${{ env.OPENCV_VER }}
+          path: |
+            ./3rd_party
+
+      - name: Download OpenCV
+        if: steps.cache-opencv.outputs.cache-hit != 'true'
+        run: |
           bash scripts/download_opencv.sh ${OPENCV_VER} 3rd_party/cache 3rd_party/opencv/
 
       - name: Make a nerves project
