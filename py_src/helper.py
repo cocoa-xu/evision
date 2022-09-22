@@ -131,6 +131,19 @@ def map_uppercase_to_erlang_name(name):
         "RQDecomp3x3": "rqDecomp3x3",
         "SVBackSubst": "svBackSubst",
         "SVDecomp": "svdDecomp",
+        "GArrayT": "gArrayT",
+        "GCompileArg": "gCompileArg",
+        "GComputation": "gComputation",
+        "GFrame": "gFrame",
+        "GInferInputs": "gInferInputs",
+        "GInferListInputs": "gInferListInputs",
+        "GInferListOutputs": "gInferListOutputs",
+        "GInferOutputs": "gInferOutputs",
+        "GMat": "gMat",
+        "GMatDesc": "gMatDesc",
+        "GOpaqueT": "gOpaqueT",
+        "GScalar": "gScalar",
+        "GStreamingCompiled": "gStreamingCompiled"
     }
     if name[0:3] == 'cv_':
         name = name[3:]

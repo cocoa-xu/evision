@@ -97,12 +97,18 @@ class BeamWrapperGenerator(object):
     def add_const(self, name, decl):
         (module_name, erl_const_name) = name.split('.')[-2:]
         val = decl[1]
-        val_tree = ast.parse(val, mode='eval')
-        val_gen = ErlEnumExpressionGenerator()
-        val_gen.visit(val_tree)
-        if not val_gen.skip_this:
+        skip_this = False
+        if val == "std::numeric_limits<uint8_t>::max()":
+            val_erlang = 255
+        else:
+            val_tree = ast.parse(val, mode='eval')
+            val_gen = ErlEnumExpressionGenerator()
+            val_gen.visit(val_tree)
+            skip_this = val_gen.skip_this
             val = val_gen.expression
             val_erlang = val_gen.expression_erlang
+
+        if not skip_this:
             erl_const_name = self.map_elixir_argname(erl_const_name, ignore_upper_starting=True)
             if self.enum_names.get(val, None) is not None:
                 val = f'cv_{val}()'
@@ -988,6 +994,9 @@ class BeamWrapperGenerator(object):
         for hdr in srcfiles:
             decls = self.parser.parse(hdr)
             if len(decls) == 0:
+                continue
+
+            if 'gapi' in hdr:
                 continue
 
             if hdr.find('misc/python/shadow_') < 0:  # Avoid including the "shadow_" files
