@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.1.5-dev
+- Fix `Evision.Mat.transpose`: should call `shape!` instead of `shape`. Thanks to @kipcole9 ! #77
+- Always use `Evision.Mat.from_binary_by_shape/3` for `Evision.Nx.to_mat`.
+- Check `cv::Mat::Mat.type()` when fetching the shape of a Mat.
+  The number of channels will be included as the last dim of the shape if and only if `cv::Mat::Mat.type()` did not encode any channel information.
+
 ## v0.1.4 (2022-09-10)
 - Default to `Evision.Backend` for `Evision.Nx.to_nx/2`.
 - Fix class inheritance issue in `py_src/class_info.py`.
