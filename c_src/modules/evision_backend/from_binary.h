@@ -98,7 +98,7 @@ static ERL_NIF_TERM evision_cv_mat_from_binary_by_shape(ErlNifEnv *env, int argc
                 // validate binary data
                 int type = 0;
                 int ndims = (int)shape.size();
-                if (!get_binary_type(t, l, 1, type)) return evision::nif::error(env, "not implemented for the given type");
+                if (!get_binary_type(t, l, 0, type)) return evision::nif::error(env, "not implemented for the given type");
 
                 evision_res<cv::Mat *> * res;
                 if (alloc_resource(&res)) {

@@ -53,9 +53,6 @@ defmodule Evision.Nx do
   @spec to_mat(Nx.t()) :: {:ok, reference()} | {:error, String.t()}
   def to_mat(t) when is_struct(t, Nx.Tensor) do
     case Nx.shape(t) do
-      {height, width, channels} ->
-        to_mat(Nx.to_binary(t), Nx.type(t), height, width, channels)
-
       {} ->
         Evision.Mat.from_binary_by_shape(Nx.to_binary(t), Nx.type(t), {1})
 
