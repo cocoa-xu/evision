@@ -226,7 +226,7 @@ defmodule Evision.Mat do
   @spec transpose(reference(), [non_neg_integer()], keyword()) ::
           {:ok, reference()} | {:error, String.t()}
   def transpose(mat, axes, opts \\ []) do
-    as_shape = opts[:as_shape] || shape(mat)
+    as_shape = opts[:as_shape] || shape!(mat)
 
     as_shape =
       case is_tuple(as_shape) do
@@ -265,7 +265,7 @@ defmodule Evision.Mat do
   """
   @spec transpose(reference(), keyword()) :: {:ok, reference()} | {:error, String.t()}
   def transpose(mat) do
-    as_shape = shape(mat)
+    as_shape = shape!(mat)
     ndims = Enum.count(as_shape)
     uniq_axes = Enum.reverse(0..(ndims - 1))
     :evision_nif.mat_transpose(img: mat, axes: uniq_axes, as_shape: as_shape)
