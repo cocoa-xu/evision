@@ -252,6 +252,7 @@ defmodule Evision.Mat do
     end
   end
 
+  deferror(transpose(mat, axes))
   deferror(transpose(mat, axes, opts))
 
   @doc """

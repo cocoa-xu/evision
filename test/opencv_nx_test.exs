@@ -61,4 +61,12 @@ defmodule Evision.Nx.Test do
     {:ok, mat_bin} = Evision.Mat.to_binary(mat)
     assert bin == mat_bin
   end
+
+  @tag :nx
+  test "expecting correct shaoe after transposing" do
+    from_tensor = Evision.Nx.to_mat!(Nx.iota({4, 3, 3}, type: :f32))
+    assert {4, 3, 3} = Evision.Mat.shape!(from_tensor)
+    transposed = Evision.Mat.transpose!(from_tensor, [1, 0, 2])
+    assert {3, 4, 3} = Evision.Mat.shape!(transposed)
+  end
 end
