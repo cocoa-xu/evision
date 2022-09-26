@@ -106,13 +106,13 @@ static ERL_NIF_TERM evision_cv_mat_shape(ErlNifEnv *env, int argc, const ERL_NIF
         if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0))) {
             cv::MatSize size = img.size;
             int channels = img.channels();
-            int dims = size.dims() + (channels == 1 ? 0 : 1);
+            int dims = size.dims();
             ERL_NIF_TERM* shape = (ERL_NIF_TERM *)enif_alloc(sizeof(ERL_NIF_TERM) * dims);
 
             for (int i = 0; i < size.dims(); i++) {
                 shape[i] = enif_make_int(env, size[i]);
             }
-            if (channels > 1) {
+            if (img.type() == CV_8UC3 || img.type() == CV_32FC3) {
                 shape[dims - 1] = enif_make_int(env, channels);
             }
             ERL_NIF_TERM ret = enif_make_tuple_from_array(env, shape, dims);
