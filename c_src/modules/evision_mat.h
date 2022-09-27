@@ -409,6 +409,266 @@ static ERL_NIF_TERM evision_cv_mat_dot(ErlNifEnv *env, int argc, const ERL_NIF_T
     else return evision::nif::error(env, "overload resolution failed");
 }
 
+// @evision c: mat_channels, evision_cv_mat_channels, 1
+// @evision nif: def mat_channels(_opts \\ []), do: :erlang.nif_error("Mat::channels not loaded")
+static ERL_NIF_TERM evision_cv_mat_channels(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
+    using namespace cv;
+    ERL_NIF_TERM error_term = 0;
+    std::map<std::string, ERL_NIF_TERM> erl_terms;
+    int nif_opts_index = 0;
+    evision::nif::parse_arg(env, nif_opts_index, argv, erl_terms);
+
+    {
+        Mat img;
+
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0))) {
+            int channels = img.channels();
+            return enif_make_int64(env, channels);
+        }
+    }
+
+    if (error_term != 0) return error_term;
+    else return evision::nif::error(env, "overload resolution failed");
+}
+
+// @evision c: mat_depth, evision_cv_mat_depth, 1
+// @evision nif: def mat_depth(_opts \\ []), do: :erlang.nif_error("Mat::depth not loaded")
+static ERL_NIF_TERM evision_cv_mat_depth(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
+    using namespace cv;
+    ERL_NIF_TERM error_term = 0;
+    std::map<std::string, ERL_NIF_TERM> erl_terms;
+    int nif_opts_index = 0;
+    evision::nif::parse_arg(env, nif_opts_index, argv, erl_terms);
+
+    {
+        Mat img;
+
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0))) {
+            int depth = img.depth();
+            return enif_make_int64(env, depth);
+        }
+    }
+
+    if (error_term != 0) return error_term;
+    else return evision::nif::error(env, "overload resolution failed");
+}
+
+// @evision c: mat_isSubmatrix, evision_cv_mat_isSubmatrix, 1
+// @evision nif: def mat_isSubmatrix(_opts \\ []), do: :erlang.nif_error("Mat::isSubmatrix not loaded")
+static ERL_NIF_TERM evision_cv_mat_isSubmatrix(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
+    using namespace cv;
+    ERL_NIF_TERM error_term = 0;
+    std::map<std::string, ERL_NIF_TERM> erl_terms;
+    int nif_opts_index = 0;
+    evision::nif::parse_arg(env, nif_opts_index, argv, erl_terms);
+
+    {
+        Mat img;
+
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0))) {
+            bool isSubmatrix = img.isSubmatrix();
+            if (isSubmatrix) {
+                return evision::nif::atom(env, "true");
+            } else {
+                return evision::nif::atom(env, "false");
+            }
+        }
+    }
+
+    if (error_term != 0) return error_term;
+    else return evision::nif::error(env, "overload resolution failed");
+}
+
+// @evision c: mat_isContinuous, evision_cv_mat_isContinuous, 1
+// @evision nif: def mat_isContinuous(_opts \\ []), do: :erlang.nif_error("Mat::isContinuous not loaded")
+static ERL_NIF_TERM evision_cv_mat_isContinuous(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
+    using namespace cv;
+    ERL_NIF_TERM error_term = 0;
+    std::map<std::string, ERL_NIF_TERM> erl_terms;
+    int nif_opts_index = 0;
+    evision::nif::parse_arg(env, nif_opts_index, argv, erl_terms);
+
+    {
+        Mat img;
+
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0))) {
+            bool isContinuous = img.isContinuous();
+            if (isContinuous) {
+                return evision::nif::atom(env, "true");
+            } else {
+                return evision::nif::atom(env, "false");
+            }
+        }
+    }
+
+    if (error_term != 0) return error_term;
+    else return evision::nif::error(env, "overload resolution failed");
+}
+
+// @evision c: mat_total, evision_cv_mat_total, 1
+// @evision nif: def mat_total(_opts \\ []), do: :erlang.nif_error("Mat::total not loaded")
+static ERL_NIF_TERM evision_cv_mat_total(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
+    using namespace cv;
+    ERL_NIF_TERM error_term = 0;
+    std::map<std::string, ERL_NIF_TERM> erl_terms;
+    int nif_opts_index = 0;
+    evision::nif::parse_arg(env, nif_opts_index, argv, erl_terms);
+
+    {
+        Mat img;
+        int start_dim = -1;
+        int end_dim = INT_MAX;
+
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0))) {
+            evision_to_safe(env, evision_get_kw(env, erl_terms, "start_dim"), start_dim, ArgInfo("start_dim", 0));
+            evision_to_safe(env, evision_get_kw(env, erl_terms, "end_dim"), end_dim, ArgInfo("end_dim", 0));
+            size_t total_elems;
+            if (start_dim == -1) {
+                total_elems = img.total();
+            } else {
+                total_elems = img.total(start_dim, end_dim);
+            }
+            
+            return enif_make_int64(env, total_elems);
+        }
+    }
+
+    if (error_term != 0) return error_term;
+    else return evision::nif::error(env, "overload resolution failed");
+}
+
+// @evision c: mat_elemSize, evision_cv_mat_elemSize, 1
+// @evision nif: def mat_elemSize(_opts \\ []), do: :erlang.nif_error("Mat::elemSize not loaded")
+static ERL_NIF_TERM evision_cv_mat_elemSize(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
+    using namespace cv;
+    ERL_NIF_TERM error_term = 0;
+    std::map<std::string, ERL_NIF_TERM> erl_terms;
+    int nif_opts_index = 0;
+    evision::nif::parse_arg(env, nif_opts_index, argv, erl_terms);
+
+    {
+        Mat img;
+
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0))) {
+            return enif_make_int64(env, img.elemSize());
+        }
+    }
+
+    if (error_term != 0) return error_term;
+    else return evision::nif::error(env, "overload resolution failed");
+}
+
+// @evision c: mat_elemSize1, evision_cv_mat_elemSize1, 1
+// @evision nif: def mat_elemSize1(_opts \\ []), do: :erlang.nif_error("Mat::elemSize1 not loaded")
+static ERL_NIF_TERM evision_cv_mat_elemSize1(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
+    using namespace cv;
+    ERL_NIF_TERM error_term = 0;
+    std::map<std::string, ERL_NIF_TERM> erl_terms;
+    int nif_opts_index = 0;
+    evision::nif::parse_arg(env, nif_opts_index, argv, erl_terms);
+
+    {
+        Mat img;
+
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0))) {
+            return enif_make_int64(env, img.elemSize1());
+        }
+    }
+
+    if (error_term != 0) return error_term;
+    else return evision::nif::error(env, "overload resolution failed");
+}
+
+// @evision c: mat_raw_type, evision_cv_mat_raw_type, 1
+// @evision nif: def mat_raw_type(_opts \\ []), do: :erlang.nif_error("Mat::raw_type not loaded")
+static ERL_NIF_TERM evision_cv_mat_raw_type(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
+    using namespace cv;
+    ERL_NIF_TERM error_term = 0;
+    std::map<std::string, ERL_NIF_TERM> erl_terms;
+    int nif_opts_index = 0;
+    evision::nif::parse_arg(env, nif_opts_index, argv, erl_terms);
+
+    {
+        Mat img;
+
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0))) {
+            return enif_make_int64(env, img.type());
+        }
+    }
+
+    if (error_term != 0) return error_term;
+    else return evision::nif::error(env, "overload resolution failed");
+}
+
+// @evision c: mat_dims, evision_cv_mat_dims, 1
+// @evision nif: def mat_dims(_opts \\ []), do: :erlang.nif_error("Mat::dims not loaded")
+static ERL_NIF_TERM evision_cv_mat_dims(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
+    using namespace cv;
+    ERL_NIF_TERM error_term = 0;
+    std::map<std::string, ERL_NIF_TERM> erl_terms;
+    int nif_opts_index = 0;
+    evision::nif::parse_arg(env, nif_opts_index, argv, erl_terms);
+
+    {
+        Mat img;
+
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0))) {
+            return enif_make_int64(env, img.dims);
+        }
+    }
+
+    if (error_term != 0) return error_term;
+    else return evision::nif::error(env, "overload resolution failed");
+}
+
+// @evision c: mat_size, evision_cv_mat_size, 1
+// @evision nif: def mat_size(_opts \\ []), do: :erlang.nif_error("Mat::size not loaded")
+static ERL_NIF_TERM evision_cv_mat_size(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
+    using namespace cv;
+    ERL_NIF_TERM error_term = 0;
+    std::map<std::string, ERL_NIF_TERM> erl_terms;
+    int nif_opts_index = 0;
+    evision::nif::parse_arg(env, nif_opts_index, argv, erl_terms);
+
+    {
+        Mat img;
+
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0))) {
+            ERL_NIF_TERM p;
+            evision::nif::make_i32_list_from_c_array(env, img.size.dims(), img.size.p, p);
+            ERL_NIF_TERM dims = enif_make_int64(env, img.size.dims());
+            return enif_make_tuple2(env, dims, p);
+        }
+    }
+
+    if (error_term != 0) return error_term;
+    else return evision::nif::error(env, "overload resolution failed");
+}
+
+// @evision c: mat_as_shape, evision_cv_mat_as_shape, 1
+// @evision nif: def mat_as_shape(_opts \\ []), do: :erlang.nif_error("Mat::as_shape not loaded")
+static ERL_NIF_TERM evision_cv_mat_as_shape(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
+    using namespace cv;
+    ERL_NIF_TERM error_term = 0;
+    std::map<std::string, ERL_NIF_TERM> erl_terms;
+    int nif_opts_index = 0;
+    evision::nif::parse_arg(env, nif_opts_index, argv, erl_terms);
+
+    {
+        Mat img;
+        std::vector<int> as_shape;
+
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0)) &&
+            evision_to_safe(env, evision_get_kw(env, erl_terms, "as_shape"), as_shape, ArgInfo("as_shape", 0))) {
+            Mat ret = Mat((int)as_shape.size(), as_shape.data(), img.depth(), img.data);
+            return evision::nif::ok(env, evision_from(env, ret.clone()));
+        }
+    }
+
+    if (error_term != 0) return error_term;
+    else return evision::nif::error(env, "overload resolution failed");
+}
+
 // @evision c: mat_last_dim_as_channel, evision_cv_mat_last_dim_as_channel, 1
 // @evision nif: def mat_last_dim_as_channel(_opts \\ []), do: :erlang.nif_error("Mat::last_dim_as_channel not loaded")
 static ERL_NIF_TERM evision_cv_mat_last_dim_as_channel(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {

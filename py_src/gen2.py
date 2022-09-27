@@ -983,9 +983,10 @@ class BeamWrapperGenerator(object):
         self.evision_elixir.write('  use Bitwise\n')
         self.evision_elixir.write('  import Kernel, except: [apply: 2, apply: 3, min: 2, max: 2]\n')
         self.evision_elixir.write('  import Evision.Errorize\n')
+        self.evision_elixir.write(ET.gen_cv_types_elixir)
         self.evision_elixir.deferror = {}
 
-        self.evision_nif_erlang.write('-module(evision_nif).\n-compile(nowarn_export_all).\n-compile([export_all]).\n\n{}\n'.format(ET.gen_evision_nif_load_nif_erlang))
+        self.evision_nif_erlang.write('-module(evision_nif).\n-compile(nowarn_export_all).\n-compile([export_all]).\n\n{}\n{}\n'.format(ET.gen_evision_nif_load_nif_erlang, ET.gen_cv_types_erlang))
         self.evision_erlang.write('-module(evision).\n-compile(nowarn_export_all).\n-compile([export_all]).\n\n')
 
         self.code_ns_reg.write('static ErlNifFunc nif_functions[] = {\n')

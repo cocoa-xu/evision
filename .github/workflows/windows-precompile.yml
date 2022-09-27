@@ -59,7 +59,7 @@ jobs:
         id: cache-mix-compile
         uses: actions/cache@v3
         with:
-          key: precompile-${{ runner.os }}-${{ hashFiles('cc_toolchain/**') }}-${{ hashFiles('c_src/**') }}-${{ hashFiles('CMakeLists.txt') }}-${{ hashFiles('Makefile.win') }}-${{ env.OPENCV_VER }}-${{ env.OTP_VERSION }}-${{ env.ELIXIR_VERSION }}
+          key: precompile-${{ runner.os }}-${{ hashFiles('cc_toolchain/**') }}-${{ hashFiles('c_src/**') }}-${{ hashFiles('py_src/**') }}-${{ hashFiles('CMakeLists.txt') }}-${{ hashFiles('Makefile.win') }}-${{ env.OPENCV_VER }}-${{ env.OTP_VERSION }}-${{ env.ELIXIR_VERSION }}
           path: |
             ./_build
             ./c_src/headers.txt

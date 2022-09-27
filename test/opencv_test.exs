@@ -245,4 +245,58 @@ defmodule Evision.Test do
 
     {:ok, {112.0, 209.0, {2, 0}, {0, 1}}} = Evision.minMaxLoc(mat)
   end
+
+  test "Evision.Mat.size" do
+    img = Evision.imread!(Path.join([__DIR__, "test.jpg"]))
+    assert {2, [2, 3]} == Evision.Mat.size(img)
+  end
+
+  test "Evision.Mat.channels" do
+    img = Evision.imread!(Path.join([__DIR__, "test.jpg"]))
+    assert 3 == Evision.Mat.channels(img)
+  end
+
+  test "Evision.Mat.depth" do
+    img = Evision.imread!(Path.join([__DIR__, "test.jpg"]))
+    assert Evision.cv_8U() == Evision.Mat.depth(img)
+  end
+
+  test "Evision.Mat.raw_type" do
+    img = Evision.imread!(Path.join([__DIR__, "test.jpg"]))
+    assert Evision.cv_8UC3() == Evision.Mat.raw_type(img)
+  end
+
+  test "Evision.Mat.isSubmatrix" do
+    img = Evision.imread!(Path.join([__DIR__, "test.jpg"]))
+    assert false == Evision.Mat.isSubmatrix(img)
+  end
+
+  test "Evision.Mat.isContinuous" do
+    img = Evision.imread!(Path.join([__DIR__, "test.jpg"]))
+    assert true == Evision.Mat.isContinuous(img)
+  end
+
+  test "Evision.Mat.elemSize" do
+    img = Evision.imread!(Path.join([__DIR__, "test.jpg"]))
+    assert 3 == Evision.Mat.elemSize(img)
+  end
+
+  test "Evision.Mat.elemSize1" do
+    img = Evision.imread!(Path.join([__DIR__, "test.jpg"]))
+    assert 1 == Evision.Mat.elemSize1(img)
+  end
+
+  test "Evision.Mat.total/{1,2,3}" do
+    img = Evision.imread!(Path.join([__DIR__, "test.jpg"]))
+    assert 6 == Evision.Mat.total(img)
+    assert 2 == Evision.Mat.total(img, 0, 1)
+    assert 3 == Evision.Mat.total(img, 1, 2)
+  end
+
+  test "Evision.Mat.as_shape" do
+    img = Evision.imread!(Path.join([__DIR__, "test.jpg"]))
+    new_img = Evision.Mat.as_shape!(img, {3, 2, 3})
+    assert {3, 2, 3} == Evision.Mat.shape!(new_img)
+    assert Evision.Mat.to_binary!(img) == Evision.Mat.to_binary!(new_img)
+  end
 end

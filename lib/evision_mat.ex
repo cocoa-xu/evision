@@ -275,6 +275,10 @@ defmodule Evision.Mat do
   deferror(transpose(mat))
 
   @doc namespace: :"cv.Mat"
+  @doc """
+  This method returns the type-tuple used by Nx. To get the raw value of `cv::Mat.type()`, please use
+  `Evision.Mat.raw_type/1`.
+  """
   @spec type(reference()) :: {:ok, mat_type()} | {:error, String.t()}
   def type(mat) when is_reference(mat) do
     :evision_nif.mat_type(img: mat)
@@ -369,6 +373,134 @@ defmodule Evision.Mat do
   deferror(shape(mat))
 
   @doc namespace: :"cv.Mat"
+  @doc """
+  The method returns the number of matrix channels.
+  """
+  def channels(mat) when is_reference(mat) do
+    :evision_nif.mat_channels(img: mat)
+  end
+
+  deferror(channels(mat))
+
+  @doc namespace: :"cv.Mat"
+  @doc """
+  Returns the depth of a matrix element.
+
+  The method returns the identifier of the matrix element depth (the type of each individual channel).
+  For example, for a 16-bit signed element array, the method returns CV_16S. A complete list of
+  matrix types contains the following values:
+
+    -   CV_8U - 8-bit unsigned integers ( 0..255 )
+    -   CV_8S - 8-bit signed integers ( -128..127 )
+    -   CV_16U - 16-bit unsigned integers ( 0..65535 )
+    -   CV_16S - 16-bit signed integers ( -32768..32767 )
+    -   CV_32S - 32-bit signed integers ( -2147483648..2147483647 )
+    -   CV_32F - 32-bit floating-point numbers ( -FLT_MAX..FLT_MAX, INF, NAN )
+    -   CV_64F - 64-bit floating-point numbers ( -DBL_MAX..DBL_MAX, INF, NAN )
+
+  """
+  def depth(mat) when is_reference(mat) do
+    :evision_nif.mat_depth(img: mat)
+  end
+
+  deferror(depth(mat))
+
+  @doc namespace: :"cv.Mat"
+  @doc """
+  Returns the type of a matrix.
+
+  As `Evision.Mat.type/1` returns the type used by Nx, this method gives the raw value of
+  `cv::Mat.type()`
+  """
+  def raw_type(mat) when is_reference(mat) do
+    :evision_nif.mat_raw_type(img: mat)
+  end
+
+  deferror(raw_type(mat))
+
+  @doc namespace: :"cv.Mat"
+  def isSubmatrix(mat) when is_reference(mat) do
+    :evision_nif.mat_isSubmatrix(img: mat)
+  end
+
+  deferror(isSubmatrix(mat))
+
+  @doc namespace: :"cv.Mat"
+  def isContinuous(mat) when is_reference(mat) do
+    :evision_nif.mat_isContinuous(img: mat)
+  end
+
+  deferror(isContinuous(mat))
+
+  @doc namespace: :"cv.Mat"
+  @doc """
+  Returns the matrix element size in bytes.
+
+  The method returns the matrix element size in bytes. For example, if the matrix type is CV_16SC3,
+  the method returns 3\*sizeof(short) or 6.
+  """
+  def elemSize(mat) when is_reference(mat) do
+    :evision_nif.mat_elemSize(img: mat)
+  end
+
+  deferror(elemSize(mat))
+
+  @doc namespace: :"cv.Mat"
+  @doc """
+  Returns the size of each matrix element channel in bytes.
+
+  The method returns the matrix element channel size in bytes, that is, it ignores the number of
+  channels. For example, if the matrix type is CV_16SC3 , the method returns sizeof(short) or 2.
+  """
+  def elemSize1(mat) when is_reference(mat) do
+    :evision_nif.mat_elemSize1(img: mat)
+  end
+
+  deferror(elemSize1(mat))
+
+  @doc namespace: :"cv.Mat"
+  @doc """
+  Returns the `cv::MatSize` of the matrix.
+
+  The method returns a tuple `{dims, p}` where `dims` is the number of dimensions, and `p` is a list with `dims` elements.
+  """
+  def size(mat) when is_reference(mat) do
+    :evision_nif.mat_size(img: mat)
+  end
+
+  deferror(size(mat))
+
+  @doc namespace: :"cv.Mat"
+  @doc """
+  Returns the total number of array elements.
+
+  The method returns the number of array elements (a number of pixels if the array represents an image).
+  """
+  def total(mat) when is_reference(mat) do
+    :evision_nif.mat_total(img: mat, start_dim: -1, end_dim: 0xFFFFFFFF)
+  end
+
+  deferror(total(mat))
+
+  @doc namespace: :"cv.Mat"
+  @doc """
+  Returns the total number of array elements.
+
+  The method returns the number of elements within a certain sub-array slice with start_dim <= dim < end_dim
+  """
+  def total(mat, start_dim, end_dim \\ 0xFFFFFFFF) when is_reference(mat) do
+    :evision_nif.mat_total(img: mat, start_dim: start_dim, end_dim: end_dim)
+  end
+
+  deferror(total(mat, start_dim))
+  deferror(total(mat, start_dim, end_dim))
+
+  @doc namespace: :"cv.Mat"
+  @doc """
+  This function would convert the input tensor with dims `[height, width, dims]` to a `dims`-channel image with dims `[height, width]`.
+
+  Note that OpenCV has limitation on the number of channels. Currently the maximum number of channels is `512`.
+  """
   def last_dim_as_channel(mat) when is_reference(mat) do
     :evision_nif.mat_last_dim_as_channel(src: mat)
   end
@@ -633,6 +765,33 @@ defmodule Evision.Mat do
   end
 
   deferror(reshape(mat, shape))
+
+  @doc namespace: :"cv.Mat"
+  @doc """
+  This method does not change the underlying data. It only changes the steps when accessing the matrix.
+
+  If intended to change the underlying data to the new shape, please use `Evision.Mat.reshape/2`.
+  """
+  def as_shape(mat, as_shape) when is_reference(mat) and is_tuple(as_shape) do
+    as_shape(mat, Tuple.to_list(as_shape))
+  end
+
+  def as_shape(mat, as_shape) when is_reference(mat) and is_list(as_shape) do
+    with {:ok, old_shape} <- Evision.Mat.shape(mat) do
+      if Tuple.product(old_shape) == Enum.product(as_shape) do
+        :evision_nif.mat_as_shape(
+          img: mat,
+          as_shape: as_shape
+        )
+      else
+        {:error, "Cannot treat mat with shape #{inspect(old_shape)} as the requested new shape #{inspect(as_shape)}: mismatching number of elements"}
+      end
+    else
+      error -> error
+    end
+  end
+
+  deferror(as_shape(mat, as_shape))
 
   def squeeze(mat) when is_reference(mat) do
     shape = Tuple.to_list(Evision.Mat.shape!(mat))
