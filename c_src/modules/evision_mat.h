@@ -409,4 +409,42 @@ static ERL_NIF_TERM evision_cv_mat_dot(ErlNifEnv *env, int argc, const ERL_NIF_T
     else return evision::nif::error(env, "overload resolution failed");
 }
 
+// @evision c: mat_last_dim_as_channel, evision_cv_mat_last_dim_as_channel, 1
+// @evision nif: def mat_last_dim_as_channel(_opts \\ []), do: :erlang.nif_error("Mat::last_dim_as_channel not loaded")
+static ERL_NIF_TERM evision_cv_mat_last_dim_as_channel(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
+    using namespace cv;
+    ERL_NIF_TERM error_term = 0;
+    std::map<std::string, ERL_NIF_TERM> erl_terms;
+    int nif_opts_index = 0;
+    evision::nif::parse_arg(env, nif_opts_index, argv, erl_terms);
+
+    {
+        Mat src;
+
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "src"), src, ArgInfo("src", 0))) {
+            if ((src.type() == CV_8S || src.type() == CV_8U || src.type() == CV_16F \
+                || src.type() == CV_16S || src.type() == CV_16U || src.type() == CV_32S \
+                || src.type() == CV_32F || src.type() == CV_64F)) {
+                int ndims = src.size.dims();
+                if (ndims <= 1) {
+                    return evision::nif::error(env, "image only has 1 dimension");
+                }
+
+                std::vector<int> new_shape(ndims - 1);
+                for (size_t i = 0; i < (size_t)(ndims - 1); i++) {
+                    new_shape[i] = src.size.p[i];
+                }
+                int type = CV_MAKETYPE(src.type(), src.size.p[ndims - 1]);
+                Mat ret = Mat(ndims - 1, new_shape.data(), type, src.data);
+                return evision::nif::ok(env, evision_from(env, ret.clone()));
+            } else {
+                return evision::nif::error(env, "image already has channel info");
+            }
+        }
+    }
+
+    if (error_term != 0) return error_term;
+    else return evision::nif::error(env, "overload resolution failed");
+}
+
 #endif // EVISION_OPENCV_MAT_H

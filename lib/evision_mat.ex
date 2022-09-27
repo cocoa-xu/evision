@@ -369,6 +369,13 @@ defmodule Evision.Mat do
   deferror(shape(mat))
 
   @doc namespace: :"cv.Mat"
+  def last_dim_as_channel(mat) when is_reference(mat) do
+    :evision_nif.mat_last_dim_as_channel(src: mat)
+  end
+
+  deferror(last_dim_as_channel(mat))
+
+  @doc namespace: :"cv.Mat"
   def zeros(shape, type) when is_tuple(shape) do
     {t, l} = check_unsupported_type(type)
 

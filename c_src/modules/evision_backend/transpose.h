@@ -146,7 +146,9 @@ static ERL_NIF_TERM evision_cv_mat_transpose(ErlNifEnv *env, int argc, const ERL
         for (size_t i = 0; i < axes.size(); i++) {
             new_shape[i] = as_shape[axes[i]];
         }
-        cv::Mat ret = cv::Mat::zeros(ndims, new_shape.data(), img.type());
+
+        int type = img.type() & CV_MAT_DEPTH_MASK;
+        cv::Mat ret = cv::Mat::zeros(ndims, new_shape.data(), type);
         // the data of img must be countinous
         if (!img.isContinuous()) {
             // if not, call clone to force opencv make a continuous matrix for us

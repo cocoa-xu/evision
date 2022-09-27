@@ -63,14 +63,50 @@ defmodule Evision.Nx do
 
   deferror(to_mat(t))
 
+  @doc namespace: :external
+  @spec to_mat(Nx.t(), tuple()) :: {:ok, reference()} | {:error, String.t()}
+  def to_mat(t, as_shape) when is_struct(t, Nx.Tensor) do
+    case Nx.shape(t) do
+      {} ->
+        Evision.Mat.from_binary_by_shape(Nx.to_binary(t), Nx.type(t), {1})
+
+      shape ->
+        if Tuple.product(shape) == Tuple.product(as_shape) do
+          Evision.Mat.from_binary_by_shape(Nx.to_binary(t), Nx.type(t), as_shape)
+        else
+          {:error, "cannot convert tensor(#{inspect(shape)}) to mat as shape #{inspect(as_shape)}"}
+        end
+    end
+  end
+
+  deferror(to_mat(t, as_shape))
+
+  @doc namespace: :external
   @spec to_mat(
           binary(),
           {atom(), pos_integer()},
           pos_integer(),
           pos_integer(),
           pos_integer()
-        ) :: {:ok, reference()} | {:error, charlist()}
-  defp to_mat(binary, type, rows, cols, channels) do
+        ) :: {:ok, reference()} | {:error, String.t()}
+  def to_mat(binary, type, rows, cols, channels) do
     Evision.Mat.from_binary(binary, type, rows, cols, channels)
   end
+
+  deferror(to_mat(binary, type, rows, cols, channels))
+
+  @doc namespace: :external
+  @spec to_mat_2d(Nx.t()) :: {:ok, reference()} | {:error, String.t()}
+  def to_mat_2d(t) do
+    case Nx.shape(t) do
+      {height, width} ->
+        Evision.Mat.from_binary(Nx.to_binary(t), Nx.type(t), height, width, 1)
+      {height, width, channels} ->
+        Evision.Mat.from_binary(Nx.to_binary(t), Nx.type(t), height, width, channels)
+      shape ->
+        {:error, "Cannot convert tensor(#{inspect(shape)}) to a 2D image"}
+    end
+  end
+
+  deferror(to_mat_2d(t))
 end
