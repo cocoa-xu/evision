@@ -1,6 +1,6 @@
 # Changelog
 
-## v0.1.5-dev
+## v0.1.5 (2022-09-27)
 - Fixed `Evision.Mat.transpose`: should call `shape!` instead of `shape`. Thanks to @kipcole9 ! #77
 - Always use `Evision.Mat.from_binary_by_shape/3` for `Evision.Nx.to_mat`.
 - Check `cv::Mat::Mat.type()` when fetching the shape of a Mat.
