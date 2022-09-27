@@ -477,7 +477,7 @@ defmodule Evision.Mat do
   The method returns the number of array elements (a number of pixels if the array represents an image).
   """
   def total(mat) when is_reference(mat) do
-    :evision_nif.mat_total(img: mat, start: -1, end: 0xFFFFFFFF)
+    :evision_nif.mat_total(img: mat, start_dim: -1, end_dim: 0xFFFFFFFF)
   end
 
   deferror(total(mat))
@@ -489,7 +489,7 @@ defmodule Evision.Mat do
   The method returns the number of elements within a certain sub-array slice with start_dim <= dim < end_dim
   """
   def total(mat, start_dim, end_dim \\ 0xFFFFFFFF) when is_reference(mat) do
-    :evision_nif.mat_total(img: mat, start: start_dim, end: end_dim)
+    :evision_nif.mat_total(img: mat, start_dim: start_dim, end_dim: end_dim)
   end
 
   deferror(total(mat, start_dim))

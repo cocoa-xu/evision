@@ -4,6 +4,178 @@
 from string import Template
 
 
+# CV_* type macros
+gen_cv_types_erlang = """
+cv_8U() -> 0.
+cv_8S() -> 1.
+cv_16U() -> 2.
+cv_16S() -> 3.
+cv_32S() -> 4.
+cv_32F() -> 5.
+cv_64F() -> 6.
+cv_16F() -> 7.
+
+cv_cn_shift() -> 3.
+cv_depth_max() ->
+    1 bsl cv_cn_shift().
+cv_mat_depth_mask() ->
+    cv_depth_max() - 1.
+cv_maketype(Depth, Cn) ->
+    (Depth band cv_mat_depth_mask()) + ((Cn-1) bsl cv_cn_shift()).
+
+cv_8UC(Cn) ->
+    cv_maketype(cv_8U(), Cn).
+cv_8UC1() ->
+    cv_8UC(1).
+cv_8UC2() ->
+    cv_8UC(2).
+cv_8UC3() ->
+    cv_8UC(3).
+cv_8UC4() ->
+    cv_8UC(4).
+
+cv_8SC(Cn) ->
+    cv_maketype(cv_8S(), Cn).
+cv_8SC1() ->
+    cv_8SC(1).
+cv_8SC2() ->
+    cv_8SC(2).
+cv_8SC3() ->
+    cv_8SC(3).
+cv_8SC4() ->
+    cv_8SC(4).
+
+cv_16UC(Cn) ->
+    cv_maketype(cv_16U(), Cn).
+cv_16SU1() ->
+    cv_16UC(1).
+cv_16UC2() ->
+    cv_16UC(2).
+cv_16UC3() ->
+    cv_16UC(3).
+cv_16UC4() ->
+    cv_16UC(4).
+
+cv_16SC(Cn) ->
+    cv_maketype(cv_16S(), Cn).
+cv_16SC1() ->
+    cv_16SC(1).
+cv_16SC2() ->
+    cv_16SC(2).
+cv_16SC3() ->
+    cv_16SC(3).
+cv_16SC4() ->
+    cv_16SC(4).
+
+cv_32SC(Cn) ->
+    cv_maketype(cv_32S(), Cn).
+cv_32SC1() ->
+    cv_32SC(1).
+cv_32SC2() ->
+    cv_32SC(2).
+cv_32SC3() ->
+    cv_32SC(3).
+cv_32SC4() ->
+    cv_32SC(4).
+
+cv_32FC(Cn) ->
+    cv_maketype(cv_32F(), Cn).
+cv_32FC1() ->
+    cv_32FC(1).
+cv_32FC2() ->
+    cv_32FC(2).
+cv_32FC3() ->
+    cv_32FC(3).
+cv_32FC4() ->
+    cv_32FC(4).
+
+cv_64FC(Cn) ->
+    cv_maketype(cv_64F(), Cn).
+cv_64FC1() ->
+    cv_64FC(1).
+cv_64FC2() ->
+    cv_64FC(2).
+cv_64FC3() ->
+    cv_64FC(3).
+cv_64FC4() ->
+    cv_64FC(4).
+
+cv_16FC(Cn) ->
+    cv_maketype(cv_16F(), Cn).
+cv_16FC1() ->
+    cv_16FC(1).
+cv_16FC2() ->
+    cv_16FC(2).
+cv_16FC3() ->
+    cv_16FC(3).
+cv_16FC4() ->
+    cv_16FC(4).
+"""
+
+gen_cv_types_elixir = """
+  def cv_8U, do: 0
+  def cv_8S, do: 1
+  def cv_16U, do: 2
+  def cv_16S, do: 3
+  def cv_32S, do: 4
+  def cv_32F, do: 5
+  def cv_64F, do: 6
+  def cv_16F, do: 7
+
+  def cv_cn_shift, do: 3
+  def cv_depth_max, do: 1 <<< cv_cn_shift()
+  def cv_mat_depth_mask, do: cv_depth_max() - 1
+  def cv_maketype(depth, cn), do: (depth &&& cv_mat_depth_mask()) + ((cn - 1) <<< cv_cn_shift())
+
+  def cv_8UC(cn), do: cv_maketype(cv_8U(), cn)
+  def cv_8UC1, do: cv_8UC(1)
+  def cv_8UC2, do: cv_8UC(2)
+  def cv_8UC3, do: cv_8UC(3)
+  def cv_8UC4, do: cv_8UC(4)
+
+  def cv_8SC(cn), do: cv_maketype(cv_8S(), cn)
+  def cv_8SC1, do: cv_8SC(1)
+  def cv_8SC2, do: cv_8SC(2)
+  def cv_8SC3, do: cv_8SC(3)
+  def cv_8SC4, do: cv_8SC(4)
+
+  def cv_16UC(cn), do: cv_maketype(cv_16U(), cn)
+  def cv_16UC1, do: cv_16UC(1)
+  def cv_16UC2, do: cv_16UC(2)
+  def cv_16UC3, do: cv_16UC(3)
+  def cv_16UC4, do: cv_16UC(4)
+
+  def cv_16SC(cn), do: cv_maketype(cv_16S(), cn)
+  def cv_16SC1, do: cv_16SC(1)
+  def cv_16SC2, do: cv_16SC(2)
+  def cv_16SC3, do: cv_16SC(3)
+  def cv_16SC4, do: cv_16SC(4)
+
+  def cv_32SC(cn), do: cv_maketype(cv_32S(), cn)
+  def cv_32SC1, do: cv_32SC(1)
+  def cv_32SC2, do: cv_32SC(2)
+  def cv_32SC3, do: cv_32SC(3)
+  def cv_32SC4, do: cv_32SC(4)
+
+  def cv_32FC(cn), do: cv_maketype(cv_32F(), cn)
+  def cv_32FC1, do: cv_32FC(1)
+  def cv_32FC2, do: cv_32FC(2)
+  def cv_32FC3, do: cv_32FC(3)
+  def cv_32FC4, do: cv_32FC(4)
+
+  def cv_64FC(cn), do: cv_maketype(cv_64F(), cn)
+  def cv_64FC1, do: cv_64FC(1)
+  def cv_64FC2, do: cv_64FC(2)
+  def cv_64FC3, do: cv_64FC(3)
+  def cv_64FC4, do: cv_64FC(4)
+
+  def cv_16FC(cn), do: cv_maketype(cv_16F(), cn)
+  def cv_16FC1, do: cv_16FC(1)
+  def cv_16FC2, do: cv_16FC(2)
+  def cv_16FC3, do: cv_16FC(3)
+  def cv_16FC4, do: cv_16FC(4)
+"""
+
 # template for Elixir NIF
 gen_evision_nif_load_nif = """
   @moduledoc false

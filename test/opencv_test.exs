@@ -258,12 +258,12 @@ defmodule Evision.Test do
 
   test "Evision.Mat.depth" do
     img = Evision.imread!(Path.join([__DIR__, "test.jpg"]))
-    assert 0 == Evision.Mat.depth(img)
+    assert Evision.cv_8U() == Evision.Mat.depth(img)
   end
 
   test "Evision.Mat.raw_type" do
     img = Evision.imread!(Path.join([__DIR__, "test.jpg"]))
-    assert 16 == Evision.Mat.raw_type(img)
+    assert Evision.cv_8UC3() == Evision.Mat.raw_type(img)
   end
 
   test "Evision.Mat.isSubmatrix" do
