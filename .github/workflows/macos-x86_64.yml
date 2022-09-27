@@ -46,11 +46,29 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Install Erlang and Elixir
+      - name: Update Homebrew
         run: |
-          brew install erlang
-          brew install elixir
-          brew install ffmpeg@4
+          brew update --preinstall
+          cat "$(brew --repository)/Library/Taps/homebrew/homebrew-core/Formula/ffmpeg@4.rb" > .github/brew-formulae
+          cat "$(brew --repository)/Library/Taps/homebrew/homebrew-core/Formula/elixir.rb" >> .github/brew-formulae
+          cat "$(brew --repository)/Library/Taps/homebrew/homebrew-core/Formula/erlang.rb" >> .github/brew-formulae
+      
+      - name: Configure Homebrew cache
+        id: cache-brew-install
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/Library/Caches/Homebrew/
+            /usr/local/Cellar
+          key: brew-${{ hashFiles('.github/brew-formulae') }}
+
+      - name: Install Erlang and Elixir
+        if: steps.cache-brew-install.outputs.cache-hit != 'true'
+        run: |
+          env HOMEBREW_NO_AUTO_UPDATE=1 brew install erlang elixir ffmpeg@4
+
+      - name: FFmpeg4, Hex and Rebar3
+        run: |
           brew link ffmpeg@4
           mix local.hex --force
           mix local.rebar --force
