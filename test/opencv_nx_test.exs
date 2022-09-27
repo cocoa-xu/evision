@@ -69,4 +69,20 @@ defmodule Evision.Nx.Test do
     transposed = Evision.Mat.transpose!(from_tensor, [1, 0, 2])
     assert {3, 4, 3} = Evision.Mat.shape!(transposed)
   end
+
+  @tag :nx
+  test "transpose" do
+    tensor = File.read!(Path.join(__DIR__, ["color_checker.etf"])) |> :erlang.binary_to_term()
+    mat = Evision.Nx.to_mat!(tensor)
+    assert {441, 297, 3} = Evision.Mat.shape!(mat)
+
+    transposed = Evision.Mat.transpose!(mat, [1, 0, 2])
+    assert {297, 441, 3} = Evision.Mat.shape!(transposed)
+
+    transposed = Evision.Mat.last_dim_as_channel!(transposed)
+    assert {297, 441, 3} = Evision.Mat.shape!(transposed)
+
+    bgr = Evision.cvtColor!(transposed, Evision.cv_COLOR_RGB2BGR())
+    assert {297, 441, 3} = Evision.Mat.shape!(bgr)
+  end
 end

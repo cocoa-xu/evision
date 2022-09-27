@@ -431,7 +431,7 @@ static ERL_NIF_TERM evision_cv_mat_last_dim_as_channel(ErlNifEnv *env, int argc,
                 }
 
                 std::vector<int> new_shape(ndims - 1);
-                for (size_t i = 0; i < ndims - 1; i++) {
+                for (size_t i = 0; i < (size_t)(ndims - 1); i++) {
                     new_shape[i] = src.size.p[i];
                 }
                 int type = CV_MAKETYPE(src.type(), src.size.p[ndims - 1]);
