@@ -133,6 +133,101 @@ namespace evision
       return enif_make_string(env, string, ERL_NIF_LATIN1);
     }
 
+    template<typename T>
+    int make_f64_list_from_c_array(ErlNifEnv *env, size_t count, T *data, ERL_NIF_TERM &out) {
+      if (count == 0) {
+        out = enif_make_list_from_array(env, nullptr, 0);
+        return 0;
+      }
+
+      ERL_NIF_TERM *terms = (ERL_NIF_TERM *)enif_alloc(sizeof(ERL_NIF_TERM) * count);
+      if (terms == nullptr) {
+        return 1;
+      }
+      for (size_t i = 0; i < count; ++i) {
+        terms[i] = enif_make_double(env, (double)(data[i]));
+      }
+      out = enif_make_list_from_array(env, terms, (unsigned) count);
+      enif_free(terms);
+      return 0;
+    }
+
+    template<typename T>
+    int make_i64_list_from_c_array(ErlNifEnv *env, size_t count, T *data, ERL_NIF_TERM &out) {
+      if (count == 0) {
+        out = enif_make_list_from_array(env, nullptr, 0);
+        return 0;
+      }
+
+      ERL_NIF_TERM *terms = (ERL_NIF_TERM *)enif_alloc(sizeof(ERL_NIF_TERM) * count);
+      if (terms == nullptr) {
+        return 1;
+      }
+      for (size_t i = 0; i < count; ++i) {
+        terms[i] = enif_make_int64(env, (int64_t)(data[i]));
+      }
+      out = enif_make_list_from_array(env, terms, (unsigned) count);
+      enif_free(terms);
+      return 0;
+    }
+
+    template<typename T>
+    int make_u64_list_from_c_array(ErlNifEnv *env, size_t count, T *data, ERL_NIF_TERM &out) {
+      if (count == 0) {
+        out = enif_make_list_from_array(env, nullptr, 0);
+        return 0;
+      }
+
+      ERL_NIF_TERM *terms = (ERL_NIF_TERM *)enif_alloc(sizeof(ERL_NIF_TERM) * count);
+      if (terms == nullptr) {
+        return 1;
+      }
+      for (size_t i = 0; i < count; ++i) {
+        terms[i] = enif_make_uint64(env, (uint64_t)(data[i]));
+      }
+      out = enif_make_list_from_array(env, terms, (unsigned) count);
+      enif_free(terms);
+      return 0;
+    }
+
+    template<typename T>
+    int make_i32_list_from_c_array(ErlNifEnv *env, size_t count, T *data, ERL_NIF_TERM &out) {
+      if (count == 0) {
+        out = enif_make_list_from_array(env, nullptr, 0);
+        return 0;
+      }
+
+      ERL_NIF_TERM *terms = (ERL_NIF_TERM *)enif_alloc(sizeof(ERL_NIF_TERM) * count);
+      if (terms == nullptr) {
+          return 1;
+      }
+      for (size_t i = 0; i < count; ++i) {
+        terms[i] = enif_make_int(env, (int32_t)(data[i]));
+      }
+      out = enif_make_list_from_array(env, terms, (unsigned) count);
+      enif_free(terms);
+      return 0;
+    }
+
+    template<typename T>
+    int make_u32_list_from_c_array(ErlNifEnv *env, size_t count, T *data, ERL_NIF_TERM &out) {
+      if (count == 0) {
+        out = enif_make_list_from_array(env, nullptr, 0);
+        return 0;
+      }
+
+      ERL_NIF_TERM *terms = (ERL_NIF_TERM *)enif_alloc(sizeof(ERL_NIF_TERM) * count);
+      if (terms == nullptr) {
+        return 1;
+      }
+      for (size_t i = 0; i < count; ++i) {
+        terms[i] = enif_make_uint(env, (uint32_t)(data[i]));
+      }
+      out = enif_make_list_from_array(env, terms, (unsigned) count);
+      enif_free(terms);
+      return 0;
+    }
+
     // Atoms
 
     int get_atom(ErlNifEnv *env, ERL_NIF_TERM term, std::string &var)

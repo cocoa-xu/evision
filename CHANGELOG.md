@@ -5,6 +5,25 @@
 - Always use `Evision.Mat.from_binary_by_shape/3` for `Evision.Nx.to_mat`.
 - Check `cv::Mat::Mat.type()` when fetching the shape of a Mat.
   The number of channels will be included as the last dim of the shape if and only if `cv::Mat::Mat.type()` did not encode any channel information.
+- Added `Evision.Mat.last_dim_as_channel/1`.
+
+  This method convert a tensor-like `Mat` to a "valid 2D image" with its `channels` equals to `3` or `1`.
+
+- Added `Evision.Nx.to_mat/2`.
+
+  This method convert a `Nx.Tensor` to a `Mat`. The second argument indicates the wanted/actual shape of the tensor.
+
+- Added more Mat functions:
+  - `Evision.Mat.as_shape/2`.
+  - `Evision.Mat.size/1`.
+  - `Evision.Mat.channels/1`.
+  - `Evision.Mat.depth/1`.
+  - `Evision.Mat.raw_type/1`.
+  - `Evision.Mat.isSubmatrix/1`.
+  - `Evision.Mat.isContinuous/1`.
+  - `Evision.Mat.elemSize/1`.
+  - `Evision.Mat.elemSize1/1`.
+  - `Evision.Mat.total/{1,2,3}`.
 
 ## v0.1.4 (2022-09-10)
 - Default to `Evision.Backend` for `Evision.Nx.to_nx/2`.
