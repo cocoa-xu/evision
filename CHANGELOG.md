@@ -26,6 +26,10 @@
   - `Evision.Mat.total/{1,2,3}`.
 
 - Added OpenCV types:
+  - `Evision.cv_cn_shift/0`.
+  - `Evision.cv_depth_max/0`.
+  - `Evision.cv_mat_depth_mask/0`.
+  - `Evision.cv_maketype/2`.
   - `Evision.cv_8U/0`.
   - `Evision.cv_8UC/1`.
   - `Evision.cv_8UC1/0`.

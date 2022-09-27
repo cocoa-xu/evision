@@ -496,6 +496,11 @@ defmodule Evision.Mat do
   deferror(total(mat, start_dim, end_dim))
 
   @doc namespace: :"cv.Mat"
+  @doc """
+  This function would convert the input tensor with dims `[height, width, dims]` to a `dims`-channel image with dims `[height, width]`.
+
+  Note that OpenCV has limitation on the number of channels. Currently the maximum number of channels is `512`.
+  """
   def last_dim_as_channel(mat) when is_reference(mat) do
     :evision_nif.mat_last_dim_as_channel(src: mat)
   end
