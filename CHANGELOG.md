@@ -25,6 +25,56 @@
   - `Evision.Mat.elemSize1/1`.
   - `Evision.Mat.total/{1,2,3}`.
 
+- Added OpenCV types:
+  - `Evision.cv_8U/0`.
+  - `Evision.cv_8UC/1`.
+  - `Evision.cv_8UC1/0`.
+  - `Evision.cv_8UC2/0`.
+  - `Evision.cv_8UC3/0`.
+  - `Evision.cv_8UC4/0`.
+  - `Evision.cv_8S/0`.
+  - `Evision.cv_8SC/1`.
+  - `Evision.cv_8SC1/0`.
+  - `Evision.cv_8SC2/0`.
+  - `Evision.cv_8SC3/0`.
+  - `Evision.cv_8SC4/0`.
+  - `Evision.cv_16U/0`.
+  - `Evision.cv_16UC/1`.
+  - `Evision.cv_16UC1/0`.
+  - `Evision.cv_16UC2/0`.
+  - `Evision.cv_16UC3/0`.
+  - `Evision.cv_16UC4/0`.
+  - `Evision.cv_16S/0`.
+  - `Evision.cv_16SC/1`.
+  - `Evision.cv_16SC1/0`.
+  - `Evision.cv_16SC2/0`.
+  - `Evision.cv_16SC3/0`.
+  - `Evision.cv_16SC4/0`.
+  - `Evision.cv_32S/0`.
+  - `Evision.cv_32SC/1`.
+  - `Evision.cv_32SC1/0`.
+  - `Evision.cv_32SC2/0`.
+  - `Evision.cv_32SC3/0`.
+  - `Evision.cv_32SC4/0`.
+  - `Evision.cv_32F/0`.
+  - `Evision.cv_32FC/1`.
+  - `Evision.cv_32FC1/0`.
+  - `Evision.cv_32FC2/0`.
+  - `Evision.cv_32FC3/0`.
+  - `Evision.cv_32FC4/0`.
+  - `Evision.cv_64F/0`.
+  - `Evision.cv_64FC/1`.
+  - `Evision.cv_64FC1/0`.
+  - `Evision.cv_64FC2/0`.
+  - `Evision.cv_64FC3/0`.
+  - `Evision.cv_64FC4/0`.
+  - `Evision.cv_16F/0`.
+  - `Evision.cv_16FC/1`.
+  - `Evision.cv_16FC1/0`.
+  - `Evision.cv_16FC2/0`.
+  - `Evision.cv_16FC3/0`.
+  - `Evision.cv_16FC4/0`.
+
 ## v0.1.4 (2022-09-10)
 - Default to `Evision.Backend` for `Evision.Nx.to_nx/2`.
 - Fixed class inheritance issue in `py_src/class_info.py`.
