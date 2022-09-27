@@ -64,6 +64,24 @@ defmodule Evision.Nx do
   deferror(to_mat(t))
 
   @doc namespace: :external
+  @spec to_mat(Nx.t(), tuple()) :: {:ok, reference()} | {:error, String.t()}
+  def to_mat(t, as_shape) when is_struct(t, Nx.Tensor) do
+    case Nx.shape(t) do
+      {} ->
+        Evision.Mat.from_binary_by_shape(Nx.to_binary(t), Nx.type(t), {1})
+
+      shape ->
+        if Tuple.product(shape) == Tuple.product(as_shape) do
+          Evision.Mat.from_binary_by_shape(Nx.to_binary(t), Nx.type(t), as_shape)
+        else
+          {:error, "cannot convert tensor(#{inspect(shape)}) to mat as shape #{inspect(as_shape)}"}
+        end
+    end
+  end
+
+  deferror(to_mat(t, as_shape))
+
+  @doc namespace: :external
   @spec to_mat(
           binary(),
           {atom(), pos_integer()},
