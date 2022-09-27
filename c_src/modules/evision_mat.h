@@ -516,17 +516,17 @@ static ERL_NIF_TERM evision_cv_mat_total(ErlNifEnv *env, int argc, const ERL_NIF
 
     {
         Mat img;
-        int start = -1;
-        int end = INT_MAX;
+        int start_dim = -1;
+        int end_dim = INT_MAX;
 
         if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0))) {
-            evision_to_safe(env, evision_get_kw(env, erl_terms, "start"), start, ArgInfo("start", 0));
-            evision_to_safe(env, evision_get_kw(env, erl_terms, "end"), end, ArgInfo("end", 0));
+            evision_to_safe(env, evision_get_kw(env, erl_terms, "start_dim"), start_dim, ArgInfo("start_dim", 0));
+            evision_to_safe(env, evision_get_kw(env, erl_terms, "end_dim"), end_dim, ArgInfo("end_dim", 0));
             size_t total_elems;
-            if (start == -1) {
+            if (start_dim == -1) {
                 total_elems = img.total();
             } else {
-                total_elems = img.total(start, end);
+                total_elems = img.total(start_dim, end_dim);
             }
             
             return enif_make_int64(env, total_elems);
