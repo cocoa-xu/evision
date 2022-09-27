@@ -1,7 +1,7 @@
 # Changelog
 
 ## v0.1.5-dev
-- Fix `Evision.Mat.transpose`: should call `shape!` instead of `shape`. Thanks to @kipcole9 ! #77
+- Fixed `Evision.Mat.transpose`: should call `shape!` instead of `shape`. Thanks to @kipcole9 ! #77
 - Always use `Evision.Mat.from_binary_by_shape/3` for `Evision.Nx.to_mat`.
 - Check `cv::Mat::Mat.type()` when fetching the shape of a Mat.
   The number of channels will be included as the last dim of the shape if and only if `cv::Mat::Mat.type()` did not encode any channel information.
@@ -27,15 +27,15 @@
 
 ## v0.1.4 (2022-09-10)
 - Default to `Evision.Backend` for `Evision.Nx.to_nx/2`.
-- Fix class inheritance issue in `py_src/class_info.py`.
-- Fix missing comma in example livebooks' `Mix.install`. @dbii
-- Add decision tree and random forest example.
+- Fixed class inheritance issue in `py_src/class_info.py`.
+- Fixed missing comma in example livebooks' `Mix.install`. @dbii
+- Added decision tree and random forest example.
 
 ## v0.1.3 (2022-09-01)
-- Fix issues in restoring files from precompiled package for macOS and Linux.
+- Fixed issues in restoring files from precompiled package for macOS and Linux.
   - Paths are now quoted. 
   - using `cp -RPf` on macOS while `cp -a` on Linux.
-- Fix `destroyAllWindows` in NIF.
+- Fixed `destroyAllWindows` in NIF.
   It was generated as 'erlang:destroyAllWindows/1' but it should be 'erlang:destroyAllWindows/0'.
 
 ## v0.1.2 (2022-08-26)
