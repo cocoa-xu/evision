@@ -133,8 +133,6 @@ thickness = 1
 {:ok, response_map} = Cv.circle(response_map, Enum.at(support_vector, 1), 6, [128, 128, 128], thickness: thickness)
 {:ok, response_map} = Cv.circle(response_map, Enum.at(support_vector, 2), 6, [128, 128, 128], thickness: thickness)
 
-Cv.imencode(".png", response_map)
-|> then(fn {:ok, val} -> val end)
-|> IO.iodata_to_binary()
+Cv.imencode!(".png", response_map)
 |> Kino.Image.new(:png)
 ```

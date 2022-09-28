@@ -70,9 +70,7 @@ alias Evision, as: Cv
 {:ok, img} = Cv.imread("cat.jpg", flags: Cv.cv_IMREAD_ANYCOLOR())
 {:ok, resized_img} = Cv.resize(img, [128, 128])
 
-Cv.imencode(".png", resized_img)
-|> elem(1)
-|> IO.iodata_to_binary()
+Cv.imencode!(".png", resized_img)
 |> Kino.Image.new(:png)
 ```
 
@@ -336,11 +334,8 @@ params = Demo.run(backend: Torchx.Backend, epochs: 50)
 ## Test
 
 ```elixir
-{:ok, resized_img} = Cv.resize(img, [128, 128])
-
-Cv.imencode(".png", resized_img)
-|> then(fn {:ok, val} -> val end)
-|> IO.iodata_to_binary()
+resized_img = Cv.resize!(img, [128, 128])
+Cv.imencode!(".png", resized_img)
 |> Kino.Image.new(:png)
 ```
 

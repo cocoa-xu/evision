@@ -178,7 +178,6 @@ defmodule Evision.Test do
     ret = Evision.imencode(".png", mat)
     assert :ok == elem(ret, 0)
     {:ok, encoded} = ret
-    encoded = IO.iodata_to_binary(encoded)
 
     ret = Evision.imdecode(encoded, Evision.cv_IMREAD_ANYCOLOR())
     assert :ok == elem(ret, 0)

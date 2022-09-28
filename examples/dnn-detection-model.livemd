@@ -299,9 +299,7 @@ Helper.download!("https://raw.githubusercontent.com/cocoa-xu/evision/main/test/d
 ```
 
 ```elixir
-Cv.imencode(".png", mat)
-|> then(fn {:ok, val} -> val end)
-|> IO.iodata_to_binary()
+Cv.imencode!(".png", mat)
 |> Kino.Image.new(:png)
 ```
 
@@ -328,9 +326,7 @@ defmodule VideoDetection do
   defp _detect(_, _, _, _, _, _, 0), do: :ok
   defp _detect(net, out_names, labels, {:ok, frame}, video, widget, left_frames) when left_frames > 0 or left_frames < 0 do
     {:ok, mat} = SSDMobileNetV2.predict_and_show(net, out_names, labels, frame)
-    Cv.imencode(".png", mat)
-    |> elem(1)
-    |> IO.iodata_to_binary()
+    Cv.imencode!(".png", mat)
     |> Kino.Image.new(:png)
     |> then(&Kino.Frame.render(widget, &1))
     frame_read = Cv.VideoCapture.read(video)

@@ -193,9 +193,7 @@ src = for {cntr, p1, p2} <- pca_analysis, reduce: src do
     src
 end
 
-{:ok, result} = Cv.imencode(".png", src)
+result = Cv.imencode!(".png", src)
 
-result
-|> IO.iodata_to_binary()
-|> Kino.Image.new(:png)
+Kino.Image.new(result, :png)
 ```
