@@ -38,6 +38,7 @@
 #include "opencv2/core/types_c.h"
 #include "erlcompat.hpp"
 #include "ArgInfo.hpp"
+#include "modules/evision_mat_api.h"
 #include <map>
 
 #include <type_traits>  // std::enable_if
@@ -522,7 +523,8 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const Mat& m)
 
     ERL_NIF_TERM ret = enif_make_resource(env, res);
     enif_release_resource(res);
-    return ret;
+
+    return _evision_make_mat_resource_into_map(env, m, ret);
 }
 
 template<typename _Tp, int m, int n>

@@ -12,20 +12,12 @@
 System.put_env("EVISION_PREFER_PRECOMPILED", "true")
 
 Mix.install([
-  {:evision, "~> 0.1", github: "cocoa-xu/evision", tag: "v0.1.5"}
+  {:evision, "~> 0.1", github: "cocoa-xu/evision", tag: "v0.1.6"},
+  {:req, "~> 0.3"}
 ])
 ```
 
-```output
-# unnecessary output removed
-Generated evision app
-```
-
-```output
-:ok
-```
-
-## Helper Functions
+## Helper Function
 
 ```elixir
 defmodule Helper do
@@ -40,17 +32,13 @@ defmodule Helper do
   end
 
   def download!(url, save_as, true) do
-    http_opts = []
-    opts = [body_format: :binary]
-    arg = {url, []}
-
     body =
-      case :httpc.request(:get, arg, http_opts, opts) do
-        {:ok, {{_, 200, _}, _, body}} ->
+      case Req.get!(url) do
+        %Req.Response{status: 200, body: body} ->
           body
 
-        {:error, reason} ->
-          raise inspect(reason)
+        error ->
+          raise inspect(error)
       end
 
     File.write!(save_as, body)
@@ -58,11 +46,25 @@ defmodule Helper do
 end
 ```
 
-```output
-{:module, Helper, <<70, 79, 82, 49, 0, 0, 9, ...>>, {:download!, 3}}
+<!-- livebook:{"output":true} -->
+
+```
+{:module, Helper, <<70, 79, 82, 49, 0, 0, 10, ...>>, {:download!, 3}}
 ```
 
-## Download model and a test image
+## alias
+
+```elixir
+alias Evision, as: Cv
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+Evision
+```
+
+### Download model and a test image
 
 * Model parameters. `bvlc_googlenet.caffemodel`
 * Model config. `bvlc_googlenet.prototxt`
@@ -89,19 +91,16 @@ Helper.download!(
   "classification_classes_ILSVRC2012.txt"
 )
 
-Helper.download!("https://docs.Cv.org/4.5.4/space_shuttle.jpg", "space_shuttle.jpg")
+Helper.download!("https://docs.opencv.org/4.5.4/space_shuttle.jpg", "space_shuttle.jpg")
 ```
 
-```output
+<!-- livebook:{"output":true} -->
+
+```
 :ok
 ```
 
-## alias
-```elixir
-alias Evision, as: Cv
-```
-
-## Read class names
+### Read class names
 
 ```elixir
 classes =
@@ -110,7 +109,9 @@ classes =
   |> String.split("\n")
 ```
 
-```output
+<!-- livebook:{"output":true} -->
+
+```
 ["tench, Tinca tinca", "goldfish, Carassius auratus",
  "great white shark, white shark, man-eater, man-eating shark, Carcharodon carcharias",
  "tiger shark, Galeocerdo cuvieri", "hammerhead, hammerhead shark",
@@ -135,7 +136,7 @@ classes =
  "African crocodile, Nile crocodile, Crocodylus niloticus", ...]
 ```
 
-## Load DNN model
+### Load DNN model
 
 ```elixir
 {:ok, model} =
@@ -145,11 +146,13 @@ classes =
   )
 ```
 
-```output
-{:ok, #Reference<0.3128475832.1787953155.129610>}
+<!-- livebook:{"output":true} -->
+
+```
+{:ok, #Reference<0.910554608.1494089757.145770>}
 ```
 
-## Set backend and target
+### Set backend and target
 
 ```elixir
 # "0: automatically (by default), "
@@ -170,14 +173,16 @@ classes =
 {:ok, model} = Cv.DNN.Net.setPreferableTarget(model, 0)
 ```
 
-```output
-{:ok, #Reference<0.3128475832.1787953155.129610>}
+<!-- livebook:{"output":true} -->
+
+```
+{:ok, #Reference<0.910554608.1494089757.145770>}
 ```
 
-## Read the test image and set as input
+### Read the test image and set as input
 
 ```elixir
-{:ok, mat} = Cv.imread("space_shuttle.jpg")
+mat = Cv.imread!("space_shuttle.jpg")
 
 {:ok, blob} =
   Cv.DNN.blobFromImage(mat,
@@ -190,11 +195,13 @@ classes =
 {:ok, model} = Cv.DNN.Net.setInput(model, blob, name: "", scalefactor: 1.0, mean: [0, 0, 0])
 ```
 
-```output
-{:ok, #Reference<0.3128475832.1787953155.129610>}
+<!-- livebook:{"output":true} -->
+
+```
+{:ok, #Reference<0.910554608.1494089757.145770>}
 ```
 
-## Forward
+### Forward
 
 ```elixir
 start_time = :os.system_time(:millisecond)
@@ -203,12 +210,14 @@ end_time = :os.system_time(:millisecond)
 "Inference time=>#{end_time - start_time} ms"
 ```
 
-```output
-"Inference time=>51 ms"
+<!-- livebook:{"output":true} -->
+
+```
+"Inference time=>48 ms"
 ```
 
 ```elixir
-pred = pred |> Cv.Nx.to_nx()
+pred = pred |> Cv.Nx.to_nx(Nx.BinaryBackend)
 pred_class_id = pred |> Nx.argmax() |> Nx.to_flat_list() |> Enum.at(0)
 
 confidence =
@@ -224,6 +233,8 @@ class_label =
 "Predict result: #{class_label}=>#{Float.round(confidence * 100, 2)}"
 ```
 
-```output
+<!-- livebook:{"output":true} -->
+
+```
 "Predict result: space shuttle=>99.13"
 ```

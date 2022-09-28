@@ -171,9 +171,7 @@ defmodule Evision.Test do
   end
 
   test "Evision.imencode and Evision.imdecode" do
-    {:ok, mat} =
-      Path.join(__DIR__, ["test.png"])
-      |> Evision.imread()
+    {:ok, mat} = Evision.imread(Path.join(__DIR__, ["test.png"]))
 
     ret = Evision.imencode(".png", mat)
     assert :ok == elem(ret, 0)
@@ -186,9 +184,7 @@ defmodule Evision.Test do
   end
 
   test "Evision.resize" do
-    {:ok, mat} =
-      Path.join([__DIR__, "test.png"])
-      |> Evision.imread()
+    {:ok, mat} = Evision.imread(Path.join([__DIR__, "test.png"]))
 
     resize_height = 4
     resize_width = 6

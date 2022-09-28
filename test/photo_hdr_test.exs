@@ -45,8 +45,7 @@ defmodule Evision.Photo.HDR.Test do
       |> File.read!()
       |> String.split("\n")
       |> Enum.reject(&(String.length(&1) == 0))
-      # remove "\r" for Windows
-      |> Enum.map(&String.replace(&1, "\r", ""))
+      |> Enum.map(&String.replace(&1, "\r", "")) # remove "\r" for Windows
       |> Enum.map(&String.split(&1, " "))
       |> Enum.map(&List.to_tuple(&1))
       |> Enum.map(fn {image_filename, times} ->
@@ -84,7 +83,7 @@ defmodule Evision.Photo.HDR.Test do
     |> Nx.multiply(255)
     |> Nx.clip(0, 255)
     |> Nx.as_type({:u, 8})
-    |> Cv.Nx.to_mat!()
+    |> Cv.Nx.to_mat_2d!()
     |> then(&Cv.imwrite(output_fusion_file, &1))
 
     output_ldr_file = Path.join([__DIR__, "photo_hdr_test", "ldr.png"])
@@ -118,7 +117,7 @@ defmodule Evision.Photo.HDR.Test do
     |> Nx.multiply(255)
     |> Nx.clip(0, 255)
     |> Nx.as_type({:u, 8})
-    |> Cv.Nx.to_mat!()
+    |> Cv.Nx.to_mat_2d!()
     |> then(&Cv.imwrite(output_ldr_file, &1))
 
     output_hdr_file = Path.join([__DIR__, "photo_hdr_test", "hdr.hdr"])

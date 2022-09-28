@@ -58,7 +58,8 @@ static ERL_NIF_TERM evision_cv_mat_from_binary(ErlNifEnv *env, int argc, const E
                     // transfer ownership to ERTS
                     ERL_NIF_TERM term = enif_make_resource(env, res);
                     enif_release_resource(res);
-                    return evision::nif::ok(env, term);
+
+                    return evision::nif::ok(env, _evision_make_mat_resource_into_map(env, *res->val, term));
                 } else {
                     return evision::nif::error(env, "no memory");
                 }
@@ -128,7 +129,8 @@ static ERL_NIF_TERM evision_cv_mat_from_binary_by_shape(ErlNifEnv *env, int argc
                     // transfer ownership to ERTS
                     ERL_NIF_TERM term = enif_make_resource(env, res);
                     enif_release_resource(res);
-                    return evision::nif::ok(env, term);
+
+                    return evision::nif::ok(env, _evision_make_mat_resource_into_map(env, *res->val, term));
                 } else {
                     return evision::nif::error(env, "no memory");
                 }

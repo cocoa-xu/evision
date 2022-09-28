@@ -60,6 +60,7 @@ class BeamWrapperGenerator(object):
         self.py_signatures = dict()
         self.class_idx = 0
         self.evision_nif_names = dict()
+        self.not_struct_types = dict()
 
     def add_class(self, stype, name, decl):
         classinfo = ClassInfo(name, decl)
@@ -267,7 +268,7 @@ class BeamWrapperGenerator(object):
             elif argtype == 'TermCriteria':
                 return f'is_tuple({argname})'
             else:
-                return f'is_reference({argname})'
+                return f'(is_reference({argname}) or is_struct({argname}))'
 
     def map_argtype_to_guard_erlang(self, argname, argtype):
         if argtype == 'int' or argtype == 'size_t':
@@ -294,9 +295,10 @@ class BeamWrapperGenerator(object):
             elif argtype == 'TermCriteria':
                 return f'is_tuple({argname})'
             else:
-                return f'is_reference({argname})'
+                return f'(is_reference({argname}) or is_map({argname}))'
 
-    def map_elixir_argname(self, argname, ignore_upper_starting=False):
+    def map_elixir_argname(self, argname, ignore_upper_starting=False, argtype=None, from_struct=False):
+        struct_types = ["Mat", "vector_Mat", "UMat", "vector_UMat", "GpuMat"]
         name = ""
         if argname in reserved_keywords():
             if argname == 'fn':
@@ -307,10 +309,17 @@ class BeamWrapperGenerator(object):
                 name = f'arg_{argname}'
         else:
             name = self.argname_prefix_re.sub('', argname)
-        if ignore_upper_starting:
-            return name
-        return f"{name[0:1].lower()}{name[1:]}"
-    
+        if not ignore_upper_starting:
+            name = f"{name[0:1].lower()}{name[1:]}"
+        if from_struct and argtype is not None:
+            if argtype in struct_types:
+                name = f"Evision.Internal.Structurise.from_struct({name})"
+            else:
+                if self.not_struct_types.get(argtype, None) is None:
+                    self.not_struct_types[argtype] = True
+                    # print(argtype)
+        return name
+
     def map_erlang_argname(self, argname):
         name = self.argname_prefix_re.sub('', argname)
         return f"{name[0:1].upper()}{name[1:]}"
@@ -369,6 +378,7 @@ class BeamWrapperGenerator(object):
             func_name = "evision_" + prop_class.wname + '_get_' + name
             writer.write(f"  def get_{name}(self) do\n"
                          f"    :evision_nif.{erl_name}(self)\n"
+                         "     |> Evision.Internal.Structurise.to_struct()\n"
                          "  end\n")
 
             writer_erlang.write(f"get_{name}(Self) -> \n"
@@ -389,7 +399,7 @@ class BeamWrapperGenerator(object):
                 if erl_name[0].isupper():
                     erl_name = map_uppercase_to_erlang_name(erl_name)
                 func_name = "evision_" + prop_class.wname + '_set_' + name
-                writer.write(f"  def set_{name}(self, opts) do\n    :evision_nif.{erl_name}(self, opts)\n  end\n")
+                writer.write(f"  def set_{name}(self, opts) do\n    self = Evision.Internal.Structurise.from_struct(self)\n    opts = Evision.Internal.Structurise.from_struct(opts)\n    :evision_nif.{erl_name}(self, opts)\n    |> Evision.Internal.Structurise.to_struct()\n  end\n")
                 writer_erlang.write(f"set_{name}(Self, Options) when is_list(Options), is_tuple(hd(Options)), tuple_size(hd(Options)) == 2 ->\n    evision_nif:{erl_name}(Self, Options).\n\n")
                 name_arity_elixir = f'set_{name}!/2'
                 name_arity_erlang = None
@@ -604,9 +614,9 @@ class BeamWrapperGenerator(object):
                 sign = evision_nif_prefix() + "dnn_dnn_Net_" + module_func_name
             if unique_signatures.get(sign, None) is True:
                 elixir_function.write('\n'.join(["  # {}".format(line.strip()) for line in opt_doc.split("\n")]))
-                elixir_function.write(f'  # def {module_func_name}({func_args}) do\n  #   :evision_nif.{erl_name}({func_args})\n  # end\n')
+                elixir_function.write(f'  # def {module_func_name}({func_args}) do\n  #   :evision_nif.{erl_name}({func_args})\n  #   |> Evision.Internal.Structurise.to_struct()\n  # end\n')
                 if len(func_args_with_opts) > 0:
-                    elixir_function.write(f'  # def {module_func_name}({func_args_with_opts}) do\n  #   :evision_nif.{erl_name}({func_args_with_opts})\n  # end\n')
+                    elixir_function.write(f'  # def {module_func_name}({func_args_with_opts}) do\n  #   :evision_nif.{erl_name}({func_args_with_opts})\n  #   |> Evision.Internal.Structurise.to_struct()\n  # end\n')
             else:
                 unique_signatures[sign] = True
 
@@ -698,13 +708,13 @@ class BeamWrapperGenerator(object):
                     when_guard_erlang = ' when '
                     when_guard_erlang += ', '.join(func_guard_erlang)
 
-                opt_args = '' if not has_opts else ' ++ opts'
+                opt_args = '' if not has_opts else ' ++ Evision.Internal.Structurise.from_struct(opts)'
                 opt_args_erlang = '' if not has_opts else ' ++ Options'
                 module_func_args = func_args
                 module_func_args_erlang = func_args_erlang
                 module_func_args_with_opts = func_args_with_opts
                 module_func_args_with_opts_erlang = func_args_with_opts_erlang
-                positional = 'positional = [{}\n    ]'.format(",".join(['\n      {}: {}'.format(self.map_elixir_argname(arg_name), self.map_elixir_argname(arg_name)) for (arg_name, _, argtype) in arglist[:pos_end]]))
+                positional = 'positional = [{}\n    ]'.format(",".join(['\n      {}: {}'.format(self.map_elixir_argname(arg_name), self.map_elixir_argname(arg_name, argtype=argtype, from_struct=True)) for (arg_name, _, argtype) in arglist[:pos_end]]))
                 positional_erlang = 'Positional = [{}\n  ]'.format(",".join(['\n    {}, {}'.format('{' + self.map_elixir_argname(arg_name), self.map_erlang_argname(arg_name) + '}') for (arg_name, _, argtype) in arglist[:pos_end]]))
                 func_args = 'positional'
                 func_args_erlang = 'Positional'
@@ -712,10 +722,10 @@ class BeamWrapperGenerator(object):
                     func_args_with_opts = f'positional{opt_args}'
                     func_args_with_opts_erlang = f'Positional{opt_args_erlang}'
                 if not is_ns and func.classname and not func.is_static and not is_constructor:
-                    func_args = f'self, {func_args}'
+                    func_args = f'Evision.Internal.Structurise.from_struct(self), {func_args}'
                     func_args_erlang = f'Self, {func_args_erlang}'
                     if len(func_args_with_opts) > 0:
-                        func_args_with_opts = f'self, {func_args_with_opts}'
+                        func_args_with_opts = f'Evision.Internal.Structurise.from_struct(self), {func_args_with_opts}'
                         func_args_with_opts_erlang = f'Self, {func_args_with_opts_erlang}'
 
                 function_group = ""
@@ -730,7 +740,7 @@ class BeamWrapperGenerator(object):
                     inline_doc += function_group
                     name_arity_elixir_identifier = f'{module_func_name}!/2'
                     name_arity_elixir = f'{module_func_name}!/1'
-                    elixir_function.write(f'{inline_doc}  def {module_func_name}(self, opts \\\\ []) when is_list(opts) do\n    :evision_nif.{erl_name}(self, opts)\n  end\n')
+                    elixir_function.write(f'{inline_doc}  def {module_func_name}(self, opts \\\\ []) when is_list(opts) do\n    self = Evision.Internal.Structurise.from_struct(self)\n    opts = Evision.Internal.Structurise.from_struct(opts)\n    :evision_nif.{erl_name}(self, opts)\n    |> Evision.Internal.Structurise.to_struct()\n  end\n')
                     
                     name_arity_erlang = f'{module_func_name}!/1'
                     name_arity_erlang_opt = f'{module_func_name}!/2'
@@ -750,7 +760,7 @@ class BeamWrapperGenerator(object):
                     inline_doc += function_group
                     name_arity_elixir_identifier = f'{module_func_name}!/2'
                     name_arity_elixir = f'{module_func_name}!/1'
-                    elixir_function.write(f'{inline_doc}  def {module_func_name}(self, opts \\\\ []) when is_list(opts) do\n    :evision_nif.{erl_name}(self, opts)\n  end\n')
+                    elixir_function.write(f'{inline_doc}  def {module_func_name}(self, opts \\\\ []) when is_list(opts) do\n    self = Evision.Internal.Structurise.from_struct(self)\n    opts = Evision.Internal.Structurise.from_struct(opts)\n    :evision_nif.{erl_name}(self, opts)\n    |> Evision.Internal.Structurise.to_struct()\n  end\n')
                     
                     name_arity_erlang = f'{module_func_name}!/1'
                     name_arity_erlang_opt = f'{module_func_name}!/2'
@@ -782,6 +792,7 @@ class BeamWrapperGenerator(object):
                     elixir_function.write(f'{inline_doc}  def {module_func_name}({module_func_args_with_opts}){when_guard_with_opts}do\n'
                                  f'    {positional}\n'
                                  f'    :evision_nif.{erl_name}({func_args_with_opts})\n'
+                                 '     |> Evision.Internal.Structurise.to_struct()\n'
                                  '  end\n')
                     
                     erlang_function_opt.write(f'{module_func_name}({module_func_args_with_opts_erlang}){when_guard_with_opts_erlang} ->\n'
@@ -805,6 +816,7 @@ class BeamWrapperGenerator(object):
                 elixir_function.write(f'{function_group}  def {module_func_name}({module_func_args}){when_guard}do\n'
                              f'    {positional}\n'
                              f'    :evision_nif.{erl_name}({func_args})\n'
+                             '    |> Evision.Internal.Structurise.to_struct()\n'
                              '  end\n')
 
                 erlang_function.write(f'{module_func_name}({module_func_args_erlang}){when_guard_erlang} ->\n'

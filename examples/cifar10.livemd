@@ -10,7 +10,8 @@
 System.put_env("EVISION_PREFER_PRECOMPILED", "true")
 
 Mix.install([
-  {:evision, "~> 0.1", github: "cocoa-xu/evision", tag: "v0.1.5"},
+  {:evision, "~> 0.1", github: "cocoa-xu/evision", tag: "v0.1.6"},
+  {:req, "~> 0.3"},
   {:torchx, "~> 0.3"},
   {:nx, "~> 0.3", override: true},
   {:kino, "~> 0.6"},
@@ -37,17 +38,13 @@ defmodule Helper do
   end
 
   def download!(url, save_as, true) do
-    http_opts = []
-    opts = [body_format: :binary]
-    arg = {url, []}
-
     body =
-      case :httpc.request(:get, arg, http_opts, opts) do
-        {:ok, {{_, 200, _}, _, body}} ->
+      case Req.get!(url) do
+        %Req.Response{status: 200, body: body} ->
           body
 
-        {:error, reason} ->
-          raise inspect(reason)
+        error ->
+          raise inspect(error)
       end
 
     File.write!(save_as, body)
@@ -344,9 +341,8 @@ classes = [:airplane, :automobile, :bird, :cat, :deer, :dog, :frog, :horse, :shi
 
 input_tensor =
   img
-  |> Cv.resize([32, 32])
-  |> then(fn {:ok, val} -> val end)
-  |> Cv.Nx.to_nx()
+  |> Cv.resize!([32, 32])
+  |> Cv.Nx.to_nx(Nx.BinaryBackend)
   |> Nx.backend_transfer(Torchx.Backend)
   |> Nx.flatten()
 

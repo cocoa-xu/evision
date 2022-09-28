@@ -15,10 +15,16 @@ defmodule Evision.Errorize do
       @doc unquote(doc)
       def unquote(:"#{name}!")(unquote_splicing(args)) do
         case unquote(fun) do
-          {:ok, res} -> res
+          {:ok, res} ->
+            if is_struct(res) do
+              res
+            else
+              Evision.Internal.Structurise.to_struct(res)
+            end
           {:error, message} when is_list(message) -> raise List.to_string(message)
           {:error, message} when is_binary(message) -> raise message
-          res -> res
+          res when is_struct(res) -> res
+          res -> Evision.Internal.Structurise.to_struct(res)
         end
       end
     end

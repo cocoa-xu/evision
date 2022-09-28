@@ -352,7 +352,7 @@ class FuncInfo(object):
                         code_ret = "if (%s) {\n                return evision::nif::atom(env, \"ok\");\n            } else {\n                return evision::nif::atom(env, \"error\");\n            }" % (aname,)
                     elif v.rettype == 'Mat':
                         code_ret = f"ERL_NIF_TERM mat_ret = evision_from(env, {aname});\n" \
-                                   "            if (enif_is_ref(env, mat_ret)) return evision::nif::ok(env, mat_ret);\n" \
+                                   "            if (enif_is_ref(env, mat_ret) || enif_is_map(env, mat_ret)) return evision::nif::ok(env, mat_ret);\n" \
                                    "            else return mat_ret;"
                     else:
                         code_ret = "return evision::nif::ok(env, evision_from(env, %s))" % (aname,)
