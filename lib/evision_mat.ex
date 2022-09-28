@@ -17,8 +17,33 @@ defmodule Evision.Mat do
           | {:s, 32}
           | {:f, 32}
           | {:f, 64}
+          | {:f, 16}
   @type channels_from_binary ::
-          1 | 3 | 4
+          1 | 2 | 3 | 4
+
+  defstruct [:channels, :dims, :type, :raw_type, :shape, :ref]
+  alias __MODULE__, as: T
+
+  @doc false
+  def __make_struct__(%{:channels => channels, :dims => dims, :type => type, :raw_type => raw_type, :shape => shape, :ref => ref}) do
+    %T{
+      channels: channels,
+      dims: dims,
+      type: type,
+      raw_type: raw_type,
+      shape: shape,
+      ref: ref
+    }
+  end
+
+  @doc false
+  def __from_struct__(%T{ref: ref}) do
+    ref
+  end
+
+  def __from_struct__(ref) when is_reference(ref) do
+    ref
+  end
 
   @doc namespace: :"cv.Mat"
   def number(number, type) do
@@ -29,177 +54,207 @@ defmodule Evision.Mat do
   deferror(number(number, type))
 
   @doc namespace: :"cv.Mat"
-  @spec at(reference(), non_neg_integer()) :: {:ok, number()} | {:error, String.t()}
-  def at(mat, position) when is_reference(mat) and is_integer(position) and position >= 0 do
+  def at(mat, position) when is_integer(position) and position >= 0 do
+    mat = __from_struct__(mat)
     :evision_nif.mat_at(img: mat, pos: position)
+    |> Evision.Internal.Structurise.to_struct()
   end
 
   deferror(at(mat, position))
 
   @doc namespace: :"cv.Mat"
-  @spec add(reference(), reference()) :: {:ok, reference()} | {:error, String.t()}
-  def add(lhs, rhs) when is_reference(lhs) and is_reference(rhs) do
+  def add(lhs, rhs) do
+    lhs = __from_struct__(lhs)
+    rhs = __from_struct__(rhs)
     :evision_nif.mat_add(l: lhs, r: rhs)
+    |> Evision.Internal.Structurise.to_struct()
   end
 
   deferror(add(lhs, rhs))
 
   @doc namespace: :"cv.Mat"
-  @spec add(reference(), reference(), mat_type()) :: {:ok, reference()} | {:error, String.t()}
-  def add(lhs, rhs, type) when is_reference(lhs) and is_reference(rhs) do
+  def add(lhs, rhs, type) do
+    lhs = __from_struct__(lhs)
+    rhs = __from_struct__(rhs)
     {t, l} = check_unsupported_type(type)
     :evision_nif.mat_add_typed(lhs: lhs, rhs: rhs, t: t, l: l)
+    |> Evision.Internal.Structurise.to_struct()
   end
 
   deferror(add(lhs, rhs, type))
 
   @doc namespace: :"cv.Mat"
-  @spec subtract(reference(), reference()) :: {:ok, reference()} | {:error, String.t()}
-  def subtract(lhs, rhs) when is_reference(lhs) and is_reference(rhs) do
+  def subtract(lhs, rhs) do
+    lhs = __from_struct__(lhs)
+    rhs = __from_struct__(rhs)
     :evision_nif.mat_subtract(l: lhs, r: rhs)
+    |> Evision.Internal.Structurise.to_struct()
   end
 
   deferror(subtract(lhs, rhs))
 
   @doc namespace: :"cv.Mat"
-  @spec subtract(reference(), reference(), mat_type()) ::
-          {:ok, reference()} | {:error, String.t()}
-  def subtract(lhs, rhs, type) when is_reference(lhs) and is_reference(rhs) do
+  def subtract(lhs, rhs, type) do
+    lhs = __from_struct__(lhs)
+    rhs = __from_struct__(rhs)
     {t, l} = check_unsupported_type(type)
     :evision_nif.mat_subtract_typed(lhs: lhs, rhs: rhs, t: t, l: l)
+    |> Evision.Internal.Structurise.to_struct()
   end
 
   deferror(subtract(lhs, rhs, type))
 
   @doc namespace: :"cv.Mat"
-  @spec multiply(reference(), reference()) :: {:ok, reference()} | {:error, String.t()}
-  def multiply(lhs, rhs) when is_reference(lhs) and is_reference(rhs) do
+  def multiply(lhs, rhs) do
+    lhs = __from_struct__(lhs)
+    rhs = __from_struct__(rhs)
     :evision_nif.mat_multiply(l: lhs, r: rhs)
+    |> Evision.Internal.Structurise.to_struct()
   end
 
   deferror(multiply(lhs, rhs))
 
   @doc namespace: :"cv.Mat"
-  @spec multiply(reference(), reference(), mat_type()) ::
-          {:ok, reference()} | {:error, String.t()}
-  def multiply(lhs, rhs, type) when is_reference(lhs) and is_reference(rhs) do
+  def multiply(lhs, rhs, type) do
+    lhs = __from_struct__(lhs)
+    rhs = __from_struct__(rhs)
     {t, l} = check_unsupported_type(type)
     :evision_nif.mat_multiply_typed(lhs: lhs, rhs: rhs, t: t, l: l)
+    |> Evision.Internal.Structurise.to_struct()
   end
 
   deferror(multiply(lhs, rhs, type))
 
   @doc namespace: :"cv.Mat"
-  @spec matrix_multiply(reference(), reference(), mat_type() | nil) ::
-          {:ok, reference()} | {:error, String.t()}
-  def matrix_multiply(lhs, rhs, out_type = {t, l} \\ nil)
-      when is_reference(lhs) and is_reference(rhs) do
+  def matrix_multiply(lhs, rhs, out_type = {t, l} \\ nil) do
+    lhs = __from_struct__(lhs)
+    rhs = __from_struct__(rhs)
     if out_type == nil do
       :evision_nif.mat_matrix_multiply(lhs: lhs, rhs: rhs, t: nil, l: 0)
     else
       :evision_nif.mat_matrix_multiply(lhs: lhs, rhs: rhs, t: t, l: l)
     end
+    |> Evision.Internal.Structurise.to_struct()
   end
 
   deferror(matrix_multiply(lhs, rhs))
   deferror(matrix_multiply(lhs, rhs, out_type))
 
   @doc namespace: :"cv.Mat"
-  @spec divide(reference(), reference()) :: {:ok, reference()} | {:error, String.t()}
-  def divide(lhs, rhs) when is_reference(lhs) and is_reference(rhs) do
+  def divide(lhs, rhs) do
+    lhs = __from_struct__(lhs)
+    rhs = __from_struct__(rhs)
     :evision_nif.mat_divide(l: lhs, r: rhs)
+    |> Evision.Internal.Structurise.to_struct()
   end
 
   deferror(divide(lhs, rhs))
 
   @doc namespace: :"cv.Mat"
-  @spec divide(reference(), reference(), mat_type()) :: {:ok, reference()} | {:error, String.t()}
-  def divide(lhs, rhs, type) when is_reference(lhs) and is_reference(rhs) do
+  def divide(lhs, rhs, type) do
+    lhs = __from_struct__(lhs)
+    rhs = __from_struct__(rhs)
     {t, l} = check_unsupported_type(type)
     :evision_nif.mat_divide_typed(lhs: lhs, rhs: rhs, t: t, l: l)
+    |> Evision.Internal.Structurise.to_struct()
   end
 
   deferror(divide(lhs, rhs, type))
 
   @doc namespace: :"cv.Mat"
-  @spec bitwise_and(reference(), reference()) :: {:ok, reference()} | {:error, String.t()}
-  def bitwise_and(lhs, rhs) when is_reference(lhs) and is_reference(rhs) do
+  def bitwise_and(lhs, rhs) do
+    lhs = __from_struct__(lhs)
+    rhs = __from_struct__(rhs)
     :evision_nif.mat_bitwise_and(l: lhs, r: rhs)
+    |> Evision.Internal.Structurise.to_struct()
   end
 
   deferror(bitwise_and(lhs, rhs))
 
   @doc namespace: :"cv.Mat"
-  @spec bitwise_or(reference(), reference()) :: {:ok, reference()} | {:error, String.t()}
-  def bitwise_or(lhs, rhs) when is_reference(lhs) and is_reference(rhs) do
+  def bitwise_or(lhs, rhs) do
+    lhs = __from_struct__(lhs)
+    rhs = __from_struct__(rhs)
     :evision_nif.mat_bitwise_or(l: lhs, r: rhs)
+    |> Evision.Internal.Structurise.to_struct()
   end
 
   deferror(bitwise_or(lhs, rhs))
 
   @doc namespace: :"cv.Mat"
-  @spec bitwise_xor(reference(), reference()) :: {:ok, reference()} | {:error, String.t()}
-  def bitwise_xor(lhs, rhs) when is_reference(lhs) and is_reference(rhs) do
+  def bitwise_xor(lhs, rhs) do
+    lhs = __from_struct__(lhs)
+    rhs = __from_struct__(rhs)
     :evision_nif.mat_bitwise_xor(l: lhs, r: rhs)
+    |> Evision.Internal.Structurise.to_struct()
   end
 
   deferror(bitwise_xor(lhs, rhs))
 
   @doc namespace: :"cv.Mat"
-  @spec cmp(reference(), reference(), atom()) :: {:ok, reference()} | {:error, String.t()}
-  def cmp(lhs, rhs, op)
-      when is_reference(lhs) and is_reference(rhs) and op in [:eq, :gt, :ge, :lt, :le, :ne] do
+  def cmp(lhs, rhs, op) when op in [:eq, :gt, :ge, :lt, :le, :ne] do
+    lhs = __from_struct__(lhs)
+    rhs = __from_struct__(rhs)
     :evision_nif.mat_cmp(l: lhs, r: rhs, type: op)
+    |> Evision.Internal.Structurise.to_struct()
   end
 
   deferror(cmp(lhs, rhs, op))
 
   @doc namespace: :"cv.Mat"
-  @spec logical_and(reference(), reference()) :: {:ok, reference()} | {:error, String.t()}
-  def logical_and(lhs, rhs) when is_reference(lhs) and is_reference(rhs) do
+  def logical_and(lhs, rhs) do
+    lhs = __from_struct__(lhs)
+    rhs = __from_struct__(rhs)
     :evision_nif.mat_logical_and(l: lhs, r: rhs)
+    |> Evision.Internal.Structurise.to_struct()
   end
 
   deferror(logical_and(lhs, rhs))
 
   @doc namespace: :"cv.Mat"
-  @spec logical_or(reference(), reference()) :: {:ok, reference()} | {:error, String.t()}
-  def logical_or(lhs, rhs) when is_reference(lhs) and is_reference(rhs) do
+  def logical_or(lhs, rhs) do
+    lhs = __from_struct__(lhs)
+    rhs = __from_struct__(rhs)
     :evision_nif.mat_logical_or(l: lhs, r: rhs)
+    |> Evision.Internal.Structurise.to_struct()
   end
 
   deferror(logical_or(lhs, rhs))
 
   @doc namespace: :"cv.Mat"
-  @spec logical_xor(reference(), reference()) :: {:ok, reference()} | {:error, String.t()}
-  def logical_xor(lhs, rhs) when is_reference(lhs) and is_reference(rhs) do
+  def logical_xor(lhs, rhs) do
+    lhs = __from_struct__(lhs)
+    rhs = __from_struct__(rhs)
     :evision_nif.mat_logical_xor(l: lhs, r: rhs)
+    |> Evision.Internal.Structurise.to_struct()
   end
 
   deferror(logical_xor(lhs, rhs))
 
   @doc namespace: :"cv.Mat"
-  @spec abs(reference()) :: {:ok, reference()} | {:error, String.t()}
-  def abs(mat) when is_reference(mat) do
+  def abs(mat) do
+    mat = __from_struct__(mat)
     :evision_nif.mat_abs(img: mat)
+    |> Evision.Internal.Structurise.to_struct()
   end
 
   deferror(abs(mat))
 
   @doc namespace: :"cv.Mat"
-  @spec expm1(reference()) :: {:ok, reference()} | {:error, String.t()}
-  def expm1(mat) when is_reference(mat) do
+  def expm1(mat) do
+    mat = __from_struct__(mat)
     :evision_nif.mat_expm1(img: mat)
+    |> Evision.Internal.Structurise.to_struct()
   end
 
   deferror(expm1(mat))
 
   @doc namespace: :"cv.Mat"
-  @spec clip(reference(), number(), number()) :: {:ok, reference()} | {:error, String.t()}
   def clip(mat, lower, upper)
-      when is_reference(mat) and is_number(lower) and
-             is_number(upper) and lower <= upper do
+      when is_number(lower) and is_number(upper) and lower <= upper do
+    mat = __from_struct__(mat)
     :evision_nif.mat_clip(img: mat, lower: lower, upper: upper)
+    |> Evision.Internal.Structurise.to_struct()
   end
 
   deferror(clip(mat, lower, upper))
@@ -223,9 +278,8 @@ defmodule Evision.Mat do
           When specified, it combines the reshape and transpose operation in a single NIF call.
 
   """
-  @spec transpose(reference(), [non_neg_integer()], keyword()) ::
-          {:ok, reference()} | {:error, String.t()}
   def transpose(mat, axes, opts \\ []) do
+    mat = __from_struct__(mat)
     as_shape = opts[:as_shape] || shape!(mat)
 
     as_shape =
@@ -249,6 +303,7 @@ defmodule Evision.Mat do
       {:error, "invalid transpose axes #{inspect(axes)} for shape #{inspect(as_shape)}"}
     else
       :evision_nif.mat_transpose(img: mat, axes: uniq_axes, as_shape: as_shape)
+      |> Evision.Internal.Structurise.to_struct()
     end
   end
 
@@ -264,12 +319,13 @@ defmodule Evision.Mat do
       by default it reverses the order of the axes.
 
   """
-  @spec transpose(reference(), keyword()) :: {:ok, reference()} | {:error, String.t()}
   def transpose(mat) do
+    mat = __from_struct__(mat)
     as_shape = shape!(mat)
     ndims = Enum.count(as_shape)
     uniq_axes = Enum.reverse(0..(ndims - 1))
     :evision_nif.mat_transpose(img: mat, axes: uniq_axes, as_shape: as_shape)
+    |> Evision.Internal.Structurise.to_struct()
   end
 
   deferror(transpose(mat))
@@ -279,20 +335,21 @@ defmodule Evision.Mat do
   This method returns the type-tuple used by Nx. To get the raw value of `cv::Mat.type()`, please use
   `Evision.Mat.raw_type/1`.
   """
-  @spec type(reference()) :: {:ok, mat_type()} | {:error, String.t()}
-  def type(mat) when is_reference(mat) do
+  def type(mat) do
+    mat = __from_struct__(mat)
     :evision_nif.mat_type(img: mat)
   end
 
   deferror(type(mat))
 
   @doc namespace: :"cv.Mat"
-  @spec bitwise_not(reference()) :: {:ok, reference()} | {:error, String.t()}
-  def bitwise_not(mat) when is_reference(mat) do
+  def bitwise_not(mat) do
+    mat = __from_struct__(mat)
     type = {s, _} = Evision.Mat.type!(mat)
 
     if s in [:s, :u] do
       :evision_nif.mat_bitwise_not(img: mat)
+      |> Evision.Internal.Structurise.to_struct()
     else
       {:error,
        "bitwise operators expect integer tensors as inputs and outputs an integer tensor, got: #{inspect(type)}"}
@@ -302,71 +359,83 @@ defmodule Evision.Mat do
   deferror(bitwise_not(mat))
 
   @doc namespace: :"cv.Mat"
-  @spec ceil(reference()) :: {:ok, reference()} | {:error, String.t()}
-  def ceil(mat) when is_reference(mat) do
+  def ceil(mat) do
+    mat = __from_struct__(mat)
     :evision_nif.mat_ceil(img: mat)
+    |> Evision.Internal.Structurise.to_struct()
   end
 
   deferror(ceil(mat))
 
   @doc namespace: :"cv.Mat"
   @spec floor(reference()) :: {:ok, reference()} | {:error, String.t()}
-  def floor(mat) when is_reference(mat) do
+  def floor(mat) do
+    mat = __from_struct__(mat)
     :evision_nif.mat_floor(img: mat)
+    |> Evision.Internal.Structurise.to_struct()
   end
 
   deferror(floor(mat))
 
   @doc namespace: :"cv.Mat"
-  @spec negate(reference()) :: {:ok, reference()} | {:error, String.t()}
-  def negate(mat) when is_reference(mat) do
+  def negate(mat) do
+    mat = __from_struct__(mat)
     :evision_nif.mat_negate(img: mat)
+    |> Evision.Internal.Structurise.to_struct()
   end
 
   deferror(negate(mat))
 
   @doc namespace: :"cv.Mat"
-  @spec round(reference()) :: {:ok, reference()} | {:error, String.t()}
-  def round(mat) when is_reference(mat) do
+  def round(mat) do
+    mat = __from_struct__(mat)
     :evision_nif.mat_round(img: mat)
+    |> Evision.Internal.Structurise.to_struct()
   end
 
   deferror(round(mat))
 
   @doc namespace: :"cv.Mat"
-  @spec sign(reference()) :: {:ok, reference()} | {:error, String.t()}
-  def sign(mat) when is_reference(mat) do
+  def sign(mat) do
+    mat = __from_struct__(mat)
     :evision_nif.mat_sign(img: mat)
+    |> Evision.Internal.Structurise.to_struct()
   end
 
   deferror(sign(mat))
 
   @doc namespace: :"cv.Mat"
-  @spec setTo(reference(), number(), reference()) :: {:ok, reference()} | {:error, String.t()}
-  def setTo(mat, value, mask) when is_reference(mat) do
+  def setTo(mat, value, mask) do
+    mat = __from_struct__(mat)
+    mask = __from_struct__(mask)
     :evision_nif.mat_set_to(img: mat, value: value, mask: mask)
+    |> Evision.Internal.Structurise.to_struct()
   end
 
   deferror(setTo(mat, value, mask))
 
   @doc namespace: :"cv.Mat"
-  @spec dot(reference(), reference()) :: {:ok, reference()} | {:error, String.t()}
-  def dot(mat_a, mat_b) when is_reference(mat_a) and is_reference(mat_b) do
+  def dot(mat_a, mat_b) do
+    mat_a = __from_struct__(mat_a)
+    mat_b = __from_struct__(mat_b)
     :evision_nif.mat_dot(a: mat_a, b: mat_b)
+    |> Evision.Internal.Structurise.to_struct()
   end
 
   deferror(dot(mat_a, mat_b))
 
   @doc namespace: :"cv.Mat"
-  @spec as_type(reference(), mat_type()) :: {:ok, reference()} | {:error, String.t()}
-  def as_type(mat, _type = {t, l}) when is_reference(mat) and is_atom(t) and l > 0 do
+  def as_type(mat, _type = {t, l}) when is_atom(t) and l > 0 do
+    mat = __from_struct__(mat)
     :evision_nif.mat_as_type(img: mat, t: t, l: l)
+    |> Evision.Internal.Structurise.to_struct()
   end
 
   deferror(as_type(mat, type))
 
   @doc namespace: :"cv.Mat"
-  def shape(mat) when is_reference(mat) do
+  def shape(mat) do
+    mat = __from_struct__(mat)
     :evision_nif.mat_shape(img: mat)
   end
 
@@ -376,7 +445,8 @@ defmodule Evision.Mat do
   @doc """
   The method returns the number of matrix channels.
   """
-  def channels(mat) when is_reference(mat) do
+  def channels(mat) do
+    mat = __from_struct__(mat)
     :evision_nif.mat_channels(img: mat)
   end
 
@@ -399,8 +469,10 @@ defmodule Evision.Mat do
     -   CV_64F - 64-bit floating-point numbers ( -DBL_MAX..DBL_MAX, INF, NAN )
 
   """
-  def depth(mat) when is_reference(mat) do
+  def depth(mat) do
+    mat = __from_struct__(mat)
     :evision_nif.mat_depth(img: mat)
+    |> Evision.Internal.Structurise.to_struct()
   end
 
   deferror(depth(mat))
@@ -412,21 +484,24 @@ defmodule Evision.Mat do
   As `Evision.Mat.type/1` returns the type used by Nx, this method gives the raw value of
   `cv::Mat.type()`
   """
-  def raw_type(mat) when is_reference(mat) do
+  def raw_type(mat) do
+    mat = __from_struct__(mat)
     :evision_nif.mat_raw_type(img: mat)
   end
 
   deferror(raw_type(mat))
 
   @doc namespace: :"cv.Mat"
-  def isSubmatrix(mat) when is_reference(mat) do
+  def isSubmatrix(mat) do
+    mat = __from_struct__(mat)
     :evision_nif.mat_isSubmatrix(img: mat)
   end
 
   deferror(isSubmatrix(mat))
 
   @doc namespace: :"cv.Mat"
-  def isContinuous(mat) when is_reference(mat) do
+  def isContinuous(mat) do
+    mat = __from_struct__(mat)
     :evision_nif.mat_isContinuous(img: mat)
   end
 
@@ -439,7 +514,8 @@ defmodule Evision.Mat do
   The method returns the matrix element size in bytes. For example, if the matrix type is CV_16SC3,
   the method returns 3\*sizeof(short) or 6.
   """
-  def elemSize(mat) when is_reference(mat) do
+  def elemSize(mat) do
+    mat = __from_struct__(mat)
     :evision_nif.mat_elemSize(img: mat)
   end
 
@@ -452,7 +528,8 @@ defmodule Evision.Mat do
   The method returns the matrix element channel size in bytes, that is, it ignores the number of
   channels. For example, if the matrix type is CV_16SC3 , the method returns sizeof(short) or 2.
   """
-  def elemSize1(mat) when is_reference(mat) do
+  def elemSize1(mat) do
+    mat = __from_struct__(mat)
     :evision_nif.mat_elemSize1(img: mat)
   end
 
@@ -464,7 +541,8 @@ defmodule Evision.Mat do
 
   The method returns a tuple `{dims, p}` where `dims` is the number of dimensions, and `p` is a list with `dims` elements.
   """
-  def size(mat) when is_reference(mat) do
+  def size(mat) do
+    mat = __from_struct__(mat)
     :evision_nif.mat_size(img: mat)
   end
 
@@ -476,7 +554,8 @@ defmodule Evision.Mat do
 
   The method returns the number of array elements (a number of pixels if the array represents an image).
   """
-  def total(mat) when is_reference(mat) do
+  def total(mat) do
+    mat = __from_struct__(mat)
     :evision_nif.mat_total(img: mat, start_dim: -1, end_dim: 0xFFFFFFFF)
   end
 
@@ -488,7 +567,8 @@ defmodule Evision.Mat do
 
   The method returns the number of elements within a certain sub-array slice with start_dim <= dim < end_dim
   """
-  def total(mat, start_dim, end_dim \\ 0xFFFFFFFF) when is_reference(mat) do
+  def total(mat, start_dim, end_dim \\ 0xFFFFFFFF) do
+    mat = __from_struct__(mat)
     :evision_nif.mat_total(img: mat, start_dim: start_dim, end_dim: end_dim)
   end
 
@@ -501,8 +581,10 @@ defmodule Evision.Mat do
 
   Note that OpenCV has limitation on the number of channels. Currently the maximum number of channels is `512`.
   """
-  def last_dim_as_channel(mat) when is_reference(mat) do
+  def last_dim_as_channel(mat) do
+    mat = __from_struct__(mat)
     :evision_nif.mat_last_dim_as_channel(src: mat)
+    |> Evision.Internal.Structurise.to_struct()
   end
 
   deferror(last_dim_as_channel(mat))
@@ -516,6 +598,7 @@ defmodule Evision.Mat do
       t: t,
       l: l
     )
+    |> Evision.Internal.Structurise.to_struct()
   end
 
   deferror(zeros(shape, type))
@@ -529,6 +612,7 @@ defmodule Evision.Mat do
       t: t,
       l: l
     )
+    |> Evision.Internal.Structurise.to_struct()
   end
 
   deferror(ones(shape, type))
@@ -581,31 +665,32 @@ defmodule Evision.Mat do
       l: l,
       shape: Tuple.to_list(shape)
     )
+    |> Evision.Internal.Structurise.to_struct()
   end
 
   deferror(full(shape, number, type))
 
   @doc namespace: :"cv.Mat"
-  @spec clone(reference()) :: {:ok, reference()} | {:error, String.t()}
   def clone(mat) when is_reference(mat) do
+    mat = __from_struct__(mat)
     :evision_nif.mat_clone(img: mat)
+    |> Evision.Internal.Structurise.to_struct()
   end
 
   deferror(clone(mat))
 
   @doc namespace: :"cv.Mat"
-  @spec(empty() :: :ok, reference())
   def empty() do
     :evision_nif.mat_empty()
+    |> Evision.Internal.Structurise.to_struct()
   end
 
   deferror(empty())
 
-  @spec to_batched(reference(), pos_integer(), keyword()) ::
-          {:ok, [reference()]} | {:error, String.t()}
   def to_batched(mat, batch_size, opts)
       when is_integer(batch_size) and batch_size >= 1 and is_list(opts) do
     leftover = opts[:leftover] || :repeat
+    mat = __from_struct__(mat)
 
     :evision_nif.mat_to_batched(
       img: mat,
@@ -613,14 +698,14 @@ defmodule Evision.Mat do
       as_shape: shape!(mat),
       leftover: leftover
     )
+    |> Evision.Internal.Structurise.to_struct()
   end
 
   deferror(to_batched(mat, batch_size, opts))
 
-  @spec to_batched(reference(), pos_integer(), keyword()) ::
-          {:ok, [reference()]} | {:error, String.t()}
   def to_batched(mat, batch_size, as_shape, opts)
       when is_integer(batch_size) and batch_size >= 1 and is_tuple(as_shape) and is_list(opts) do
+    mat = __from_struct__(mat)
     leftover = opts[:leftover] || :repeat
 
     :evision_nif.mat_to_batched(
@@ -629,13 +714,14 @@ defmodule Evision.Mat do
       as_shape: Tuple.to_list(as_shape),
       leftover: leftover
     )
+    |> Evision.Internal.Structurise.to_struct()
   end
 
   deferror(to_batched(mat, batch_size, as_shape, opts))
 
   @doc namespace: :"cv.Mat"
-  @spec to_binary(reference(), non_neg_integer()) :: {:ok, binary()} | {:error, String.t()}
   def to_binary(mat, limit \\ 0) when is_reference(mat) and is_integer(limit) and limit >= 0 do
+    mat = __from_struct__(mat)
     :evision_nif.mat_to_binary(img: mat, limit: limit)
   end
 
@@ -665,6 +751,7 @@ defmodule Evision.Mat do
       rows: rows,
       channels: channels
     )
+    |> Evision.Internal.Structurise.to_struct()
   end
 
   deferror(from_binary(binary, type, rows, cols, channels))
@@ -732,6 +819,7 @@ defmodule Evision.Mat do
       l: l,
       shape: shape
     )
+    |> Evision.Internal.Structurise.to_struct()
   end
 
   deferror(from_binary_by_shape(binary, type, shape))
@@ -745,23 +833,28 @@ defmodule Evision.Mat do
       t: t,
       l: l
     )
+    |> Evision.Internal.Structurise.to_struct()
   end
 
   deferror(eye(n, type))
 
   @doc namespace: :"cv.Mat"
   def reshape(mat, shape) when is_reference(mat) and is_tuple(shape) do
+    mat = __from_struct__(mat)
     :evision_nif.mat_reshape(
       mat: mat,
       shape: Tuple.to_list(shape)
     )
+    |> Evision.Internal.Structurise.to_struct()
   end
 
   def reshape(mat, shape) when is_reference(mat) and is_list(shape) do
+    mat = __from_struct__(mat)
     :evision_nif.mat_reshape(
       mat: mat,
       shape: shape
     )
+    |> Evision.Internal.Structurise.to_struct()
   end
 
   deferror(reshape(mat, shape))
@@ -772,17 +865,19 @@ defmodule Evision.Mat do
 
   If intended to change the underlying data to the new shape, please use `Evision.Mat.reshape/2`.
   """
-  def as_shape(mat, as_shape) when is_reference(mat) and is_tuple(as_shape) do
+  def as_shape(mat, as_shape) when is_tuple(as_shape) do
     as_shape(mat, Tuple.to_list(as_shape))
   end
 
-  def as_shape(mat, as_shape) when is_reference(mat) and is_list(as_shape) do
+  def as_shape(mat, as_shape) when is_list(as_shape) do
+    mat = __from_struct__(mat)
     with {:ok, old_shape} <- Evision.Mat.shape(mat) do
       if Tuple.product(old_shape) == Enum.product(as_shape) do
         :evision_nif.mat_as_shape(
           img: mat,
           as_shape: as_shape
         )
+        |> Evision.Internal.Structurise.to_struct()
       else
         {:error, "Cannot treat mat with shape #{inspect(old_shape)} as the requested new shape #{inspect(as_shape)}: mismatching number of elements"}
       end
@@ -793,7 +888,8 @@ defmodule Evision.Mat do
 
   deferror(as_shape(mat, as_shape))
 
-  def squeeze(mat) when is_reference(mat) do
+  def squeeze(mat) do
+    mat = __from_struct__(mat)
     shape = Tuple.to_list(Evision.Mat.shape!(mat))
     Evision.Mat.reshape(mat, Enum.reject(shape, fn d -> d == 1 end))
   end
@@ -801,21 +897,25 @@ defmodule Evision.Mat do
   deferror(squeeze(mat))
 
   def broadcast_to(mat, to_shape) do
+    mat = __from_struct__(mat)
     :evision_nif.mat_broadcast_to(
       img: mat,
       to_shape: Tuple.to_list(to_shape),
       force_src_shape: []
     )
+    |> Evision.Internal.Structurise.to_struct()
   end
 
   deferror(broadcast_to(mat, to_shape))
 
   def broadcast_to(mat, to_shape, force_src_shape) do
+    mat = __from_struct__(mat)
     :evision_nif.mat_broadcast_to(
       img: mat,
       to_shape: Tuple.to_list(to_shape),
       force_src_shape: Tuple.to_list(force_src_shape)
     )
+    |> Evision.Internal.Structurise.to_struct()
   end
 
   deferror(broadcast_to(mat, to_shape, force_src_shape))
