@@ -69,6 +69,8 @@ jobs:
       - name: FFmpeg4, Hex and Rebar3
         run: |
           brew link ffmpeg@4
+          brew link erlang
+          brew link elixir
           mix local.hex --force
           mix local.rebar --force
 
