@@ -77,11 +77,9 @@ Helper.download!(
 
 {:ok, mat} = Cv.imread(lenna_test_image_path)
 {:ok, {_height = 512, _width = 512, _channels = 3}} = Cv.Mat.shape(mat)
-{:ok, encoded} = Cv.imencode(".png", mat)
+encoded = Cv.imencode!(".png", mat)
 
-encoded
-|> IO.iodata_to_binary()
-|> Kino.Image.new(:png)
+Kino.Image.new(encoded, :png)
 ```
 
 ### Resize image `Cv.resize`
@@ -89,19 +87,16 @@ encoded
 ```elixir
 {:ok, resized_mat} = Cv.resize(mat, [_width = 256, _height = 128])
 {:ok, {128, 256, 3}} = Cv.Mat.shape(resized_mat)
-{:ok, encoded} = Cv.imencode(".png", resized_mat)
+encoded = Cv.imencode!(".png", resized_mat)
 
-encoded
-|> IO.iodata_to_binary()
-|> Kino.Image.new(:png)
+Kino.Image.new(encoded, :png)
 ```
 
 ### Encode and decode image in memory
 
 ```elixir
 # encode in memory
-{:ok, encoded_in_memory} = Cv.imencode(".png", resized_mat)
-encoded_in_memory = encoded_in_memory |> IO.iodata_to_binary()
+encoded_in_memory = Cv.imencode!(".png", resized_mat)
 
 # decode in memory
 {:ok, decoded_mat} = Cv.imdecode(encoded_in_memory, Cv.cv_IMREAD_ANYCOLOR())
@@ -139,9 +134,7 @@ Cv.Mat.shape(with_alpha)
   lenna_test_image_path
   |> Cv.imread(flags: Cv.cv_IMREAD_GRAYSCALE())
 
-{:ok, gray_scale} = Cv.imencode(".png", gray_scale_mat)
+gray_scale = Cv.imencode!(".png", gray_scale_mat)
 
-gray_scale
-|> IO.iodata_to_binary()
-|> Kino.Image.new(:png)
+Kino.Image.new(gray_scale, :png)
 ```

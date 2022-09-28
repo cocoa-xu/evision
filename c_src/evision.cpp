@@ -98,6 +98,7 @@ struct Evision_Converter
 {
     static inline bool to(ErlNifEnv *env, ERL_NIF_TERM obj, T& p, const ArgInfo& info);
     static inline ERL_NIF_TERM from(ErlNifEnv *env, const T& src);
+    static inline ERL_NIF_TERM from_as_binary(ErlNifEnv *env, const T& src, bool& success);
 };
 
 // exception-safe evision_to
@@ -134,6 +135,21 @@ bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, T& p, const ArgInfo& info) { r
 
 template<typename T> static
 ERL_NIF_TERM evision_from(ErlNifEnv *env, const T& src) { return Evision_Converter<T>::from(env, src); }
+
+template<typename T> static
+ERL_NIF_TERM evision_from_as_binary(ErlNifEnv *env, const T& src, bool& success) { return Evision_Converter<T>::from_as_binary(env, src, success); }
+
+template <>
+ERL_NIF_TERM evision_from_as_binary(ErlNifEnv *env, const std::vector<uchar>& src, bool& success) {
+    size_t n = static_cast<size_t>(src.size());
+    ErlNifBinary binary;
+    if ((success = enif_alloc_binary(n, &binary))) {
+        memcpy(binary.data, src.data(), n);
+        ERL_NIF_TERM ret = enif_make_binary(env, &binary);
+        return ret;
+    }
+    return 0;
+}
 
 static bool isBindingsDebugEnabled()
 {

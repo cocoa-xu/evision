@@ -362,21 +362,19 @@ class FuncInfo(object):
                 evision_from_calls = ["evision_from(env, " + aname + ")" for aname, argno in v.py_outlist]
                 if v.rettype == 'bool':
                     if n_tuple >= 10:
-                        code_ret = "ERL_NIF_TERM arr[] = {%s};\n    if (retval) {\n                return evision::nif::ok(env, enif_make_tuple_from_array(env, arr, %d));\n            } else {\n                return evision::nif::atom(env, \"error\");\n            }" % \
-                            (",\n        ".join(evision_from_calls[1:]), n_tuple-1)
+                        code_ret = ET.code_ret_ge_10_tuple_except_bool % (",\n        ".join(evision_from_calls[1:]), n_tuple-1)
                     elif (n_tuple-1) == 1:
-                        code_ret = "if (retval) {\n                return evision::nif::ok(env, %s);\n            } else {\n                return evision::nif::atom(env, \"error\");\n            }" % \
-                            (", ".join(evision_from_calls[1:]),)
+                        if "imencode" in fname:
+                            code_ret = ET.code_ret_as_binary % (", ".join(evision_from_calls[1:]).replace("evision_from", "evision_from_as_binary").replace(")", ", success)"),)
+                        else:
+                            code_ret = ET.code_ret_1_tuple_except_bool % (", ".join(evision_from_calls[1:]),)
                     else:
-                        code_ret = "if (retval) {\n                return evision::nif::ok(env, enif_make_tuple%d(env, %s));\n            } else {\n                return evision::nif::atom(env, \"error\");\n            }" % \
-                            (n_tuple-1, ", ".join(evision_from_calls[1:]))
+                        code_ret = ET.code_ret_2_to_10_tuple_except_bool % (n_tuple-1, ", ".join(evision_from_calls[1:]))
                 else:
                     if n_tuple >= 10:
-                        code_ret = "ERL_NIF_TERM arr[] = {%s};\n    return evision::nif::ok(env, enif_make_tuple_from_array(env, arr, %d))" % \
-                            (",\n        ".join(evision_from_calls), n_tuple)
+                        code_ret = ET.code_ret_ge_10_tuple % (",\n                ".join(evision_from_calls), n_tuple)
                     else:
-                        code_ret = "return evision::nif::ok(env, enif_make_tuple%d(env, %s))" % \
-                            (n_tuple, ", ".join(evision_from_calls))
+                        code_ret = ET.code_ret_lt_10_tuple % (n_tuple, ", ".join(evision_from_calls))
 
             all_code_variants.append(ET.gen_template_func_body.substitute(code_decl=code_decl, code_parse=code_parse,
                                                                        code_prelude=code_prelude, code_fcall=code_fcall,

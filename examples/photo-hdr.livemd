@@ -203,10 +203,9 @@ result =
     result
   end)
 
-{:ok, result} = Cv.imencode(".png", result)
-result
-|> IO.iodata_to_binary()
-|> Kino.Image.new(:png)
+result = Cv.imencode!(".png", result)
+
+Kino.Image.new(result, :png)
 ```
 
 ### Write LDR image
@@ -245,10 +244,9 @@ result = ldr
   |> Cv.Nx.to_mat
   |> elem(1)
 
-{:ok, result} = Cv.imencode(".png", result)
-result
-|> IO.iodata_to_binary()
-|> Kino.Image.new(:png)
+result = Cv.imencode!(".png", result)
+
+Kino.Image.new(result, :png)
 ```
 
 ### Write HDR image
