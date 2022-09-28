@@ -40,7 +40,6 @@ jobs:
           key: brew-${{ hashFiles('.github/brew-formulae') }}
 
       - name: Install Erlang and Elixir
-        if: steps.cache-brew-install.outputs.cache-hit != 'true'
         run: |
           env HOMEBREW_NO_AUTO_UPDATE=1 brew install erlang elixir ffmpeg@4
 
