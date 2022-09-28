@@ -1,8 +1,8 @@
 <!-- vim: syntax=markdown -->
 
-# Detection Model
+<!-- livebook:{"persist_outputs":true} -->
 
-## Setup
+# Detection Model
 
 ```elixir
 # remove the following line (or set to `false`) to compile evision from source
@@ -10,12 +10,13 @@
 System.put_env("EVISION_PREFER_PRECOMPILED", "true")
 
 Mix.install([
-  {:evision, "~> 0.1", github: "cocoa-xu/evision", tag: "v0.1.5"},
+  {:evision, "~> 0.1", github: "cocoa-xu/evision", tag: "v0.1.6"},
+  {:req, "~> 0.3"},
   {:kino, "~> 0.6"}
 ])
 ```
 
-## Helper
+## Helper Function
 
 ```elixir
 defmodule Helper do
@@ -30,17 +31,13 @@ defmodule Helper do
   end
 
   def download!(url, save_as, true) do
-    http_opts = []
-    opts = [body_format: :binary]
-    arg = {url, []}
-
     body =
-      case :httpc.request(:get, arg, http_opts, opts) do
-        {:ok, {{_, 200, _}, _, body}} ->
+      case Req.get!(url) do
+        %Req.Response{status: 200, body: body} ->
           body
 
-        {:error, reason} ->
-          raise inspect(reason)
+        error ->
+          raise inspect(error)
       end
 
     File.write!(save_as, body)
@@ -48,12 +45,25 @@ defmodule Helper do
 end
 ```
 
+<!-- livebook:{"output":true} -->
+
+```
+{:module, Helper, <<70, 79, 82, 49, 0, 0, 10, ...>>, {:download!, 3}}
+```
+
 ## alias
+
 ```elixir
 alias Evision, as: Cv
 ```
 
-## Detection Model Module
+<!-- livebook:{"output":true} -->
+
+```
+Evision
+```
+
+### Detection Model Module
 
 ```elixir
 # change to the file's directory
@@ -90,8 +100,7 @@ defmodule DetectionModel do
         255
       ])
 
-    {:ok, mat} =
-      Cv.putText(mat, text, [l, top], Cv.cv_FONT_HERSHEY_SIMPLEX(), 0.5, [0, 0, 255])
+    {:ok, mat} = Cv.putText(mat, text, [l, top], Cv.cv_FONT_HERSHEY_SIMPLEX(), 0.5, [0, 0, 255])
 
     _visualise_pred(mat, labels, outs)
   end
@@ -127,10 +136,10 @@ defmodule DetectionModel do
 
   defp _translate_outs(
          confidence_threshold,
-         <<_batch_id::float()-size(32)-little, class_id::float()-size(32)-little,
-           confidence::float()-size(32)-little, left::float()-size(32)-little,
-           top::float()-size(32)-little, right::float()-size(32)-little,
-           bottom::float()-size(32)-little, rest::binary>>,
+         <<_batch_id::float-size(32)-little, class_id::float-size(32)-little,
+           confidence::float-size(32)-little, left::float-size(32)-little,
+           top::float-size(32)-little, right::float-size(32)-little,
+           bottom::float-size(32)-little, rest::binary>>,
          h,
          w,
          acc
@@ -166,8 +175,7 @@ defmodule DetectionModel do
   def predict(mat, model, out_names, opts \\ []) do
     {:ok, blob} = Cv.DNN.blobFromImage(mat, opts)
 
-    {:ok, model} =
-      Cv.DNN.Net.setInput(model, blob, name: "", scalefactor: 1.0, mean: [0, 0, 0])
+    {:ok, model} = Cv.DNN.Net.setInput(model, blob, name: "", scalefactor: 1.0, mean: [0, 0, 0])
 
     start_time = :os.system_time(:millisecond)
     {:ok, detections} = Cv.DNN.Net.forward(model, outBlobNames: out_names)
@@ -194,6 +202,12 @@ defmodule DetectionModel do
 end
 ```
 
+<!-- livebook:{"output":true} -->
+
+```
+{:module, DetectionModel, <<70, 79, 82, 49, 0, 0, 35, ...>>, {:get_model, 3}}
+```
+
 ## Example: SSD MobileNetv2
 
 Basic steps:
@@ -202,8 +216,7 @@ Basic steps:
 2. `DetectionModel.get_model`.
 3. `DetectionModel.get_labels`.
 4. `DetectionModel.predict` and specify some preprocessing parameters.
-5. `DetectionModel.postprocess`. This translates nerual network outputs to data 
-   that is easier to read/use.
+5. `DetectionModel.postprocess`. This translates nerual network outputs to data that is easier to read/use.
 6. `DetectionModel.visualise_pred` if you want to see the result.
 
 ```elixir
@@ -228,18 +241,20 @@ defmodule SSDMobileNetV2 do
       )
 
       "ssd_mobilenet_v2_coco_2018_03_29.tar.gz"
-        |> File.read!()
-        |> :zlib.gunzip()
-        |> then(&:erl_tar.extract({:binary, &1}, [:memory, :compressed]))
-        |> elem(1)
-        |> Enum.map(fn {filename, content} -> {List.to_string(filename), content} end)
-        |> Enum.reject(&elem(&1, 0) != "ssd_mobilenet_v2_coco_2018_03_29/frozen_inference_graph.pb")
-        |> Enum.at(0)
-        |> then(fn {_filename, content} ->
-              File.mkdir_p!("ssd_mobilenet_v2_coco_2018_03_29")
-              File.write!(graph_pb, content)
-              :ok
-          end)
+      |> File.read!()
+      |> :zlib.gunzip()
+      |> then(&:erl_tar.extract({:binary, &1}, [:memory, :compressed]))
+      |> elem(1)
+      |> Enum.map(fn {filename, content} -> {List.to_string(filename), content} end)
+      |> Enum.reject(
+        &(elem(&1, 0) != "ssd_mobilenet_v2_coco_2018_03_29/frozen_inference_graph.pb")
+      )
+      |> Enum.at(0)
+      |> then(fn {_filename, content} ->
+        File.mkdir_p!("ssd_mobilenet_v2_coco_2018_03_29")
+        File.write!(graph_pb, content)
+        :ok
+      end)
     else
       :ok
     end
@@ -248,6 +263,7 @@ defmodule SSDMobileNetV2 do
   def get_detection_model() do
     :ok = download_model()
     graph_pb = "ssd_mobilenet_v2_coco_2018_03_29/frozen_inference_graph.pb"
+
     {:ok, net, out_names} =
       DetectionModel.get_model(
         graph_pb,
@@ -260,6 +276,7 @@ defmodule SSDMobileNetV2 do
 
   def predict_file_and_show(filename, confidence_threshold \\ 0.5) when is_binary(filename) do
     {net, out_names, labels} = get_detection_model()
+
     {:ok, mat, detections} =
       DetectionModel.predict_file(filename, net, out_names,
         scalefactor: 1,
@@ -275,7 +292,7 @@ defmodule SSDMobileNetV2 do
   end
 
   def predict_and_show(net, out_names, labels, mat, confidence_threshold \\ 0.5)
-  when is_reference(mat) do
+      when is_reference(mat) do
     {:ok, mat, detections} =
       DetectionModel.predict(mat, net, out_names,
         scalefactor: 1,
@@ -292,10 +309,41 @@ defmodule SSDMobileNetV2 do
 end
 ```
 
+<!-- livebook:{"output":true} -->
+
+```
+{:module, SSDMobileNetV2, <<70, 79, 82, 49, 0, 0, 21, ...>>, {:predict_and_show, 5}}
+```
+
 ### Detect objects in an image file
+
 ```elixir
-Helper.download!("https://raw.githubusercontent.com/cocoa-xu/evision/main/test/dnn_detection_test.jpg", "dnn_detection_test.jpg")
+Helper.download!(
+  "https://raw.githubusercontent.com/cocoa-xu/evision/main/test/dnn_detection_test.jpg",
+  "dnn_detection_test.jpg"
+)
+
 {:ok, mat} = SSDMobileNetV2.predict_file_and_show("dnn_detection_test.jpg")
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+Inference time=>36 ms
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+{:ok,
+ %Evision.Mat{
+   channels: 3,
+   dims: 2,
+   type: {:u, 8},
+   raw_type: 16,
+   shape: {586, 872, 3},
+   ref: #Reference<0.910554608.1494089745.145365>
+ }}
 ```
 
 ```elixir
@@ -304,6 +352,7 @@ Cv.imencode!(".png", mat)
 ```
 
 ### Detect objects in a video stream
+
 ```elixir
 # if you have a camera available
 # uncomment the line below
@@ -314,22 +363,33 @@ Cv.imencode!(".png", mat)
 # {:ok, video} = Cv.VideoCapture.videoCapture("/path/to/your/video/file")
 ```
 
+<!-- livebook:{"output":true} -->
+
+```
+nil
+```
+
 ```elixir
 defmodule VideoDetection do
-  def detect(video, widget, max_frames \\ 30*60)
-  when is_reference(video) and is_integer(max_frames) do
+  def detect(video, widget, max_frames \\ 30 * 60)
+      when is_reference(video) and is_integer(max_frames) do
     {net, out_names, labels} = SSDMobileNetV2.get_detection_model()
     frame_read = Cv.VideoCapture.read(video)
     _detect(net, out_names, labels, frame_read, video, widget, max_frames)
   end
 
   defp _detect(_, _, _, _, _, _, 0), do: :ok
-  defp _detect(net, out_names, labels, {:ok, frame}, video, widget, left_frames) when left_frames > 0 or left_frames < 0 do
+
+  defp _detect(net, out_names, labels, {:ok, frame}, video, widget, left_frames)
+       when left_frames > 0 or left_frames < 0 do
     {:ok, mat} = SSDMobileNetV2.predict_and_show(net, out_names, labels, frame)
+
     Cv.imencode!(".png", mat)
     |> Kino.Image.new(:png)
     |> then(&Kino.Frame.render(widget, &1))
+
     frame_read = Cv.VideoCapture.read(video)
+
     if left_frames > 0 do
       _detect(net, out_names, labels, frame_read, video, widget, left_frames - 1)
     else
@@ -339,7 +399,14 @@ defmodule VideoDetection do
 end
 ```
 
+<!-- livebook:{"output":true} -->
+
+```
+{:module, VideoDetection, <<70, 79, 82, 49, 0, 0, 12, ...>>, {:_detect, 7}}
+```
+
 ### Run the detection
+
 ```elixir
 widget = Kino.Frame.new() |> Kino.render()
 # read 1,800 frames at most
@@ -347,4 +414,10 @@ widget = Kino.Frame.new() |> Kino.render()
 # detect objects until OpenCV cannot read
 # new frame from the video stream
 VideoDetection.detect(video, widget, 1800)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+"Inference time=>48 ms"
 ```

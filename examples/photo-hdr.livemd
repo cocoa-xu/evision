@@ -1,8 +1,8 @@
 <!-- vim: syntax=markdown -->
 
-# photo - High Dynamic Range Imaging
+<!-- livebook:{"persist_outputs":true} -->
 
-## Setup
+# photo - High Dynamic Range Imaging
 
 ```elixir
 # remove the following line (or set to `false`) to compile evision from source
@@ -10,11 +10,10 @@
 System.put_env("EVISION_PREFER_PRECOMPILED", "true")
 
 Mix.install([
-  {:evision, "~> 0.1", github: "cocoa-xu/evision", tag: "v0.1.5"},
+  {:evision, "~> 0.1", github: "cocoa-xu/evision", tag: "v0.1.6"},
+  {:req, "~> 0.3"},
   {:kino, "~> 0.6"}
 ])
-
-# this example is based on https://docs.Cv.org/4.x/d3/db7/tutorial_hdr_imaging.html
 ```
 
 ## Helper Function
@@ -32,17 +31,13 @@ defmodule Helper do
   end
 
   def download!(url, save_as, true) do
-    http_opts = []
-    opts = [body_format: :binary]
-    arg = {url, []}
-
     body =
-      case :httpc.request(:get, arg, http_opts, opts) do
-        {:ok, {{_, 200, _}, _, body}} ->
+      case Req.get!(url) do
+        %Req.Response{status: 200, body: body} ->
           body
 
-        {:error, reason} ->
-          raise inspect(reason)
+        error ->
+          raise inspect(error)
       end
 
     File.write!(save_as, body)
@@ -61,24 +56,46 @@ defmodule Helper do
   def chunk_binary(binary, chunk_size) when is_binary(binary) do
     total_bytes = byte_size(binary)
     full_chunks = div(total_bytes, chunk_size)
+
     chunks =
       if full_chunks > 0 do
-        for i <- 0..(full_chunks-1), reduce: [] do
+        for i <- 0..(full_chunks - 1), reduce: [] do
           acc -> [:binary.part(binary, chunk_size * i, chunk_size) | acc]
         end
       else
         []
       end
+
     remaining = rem(total_bytes, chunk_size)
+
     chunks =
       if remaining > 0 do
         [:binary.part(binary, chunk_size * full_chunks, remaining) | chunks]
       else
         chunks
       end
+
     Enum.reverse(chunks)
   end
 end
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+{:module, Helper, <<70, 79, 82, 49, 0, 0, 16, ...>>, {:chunk_binary, 2}}
+```
+
+### alias
+
+```elixir
+alias Evision, as: Cv
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+Evision
 ```
 
 ```elixir
@@ -90,41 +107,62 @@ File.cd!(__DIR__)
 File.mkdir_p!("photo_hdr_test")
 ```
 
+<!-- livebook:{"output":true} -->
+
+```
+:ok
+```
+
 ### Download the test images
+
 ```elixir
 exposure_filenames =
   0..15
   |> Enum.map(&Integer.to_string(&1))
   |> Enum.map(&String.pad_leading(&1, 2, "0"))
-  |> Enum.map(&"memorial" <> &1 <> ".png")
+  |> Enum.map(&("memorial" <> &1 <> ".png"))
 
 exposure_file_urls =
   exposure_filenames
-  |> Enum.map(&"https://raw.githubusercontent.com/opencv/opencv_extra/4.x/testdata/cv/hdr/exposures/" <> &1)
+  |> Enum.map(
+    &("https://raw.githubusercontent.com/opencv/opencv_extra/4.x/testdata/cv/hdr/exposures/" <> &1)
+  )
 
 exposure_file_save_paths =
   exposure_filenames
   |> Enum.map(&Path.join([__DIR__, "photo_hdr_test", &1]))
 
 exposure_file_urls
-  |> Enum.zip(exposure_file_save_paths)
-  |> Enum.map(fn {url, save_as} -> Cv.TestHelper.download!(url, save_as) end)
-  |> Enum.all?(&:ok = &1)
+|> Enum.zip(exposure_file_save_paths)
+|> Enum.map(fn {url, save_as} -> Helper.download!(url, save_as) end)
+|> Enum.all?(&(:ok = &1))
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+true
 ```
 
 ### Download `list.txt`
 
 ```elixir
 list_txt_file = Path.join([__DIR__, "photo_hdr_test", "list.txt"])
-Helper.download!("https://raw.githubusercontent.com/opencv/opencv_extra/4.x/testdata/cv/hdr/exposures/list.txt", list_txt_file)
+
+Helper.download!(
+  "https://raw.githubusercontent.com/opencv/opencv_extra/4.x/testdata/cv/hdr/exposures/list.txt",
+  list_txt_file
+)
 ```
 
-## alias
-```elixir
-alias Evision, as: Cv
+<!-- livebook:{"output":true} -->
+
+```
+:ok
 ```
 
 ### Load exposure sequences
+
 ```elixir
 # Firstly we load input images and exposure times from user-defined folder.
 # The folder should contain images and list.txt - file that contains file names and inverse exposure times.
@@ -132,13 +170,13 @@ exposure_sequences =
   list_txt_file
   |> File.read!()
   |> String.split("\n")
-  |> Enum.reject(&String.length(&1)==0)
+  |> Enum.reject(&(String.length(&1) == 0))
   |> Enum.map(&String.split(&1, " "))
   |> Enum.map(&List.to_tuple(&1))
   |> Enum.map(fn {image_filename, times} ->
     {:ok, mat} = Cv.imread(Path.join([__DIR__, "photo_hdr_test", image_filename]))
     {val, ""} = Float.parse(times)
-    {mat, 1/val}
+    {mat, 1 / val}
   end)
 
 images =
@@ -149,11 +187,26 @@ images =
 {:ok, times} =
   exposure_sequences
   |> Enum.map(&elem(&1, 1))
-  |> Enum.into(<<>>, fn d -> << d::float()-size(32)-little >> end)
+  |> Enum.into(<<>>, fn d -> <<d::float-size(32)-little>> end)
   |> Cv.Mat.from_binary_by_shape({:f, 32}, {1, Enum.count(images)})
 ```
 
+<!-- livebook:{"output":true} -->
+
+```
+{:ok,
+ %Evision.Mat{
+   channels: 1,
+   dims: 2,
+   type: {:f, 32},
+   raw_type: 5,
+   shape: {1, 16},
+   ref: #Reference<0.283987646.431620110.154265>
+ }}
+```
+
 ### Estimate camera response
+
 ```elixir
 # It is necessary to know camera response function (CRF) for a lot of HDR construction algorithms.
 # We use one of the calibration algorithms to estimate inverse CRF for all 256 pixel values.
@@ -161,15 +214,45 @@ images =
 {:ok, response} = Cv.CalibrateDebevec.process(calibrate, images, times)
 ```
 
-### Make HDR image
+<!-- livebook:{"output":true} -->
+
 ```
+{:ok,
+ %Evision.Mat{
+   channels: 3,
+   dims: 2,
+   type: {:f, 32},
+   raw_type: 21,
+   shape: {256, 1, 3},
+   ref: #Reference<0.283987646.431620110.154267>
+ }}
+```
+
+### Make HDR image
+
+```elixir
 # We use Debevec's weighting scheme to construct HDR image
 # using response calculated in the previous item.
 {:ok, merge_debevec} = Cv.createMergeDebevec()
 {:ok, hdr} = Cv.MergeDebevec.process(merge_debevec, images, times, response: response)
 ```
 
+<!-- livebook:{"output":true} -->
+
+```
+{:ok,
+ %Evision.Mat{
+   channels: 3,
+   dims: 2,
+   type: {:f, 32},
+   raw_type: 21,
+   shape: {714, 484, 3},
+   ref: #Reference<0.283987646.431620110.154269>
+ }}
+```
+
 ### Tonemap HDR image
+
 ```elixir
 # Since we want to see our results on common LDR display we have to map our HDR image to 8-bit range
 # preserving most details.
@@ -179,7 +262,22 @@ images =
 {:ok, ldr} = Cv.Tonemap.process(tonemap, hdr)
 ```
 
+<!-- livebook:{"output":true} -->
+
+```
+{:ok,
+ %Evision.Mat{
+   channels: 3,
+   dims: 2,
+   type: {:f, 32},
+   raw_type: 21,
+   shape: {714, 484, 3},
+   ref: #Reference<0.283987646.431620110.154271>
+ }}
+```
+
 ### Perform exposure fusions
+
 ```elixir
 # There is an alternative way to merge our exposures in case when we don't need HDR image.
 # This process is called exposure fusion and produces LDR image that doesn't require gamma correction.
@@ -188,47 +286,81 @@ images =
 {:ok, fusion} = Cv.MergeMertens.process(merge_mertens, images)
 ```
 
+<!-- livebook:{"output":true} -->
+
+```
+{:ok,
+ %Evision.Mat{
+   channels: 3,
+   dims: 2,
+   type: {:f, 32},
+   raw_type: 21,
+   shape: {714, 484, 3},
+   ref: #Reference<0.283987646.431620110.154273>
+ }}
+```
+
 ### Write fusion
+
 ```elixir
 output_fusion_file = Path.join([__DIR__, "photo_hdr_test", "fusion.png"])
+
 result =
   fusion
-  |> Cv.Nx.to_nx()
+  |> Cv.Nx.to_nx(Nx.BinaryBackend)
   |> Nx.multiply(255)
   |> Nx.clip(0, 255)
   |> Nx.as_type({:u, 8})
-  |> Cv.Nx.to_mat
+  |> Cv.Nx.to_mat_2d()
   |> then(fn {:ok, result} ->
     Cv.imwrite(output_fusion_file, result)
     result
   end)
+```
 
+<!-- livebook:{"output":true} -->
+
+```
+%Evision.Mat{
+  channels: 3,
+  dims: 2,
+  type: {:u, 8},
+  raw_type: 16,
+  shape: {714, 484, 3},
+  ref: #Reference<0.283987646.431620110.154276>
+}
+```
+
+```elixir
 result = Cv.imencode!(".png", result)
 
 Kino.Image.new(result, :png)
 ```
 
 ### Write LDR image
+
 ```elixir
 output_ldr_file = Path.join([__DIR__, "photo_hdr_test", "ldr.png"])
 {:ok, f32_shape} = Cv.Mat.shape(ldr)
-nan          = << 0, 0, 192, 255 >>
-positive_inf = << 0, 0, 128, 127 >>
-negative_inf = << 0, 0, 128, 255 >>
-result = ldr
+nan = <<0, 0, 192, 255>>
+positive_inf = <<0, 0, 128, 127>>
+negative_inf = <<0, 0, 128, 255>>
+
+result =
+  ldr
   |> Cv.Mat.to_binary()
   |> elem(1)
   |> Helper.chunk_binary(4)
   |> Enum.map(fn f32 ->
     case f32 do
       ^nan ->
-        << 0, 0, 0, 0 >>
+        <<0, 0, 0, 0>>
 
       ^positive_inf ->
-        << 0, 0, 0, 0 >>
+        <<0, 0, 0, 0>>
 
       ^negative_inf ->
-        << 0, 0, 0, 0 >>
+        <<0, 0, 0, 0>>
 
       # legal value
       _ ->
@@ -241,8 +373,7 @@ result = ldr
   |> Nx.multiply(255)
   |> Nx.clip(0, 255)
   |> Nx.as_type({:u, 8})
-  |> Cv.Nx.to_mat
-  |> elem(1)
+  |> Cv.Nx.to_mat_2d!()
 
 result = Cv.imencode!(".png", result)
 
@@ -250,7 +381,14 @@ Kino.Image.new(result, :png)
 ```
 
 ### Write HDR image
+
 ```elixir
 output_hdr_file = Path.join([__DIR__, "photo_hdr_test", "hdr.hdr"])
 Cv.imwrite(output_hdr_file, hdr)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+:ok
 ```

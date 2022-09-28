@@ -1,8 +1,8 @@
 <!-- vim: syntax=markdown -->
 
-# OpenCV Stitcher Demo
+<!-- livebook:{"persist_outputs":true} -->
 
-## Install deps
+# Stitcher Demo
 
 ```elixir
 # remove the following line (or set to `false`) to compile evision from source
@@ -10,7 +10,8 @@
 System.put_env("EVISION_PREFER_PRECOMPILED", "true")
 
 Mix.install([
-  {:evision, "~> 0.1", github: "cocoa-xu/evision", tag: "v0.1.5"},
+  {:evision, "~> 0.1", github: "cocoa-xu/evision", tag: "v0.1.6"},
+  {:req, "~> 0.3"},
   {:kino, "~> 0.6"}
 ])
 ```
@@ -19,18 +20,24 @@ Mix.install([
 
 ```elixir
 defmodule Helper do
-  def download!(url, save_as) do
-    http_opts = []
-    opts = [body_format: :binary]
-    arg = {url, []}
+  def download!(url, save_as, overwrite \\ false)
 
+  def download!(url, save_as, false) do
+    unless File.exists?(save_as) do
+      download!(url, save_as, true)
+    end
+
+    :ok
+  end
+
+  def download!(url, save_as, true) do
     body =
-      case :httpc.request(:get, arg, http_opts, opts) do
-        {:ok, {{_, 200, _}, _, body}} ->
+      case Req.get!(url) do
+        %Req.Response{status: 200, body: body} ->
           body
 
-        {:error, reason} ->
-          raise inspect(reason)
+        error ->
+          raise inspect(error)
       end
 
     File.write!(save_as, body)
@@ -38,7 +45,23 @@ defmodule Helper do
 end
 ```
 
-## Download test images
+<!-- livebook:{"output":true} -->
+
+```
+{:module, Helper, <<70, 79, 82, 49, 0, 0, 16, ...>>, {:download!, 3}}
+```
+
+### alias
+
+```elixir
+alias Evision, as: Cv
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+Evision
+```
 
 ```elixir
 # change to the file's directory
@@ -46,24 +69,36 @@ end
 File.cd!(__DIR__)
 
 # https://github.com/opencv/opencv_extra/tree/4.x/testdata/stitching
-Helper.download!("https://raw.githubusercontent.com/opencv/opencv_extra/master/testdata/stitching/a1.png", "a1.png")
-Helper.download!("https://raw.githubusercontent.com/opencv/opencv_extra/master/testdata/stitching/a2.png", "a2.png")
-Helper.download!("https://raw.githubusercontent.com/opencv/opencv_extra/master/testdata/stitching/a3.png", "a3.png")
+Helper.download!(
+  "https://raw.githubusercontent.com/opencv/opencv_extra/master/testdata/stitching/a1.png",
+  "a1.png"
+)
+
+Helper.download!(
+  "https://raw.githubusercontent.com/opencv/opencv_extra/master/testdata/stitching/a2.png",
+  "a2.png"
+)
+
+Helper.download!(
+  "https://raw.githubusercontent.com/opencv/opencv_extra/master/testdata/stitching/a3.png",
+  "a3.png"
+)
 ```
 
-## alias
-```elixir
-alias Evision, as: Cv
+<!-- livebook:{"output":true} -->
+
+```
+:ok
 ```
 
-## Stitching
+### Stitching
 
 ```elixir
-{:ok, a1} = Cv.imread("./a1.png")
-{:ok, a2} = Cv.imread("./a2.png")
-{:ok, a3} = Cv.imread("./a3.png")
-{:ok, sticher} = Cv.Stitcher.create
-{:ok, {status_code, result}} = Cv.Stitcher.stitch(sticher, [a1, a2, a3])
+a1 = Cv.imread!("./a1.png")
+a2 = Cv.imread!("./a2.png")
+a3 = Cv.imread!("./a3.png")
+sticher = Cv.Stitcher.create!()
+{status_code, result} = Cv.Stitcher.stitch!(sticher, [a1, a2, a3])
 0 = status_code
 # status_code should be 0 (OK),
 # for other status_code, please refer to https://github.com/opencv/opencv/blob/4.5.4/modules/stitching/include/opencv2/stitching.hpp#L152

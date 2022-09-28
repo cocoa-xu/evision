@@ -6,7 +6,8 @@
 System.put_env("EVISION_PREFER_PRECOMPILED", "true")
 
 Mix.install([
-  {:evision, "~> 0.1", github: "cocoa-xu/evision", tag: "v0.1.5"},
+  {:evision, "~> 0.1", github: "cocoa-xu/evision", tag: "v0.1.6"},
+  {:req, "~> 0.3"}
 ])
 ```
 
@@ -17,9 +18,6 @@ alias Evision, as: Cv
 ```
 
 ```elixir
-:inets.start()
-:ssl.start()
-
 defmodule Helper do
   def download!(url, save_as, overwrite \\ false)
 
@@ -32,17 +30,13 @@ defmodule Helper do
   end
 
   def download!(url, save_as, true) do
-    http_opts = []
-    opts = [body_format: :binary]
-    arg = {url, []}
-
     body =
-      case :httpc.request(:get, arg, http_opts, opts) do
-        {:ok, {{_, 200, _}, _, body}} ->
+      case Req.get!(url) do
+        %Req.Response{status: 200, body: body} ->
           body
 
-        {:error, reason} ->
-          raise inspect(reason)
+        error ->
+          raise inspect(error)
       end
 
     File.write!(save_as, body)

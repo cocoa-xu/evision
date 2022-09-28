@@ -1,8 +1,8 @@
 <!-- vim: syntax=markdown -->
 
-# core - PCA
+<!-- livebook:{"persist_outputs":true} -->
 
-## Setup
+# core - PCA
 
 ```elixir
 # remove the following line (or set to `false`) to compile evision from source
@@ -10,11 +10,10 @@
 System.put_env("EVISION_PREFER_PRECOMPILED", "true")
 
 Mix.install([
-  {:evision, "~> 0.1", github: "cocoa-xu/evision", tag: "v0.1.5"},
+  {:evision, "~> 0.1", github: "cocoa-xu/evision", tag: "v0.1.6"},
+  {:req, "~> 0.3"},
   {:kino, "~> 0.6"}
 ])
-
-# this example is based on https://docs.Cv.org/4.x/d1/dee/tutorial_introduction_to_pca.html
 ```
 
 ## Helper Function
@@ -32,17 +31,13 @@ defmodule Helper do
   end
 
   def download!(url, save_as, true) do
-    http_opts = []
-    opts = [body_format: :binary]
-    arg = {url, []}
-
     body =
-      case :httpc.request(:get, arg, http_opts, opts) do
-        {:ok, {{_, 200, _}, _, body}} ->
+      case Req.get!(url) do
+        %Req.Response{status: 200, body: body} ->
           body
 
-        {:error, reason} ->
-          raise inspect(reason)
+        error ->
+          raise inspect(error)
       end
 
     File.write!(save_as, body)
@@ -50,41 +45,47 @@ defmodule Helper do
 end
 ```
 
+<!-- livebook:{"output":true} -->
+
+```
+{:module, Helper, <<70, 79, 82, 49, 0, 0, 10, ...>>, {:download!, 3}}
+```
+
 ## alias
+
 ```elixir
 alias Evision, as: Cv
 ```
 
-## Cv.PCA
+<!-- livebook:{"output":true} -->
 
-```elixir
-# change to the file's directory
-# or somewhere you have write permission
-File.cd!(__DIR__)
+```
+Evision
 ```
 
-```output
+### Download the test image
+
+```elixir
+Helper.download!("https://docs.opencv.org/4.x/pca_test1.jpg", "opencv_pca_test.jpg")
+```
+
+<!-- livebook:{"output":true} -->
+
+```
 :ok
 ```
 
-Download the test image
 ```elixir
-Helper.download!("https://docs.Cv.org/4.x/pca_test1.jpg", "opencv_pca_test.jpg")
-```
+import Bitwise
 
-```elixir
 # Load image in grayscale
-{:ok, gray} =
-  Path.join(__DIR__, "opencv_pca_test.jpg")
-  |> Cv.imread(flags: Cv.cv_IMREAD_GRAYSCALE())
+gray = Cv.imread!("opencv_pca_test.jpg", flags: Cv.cv_IMREAD_GRAYSCALE())
 
 # Convert image to binary
-{:ok, {_, bw}} =
-  Cv.threshold(gray, 50, 255, Cv.cv_THRESH_BINARY() ||| Cv.cv_THRESH_OTSU())
+{_, bw} = Cv.threshold!(gray, 50, 255, Cv.cv_THRESH_BINARY() ||| Cv.cv_THRESH_OTSU())
 
 # Find all the contours in the thresholded image
-{:ok, {contours, _}} =
-  Cv.findContours(bw, Cv.cv_RETR_LIST(), Cv.cv_CHAIN_APPROX_NONE())
+{contours, _} = Cv.findContours!(bw, Cv.cv_RETR_LIST(), Cv.cv_CHAIN_APPROX_NONE())
 
 contours =
   contours
@@ -97,10 +98,17 @@ contours =
 Enum.map(contours, &elem(&1, 0))
 ```
 
+<!-- livebook:{"output":true} -->
+
+```
+[17192.0, 16830.0, 16150.5, 15367.5, 15571.0, 14842.0]
+```
+
 PCA analysis
 
 ```elixir
 contours = Enum.map(contours, &elem(&1, 1))
+
 pca_analysis =
   for c <- contours, reduce: [] do
     acc ->
@@ -114,12 +122,11 @@ pca_analysis =
 
       # Perform PCA analysis
       {:ok, {mean, eigenvectors, eigenvalues}} = Cv.pcaCompute2(data_pts, Cv.Mat.empty!())
-      eigenvectors = Cv.Nx.to_nx(eigenvectors)
-      eigenvalues = Cv.Nx.to_nx(eigenvalues)
+      eigenvectors = Cv.Nx.to_nx(eigenvectors, Nx.BinaryBackend)
+      eigenvalues = Cv.Nx.to_nx(eigenvalues, Nx.BinaryBackend)
 
       # Store the center of the object
-      {:ok,
-       <<centre_x::float()-size(64)-little, centre_y::float()-size(64)-little, _::binary>>} =
+      {:ok, <<centre_x::float-size(64)-little, centre_y::float-size(64)-little, _::binary>>} =
         Cv.Mat.to_binary(mean)
 
       centre_x = trunc(centre_x)
@@ -136,62 +143,99 @@ pca_analysis =
 
       # Calculate the principal components
       p1 =
-         {trunc(Float.round(centre_x + 0.02 * evec00 * eval00)), trunc(Float.round(centre_y + 0.02 * evec01 * eval00))}
+        {trunc(Float.round(centre_x + 0.02 * evec00 * eval00)),
+         trunc(Float.round(centre_y + 0.02 * evec01 * eval00))}
 
       p2 =
-         {trunc(Float.round(centre_x - 0.02 * evec10 * eval10)), trunc(Float.round(centre_y - 0.02 * evec11 * eval10))}
+        {trunc(Float.round(centre_x - 0.02 * evec10 * eval10)),
+         trunc(Float.round(centre_y - 0.02 * evec11 * eval10))}
 
       cntr = [centre_x, centre_y]
       [{cntr, p1, p2} | acc]
   end
+
 pca_analysis = Enum.reverse(pca_analysis)
 ```
 
-## visualisation
+<!-- livebook:{"output":true} -->
+
+```
+[
+  {[430, 407], {691, 338}, {427, 397}},
+  {[439, 326], {697, 264}, {437, 317}},
+  {[433, 239], {683, 182}, {431, 230}},
+  {[420, 169], {666, 127}, {419, 161}},
+  {[191, 291], {176, 52}, {200, 290}},
+  {[407, 90], {645, 49}, {406, 82}}
+]
+```
+
+### visualisation
+
 ```elixir
-{:ok, src} =
-  Path.join(__DIR__, "opencv_pca_test.jpg")
-  |> Cv.imread()
+src = Cv.imread!("opencv_pca_test.jpg")
 
 # Draw each contour
-src = for index <- 0..(Enum.count(contours) - 1), reduce: src do
-  src ->
-    {:ok, src} = Cv.drawContours(src, contours, index, [0, 0, 255], thickness: 2)
-    src
-end
+src =
+  for index <- 0..(Enum.count(contours) - 1), reduce: src do
+    src ->
+      src = Cv.drawContours!(src, contours, index, [0, 0, 255], thickness: 2)
+      src
+  end
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+%Evision.Mat{
+  channels: 3,
+  dims: 2,
+  type: {:u, 8},
+  raw_type: 16,
+  shape: {600, 800, 3},
+  ref: #Reference<0.910554608.1494089745.145277>
+}
 ```
 
 A helper function
 
 ```elixir
 defmodule PACHelper do
-    def drawAxis(src, {px, py}, {qx, qy}, colour, scale) do
-        angle = :math.atan2(py - qy, px - qx)
-        hypotenuse = :math.sqrt((py - qy) * (py - qy) + (px - qx) * (px - qx))
-        qx = trunc(px - scale * hypotenuse * :math.cos(angle))
-        qy = trunc(py - scale * hypotenuse * :math.sin(angle))
-        {:ok, src} = Cv.line(src, [px, py], [qx, qy], colour, thickness: 1, style: Cv.cv_LINE_AA)
+  def drawAxis(src, {px, py}, {qx, qy}, colour, scale) do
+    angle = :math.atan2(py - qy, px - qx)
+    hypotenuse = :math.sqrt((py - qy) * (py - qy) + (px - qx) * (px - qx))
+    qx = trunc(px - scale * hypotenuse * :math.cos(angle))
+    qy = trunc(py - scale * hypotenuse * :math.sin(angle))
+    {:ok, src} = Cv.line(src, [px, py], [qx, qy], colour, thickness: 1, style: Cv.cv_LINE_AA())
 
-        px = trunc(qx + 9 * :math.cos(angle + :math.pi / 4))
-        py = trunc(qy + 9 * :math.sin(angle + :math.pi / 4))
-        {:ok, src} = Cv.line(src, [px, py], [qx, qy], colour, thickness: 1, style: Cv.cv_LINE_AA)
+    px = trunc(qx + 9 * :math.cos(angle + :math.pi() / 4))
+    py = trunc(qy + 9 * :math.sin(angle + :math.pi() / 4))
+    {:ok, src} = Cv.line(src, [px, py], [qx, qy], colour, thickness: 1, style: Cv.cv_LINE_AA())
 
-        px = trunc(qx + 9 * :math.cos(angle - :math.pi / 4))
-        py = trunc(qy + 9 * :math.sin(angle - :math.pi / 4))
-        Cv.line(src, [px, py], [qx, qy], colour, thickness: 1, style: Cv.cv_LINE_AA)
-    end
+    px = trunc(qx + 9 * :math.cos(angle - :math.pi() / 4))
+    py = trunc(qy + 9 * :math.sin(angle - :math.pi() / 4))
+    Cv.line(src, [px, py], [qx, qy], colour, thickness: 1, style: Cv.cv_LINE_AA())
+  end
 end
 ```
 
-## Draw the principal components
+<!-- livebook:{"output":true} -->
+
+```
+{:module, PACHelper, <<70, 79, 82, 49, 0, 0, 13, ...>>, {:drawAxis, 5}}
+```
+
+### Draw the principal components
+
 ```elixir
-src = for {cntr, p1, p2} <- pca_analysis, reduce: src do
-  src ->
-    {:ok, src} = Cv.circle(src, cntr, 3, [255, 0, 255], thickness: 2)
-    {:ok, src} = PACHelper.drawAxis(src, List.to_tuple(cntr), p1, [0, 255, 0], 1)
-    {:ok, src} = PACHelper.drawAxis(src, List.to_tuple(cntr), p2, [255, 255, 0], 5)
-    src
-end
+src =
+  for {cntr, p1, p2} <- pca_analysis, reduce: src do
+    src ->
+      {:ok, src} = Cv.circle(src, cntr, 3, [255, 0, 255], thickness: 2)
+      {:ok, src} = PACHelper.drawAxis(src, List.to_tuple(cntr), p1, [0, 255, 0], 1)
+      {:ok, src} = PACHelper.drawAxis(src, List.to_tuple(cntr), p2, [255, 255, 0], 5)
+      src
+  end
 
 result = Cv.imencode!(".png", src)
 
