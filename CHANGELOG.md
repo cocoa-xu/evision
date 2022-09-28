@@ -1,7 +1,24 @@
 # Changelog
 
-## v0.1.6-dev
+## v0.1.6 (2022-09-29)
+### Breaking Changes
 - `Evision.imencode/{2,3}` will now return encoded image as binary instead of a list.
+
+- `cv::Mat` will be wrapped in struct. For example:
+
+  ```elixir
+  iex> Evision.imread!("path/to/image.png")
+  %Evision.Mat{
+    channels: 3,
+    dims: 2,
+    type: {:u, 8},
+    raw_type: 16,
+    shape: {512, 512, 3},
+    ref: #Reference<0.2992585850.4173463580.172624>
+  }
+  ```
+
+  This should close #76.
 
 ## v0.1.5 (2022-09-27)
 - Fixed `Evision.Mat.transpose`: should call `shape!` instead of `shape`. Thanks to @kipcole9 ! #77
