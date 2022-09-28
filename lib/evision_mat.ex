@@ -671,7 +671,7 @@ defmodule Evision.Mat do
   deferror(full(shape, number, type))
 
   @doc namespace: :"cv.Mat"
-  def clone(mat) when is_reference(mat) do
+  def clone(mat) do
     mat = __from_struct__(mat)
     :evision_nif.mat_clone(img: mat)
     |> Evision.Internal.Structurise.to_struct()
@@ -720,7 +720,7 @@ defmodule Evision.Mat do
   deferror(to_batched(mat, batch_size, as_shape, opts))
 
   @doc namespace: :"cv.Mat"
-  def to_binary(mat, limit \\ 0) when is_reference(mat) and is_integer(limit) and limit >= 0 do
+  def to_binary(mat, limit \\ 0) when is_integer(limit) and limit >= 0 do
     mat = __from_struct__(mat)
     :evision_nif.mat_to_binary(img: mat, limit: limit)
   end
@@ -839,7 +839,7 @@ defmodule Evision.Mat do
   deferror(eye(n, type))
 
   @doc namespace: :"cv.Mat"
-  def reshape(mat, shape) when is_reference(mat) and is_tuple(shape) do
+  def reshape(mat, shape) when is_tuple(shape) do
     mat = __from_struct__(mat)
     :evision_nif.mat_reshape(
       mat: mat,
@@ -848,7 +848,7 @@ defmodule Evision.Mat do
     |> Evision.Internal.Structurise.to_struct()
   end
 
-  def reshape(mat, shape) when is_reference(mat) and is_list(shape) do
+  def reshape(mat, shape) when is_list(shape) do
     mat = __from_struct__(mat)
     :evision_nif.mat_reshape(
       mat: mat,

@@ -162,7 +162,7 @@ defmodule Evision.Backend do
   end
 
   @impl true
-  def to_binary(%T{data: %EB{ref: mat}} = tensor, limit) when is_reference(mat) and is_integer(limit) and limit >= 0 do
+  def to_binary(%T{data: %EB{ref: mat}} = tensor, limit) when (is_reference(mat) or is_struct(mat)) and is_integer(limit) and limit >= 0 do
     Evision.Mat.to_binary!(mat, limit)
   end
 
@@ -644,8 +644,8 @@ defmodule Evision.Backend do
   def from_nx(%T{} = tensor), do: Nx.backend_transfer(tensor, EB) |> from_nx()
 
   @doc false
-  def to_nx(mat_ref, %T{type: type, shape: shape} = t)
-      when is_reference(mat_ref) do
+  def to_nx(mat_ref, %T{shape: shape} = t) when is_reference(mat_ref) or is_struct(mat_ref) do
+    mat_ref = Evision.Internal.Structurise.from_struct(mat_ref)
     type = Evision.Mat.type!(mat_ref)
     %{t | type: type, data: %__MODULE__{ref: check_shape_and_type!(mat_ref, shape, type)}}
   end

@@ -399,7 +399,7 @@ class BeamWrapperGenerator(object):
                 if erl_name[0].isupper():
                     erl_name = map_uppercase_to_erlang_name(erl_name)
                 func_name = "evision_" + prop_class.wname + '_set_' + name
-                writer.write(f"  def set_{name}(self, opts) do\n    :evision_nif.{erl_name}(self, opts)\n    |> Evision.Internal.Structurise.to_struct()\n  end\n")
+                writer.write(f"  def set_{name}(self, opts) do\n    self = Evision.Internal.Structurise.from_struct(self)\n    opts = Evision.Internal.Structurise.from_struct(opts)\n    :evision_nif.{erl_name}(self, opts)\n    |> Evision.Internal.Structurise.to_struct()\n  end\n")
                 writer_erlang.write(f"set_{name}(Self, Options) when is_list(Options), is_tuple(hd(Options)), tuple_size(hd(Options)) == 2 ->\n    evision_nif:{erl_name}(Self, Options).\n\n")
                 name_arity_elixir = f'set_{name}!/2'
                 name_arity_erlang = None
@@ -708,7 +708,7 @@ class BeamWrapperGenerator(object):
                     when_guard_erlang = ' when '
                     when_guard_erlang += ', '.join(func_guard_erlang)
 
-                opt_args = '' if not has_opts else ' ++ opts'
+                opt_args = '' if not has_opts else ' ++ Evision.Internal.Structurise.from_struct(opts)'
                 opt_args_erlang = '' if not has_opts else ' ++ Options'
                 module_func_args = func_args
                 module_func_args_erlang = func_args_erlang
@@ -722,10 +722,10 @@ class BeamWrapperGenerator(object):
                     func_args_with_opts = f'positional{opt_args}'
                     func_args_with_opts_erlang = f'Positional{opt_args_erlang}'
                 if not is_ns and func.classname and not func.is_static and not is_constructor:
-                    func_args = f'self, {func_args}'
+                    func_args = f'Evision.Internal.Structurise.from_struct(self), {func_args}'
                     func_args_erlang = f'Self, {func_args_erlang}'
                     if len(func_args_with_opts) > 0:
-                        func_args_with_opts = f'self, {func_args_with_opts}'
+                        func_args_with_opts = f'Evision.Internal.Structurise.from_struct(self), {func_args_with_opts}'
                         func_args_with_opts_erlang = f'Self, {func_args_with_opts_erlang}'
 
                 function_group = ""
@@ -740,7 +740,7 @@ class BeamWrapperGenerator(object):
                     inline_doc += function_group
                     name_arity_elixir_identifier = f'{module_func_name}!/2'
                     name_arity_elixir = f'{module_func_name}!/1'
-                    elixir_function.write(f'{inline_doc}  def {module_func_name}(self, opts \\\\ []) when is_list(opts) do\n    :evision_nif.{erl_name}(self, opts)\n    |> Evision.Internal.Structurise.to_struct()\n  end\n')
+                    elixir_function.write(f'{inline_doc}  def {module_func_name}(self, opts \\\\ []) when is_list(opts) do\n    self = Evision.Internal.Structurise.from_struct(self)\n    opts = Evision.Internal.Structurise.from_struct(opts)\n    :evision_nif.{erl_name}(self, opts)\n    |> Evision.Internal.Structurise.to_struct()\n  end\n')
                     
                     name_arity_erlang = f'{module_func_name}!/1'
                     name_arity_erlang_opt = f'{module_func_name}!/2'
@@ -760,7 +760,7 @@ class BeamWrapperGenerator(object):
                     inline_doc += function_group
                     name_arity_elixir_identifier = f'{module_func_name}!/2'
                     name_arity_elixir = f'{module_func_name}!/1'
-                    elixir_function.write(f'{inline_doc}  def {module_func_name}(self, opts \\\\ []) when is_list(opts) do\n    :evision_nif.{erl_name}(self, opts)\n    |> Evision.Internal.Structurise.to_struct()\n  end\n')
+                    elixir_function.write(f'{inline_doc}  def {module_func_name}(self, opts \\\\ []) when is_list(opts) do\n    self = Evision.Internal.Structurise.from_struct(self)\n    opts = Evision.Internal.Structurise.from_struct(opts)\n    :evision_nif.{erl_name}(self, opts)\n    |> Evision.Internal.Structurise.to_struct()\n  end\n')
                     
                     name_arity_erlang = f'{module_func_name}!/1'
                     name_arity_erlang_opt = f'{module_func_name}!/2'

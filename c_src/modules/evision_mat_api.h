@@ -43,4 +43,47 @@ static ERL_NIF_TERM _evision_get_mat_shape(ErlNifEnv *env, const cv::Mat& img) {
     return ret;
 }
 
+static ERL_NIF_TERM _evision_make_mat_resource_into_map(ErlNifEnv *env, const cv::Mat& m, ERL_NIF_TERM res_term) {
+    const size_t num_items = 7;
+    size_t item_index = 0;
+
+    ERL_NIF_TERM keys[num_items];
+    ERL_NIF_TERM values[num_items];
+
+    keys[item_index] = enif_make_atom(env, "channels");
+    values[item_index] = enif_make_int(env, m.channels());
+    item_index++;
+
+    keys[item_index] = enif_make_atom(env, "dims");
+    values[item_index] = enif_make_int(env, m.dims);
+    item_index++;
+
+    keys[item_index] = enif_make_atom(env, "type");
+    values[item_index] = _evision_get_mat_type(env, m);
+    item_index++;
+
+    keys[item_index] = enif_make_atom(env, "raw_type");
+    values[item_index] = enif_make_int(env, m.type());
+    item_index++;
+
+    keys[item_index] = enif_make_atom(env, "shape");
+    values[item_index] = _evision_get_mat_shape(env, m);
+    item_index++;
+
+    keys[item_index] = enif_make_atom(env, "ref");
+    values[item_index] = res_term;
+    item_index++;
+
+    keys[item_index] = enif_make_atom(env, "class");
+    values[item_index] = enif_make_atom(env, "Mat");
+    item_index++;
+
+    ERL_NIF_TERM map;
+    if (enif_make_map_from_arrays(env, keys, values, item_index, &map)) {
+        return map;
+    } else {
+        return enif_make_atom(env, "error when making map from arrays");
+    }
+}
+
 #endif  // EVISION_MAT_API_H
