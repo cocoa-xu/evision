@@ -42,24 +42,93 @@ The default password of the livebook is `nerves` (as the time of writing, if it 
 `Evision.Nx` module converts `Evision.Mat` to `Nx.tensor`:
 
 ```elixir
-{:ok, mat} = Evision.imread("/path/to/image.png")
+iex> {:ok, mat} = Evision.imread("/path/to/image.png")
 # Or you can use the !(bang) version, but if the image cannot be read by OpenCV for whatever reason
 # the bang version will raise a RuntimeError exception
-mat = Evision.imread!("/path/to/image.png")
-t = Evision.Nx.to_nx(mat)
+iex> mat = Evision.imread!("/path/to/image.png")
+%Evision.Mat{
+  channels: 3,
+  dims: 2,
+  type: {:u, 8},
+  raw_type: 16,
+  shape: {512, 512, 3},
+  ref: #Reference<0.2992585850.4173463580.172624>
+}
+
+iex> t = Evision.Nx.to_nx(mat)
+#Nx.Tensor<
+  u8[512][512][3]
+  Evision.Backend
+  [
+    [
+      [255, 255, 255],
+      [255, 255, 255],
+      [255, 255, 255],
+      [255, 255, 255],
+      [255, 255, 255],
+      [255, 255, 255],
+      [255, 255, 255],
+      [255, 255, 255],
+      [255, 255, 255],
+      [255, 255, 255],
+      [255, 255, 255],
+      [255, 255, 255],
+      [255, 255, 255],
+      [255, 255, 255],
+      [255, 255, 255],
+      [255, 255, 255],
+      [255, 255, ...],
+      ...
+    ],
+    ...
+  ]
+>
 ```
 
 and vice-versa:
 
 ```elixir
-{:ok, mat} = Evision.imread("/path/to/image.png")
-t = Evision.Nx.to_nx(mat)
+iex> mat = Evision.imread!("/path/to/image.png")
+iex> t = Evision.Nx.to_nx(mat)
 # convert a tensor to a mat
-{:ok, mat_from_tensor} = Evision.Nx.to_mat(t)
+iex> mat_from_tensor = Evision.Nx.to_mat!(t)
+%Evision.Mat{
+  channels: 1,
+  dims: 3,
+  type: {:u, 8},
+  raw_type: 0,
+  shape: {512, 512, 3},
+  ref: #Reference<0.1086574232.1510342676.18186>
+}
+
+# Note that `Evision.Nx.to_mat` gives a tensor
+# however, some OpenCV functions expect the mat
+# to be a "valid 2D image"
+# therefore, in such cases `Evision.Nx.to_mat_2d`
+# should be used instead
+#
+# Noticing the changes in `channels`, `dims` and `raw_type`
+iex> mat_from_tensor = Evision.Nx.to_mat_2d!(t)
+%Evision.Mat{
+  channels: 3,
+  dims: 2,
+  type: {:u, 8},
+  raw_type: 16,
+  shape: {512, 512, 3},
+  ref: #Reference<0.1086574232.1510342676.18187>
+}
 
 # and it works for tensors with any shapes
-t = Nx.iota({2, 3, 2, 3, 2, 3}, type: {:s, 32})
-{:ok, mat} = Evision.Nx.to_mat(t)
+iex> t = Nx.iota({2, 3, 2, 3, 2, 3}, type: :s32)
+iex> mat = Evision.Nx.to_mat!(t)
+%Evision.Mat{
+  channels: 1,
+  dims: 6,
+  type: {:s, 32},
+  raw_type: 4,
+  shape: {2, 3, 2, 3, 2, 3},
+  ref: #Reference<0.1086574232.1510342676.18188>
+}
 ```
 
 ## Description
