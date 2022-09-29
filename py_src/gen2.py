@@ -11,6 +11,7 @@ import hdr_parser
 import re
 from erl_enum_expression_generator import ErlEnumExpressionGenerator
 import evision_templates as ET
+import evision_structures as ES
 from helper import *
 from namespace import Namespace
 from func_info import FuncInfo
@@ -298,7 +299,7 @@ class BeamWrapperGenerator(object):
                 return f'(is_reference({argname}) or is_map({argname}))'
 
     def map_elixir_argname(self, argname, ignore_upper_starting=False, argtype=None, from_struct=False):
-        struct_types = ["Mat", "vector_Mat", "UMat", "vector_UMat", "GpuMat"]
+        struct_types = ["Mat", "vector_Mat", "UMat", "vector_UMat", "GpuMat", "VideoCapture"]
         name = ""
         if argname in reserved_keywords():
             if argname == 'fn':
@@ -972,6 +973,8 @@ class BeamWrapperGenerator(object):
             module_file_writer.write(f'defmodule Evision.{elixir_module_name} do\n')
             module_file_writer.write('  import Kernel, except: [apply: 2, apply: 3]\n')
             module_file_writer.write('  import Evision.Errorize\n')
+            if ES.evision_structs.get(elixir_module_name, None) is not None:
+                module_file_writer.write(ES.evision_structs[elixir_module_name])
             module_file_writer.deferror = {}
 
             module_file_writer_erlang = StringIO()

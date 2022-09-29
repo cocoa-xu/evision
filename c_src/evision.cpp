@@ -100,6 +100,7 @@ struct Evision_Converter
     static inline bool to(ErlNifEnv *env, ERL_NIF_TERM obj, T& p, const ArgInfo& info);
     static inline ERL_NIF_TERM from(ErlNifEnv *env, const T& src);
     static inline ERL_NIF_TERM from_as_binary(ErlNifEnv *env, const T& src, bool& success);
+    static inline ERL_NIF_TERM from_as_map(ErlNifEnv *env, T src, ERL_NIF_TERM res_term);
 };
 
 // exception-safe evision_to
@@ -140,6 +141,9 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const T& src) { return Evision_Convert
 template<typename T> static
 ERL_NIF_TERM evision_from_as_binary(ErlNifEnv *env, const T& src, bool& success) { return Evision_Converter<T>::from_as_binary(env, src, success); }
 
+template<typename T> static
+ERL_NIF_TERM evision_from_as_map(ErlNifEnv *env, const T& src, ERL_NIF_TERM res_term) { return res_term; }
+
 template <>
 ERL_NIF_TERM evision_from_as_binary(ErlNifEnv *env, const std::vector<uchar>& src, bool& success) {
     size_t n = static_cast<size_t>(src.size());
@@ -151,6 +155,8 @@ ERL_NIF_TERM evision_from_as_binary(ErlNifEnv *env, const std::vector<uchar>& sr
     }
     return 0;
 }
+
+#include "modules/evision_video_api.h"
 
 static bool isBindingsDebugEnabled()
 {

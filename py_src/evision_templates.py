@@ -264,6 +264,14 @@ code_ret_lt_10_tuple = "return evision::nif::ok(env, enif_make_tuple%d(env, %s))
 code_ret_ge_10_tuple = """ERL_NIF_TERM arr[] = {%s};
             return evision::nif::ok(env, enif_make_tuple_from_array(env, arr, %d))"""
 
+code_ret_constructor = """ERL_NIF_TERM ret = enif_make_resource(env, self);
+        enif_release_resource(self);
+        return evision::nif::ok(env, ret);"""
+
+code_ret_constructor_structurise = """ERL_NIF_TERM ret = enif_make_resource(env, self);
+        enif_release_resource(self);
+        return evision::nif::ok(env, evision_from_as_map<Ptr<%s>>(env, self->val, ret));"""
+
 # template for `Evision.__enabled_modules__/0`
 enabled_modules_code = Template("""
   @doc \"\"\"

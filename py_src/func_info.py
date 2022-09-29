@@ -345,7 +345,10 @@ class FuncInfo(object):
                     code_ret = "return evision::nif::ok(env, self)"
             elif len(v.py_outlist) == 1:
                 if self.isconstructor:
-                    code_ret = "ERL_NIF_TERM ret = enif_make_resource(env, self);\n        enif_release_resource(self);\n        return evision::nif::ok(env, ret);"
+                    if self.classname in ["VideoCapture"]:
+                        code_ret = ET.code_ret_constructor_structurise % (self.classname,)
+                    else:
+                        code_ret = ET.code_ret_constructor
                 else:
                     aname, argno = v.py_outlist[0]
                     if v.rettype == 'bool':

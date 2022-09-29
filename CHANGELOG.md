@@ -1,5 +1,29 @@
 # Changelog
 
+## v0.1.7-dev
+- `cv::VideoCapture` will be wrapped in struct. For example:
+
+  ```elixir
+  iex> cap = Evision.VideoCapture.videoCapture!("test/videocapture_test.mp4")
+  %Evision.VideoCapture{
+    fps: 43.2,
+    frame_count: 18.0,
+    frame_width: 1920.0,
+    frame_height: 1080.0,
+    isOpened: true,
+    ref: #Reference<0.3650318819.3952214034.37793>
+  }
+  iex> frame = Evision.VideoCapture.read!(cap)
+  %Evision.Mat{
+    channels: 3,
+    dims: 2,
+    type: {:u, 8},
+    raw_type: 16,
+    shape: {1080, 1920, 3},
+    ref: #Reference<0.3650318819.3952214042.38343>
+  }
+  ```
+
 ## v0.1.6 (2022-09-29)
 ### Breaking Changes
 - `Evision.imencode/{2,3}` will now return encoded image as binary instead of a list.
