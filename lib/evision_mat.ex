@@ -45,6 +45,28 @@ defmodule Evision.Mat do
     ref
   end
 
+  if Code.ensure_loaded?(Kino.Render) do
+    defp is_2d_image(%Evision.Mat{dims: 2}), do: true
+    defp is_2d_image(%Evision.Mat{channels: c, shape: {_h, _w, c}}) when c in [1, 3, 4] do
+      true
+    end
+
+    defp is_2d_image(_), do: true
+
+    def to_livebook(mat) do
+      with true <- is_2d_image(mat),
+          {:ok, encoded} <- Evision.imencode(".png", mat) do
+        raw = Kino.Inspect.new(mat)
+        image = Kino.Image.new(encoded, :png)
+        tabs = Kino.Layout.tabs("Raw": raw, "Image": image)
+        Kino.Render.to_livebook(tabs)
+      else
+        _ ->
+          Kino.Output.inspect(mat)
+      end
+    end
+  end
+
   @doc namespace: :"cv.Mat"
   def number(number, type) do
     type = check_unsupported_type(type)
