@@ -224,10 +224,14 @@ defmodule Evision.MixProject do
 
   defp deps do
     [
+      # compilation
       {:elixir_make, "~> 0.6", runtime: false},
+      # runtime
       {:dll_loader_helper, "~> 0.1"},
+      {:nx, "~> 0.3", override: true},
+      # docs
       {:ex_doc, "~> 0.28", only: :docs, runtime: false},
-      {:nx, "~> 0.3"},
+      # test
       {:scidata, "~> 0.1", only: :test},
       {:scholar, "~> 0.1", only: :test, github: "elixir-nx/scholar"},
       {:castore, "~> 0.1", only: :test, override: true}
