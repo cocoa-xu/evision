@@ -513,8 +513,9 @@ bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Vec<_Tp, cn>& vec, const ArgInfo
 template<>
 ERL_NIF_TERM evision_from(ErlNifEnv *env, const Mat& m)
 {
-    if( !m.data )
+    if (!m.data) {
         return evision::nif::error(env, "empty matrix");
+    }
 
     evision_res<cv::Mat *> * res;
     if (alloc_resource(&res)) {
@@ -524,7 +525,7 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const Mat& m)
         // and this function returns the output/result matrix, which should already be a new matrix
         *res->val = m;
     } else {
-        return evision::nif::error(env, "no memory");
+        return evision::nif::error(env, "out of memory");
     }
 
     ERL_NIF_TERM ret = enif_make_resource(env, res);
