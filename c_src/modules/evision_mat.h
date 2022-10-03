@@ -23,7 +23,7 @@ static ERL_NIF_TERM evision_cv_mat_empty(ErlNifEnv *env, int argc, const ERL_NIF
     ERL_NIF_TERM ret = enif_make_resource(env, res);
     enif_release_resource(res);
 
-    return evision::nif::ok(env, ret);
+    return evision::nif::ok(env, _evision_make_mat_resource_into_map(env, *res->val, ret));
 }
 
 // @evision c: mat_type,evision_cv_mat_type,1
