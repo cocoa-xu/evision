@@ -18,6 +18,14 @@ defmodule Evision.Mat do
           | {:f, 32}
           | {:f, 64}
           | {:f, 16}
+          | :u8
+          | :u16
+          | :s8
+          | :s16
+          | :s32
+          | :f32
+          | :f64
+          | :f16
   @type channels_from_binary ::
           1 | 2 | 3 | 4
 
@@ -53,6 +61,7 @@ defmodule Evision.Mat do
 
     defp is_2d_image(_), do: true
 
+    @doc false
     def to_livebook(mat) do
       with true <- is_2d_image(mat),
           {:ok, encoded} <- Evision.imencode(".png", mat) do
@@ -66,6 +75,81 @@ defmodule Evision.Mat do
       end
     end
   end
+
+  @doc namespace: :"cv.Mat"
+  @doc """
+  Create an `Evision.Mat` from list literals.
+
+  ### Example
+
+  Creating `Evision.Mat` from empty list literal (`[]`) is the same as
+  calling `Evision.Mat.empty()`.
+
+  ```elixir
+  iex> Evision.Mat.literal!([])
+  %Evision.Mat{
+    channels: 1,
+    dims: 0,
+    type: {:u, 8},
+    raw_type: 0,
+    shape: {},
+    ref: #Reference<0.1204050731.2031747092.46781>
+  }
+  ```
+
+  By default, the shape of the Mat will stay as is.
+  ```elixir
+  iex> Evision.Mat.literal!([[[1,1,1],[2,2,2],[3,3,3]]], :u8)
+  %Evision.Mat{
+    channels: 1,
+    dims: 3,
+    type: {:u, 8},
+    raw_type: 0,
+    shape: {1, 3, 3},
+    ref: #Reference<0.512519210.691404819.106300>
+  }
+  ```
+
+  `Evision.Mat.literal/3` will return a vaild 2D image
+  if the keyword argment, `as_2d`, is set to `true`
+  and if the list literal can be represented as a 2D image.
+  ```elixir
+  iex> Evision.Mat.literal!([[[1,1,1],[2,2,2],[3,3,3]]], :u8, as_2d: true)
+  %Evision.Mat{
+    channels: 3,
+    dims: 2,
+    type: {:u, 8},
+    raw_type: 16,
+    shape: {1, 3, 3},
+    ref: #Reference<0.512519210.691404820.106293>
+  }
+  ```
+
+  """
+  @spec literal(list(), mat_type(), Keyword.t()) :: {:ok, %T{}} | {:error, String.t()}
+  def literal([]) do
+    empty()
+  end
+  deferror(literal([]))
+
+  def literal(literal, type, opts \\ [])
+  def literal([], _type, _opts) do
+    empty()
+  end
+
+  def literal(literal, type, opts) when is_list(literal) do
+    # leave all the checks to Nx.tensor/2
+    as_2d_image = opts[:as_2d] || false
+    tensor = Nx.tensor(literal, type: type, backend: Evision.Backend)
+    if as_2d_image do
+      Evision.Nx.to_mat_2d(tensor)
+    else
+      Evision.Nx.to_mat(tensor)
+    end
+  end
+
+  deferror(literal(literal, type))
+  deferror(literal(literal, type, opts))
 
   @doc namespace: :"cv.Mat"
   def number(number, type) do
@@ -357,8 +441,11 @@ defmodule Evision.Mat do
   This method returns the type-tuple used by Nx. To get the raw value of `cv::Mat.type()`, please use
   `Evision.Mat.raw_type/1`.
   """
-  def type(mat) do
-    mat = __from_struct__(mat)
+  def type(%T{type: type}) do
+    {:ok, type}
+  end
+
+  def type(mat) when is_reference(mat) do
     :evision_nif.mat_type(img: mat)
   end
 
@@ -456,8 +543,11 @@ defmodule Evision.Mat do
   deferror(as_type(mat, type))
 
   @doc namespace: :"cv.Mat"
-  def shape(mat) do
-    mat = __from_struct__(mat)
+  def shape(%T{shape: shape}) do
+    {:ok, shape}
+  end
+
+  def shape(mat) when is_reference(mat) do
     :evision_nif.mat_shape(img: mat)
   end
 
@@ -467,8 +557,11 @@ defmodule Evision.Mat do
   @doc """
   The method returns the number of matrix channels.
   """
-  def channels(mat) do
-    mat = __from_struct__(mat)
+  def channels(%T{channels: channels}) do
+    channels
+  end
+
+  def channels(mat) when is_reference(mat) do
     :evision_nif.mat_channels(img: mat)
   end
 
@@ -506,8 +599,11 @@ defmodule Evision.Mat do
   As `Evision.Mat.type/1` returns the type used by Nx, this method gives the raw value of
   `cv::Mat.type()`
   """
-  def raw_type(mat) do
-    mat = __from_struct__(mat)
+  def raw_type(%T{raw_type: raw_type}) do
+    raw_type
+  end
+
+  def raw_type(mat) when is_reference(mat) do
     :evision_nif.mat_raw_type(img: mat)
   end
 
