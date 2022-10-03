@@ -36,14 +36,6 @@ defmodule Evision.Backend do
   end
 
   @impl true
-  def from_binary(%T{shape: {count}, type: type} = out, binary, _backend_options) when is_binary(binary) do
-      Evision.Mat.from_binary!(binary, type, 1, count, 1) |> to_nx(out)
-  end
-
-  def from_binary(%T{shape: {rows, cols}, type: type} = out, binary, _backend_options) when is_binary(binary) do
-    Evision.Mat.from_binary_by_shape!(binary, type, {rows, cols}) |> to_nx(out)
-  end
-
   def from_binary(%T{shape: shape, type: type} = out, binary, _backend_options) when is_binary(binary) do
     Evision.Mat.from_binary_by_shape!(binary, type, shape) |> to_nx(out)
   end
@@ -662,7 +654,7 @@ defmodule Evision.Backend do
               "Please report this bug"
       end
 
-      current_shape = Evision.Mat.shape(mat_ref)
+      current_shape = Evision.Mat.shape!(mat_ref)
 
       if current_shape != shape do
         raise "shape mismatch in Torchx: expected #{inspect(shape)}, got: #{inspect(current_shape)}. " <>

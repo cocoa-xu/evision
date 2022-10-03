@@ -294,4 +294,60 @@ defmodule Evision.Test do
     assert {3, 2, 3} == Evision.Mat.shape!(new_img)
     assert Evision.Mat.to_binary!(img) == Evision.Mat.to_binary!(new_img)
   end
+
+  test "Evision.Mat.literal/1" do
+    %Evision.Mat{
+      channels: 1,
+      dims: 0,
+      type: {:u, 8},
+      raw_type: 0,
+      shape: {},
+      ref: any_ref
+    } = Evision.Mat.literal!([])
+    assert is_reference(any_ref)
+  end
+
+  test "Evision.Mat.literal/2" do
+    %Evision.Mat{
+      channels: 1,
+      dims: 3,
+      type: {:u, 8},
+      raw_type: 0,
+      shape: {1, 3, 3},
+      ref: any_ref
+    } = Evision.Mat.literal!([[[1,1,1],[2,2,2],[3,3,3]]], :u8)
+    assert is_reference(any_ref)
+
+    %Evision.Mat{
+      channels: 1,
+      dims: 3,
+      type: {:f, 32},
+      raw_type: 5,
+      shape: {1, 3, 3},
+      ref: any_ref
+    } = Evision.Mat.literal!([[[1,1,1],[2,2,2],[3,3,3]]], :f32)
+    assert is_reference(any_ref)
+  end
+
+  test "Evision.Mat.literal/3" do
+    %Evision.Mat{
+      channels: 3,
+      dims: 2,
+      type: {:u, 8},
+      raw_type: 16,
+      shape: {1, 3, 3},
+      ref: any_ref
+    } = Evision.Mat.literal!([[[1,1,1],[2,2,2],[3,3,3]]], :u8, as_2d: true)
+    assert is_reference(any_ref)
+
+    %Evision.Mat{
+      channels: 3,
+      dims: 2,
+      type: {:f, 32},
+      raw_type: 21,
+      shape: {1, 3, 3},
+      ref: any_ref
+    } = Evision.Mat.literal!([[[1,1,1],[2,2,2],[3,3,3]]], :f32, as_2d: true)
+    assert is_reference(any_ref)
+  end
 end

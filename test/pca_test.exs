@@ -28,7 +28,7 @@ defmodule Evision.PCA.Test do
   @tag :nx
   test "Use the OpenCV class Cv.PCA to calculate the orientation of an object." do
     {:ok, gray} =
-      Path.join(__DIR__, "opencv_pca_test.jpg")
+      Path.join(__DIR__, "pca_test.jpg")
       |> Cv.imread(flags: Cv.cv_IMREAD_GRAYSCALE())
 
     {:ok, {_, bw}} =
@@ -94,7 +94,7 @@ defmodule Evision.PCA.Test do
     assert 6 == Enum.count(pca_analysis)
 
     {:ok, src} =
-      Path.join(__DIR__, "opencv_pca_test.jpg")
+      Path.join(__DIR__, "pca_test.jpg")
       |> Cv.imread()
 
     src =
@@ -113,7 +113,7 @@ defmodule Evision.PCA.Test do
           src
       end
 
-    output_path = Path.join(__DIR__, "opencv_pca_test_out.png")
+    output_path = Path.join(__DIR__, "pca_test_out.png")
     Cv.imwrite(output_path, src)
     File.rm!(output_path)
   end
