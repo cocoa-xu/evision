@@ -1,6 +1,7 @@
 # Changelog
 
-## v0.1.7-dev
+## v0.1.7-dev (main)
+[Browse the Repository](https://github.com/cocoa-xu/evision)
 ### Changed
 - `cv::VideoCapture` will be wrapped in struct. For example:
 
@@ -26,6 +27,7 @@
   ```
 
 ## v0.1.6 (2022-09-29)
+[Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.7) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.6)
 ### Breaking Changes
 - `Evision.imencode/{2,3}` will now return encoded image as binary instead of a list.
 
@@ -46,6 +48,7 @@
   This should close #76.
 
 ## v0.1.5 (2022-09-27)
+[Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.5) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.5)
 ### Changed
 - Always use `Evision.Mat.from_binary_by_shape/3` for `Evision.Nx.to_mat`.
 - Check `cv::Mat::Mat.type()` when fetching the shape of a Mat.
@@ -130,6 +133,7 @@
   - `Evision.cv_16FC4/0`.
 
 ## v0.1.4 (2022-09-10)
+[Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.4) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.4)
 ### Changed
 - Default to `Evision.Backend` for `Evision.Nx.to_nx/2`.
 
@@ -141,6 +145,7 @@
 - Added decision tree and random forest example.
 
 ## v0.1.3 (2022-09-01)
+[Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.3) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.3)
 ### Fixed
 - Fixed issues in restoring files from precompiled package for macOS and Linux.
   - Paths are now quoted. 
@@ -149,6 +154,7 @@
   It was generated as 'erlang:destroyAllWindows/1' but it should be 'erlang:destroyAllWindows/0'.
 
 ## v0.1.2 (2022-08-26)
+[Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.2) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.2)
 ### Fixed
 - Fixed transpose.
 
@@ -161,6 +167,7 @@
   - riscv64-linux-musl
 
 ## v0.1.1 (2022-08-25)
+[Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.1) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.1)
 ### Changed
 - Use OpenCV 4.6.0 by default.
 - Deprecated the use of the `EVISION_PRECOMPILED_VERSION` environment variable. The version information will be implied by the tag:
