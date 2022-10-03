@@ -26,6 +26,66 @@
   }
   ```
 
+- `Evision.Mat.empty/0` will also return an `Evision.Mat` struct (was returning `#Reference<some random numbers>`).
+
+  ```elixir
+  iex> Evision.Mat.empty!()
+  %Evision.Mat{
+    channels: 1,
+    dims: 0,
+    type: {:u, 8},
+    raw_type: 0,
+    shape: {},
+    ref: #Reference<0.2351084001.2568618002.207930>
+  }
+  ```
+
+### Added
+- Creating `Evision.Mat` from list literals, `Evision.Mat.literal/{1,2,3}`.
+
+  Creating `Evision.Mat` from empty list literal (`[]`) is the same as
+  calling `Evision.Mat.empty()`.
+
+  ```elixir
+  iex> Evision.Mat.literal!([])
+  %Evision.Mat{
+    channels: 1,
+    dims: 0,
+    type: {:u, 8},
+    raw_type: 0,
+    shape: {},
+    ref: #Reference<0.1204050731.2031747092.46781>
+  }
+  ```
+
+  By default, the shape of the Mat will stay as is.
+  ```elixir
+  iex> Evision.Mat.literal!([[[1,1,1],[2,2,2],[3,3,3]]], :u8)
+  %Evision.Mat{
+    channels: 1,
+    dims: 3,
+    type: {:u, 8},
+    raw_type: 0,
+    shape: {1, 3, 3},
+    ref: #Reference<0.512519210.691404819.106300>
+  }
+  ```
+
+  `Evision.Mat.literal/3` will return a vaild 2D image
+  if the keyword argment, `as_2d`, is set to `true`
+  and if the list literal can be represented as a 2D image.
+  ```elixir
+  iex> Evision.Mat.literal!([[[1,1,1],[2,2,2],[3,3,3]]], :u8, as_2d: true)
+  %Evision.Mat{
+    channels: 3,
+    dims: 2,
+    type: {:u, 8},
+    raw_type: 16,
+    shape: {1, 3, 3},
+    ref: #Reference<0.512519210.691404820.106293>
+  }
+  ```
+
 ## v0.1.6 (2022-09-29)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.7) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.6)
 ### Breaking Changes
