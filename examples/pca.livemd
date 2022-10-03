@@ -66,7 +66,7 @@ Evision
 ### Download the test image
 
 ```elixir
-Helper.download!("https://docs.opencv.org/4.x/pca_test1.jpg", "opencv_pca_test.jpg")
+Helper.download!("https://docs.opencv.org/4.x/pca_test1.jpg", "pca_test.jpg")
 ```
 
 <!-- livebook:{"output":true} -->
@@ -79,7 +79,7 @@ Helper.download!("https://docs.opencv.org/4.x/pca_test1.jpg", "opencv_pca_test.j
 import Bitwise
 
 # Load image in grayscale
-gray = Cv.imread!("opencv_pca_test.jpg", flags: Cv.cv_IMREAD_GRAYSCALE())
+gray = Cv.imread!("pca_test.jpg", flags: Cv.cv_IMREAD_GRAYSCALE())
 
 # Convert image to binary
 {_, bw} = Cv.threshold!(gray, 50, 255, Cv.cv_THRESH_BINARY() ||| Cv.cv_THRESH_OTSU())
@@ -173,7 +173,7 @@ pca_analysis = Enum.reverse(pca_analysis)
 ### visualisation
 
 ```elixir
-src = Cv.imread!("opencv_pca_test.jpg")
+src = Cv.imread!("pca_test.jpg")
 
 # Draw each contour
 src =
