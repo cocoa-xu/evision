@@ -41,10 +41,9 @@
   ```
 
 ### Added
-- Creating `Evision.Mat` from list literals, `Evision.Mat.literal/{1,2,3}`.
+- Added `Evision.Mat.literal/{1,2,3}` to create `Evision.Mat` from list literals.
 
-  Creating `Evision.Mat` from empty list literal (`[]`) is the same as
-  calling `Evision.Mat.empty()`.
+  Creating `Evision.Mat` from empty list literal (`[]`) is the same as calling `Evision.Mat.empty()`.
 
   ```elixir
   iex> Evision.Mat.literal!([])
@@ -71,9 +70,7 @@
   }
   ```
 
-  `Evision.Mat.literal/3` will return a vaild 2D image
-  if the keyword argment, `as_2d`, is set to `true`
-  and if the list literal can be represented as a 2D image.
+  `Evision.Mat.literal/3` will return a vaild 2D image if the keyword argment, `as_2d`, is set to `true` and if the list literal can be represented as a 2D image.
   ```elixir
   iex> Evision.Mat.literal!([[[1,1,1],[2,2,2],[3,3,3]]], :u8, as_2d: true)
   %Evision.Mat{
