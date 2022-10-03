@@ -82,8 +82,7 @@ defmodule Evision.Mat do
 
   ### Example
 
-  Creating `Evision.Mat` from empty list literal (`[]`) is the same as
-  calling `Evision.Mat.empty()`.
+  Creating `Evision.Mat` from empty list literal (`[]`) is the same as calling `Evision.Mat.empty()`.
 
   ```elixir
   iex> Evision.Mat.literal!([])
@@ -111,7 +110,7 @@ defmodule Evision.Mat do
   ```
 
   `Evision.Mat.literal/3` will return a vaild 2D image
-  if the keyword argment, `as_2d`, is set to `true`
+  if the keyword argument, `as_2d`, is set to `true`
   and if the list literal can be represented as a 2D image.
   ```elixir
   iex> Evision.Mat.literal!([[[1,1,1],[2,2,2],[3,3,3]]], :u8, as_2d: true)
