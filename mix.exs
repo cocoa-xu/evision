@@ -56,7 +56,7 @@ defmodule Evision.MixProject do
           System.get_env("MAKE_BUILD_FLAGS", "-j#{System.schedulers_online()}"),
         "CMAKE_OPTIONS" => cmake_options,
         "ENABLED_CV_MODULES" => enabled_modules,
-        "EVISION_PREFER_PRECOMPILED" => System.get_env("EVISION_PREFER_PRECOMPILED", "false"),
+        "EVISION_PREFER_PRECOMPILED" => System.get_env("EVISION_PREFER_PRECOMPILED", "true"),
         "EVISION_PRECOMPILED_VERSION" => @last_released_version,
         "TARGET_ABI" => System.get_env("TARGET_ABI", target_abi)
       }
