@@ -42,6 +42,7 @@ jobs:
     env:
       OPENCV_VER: "4.6.0"
       MIX_ENV: "test"
+      EVISION_PREFER_PRECOMPILED: "false"
 
     steps:
       - uses: actions/checkout@v3

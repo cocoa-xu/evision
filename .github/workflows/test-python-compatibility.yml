@@ -26,6 +26,7 @@ jobs:
     env:
       MIX_ENV: test
       OPENCV_VER: "4.6.0"
+      EVISION_PREFER_PRECOMPILED: "false"
 
     strategy:
       fail-fast: false
@@ -38,8 +39,8 @@ jobs:
       - name: Set up beam
         uses: erlef/setup-beam@v1
         with:
-          otp-version: "24.1.5"
-          elixir-version: "1.13"
+          otp-version: "25.1.1"
+          elixir-version: "1.14"
 
       - name: Set up Python
         uses: actions/setup-python@v2

@@ -13,6 +13,7 @@ jobs:
       OPENCV_VER: "4.6.0"
       OTP_VERSION: "25.0.4"
       ELIXIR_VERSION: "1.14.0"
+      EVISION_PREFER_PRECOMPILED: "false"
 
     steps:
       - uses: actions/checkout@v3

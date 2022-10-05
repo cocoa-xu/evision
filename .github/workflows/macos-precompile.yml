@@ -11,6 +11,7 @@ jobs:
     env:
       MIX_ENV: prod
       OPENCV_VER: "4.6.0"
+      EVISION_PREFER_PRECOMPILED: "false"
     strategy:
       fail-fast: false
       matrix:
