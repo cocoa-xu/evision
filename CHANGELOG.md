@@ -40,6 +40,12 @@
   }
   ```
 
+- raise RuntimeError for all unimplemented `:nx` callbacks.
+
+  ```elixir
+  raise RuntimeError, "not implemented yet"
+  ```
+
 ### Added
 - Added `Evision.Mat.literal/{1,2,3}` to create `Evision.Mat` from list literals.
 
