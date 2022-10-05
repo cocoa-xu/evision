@@ -165,29 +165,15 @@ Early versions (v0.1.x) of `evision` will be available on hex.pm soon.
 To use precompiled Evision library, the following environment variables should be set
 
 ```shell
-# required 
-# set this to true if prefer to use precompiled library
+# required if and only if the build target is using musl libc.
 #
-# currently "0.1.1" to "0.1.6" are available
-# the version is implied by the tag in deps:
-#   {:evision, "~> 0.1.6", github: "cocoa-xu/evision", tag: "v0.1.6"}
-# for other available versions, please check the GitHub release page
-# https://github.com/cocoa-xu/evision/releases
-export EVISION_PREFER_PRECOMPILED=true
-
-# optional.
-## set the cache directory for the precompiled archive file
-export EVISION_PRECOMPILED_CACHE_DIR="$(pwd)/.cache"
-
-# optional.
-## for linux system with musl libc only:
-## for nerves project, this environment variable is set by nerves
+# (for nerves project, this environment variable is set by nerves)
 export TARGET_ABI=musl
 ## (for armv7l which uses hard-float ABI (armhf))
 export TARGET_ABI=musleabihf
 ```
 
-The default value for the `TARGET_ABI` env var is set using the following elixir code
+The default value for the `TARGET_ABI` env var is obtained using the following elixir code
 
 ```elixir
 target_abi = List.last(String.split(to_string(:erlang.system_info(:system_architecture)), "-"))
@@ -202,6 +188,23 @@ target_abi =
       end
     _ -> target_abi
   end
+```
+
+```shell
+# optional. 
+# set this to "false" if you prefer :evision to be compiled from source
+# 
+# default value is "true", and :evision will prefer to use precompiled binaries (if available)
+#   currently "0.1.1" to "0.1.6" are available
+#   the version is implied by the tag in deps:
+#     {:evision, "~> 0.1.6", github: "cocoa-xu/evision", tag: "v0.1.6"}
+#   for other available versions, please check the GitHub release page
+#   https://github.com/cocoa-xu/evision/releases
+export EVISION_PREFER_PRECOMPILED=false
+
+# optional.
+## set the cache directory for the precompiled archive file
+export EVISION_PRECOMPILED_CACHE_DIR="$(pwd)/.cache"
 ```
 
 Note 1: Precompiled binaries does not use FFmpeg. If you'd like to use FFmpeg, please compile from source and set corresponding environment variables.
@@ -393,11 +396,9 @@ As OpenCV does not support the following types
 - `{:u, 32}`
 - `{:u, 64}`
 
-Although it's possible to *store* values with those types using custom types, the resulting Mat/tensor will be 
-incompatible with most existing functions in OpenCV.
+Although it's possible to *store* values with those types using custom types, the resulting Mat/tensor will be incompatible with most existing functions in OpenCV.
 
-Moreover, it's somewhat inconvinient to explicitly specify the type each time using them. Therefore, Evision allows to 
-set a map for those unsupported types. 
+Moreover, it's somewhat inconvinient to explicitly specify the type each time using them. Therefore, Evision allows to set a map for those unsupported types. 
 
 ```elixir
 config :evision, unsupported_type_map: %{

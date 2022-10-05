@@ -5,9 +5,10 @@
 # Stitcher Demo
 
 ```elixir
-# remove the following line (or set to `false`) to compile evision from source
+# set `EVISION_PREFER_PRECOMPILED` to `false` 
+# if you prefer `:evision` to be compiled from source
 # note that to compile from source, you may need at least 1GB RAM
-System.put_env("EVISION_PREFER_PRECOMPILED", "true")
+# System.put_env("EVISION_PREFER_PRECOMPILED", "false")
 
 Mix.install([
   {:evision, "~> 0.1", github: "cocoa-xu/evision", tag: "v0.1.6"},
