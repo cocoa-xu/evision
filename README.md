@@ -305,12 +305,12 @@ brew link ffmpeg@4
   - 3.8.12
   - 3.9.9
   - 3.10.1
-- [CMake](https://cmake.org/) >= 3.1 (for this project)
+- [CMake](https://cmake.org/) >= 3.3 (for this project)
 
   The minimal version required by OpenCV can vary between versions.
 
   OpenCV 4.5.5 requires at least CMake 3.5.1.
-- Erlang development library/headers. Tested on OTP/24.
+- Erlang development library/headers. Tested on OTP/25.
 
 #### Extra Notes for Windows
 Evision on Windows uses `nmake` to handle the `Makefile.win` at the moment. And we also need `powershell` for now. `nmake`

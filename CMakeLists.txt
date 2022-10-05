@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.3 FATAL_ERROR)
 project(evision)
 
 if(NOT DEFINED CMAKE_BUILD_TYPE OR "${CMAKE_BUILD_TYPE}" STREQUAL "")
@@ -12,6 +12,21 @@ else()
 endif()
 message(STATUS "Using PRIV_DIR: ${PRIV_DIR}")
 
+set(EVISION_AVAILABLE_PRECOMPILED_BINARIES
+    "arm64-apple-darwin"
+    "x86_64-apple-darwin"
+    "aarch64-linux-gnu"
+    "aarch64-linux-musl"
+    "x86_64-linux-gnu"
+    "x86_64-linux-musl"
+    "armv7l-linux-gnueabihf"
+    "ppc64le-linux-gnu"
+    "s390x-linux-gnu"
+    "riscv64-linux-gnu"
+    "riscv64-linux-musl"
+    "amd64-windows-msvc"
+)
+
 if(EVISION_PREFER_PRECOMPILED STREQUAL "true")
     message(STATUS "EVISION_PREFER_PRECOMPILED is true: try to download and use the precompiled library")
 
@@ -19,20 +34,33 @@ if(EVISION_PREFER_PRECOMPILED STREQUAL "true")
     string(TOLOWER "${CMAKE_SYSTEM_PROCESSOR}" PRECOMPILED_PROCESSOR_ARCH)
 
     if("${PRECOMPILED_SYSTEM_NAME}" STREQUAL "darwin")
-        set(PRECOMPILE_PKG_NAME "evision-${PRECOMPILED_PROCESSOR_ARCH}-apple-darwin-${EVISION_PRECOMPILED_VERSION}")
+        set(PRECOMPILE_TARGET_TUPLE "${PRECOMPILED_PROCESSOR_ARCH}-apple-darwin")
     elseif("${PRECOMPILED_SYSTEM_NAME}" STREQUAL "linux")
         if(NOT "$ENV{TARGET_ABI}" STREQUAL "")
-            set(PRECOMPILE_PKG_NAME "evision-${PRECOMPILED_PROCESSOR_ARCH}-linux-$ENV{TARGET_ABI}-${EVISION_PRECOMPILED_VERSION}")
+            set(PRECOMPILE_TARGET_TUPLE "${PRECOMPILED_PROCESSOR_ARCH}-linux-$ENV{TARGET_ABI}")
         else()
             if("${PRECOMPILED_PROCESSOR_ARCH}" STREQUAL "armv7l")
-                set(PRECOMPILE_PKG_NAME "evision-${PRECOMPILED_PROCESSOR_ARCH}-linux-gnueabihf-${EVISION_PRECOMPILED_VERSION}")
+                set(PRECOMPILE_TARGET_TUPLE "${PRECOMPILED_PROCESSOR_ARCH}-linux-gnueabihf")
             else()
-                set(PRECOMPILE_PKG_NAME "evision-${PRECOMPILED_PROCESSOR_ARCH}-linux-gnu-${EVISION_PRECOMPILED_VERSION}")
+                set(PRECOMPILE_TARGET_TUPLE "${PRECOMPILED_PROCESSOR_ARCH}-linux-gnu")
             endif()
         endif()
     elseif("${PRECOMPILED_SYSTEM_NAME}" STREQUAL "windows")
-        set(PRECOMPILE_PKG_NAME "evision-${PRECOMPILED_PROCESSOR_ARCH}-windows-msvc-${EVISION_PRECOMPILED_VERSION}")
+        set(PRECOMPILE_TARGET_TUPLE "${PRECOMPILED_PROCESSOR_ARCH}-windows-msvc")
     endif()
+
+    set(EVISION_HAS_PRECOMPILED_BINARY_AVAILABLE false)
+    if("${PRECOMPILE_TARGET_TUPLE}" IN_LIST EVISION_AVAILABLE_PRECOMPILED_BINARIES)
+        set(EVISION_HAS_PRECOMPILED_BINARY_AVAILABLE true)
+        message(STATUS "Precompiled binaries is available for the current target: ${PRECOMPILE_TARGET_TUPLE}")
+    else()
+        message(WARNING "EVISION_PREFER_PRECOMPILED is true, but there is no precompiled binaries available for the current target: ${PRECOMPILE_TARGET_TUPLE}")
+        message(WARNING "Will fallback to building evision from source")
+    endif()
+endif()
+
+if(EVISION_HAS_PRECOMPILED_BINARY_AVAILABLE)
+    set(PRECOMPILE_PKG_NAME "evision-${PRECOMPILE_TARGET_TUPLE}-${EVISION_PRECOMPILED_VERSION}")
 
     set(PRECOMPILE_PKG_FILENAME "${PRECOMPILE_PKG_NAME}.tar.gz")
     set(PRECOMPILE_PKG_URL "https://github.com/cocoa-xu/evision/releases/download/v${EVISION_PRECOMPILED_VERSION}/${PRECOMPILE_PKG_FILENAME}")
@@ -45,7 +73,6 @@ if(EVISION_PREFER_PRECOMPILED STREQUAL "true")
     else()
         set(EVISION_SO_FILE "${PRIV_DIR}/evision.so")
     endif(WIN32)
-    
 
     set(PRECOMPILE_PKG_NEEDS_DOWNLOAD YES)
     set(PRECOMPILE_PKG_NEEDS_UNARCHIVE YES)
