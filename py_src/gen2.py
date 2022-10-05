@@ -389,7 +389,7 @@ class BeamWrapperGenerator(object):
             name_arity_erlang = f'get_{name}!/1'
             name_arity_erlang_opt = None
             if not writer.deferror.get(name_arity_elixir, False):
-                writer.write(f"  deferror get_{name}(self)\n")
+                writer.write(f"  deferror get_{name}(self)\n\n")
                 writer.deferror[name_arity_elixir] = True
 
             self.evision_nif.write(f'  def {erl_name}(_self), do: :erlang.nif_error("{wname}::{name} getter not loaded")\n')
@@ -406,7 +406,7 @@ class BeamWrapperGenerator(object):
                 name_arity_erlang = None
                 name_arity_erlang_opt = f'set_{name}!/2'
                 if not writer.deferror.get(name_arity_elixir, False):
-                    writer.write(f"  deferror set_{name}(self, opts)\n")
+                    writer.write(f"  deferror set_{name}(self, opts)\n\n")
                     writer.deferror[name_arity_elixir] = True
 
                 self.evision_nif.write(f'  def {erl_name}(_self, _opts), do: :erlang.nif_error("{wname}::{name} setter not loaded")\n')
@@ -627,8 +627,8 @@ class BeamWrapperGenerator(object):
                 else:
                     doc_string = '\n'
                 inline_doc = f'\n  @doc """{doc_string}{opt_doc}{prototype}\n'
-                if writer.doc_written.get(module_func_name, None) is None:
-                    writer.doc_written[module_func_name] = True
+                if writer.doc_written.get(sign, None) is None:
+                    writer.doc_written[sign] = True
                     inline_doc1 = ""
                     last_in_list = False
                     last_is_code = False
@@ -748,7 +748,7 @@ class BeamWrapperGenerator(object):
                     erlang_function.write(f'{module_func_name}(Self) ->\n  evision_nif:{erl_name}(Self, []).\n')
                     erlang_function_opt.write(f'{module_func_name}(Self, Options) when is_list(Options), is_tuple(hd(Options)), tuple_size(hd(Options)) == 2 ->\n  evision_nif:{erl_name}(Self, Options).\n')
                     if not writer.deferror.get(name_arity_elixir_identifier, False):
-                        elixir_function.write(f"  deferror {module_func_name}(self, opts)\n")
+                        elixir_function.write(f"  deferror {module_func_name}(self, opts)\n\n")
                         writer.deferror[name_arity_elixir_identifier] = True
 
                     push_to_function_group(name_arity_elixir, guarded_elixir_function_groups, elixir_function)
@@ -769,10 +769,9 @@ class BeamWrapperGenerator(object):
                     erlang_function_opt.write(f'{module_func_name}(Self, Options) when is_list(Options), is_tuple(hd(Options)), tuple_size(hd(Options)) == 2 ->\n  evision_nif:{erl_name}(Self, Options).\n')
                     
                     if not writer.deferror.get(name_arity_elixir_identifier, False):
-                        elixir_function.write(f"  deferror {module_func_name}(self, opts)\n")
-                        # writer.write(f"  deferror {module_func_name}(self, opts)\n")
+                        elixir_function.write(f"  deferror {module_func_name}(self, opts)\n\n")
                         writer.deferror[name_arity_elixir_identifier] = True
-                    
+
                     push_to_function_group(name_arity_elixir, guarded_elixir_function_groups, elixir_function)
                     push_to_function_group(name_arity_erlang, guarded_erlang_function_groups, erlang_function)
                     push_to_function_group(name_arity_erlang_opt, guarded_erlang_function_groups, erlang_function_opt)
@@ -812,7 +811,7 @@ class BeamWrapperGenerator(object):
                         name_arity_elixir_identifier = f'{module_func_name}!/0'
                         name_arity_elixir = f'{module_func_name}!/0'
                     if not writer.deferror.get(name_arity_elixir_identifier, False):
-                        elixir_function.write(f"  deferror {module_func_name}({module_func_args_without_opts_defaults})\n")
+                        elixir_function.write(f"  deferror {module_func_name}({module_func_args_without_opts_defaults})\n\n")
                         writer.deferror[name_arity_elixir_identifier] = True
                 elixir_function.write(f'{function_group}  def {module_func_name}({module_func_args}){when_guard}do\n'
                              f'    {positional}\n'
@@ -836,7 +835,7 @@ class BeamWrapperGenerator(object):
                     if len(erlang_function_opt.getvalue()) > 0:
                         name_arity_erlang_opt = f'{module_func_name}!/1{module_func_args}'
                 if not writer.deferror.get(name_arity_elixir, False):
-                    elixir_function.write(f'  deferror {module_func_name}({module_func_args})\n')
+                    elixir_function.write(f'  deferror {module_func_name}({module_func_args})\n\n')
                     writer.deferror[name_arity_elixir] = True
 
             push_to_function_group(name_arity_elixir, guarded_elixir_function_groups, elixir_function)
@@ -975,6 +974,7 @@ class BeamWrapperGenerator(object):
             module_file_writer.write('  import Evision.Errorize\n')
             if ES.evision_structs.get(elixir_module_name, None) is not None:
                 module_file_writer.write(ES.evision_structs[elixir_module_name])
+                module_file_writer.write("\n")
             module_file_writer.deferror = {}
 
             module_file_writer_erlang = StringIO()
