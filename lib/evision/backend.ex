@@ -26,7 +26,7 @@ defmodule Evision.Backend do
     |> to_nx(out)
   end
 
-  def constant(%T{shape: shape, type: type} = out, scalar, backend_options) do
+  def constant(%T{shape: shape, type: type} = out, scalar, _backend_options) do
     shape
     |> Evision.Mat.full!(
          scalar,
@@ -46,12 +46,12 @@ defmodule Evision.Backend do
   end
 
   @impl true
-  def iota(%T{shape: {}, type: type} = out, nil, backend_options) do
+  def iota(%T{shape: {}, type: type} = out, nil, _backend_options) do
     Evision.Mat.arange!(0, 1, 1, type)
     |> to_nx(out)
   end
 
-  def iota(%T{shape: shape, type: type} = out, nil, backend_options) do
+  def iota(%T{shape: shape, type: type} = out, nil, _backend_options) do
     Evision.Mat.arange!(
       0,
       Nx.size(shape),
@@ -63,11 +63,11 @@ defmodule Evision.Backend do
   end
 
   @impl true
-  def iota(%T{shape: {n}, type: type} = out, 0, backend_options) do
+  def iota(%T{shape: {n}, type: type} = out, 0, _backend_options) do
     Evision.Mat.arange!(0, n, 1, type) |> to_nx(out)
   end
 
-  def iota(%T{shape: shape, type: type} = out, axis, backend_options) do
+  def iota(%T{shape: shape, type: type} = out, axis, _backend_options) do
     # gets the size of iota
     dim = elem(shape, axis)
 
@@ -83,7 +83,7 @@ defmodule Evision.Backend do
   end
 
   @impl true
-  def random_uniform(%T{type: {s, _} = type, shape: shape} = out, min, max, backend_options)
+  def random_uniform(%T{type: {s, _} = type, shape: shape} = out, min, max, _backend_options)
       when s in [:u, :s, :f] do
     min = to_number(min)
     max = to_number(max)
@@ -97,12 +97,12 @@ defmodule Evision.Backend do
     |> to_nx(out)
   end
 
-  def random_uniform(%T{type: {:c, s}, shape: _shape} = _out, _min, _max, _backend_options) do
-    raise ArgumentError, "Complex number is not support at Evision.Backend"
+  def random_uniform(%T{type: {:c, _}, shape: _shape} = _out, _min, _max, _backend_options) do
+    raise ArgumentError, "Complex number is not support yet"
   end
 
   @impl true
-  def random_normal(%T{type: {s, _} = type, shape: shape} = out, mu, sigma, backend_options)
+  def random_normal(%T{type: {s, _} = type, shape: shape} = out, mu, sigma, _backend_options)
       when s in [:u, :s, :f] do
     mu = to_number(mu)
     sigma = to_number(sigma)
@@ -116,8 +116,8 @@ defmodule Evision.Backend do
     |> to_nx(out)
   end
 
-  def random_normal(%T{type: {:c, s}, shape: _shape} = _out, _min, _max, _backend_options) do
-    raise ArgumentError, "Complex number is not support at Evision.Backend"
+  def random_normal(%T{type: {:c, _}, shape: _shape} = _out, _min, _max, _backend_options) do
+    raise ArgumentError, "Complex number is not support yet"
   end
 
   @impl true
@@ -154,7 +154,7 @@ defmodule Evision.Backend do
   end
 
   @impl true
-  def to_binary(%T{data: %EB{ref: mat}} = tensor, limit) when (is_reference(mat) or is_struct(mat)) and is_integer(limit) and limit >= 0 do
+  def to_binary(%T{data: %EB{ref: mat}}, limit) when (is_reference(mat) or is_struct(mat)) and is_integer(limit) and limit >= 0 do
     Evision.Mat.to_binary!(mat, limit)
   end
 
@@ -169,7 +169,7 @@ defmodule Evision.Backend do
   end
 
   @impl true
-  def as_type(%T{type: type} = out, %T{data: %EB{ref: mat}} = t) do
+  def as_type(%T{type: type} = out, %T{data: %EB{ref: mat}}) do
     Evision.Mat.as_type!(mat, type) |> to_nx(out)
   end
 
@@ -177,12 +177,12 @@ defmodule Evision.Backend do
   def bitcast(out, tensor), do: from_binary(out, Evision.Mat.to_binary!(from_nx(tensor), 0), [])
 
   @impl true
-  def reshape(%T{shape: shape} = out, %T{data: %EB{ref: mat}} = t) do
+  def reshape(%T{shape: shape} = out, %T{data: %EB{ref: mat}}) do
     Evision.Mat.reshape!(mat, Tuple.to_list(shape)) |> to_nx(out)
   end
 
   @impl true
-  def squeeze(out, %T{data: %EB{ref: mat}} = t, _axes) do
+  def squeeze(out, %T{data: %EB{ref: mat}}, _axes) do
     Evision.Mat.squeeze!(mat) |> to_nx(out)
   end
 
@@ -194,13 +194,13 @@ defmodule Evision.Backend do
   end
 
   defp maybe_reshape(%T{shape: {n}} = t, {n, _}, [0]), do: {Nx.reshape(t, {n, 1}), {n, 1}}
-  defp maybe_reshape(%T{shape: shape} = t, to_shape, axes) do
+  defp maybe_reshape(%T{shape: shape} = t, to_shape, _axes) do
     l_shape = Tuple.to_list(shape)
     l_to_shape = Tuple.to_list(to_shape)
 
     if length(l_shape) != length(l_to_shape) do
       src_shape_axis = length(l_shape) - 1
-      {src_shape_axis, force_shape} =
+      {_src_shape_axis, force_shape} =
         for axis <- Enum.to_list(length(l_to_shape)-1..0), reduce: {src_shape_axis, []} do
           {src_shape_axis, acc} ->
             if src_shape_axis == -1 do
@@ -225,8 +225,8 @@ defmodule Evision.Backend do
   @impl true
   def dot(
     %T{type: out_type} = out,
-    a, left_axes, [],
-    b, right_axes, []) do
+    a, _left_axes, [],
+    b, _right_axes, []) do
     Evision.Mat.matrix_multiply!(from_nx(a), from_nx(b), out_type)
     |> to_nx(out)
   end
@@ -241,22 +241,23 @@ defmodule Evision.Backend do
   end
 
   @impl true
-  def transpose(out, %T{shape: shape, type: {_, size}} = tensor, axes) do
+  def transpose(out, %T{shape: shape} = tensor, axes) do
     Evision.Mat.transpose!(from_nx(tensor), axes, as_shape: shape)
     |> to_nx(out)
   end
 
   @impl true
-  def pad(out, tensor, constant, config) do
+  def pad(_out, tensor, _constant, config) do
     case tensor.shape do
       {} ->
         tensor
       {_} ->
-        [{edge_low, edge_high, interior}] = config
+        [{_edge_low, _edge_high, _interior}] = config
       _ ->
         permutation = for i <- 0..(Nx.rank(tensor) - 2), do: i
-        permutation = [Nx.rank(tensor) - 1 | permutation]
+        _permutation = [Nx.rank(tensor) - 1 | permutation]
     end
+    raise RuntimeError, "not implemented yet"
   end
 
   @impl true
@@ -274,7 +275,7 @@ defmodule Evision.Backend do
   end
 
   @impl true
-  def multiply(%T{type: type, shape: shape}=out, %T{shape: lshape}=l, %T{shape: rshape}=r) do
+  def multiply(%T{type: type}=out, %T{}=l, %T{}=r) do
     case check_mul_div_kind(l, r) do
       :per_element ->
         Evision.Mat.multiply!(from_nx(l), from_nx(r), type)
@@ -304,10 +305,10 @@ defmodule Evision.Backend do
     |> to_nx(out)
   end
 
-  defp check_mul_div_kind(%T{shape: {}}=l, r) do
+  defp check_mul_div_kind(%T{shape: {}}, _r) do
     :per_element
   end
-  defp check_mul_div_kind(l, %T{shape: {}}=r) do
+  defp check_mul_div_kind(_l, %T{shape: {}}) do
     :per_element
   end
   defp check_mul_div_kind(_l, _r) do
@@ -322,7 +323,7 @@ defmodule Evision.Backend do
   end
 
   @impl true
-  def min(%T{type: type, shape: out_shape}=out, l, r) do
+  def min(%T{shape: out_shape}=out, l, r) do
     shape =
       case out_shape do
         {} -> {1}
@@ -338,7 +339,7 @@ defmodule Evision.Backend do
   end
 
   @impl true
-  def max(%T{type: type, shape: out_shape}=out, l, r) do
+  def max(%T{shape: out_shape}=out, l, r) do
     shape =
       case out_shape do
         {} -> {1}
@@ -354,23 +355,23 @@ defmodule Evision.Backend do
   end
 
   defp enforce_same_type(%T{type: type}=a, %T{type: type}=b), do: {a, b}
-  defp enforce_same_type(%T{type: a_type={:f, 64}}=a, %T{type: b_type}=b) do
+  defp enforce_same_type(%T{type: a_type={:f, 64}}=a, %T{type: _b_type}=b) do
     new_type = Evision.Mat.as_type!(from_nx(b), a_type)
     b = %T{b | type: a_type}
     {a, to_nx(new_type, b)}
   end
-  defp enforce_same_type(%T{type: a_type}=a, %T{type: b_type={:f, 64}}=b) do
+  defp enforce_same_type(%T{type: _a_type}=a, %T{type: b_type={:f, 64}}=b) do
     new_type = Evision.Mat.as_type!(from_nx(a), b_type)
     a = %T{a | type: b_type}
     {to_nx(new_type, a), b}
   end
 
-  defp enforce_same_type(%T{type: a_type={:f, 32}}=a, %T{type: b_type}=b) do
+  defp enforce_same_type(%T{type: a_type={:f, 32}}=a, %T{type: _b_type}=b) do
     new_type = Evision.Mat.as_type!(from_nx(b), a_type)
     b = %T{b | type: a_type}
     {a, to_nx(new_type, b)}
   end
-  defp enforce_same_type(%T{type: a_type}=a, %T{type: b_type={:f, 32}}=b) do
+  defp enforce_same_type(%T{type: _a_type}=a, %T{type: b_type={:f, 32}}=b) do
     new_type = Evision.Mat.as_type!(from_nx(a), b_type)
     a = %T{a | type: b_type}
     {to_nx(new_type, a), b}
@@ -468,7 +469,7 @@ defmodule Evision.Backend do
        do: {left, right}
 
   @impl true
-  def equal(%T{type: type, shape: out_shape} = out, l, r) do
+  def equal(%T{shape: out_shape} = out, l, r) do
     {l, r} = enforce_same_shape(l, r, out_shape)
     {l, r} = enforce_same_type(l, r)
     from_nx(l)
@@ -477,7 +478,7 @@ defmodule Evision.Backend do
   end
 
   @impl true
-  def not_equal(%T{type: type, shape: out_shape} = out, l, r) do
+  def not_equal(%T{shape: out_shape} = out, l, r) do
     {l, r} = enforce_same_shape(l, r, out_shape)
     {l, r} = enforce_same_type(l, r)
     from_nx(l)
@@ -486,7 +487,7 @@ defmodule Evision.Backend do
   end
 
   @impl true
-  def greater(%T{type: type, shape: out_shape} = out, l, r) do
+  def greater(%T{shape: out_shape} = out, l, r) do
     {l, r} = enforce_same_shape(l, r, out_shape)
     {l, r} = enforce_same_type(l, r)
     from_nx(l)
@@ -495,7 +496,7 @@ defmodule Evision.Backend do
   end
 
   @impl true
-  def less(%T{type: type, shape: out_shape} = out, l, r) do
+  def less(%T{shape: out_shape} = out, l, r) do
     {l, r} = enforce_same_shape(l, r, out_shape)
     {l, r} = enforce_same_type(l, r)
     from_nx(l)
@@ -504,7 +505,7 @@ defmodule Evision.Backend do
   end
 
   @impl true
-  def greater_equal(%T{type: type, shape: out_shape} = out, l, r) do
+  def greater_equal(%T{shape: out_shape} = out, l, r) do
     {l, r} = enforce_same_shape(l, r, out_shape)
     {l, r} = enforce_same_type(l, r)
     from_nx(l)
@@ -513,7 +514,7 @@ defmodule Evision.Backend do
   end
 
   @impl true
-  def less_equal(%T{type: type, shape: out_shape} = out, l, r) do
+  def less_equal(%T{shape: out_shape} = out, l, r) do
     {l, r} = enforce_same_shape(l, r, out_shape)
     {l, r} = enforce_same_type(l, r)
     from_nx(l)
@@ -555,7 +556,7 @@ defmodule Evision.Backend do
   end
 
   @impl true
-  def abs(%T{type: type} = out, tensor) do
+  def abs(%T{} = out, tensor) do
     Evision.Mat.abs!(from_nx(tensor))
     |> to_nx(out)
   end
@@ -566,7 +567,7 @@ defmodule Evision.Backend do
     |> to_nx(out)
   end
 
-  def bitwise_not(%T{type: type} = out, tensor) do
+  def bitwise_not(%T{type: type} = _out, _tensor) do
     raise ArgumentError, "bitwise operators expect integer tensors as inputs " <>
                          "and outputs an integer tensor, got: #{inspect(type)}"
   end
@@ -614,19 +615,19 @@ defmodule Evision.Backend do
   end
 
   @impl true
-  def exp(%T{type: type} = out, tensor) do
+  def exp(%T{} = out, tensor) do
     Evision.exp!(from_nx(tensor))
     |> to_nx(out)
   end
 
   @impl true
-  def expm1(%T{type: type} = out, tensor) do
+  def expm1(%T{} = out, tensor) do
     Evision.Mat.expm1!(from_nx(tensor))
     |> to_nx(out)
   end
 
   @impl true
-  def log(%T{type: type} = out, tensor) do
+  def log(%T{} = out, tensor) do
     Evision.log!(from_nx(tensor))
     |> to_nx(out)
   end
