@@ -2,6 +2,11 @@
 
 ## v0.1.7-dev (main)
 [Browse the Repository](https://github.com/cocoa-xu/evision)
+### Breaking Changes
+- `EVISION_PREFER_PRECOMPILED` is set to `true` by default. 
+   
+   `:evision` will try to use precompiled binaries if available. Otherwise, it will fallback to building from source.
+
 ### Changed
 - `cv::VideoCapture` will be wrapped in struct. For example:
 
