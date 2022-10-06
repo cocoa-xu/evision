@@ -8,7 +8,6 @@ from class_info import ClassInfo
 from class_prop import ClassProp
 from helper import *
 import evision_templates as ET
-from evision_structures import evision_structrised_classes
 
 if sys.version_info[0] >= 3:
     from io import StringIO
@@ -18,7 +17,7 @@ else:
 unique_signatures = {}
 nif_declared = {}
 
-class ElixirModuleGenerator(object):
+class ModuleGenerator(object):
     def __init__(self, module_name: str):
         self.module_name = module_name.strip()
 
@@ -124,9 +123,6 @@ class ElixirModuleGenerator(object):
     def end_erlang(self):
         for function_name, function in self.function['erlang'].items():
             for arity, functions in function.items():
-                self.write_erlang(f"% arity: {arity}\n")
-                self.write_erlang(f"% function_name: {function_name}\n")
-                self.write_erlang(f"% #functions: {len(functions)}\n")
                 if len(functions) == 1:
                     self.write_erlang(functions[0])
                 else:

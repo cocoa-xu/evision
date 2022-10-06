@@ -17,7 +17,7 @@ from helper import *
 from namespace import Namespace
 from func_info import FuncInfo
 from class_info import ClassInfo
-from elixir_module_generator import ElixirModuleGenerator
+from module_generator import ModuleGenerator
 from fixes import evision_elixir_fixes, evision_erlang_fixes
 
 
@@ -61,7 +61,7 @@ class BeamWrapperGenerator(object):
         # src/generated/evision.erl
         self.evision_erlang = StringIO()
 
-        self.evision_ex = ElixirModuleGenerator("Evision")
+        self.evision_ex = ModuleGenerator("Evision")
         self.evision_elixir.write('defmodule Evision do\n')
         self.evision_elixir.write('  import Bitwise\n')
         self.evision_elixir.write('  import Kernel, except: [apply: 2, apply: 3, min: 2, max: 2]\n')
@@ -354,7 +354,7 @@ class BeamWrapperGenerator(object):
         if evision_module_filename in self.evision_modules:
             return self.evision_modules[evision_module_filename], inner_ns
         else:
-            module_file_generator = ElixirModuleGenerator(elixir_module_name)
+            module_file_generator = ModuleGenerator(elixir_module_name)
             module_file_generator.write_elixir(f'defmodule Evision.{elixir_module_name} do\n')
             if elixir_module_name not in ['Flann', 'Segmentation', 'ML']:
                 module_file_generator.write_elixir('  import Kernel, except: [apply: 2, apply: 3]\n')
