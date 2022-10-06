@@ -49,6 +49,10 @@ defmodule Evision.Mat do
     ref
   end
 
+  def __from_struct__(%Nx.Tensor{}=tensor) do
+    Evision.Internal.Structurise.from_struct(tensor)
+  end
+
   def __from_struct__(ref) when is_reference(ref) do
     ref
   end
@@ -444,6 +448,11 @@ defmodule Evision.Mat do
     {:ok, type}
   end
 
+  def type(mat) when is_struct(mat) do
+    mat = Evision.Internal.Structurise.from_struct(mat)
+    :evision_nif.mat_type(img: mat)
+  end
+
   def type(mat) when is_reference(mat) do
     :evision_nif.mat_type(img: mat)
   end
@@ -546,6 +555,11 @@ defmodule Evision.Mat do
     {:ok, shape}
   end
 
+  def shape(mat) when is_struct(mat) do
+    mat = Evision.Internal.Structurise.from_struct(mat)
+    :evision_nif.mat_shape(img: mat)
+  end
+
   def shape(mat) when is_reference(mat) do
     :evision_nif.mat_shape(img: mat)
   end
@@ -558,6 +572,11 @@ defmodule Evision.Mat do
   """
   def channels(%T{channels: channels}) do
     channels
+  end
+
+  def channels(mat) when is_struct(mat) do
+    mat = Evision.Internal.Structurise.from_struct(mat)
+    :evision_nif.mat_type(img: mat)
   end
 
   def channels(mat) when is_reference(mat) do
@@ -600,6 +619,11 @@ defmodule Evision.Mat do
   """
   def raw_type(%T{raw_type: raw_type}) do
     raw_type
+  end
+
+  def raw_type(mat) when is_struct(mat) do
+    mat = Evision.Internal.Structurise.from_struct(mat)
+    :evision_nif.mat_raw_type(img: mat)
   end
 
   def raw_type(mat) when is_reference(mat) do

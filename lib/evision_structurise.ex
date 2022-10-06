@@ -47,6 +47,11 @@ defmodule Evision.Internal.Structurise do
     ref
   end
 
+  def from_struct(%Nx.Tensor{}=tensor) do
+    %Evision.Mat{ref: ref} = Evision.Nx.to_mat!(tensor)
+    ref
+  end
+
   def from_struct(%{ref: ref}) do
     ref
   end
