@@ -18,8 +18,10 @@ jobs:
         include:
           - pair:
               arch: x86_64
+              arch_name: x86_64
           - pair:
               arch: arm64
+              arch_name: aarch64
 
     steps:
       - uses: actions/checkout@v3
@@ -82,7 +84,7 @@ jobs:
 
       - name: Create precompiled library
         run: |
-          export PKG_NAME=evision-${{ matrix.pair.arch }}-apple-darwin-${GITHUB_REF##*/v}
+          export PKG_NAME=evision-${{ matrix.pair.arch_name }}-apple-darwin-${GITHUB_REF##*/v}
           mkdir -p "${PKG_NAME}"
           cp -a _build/${MIX_ENV}/lib/evision/priv "${PKG_NAME}"
           cp -a lib/generated "${PKG_NAME}/elixir_generated"

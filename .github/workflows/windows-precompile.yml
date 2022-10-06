@@ -26,7 +26,7 @@ jobs:
       - uses: ilammy/msvc-dev-cmd@v1
         with:
           arch: x64
-      
+
       - name: Cache mix packages
         id: cache-mix-deps
         uses: actions/cache@v3
@@ -78,7 +78,7 @@ jobs:
       - name: Create precompiled library
         shell: bash
         run: |
-          export PKG_NAME=evision-amd64-windows-msvc-${GITHUB_REF##*/v}
+          export PKG_NAME=evision-x86_64-windows-msvc-${GITHUB_REF##*/v}
           mkdir -p "${PKG_NAME}"
           rm -rf "_build/${MIX_ENV}/lib/evision/priv/x64"
           cp -a _build/${MIX_ENV}/lib/evision/priv "${PKG_NAME}"

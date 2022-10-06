@@ -7,6 +7,13 @@
    
    `:evision` will try to use precompiled binaries if available. Otherwise, it will fallback to building from source.
 
+- Precompiled binary filename changed:
+
+  ```
+  arm64-apple-darwin => aarch64-apple-darwin
+  amd64-apple-darwin => x86_64-windows-msvc
+  ```
+
 ### Changed
 - `cv::VideoCapture` will be wrapped in struct. For example:
 

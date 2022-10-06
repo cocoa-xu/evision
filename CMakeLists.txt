@@ -13,7 +13,7 @@ endif()
 message(STATUS "Using PRIV_DIR: ${PRIV_DIR}")
 
 set(EVISION_AVAILABLE_PRECOMPILED_BINARIES
-    "arm64-apple-darwin"
+    "aarch64-apple-darwin"
     "x86_64-apple-darwin"
     "aarch64-linux-gnu"
     "aarch64-linux-musl"
@@ -24,7 +24,7 @@ set(EVISION_AVAILABLE_PRECOMPILED_BINARIES
     "s390x-linux-gnu"
     "riscv64-linux-gnu"
     "riscv64-linux-musl"
-    "amd64-windows-msvc"
+    "x86_64-windows-msvc"
 )
 
 if(EVISION_PREFER_PRECOMPILED STREQUAL "true")
@@ -32,6 +32,12 @@ if(EVISION_PREFER_PRECOMPILED STREQUAL "true")
 
     string(TOLOWER "${CMAKE_SYSTEM_NAME}" PRECOMPILED_SYSTEM_NAME)
     string(TOLOWER "${CMAKE_SYSTEM_PROCESSOR}" PRECOMPILED_PROCESSOR_ARCH)
+
+    if("${PRECOMPILED_PROCESSOR_ARCH}" STREQUAL "amd64")
+        set(PRECOMPILED_PROCESSOR_ARCH "x86_64")
+    elseif("${PRECOMPILED_PROCESSOR_ARCH}" STREQUAL "arm64")
+        set(PRECOMPILED_PROCESSOR_ARCH "aarch64")
+    endif()
 
     if("${PRECOMPILED_SYSTEM_NAME}" STREQUAL "darwin")
         set(PRECOMPILE_TARGET_TRIPLET "${PRECOMPILED_PROCESSOR_ARCH}-apple-darwin")
