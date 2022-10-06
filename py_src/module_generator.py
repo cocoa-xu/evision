@@ -31,7 +31,7 @@ class ModuleGenerator(object):
         #   value: dict
         #     key: function_arity
         #     value: list
-        #       entry: function_code
+        #       entry: (number_guards, function_code)
         self.function = {
             "elixir": {},
             "erlang": {}
@@ -116,7 +116,8 @@ class ModuleGenerator(object):
                         self.write_elixir('\n  """\n')
                     # function group
                     self.write_elixir(docs_mfa[0][1])
-                for function_code in functions:
+                functions = sorted(functions, key=lambda x: -x[0])
+                for _, function_code in functions:
                     self.write_elixir(function_code)
         self.write_elixir("end\n")
 
@@ -124,11 +125,12 @@ class ModuleGenerator(object):
         for function_name, function in self.function['erlang'].items():
             for arity, functions in function.items():
                 if len(functions) == 1:
-                    self.write_erlang(functions[0])
+                    self.write_erlang(functions[0][1])
                 else:
-                    for function_code in functions[:-1]:
+                    functions = sorted(functions, key=lambda x: -x[0])
+                    for _, function_code in functions[:-1]:
                         self.write_erlang(function_code[:-3] + ';\n')
-                    self.write_erlang(functions[-1])
+                    self.write_erlang(functions[-1][1])
 
     def gen_constructor(self, full_qualified_name: str, constructor: str, func: FuncInfo, namespace_list: list):
         self._process_function(full_qualified_name, name=constructor, func=func, is_ns=False, is_constructor=True, namespace_list=namespace_list)
@@ -207,7 +209,7 @@ class ModuleGenerator(object):
 
         for kind, template in property_templates.items():
             self.register_nif(kind, nif_name, template)
-            self.add_function(kind, func_name, func_arity, property_code[kind])
+            self.add_function(kind, func_name, func_arity, 0, property_code[kind])
 
     def _process_function(self, full_qualified_name: str, name: str, func: FuncInfo, is_ns: bool, is_constructor: bool, namespace_list: list):
         # ======== step 1. get wrapper name and ensure function name starts with a lowercase letter ========
@@ -353,7 +355,7 @@ class ModuleGenerator(object):
                         func_args_with_opts = f'{positional_var}{opts_args}'
 
                     if is_instance_method:
-                        self_arg = {'elixir': 'self', 'erlang': 'Self'}
+                        self_arg = {'elixir': 'Evision.Internal.Structurise.from_struct(self)', 'erlang': 'Self'}
                         func_args = f'{self_arg[kind]}, {func_args}'
                         if len(func_args_with_opts) > 0:
                             func_args_with_opts = f'{self_arg[kind]}, {func_args_with_opts}'
@@ -362,7 +364,7 @@ class ModuleGenerator(object):
                         func_arity = 2
                         if kind == 'elixir':
                             function_code.write(f'  def {module_func_name}(self, opts \\\\ [])\n'
-                                f'  def {module_func_name}(self, opts) when is_list(opts) do\n'
+                                f'  def {module_func_name}(self, opts) when is_list(opts) and (opts == [] or is_tuple(hd(opts))) do\n'
                                 '    self = Evision.Internal.Structurise.from_struct(self)\n'
                                 '    opts = Evision.Internal.Structurise.from_struct(opts)\n'
                                 f'    :evision_nif.{nif_name}(self, opts)\n'
@@ -371,22 +373,22 @@ class ModuleGenerator(object):
                             if not self.has_deferror(func_name, func_arity):
                                 function_code.write(f"  deferror {module_func_name}(self, opts)\n\n")
                                 self.register_deferror(func_name, func_arity)
-                            self.add_function(kind, module_func_name, func_arity, function_code.getvalue())
+                            self.add_function(kind, module_func_name, func_arity, guards_count=3, generated_code=function_code.getvalue())
                             self.add_function_docs(kind, module_func_name, 2, inline_doc, function_group)
                         elif kind == 'erlang':
                             function_code.write(f'{module_func_name}(Self) ->\n'
                                 f'  evision_nif:{nif_name}(Self, []).\n')
-                            self.add_function(kind, module_func_name, 1, function_code.getvalue())
+                            self.add_function(kind, module_func_name, 1, guards_count=0, generated_code=function_code.getvalue())
                             function_code = StringIO()
                             function_code.write(f'{module_func_name}(Self, Options) when is_list(Options), is_tuple(hd(Options)), tuple_size(hd(Options)) == 2 ->\n'
                                 f'  evision_nif:{nif_name}(Self, Options).\n')
-                            self.add_function(kind, module_func_name, 2, function_code.getvalue())
+                            self.add_function(kind, module_func_name, 2, guards_count=3, generated_code=function_code.getvalue())
                         continue
 
                     if func_name.startswith(evision_nif_prefix() + "dnn_dnn_Net") and (module_func_name == "getLayerShapes" or module_func_name == "getLayersShapes"):
                         func_arity = 2
                         if kind == 'elixir':
-                            function_code.write(f'  def {module_func_name}(self, opts \\\\ []) when is_list(opts) do\n'
+                            function_code.write(f'  def {module_func_name}(self, opts \\\\ []) when is_list(opts) and (opts == [] or is_tuple(hd(opts))) do\n'
                                 '    self = Evision.Internal.Structurise.from_struct(self)\n'
                                 '    opts = Evision.Internal.Structurise.from_struct(opts)\n'
                                 f'    :evision_nif.{nif_name}(self, opts)\n'
@@ -395,16 +397,16 @@ class ModuleGenerator(object):
                             if not self.has_deferror(func_name, func_arity):
                                 function_code.write(f"  deferror {module_func_name}(self, opts)\n\n")
                                 self.register_deferror(func_name, func_arity)
-                            self.add_function(kind, module_func_name, func_arity, function_code.getvalue())
+                            self.add_function(kind, module_func_name, func_arity, guards_count=3, generated_code=function_code.getvalue())
                             self.add_function_docs(kind, module_func_name, 2, inline_doc, function_group)
                         elif kind == 'erlang':
                             function_code.write(f'{module_func_name}(Self) ->\n'
                                 f'  evision_nif:{nif_name}(Self, []).\n')
-                            self.add_function(kind, module_func_name, 1, function_code.getvalue())
+                            self.add_function(kind, module_func_name, function_arity=1, guards_count=0, generated_code=function_code.getvalue())
                             function_code = StringIO()
                             function_code.write(f'{module_func_name}(Self, Options) when is_list(Options), is_tuple(hd(Options)), tuple_size(hd(Options)) == 2 ->\n'
                                 f'  evision_nif:{nif_name}(Self, Options).\n')
-                            self.add_function(kind, module_func_name, 2, function_code.getvalue())
+                            self.add_function(kind, module_func_name, function_arity=2, guards_count=3, generated_code=function_code.getvalue())
                         continue
 
                     # if func_args_with_opts is not None
@@ -417,7 +419,7 @@ class ModuleGenerator(object):
                         if len(when_guard_with_opts.strip()) > 0:
                             # when there are some positional args
                             if kind == 'elixir':
-                                when_guard_with_opts = f' {when_guard_with_opts.strip()} and is_list(opts)\n  '
+                                when_guard_with_opts = f' {when_guard_with_opts.strip()} and is_list(opts) and (opts == [] or is_tuple(hd(opts)))\n  '
                             elif kind == 'erlang':
                                 when_guard_with_opts = f' {when_guard_with_opts.strip()}, is_list(Options), is_tuple(hd(Options)), tuple_size(hd(Options)) == 2'
                             else:
@@ -425,7 +427,7 @@ class ModuleGenerator(object):
                         else:
                             # when there is no positional args
                             if kind == 'elixir':
-                                when_guard_with_opts = ' when is_list(opts)\n  '
+                                when_guard_with_opts = ' when is_list(opts) and (opts == [] or is_tuple(hd(opts)))\n  '
                             elif kind == 'erlang':
                                 when_guard_with_opts = ' when is_list(Options), is_tuple(hd(Options)), tuple_size(hd(Options)) == 2'
                             else:
@@ -457,7 +459,7 @@ class ModuleGenerator(object):
                             raise RuntimeError(f"unknown kind `{kind}`")
 
                         # add this function to the collection
-                        self.add_function(kind, module_func_name, func_arity, function_code.getvalue())
+                        self.add_function(kind, module_func_name, func_arity, guards_count=3 + len(func_guard), generated_code=function_code.getvalue())
                         # "empty" buffer in function_code
                         # so that we can use it later
                         function_code = StringIO()
@@ -488,7 +490,7 @@ class ModuleGenerator(object):
                     else:
                         raise RuntimeError(f"unknown kind `{kind}`")
                     # add this function to the collection
-                    self.add_function(kind, module_func_name, func_arity, function_code.getvalue())
+                    self.add_function(kind, module_func_name, func_arity, guards_count=len(func_guard), generated_code=function_code.getvalue())
 
     def _reject_ns_func(self, full_qualified_name: str, class_name: str, func_name: str):
         if func_name != f'{evision_nif_prefix()}{class_name}':
@@ -565,7 +567,7 @@ class ModuleGenerator(object):
             self.nif_declaration[kind].write(nif_declaration)
             nif_declared[kind][nif_name] = True
 
-    def add_function(self, kind: str, function_name: str, function_arity: int, generated_code: str):
+    def add_function(self, kind: str, function_name: str, function_arity: int, guards_count: int, generated_code: str):
         if self.function.get(kind, None) is None:
             self.function[kind] = {}
         function_dict = self.function[kind]
@@ -573,7 +575,7 @@ class ModuleGenerator(object):
             function_dict[function_name] = {}
         if function_arity not in function_dict[function_name]:
             function_dict[function_name][function_arity] = []
-        function_dict[function_name][function_arity].append(generated_code)
+        function_dict[function_name][function_arity].append((guards_count, generated_code))
 
     def add_function_docs(self, kind: str, function_name: str, function_arity: int, inline_docs: str, function_group: str):
         if self.inline_docs.get(kind, None) is None:
