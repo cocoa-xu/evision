@@ -76,6 +76,93 @@
   export EVISION_GENERATE_LANG="erlang,elixir"
   ```
 
+- Better inline docs.
+  - Inline docs will have a section for `Positional Arguments` and a section for `Keyword Arguments`. For example,
+
+    ```elixir
+    @doc """
+    ### Positional Arguments
+    - **bboxes**: vector_Rect2d. 
+    - **scores**: vector_float. 
+    - **score_threshold**: float. 
+    - **nms_threshold**: float. 
+
+    ### Keyword Arguments
+    - **eta**: float.
+    - **top_k**: int.
+
+    Performs non maximum suppression given boxes and corresponding scores.
+
+    Python prototype (for reference): 
+    \```
+    NMSBoxes(bboxes, scores, score_threshold, nms_threshold[, eta[, top_k]]) -> indices
+    \```
+    """
+    @doc namespace: :"cv.dnn"
+    def nmsBoxes(bboxes, scores, score_threshold, nms_threshold, opts)
+    ```
+
+  - If a function (same name and arity) has multiple variants, the inline docs will show each of them in section `## Variant VAR_INDEX`. For example,
+  
+    ```elixir
+    @doc """
+    ## Variaint 1:
+
+    ### Positional Arguments
+    - **dx**: UMat. 
+    - **dy**: UMat. 
+    - **threshold1**: double. 
+    - **threshold2**: double. 
+
+    ### Keyword Arguments
+    - **edges**: UMat.
+    - **l2gradient**: bool.
+
+      \\overload
+      Finds edges in an image using the Canny algorithm with custom image gradient.
+        \\f$=\\sqrt{(dI/dx)^2 + (dI/dy)^2}\\f$ should be used to calculate the image gradient magnitude (
+        L2gradient=true ), or whether the default \\f$L\\_1\\f$ norm \\f$=|dI/dx|+|dI/dy|\\f$ is enough (
+        L2gradient=false ).
+
+    Python prototype (for reference): 
+    \```
+    Canny(dx, dy, threshold1, threshold2[, edges[, L2gradient]]) -> edges
+    \```
+    ## Variaint 2:
+
+    ### Positional Arguments
+    - **image**: UMat. 
+    - **threshold1**: double. 
+    - **threshold2**: double. 
+
+    ### Keyword Arguments
+    - **edges**: UMat.
+    - **apertureSize**: int.
+    - **l2gradient**: bool.
+
+    Finds edges in an image using the Canny algorithm @cite Canny86 .
+      The function finds edges in the input image and marks them in the output map edges using the
+      Canny algorithm. The smallest value between threshold1 and threshold2 is used for edge linking. The
+      largest value is used to find initial segments of strong edges. See
+      <http://en.wikipedia.org/wiki/Canny_edge_detector>
+        \\f$=\\sqrt{(dI/dx)^2 + (dI/dy)^2}\\f$ should be used to calculate the image gradient magnitude (
+        L2gradient=true ), or whether the default \\f$L\\_1\\f$ norm \\f$=|dI/dx|+|dI/dy|\\f$ is enough (
+        L2gradient=false ).
+
+    Python prototype (for reference): 
+    \```
+    Canny(image, threshold1, threshold2[, edges[, apertureSize[, L2gradient]]]) -> edges
+    \```
+
+    """
+    @doc namespace: :cv
+    def canny(image, threshold1, threshold2, opts)
+    when (is_reference(image) or is_struct(image)) and is_number(threshold1) and is_number(threshold2) and is_list(opts) and (opts == [] or is_tuple(hd(opts))), do: # variant 2
+
+    def canny(dx, dy, threshold1, threshold2)
+    when (is_reference(dx) or is_struct(dx)) and (is_reference(dy) or is_struct(dy)) and is_number(threshold1) and is_number(threshold2), do: # variant 1
+    ```
+
 ### Added
 - Added `Evision.Mat.literal/{1,2,3}` to create `Evision.Mat` from list literals.
 
