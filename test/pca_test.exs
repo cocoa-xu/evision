@@ -1,6 +1,6 @@
 defmodule Evision.PCA.Test do
   use ExUnit.Case
-  use Bitwise
+  import Bitwise
   alias Evision, as: Cv
 
   @moduletag timeout: 120_000
