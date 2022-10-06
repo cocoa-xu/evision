@@ -12,6 +12,7 @@ static ERL_NIF_TERM evision_cv_mat_clip(ErlNifEnv *env, int argc, const ERL_NIF_
     std::map<std::string, ERL_NIF_TERM> erl_terms;
     int nif_opts_index = 0;
     evision::nif::parse_arg(env, nif_opts_index, argv, erl_terms);
+    int error_flag = false;
 
     {
         Mat img;
@@ -21,13 +22,17 @@ static ERL_NIF_TERM evision_cv_mat_clip(ErlNifEnv *env, int argc, const ERL_NIF_
         if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "lower"), lower, ArgInfo("lower", 0)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "upper"), upper, ArgInfo("upper", 0))) {
-            img.setTo(lower, img < lower);
-            img.setTo(upper, img > upper);
-            return evision::nif::ok(env, evision_from(env, img));
+            ERRWRAP2(img.setTo(lower, img < lower), env, error_flag, error_term);
+            if (!error_flag) {
+                ERRWRAP2(img.setTo(lower, img > lower), env, error_flag, error_term);
+                if (!error_flag) {
+                    return evision::nif::ok(env, evision_from(env, img));
+                }
+            }
         }
     }
 
-    if (error_term != 0) return error_term;
+    if (error_flag) return error_term;
     else return evision::nif::error(env, "overload resolution failed");
 }
 

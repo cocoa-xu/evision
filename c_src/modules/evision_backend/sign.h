@@ -12,19 +12,26 @@ static ERL_NIF_TERM evision_cv_mat_sign(ErlNifEnv *env, int argc, const ERL_NIF_
     std::map<std::string, ERL_NIF_TERM> erl_terms;
     int nif_opts_index = 0;
     evision::nif::parse_arg(env, nif_opts_index, argv, erl_terms);
+    int error_flag = false;
 
     {
         Mat img;
 
         if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0))) {
-            img.setTo(1, img > 0);
-            img.setTo(0, img == 0);
-            img.setTo(-1, img < 0);
-            return evision::nif::ok(env, evision_from(env, img));
+            ERRWRAP2(img.setTo(1, img > 0), env, error_flag, error_term);
+            if (!error_flag) {
+                ERRWRAP2(img.setTo(0, img == 0), env, error_flag, error_term);
+                if (!error_flag) {
+                    ERRWRAP2(img.setTo(-1, img < 0), env, error_flag, error_term);
+                    if (!error_flag) {
+                        return evision::nif::ok(env, evision_from(env, img));
+                    }
+                }
+            }
         }
     }
 
-    if (error_term != 0) return error_term;
+    if (error_flag) return error_term;
     else return evision::nif::error(env, "overload resolution failed");
 }
 

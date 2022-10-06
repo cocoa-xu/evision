@@ -20,8 +20,14 @@ static ERL_NIF_TERM evision_cv_mat_subtract(ErlNifEnv *env, int argc, const ERL_
         if (evision_to_safe(env, evision_get_kw(env, erl_terms, "l"), l, ArgInfo("l", 0)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "r"), r, ArgInfo("r", 0))) {
             Mat ret;
-            cv::subtract(l, r, ret, cv::noArray(), -1);
-            return evision::nif::ok(env, evision_from(env, ret));
+
+            int error_flag = false;
+            ERRWRAP2(cv::subtract(l, r, ret, cv::noArray(), -1), env, error_flag, error_term);
+            if (!error_flag) {
+                return evision::nif::ok(env, evision_from(env, ret));
+            } else {
+                return error_term;
+            }
         }
     }
 
