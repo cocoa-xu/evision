@@ -14,6 +14,7 @@ jobs:
       OTP_VERSION: "25.0.4"
       ELIXIR_VERSION: "1.14.0"
       EVISION_PREFER_PRECOMPILED: "false"
+      EVISION_GENERATE_LANG: "erlang,elixir"
     strategy:
       fail-fast: false
       matrix:

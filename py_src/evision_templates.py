@@ -272,6 +272,28 @@ code_ret_constructor_structurise = """ERL_NIF_TERM ret = enif_make_resource(env,
         enif_release_resource(self);
         return evision::nif::ok(env, evision_from_as_map<Ptr<%s>>(env, self->val, ret));"""
 
+elixir_property_getter = Template("""  def get_${property_name}(self) do
+    :evision_nif.${nif_name}(Evision.Internal.Structurise.from_struct(self))
+    |> Evision.Internal.Structurise.to_struct()
+  end
+""")
+
+erlang_property_getter = Template("""get_${property_name}(Self) ->
+    evision_nif:${nif_name}(Self).
+
+""")
+
+elixir_property_setter = Template("""  def set_${property_name}(self, prop) do
+    :evision_nif.${nif_name}(Evision.Internal.Structurise.from_struct(self), [${property_name}: Evision.Internal.Structurise.from_struct(prop)])
+    |> Evision.Internal.Structurise.to_struct()
+  end
+""")
+
+erlang_property_setter = Template("""set_${property_name}(Self, Prop) ->
+    evision_nif:${nif_name}(Self, [{${property_name}, Prop}]).
+
+""")
+
 # template for `Evision.__enabled_modules__/0`
 enabled_modules_code = Template("""
   @doc \"\"\"

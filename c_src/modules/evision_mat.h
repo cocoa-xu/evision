@@ -605,7 +605,7 @@ static ERL_NIF_TERM evision_cv_mat_size(ErlNifEnv *env, int argc, const ERL_NIF_
         Mat img;
 
         if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0))) {
-            ERL_NIF_TERM p;
+            ERL_NIF_TERM p = 0;
             evision::nif::make_i32_list_from_c_array(env, img.size.dims(), img.size.p, p);
             ERL_NIF_TERM dims = enif_make_int64(env, img.size.dims());
             return enif_make_tuple2(env, dims, p);

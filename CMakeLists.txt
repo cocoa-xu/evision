@@ -13,7 +13,7 @@ endif()
 message(STATUS "Using PRIV_DIR: ${PRIV_DIR}")
 
 set(EVISION_AVAILABLE_PRECOMPILED_BINARIES
-    "arm64-apple-darwin"
+    "aarch64-apple-darwin"
     "x86_64-apple-darwin"
     "aarch64-linux-gnu"
     "aarch64-linux-musl"
@@ -24,7 +24,7 @@ set(EVISION_AVAILABLE_PRECOMPILED_BINARIES
     "s390x-linux-gnu"
     "riscv64-linux-gnu"
     "riscv64-linux-musl"
-    "amd64-windows-msvc"
+    "x86_64-windows-msvc"
 )
 
 if(EVISION_PREFER_PRECOMPILED STREQUAL "true")
@@ -32,6 +32,12 @@ if(EVISION_PREFER_PRECOMPILED STREQUAL "true")
 
     string(TOLOWER "${CMAKE_SYSTEM_NAME}" PRECOMPILED_SYSTEM_NAME)
     string(TOLOWER "${CMAKE_SYSTEM_PROCESSOR}" PRECOMPILED_PROCESSOR_ARCH)
+
+    if("${PRECOMPILED_PROCESSOR_ARCH}" STREQUAL "amd64")
+        set(PRECOMPILED_PROCESSOR_ARCH "x86_64")
+    elseif("${PRECOMPILED_PROCESSOR_ARCH}" STREQUAL "arm64")
+        set(PRECOMPILED_PROCESSOR_ARCH "aarch64")
+    endif()
 
     if("${PRECOMPILED_SYSTEM_NAME}" STREQUAL "darwin")
         set(PRECOMPILE_TARGET_TRIPLET "${PRECOMPILED_PROCESSOR_ARCH}-apple-darwin")
@@ -187,16 +193,16 @@ else()
     if(WIN32)
         execute_process(COMMAND "rmdir ${GENERATED_ELIXIR_SRC_DIR} /s /q && rmdir ${GENERATED_ERLANG_SRC_DIR} /s /q  && mkdir ${GENERATED_ELIXIR_SRC_DIR} && mkdir ${GENERATED_ERLANG_SRC_DIR}")
         message("enabled modules: ${ENABLED_CV_MODULES}")
-        execute_process(COMMAND python3.exe "${PY_SRC}\\gen2.py" "${C_SRC}" "${GENERATED_ELIXIR_SRC_DIR}" "${GENERATED_ERLANG_SRC_DIR}" "${C_SRC}\\headers.txt" "${ENABLED_CV_MODULES}" RESULT_VARIABLE STATUS)
+        execute_process(COMMAND python3.exe "${PY_SRC}\\gen2.py" "${C_SRC}" "${GENERATED_ELIXIR_SRC_DIR}" "${GENERATED_ERLANG_SRC_DIR}" "${C_SRC}\\headers.txt" "${EVISION_GENERATE_LANG}" "${ENABLED_CV_MODULES}" RESULT_VARIABLE STATUS)
     else()
         execute_process(COMMAND bash -c "rm -rf ${GENERATED_ELIXIR_SRC_DIR} && rm -rf ${GENERATED_ERLANG_SRC_DIR} && mkdir -p ${GENERATED_ELIXIR_SRC_DIR} && mkdir -p ${GENERATED_ERLANG_SRC_DIR}")
         message("enabled modules: ${ENABLED_CV_MODULES}")
-        execute_process(COMMAND bash -c "python3 ${PY_SRC}/gen2.py ${C_SRC} ${GENERATED_ELIXIR_SRC_DIR} ${GENERATED_ERLANG_SRC_DIR} ${C_SRC}/headers.txt ${ENABLED_CV_MODULES}" RESULT_VARIABLE STATUS)
+        execute_process(COMMAND bash -c "python3 ${PY_SRC}/gen2.py ${C_SRC} ${GENERATED_ELIXIR_SRC_DIR} ${GENERATED_ERLANG_SRC_DIR} ${C_SRC}/headers.txt ${EVISION_GENERATE_LANG} ${ENABLED_CV_MODULES}" RESULT_VARIABLE STATUS)
     endif()
     if(STATUS STREQUAL "0")
-        message("Successfully generated Erlang/Elixir bindings")
+        message(STATUS "Successfully generated binding code for: ${EVISION_GENERATE_LANG}")
     else()
-        message(FATAL_ERROR "Failed to generate Erlang/Elixir bindings")
+        message(FATAL_ERROR "Failed to generate binding code for: ${EVISION_GENERATE_LANG}")
     endif()
 
     if(WIN32)

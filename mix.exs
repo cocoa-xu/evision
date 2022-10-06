@@ -58,7 +58,8 @@ defmodule Evision.MixProject do
         "ENABLED_CV_MODULES" => enabled_modules,
         "EVISION_PREFER_PRECOMPILED" => System.get_env("EVISION_PREFER_PRECOMPILED", "true"),
         "EVISION_PRECOMPILED_VERSION" => @last_released_version,
-        "TARGET_ABI" => System.get_env("TARGET_ABI", target_abi)
+        "TARGET_ABI" => System.get_env("TARGET_ABI", target_abi),
+        "EVISION_GENERATE_LANG" => System.get_env("EVISION_GENERATE_LANG", "elixir"),
       }
     ]
   end

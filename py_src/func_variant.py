@@ -1,12 +1,16 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from helper import handle_ptr, forbidden_arg_types, ignored_arg_types
+from io import StringIO
+from pydoc import describe
+from helper import handle_ptr, forbidden_arg_types, ignored_arg_types, map_argtype_to_guard, map_argname, map_argtype_to_type, handle_inline_math_escaping
 from arg_info import ArgInfo
+import re
 
 
 class FuncVariant(object):
     def __init__(self, classname, name, decl, isconstructor, isphantom=False):
+        self.inline_docs_code_type_re = re.compile(r'@code{.(.*)}')
         self.classname = classname
         self.from_base = False
         self.base_classname = None
@@ -118,3 +122,219 @@ class FuncVariant(object):
             if argno >= 0:
                 self.args[argno].py_outputarg = True
         self.py_outlist = outlist
+
+    @property
+    def pos_end(self):
+        return len(self.py_arglist) if not self.has_opts else -self.py_noptargs
+
+    @property
+    def has_opts(self):
+        return self.py_noptargs > 0
+
+    @property
+    def min_args(self):
+        return len(self.py_arglist) - self.py_noptargs
+
+    def function_guard(self, kind: str):
+        return list(filter(lambda x: x != '', [map_argtype_to_guard(kind, map_argname(kind, argname), argtype) for argname, _, argtype in self.py_arglist[:self.pos_end]]))
+
+    def function_signature(self):
+        return ''.join(filter(lambda x: x != '', [map_argtype_to_type(argtype) for _, _, argtype in self.py_arglist[:self.pos_end]]))
+    
+    def inline_docs(self, kind):
+        if kind == 'elixir':
+            return self.inline_docs_elixir()
+        else:
+            return ''
+
+    def inline_docs_elixir(self):
+        parameter_info = {}
+        doc_string = "\n".join('    {}'.format(line.strip()) for line in self.docstring.split("\n")).strip()
+        if len(doc_string) > 0:
+            doc_string = f'\n    {doc_string}\n'
+        else:
+            doc_string = '\n'
+
+        opt_doc = ''
+        prototype = f'    Python prototype (for reference): {self.py_prototype}'
+        if self.has_opts:
+            opt_doc = '\n'.join(['    @optional {}: {}'.format(arg_name, argtype) for (arg_name, _, argtype) in self.py_arglist[-self.py_noptargs:]])
+            opt_doc += '\n'
+
+        inline_doc = f'\n  @doc """<evision_param_info>\n{doc_string}{opt_doc}{prototype}\n'
+        inline_doc1 = ""
+        last_in_list = False
+        last_is_code = False
+        for line in inline_doc.split("\n"):
+            line = line.replace("\\", r"\\")
+            line = line.replace(r"\\\\", r"\\\\\\\\")
+            strip_line = line.strip()
+            if strip_line.startswith("*"):
+                strip_line = strip_line[1:].strip()
+                line = line.replace("*", "", 1)
+            if strip_line.startswith('"""'):
+                strip_line = strip_line.replace('"""', r'\"\"\"', 1)
+                line = line.replace('"""', r'\"\"\"', 1)
+            if strip_line == "=":
+                inline_doc = inline_doc[:-1] + "="
+                continue
+
+            if strip_line.startswith("@"):
+                if strip_line != "@doc \"\"\"":
+                    if strip_line.startswith("@brief"):
+                        inline_doc1 += "  {}\n".format(strip_line[len("@brief"):].strip())
+                        last_in_list = False
+                    elif strip_line.startswith("@overload"):
+                        inline_doc1 += "  Has overloading in C++\n\n"
+                        last_in_list = False
+                    elif strip_line.startswith("@note"):
+                        inline_doc1 += "  **Note**: {}\n".format(strip_line[len("@note"):].strip())
+                        last_in_list = False
+                    elif strip_line.startswith("@param") or strip_line.startswith("@optional"):
+                        # expecting:
+                        # @param <ARG_NAME>[ <DESCRIPTION GOES HERE>]
+                        # @optional <ARG_NAME>[ <DESCRIPTION GOES HERE>]
+                        arg_desc = strip_line.split(' ', 3)
+                        normalized_arg_name = map_argname('elixir', arg_desc[1])
+                        normalized_arg_name = normalized_arg_name.replace(":", "")
+                        is_optional = strip_line.startswith("@optional")
+                        description = ''
+                        if len(arg_desc) == 3:
+                            description = arg_desc[2]
+                        parameter_info[normalized_arg_name] = {
+                            "is_optional": is_optional,
+                            "desc": description
+                        }
+                        last_in_list = True
+                    elif strip_line.startswith("@code"):
+                        last_in_list = False
+                        last_is_code = True
+                        code_type_match = self.inline_docs_code_type_re.match(strip_line)
+                        inline_doc1 += "  ```"
+                        if code_type_match:
+                            inline_doc1 += code_type_match.group(1)
+                        inline_doc1 += "\n"
+                    elif strip_line.startswith("@endcode"):
+                        last_in_list = False
+                        last_is_code = False
+                        inline_doc1 += "  ```\n"
+                    else:
+                        inline_doc1 += "  {}\n".format(strip_line)
+                        last_in_list = False
+                else:
+                    inline_doc1 += "  @doc \"\"\"\n"
+            elif strip_line.startswith("Python prototype (for reference): "):
+                inline_doc1 += "\n  Python prototype (for reference): \n  ```\n  {}\n  ```\n".format(strip_line[len("Python prototype (for reference): "):])
+                last_in_list = False
+            elif len(strip_line) != 0:
+                if last_is_code:
+                    inline_doc1 += "  {}\n".format(strip_line)
+                else:
+                    inline_doc1 += "{}{}\n".format("  " if last_in_list else "", line)
+            else:
+                last_in_list = False
+        inline_doc = inline_doc1.replace('@doc """', '').strip()
+        inline_doc = handle_inline_math_escaping(inline_doc)
+        parameter_info_doc = StringIO()
+        if self.py_noptargs > 0:
+            parameter_info_doc.write("\n  ### Positional Arguments\n")
+            for (arg_name, _, argtype) in self.py_arglist[:self.pos_end]:
+                normalized_arg_name = map_argname('elixir', arg_name)
+                normalized_arg_name = normalized_arg_name.replace(":", "")
+                if parameter_info.get(normalized_arg_name, None) is None:
+                    parameter_info_doc.write(f"  - **{normalized_arg_name}**: {argtype}\n")
+                else:
+                    info = parameter_info[normalized_arg_name]
+                    parameter_info_doc.write(f"  - **{normalized_arg_name}**: {argtype}. {info['desc']}\n")
+            parameter_info_doc.write("\n")
+
+        if self.has_opts:
+            parameter_info_doc.write("  ### Keyword Arguments\n")
+            for (arg_name, _, argtype) in self.py_arglist[self.pos_end:]:
+                normalized_arg_name = map_argname('elixir', arg_name)
+                normalized_arg_name = normalized_arg_name.replace(":", "")
+                if parameter_info.get(normalized_arg_name, None) is None:
+                    parameter_info_doc.write(f"  - **{normalized_arg_name}**: {argtype}\n")
+                else:
+                    info = parameter_info[normalized_arg_name]
+                    if argtype == info['desc']:
+                        parameter_info_doc.write(f"  - **{normalized_arg_name}**: {argtype}.\n")
+                    else:
+                        parameter_info_doc.write(f"  - **{normalized_arg_name}**: {argtype}. {info['desc']}\n")
+        return inline_doc.replace('<evision_param_info>', parameter_info_doc.getvalue())
+
+    def opts_args(self, kind: str, in_func_body: bool = False):
+        if self.has_opts:
+            if kind == 'elixir':
+                return self.opts_args_elixir(in_func_body=in_func_body)
+            elif kind == 'erlang':
+                return self.opts_args_erlang(in_func_body=in_func_body)
+            else:
+                print(f'warning: opt_args: unknown kind `{kind}`')
+                return ''
+        else:
+            return ''
+
+    def opts_args_elixir(self, in_func_body: bool = False):
+        opts_args = ''
+        if self.has_opts:
+            if in_func_body:
+                opts_args = ' ++ Evision.Internal.Structurise.from_struct(opts)'
+            else:
+                opts_args = 'opts' if self.min_args == 0 else ', opts'
+        return opts_args
+
+    def opts_args_erlang(self, in_func_body: bool = False):
+        opts_args = ''
+        if self.has_opts:
+            if in_func_body:
+                opts_args = ' ++ Options'
+            else:
+                opts_args = 'Options' if self.min_args == 0 else ', Options'
+        return opts_args
+ 
+    def positional_args(self, kind: str):
+        if kind == 'elixir':
+            return self.positional_args_elixir()
+        elif kind == 'erlang':
+            return self.positional_args_erlang()
+        else:
+            print(f'warning: positional_args: unknown kind `{kind}`')
+
+    def positional_args_elixir(self):
+        positional_var = 'positional'
+        positional = '{} = [{}\n    ]'.format(positional_var, ",".join(['\n      {}: {}'.format(map_argname('elixir', arg_name), map_argname('elixir', arg_name, argtype=argtype, from_struct=True)) for (arg_name, _, argtype) in self.py_arglist[:self.pos_end]]))
+        return positional, positional_var
+    
+    def positional_args_erlang(self):
+        # [{elixir_arg_atom, ErlangVar}, ...]
+        positional_var = 'Positional'
+        positional = '{} = [{}\n  ]'.format(positional_var, ",".join(['\n    {}, {}'.format('{' + map_argname('elixir', arg_name), map_argname('erlang', arg_name) + '}') for (arg_name, _, argtype) in self.py_arglist[:self.pos_end]]))
+        return positional, positional_var
+
+    def func_args(self, kind: str, instance_method: bool = False, in_func_body: bool = False):
+        func_args = '{}'.format(", ".join(['{}'.format(map_argname(kind, arg_name)) for (arg_name, _, _argtype) in self.py_arglist[:self.pos_end]]))
+        func_args_with_opts = ''
+        if self.has_opts:
+            func_args_with_opts = '{}{}'.format(", ".join(['{}'.format(map_argname(kind, arg_name)) for (arg_name, _, _argtype) in self.py_arglist[:self.pos_end]]), self.opts_args(kind))
+
+        if instance_method:
+            self_arg = ''
+            if kind == 'elixir':
+                self_arg = 'self'
+                if in_func_body:
+                    self_arg = 'Evision.Internal.Structurise.from_struct(self)'
+            elif kind == 'erlang':
+                self_arg = 'Self'
+            else:
+                print(f'warning: func_args: unknown kind `{kind}`')
+
+            if len(func_args) > 0:
+                func_args = f'{self_arg}, {func_args}'
+                if len(func_args_with_opts) > 0:
+                    func_args_with_opts = f'{self_arg}, {func_args_with_opts}'
+            else:
+                func_args = self_arg
+                func_args_with_opts = ''
+
+        return func_args, func_args_with_opts

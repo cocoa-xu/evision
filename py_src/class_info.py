@@ -105,28 +105,22 @@ class ClassInfo(object):
 
         # generate functions for constructor
         if self.constructor is not None:
-            (module_file_writer, module_file_writer_erlang), separated_ns = codegen.get_module_writer(
+            module_file_generator, separated_ns = codegen.get_module_writer(
                 self.name, wname=self.cname, name=self.name, is_ns=False)
-            codegen.gen_erl_declaration(
-                self.cname, self.name, self.constructor, module_file_writer, module_file_writer_erlang,
-                is_constructor=True, separated_ns=separated_ns)
+            module_file_generator.gen_constructor(self.cname, self.name, self.constructor, separated_ns)
 
         # generate functions for methods
         for mname, m in sorted_methods:
             codegen.code_ns_reg.write(m.get_tab_entry())
-            (module_file_writer, module_file_writer_erlang), separated_ns = codegen.get_module_writer(
+            module_file_generator, separated_ns = codegen.get_module_writer(
                 self.name, wname=self.cname, name=mname, is_ns=False)
-            codegen.gen_erl_declaration(
-                self.cname, mname, m, module_file_writer, module_file_writer_erlang,
-                is_constructor=False, separated_ns=separated_ns)
+            module_file_generator.gen_method(self.cname, mname, m, separated_ns)
 
         # generate functions for properties
         for pname, m in sorted_props:
-            (module_file_writer, module_file_writer_erlang), separated_ns = codegen.get_module_writer(
+            module_file_generator, separated_ns = codegen.get_module_writer(
                 self.name, wname=self.cname, name=pname, is_ns=False)
-            codegen.gen_erl_declaration(
-                self.cname, pname, m, module_file_writer, module_file_writer_erlang,
-                is_constructor=False, is_prop=True, prop_class=self, separated_ns=separated_ns)
+            module_file_generator.gen_property(self.cname, self.name, pname, m)
 
     def gen_code(self, codegen):
         all_classes = codegen.classes

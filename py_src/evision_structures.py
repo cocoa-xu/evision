@@ -21,3 +21,6 @@ videocapture_struct = """
 evision_structs = {
     "VideoCapture": videocapture_struct
 }
+
+evision_structrised_classes = list(evision_structs.keys())
+evision_structrised_classes.append('Mat')

@@ -1,6 +1,5 @@
 defmodule Evision.Photo.HDR.Test do
   use ExUnit.Case
-  use Bitwise
   alias Evision, as: Cv
 
   @moduletag timeout: 120_000
