@@ -58,6 +58,10 @@
   raise RuntimeError, "not implemented yet"
   ```
 
+- Elixir functions that have same name and arity will be grouped together now.
+
+  This should massively reduce the number of warnings emitted by the elixir compiler.
+
 ### Added
 - Added `Evision.Mat.literal/{1,2,3}` to create `Evision.Mat` from list literals.
 
