@@ -31,6 +31,7 @@ defmodule Evision.Mat do
 
   defstruct [:channels, :dims, :type, :raw_type, :shape, :ref]
   alias __MODULE__, as: T
+  @type t :: %{__struct__: atom()}
 
   @doc false
   def __make_struct__(%{:channels => channels, :dims => dims, :type => type, :raw_type => raw_type, :shape => shape, :ref => ref}) do
@@ -58,24 +59,25 @@ defmodule Evision.Mat do
   end
 
   if Code.ensure_loaded?(Kino.Render) do
-    defp is_2d_image(%Evision.Mat{dims: 2}), do: true
-    defp is_2d_image(%Evision.Mat{channels: c, shape: {_h, _w, c}}) when c in [1, 3, 4] do
-      true
-    end
+    defimpl Kino.Render do
+      defp is_2d_image(%Evision.Mat{dims: 2}), do: true
+      defp is_2d_image(%Evision.Mat{channels: c, shape: {_h, _w, c}}) when c in [1, 3, 4] do
+        true
+      end
 
-    defp is_2d_image(_), do: true
+      defp is_2d_image(_), do: true
 
-    @doc false
-    def to_livebook(mat) do
-      with true <- is_2d_image(mat),
-          {:ok, encoded} <- Evision.imencode(".png", mat) do
-        raw = Kino.Inspect.new(mat)
-        image = Kino.Image.new(encoded, :png)
-        tabs = Kino.Layout.tabs("Raw": raw, "Image": image)
-        Kino.Render.to_livebook(tabs)
-      else
-        _ ->
-          Kino.Output.inspect(mat)
+      def to_livebook(mat) do
+        with true <- is_2d_image(mat),
+            {:ok, encoded} <- Evision.imencode(".png", mat) do
+          raw = Kino.Inspect.new(mat)
+          image = Kino.Image.new(encoded, :png)
+          tabs = Kino.Layout.tabs("Raw": raw, "Image": image)
+          Kino.Render.to_livebook(tabs)
+        else
+          _ ->
+            Kino.Output.inspect(mat)
+        end
       end
     end
   end
@@ -729,6 +731,33 @@ defmodule Evision.Mat do
   end
 
   deferror(last_dim_as_channel(mat))
+
+  @doc """
+  This function does the opposite as to `Evision.Mat.last_dim_as_channel/1`.
+
+  If the number of channels of the input Evision.Mat is greater than 1,
+  then this function would convert the input Evision.Mat with dims `dims=list(int())` to a `1`-channel Evision.Mat with dims `[dims | channels]`.
+
+  If the number of channels of the input Evision.Mat is equal to 1,
+  - if dims == shape, then nothing happens
+  - otherwise, a new Evision.Mat that has dims=`[dims | channels]` will be returned
+  """
+  def channel_as_last_dim(mat) when is_struct(mat) do
+    mat = Evision.Internal.Structurise.from_struct(mat)
+    channel_as_last_dim(mat)
+  end
+
+  def channel_as_last_dim(mat) when is_reference(mat) do
+    {num_dims, _} = size!(mat)
+    shape = shape!(mat)
+    num_shape = tuple_size(shape)
+    if num_shape == num_dims do
+      mat
+    else
+      Evision.Mat.as_shape(mat, shape)
+    end
+  end
+  deferror(channel_as_last_dim(mat))
 
   @doc namespace: :"cv.Mat"
   def zeros(shape, type) when is_tuple(shape) do

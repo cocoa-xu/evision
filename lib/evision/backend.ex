@@ -1031,6 +1031,14 @@ defmodule Evision.Backend do
         result
       ])
     end
+
+    defp maybe_add_signature(result, %Evision.Mat{ref: _ref}) do
+      Inspect.Algebra.concat([
+        "Evision.Mat",
+        Inspect.Algebra.line(),
+        result
+      ])
+    end
   else
     defp maybe_add_signature(result, _tensor) do
       result
