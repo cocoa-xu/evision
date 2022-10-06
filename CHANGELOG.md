@@ -58,7 +58,7 @@
   raise RuntimeError, "not implemented yet"
   ```
 
-- Elixir functions that have same name and arity will be grouped together now.
+- Elixir functions that have the same name and arity will be grouped together now.
 
   This should massively reduce the number of warnings emitted by the elixir compiler.
 
