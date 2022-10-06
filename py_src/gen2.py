@@ -28,12 +28,13 @@ else:
 
 
 class BeamWrapperGenerator(object):
-    def __init__(self, enabled_modules):
+    def __init__(self, enabled_modules, langs):
         self.clear()
         self.argname_prefix_re = re.compile(r'^[_]*')
         self.inline_docs_code_type_re = re.compile(r'@code{.(.*)}')
         self.inline_docs_inline_math_re = re.compile(r'(?:.*?)\\\\f[$\[](.*?)\\\\f[$\]]', re.MULTILINE|re.DOTALL)
         self.enabled_modules = enabled_modules
+        self.langs = langs
 
     def clear(self):
         self.classes = {}
@@ -290,6 +291,7 @@ class BeamWrapperGenerator(object):
 
         modules_dir = Path(self.output_path) / 'modules'
         for module_text in modules_dir.glob('*.h'):
+            print("module_text:", module_text)
             self.handle_custom_file(module_text)
         backend_dir = Path(self.output_path) / 'modules' / 'evision_backend'
         for module_text in backend_dir.glob('*.h'):
@@ -542,27 +544,33 @@ class BeamWrapperGenerator(object):
             self.evision_nif_erlang.write(module_file_generator.get_nif_declaration('erlang'))
             self.code_ns_reg.write(module_file_generator.get_erl_nif_func_entry())
 
-            self.save(erl_output_path, f"evision_{name.lower()}.ex", module_file_generator.get_generated_code('elixir'))
-            self.save(erlang_output_path, f"evision_{name.lower()}.erl", module_file_generator.get_generated_code('erlang'))
+            if 'elixir' in self.langs:
+                self.save(erl_output_path, f"evision_{name.lower()}.ex", module_file_generator.get_generated_code('elixir'))
+            if 'erlang' in self.langs:
+                self.save(erlang_output_path, f"evision_{name.lower()}.erl", module_file_generator.get_generated_code('erlang'))
 
         # 'evision_nif.ex'
         self.evision_nif.write(self.evision_ex.get_nif_declaration('elixir'))
         self.evision_nif.write('\nend\n')
-        self.save(erl_output_path, "evision_nif.ex", self.evision_nif)
+        if 'elixir' in self.langs:
+            self.save(erl_output_path, "evision_nif.ex", self.evision_nif)
 
         # 'evision.ex'
         self.evision_ex.end('elixir')
         self.evision_elixir.write(self.evision_ex.get_generated_code('elixir'))
-        self.save(erl_output_path, "evision.ex", self.evision_elixir)
+        if 'elixir' in self.langs:
+            self.save(erl_output_path, "evision.ex", self.evision_elixir)
 
-        # 'evision_nif.ex'
+        # 'evision_nif.erl'
         self.evision_nif_erlang.write(self.evision_ex.get_nif_declaration('erlang'))
-        self.save(erlang_output_path, "evision_nif.erl", self.evision_nif_erlang)
+        if 'erlang' in self.langs:
+            self.save(erlang_output_path, "evision_nif.erl", self.evision_nif_erlang)
 
         # 'evision.erl'
         self.evision_ex.end('erlang')
         self.evision_elixir.write(self.evision_ex.get_generated_code('erlang'))
-        self.save(erlang_output_path, "evision.erl", self.evision_erlang)
+        if 'erlang' in self.langs:
+            self.save(erlang_output_path, "evision.erl", self.evision_erlang)
 
         self.code_ns_reg.write('\n};\n\n')
         self.save(output_path, "evision_generated_modules_content.h", self.code_ns_reg)
@@ -582,12 +590,21 @@ if __name__ == "__main__":
     if len(sys.argv) > 4:
         with open(sys.argv[4], 'r') as f:
             srcfiles = [l.strip() for l in f.readlines()]
+    lang = []
+    if len(sys.argv) > 5:
+        lang = [l.lower().strip() for l in sys.argv[5].split(",")]
+    if len(lang) == 0:
+        raise RuntimeError("env var EVISION_GENERATE_LANG is empty")
+    for l in lang:
+        if l not in ['elixir', 'erlang']:
+            raise RuntimeError(f"unknown value found in EVISION_GENERATE_LANG: `{l}`. Allowed values are `elixir`, `erlang`")
+
     # default
     enabled_modules = ['calib3d', 'core', 'features2d', 'flann', 'highgui', 'imgcodecs', 'imgproc', 'ml', 'photo',
                        'stitching', 'ts', 'video', 'videoio', 'dnn']
-    if len(sys.argv) > 5:
-        enabled_modules = sys.argv[5].split(",")
-    generator = BeamWrapperGenerator(enabled_modules)
+    if len(sys.argv) > 6:
+        enabled_modules = sys.argv[6].split(",")
+    generator = BeamWrapperGenerator(enabled_modules, lang)
     generator.gen(srcfiles, dstdir, erl_dstdir, erlang_dstdir)
     # for n in generator.namespaces:
     #     print(f'"{n}": &(&1[:namespace] == :"{n}"),')

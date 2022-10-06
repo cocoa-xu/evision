@@ -459,6 +459,17 @@ The `key` of this `unsupported_type_map` is the unsupported type, and the value 
     export CMAKE_OPENCV_OPTIONS="YOUR CMAKE OPTIONS FOR OPENCV"
     ```
 
+- How do I generate binding code for erlang and Elixir at the same time?
+    Yes, but currently it's only possible to do so when compiling evision using `mix`.
+
+    ```shell
+    # default value is `elixir` when compiling evision using `mix`
+    # default value is `erlang` when compiling evision using `rebar`
+    #
+    # expected format is a comma-separated string
+    export EVISION_GENERATE_LANG="erlang,elixir"
+    ```
+
 - Which ones of OpenCV options are supposed to be specified in `config/config.exs`?
   1. Enabled and disabled OpenCV modules
   2. Image codecs (if you enabled related OpenCV modules).

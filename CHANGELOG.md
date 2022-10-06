@@ -62,6 +62,20 @@
 
   This should massively reduce the number of warnings emitted by the elixir compiler.
 
+- Only generate corresponding binding code.
+  - Only generate binding code for Elixir when compiling `:evision` using `mix`; 
+  - Only generate binding code for erlang when compiling `:evision` using `rebar`;
+  
+  It's possible to generate erlang and Elixir at the same time. However, currently it's only possible to do so when compiling evision using `mix`.
+
+  ```shell
+  # default value is `elixir` when compiling evision using `mix`
+  # default value is `erlang` when compiling evision using `rebar`
+  #
+  # expected format is a comma-separated string
+  export EVISION_GENERATE_LANG="erlang,elixir"
+  ```
+
 ### Added
 - Added `Evision.Mat.literal/{1,2,3}` to create `Evision.Mat` from list literals.
 
