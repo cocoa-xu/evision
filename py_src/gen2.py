@@ -348,7 +348,7 @@ class BeamWrapperGenerator(object):
             wname = wname[4:]
             inner_ns = wname.split('::')
             elixir_module_name = self.make_elixir_module_names(separated_ns=inner_ns)
-        elixir_module_name = elixir_module_name.replace('_', '')
+        elixir_module_name = elixir_module_name.replace('_', '').strip()
         evision_module_filename = elixir_module_name.replace('.', '_')
 
         if evision_module_filename in self.evision_modules:
@@ -356,9 +356,9 @@ class BeamWrapperGenerator(object):
         else:
             module_file_generator = ElixirModuleGenerator(elixir_module_name)
             module_file_generator.write_elixir(f'defmodule Evision.{elixir_module_name} do\n')
-            if elixir_module_name not in ['flann', 'segmentation', 'ml']:
+            if elixir_module_name not in ['Flann', 'Segmentation', 'ML']:
                 module_file_generator.write_elixir('  import Kernel, except: [apply: 2, apply: 3]\n')
-            if elixir_module_name not in ['flann', 'segmentation', 'ml']:
+            if elixir_module_name not in ['Flann', 'Segmentation', 'ML']:
                 module_file_generator.write_elixir('  import Evision.Errorize\n')
             if ES.evision_structs.get(elixir_module_name, None) is not None:
                 module_file_generator.write_elixir(ES.evision_structs[elixir_module_name])
