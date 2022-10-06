@@ -12,6 +12,7 @@ jobs:
       MIX_ENV: prod
       OPENCV_VER: "4.6.0"
       EVISION_PREFER_PRECOMPILED: "false"
+      EVISION_GENERATE_LANG: "erlang,elixir"
     strategy:
       fail-fast: false
       matrix:

@@ -291,7 +291,6 @@ class BeamWrapperGenerator(object):
 
         modules_dir = Path(self.output_path) / 'modules'
         for module_text in modules_dir.glob('*.h'):
-            print("module_text:", module_text)
             self.handle_custom_file(module_text)
         backend_dir = Path(self.output_path) / 'modules' / 'evision_backend'
         for module_text in backend_dir.glob('*.h'):
