@@ -172,12 +172,20 @@ by compatible, it means these versions can compile successfully, and I tested a 
 should be written, and then we can have a list for tested OpenCV versions.
 
 ## Usage
-In general, you can add `evision` to `deps` with the following settings.
+### Installation
+
+In order to use `evision`, you will need Elixir installed. Then create an Elixir project via the `mix` build tool:
+
+```sh
+$ mix new my_app
+```
+
+Then you can add `evision` as dependency in your `mix.exs`. At the moment you will have to use a Git dependency while we work on our first release:
 
 ```elixir
 def deps do
   [
-    {:evision, "~> 0.1", github: "cocoa-xu/evision", tag: "v0.1.6"}
+    {:evision, "~> 0.1.6", github: "cocoa-xu/evision", tag: "v0.1.6"}
   ]
 end
 ```
@@ -185,9 +193,11 @@ end
 Early versions (v0.1.x) of `evision` will be available on hex.pm soon.
 
 ### Use Precompiled Library (Default)
-To use precompiled Evision library, the following environment variables can be set based on your needs.
+[CMake](https://cmake.org/) >= 3.3 is required for downloading and deploying precompiled binaries at the moment. We're working on removing this requirement.
 
-(Note that precompiled binaries do not use FFmpeg. If you'd like to use FFmpeg, please compile from source and set corresponding environment variables. We're considering this option at the moment.)
+The following environment variables can be set based on your needs.
+
+(Note that precompiled binaries do not use FFmpeg. If you'd like to use FFmpeg, please compile from source (please see instructions in the next section) and set corresponding environment variables. We're considering this option at the moment.)
 
 #### TARGET_ABI
 ```shell
@@ -237,7 +247,25 @@ export EVISION_PREFER_PRECOMPILED=false
 export EVISION_PRECOMPILED_CACHE_DIR="$(pwd)/.cache"
 ```
 
-### Compile OpenCV from Sources
+### Compile evision from source
+#### Dependencies
+
+- Python3 (Only during the compilation, to generate binding files)
+
+  Tested Python verisons (on `ubuntu:20.04`, see [workflow file](https://github.com/cocoa-xu/evision/blob/main/.github/workflows/test-python-compatibility.yml)):
+  - 3.6.15
+  - 3.7.12
+  - 3.8.12
+  - 3.9.9
+  - 3.10.1
+- [CMake](https://cmake.org/) >= 3.3 (for this project)
+
+  The minimal version required by OpenCV can vary between versions.
+
+  OpenCV 4.5.5 requires at least CMake 3.5.1.
+- Erlang development library/headers. Tested on OTP/25.
+
+#### Build from source
 To obtain and compile OpenCV's source code from official releases, the following environment variables can affect the build
 
 ```shell
@@ -260,52 +288,11 @@ export CMAKE_OPENCV_OPTIONS="-D WITH_FFMPEG=ON"
 export CMAKE_OPENCV_OPTIONS="-D WITH_FFMPEG=OFF"
 ```
 
-### Compile OpenCV from Git Repo
-To obtain and compile OpenCV's source code from git, set the following environment variables
-
-```shell
-# required 
-# set those variables if you'd like to compile OpenCV from git
-##   the corresponding license file should be available at https://github.com/opencv/opencv/blob/${OPENCV_USE_GIT_BRANCH}/LICENSE
-export OPENCV_USE_GIT_HEAD=true
-export OPENCV_USE_GIT_BRANCH=4.x
-
-# optional.
-## set this if you want to use to your/other fork/mirrors
-export OPENCV_GIT_REPO="https://github.com/opencv/opencv.git"
-
-## enable FFmpeg
-##   this will allow cmake to auto-detect FFmpeg libraries installed on the host
-##   on Windows, OpenCV will download prebuilt FFmpeg libraries
-##   for more information, please visit https://github.com/opencv/opencv/tree/4.x/3rdparty/ffmpeg
-export CMAKE_OPENCV_OPTIONS="-D WITH_FFMPEG=ON"
-
-## disable FFmpeg
-export CMAKE_OPENCV_OPTIONS="-D WITH_FFMPEG=OFF"
-```
-
-### Available modules
-Current available modules:
-- calib3d
-- core
-- dnn
-- features2d
-- flann
-- highgui
-- imgcodecs
-- imgproc
-- ml
-- photo
-- stitching 
-- ts 
-- video 
-- videoio
-
-Note 1: to be able to encode/decode more video formats, you may compile OpenCV with FFmpeg enabled. 
+Note 1: OpenCV can encode and decode some video formats (varies depending on your system). FFmpeg can be used to encode/decode more video formats. 
 
 However, you should be aware of the license of the FFmpeg components you selected as they could be licensed by LGPL/GPL or other licenses.
 
-Note 2: FFmpeg 5 is not supported by OpenCV yet.
+Note 2: FFmpeg 5 is not supported by OpenCV yet (as of OpenCV 4.6.0).
 
 ```shell
 sudo apt install -y libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libavresample-dev ffmpeg
@@ -317,26 +304,7 @@ brew install ffmpeg@4
 brew link ffmpeg@4
 ```
 
-## Dependencies
-
-### Required
-
-- Python3 (Only during the compilation, to generate binding files)
-
-  Tested Python verisons (on `ubuntu:20.04`, see [workflow file](https://github.com/cocoa-xu/evision/blob/main/.github/workflows/test-python-compatibility.yml)):
-  - 3.6.15
-  - 3.7.12
-  - 3.8.12
-  - 3.9.9
-  - 3.10.1
-- [CMake](https://cmake.org/) >= 3.3 (for this project)
-
-  The minimal version required by OpenCV can vary between versions.
-
-  OpenCV 4.5.5 requires at least CMake 3.5.1.
-- Erlang development library/headers. Tested on OTP/25.
-
-#### Extra Notes for Windows
+##### Extra notes for building from source on Windows
 Evision on Windows uses `nmake` to handle the `Makefile.win` at the moment. And we also need `powershell` for now. `nmake`
 should be included in Microsoft Visual Studio, and `powershell` should be included in almost all recent version (it was 
 first released in 2007).
@@ -345,31 +313,22 @@ If `ninja` can be found in `%PATH%`, then we will prefer using `ninja` to build 
 
 Evision is NOT tested in MSYS2, Cygwin, or WSL/WSL2. 
 
-### Optional
+#### Using source from a git repo (Optional)
+It's also possible to obtain and compile OpenCV's source code from a custom git repo by setting the following environment variables (in addition to the ones above)
 
-To skip the download process, you can put the source zip file at `3rd_party/cache/opencv-${OPENCV_VER}.zip`.
+```shell
+# required 
+# set those variables if you'd like to compile OpenCV from git
+##   the corresponding license file should be available at https://github.com/opencv/opencv/blob/${OPENCV_USE_GIT_BRANCH}/LICENSE
+export OPENCV_USE_GIT_HEAD=true
+export OPENCV_USE_GIT_BRANCH=4.x
 
-Or you could supply OpenCV source code at `3rd_party/opencv/opencv-${OPENCV_VER}`.
-
-## Installation
-
-In order to use `evision`, you will need Elixir installed. Then create an Elixir project via the `mix` build tool:
-
-```sh
-$ mix new my_app
+# optional.
+## set this if you want to use to your/other fork/mirrors
+export OPENCV_GIT_REPO="https://github.com/opencv/opencv.git"
 ```
 
-Then you can add `evision` as dependency in your `mix.exs`. At the moment you will have to use a Git dependency while we work on our first release:
-
-```elixir
-def deps do
-  [
-    {:evision, "~> 0.1.6", github: "cocoa-xu/evision", tag: "v0.1.6"}
-  ]
-end
-```
-
-### Configuration
+#### More Configuration (Optional)
 
 `evision` will compile a subset of OpenCV functionality. You can configure the enabled modules in your `config` files:
 
@@ -413,24 +372,19 @@ config :evision, enabled_img_codecs: [
 ]
 ```
 
-### Notes 
-
-#### Compile-time related
-
-- How do I specify which OpenCV version to compile?
-    ```shell
-    # e.g., use OpenCV 4.5.5
-    # current, evision uses 4.6.0 by default 
-    export OPENCV_VER=4.5.5
-    ```
+#### Notes
 
 - How do I use my own OpenCV source code on my local disk?
 
     ```shell
+    # To skip the download process, you can put the source zip file at `3rd_party/cache/opencv-${OPENCV_VER}.zip`.
+    # Or you could supply OpenCV source code at `3rd_party/opencv/opencv-${OPENCV_VER}`.
+    #
+    # `3rd_party/opencv/opencv-${OPENCV_VER}` is the default value for `OPENCV_DIR`
     export OPENCV_DIR=/path/to/your/opencv/source/root
     ```
 
-- How do I use my own OpenCV source code on my git?
+- How do I use my own OpenCV source code on my git repo?
 
     ```shell
     # use branch
@@ -539,57 +493,9 @@ MIX_TARGET=rpi4
     ```shell
     export OPENCV_EVISION_DEBUG=1
     ```
+## Examples
 
-### Namespace
-`:evision` is just one possible OpenCV-Elixir bindings, and that means I didn't write ANY actual algorithms here. As for
-the reason why I chose `OpenCV` as the namespace in previous commits, that's because I don't want to give a feeling to 
-users that all these functions/algorithms come from `:evision`.
-
-However, as there are more people get interested in this project, I have to think about this question carefully. And after
-various considerations, I decided to use `Evision` as the root namespace for this project. The reasons are
-
-1. The `app` name of this project is `:evision`, therefore, I should use `Evision` so that it's consistent. 
-2. `:evision` is one possible OpenCV-Elixir bindings, so it is better to use `Evision` as the namespace.
-3. Using `OpenCV` as the namespace could be misleading at times if something went wrong in `:evision`'s code.
-4. This leaves the choice to users to choose whether if they would like to alias `Evision` as `OpenCV` or any other names.
-
-Please note that although everything now will be under the `Evision` namespace, the actual algorithms/functions come from
-the OpenCV project.
-
-```elixir
-alias Evision, as: Cv
-```
-
-### Current Status
-
-Some tiny examples:
-
-```elixir
-alias Evision, as: Cv
-
-## read image, process image and write image
-gray_mat = Cv.imread!("/path/to/img.png", flags: Cv.cv_IMREAD_GRAYSCALE)
-gray_blur_mat = Cv.blur!(gray_mat, [10,10], anchor: [1,1])
-colour_mat = Cv.imread!("/path/to/img.png")
-colour_blur_mat = Cv.blur!(colour_mat, [10,10], anchor: [1,1])
-:ok = Cv.imwrite("/path/to/img-gray-and-blur.png", gray_blur_mat)
-:ok = Cv.imwrite("/path/to/img-colour-and-blur.png", colour_blur_mat)
-
-## capture from video file/camera
-cap = Cv.VideoCapture.videoCapture!(0)
-cap_mat = Cv.VideoCapture.read!(cap)
-:ok = Cv.imwrite("/path/exists/capture-mat.png", cap_mat)
-:error = Cv.imwrite("/path/not/exists/capture-mat.png", cap_mat)
-
-## to_binary/from_binary
-mat = Cv.imread!("/path/to/img.jpg")
-type = Cv.Mat.type!(mat)
-{rows, cols, channels} = Cv.Mat.shape!(mat)
-binary_data = Cv.Mat.to_binary!(mat)
-Cv.Mat.from_binary(binary_data, type, cols, rows, channels)
-```
-
-Some other [examples](https://github.com/cocoa-xu/evision/tree/main/examples).
+Some [examples](https://github.com/cocoa-xu/evision/tree/main/examples) are available in the `examples` directory.
 
 ### Acknowledgements
 - `gen2.py`, `hdr_parser.py` and `c_src/erlcompat.hpp` were directly copied from the `python` module in the [OpenCV repo](https://github.com/opencv/opencv). Changes applied.
