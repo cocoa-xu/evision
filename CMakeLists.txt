@@ -26,15 +26,6 @@ set(EVISION_AVAILABLE_PRECOMPILED_BINARIES
     "riscv64-linux-musl"
     "x86_64-windows-msvc"
 )
-set(EVISION_AVAILABLE_PRECOMPILED_VERSIONS
-    "0.1.6"
-    "0.1.5"
-    "0.1.4"
-    "0.1.3"
-    "0.1.2"
-    "0.1.1"
-    "0.1.0-dev"
-)
 
 set(EVISION_AVAILABLE_PRECOMPILED_VERSIONS
     "0.1.7"
