@@ -198,7 +198,7 @@ Please note that although `:evision` is available on hex.pm now, it's still in i
 Therefore, it's recommended to use a specific version (i.e., include the minor version number in `deps`, `{:evision, "~> 0.1.7"}`, instead of `{:evision, "~> 0.1"}`) at the moment.
 
 ### Use Precompiled Library (Default)
-[CMake](https://cmake.org/) >= 3.3 is required for downloading and deploying precompiled binaries at the moment. We're working on removing this requirement.
+[CMake](https://cmake.org/) >= 3.3 and `make` (`nmake` if on Windows) are required for downloading and deploying precompiled binaries at the moment. We're working on removing this requirement.
 
 The following environment variables can be set based on your needs.
 
@@ -326,8 +326,8 @@ brew link ffmpeg@4
 
 ##### Extra notes for building from source on Windows
 Evision on Windows uses `nmake` to handle the `Makefile.win` at the moment. And we also need `powershell` for now. `nmake`
-should be included in Microsoft Visual Studio, and `powershell` should be included in almost all recent version (it was 
-first released in 2007).
+should be included in Microsoft Visual Studio, and `powershell` should be included in almost all recent versions (it was 
+first released in 2007) of Windows.
 
 If `ninja` can be found in `%PATH%`, then we will prefer using `ninja` to build everything as it allows parallel building.
 
@@ -337,15 +337,25 @@ Evision is NOT tested in MSYS2, Cygwin, or WSL/WSL2.
 It's also possible to obtain and compile OpenCV's source code from a custom git repo by setting the following environment variables (in addition to the ones above)
 
 ```shell
-# required 
-# set those variables if you'd like to compile OpenCV from git
-##   the corresponding license file should be available at https://github.com/opencv/opencv/blob/${OPENCV_USE_GIT_BRANCH}/LICENSE
+# required if and only if you prefer to compile OpenCV from a git repo
+# set OPENCV_USE_GIT_HEAD to true to compile OpenCV from a git repo
+# default value is false
 export OPENCV_USE_GIT_HEAD=true
+
+# required if and only if you prefer to compile OpenCV from a git repo
+# this env var indicates which branch you prefer to use
+# no default value
 export OPENCV_USE_GIT_BRANCH=4.x
 
 # optional.
-## set this if you want to use to your/other fork/mirrors
+# set this env var to specify which git repo to use
+# default value is https://github.com/opencv/opencv.git, which is the offical git repo of OpenCV
 export OPENCV_GIT_REPO="https://github.com/opencv/opencv.git"
+```
+
+When `OPENCV_USE_GIT_HEAD` is set to `true`, the following command will be used to fetch OpenCV's source code in `Makefile`:
+```shell
+git clone --branch=${OPENCV_USE_GIT_BRANCH} --depth=1 ${OPENCV_GIT_REPO} "${OPENCV_DIR}"
 ```
 
 #### More Configuration (Optional)
