@@ -183,17 +183,19 @@ In order to use `evision`, you will need Elixir installed. Then create an Elixir
 $ mix new my_app
 ```
 
-Then you can add `evision` as dependency in your `mix.exs`. At the moment you will have to use a Git dependency while we work on our first release:
+Then you can add `evision` as dependency in your `mix.exs`.
 
 ```elixir
 def deps do
   [
-    {:evision, "~> 0.1.7", github: "cocoa-xu/evision", tag: "v0.1.7"}
+    {:evision, "~> 0.1.7"}
   ]
 end
 ```
 
-Early versions (v0.1.x) of `evision` will be available on hex.pm soon.
+Please note that although `:evision` is available on hex.pm now, it's still in its early versions. And it will remain on v0.1.x for a while, and all v0.1.x versions should be treated as in very active development. Please read the `CHANGELOG.md` for all breaking changes even it's a "minor" update.
+
+Therefore, it's recommend to use a specific version (i.e., include the minor version number in `deps`, `{:evision, "~> 0.1.7"}`, instead of `{:evision, "~> 0.1"}`) at the moment.
 
 ### Use Precompiled Library (Default)
 [CMake](https://cmake.org/) >= 3.3 is required for downloading and deploying precompiled binaries at the moment. We're working on removing this requirement.
@@ -241,6 +243,21 @@ target_abi =
 #   for other available versions, please check the GitHub release page
 #   https://github.com/cocoa-xu/evision/releases
 export EVISION_PREFER_PRECOMPILED=false
+```
+
+If you found the precompiled binaries does not suit your needs (e.g., perhaps you need OpenCV to be compiled with FFmpeg to handle more video formats.), it's possible to override the behaviour by setting the environment variable `EVISION_PREFER_PRECOMPILED` to `false`
+
+```shell
+export EVISION_PREFER_PRECOMPILED=false
+```
+
+For livebook users, 
+```elixir
+Mix.install([
+  {:evision, "~> 0.1.7"}
+], system_env: [
+  {"EVISION_PREFER_PRECOMPILED", "false"}
+])
 ```
 
 #### EVISION_PRECOMPILED_CACHE_DIR
