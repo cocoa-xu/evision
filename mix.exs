@@ -230,6 +230,8 @@ defmodule Evision.MixProject do
       # runtime
       {:dll_loader_helper, "~> 0.1"},
       {:nx, "~> 0.3", override: true},
+      # optional
+      {:kino, "~> 0.7", optional: true},
       # docs
       {:ex_doc, "~> 0.28", only: :docs, runtime: false},
       # test

@@ -361,6 +361,52 @@
   }
   ```
 
+- Automatically displays a tabbed output in Livebook if the type of evaluated result is `Evision.Mat`.
+
+  This is an optional feature. To enable it, `:kino` should be added to `deps`, e.g.,
+
+  ```elixir
+  defp deps do
+    [
+      # ...
+      {:kino, "~> 0.7"},
+      # ...
+    ]
+  end
+  ```
+
+  Now, with `:kino` >= v0.7 available, a tabbed output will shown in Livebook if the evaluated result is an `Evision.Mat`.
+
+  A `Raw` tab will always be the first one, e.g.,
+
+  ```elixir
+  %Evision.Mat{
+    channels: 1,
+    dims: 3,
+    type: {:u, 8},
+    raw_type: 0,
+    shape: {1, 2, 3},
+    ref: #Reference<0.3310236255.1057357843.168932>
+  }
+  ```
+
+  For 2D images (`dims == 2`), the second tab will be `Image`, which displays the image.
+
+  For all `Evision.Mat`, the last tab will be `Numerical`, which shows the numbers behind the scene. Of course, for large size `Evision.Mat`, only part of the data will be shown. A example output in this tab:
+
+  ```elixir
+  #Nx.Tensor<
+    u8[1][2][3]
+    Evision.Backend
+    [
+      [
+        [1, 2, 3],
+        [1, 2, 3]
+      ]
+    ]
+  >
+  ```
+
 ## v0.1.6 (2022-09-29)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.7) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.6)
 ### Breaking Changes
