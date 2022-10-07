@@ -154,6 +154,10 @@ The `key` of this `unsupported_type_map` is the unsupported type, and the value 
 
 See [this reply](https://github.com/cocoa-xu/evision/issues/48#issuecomment-1266282345) for more details on this.
 
+## Examples
+
+Some [examples](https://github.com/cocoa-xu/evision/tree/main/examples) are available in the `examples` directory.
+
 ## Description
 
 `evision` will pull OpenCV source code from GitHub, then parse and automatically generate corresponding OpenCV-Elixir bindings.
@@ -469,20 +473,26 @@ MIX_TARGET=rpi4
 
   2. Secondly, comment out the following lines in the CMakeLists.txt  
 
-      otherwise, your editing will be overwritten by the `py_src/gen2.py`
-  
-    ```cmake
-    execute_process(COMMAND bash -c "rm -rf ${GENERATED_ELIXIR_SRC_DIR} && mkdir -p ${GENERATED_ELIXIR_SRC_DIR}")
-    message("enabled modules: ${ENABLED_CV_MODULES}")
-    execute_process(COMMAND bash -c "python3 ${PY_SRC}/gen2.py ${C_SRC} ${GENERATED_ELIXIR_SRC_DIR} ${C_SRC}/headers.txt ${ENABLED_CV_MODULES}" RESULT_VARIABLE STATUS)
-    if(STATUS STREQUAL "0")
-      message("Successfully generated Erlang/Elixir bindings")
-    else()
-      message(FATAL_ERROR "Failed to generate Erlang/Elixir bindings")
-    endif()
-    ```  
+    otherwise, your editing will be overwritten by the `py_src/gen2.py` (executing from the `CMakeLists.txt`)
 
-  3. Lastly, you can edit the source files and recompile the project.
+    ```cmake
+    if(WIN32)
+        execute_process(COMMAND "rmdir ${GENERATED_ELIXIR_SRC_DIR} /s /q && rmdir ${GENERATED_ERLANG_SRC_DIR} /s /q  && mkdir ${GENERATED_ELIXIR_SRC_DIR} && mkdir ${GENERATED_ERLANG_SRC_DIR}")
+        message("enabled modules: ${ENABLED_CV_MODULES}")
+        execute_process(COMMAND python3.exe "${PY_SRC}\\gen2.py" "${C_SRC}" "${GENERATED_ELIXIR_SRC_DIR}" "${GENERATED_ERLANG_SRC_DIR}" "${C_SRC}\\headers.txt" "${EVISION_GENERATE_LANG}" "${ENABLED_CV_MODULES}" RESULT_VARIABLE STATUS)
+    else()
+        execute_process(COMMAND bash -c "rm -rf ${GENERATED_ELIXIR_SRC_DIR} && rm -rf ${GENERATED_ERLANG_SRC_DIR} && mkdir -p ${GENERATED_ELIXIR_SRC_DIR} && mkdir -p ${GENERATED_ERLANG_SRC_DIR}")
+        message("enabled modules: ${ENABLED_CV_MODULES}")
+        execute_process(COMMAND bash -c "python3 ${PY_SRC}/gen2.py ${C_SRC} ${GENERATED_ELIXIR_SRC_DIR} ${GENERATED_ERLANG_SRC_DIR} ${C_SRC}/headers.txt ${EVISION_GENERATE_LANG} ${ENABLED_CV_MODULES}" RESULT_VARIABLE STATUS)
+    endif()
+    if(STATUS STREQUAL "0")
+        message(STATUS "Successfully generated binding code for: ${EVISION_GENERATE_LANG}")
+    else()
+        message(FATAL_ERROR "Failed to generate binding code for: ${EVISION_GENERATE_LANG}")
+    endif()
+    ```
+
+  3. Then you can edit the source files and recompile `evision.so`.
     ```shell
     mix compile
     ```
@@ -493,9 +503,6 @@ MIX_TARGET=rpi4
     ```shell
     export OPENCV_EVISION_DEBUG=1
     ```
-## Examples
-
-Some [examples](https://github.com/cocoa-xu/evision/tree/main/examples) are available in the `examples` directory.
 
 ### Acknowledgements
 - `gen2.py`, `hdr_parser.py` and `c_src/erlcompat.hpp` were directly copied from the `python` module in the [OpenCV repo](https://github.com/opencv/opencv). Changes applied.
