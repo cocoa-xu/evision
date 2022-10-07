@@ -329,7 +329,6 @@ defmodule Evision.MixProject do
           c_src/erlcompat.hpp
           c_src/evision.cpp
           c_src/evision_custom_headers.h
-          c_src/evision_generated_enums.h
           c_src/nif_utils.hpp
           py_src/*.py
           scripts
