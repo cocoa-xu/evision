@@ -11,7 +11,7 @@
 
   ```
   arm64-apple-darwin => aarch64-apple-darwin
-  amd64-apple-darwin => x86_64-windows-msvc
+  amd64-windows-msvc => x86_64-windows-msvc
   ```
 
 ### Changed
