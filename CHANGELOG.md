@@ -357,6 +357,22 @@
   }
   ```
 
+- Automatically displays a tabbed output in Livebook if the type of evaluated result is `Evision.Mat`.
+
+  This is an optional feature. To enable it, `:kino` should be added to `deps`, e.g.,
+
+  ```elixir
+  defp deps do
+    [
+      # ...
+      {:kino, "~> 0.7"},
+      # ...
+    ]
+  end
+  ```
+
+  Now, with `:kino` >= v0.7 available, a tabbed output will shown in Livebook if the evaluated result is an `Evision.Mat`.
+
 ## v0.1.6 (2022-09-29)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.7) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.6)
 ### Breaking Changes
