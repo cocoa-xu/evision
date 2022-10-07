@@ -61,22 +61,24 @@ defmodule Evision.Mat do
   if Code.ensure_loaded?(Kino.Render) do
     defimpl Kino.Render do
       defp is_2d_image(%Evision.Mat{dims: 2}), do: true
-      defp is_2d_image(%Evision.Mat{channels: c, shape: {_h, _w, c}}) when c in [1, 3, 4] do
+      defp is_2d_image(%Evision.Mat{channels: 1, shape: {_h, _w, 1}}) do
         true
       end
 
-      defp is_2d_image(_), do: true
+      defp is_2d_image(_), do: false
 
       def to_livebook(mat) do
+        raw = Kino.Inspect.new(mat)
+        numerical = Kino.Inspect.new(Evision.Nx.to_nx!(mat))
         with true <- is_2d_image(mat),
             {:ok, encoded} <- Evision.imencode(".png", mat) do
-          raw = Kino.Inspect.new(mat)
           image = Kino.Image.new(encoded, :png)
-          tabs = Kino.Layout.tabs("Raw": raw, "Image": image)
+          tabs = Kino.Layout.tabs("Raw": raw, "Image": image, "Numerical": numerical)
           Kino.Render.to_livebook(tabs)
         else
-          _ ->
-            Kino.Output.inspect(mat)
+          false ->
+            tabs = Kino.Layout.tabs("Raw": raw, "Numerical": numerical)
+            Kino.Render.to_livebook(tabs)
         end
       end
     end
