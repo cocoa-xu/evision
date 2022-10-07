@@ -26,42 +26,57 @@ set(EVISION_AVAILABLE_PRECOMPILED_BINARIES
     "riscv64-linux-musl"
     "x86_64-windows-msvc"
 )
+set(EVISION_AVAILABLE_PRECOMPILED_VERSIONS
+    "0.1.6"
+    "0.1.5"
+    "0.1.4"
+    "0.1.3"
+    "0.1.2"
+    "0.1.1"
+    "0.1.0-dev"
+)
 
 if(EVISION_PREFER_PRECOMPILED STREQUAL "true")
     message(STATUS "EVISION_PREFER_PRECOMPILED is true: try to download and use the precompiled library")
 
-    string(TOLOWER "${CMAKE_SYSTEM_NAME}" PRECOMPILED_SYSTEM_NAME)
-    string(TOLOWER "${CMAKE_SYSTEM_PROCESSOR}" PRECOMPILED_PROCESSOR_ARCH)
+    set(EVISION_HAS_PRECOMPILED_BINARY_AVAILABLE false)
+    if ("${EVISION_PRECOMPILED_VERSION}" IN_LIST EVISION_AVAILABLE_PRECOMPILED_VERSIONS)
+        string(TOLOWER "${CMAKE_SYSTEM_NAME}" PRECOMPILED_SYSTEM_NAME)
+        string(TOLOWER "${CMAKE_SYSTEM_PROCESSOR}" PRECOMPILED_PROCESSOR_ARCH)
 
-    if("${PRECOMPILED_PROCESSOR_ARCH}" STREQUAL "amd64")
-        set(PRECOMPILED_PROCESSOR_ARCH "x86_64")
-    elseif("${PRECOMPILED_PROCESSOR_ARCH}" STREQUAL "arm64")
-        set(PRECOMPILED_PROCESSOR_ARCH "aarch64")
-    endif()
-
-    if("${PRECOMPILED_SYSTEM_NAME}" STREQUAL "darwin")
-        set(PRECOMPILE_TARGET_TRIPLET "${PRECOMPILED_PROCESSOR_ARCH}-apple-darwin")
-    elseif("${PRECOMPILED_SYSTEM_NAME}" STREQUAL "linux")
-        if(NOT "$ENV{TARGET_ABI}" STREQUAL "")
-            set(PRECOMPILE_TARGET_TRIPLET "${PRECOMPILED_PROCESSOR_ARCH}-linux-$ENV{TARGET_ABI}")
-        else()
-            if("${PRECOMPILED_PROCESSOR_ARCH}" STREQUAL "armv7l")
-                set(PRECOMPILE_TARGET_TRIPLET "${PRECOMPILED_PROCESSOR_ARCH}-linux-gnueabihf")
-            else()
-                set(PRECOMPILE_TARGET_TRIPLET "${PRECOMPILED_PROCESSOR_ARCH}-linux-gnu")
+        if ("${EVISION_PRECOMPILED_VERSION}" VERSION_GREATER "0.1.6")
+            if("${PRECOMPILED_PROCESSOR_ARCH}" STREQUAL "amd64")
+                set(PRECOMPILED_PROCESSOR_ARCH "x86_64")
+            elseif("${PRECOMPILED_PROCESSOR_ARCH}" STREQUAL "arm64")
+                set(PRECOMPILED_PROCESSOR_ARCH "aarch64")
             endif()
         endif()
-    elseif("${PRECOMPILED_SYSTEM_NAME}" STREQUAL "windows")
-        set(PRECOMPILE_TARGET_TRIPLET "${PRECOMPILED_PROCESSOR_ARCH}-windows-msvc")
-    endif()
 
-    set(EVISION_HAS_PRECOMPILED_BINARY_AVAILABLE false)
-    if("${PRECOMPILE_TARGET_TRIPLET}" IN_LIST EVISION_AVAILABLE_PRECOMPILED_BINARIES)
-        set(EVISION_HAS_PRECOMPILED_BINARY_AVAILABLE true)
-        message(STATUS "Precompiled binaries is available for the current target: ${PRECOMPILE_TARGET_TRIPLET}")
+        if("${PRECOMPILED_SYSTEM_NAME}" STREQUAL "darwin")
+            set(PRECOMPILE_TARGET_TRIPLET "${PRECOMPILED_PROCESSOR_ARCH}-apple-darwin")
+        elseif("${PRECOMPILED_SYSTEM_NAME}" STREQUAL "linux")
+            if(NOT "$ENV{TARGET_ABI}" STREQUAL "")
+                set(PRECOMPILE_TARGET_TRIPLET "${PRECOMPILED_PROCESSOR_ARCH}-linux-$ENV{TARGET_ABI}")
+            else()
+                if("${PRECOMPILED_PROCESSOR_ARCH}" STREQUAL "armv7l")
+                    set(PRECOMPILE_TARGET_TRIPLET "${PRECOMPILED_PROCESSOR_ARCH}-linux-gnueabihf")
+                else()
+                    set(PRECOMPILE_TARGET_TRIPLET "${PRECOMPILED_PROCESSOR_ARCH}-linux-gnu")
+                endif()
+            endif()
+        elseif("${PRECOMPILED_SYSTEM_NAME}" STREQUAL "windows")
+            set(PRECOMPILE_TARGET_TRIPLET "${PRECOMPILED_PROCESSOR_ARCH}-windows-msvc")
+        endif()
+
+        if("${PRECOMPILE_TARGET_TRIPLET}" IN_LIST EVISION_AVAILABLE_PRECOMPILED_BINARIES)
+            set(EVISION_HAS_PRECOMPILED_BINARY_AVAILABLE true)
+            message(STATUS "Precompiled binaries is available for the current target: ${PRECOMPILE_TARGET_TRIPLET}")
+        else()
+            message(WARNING "EVISION_PREFER_PRECOMPILED is true, but there is no precompiled binaries available for the current target: ${PRECOMPILE_TARGET_TRIPLET}")
+            message(WARNING "Will fallback to building evision from source")
+        endif()
     else()
-        message(WARNING "EVISION_PREFER_PRECOMPILED is true, but there is no precompiled binaries available for the current target: ${PRECOMPILE_TARGET_TRIPLET}")
-        message(WARNING "Will fallback to building evision from source")
+        message(FATAL_ERROR "Requested version `${EVISION_PRECOMPILED_VERSION}` (set in EVISION_PRECOMPILED_VERSION) does NOT have a precompiled binaries available")
     endif()
 endif()
 
