@@ -1,6 +1,6 @@
 # Changelog
 
-## v0.1.7
+## v0.1.7 (2022-10-07)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.7) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.7)
 ### Breaking Changes
 - `EVISION_PREFER_PRECOMPILED` is set to `true` by default. 
