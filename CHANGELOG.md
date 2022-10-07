@@ -216,6 +216,70 @@
   >
   ```
 
+- Implemented property setter for `cv::Ptr<>` wrapped types. For example,
+
+  ```elixir
+  iex> k = Evision.KalmanFilter.kalmanFilter!(1, 1)
+  #Reference<0.382162378.457572372.189094>
+  iex> Evision.KalmanFilter.get_gain!(k) |> Evision.Nx.to_nx!
+  #Nx.Tensor<
+    f32[1][1]
+    Evision.Backend
+    [
+      [0.0]
+    ]
+  >
+  iex> Evision.KalmanFilter.set_gain!(k, Evision.Mat.literal!([1.0], :f32))
+  #Reference<0.382162378.457572372.189094>
+  iex> Evision.KalmanFilter.get_gain!(k) |> Evision.Nx.to_nx!
+  #Nx.Tensor<
+    f32[1][1]
+    Evision.Backend
+    [
+      [1.0]
+    ]
+  >
+  ```
+
+- More detailed error message for property getter/setter. For example,
+
+  - When setting a property that is type `A` and value passed to the setter is type `B`, and there is no known conversion from `B` to `A`, then it will return an error-tuple
+
+    ```elixir 
+    iex> k = Evision.KalmanFilter.kalmanFilter!(1, 1)
+    iex> Evision.KalmanFilter.set_gain(k, :p)
+    {:error, "cannot assign new value, mismatched type?"}
+    iex> Evision.KalmanFilter.set_gain(k, :p)
+    ** (RuntimeError) cannot assign new value, mismatched type?
+        (evision 0.1.7-dev) lib/generated/evision_kalmanfilter.ex:175: Evision.KalmanFilter.set_gain!/2
+        iex:7: (file)
+    ```
+
+  - For property getter/setter, if the `self` passed in is a different type than what is expected, an error-tuple will be returned
+
+    ```elixir
+    iex> mat = Evision.Mat.literal!([1.0], :f32)
+    %Evision.Mat{
+      channels: 1,
+      dims: 2,
+      type: {:f, 32},
+      raw_type: 5,
+      shape: {1, 1},
+      ref: #Reference<0.1499445684.3682467860.58544>
+    }
+    iex> Evision.KalmanFilter.set_gain(mat, mat) 
+    {:error,
+    "cannot get `Ptr<cv::KalmanFilter>` from `self`: mismatched type or invalid resource?"}
+    iex> Evision.KalmanFilter.set_gain!(mat, mat)
+    ** (RuntimeError) cannot get `Ptr<cv::KalmanFilter>` from `self`: mismatched type or invalid resource?
+        (evision 0.1.7-dev) lib/generated/evision_kalmanfilter.ex:175: Evision.KalmanFilter.set_gain!/2
+        iex:2: (file)
+    ```
+
+- `evision_##NAME##_getp` (in `c_src/erlcompat.hpp`) should just return true or false. 
+  
+  Returning a `ERL_NIF_TERM` (`enif_make_badarg`) in the macro (when `enif_get_resource` fails) will prevent the caller from returning an error-tuple with detailed error message.
+
 ### Added
 - Added `Evision.Mat.literal/{1,2,3}` to create `Evision.Mat` from list literals.
 
