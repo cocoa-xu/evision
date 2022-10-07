@@ -11,11 +11,11 @@
 # System.put_env("EVISION_PREFER_PRECOMPILED", "false")
 
 Mix.install([
-  {:evision, "~> 0.1.7", github: "cocoa-xu/evision", tag: "v0.1.7"},
+  {:evision, "~> 0.1.7"},
   {:req, "~> 0.3"},
   {:torchx, "~> 0.3"},
   {:nx, "~> 0.3", override: true},
-  {:kino, "~> 0.6"},
+  {:kino, "~> 0.7"},
   {:scidata, "~> 0.1"}
 ])
 ```
