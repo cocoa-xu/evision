@@ -175,8 +175,7 @@ Compatible OpenCV versions:
 by compatible, it means these versions can compile successfully, and I tested a small range of functions. Tons of tests
 should be written, and then we can have a list for tested OpenCV versions.
 
-## Usage
-### Installation
+## Installation
 
 In order to use `evision`, you will need Elixir installed. Then create an Elixir project via the `mix` build tool:
 
