@@ -16,7 +16,7 @@
 | Windows 2019     | x86_64         | msvc |[![CI](https://github.com/cocoa-xu/evision/actions/workflows/windows-x86_64.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/windows-x86_64.yml) | Yes |
 
 ## Docs
-Online docs is available here, [https://cocoa-xu.github.io/evision](https://cocoa-xu.github.io/evision/doc/OpenCV.html).
+Online docs is available here, [https://cocoa-xu.github.io/evision](https://cocoa-xu.github.io/evision/doc/Evision.html).
 
 Will be available on hex.pm once we reach to the first release.
 
