@@ -111,10 +111,7 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const TYPE& src)                      
     static bool evision_##NAME##_getp(ErlNifEnv *env, ERL_NIF_TERM self, STORAGE * & dst)             \
     {                                                                                                 \
         evision_res<STORAGE> * VAR;                                                                   \
-        if (!enif_get_resource(env, self, evision_res<STORAGE>::type, (void **)&VAR))                 \
-            return enif_make_badarg(env);                                                             \
-        else                                                                                          \
-        {                                                                                             \
+        if (enif_get_resource(env, self, evision_res<STORAGE>::type, (void **)&VAR)) {                \
             dst = &(VAR->val);                                                                        \
             return true;                                                                              \
         }                                                                                             \
@@ -122,11 +119,10 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const TYPE& src)                      
     }                                                                                                 \
     static ERL_NIF_TERM evision_##NAME##_Instance(ErlNifEnv *env, const STORAGE &r)                   \
     {                                                                                                 \
-        evision_res< STORAGE > * VAR;                                                                 \
-        VAR = (decltype(VAR))enif_alloc_resource(evision_res< STORAGE >::type,                        \
-                                sizeof(evision_res< STORAGE >));                                      \
-        if (!VAR)                                                                                     \
-            return evision::nif::error(env, "no memory");                                             \
+        evision_res<STORAGE> * VAR;                                                                   \
+        VAR = (decltype(VAR))enif_alloc_resource(evision_res<STORAGE>::type,                          \
+                                sizeof(evision_res<STORAGE>));                                        \
+        if (!VAR) return evision::nif::error(env, "no memory");                                       \
         new (&(VAR->val)) STORAGE(r);                                                                 \
         ERL_NIF_TERM ret = enif_make_resource(env, VAR);                                              \
         enif_release_resource(VAR);                                                                   \

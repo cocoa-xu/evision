@@ -314,7 +314,7 @@ gen_template_check_self = Template("""
     ERL_NIF_TERM self = argv[0];
     ${cname} * self1 = 0;
     if (!evision_${name}_getp(env, self, self1)) {
-        return enif_make_badarg(env);
+        return failmsgp(env, "cannot get `${cname}` from `self`: mismatched type or invalid resource?");
     }
     ${pname} _self_ = ${cvt}(self1);
 """)
@@ -324,7 +324,7 @@ gen_template_safe_check_self = Template("""
     ${cname} self1;
     const ArgInfo selfArg("self", false);
     if (!evision_to_safe(env, self, self1, selfArg)) {
-        return enif_make_badarg(env);
+        return failmsgp(env, "cannot get `${cname}` from `self`: mismatched type or invalid resource?");
     }
     ${pname} _self_ = &self1;
 """)
