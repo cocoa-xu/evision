@@ -3,8 +3,8 @@ defmodule Evision.MixProject do
   require Logger
 
   @app :evision
-  @version "0.1.7-dev"
-  @last_released_version "0.1.6"
+  @version "0.1.7"
+  @last_released_version "0.1.7"
   @github_url "https://github.com/cocoa-xu/evision"
   @opencv_version "4.6.0"
   # only means compatible. need to write more tests

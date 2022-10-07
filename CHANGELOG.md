@@ -1,7 +1,7 @@
 # Changelog
 
-## v0.1.7-dev (main)
-[Browse the Repository](https://github.com/cocoa-xu/evision)
+## v0.1.7
+[Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.7) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.7)
 ### Breaking Changes
 - `EVISION_PREFER_PRECOMPILED` is set to `true` by default. 
    
@@ -251,7 +251,7 @@
     {:error, "cannot assign new value, mismatched type?"}
     iex> Evision.KalmanFilter.set_gain(k, :p)
     ** (RuntimeError) cannot assign new value, mismatched type?
-        (evision 0.1.7-dev) lib/generated/evision_kalmanfilter.ex:175: Evision.KalmanFilter.set_gain!/2
+        (evision 0.1.7) lib/generated/evision_kalmanfilter.ex:175: Evision.KalmanFilter.set_gain!/2
         iex:7: (file)
     ```
 
@@ -272,7 +272,7 @@
     "cannot get `Ptr<cv::KalmanFilter>` from `self`: mismatched type or invalid resource?"}
     iex> Evision.KalmanFilter.set_gain!(mat, mat)
     ** (RuntimeError) cannot get `Ptr<cv::KalmanFilter>` from `self`: mismatched type or invalid resource?
-        (evision 0.1.7-dev) lib/generated/evision_kalmanfilter.ex:175: Evision.KalmanFilter.set_gain!/2
+        (evision 0.1.7) lib/generated/evision_kalmanfilter.ex:175: Evision.KalmanFilter.set_gain!/2
         iex:2: (file)
     ```
 
@@ -362,7 +362,7 @@
   ```
 
 ## v0.1.6 (2022-09-29)
-[Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.7) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.6)
+[Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.6) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.6)
 ### Breaking Changes
 - `Evision.imencode/{2,3}` will now return encoded image as binary instead of a list.
 

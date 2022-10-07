@@ -188,7 +188,7 @@ Then you can add `evision` as dependency in your `mix.exs`. At the moment you wi
 ```elixir
 def deps do
   [
-    {:evision, "~> 0.1.6", github: "cocoa-xu/evision", tag: "v0.1.6"}
+    {:evision, "~> 0.1.7", github: "cocoa-xu/evision", tag: "v0.1.7"}
   ]
 end
 ```
@@ -235,9 +235,9 @@ target_abi =
 # set this to "false" if you prefer :evision to be compiled from source
 # 
 # default value is "true", and :evision will prefer to use precompiled binaries (if available)
-#   currently "0.1.1" to "0.1.6" are available
+#   currently "0.1.1" to "0.1.7" are available
 #   the version is implied by the tag in deps:
-#     {:evision, "~> 0.1.6", github: "cocoa-xu/evision", tag: "v0.1.6"}
+#     {:evision, "~> 0.1.7", github: "cocoa-xu/evision", tag: "v0.1.7"}
 #   for other available versions, please check the GitHub release page
 #   https://github.com/cocoa-xu/evision/releases
 export EVISION_PREFER_PRECOMPILED=false
