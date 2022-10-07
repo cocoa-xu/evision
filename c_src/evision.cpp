@@ -92,72 +92,6 @@ int alloc_resource(evision_res<cv::Mat *> **res) {
     return 0;
 }
 
-#define CV_HAS_CONVERSION_ERROR(x) (((x) == -1))
-
-template<typename T, class TEnable = void>  // TEnable is used for SFINAE checks
-struct Evision_Converter
-{
-    static inline bool to(ErlNifEnv *env, ERL_NIF_TERM obj, T& p, const ArgInfo& info);
-    static inline ERL_NIF_TERM from(ErlNifEnv *env, const T& src);
-    static inline ERL_NIF_TERM from_as_binary(ErlNifEnv *env, const T& src, bool& success);
-    static inline ERL_NIF_TERM from_as_map(ErlNifEnv *env, T src, ERL_NIF_TERM res_term);
-};
-
-// exception-safe evision_to
-template<typename _Tp> static
-bool evision_to_safe(ErlNifEnv *env, ERL_NIF_TERM obj, _Tp& value, const ArgInfo& info)
-{
-    try
-    {
-        return evision_to(env, obj, value, info);
-    }
-    catch (const std::exception &e)
-    {
-        // PyErr_SetString(opencv_error, cv::format("Conversion error: %s, what: %s", info.name, e.what()).c_str());
-        return false;
-    }
-    catch (...)
-    {
-        // PyErr_SetString(opencv_error, cv::format("Conversion error: %s", info.name).c_str());
-        return false;
-    }
-}
-
-static inline
-ERL_NIF_TERM evision_get_kw(ErlNifEnv *env, const std::map<std::string, ERL_NIF_TERM>& erl_terms, const std::string& key) {
-    auto iter = erl_terms.find(key);
-    if (iter == erl_terms.end()) {
-        return evision::nif::atom(env, "nil");
-    }
-    return iter->second;
-}
-
-template<typename T> static
-bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, T& p, const ArgInfo& info) { return Evision_Converter<T>::to(env, obj, p, info); }
-
-template<typename T> static
-ERL_NIF_TERM evision_from(ErlNifEnv *env, const T& src) { return Evision_Converter<T>::from(env, src); }
-
-template<typename T> static
-ERL_NIF_TERM evision_from_as_binary(ErlNifEnv *env, const T& src, bool& success) { return Evision_Converter<T>::from_as_binary(env, src, success); }
-
-template<typename T> static
-ERL_NIF_TERM evision_from_as_map(ErlNifEnv *env, const T& src, ERL_NIF_TERM res_term) { return res_term; }
-
-template <>
-ERL_NIF_TERM evision_from_as_binary(ErlNifEnv *env, const std::vector<uchar>& src, bool& success) {
-    size_t n = static_cast<size_t>(src.size());
-    ErlNifBinary binary;
-    if ((success = enif_alloc_binary(n, &binary))) {
-        memcpy(binary.data, src.data(), n);
-        ERL_NIF_TERM ret = enif_make_binary(env, &binary);
-        return ret;
-    }
-    return 0;
-}
-
-#include "modules/evision_video_api.h"
-
 static bool isBindingsDebugEnabled()
 {
     static bool param_debug = cv::utils::getConfigurationParameterBool("OPENCV_EVISION_DEBUG", false);
@@ -198,6 +132,72 @@ static ERL_NIF_TERM failmsgp(ErlNifEnv *env, const char *fmt, ...)
     emit_failmsg(env, "TypeError", str);
     return evision::nif::error(env, str);
 }
+
+#define CV_HAS_CONVERSION_ERROR(x) (((x) == -1))
+
+template<typename T, class TEnable = void>  // TEnable is used for SFINAE checks
+struct Evision_Converter
+{
+    static inline bool to(ErlNifEnv *env, ERL_NIF_TERM obj, T& p, const ArgInfo& info);
+    static inline ERL_NIF_TERM from(ErlNifEnv *env, const T& src);
+    static inline ERL_NIF_TERM from_as_binary(ErlNifEnv *env, const T& src, bool& success);
+    static inline ERL_NIF_TERM from_as_map(ErlNifEnv *env, T src, ERL_NIF_TERM res_term);
+};
+
+// exception-safe evision_to
+template<typename _Tp> static
+bool evision_to_safe(ErlNifEnv *env, ERL_NIF_TERM obj, _Tp& value, const ArgInfo& info)
+{
+    try
+    {
+        return evision_to(env, obj, value, info);
+    }
+    catch (const std::exception &e)
+    {
+        failmsgp(env, cv::format("Conversion error: %s, what: %s", info.name, e.what()).c_str());
+        return false;
+    }
+    catch (...)
+    {
+        failmsgp(env, cv::format("Conversion error: %s", info.name).c_str());
+        return false;
+    }
+}
+
+static inline
+ERL_NIF_TERM evision_get_kw(ErlNifEnv *env, const std::map<std::string, ERL_NIF_TERM>& erl_terms, const std::string& key) {
+    auto iter = erl_terms.find(key);
+    if (iter == erl_terms.end()) {
+        return evision::nif::atom(env, "nil");
+    }
+    return iter->second;
+}
+
+template<typename T> static
+bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, T& p, const ArgInfo& info) { return Evision_Converter<T>::to(env, obj, p, info); }
+
+template<typename T> static
+ERL_NIF_TERM evision_from(ErlNifEnv *env, const T& src) { return Evision_Converter<T>::from(env, src); }
+
+template<typename T> static
+ERL_NIF_TERM evision_from_as_binary(ErlNifEnv *env, const T& src, bool& success) { return Evision_Converter<T>::from_as_binary(env, src, success); }
+
+template<typename T> static
+ERL_NIF_TERM evision_from_as_map(ErlNifEnv *env, const T& src, ERL_NIF_TERM res_term) { return res_term; }
+
+template <>
+ERL_NIF_TERM evision_from_as_binary(ErlNifEnv *env, const std::vector<uchar>& src, bool& success) {
+    size_t n = static_cast<size_t>(src.size());
+    ErlNifBinary binary;
+    if ((success = enif_alloc_binary(n, &binary))) {
+        memcpy(binary.data, src.data(), n);
+        ERL_NIF_TERM ret = enif_make_binary(env, &binary);
+        return ret;
+    }
+    return 0;
+}
+
+#include "modules/evision_video_api.h"
 
 static ERL_NIF_TERM evisionRaiseCVException(ErlNifEnv *env, const cv::Exception &e)
 {

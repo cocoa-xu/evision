@@ -314,7 +314,7 @@ gen_template_check_self = Template("""
     ERL_NIF_TERM self = argv[0];
     ${cname} * self1 = 0;
     if (!evision_${name}_getp(env, self, self1)) {
-        return enif_make_badarg(env);
+        return failmsgp(env, "cannot get `${cname}` from `self`: mismatched type or invalid resource?");
     }
     ${pname} _self_ = ${cvt}(self1);
 """)
@@ -324,7 +324,7 @@ gen_template_safe_check_self = Template("""
     ${cname} self1;
     const ArgInfo selfArg("self", false);
     if (!evision_to_safe(env, self, self1, selfArg)) {
-        return enif_make_badarg(env);
+        return failmsgp(env, "cannot get `${cname}` from `self`: mismatched type or invalid resource?");
     }
     ${pname} _self_ = &self1;
 """)
@@ -425,12 +425,12 @@ gen_template_get_prop_ptr = Template("""
 static ERL_NIF_TERM evision_${name}_get_${member}(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
     ERL_NIF_TERM self = argv[0];
-    ${storage_name}* self1_ptr = 0;
-    if (!evision_${name}_getp(env, self, self1_ptr) && !self1_ptr) {
-        return enif_make_badarg(env);
+    ${storage_name}* self_ptr = 0;
+    if (!evision_${name}_getp(env, self, self_ptr) && !self_ptr) {
+        return failmsgp(env, "cannot get `${storage_name}` from `self`: mismatched type or invalid resource?");
     }
-    
-    ${storage_name} &self2 = *self1_ptr;
+
+    ${storage_name} &self2 = *self_ptr;
     $cname* _self_ = dynamic_cast<$cname*>(self2.get());
     return evision_from(env, _self_->${member});
 }
@@ -440,12 +440,12 @@ gen_template_get_prop = Template("""
 static ERL_NIF_TERM evision_${name}_get_${member}(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
     ERL_NIF_TERM self = argv[0];
-    ${storage_name}* self1 = 0;
-    if (!evision_${name}_getp(env, self, self1) && !self1) {
-        return enif_make_badarg(env);
+    ${storage_name}* self_ptr = 0;
+    if (!evision_${name}_getp(env, self, self_ptr) && !self_ptr) {
+        return failmsgp(env, "cannot get `${storage_name}` from `self`: mismatched type or invalid resource?");
     }
-    
-    return evision_from(env, self1${access}${member});
+
+    return evision_from(env, self_ptr${access}${member});
 }
 """)
 
@@ -453,14 +453,16 @@ gen_template_get_prop_algo = Template("""
 static ERL_NIF_TERM evision_${name}_get_${member}(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
     ERL_NIF_TERM self = argv[0];
-    ${storage_name}* self1 = 0;
-    if (!evision_${name}_getp(env, self, self1)) {
-        return enif_make_badarg(env);
+    ${storage_name}* self_ptr = 0;
+    if (!evision_${name}_getp(env, self, self_ptr) && !self_ptr) {
+        return failmsgp(env, "cannot get `${storage_name}` from `self`: mismatched type or invalid resource?");
     }
-    
-    $cname* _self_algo_ = dynamic_cast<$cname*>(self1->get());
-    if (!_self_algo_)
+
+    $cname* _self_algo_ = dynamic_cast<$cname*>(self_ptr->get());
+    if (!_self_algo_) {
         return failmsgp(env, "Incorrect type of object (must be '${name}' or its derivative)");
+    }
+
     return evision_from(env, _self_algo_${access}${member});
 }
 """)
@@ -469,18 +471,40 @@ gen_template_set_prop = Template("""
 static ERL_NIF_TERM evision_${name}_set_${member}(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
     ERL_NIF_TERM self = argv[0];
-    ${storage_name}* self1 = 0;
-    if (!evision_${name}_getp(env, self, self1)) {
-        return enif_make_badarg(env);
-    }
-    return evision::nif::atom(env, "not implemented setter");
+    ${storage_name}* self_ptr = 0;
 
-    // if (!value)
-    // {
-    //     // todo: error("Cannot delete the ${member} attribute");
-    //     return -1;
-    // }
-    // return evision_to_safe(env, value, p->val${access}${member}, ArgInfo("value", false)) ? 0 : -1;
+    if (!evision_${name}_getp(env, self, self_ptr) && !self_ptr) {
+        return failmsgp(env, "cannot get `${storage_name}` from `self`: mismatched type or invalid resource?");
+    }
+
+    if (evision_to_safe(env, argv[1], self_ptr->${member}, ArgInfo("${member}", false))) {
+        return evision::nif::ok(env, self);
+    }
+
+    return failmsgp(env, "cannot assign new value, mismatched type?");
+}
+""")
+
+gen_template_set_prop_cv_ptr = Template("""
+static ERL_NIF_TERM evision_${name}_set_${member}(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
+{
+    ERL_NIF_TERM self = argv[0];
+    ${storage_name}* self_ptr = 0;
+
+    if (!evision_${name}_getp(env, self, self_ptr) && !self_ptr) {
+        return failmsgp(env, "cannot get `${storage_name}` from `self`: mismatched type or invalid resource?");
+    }
+
+    ${storage_name} &_self_ = *self_ptr;
+
+    std::map<std::string, ERL_NIF_TERM> erl_terms;
+    evision::nif::parse_arg(env, 1, argv, erl_terms);
+
+    if (evision_to_safe(env, evision_get_kw(env, erl_terms, "${member}"), _self_${access}${member}, ArgInfo("${member}", false))) {
+        return evision::nif::ok(env, self);
+    }
+
+    return failmsgp(env, "cannot assign new value, mismatched type?");
 }
 """)
 
@@ -488,23 +512,23 @@ gen_template_set_prop_algo = Template("""
 static ERL_NIF_TERM evision_${name}_set_${member}(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
     ERL_NIF_TERM self = argv[0];
-    ${storage_name}* self1 = 0;
-    if (!evision_${name}_getp(env, self, self1)) {
-        return enif_make_badarg(env);
+    ${storage_name}* self_ptr = 0;
+    if (!evision_${name}_getp(env, self, self_ptr) && !self_ptr) {
+        return failmsgp(env, "cannot get `${storage_name}` from `self`: mismatched type or invalid resource?");
     }
-    $cname* _self_algo_ = dynamic_cast<$cname*>(self1->get());
-    if (!_self_algo_)
-    {
-        failmsgp(env, "Incorrect type of object (must be '${name}' or its derivative)");
-        return -1;
+
+    $cname* _self_algo_ = dynamic_cast<$cname*>(self_ptr->get());
+    if (!_self_algo_) {
+        return failmsgp(env, "Incorrect type of object (must be '${name}' or its derivative)");
     }
-    if (evision_to_safe(env, argv[1], _self_algo_${access}${member}, ArgInfo("value", false))) {
+
+    if (evision_to_safe(env, argv[1], _self_algo_${access}${member}, ArgInfo("${member}", false))) {
         return evision::nif::ok(env, self);
     }
-    return evision::nif::atom(env, "error");
+
+    return failmsgp(env, "cannot assign new value, mismatched type?");
 }
 """)
-
 
 gen_template_prop_init = Template("""
     {(char*)"${member}", (getter)evision_${name}_get_${member}, NULL, (char*)"${member}", NULL},""")
