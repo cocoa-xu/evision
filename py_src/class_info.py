@@ -162,9 +162,14 @@ class ClassInfo(object):
                         name=self.name, cname=self.cname, member=pname,  membertype=p.tp, access=access_op,
                         storage_name=self.cname if self.issimple else "Ptr<{}>".format(self.cname)))
                 else:
-                    getset_code.write(ET.gen_template_set_prop.substitute(
+                    if self.issimple:
+                        getset_code.write(ET.gen_template_set_prop.substitute(
                         name=self.name, member=pname, membertype=p.tp, access=access_op, cname=self.cname,
-                        storage_name=self.cname if self.issimple else "Ptr<{}>".format(self.cname)))
+                        storage_name=self.cname))
+                    else:
+                        getset_code.write(ET.gen_template_set_prop_cv_ptr.substitute(
+                            name=self.name, member=pname, membertype=p.tp, access=access_op, cname=self.cname,
+                            storage_name="Ptr<{}>".format(self.cname)))
                 getset_inits.write(ET.gen_template_rw_prop_init.substitute(
                     name=self.name, member=pname,
                     storage_name=self.cname if self.issimple else "Ptr<{}>".format(self.cname)))
