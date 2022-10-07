@@ -106,7 +106,7 @@
   
     ```elixir
     @doc """
-    #### Variaint 1:
+    #### Variant 1:
 
     ##### Positional Arguments
     - **dx**: UMat. 
@@ -128,7 +128,7 @@
     \```
     Canny(dx, dy, threshold1, threshold2[, edges[, L2gradient]]) -> edges
     \```
-    #### Variaint 2:
+    #### Variant 2:
 
     ##### Positional Arguments
     - **image**: UMat. 
