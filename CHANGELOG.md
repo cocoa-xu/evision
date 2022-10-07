@@ -280,6 +280,10 @@
   
   Returning a `ERL_NIF_TERM` (`enif_make_badarg`) in the macro (when `enif_get_resource` fails) will prevent the caller from returning an error-tuple with detailed error message.
 
+- Improved the quality of generated inline docs.
+
+  Also displays what variable(s) will be returned (when applicable) in the `##### Return` section.
+
 ### Added
 - Added `Evision.Mat.literal/{1,2,3}` to create `Evision.Mat` from list literals.
 

@@ -147,42 +147,107 @@ class FuncVariant(object):
         else:
             return ''
 
+    def __escape_inline_docs__(self, line: str):
+        line = line.replace("\\", r"\\")
+        line = line.replace(r"\\\\", r"\\\\\\\\")
+        strip_line = line.strip()
+        if strip_line.startswith("*"):
+            strip_line = strip_line[1:].strip()
+            line = line.replace("*", "", 1)
+        if strip_line.startswith('"""'):
+            strip_line = strip_line.replace('"""', r'\"\"\"', 1)
+            line = line.replace('"""', r'\"\"\"', 1)
+        return strip_line, line
+
+    def __maybe_multiline__(self, lines, line_index: int, total_lines: int, append_to: StringIO, current_indent: int, add_newline_before_appending: bool, multiline_end_mark=['@']):
+        # deal with multi-line inline docs items
+        peak_line_index = line_index + 1
+        is_multiline = False
+        added_newline = False
+        last_line = ''
+        while peak_line_index < total_lines:
+            peak_line = lines[peak_line_index].strip()
+            peak_line_stripped, peak_line_escaped = self.__escape_inline_docs__(peak_line)
+            if len(peak_line_stripped) == 0:
+                if not last_line.endswith('\\\\'):
+                    break
+                else:
+                    peak_line_index += 1
+                    continue
+
+            if sum(peak_line_stripped.startswith(mark) for mark in multiline_end_mark) > 0:
+                break
+
+            last_line = peak_line_escaped
+            is_multiline = True
+            if add_newline_before_appending and not added_newline:
+                added_newline = True
+                append_to.write('\n')
+
+            append_to.write(' ' * current_indent)
+
+            if peak_line_stripped[0] in ['-', '*']:
+                append_to.write(peak_line_stripped[0])
+                append_to.write(' ')
+                append_to.write(peak_line_stripped[1:].strip())
+                append_to.write('\n')
+                _, peak_line_index = self.__maybe_multiline__(lines, peak_line_index, total_lines, append_to, 
+                    current_indent=current_indent + 2,
+                    add_newline_before_appending=False,
+                    multiline_end_mark=['-', '@', '*/', '\\\\f']
+                )
+            else:
+                append_to.write(peak_line_stripped)
+                append_to.write('\n')
+            peak_line_index += 1
+
+        if is_multiline:
+            line_index = peak_line_index - 1
+        return is_multiline, line_index
+
     def inline_docs_elixir(self):
         parameter_info = {}
-        doc_string = "\n".join('    {}'.format(line.strip()) for line in self.docstring.split("\n")).strip()
+        doc_string = "\n".join('  {}'.format(line.strip()) for line in self.docstring.split("\n")).strip()
         if len(doc_string) > 0:
-            doc_string = f'\n    {doc_string}\n'
+            doc_string = f'\n  {doc_string}\n'
         else:
             doc_string = '\n'
 
+        function_brief = ''
         opt_doc = ''
-        prototype = f'    Python prototype (for reference): {self.py_prototype}'
+        prototype = f'  Python prototype (for reference): {self.py_prototype}'
         if self.has_opts:
-            opt_doc = '\n'.join(['    @optional {}: {}'.format(arg_name, argtype) for (arg_name, _, argtype) in self.py_arglist[-self.py_noptargs:]])
+            opt_doc = '\n'.join(['  @optional {}: {}'.format(arg_name, argtype) for (arg_name, _, argtype) in self.py_arglist[-self.py_noptargs:]])
             opt_doc += '\n'
 
-        inline_doc = f'\n  @doc """<evision_param_info>\n{doc_string}{opt_doc}{prototype}\n'
+        inline_doc = f'\n  @doc """<evision_param_info>\n{doc_string}{opt_doc}\n{prototype}\n'
         inline_doc1 = ""
         last_in_list = False
         last_is_code = False
-        for line in inline_doc.split("\n"):
-            line = line.replace("\\", r"\\")
-            line = line.replace(r"\\\\", r"\\\\\\\\")
-            strip_line = line.strip()
-            if strip_line.startswith("*"):
-                strip_line = strip_line[1:].strip()
-                line = line.replace("*", "", 1)
-            if strip_line.startswith('"""'):
-                strip_line = strip_line.replace('"""', r'\"\"\"', 1)
-                line = line.replace('"""', r'\"\"\"', 1)
+        lines = inline_doc.split("\n")
+        line_index = 0
+        total_lines = len(lines)
+        current_indent = 2
+        while line_index < total_lines:
+            line = lines[line_index]
+            strip_line, line = self.__escape_inline_docs__(line)
             if strip_line == "=":
                 inline_doc = inline_doc[:-1] + "="
+                line_index += 1
                 continue
 
             if strip_line.startswith("@"):
                 if strip_line != "@doc \"\"\"":
                     if strip_line.startswith("@brief"):
-                        inline_doc1 += "  {}\n".format(strip_line[len("@brief"):].strip())
+                        brief_str = StringIO()
+                        brief_str.write("{}\n".format(strip_line[len("@brief"):].strip()))
+                        is_multiline, line_index = self.__maybe_multiline__(lines, line_index, total_lines, brief_str, 
+                            current_indent=current_indent,
+                            add_newline_before_appending=False
+                        )
+                        if is_multiline:
+                            brief_str.write('\n')
+                        function_brief = brief_str.getvalue()
                         last_in_list = False
                     elif strip_line.startswith("@overload"):
                         inline_doc1 += "  Has overloading in C++\n\n"
@@ -194,17 +259,32 @@ class FuncVariant(object):
                         # expecting:
                         # @param <ARG_NAME>[ <DESCRIPTION GOES HERE>]
                         # @optional <ARG_NAME>[ <DESCRIPTION GOES HERE>]
-                        arg_desc = strip_line.split(' ', 3)
+                        arg_desc = strip_line.split(' ', 2)
+                        description = StringIO()
+                        if len(arg_desc) == 3:
+                            description.write(arg_desc[2].strip())
+
+                        # deal with multi-line @param/@optional
+                        is_multiline, line_index = self.__maybe_multiline__(lines, line_index, total_lines, description, 
+                            current_indent=current_indent + 2,
+                            add_newline_before_appending=True
+                        )
+                        if is_multiline is False:
+                            description.write('\n')
+
                         normalized_arg_name = map_argname('elixir', arg_desc[1])
                         normalized_arg_name = normalized_arg_name.replace(":", "")
                         is_optional = strip_line.startswith("@optional")
-                        description = ''
-                        if len(arg_desc) == 3:
-                            description = arg_desc[2]
-                        parameter_info[normalized_arg_name] = {
-                            "is_optional": is_optional,
-                            "desc": description
-                        }
+
+                        description = description.getvalue()
+                        if parameter_info.get(normalized_arg_name) is None:
+                            parameter_info[normalized_arg_name] = {
+                                "is_optional": is_optional,
+                                "desc": description
+                            }
+                        else:
+                            if len(parameter_info[normalized_arg_name]["desc"]) < len(description):
+                                parameter_info[normalized_arg_name]["desc"] = description
                         last_in_list = True
                     elif strip_line.startswith("@code"):
                         last_in_list = False
@@ -224,44 +304,117 @@ class FuncVariant(object):
                 else:
                     inline_doc1 += "  @doc \"\"\"\n"
             elif strip_line.startswith("Python prototype (for reference): "):
-                inline_doc1 += "\n  Python prototype (for reference): \n  ```\n  {}\n  ```\n".format(strip_line[len("Python prototype (for reference): "):])
+                inline_doc1 += "\n  Python prototype (for reference): \n  ```python3\n  {}\n  ```\n".format(strip_line[len("Python prototype (for reference): "):])
                 last_in_list = False
+            elif strip_line.startswith("-"):
+                list_content = StringIO()
+                list_content.write(' ' * current_indent)
+                list_content.write('- ')
+                list_content.write(strip_line[1:].strip())
+                _, line_index = self.__maybe_multiline__(lines, line_index, total_lines, list_content,
+                    current_indent=current_indent + 2,
+                    add_newline_before_appending=True,
+                    multiline_end_mark=['-', '@']
+                )
+                list_content.write('\n')
+                inline_doc1 += list_content.getvalue()
+                last_in_list = True
             elif len(strip_line) != 0:
+                if last_in_list:
+                    inline_doc1 += '\n'
+                    last_in_list = False
+                if strip_line == '\\note':
+                    strip_line = '**Note**'
+                elif strip_line == '\\\\overload':
+                    line_index += 1
+                    continue
+
                 if last_is_code:
                     inline_doc1 += "  {}\n".format(strip_line)
                 else:
                     inline_doc1 += "{}{}\n".format("  " if last_in_list else "", line)
             else:
-                last_in_list = False
-        inline_doc = inline_doc1.replace('@doc """', '').strip()
+                if last_in_list:
+                    inline_doc1 += '\n'
+                    last_in_list = False
+            line_index += 1
+
+        inline_doc = inline_doc1.replace('@doc """', function_brief)
         inline_doc = handle_inline_math_escaping(inline_doc)
         parameter_info_doc = StringIO()
-        if self.py_noptargs > 0:
-            parameter_info_doc.write("\n  ##### Positional Arguments\n")
-            for (arg_name, _, argtype) in self.py_arglist[:self.pos_end]:
-                normalized_arg_name = map_argname('elixir', arg_name)
-                normalized_arg_name = normalized_arg_name.replace(":", "")
-                if parameter_info.get(normalized_arg_name, None) is None:
-                    parameter_info_doc.write(f"  - **{normalized_arg_name}**: {argtype}\n")
-                else:
-                    info = parameter_info[normalized_arg_name]
-                    parameter_info_doc.write(f"  - **{normalized_arg_name}**: {argtype}. {info['desc']}\n")
-            parameter_info_doc.write("\n")
+
+        out_args = [o[0] for o in self.py_outlist]
+        if self.min_args > 0:
+            positional_args = []
+            for (arg_name, argno, argtype) in self.py_arglist[:self.pos_end]:
+                if arg_name not in out_args:
+                    positional_args.append((arg_name, argno, argtype))
+            if len(positional_args) > 0:
+                parameter_info_doc.write("\n  ##### Positional Arguments\n")
+                for (arg_name, _, argtype) in positional_args:
+                    argtype1 = self.__map_argtype_in_docs__(argtype)
+                    normalized_arg_name = map_argname('elixir', arg_name)
+                    normalized_arg_name = normalized_arg_name.replace(":", "")
+                    if parameter_info.get(normalized_arg_name, None) is None:
+                        parameter_info_doc.write(f"  - **{normalized_arg_name}**: `{argtype1}`\n")
+                    else:
+                        info = parameter_info[normalized_arg_name]
+                        parameter_info_doc.write(f"  - **{normalized_arg_name}**: `{argtype1}`.\n\n    {info['desc']}\n")
+                parameter_info_doc.write("\n")
 
         if self.has_opts:
-            parameter_info_doc.write("  ##### Keyword Arguments\n")
-            for (arg_name, _, argtype) in self.py_arglist[self.pos_end:]:
-                normalized_arg_name = map_argname('elixir', arg_name)
-                normalized_arg_name = normalized_arg_name.replace(":", "")
-                if parameter_info.get(normalized_arg_name, None) is None:
-                    parameter_info_doc.write(f"  - **{normalized_arg_name}**: {argtype}\n")
-                else:
-                    info = parameter_info[normalized_arg_name]
-                    if argtype == info['desc']:
-                        parameter_info_doc.write(f"  - **{normalized_arg_name}**: {argtype}.\n")
+            optional_args = []
+            for (arg_name, argno, argtype) in self.py_arglist[self.pos_end:]:
+                if arg_name not in out_args:
+                    optional_args.append((arg_name, argno, argtype))
+            if len(optional_args) > 0:
+                parameter_info_doc.write("  ##### Keyword Arguments\n")
+                for (arg_name, _, argtype) in optional_args:
+                    argtype1 = self.__map_argtype_in_docs__(argtype)
+                    normalized_arg_name = map_argname('elixir', arg_name)
+                    normalized_arg_name = normalized_arg_name.replace(":", "")
+                    if parameter_info.get(normalized_arg_name, None) is None:
+                        parameter_info_doc.write(f"  - **{normalized_arg_name}**: `{argtype1}`\n")
                     else:
-                        parameter_info_doc.write(f"  - **{normalized_arg_name}**: {argtype}. {info['desc']}\n")
+                        info = parameter_info[normalized_arg_name]
+                        if argtype == info['desc'].strip():
+                            parameter_info_doc.write(f"  - **{normalized_arg_name}**: `{argtype1}`.\n")
+                        else:
+                            parameter_info_doc.write(f"  - **{normalized_arg_name}**: `{argtype1}`.\n\n    {info['desc']}\n")
+
+        if len(out_args) > 0:
+            return_values = []
+            for arg in self.args:
+                if arg.name in out_args:
+                    return_values.append((arg.name, arg.tp))
+            if len(return_values) > 0:
+                parameter_info_doc.write("  ##### Return\n")
+                for (arg_name, argtype) in return_values:
+                    argtype1 = self.__map_argtype_in_docs__(argtype)
+                    normalized_arg_name = map_argname('elixir', arg_name)
+                    normalized_arg_name = normalized_arg_name.replace(":", "")
+                    if parameter_info.get(normalized_arg_name, None) is None:
+                        parameter_info_doc.write(f"  - **{normalized_arg_name}**: `{argtype1}`\n")
+                    else:
+                        info = parameter_info[normalized_arg_name]
+                        if argtype == info['desc'].strip():
+                            parameter_info_doc.write(f"  - **{normalized_arg_name}**: `{argtype1}`.\n")
+                        else:
+                            parameter_info_doc.write(f"  - **{normalized_arg_name}**: `{argtype1}`.\n\n    {info['desc']}\n")
         return inline_doc.replace('<evision_param_info>', parameter_info_doc.getvalue())
+
+    def __map_argtype_in_docs__(self, argtype: str):
+        is_array = argtype.startswith('vector_')
+        if is_array:
+            argtype = argtype[len('vector_'):]
+        mapping = {
+            'UMat': 'Evision.Mat',
+            'Mat': 'Evision.Mat',
+        }
+        mapped_type = mapping.get(argtype, argtype)
+        if is_array:
+            mapped_type = f'[{mapped_type}]'
+        return mapped_type
 
     def opts_args(self, kind: str, in_func_body: bool = False):
         if self.has_opts:

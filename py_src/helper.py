@@ -130,7 +130,11 @@ def handle_inline_math_escaping(text, start_pos=0):
                 elif strip_line.startswith('+ '):
                     math_lines += line.replace('+ ', r'\\+ ', 1)
                 else:
-                    math_lines += line
+                    if line.strip() == '=':
+                        math_lines = math_lines.rstrip()
+                        math_lines += '='
+                    else:
+                        math_lines += line
                 math_lines += "\n"
             math_text = math_lines[:-1]
             replaced = processed + todo[:start] + math_text + todo[end:]
