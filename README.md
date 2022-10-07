@@ -161,9 +161,12 @@ end
 
 Early versions (v0.1.x) of `evision` will be available on hex.pm soon.
 
-### Use Precompiled Library
-To use precompiled Evision library, the following environment variables should be set
+### Use Precompiled Library (Default)
+To use precompiled Evision library, the following environment variables can be set based on your needs.
 
+(Note that precompiled binaries do not use FFmpeg. If you'd like to use FFmpeg, please compile from source and set corresponding environment variables. We're considering this option at the moment.)
+
+#### TARGET_ABI
 ```shell
 # required if and only if the build target is using musl libc.
 #
@@ -190,6 +193,7 @@ target_abi =
   end
 ```
 
+#### EVISION_PREFER_PRECOMPILED
 ```shell
 # optional. 
 # set this to "false" if you prefer :evision to be compiled from source
@@ -201,17 +205,14 @@ target_abi =
 #   for other available versions, please check the GitHub release page
 #   https://github.com/cocoa-xu/evision/releases
 export EVISION_PREFER_PRECOMPILED=false
+```
 
+#### EVISION_PRECOMPILED_CACHE_DIR
+```shell
 # optional.
 ## set the cache directory for the precompiled archive file
 export EVISION_PRECOMPILED_CACHE_DIR="$(pwd)/.cache"
 ```
-
-Note 1: Precompiled binaries does not use FFmpeg. If you'd like to use FFmpeg, please compile from source and set corresponding environment variables.
-
-Note 2: by default, Evision will compile from source as it's WIP at the moment.
-
-Note 3: a copy of OpenCV's license file can be found at `LICENSE-OpenCV`.
 
 ### Compile OpenCV from Sources
 To obtain and compile OpenCV's source code from official releases, the following environment variables can affect the build
