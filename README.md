@@ -131,6 +131,29 @@ iex> mat = Evision.Nx.to_mat!(t)
 }
 ```
 
+#### Unsupported Type Map
+As OpenCV does not support the following types (yet, as of OpenCV 4.6.0)
+
+- `{:s, 64}`
+- `{:u, 32}`
+- `{:u, 64}`
+
+Although it's possible to *store* values with those types using custom types, the resulting Mat/tensor will be incompatible with most existing functions in OpenCV.
+
+Moreover, it's somewhat inconvinient to explicitly specify the type each time using them. Therefore, Evision allows to set a map for those unsupported types. 
+
+```elixir
+config :evision, unsupported_type_map: %{
+  {:s, 64} => {:f, 64},
+  {:u, 64} => {:f, 64},
+  {:u, 32} => {:f, 32}
+}
+```
+
+The `key` of this `unsupported_type_map` is the unsupported type, and the value is the replacement type for it.
+
+See [this reply](https://github.com/cocoa-xu/evision/issues/48#issuecomment-1266282345) for more details on this.
+
 ## Description
 
 `evision` will pull OpenCV source code from GitHub, then parse and automatically generate corresponding OpenCV-Elixir bindings.
@@ -389,27 +412,6 @@ config :evision, enabled_img_codecs: [
   :openexr
 ]
 ```
-
-#### Unsupported Type Map
-As OpenCV does not support the following types
-
-- `{:s, 64}`
-- `{:u, 32}`
-- `{:u, 64}`
-
-Although it's possible to *store* values with those types using custom types, the resulting Mat/tensor will be incompatible with most existing functions in OpenCV.
-
-Moreover, it's somewhat inconvinient to explicitly specify the type each time using them. Therefore, Evision allows to set a map for those unsupported types. 
-
-```elixir
-config :evision, unsupported_type_map: %{
-  {:s, 64} => {:f, 64},
-  {:u, 64} => {:f, 64},
-  {:u, 32} => {:f, 32}
-}
-```
-
-The `key` of this `unsupported_type_map` is the unsupported type, and the value is the replacement type for it.
 
 ### Notes 
 
