@@ -229,12 +229,11 @@ defmodule Evision.MixProject do
       {:elixir_make, "~> 0.6", runtime: false},
       # runtime
       {:dll_loader_helper, "~> 0.1"},
-      {:nx, "~> 0.3", override: true},
+      {:nx, "~> 0.3"},
       # docs
       {:ex_doc, "~> 0.28", only: :docs, runtime: false},
       # test
       {:scidata, "~> 0.1", only: :test},
-      {:scholar, "~> 0.1", only: :test, github: "elixir-nx/scholar"},
       {:castore, "~> 0.1", only: :test, override: true}
     ]
   end
@@ -321,10 +320,31 @@ defmodule Evision.MixProject do
       name: "evision",
       # These are the default files included in the package
       files:
-        ~w(c_src py_src 3rd_party scripts patches cc_toolchain priv Makefile Makefile.win CMakeLists.txt
-                lib .formatter.exs mix.exs
-                src rebar.config
-                README* readme* LICENSE* license* CHANGELOG* changelog*),
+        ~w(
+          c_src/evision_custom_headers
+          c_src/modules
+          c_src/ArgInfo.hpp
+          c_src/erlcompat.hpp
+          c_src/evision.cpp
+          c_src/evision_custom_headers.h
+          c_src/evision_generated_enums.h
+          c_src/nif_utils.hpp
+          py_src/*.py
+          scripts
+          patches
+          cc_toolchain
+          Makefile
+          Makefile.win
+          CMakeLists.txt
+          lib/*.ex
+          lib/evision
+          .formatter.exs
+          mix.exs
+          src/evision_mat.erl
+          src/evision_highgui.erl
+          src/evision.app.src
+          rebar.config
+          README* LICENSE* CHANGELOG*),
       licenses: ["Apache-2.0"],
       links: %{"GitHub" => @github_url}
     ]
