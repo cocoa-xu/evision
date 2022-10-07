@@ -19,8 +19,15 @@ static ERL_NIF_TERM evision_cv_mat_reshape(ErlNifEnv *env, int argc, const ERL_N
 
         if (evision_to_safe(env, evision_get_kw(env, erl_terms, "mat"), mat, ArgInfo("mat", 0)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "shape"), shape, ArgInfo("shape", 0))) {
-            Mat out = mat.reshape(0, shape);
-            return evision::nif::ok(env, evision_from(env, out));
+            Mat ret;
+
+            int error_flag = false;
+            ERRWRAP2(ret = mat.reshape(0, shape), env, error_flag, error_term);
+            if (!error_flag) {
+                return evision::nif::ok(env, evision_from(env, ret));
+            } else {
+                return error_term;
+            }
         }
     }
 

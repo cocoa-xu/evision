@@ -163,6 +163,59 @@
     when (is_reference(dx) or is_struct(dx)) and (is_reference(dy) or is_struct(dy)) and is_number(threshold1) and is_number(threshold2), do: # variant 1
     ```
 
+- Better integration with `:nx`.
+
+  ```elixir
+  iex> t = Nx.tensor([[[0,0,0], [255, 255, 255]]], type: :u8)
+  #Nx.Tensor<
+    u8[1][2][3]
+    [
+      [
+        [0, 0, 0],
+        [255, 255, 255]
+      ]
+    ]
+  >
+  iex> mat = Evision.imread!("test.png")
+  %Evision.Mat{
+    channels: 3,
+    dims: 2,
+    type: {:u, 8},
+    raw_type: 16,
+    shape: {1, 2, 3},
+    ref: #Reference<0.2067356221.74055707.218654>
+  }
+  iex> mat = Evision.Mat.channel_as_last_dim!(mat)
+  %Evision.Mat{
+    channels: 1,
+    dims: 3,
+    type: {:u, 8},
+    raw_type: 0,
+    shape: {1, 2, 3},
+    ref: #Reference<0.2067356221.74055698.218182>
+  }
+  iex> result = Evision.Mat.add!(t, mat)
+  %Evision.Mat{
+    channels: 1,
+    dims: 3,
+    type: {:u, 8},
+    raw_type: 0,
+    shape: {1, 2, 3},
+    ref: #Reference<0.2067356221.74055698.218184>
+  }
+  iex> Evision.Nx.to_nx!(result)
+  #Nx.Tensor<
+    u8[1][2][3]
+    Evision.Backend
+    [
+      [
+        [255, 255, 255],
+        [255, 255, 255]
+      ]
+    ]
+  >
+  ```
+
 ### Added
 - Added `Evision.Mat.literal/{1,2,3}` to create `Evision.Mat` from list literals.
 
@@ -203,6 +256,40 @@
     raw_type: 16,
     shape: {1, 3, 3},
     ref: #Reference<0.512519210.691404820.106293>
+  }
+  ```
+
+- Added `Evision.Mat.channel_as_last_dim/1`.
+
+  This function does the opposite as to `Evision.Mat.last_dim_as_channel/1`.
+
+  If the number of channels of the input Evision.Mat is greater than 1,
+  then this function would convert the input Evision.Mat with dims `dims=list(int())` to a `1`-channel Evision.Mat with dims `[dims | channels]`.
+
+  If the number of channels of the input Evision.Mat is equal to 1,
+  - if dims == shape, then nothing happens
+  - otherwise, a new Evision.Mat that has dims=`[dims | channels]` will be returned
+  
+  For example,
+
+  ```elixir
+  iex> mat = Evision.imread!("test.png")
+  %Evision.Mat{
+    channels: 3,
+    dims: 2,
+    type: {:u, 8},
+    raw_type: 16,
+    shape: {1, 2, 3},
+    ref: #Reference<0.2067356221.74055707.218654>
+  }
+  iex> mat = Evision.Mat.channel_as_last_dim!(mat)
+  %Evision.Mat{
+    channels: 1,
+    dims: 3,
+    type: {:u, 8},
+    raw_type: 0,
+    shape: {1, 2, 3},
+    ref: #Reference<0.2067356221.74055698.218182>
   }
   ```
 
