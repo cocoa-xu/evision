@@ -106,15 +106,15 @@
   
     ```elixir
     @doc """
-    ## Variaint 1:
+    #### Variaint 1:
 
-    ### Positional Arguments
+    ##### Positional Arguments
     - **dx**: UMat. 
     - **dy**: UMat. 
     - **threshold1**: double. 
     - **threshold2**: double. 
 
-    ### Keyword Arguments
+    ##### Keyword Arguments
     - **edges**: UMat.
     - **l2gradient**: bool.
 
@@ -128,14 +128,14 @@
     \```
     Canny(dx, dy, threshold1, threshold2[, edges[, L2gradient]]) -> edges
     \```
-    ## Variaint 2:
+    #### Variaint 2:
 
-    ### Positional Arguments
+    ##### Positional Arguments
     - **image**: UMat. 
     - **threshold1**: double. 
     - **threshold2**: double. 
 
-    ### Keyword Arguments
+    ##### Keyword Arguments
     - **edges**: UMat.
     - **apertureSize**: int.
     - **l2gradient**: bool.
