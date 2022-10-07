@@ -16,9 +16,9 @@
 | Windows 2019     | x86_64         | msvc |[![CI](https://github.com/cocoa-xu/evision/actions/workflows/windows-x86_64.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/windows-x86_64.yml) | Yes |
 
 ## Docs
-Online docs is available here, [https://cocoa-xu.github.io/evision](https://cocoa-xu.github.io/evision/doc/Evision.html).
+Online docs for the latest released version is available on Hex.pm, [https://hexdocs.pm/evision/](https://hexdocs.pm/evision/).
 
-Will be available on hex.pm once we reach to the first release.
+Online docs for git HEAD is available here, [https://cocoa-xu.github.io/evision/](https://cocoa-xu.github.io/evision/).
 
 ## Nerves Support
 
