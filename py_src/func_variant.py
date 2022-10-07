@@ -237,7 +237,7 @@ class FuncVariant(object):
         inline_doc = handle_inline_math_escaping(inline_doc)
         parameter_info_doc = StringIO()
         if self.py_noptargs > 0:
-            parameter_info_doc.write("\n  ### Positional Arguments\n")
+            parameter_info_doc.write("\n  ##### Positional Arguments\n")
             for (arg_name, _, argtype) in self.py_arglist[:self.pos_end]:
                 normalized_arg_name = map_argname('elixir', arg_name)
                 normalized_arg_name = normalized_arg_name.replace(":", "")
@@ -249,7 +249,7 @@ class FuncVariant(object):
             parameter_info_doc.write("\n")
 
         if self.has_opts:
-            parameter_info_doc.write("  ### Keyword Arguments\n")
+            parameter_info_doc.write("  ##### Keyword Arguments\n")
             for (arg_name, _, argtype) in self.py_arglist[self.pos_end:]:
                 normalized_arg_name = map_argname('elixir', arg_name)
                 normalized_arg_name = normalized_arg_name.replace(":", "")

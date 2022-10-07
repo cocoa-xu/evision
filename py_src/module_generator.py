@@ -110,7 +110,7 @@ class ModuleGenerator(object):
                     else:
                         self.write_elixir('\n  @doc """\n')
                         for i in range(len(docs_mfa)):
-                            self.write_elixir(f'  ## Variaint {i+1}:\n')
+                            self.write_elixir(f'  #### Variant {i+1}:\n')
                             self.write_elixir(docs_mfa[i][0])
                             self.write_elixir('\n')
                         self.write_elixir('\n  """\n')
