@@ -38,3 +38,7 @@ test/photo_hdr_test/
 /examples/space_shuttle.jpg
 /examples/ssd_mobilenet_v2_coco_2018_03_29**
 /examples/test.png
+
+# we don't need to track checksum-evision.exs in git
+# it should only be tracked by hex.pm (in `Evision.MixProject.package()[:files]`)
+checksum-evision.exs
