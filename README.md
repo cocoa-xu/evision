@@ -198,8 +198,6 @@ Please note that although `:evision` is available on hex.pm now, it's still in i
 Therefore, it's recommended to use a specific version (i.e., include the minor version number in `deps`, `{:evision, "~> 0.1.7"}`, instead of `{:evision, "~> 0.1"}`) at the moment.
 
 ### Use Precompiled Library (Default)
-[CMake](https://cmake.org/) >= 3.3 and `make` (`nmake` if on Windows) are required for downloading and deploying precompiled binaries at the moment. We're working on removing this requirement.
-
 The following environment variables can be set based on your needs.
 
 (Note that precompiled binaries do not use FFmpeg. If you'd like to use FFmpeg, please compile from source (please see instructions in the next section) and set corresponding environment variables. We're considering this option at the moment.)

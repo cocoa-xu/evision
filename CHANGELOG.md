@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.1.8 (2022-10-08)
+### Changed
+- `CMake` and `make` (`nmake` if on Windows) will not be used to download and deploy precompiled binaries for Elixir users.
+
+  This means that `evision` can be downloaded and deployed once Erlang and Elixir are properly installed on the system.
+
 ## v0.1.7 (2022-10-07)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.7) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.7)
 ### Breaking Changes
