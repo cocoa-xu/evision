@@ -1,11 +1,13 @@
 # Changelog
 
 ## v0.1.9 (2022-10-08)
+[Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.9) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.9)
 ### Bug Fixes
 - `Mix.Tasks.Compile.EvisionPrecompiled`: using `File.cp_r/2` instead of calling `cp -a` via `System.cmd/3`.
 - Fixed TLS warnings when downloading precompiled tarball file. Thanks to @kipcole9!
 
 ## v0.1.8 (2022-10-08)
+[Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.8) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.8)
 ### Changed
 - `CMake` and `make` (`nmake` if on Windows) will not be used to download and deploy precompiled binaries for Elixir users.
 
