@@ -188,14 +188,14 @@ Then you can add `evision` as dependency in your `mix.exs`.
 ```elixir
 def deps do
   [
-    {:evision, "~> 0.1.7"}
+    {:evision, "~> 0.1.8"}
   ]
 end
 ```
 
 Please note that although `:evision` is available on hex.pm now, it's still in its early versions. And it will remain on v0.1.x for a while, and all v0.1.x versions should be treated as in very active development. Please read the `CHANGELOG.md` for all breaking changes even it's a "minor" update.
 
-Therefore, it's recommended to use a specific version (i.e., include the minor version number in `deps`, `{:evision, "~> 0.1.7"}`, instead of `{:evision, "~> 0.1"}`) at the moment.
+Therefore, it's recommended to use a specific version (i.e., include the minor version number in `deps`, `{:evision, "~> 0.1.8"}`, instead of `{:evision, "~> 0.1"}`) at the moment.
 
 ### Use Precompiled Library (Default)
 The following environment variables can be set based on your needs.
@@ -235,9 +235,9 @@ target_abi =
 # set this to "false" if you prefer :evision to be compiled from source
 # 
 # default value is "true", and :evision will prefer to use precompiled binaries (if available)
-#   currently "0.1.1" to "0.1.7" are available
+#   currently "0.1.1" to "0.1.8" are available
 #   the version is implied by the tag in deps:
-#     {:evision, "~> 0.1.7", github: "cocoa-xu/evision", tag: "v0.1.7"}
+#     {:evision, "~> 0.1.8", github: "cocoa-xu/evision", tag: "v0.1.8"}
 #   for other available versions, please check the GitHub release page
 #   https://github.com/cocoa-xu/evision/releases
 export EVISION_PREFER_PRECOMPILED=false
@@ -252,7 +252,7 @@ export EVISION_PREFER_PRECOMPILED=false
 For livebook users, 
 ```elixir
 Mix.install([
-  {:evision, "~> 0.1.7"}
+  {:evision, "~> 0.1.8"}
 ], system_env: [
   {"EVISION_PREFER_PRECOMPILED", "false"}
 ])
