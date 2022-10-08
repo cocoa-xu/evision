@@ -344,7 +344,7 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
     end
 
     Logger.info("Copying priv directory: #{cached_priv_dir} => #{app_priv}")
-    with {"", 0} <- System.cmd("cp", ["-a", cached_priv_dir, app_priv]) do
+    with {"", 0} <- File.cp_r(cached_priv_dir, app_priv) do
       :ok
     else
       {msg, code} ->
@@ -354,7 +354,7 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
     end
 
     Logger.info("Copying generated Elixir binding files: #{cached_elixir_dir} => #{generated_elixir_dir}")
-    with {"", 0} <- System.cmd("cp", ["-a", cached_elixir_dir, generated_elixir_dir]) do
+    with {"", 0} <- File.cp_r(cached_elixir_dir, generated_elixir_dir) do
       :ok
     else
       {msg, code} ->
