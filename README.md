@@ -202,6 +202,28 @@ The following environment variables can be set based on your needs.
 
 (Note that precompiled binaries do not use FFmpeg. If you'd like to use FFmpeg, please compile from source (please see instructions in the next section) and set corresponding environment variables. We're considering this option at the moment.)
 
+#### Important notes
+When using `:evision` from git, version "0.1.1" to "0.1.7" are available.
+
+Starting from `0.1.8` (included), using `:evision` from git is no longer supported (unless set `EVISION_PREFER_PRECOMPILED` to `false`) because we started to use checksum file to verify the integrity of the downloaded tarball file, and the checksum file is only tracked in the hex.pm package.
+
+```elixir
+def deps do
+  [
+    {:evision, "~> 0.1.7", github: "cocoa-xu/evision", tag: "v0.1.7"}
+  ]
+end
+```
+
+It is recommended to use `:evision` from hex.pm. Currently "0.1.7" to "0.1.8" are available on hex.pm,
+```elixir
+def deps do
+  [
+    {:evision, "~> 0.1.8"}
+  ]
+end
+```
+
 #### TARGET_ABI
 ```shell
 # required if and only if the build target is using musl libc.
@@ -235,11 +257,6 @@ target_abi =
 # set this to "false" if you prefer :evision to be compiled from source
 # 
 # default value is "true", and :evision will prefer to use precompiled binaries (if available)
-#   currently "0.1.1" to "0.1.8" are available
-#   the version is implied by the tag in deps:
-#     {:evision, "~> 0.1.8", github: "cocoa-xu/evision", tag: "v0.1.8"}
-#   for other available versions, please check the GitHub release page
-#   https://github.com/cocoa-xu/evision/releases
 export EVISION_PREFER_PRECOMPILED=false
 ```
 
