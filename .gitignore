@@ -20,6 +20,7 @@ erl_crash.dump
 /cmake_*/
 /priv/
 *.pyc
+/*.xcodeproj/
 /c_src/evision_custom_headers/*
 /lib/evision.ex
 /src/evision.erl
