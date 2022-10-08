@@ -598,6 +598,8 @@ defmodule Evision.MixProject do
       elixir: "~> 1.11",
       deps: deps(),
       docs: docs(),
+      elixirc_paths: elixirc_paths(),
+      erlc_paths: erlc_paths(),
       compilers: compilers,
       source_url: Metadata.github_url(),
       description: description(),
@@ -789,6 +791,10 @@ defmodule Evision.MixProject do
       main: "Evision",
       source_ref: "v#{Metadata.version()}",
       source_url: @source_url,
+      extras: [
+        "CHANGELOG.md",
+        "README.md"
+      ],
       before_closing_body_tag: &before_closing_body_tag/1,
       groups_for_functions: [
         cv: &(&1[:namespace] == :cv),
@@ -861,6 +867,17 @@ defmodule Evision.MixProject do
     "OpenCV-Erlang/Elixir binding."
   end
 
+  def links do
+    %{
+      "GitHub" => Metadata.github_url(),
+      "Readme" => "#{Metadata.github_url()}/blob/v#{Metadata.version()}/README.md",
+      "Changelog" => "#{Metadata.github_url()}/blob/v#{Metadata.version()}/CHANGELOG.md"
+    }
+  end
+
+  defp elixirc_paths, do: ["lib"]
+  defp erlc_paths, do: []
+
   defp package() do
     [
       name: "evision",
@@ -892,7 +909,7 @@ defmodule Evision.MixProject do
           rebar.config
           README* LICENSE* CHANGELOG*),
       licenses: ["Apache-2.0"],
-      links: %{"GitHub" => Metadata.github_url()}
+      links: links()
     ]
   end
 end
