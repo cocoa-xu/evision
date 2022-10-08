@@ -18,6 +18,7 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
   alias Evision.MixProject.Metadata
 
   @available_versions [
+    "0.1.8",
     "0.1.7",
     "0.1.6",
     "0.1.5",
@@ -75,6 +76,13 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
       4 ->
         [arch, _vendor, os, abi] = target
         [arch, os, abi]
+      1 ->
+        with ["win32"] <- target do
+          ["x86_64", "windows", "msvc"]
+        else
+          [unknown_target] ->
+            [unknown_target, "unknown", nil]
+        end
     end
 
     abi =
