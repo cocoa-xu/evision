@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.1.9 (2022-10-08)
+### Bug Fixes
+- `Mix.Tasks.Compile.EvisionPrecompiled`: using `File.cp_r/2` instead of calling `cp -a` via `System.cmd/3`.
+- Fixed TLS warnings when downloading precompiled tarball file. Thanks to @kipcole9!
+
 ## v0.1.8 (2022-10-08)
 ### Changed
 - `CMake` and `make` (`nmake` if on Windows) will not be used to download and deploy precompiled binaries for Elixir users.
@@ -441,7 +446,7 @@
 - Check `cv::Mat::Mat.type()` when fetching the shape of a Mat.
   The number of channels will be included as the last dim of the shape if and only if `cv::Mat::Mat.type()` did not encode any channel information.
 
-### Fixed
+### Bug Fixes
 - Fixed `Evision.Mat.transpose`: should call `shape!` instead of `shape`. Thanks to @kipcole9 ! #77
 
 ### Added
@@ -524,7 +529,7 @@
 ### Changed
 - Default to `Evision.Backend` for `Evision.Nx.to_nx/2`.
 
-### Fixed
+### Bug Fixes
 - Fixed class inheritance issue in `py_src/class_info.py`.
 - Fixed missing comma in example livebooks' `Mix.install`. Thanks to @dbii.
 
@@ -533,7 +538,7 @@
 
 ## v0.1.3 (2022-09-01)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.3) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.3)
-### Fixed
+### Bug Fixes
 - Fixed issues in restoring files from precompiled package for macOS and Linux.
   - Paths are now quoted. 
   - using `cp -RPf` on macOS while `cp -a` on Linux.
@@ -542,7 +547,7 @@
 
 ## v0.1.2 (2022-08-26)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.2) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.2)
-### Fixed
+### Bug Fixes
 - Fixed transpose.
 
 ### Added
