@@ -6,7 +6,7 @@ on:
       - 'v*'
 
 jobs:
-  mix_test:
+  mix_compile:
     runs-on: ubuntu-20.04
     env:
       OPENCV_VER: "4.6.0"

@@ -10,6 +10,7 @@ on:
       - 'test/**'
       - 'Makefile.win'
       - 'cc_toolchain/**'
+      - 'checksum-evision.exs'
       - '.github/FUNDING.yml'
       - '.github/workflows/linux-*'
       - '.github/workflows/macos-*'
@@ -28,6 +29,7 @@ on:
       - 'examples/**'
       - 'Makefile.win'
       - 'cc_toolchain/**'
+      - 'checksum-evision.exs'
       - '.github/FUNDING.yml'
       - '.github/workflows/linux-*'
       - '.github/workflows/macos-*'
@@ -36,7 +38,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  mix_test:
+  mix_compile:
     runs-on: ubuntu-20.04
     env:
       MIX_ENV: prod
