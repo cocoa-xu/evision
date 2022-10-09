@@ -352,7 +352,7 @@ class FuncInfo(object):
                 else:
                     aname, argno = v.py_outlist[0]
                     if v.rettype == 'bool':
-                        code_ret = "if (%s) {\n                return evision::nif::atom(env, \"ok\");\n            } else {\n                return evision::nif::atom(env, \"error\");\n            }" % (aname,)
+                        code_ret = "if (%s) {\n                return evision::nif::atom(env, \"true\");\n            } else {\n                return evision::nif::atom(env, \"false\");\n            }" % (aname,)
                     elif v.rettype == 'Mat':
                         code_ret = f"ERL_NIF_TERM mat_ret = evision_from(env, {aname});\n" \
                                    "            if (enif_is_ref(env, mat_ret) || enif_is_map(env, mat_ret)) return evision::nif::ok(env, mat_ret);\n" \
