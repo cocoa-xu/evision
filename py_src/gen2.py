@@ -66,7 +66,10 @@ class BeamWrapperGenerator(object):
         self.evision_elixir.write('defmodule Evision do\n')
         self.evision_elixir.write('  import Bitwise\n')
         self.evision_elixir.write('  import Kernel, except: [apply: 2, apply: 3, min: 2, max: 2]\n')
-        self.evision_elixir.write('  import Evision.Errorize\n')
+        self.evision_elixir.write('  import Evision.Errorize\n\n')
+        self.evision_elixir.write('  @doc false\n')
+        self.evision_elixir.write('  def __to_struct__(any), do: Evision.Internal.Structurise.to_struct(any)\n\n')
+
         self.evision_elixir.write(ET.gen_cv_types_elixir)
         self.evision_erlang.write('-module(evision).\n-compile(nowarn_export_all).\n-compile([export_all]).\n\n')
 
@@ -326,29 +329,13 @@ class BeamWrapperGenerator(object):
         with open(path + "/" + name, "wt", encoding='utf-8') as f:
             json.dump(value, f)
 
-    def make_elixir_module_names(self, module_name=None, separated_ns=None):
-        mapping = {
-            'dnn': 'DNN',
-            'ml': 'ML',
-            'ocl': 'OCL',
-            'ipp': 'IPP',
-            'videoio_registry': 'VideoIORegistry',
-            'fisheye': 'FishEye',
-            'utils_fs': 'UtilsFS',
-            'cuda': 'CUDA',
-        }
-        if module_name is not None:
-            return mapping.get(module_name, f"{module_name[0].upper()}{module_name[1:]}")
-        if separated_ns is not None:
-            return ".".join([mapping.get(n, f"{n[0].upper()}{n[1:]}") for n in separated_ns])
-
     def get_module_writer(self, module_name, wname, name, is_ns):
-        elixir_module_name = self.make_elixir_module_names(module_name=module_name)
+        elixir_module_name = make_elixir_module_names(module_name=module_name)
         inner_ns = []
         if wname.startswith('cv::'):
             wname = wname[4:]
             inner_ns = wname.split('::')
-            elixir_module_name = self.make_elixir_module_names(separated_ns=inner_ns)
+            elixir_module_name = make_elixir_module_names(separated_ns=inner_ns)
         elixir_module_name = elixir_module_name.replace('_', '').strip()
         evision_module_filename = elixir_module_name.replace('.', '_')
 
@@ -360,10 +347,21 @@ class BeamWrapperGenerator(object):
             if elixir_module_name not in ['Flann', 'Segmentation', 'ML']:
                 module_file_generator.write_elixir('  import Kernel, except: [apply: 2, apply: 3]\n')
             if elixir_module_name not in ['Flann', 'Segmentation', 'ML']:
-                module_file_generator.write_elixir('  import Evision.Errorize\n')
+                module_file_generator.write_elixir('  import Evision.Errorize\n\n')
             if ES.evision_structs.get(elixir_module_name, None) is not None:
                 module_file_generator.write_elixir(ES.evision_structs[elixir_module_name])
                 module_file_generator.write_elixir("\n")
+
+            if elixir_module_name not in evision_structrised_classes:
+                atom_elixir_module_name = elixir_module_name
+                if '.' in atom_elixir_module_name:
+                    atom_elixir_module_name = f'"{atom_elixir_module_name}"'
+                module_file_generator.write_elixir(
+                    ES.generic_struct_template.substitute(
+                        atom_elixir_module_name=atom_elixir_module_name,
+                        elixir_module_name=elixir_module_name
+                    )
+                )
 
             if not evision_module_filename.startswith("evision_"):
                 module_file_generator.write_erlang(f'-module(evision_{evision_module_filename.lower()}).\n-compile(nowarn_export_all).\n-compile([export_all]).\n\n')
@@ -483,7 +481,6 @@ class BeamWrapperGenerator(object):
                 continue
             self.code_type_publish.write(classinfo.gen_def(self))
 
-
         # step 3: generate the code for all the global functions
         for ns_name, ns in sorted(self.namespaces.items()):
             if ns_name.split('.')[0] != 'cv':
@@ -508,24 +505,26 @@ class BeamWrapperGenerator(object):
             self.gen_const_reg(constinfo)
 
         # end 'evision.ex'
-        self.evision_elixir.write(self.enum_names_io.getvalue())
-        for fix in evision_elixir_fixes():
-            self.evision_elixir.write(fix)
-            self.evision_elixir.write("\n")
-        self.evision_elixir.write(ET.enabled_modules_code.substitute(
-            enabled_modules=",".join([f'\n      "{m}"' for m in self.enabled_modules]))
-        )
+        if 'elixir' in self.langs:
+            self.evision_elixir.write(self.enum_names_io.getvalue())
+            for fix in evision_elixir_fixes():
+                self.evision_elixir.write(fix)
+                self.evision_elixir.write("\n")
+            self.evision_elixir.write(ET.enabled_modules_code.substitute(
+                enabled_modules=",".join([f'\n      "{m}"' for m in self.enabled_modules]))
+            )
 
         # end 'evision.erl'
-        self.evision_ex.end('erlang')
-        self.evision_erlang.write(self.evision_ex.get_generated_code('erlang'))
-        self.evision_erlang.write(self.enum_names_io_erlang.getvalue())
-        for fix in evision_erlang_fixes():
-            self.evision_erlang.write(fix)
-            self.evision_erlang.write("\n")
-        self.evision_erlang.write(ET.enabled_modules_code_erlang.substitute(
-            enabled_modules=",".join([f'\'{m}\'' for m in self.enabled_modules]))
-        )
+        if 'erlang' in self.langs:
+            self.evision_ex.end('erlang')
+            self.evision_erlang.write(self.evision_ex.get_generated_code('erlang'))
+            self.evision_erlang.write(self.enum_names_io_erlang.getvalue())
+            for fix in evision_erlang_fixes():
+                self.evision_erlang.write(fix)
+                self.evision_erlang.write("\n")
+            self.evision_erlang.write(ET.enabled_modules_code_erlang.substitute(
+                enabled_modules=",".join([f'\'{m}\'' for m in self.enabled_modules]))
+            )
 
         # That's it. Now save all the files
         self.save(output_path, "evision_generated_include.h", self.code_include)
@@ -534,42 +533,43 @@ class BeamWrapperGenerator(object):
         self.save(output_path, "evision_generated_types.h", self.code_type_publish)
         self.save(output_path, "evision_generated_types_content.h", self.code_types)
 
+        # write all module files
         for name in self.evision_modules:
             module_file_generator = self.evision_modules[name]
-            module_file_generator.end('elixir')
-            module_file_generator.end('erlang')
-
-            self.evision_nif.write(module_file_generator.get_nif_declaration('elixir'))
-            self.evision_nif_erlang.write(module_file_generator.get_nif_declaration('erlang'))
-            self.code_ns_reg.write(module_file_generator.get_erl_nif_func_entry())
 
             if 'elixir' in self.langs:
+                module_file_generator.end('elixir')
+                self.evision_nif.write(module_file_generator.get_nif_declaration('elixir'))
                 self.save(erl_output_path, f"evision_{name.lower()}.ex", module_file_generator.get_generated_code('elixir'))
-            if 'erlang' in self.langs:
-                self.save(erlang_output_path, f"evision_{name.lower()}.erl", module_file_generator.get_generated_code('erlang'))
 
-        # 'evision_nif.ex'
-        self.evision_nif.write(self.evision_ex.get_nif_declaration('elixir'))
-        self.evision_nif.write('\nend\n')
+            if 'erlang' in self.langs:
+                module_file_generator.end('erlang')
+                self.evision_nif_erlang.write(module_file_generator.get_nif_declaration('erlang'))
+                self.save(erlang_output_path, f"evision_{name.lower()}.erl", module_file_generator.get_generated_code('erlang'))
+            
+            self.code_ns_reg.write(module_file_generator.get_erl_nif_func_entry())
+
+        
         if 'elixir' in self.langs:
+            # 'evision_nif.ex'
+            self.evision_nif.write(self.evision_ex.get_nif_declaration('elixir'))
+            self.evision_nif.write('\nend\n')
             self.save(erl_output_path, "evision_nif.ex", self.evision_nif)
 
-        # 'evision.ex'
-        self.evision_ex.end('elixir')
-        self.evision_elixir.write(self.evision_ex.get_generated_code('elixir'))
-        if 'elixir' in self.langs:
+            # 'evision.ex'
+            self.evision_ex.end('elixir')
+            self.evision_elixir.write(self.evision_ex.get_generated_code('elixir'))
             self.save(erl_output_path, "evision.ex", self.evision_elixir)
 
-        # 'evision_nif.erl'
-        self.evision_nif_erlang.write(self.evision_ex.get_nif_declaration('erlang'))
         if 'erlang' in self.langs:
+            # 'evision_nif.erl'
+            self.evision_nif_erlang.write(self.evision_ex.get_nif_declaration('erlang'))
             self.save(erlang_output_path, "evision_nif.erl", self.evision_nif_erlang)
 
-        # 'evision.erl'
-        self.evision_ex.end('erlang')
-        self.evision_elixir.write(self.evision_ex.get_generated_code('erlang'))
-        if 'erlang' in self.langs:
-            self.save(erlang_output_path, "evision.erl", self.evision_erlang)
+            # 'evision.erl'
+            self.evision_ex.end('erlang')
+            self.evision_elixir.write(self.evision_ex.get_generated_code('erlang'))
+            self.save(erlang_output_path, "evision.erl", self.evision_erlang)            
 
         self.code_ns_reg.write('\n};\n\n')
         self.save(output_path, "evision_generated_modules_content.h", self.code_ns_reg)
