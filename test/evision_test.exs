@@ -1,15 +1,6 @@
 defmodule Evision.Test do
   use ExUnit.Case
 
-  test "Errors will be {:error, String.t()}" do
-    random_ref = :erlang.make_ref()
-    {:error, reason} = Evision.Mat.shape(random_ref)
-    assert is_binary(reason)
-
-    {:error, reason} = Evision.Nx.to_nx(random_ref)
-    assert is_binary(reason)
-  end
-
   test "imread non-exist image shoud return error message: \"empty matrix\"" do
     assert {:error, "empty matrix"} == Evision.imread("/dev/null")
   end
@@ -160,7 +151,7 @@ defmodule Evision.Test do
     input_path = Path.join([__DIR__, "imreadmulti_test.tiff"])
     output_path = Path.join([__DIR__, "imwritemulti_test.tiff"])
     {:ok, images} = Evision.imreadmulti(input_path)
-    assert :ok = Evision.imwritemulti(output_path, images)
+    assert true = Evision.imwritemulti(output_path, images)
 
     ret = Evision.imreadmulti(output_path)
     assert :ok == elem(ret, 0)
@@ -196,7 +187,7 @@ defmodule Evision.Test do
     input_path = Path.join([__DIR__, "test.png"])
     output_path = Path.join([__DIR__, "imwrite_test.png"])
     {:ok, mat} = Evision.imread(input_path)
-    assert :ok = Evision.imwrite(output_path, mat)
+    assert true = Evision.imwrite(output_path, mat)
 
     ret = Evision.imread(output_path)
     assert :ok == elem(ret, 0)
