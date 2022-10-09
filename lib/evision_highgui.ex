@@ -49,12 +49,12 @@ defmodule Evision.HighGui do
 
   """
   @doc namespace: :"cv.highgui"
-  @spec waitkey(integer()) :: :ok | {:error, String.t()}
-  def waitkey(delay) when is_integer(delay) do
+  @spec waitKey(integer()) :: :ok | {:error, String.t()}
+  def waitKey(delay) when is_integer(delay) do
     :evision_nif.waitKey(delay: delay)
   end
 
-  deferror(waitkey(delay))
+  deferror(waitKey(delay))
 
   @doc """
   Close a named window
