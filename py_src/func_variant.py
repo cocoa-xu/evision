@@ -143,9 +143,9 @@ class FuncVariant(object):
     def function_signature(self):
         return ''.join(filter(lambda x: x != '', [map_argtype_to_type(argtype) for _, _, argtype in self.py_arglist[:self.pos_end]]))
     
-    def inline_docs(self, kind, beam_generator=None):
+    def inline_docs(self, kind):
         if kind == 'elixir':
-            return self.inline_docs_elixir(beam_generator)
+            return self.inline_docs_elixir()
         else:
             return ''
 
@@ -431,10 +431,7 @@ class FuncVariant(object):
     def generate_spec(self, kind: str, module_func_name: str, is_instance_method: bool, include_opts: bool, in_args: list=None, out_args: list=None) -> str:
         spec = StringIO()
 
-        classname_override = self.classname
-        if self.derived_class is not None:
-            classname_override = self.derived_class
-            print(f"{self.classname} => {classname_override}")
+        self.classname
         if out_args is None:
             out_args = self.py_outlist
             out_args_name = [o[0] for o in out_args]
@@ -442,13 +439,11 @@ class FuncVariant(object):
             if len(out_args_name) > 0 and (out_args_name[0] in ['retval', 'self']) and self.py_outlist[0][1] == -1:
                 if out_args_name[0] == 'retval':
                     out_args = [self.rettype]
-                    if self.rettype == self.classname:
-                        out_args = [classname_override]
                 elif out_args_name[0] == 'self':
                     out_args = [self.name]
                 out_args_name = out_args_name[1:]
             elif self.isconstructor:
-                out_args = [classname_override]
+                out_args = [self.classname]
             else:
                 out_args = []
 
@@ -467,13 +462,13 @@ class FuncVariant(object):
         in_args_spec = []
         if in_args is not None:
             for argtype in in_args:
-                in_args_spec.append(map_argtype_in_spec(classname_override, argtype, is_in=True))
+                in_args_spec.append(map_argtype_in_spec(self.classname, argtype, is_in=True))
         if self.has_opts and include_opts:
             in_args_spec.append('Keyword.t()')
         if is_instance_method:
             self.spec_self = ''
-            if len(classname_override) > 0:
-                tmp_name = classname_override
+            if len(self.classname) > 0:
+                tmp_name = self.classname
                 is_param = False
                 if tmp_name.endswith('_Param'):
                     tmp_name = tmp_name[:len('_Param')]
@@ -491,7 +486,7 @@ class FuncVariant(object):
         out_args_spec = []
         if out_args is not None and len(out_args) > 0:
             for argtype in out_args:
-                out_args_spec.append(map_argtype_in_spec(classname_override, argtype, is_in=False))
+                out_args_spec.append(map_argtype_in_spec(self.classname, argtype, is_in=False))
             out_spec = ", ".join(out_args_spec)
         else:
             out_args_spec = [':ok']
