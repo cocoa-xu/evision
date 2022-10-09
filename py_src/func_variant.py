@@ -410,6 +410,7 @@ class FuncVariant(object):
         mapping = {
             'UMat': 'Evision.Mat',
             'Mat': 'Evision.Mat',
+            'RotatedRect': '{centre={x, y}, size={s1, s2}, angle}'
         }
         mapped_type = mapping.get(argtype, argtype)
         if is_array:
