@@ -7,11 +7,16 @@ defmodule Evision.Internal.Structurise do
   def to_struct({:ok, ret}), do: to_struct_ok(ret)
 
   def to_struct(mat = %{:class => :Mat}) do
-    Evision.Mat.__make_struct__(mat)
+    Evision.Mat.__to_struct__(mat)
   end
 
   def to_struct(cap = %{:class => :VideoCapture}) do
-    Evision.VideoCapture.__make_struct__(cap)
+    Evision.VideoCapture.__to_struct__(cap)
+  end
+
+  def to_struct(ret = %{:class => module_name}) when is_atom(module_name) do
+    module = Module.concat([Evision, Atom.to_string(module_name)])
+    module.__to_struct__(ret)
   end
 
   def to_struct(tuple) when is_tuple(tuple) do
