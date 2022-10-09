@@ -7,12 +7,8 @@ defmodule Evision.Errorize do
   defmacro deferror(fun) do
     {name, args} = Macro.decompose_call(fun)
 
-    doc = """
-    Raising version of `#{name}/#{length(args)}`.
-    """
-
     quote do
-      @doc unquote(doc)
+      @doc false
       def unquote(:"#{name}!")(unquote_splicing(args)) do
         case unquote(fun) do
           {:ok, res} ->
