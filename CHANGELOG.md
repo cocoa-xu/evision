@@ -14,6 +14,14 @@
   bool parseSequence(ErlNifEnv *env, ERL_NIF_TERM obj, RefWrapper<T> (&value)[N], const ArgInfo& info)
   ```
 
+  ```elixir
+  # `RotatedRect` has to be a tuple, {centre, size, angle}
+  Evision.boxPoints!({{224.0, 262.5}, {343.0, 344.0}, 90.0})
+
+  # while `Point`/`Size` can be either a list, `[x, y]`, or a tuple, `{x, y}`
+  Evision.boxPoints!({[224.0, 262.5], [343.0, 344.0], 90.0})
+  ```
+
 ### Changed
 - Display `RotatedRect` type as `{centre={x, y}, size={s1, s2}, angle}` in docs.
 

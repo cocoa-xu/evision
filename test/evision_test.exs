@@ -350,4 +350,12 @@ defmodule Evision.Test do
     } = Evision.Mat.literal!([[[1,1,1],[2,2,2],[3,3,3]]], :f32, as_2d: true)
     assert is_reference(any_ref)
   end
+
+  test "Evision.boxPoints/1" do
+    # `RotatedRect` has to be a tuple, {centre, size, angle}
+    Evision.boxPoints!({{224.0, 262.5}, {343.0, 344.0}, 90.0})
+
+    # while `Point`/`Size` can be either a list or a tuple
+    Evision.boxPoints!({[224.0, 262.5], [343.0, 344.0], 90.0})
+  end
 end
