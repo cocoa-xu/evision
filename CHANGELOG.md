@@ -22,6 +22,9 @@
   Evision.boxPoints!({[224.0, 262.5], [343.0, 344.0], 90.0})
   ```
 
+- Fixed the mapping from a type to the corresponding function guard in `py_src/helper.py`. ([#99](https://github.com/cocoa-xu/evision/issues/99))
+
+
 ### Changed
 - Display `RotatedRect` type as `{centre={x, y}, size={s1, s2}, angle}` in docs.
 
