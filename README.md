@@ -18,8 +18,6 @@
 ## Docs
 Online docs for the latest released version is available on Hex.pm, [https://hexdocs.pm/evision/](https://hexdocs.pm/evision/).
 
-Online docs for git HEAD is available here, [https://cocoa-xu.github.io/evision/](https://cocoa-xu.github.io/evision/).
-
 ## Nerves Support
 
 [![Nerves](https://github-actions.40ants.com/cocoa-xu/evision/matrix.svg?only=nerves-build)](https://github.com/cocoa-xu/evision)
