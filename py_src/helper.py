@@ -290,9 +290,72 @@ def map_argtype_to_guard(kind, argname, argtype):
     else:
         print(f'warning: map_argtype_to_guard: unknown kind `{kind}`')
 
+def is_int_type(argtype):
+    int_types = [
+        'int',
+        'size_t',
+        'ORB_ScoreType',
+        'dnn_Backend',
+        'dnn_Target',
+        'AKAZE_DescriptorType',
+        'KAZE_DiffusivityType',
+        'DescriptorMatcher_MatcherType',
+        'AgastFeatureDetector_DetectorType',
+        'FastFeatureDetector_DetectorType',
+        'InterpolationFlags',
+        'AccessFlag',
+        'WaveCorrectKind',
+        'flann_distance_t',
+        'cvflann_flann_algorithm_t',
+        'cvflann_flann_distance_t'
+    ]
+    return argtype in int_types
+
+def is_list_type(argtype):
+    list_types = [
+        'ImageFeatures',
+        'Point2f',
+        'Point',
+        'Size',
+        'Scalar',
+        'MatchesInfo',
+        'CameraParams',
+        'VideoCaptureAPIs',
+        'MatShape',
+
+        'UsacParams',
+        'CirclesGridFinderParameters',
+        'KeyPoint'
+    ]
+    if argtype[:7] == 'vector_':
+        return True
+    return argtype in list_types
+
+def is_tuple_type(argtype):
+    tuple_types = [
+        'Rect',
+        'RotatedRect',
+        'Range',
+        'TermCriteria',
+        'CvTermCriteria',
+        'CvSlice'
+    ]
+    return argtype in tuple_types
+
+def is_ref_or_struct(argtype: str):
+    ref_or_struct_types = [
+        'Mat',
+        'UMat',
+        'Net',
+
+        'GpuMat_Allocator*',
+    ]
+    if argtype.startswith('Ptr<'):
+        return True
+    return argtype in ref_or_struct_types
 
 def map_argtype_to_guard_elixir(argname, argtype):
-    if argtype == 'int' or argtype == 'size_t':
+    if is_int_type(argtype):
         return f'is_integer({argname})'
     elif argtype == 'bool':
         return f'is_boolean({argname})'
@@ -300,27 +363,29 @@ def map_argtype_to_guard_elixir(argname, argtype):
         return f'is_number({argname})'
     elif argtype == 'float':
         return f'is_float({argname})'
-    elif argtype == 'String' or argtype == 'c_string':
+    elif argtype == 'String' or argtype == 'c_string' or argtype == 'string':
         return f'is_binary({argname})'
     elif argtype == 'char':
         return f'is_binary({argname})'
-    elif argtype == 'Size' or argtype == 'Scalar':
-        return f'is_list({argname})'
-    elif argtype == 'Point2f' or argtype == 'Point':
-        return f'is_list({argname})'
-    elif argtype[:7] == 'vector_':
+    elif is_tuple_type(argtype):
+        return f'is_tuple({argname})'
+    elif is_ref_or_struct(argtype):
+        return f'(is_reference({argname}) or is_struct({argname}))'
+    elif is_list_type(argtype):
         return f'is_list({argname})'
     else:
         if argtype == 'LayerId':
             return ''
-        elif argtype == 'TermCriteria':
-            return f'is_tuple({argname})'
+        if argtype == 'GpuMat' or argtype == 'cuda::GpuMat':
+            return f'is_list({argname})'
+        if argtype == 'IndexParams' or argtype == 'SearchParams' or argtype == 'Moments':
+            return f'is_map({argname})'
         else:
-            return f'(is_reference({argname}) or is_struct({argname}))'
+            return ''
 
 
 def map_argtype_to_guard_erlang(argname, argtype):
-    if argtype == 'int' or argtype == 'size_t':
+    if is_int_type(argtype):
         return f'is_integer({argname})'
     elif argtype == 'bool':
         return f'is_boolean({argname})'
@@ -328,23 +393,25 @@ def map_argtype_to_guard_erlang(argname, argtype):
         return f'is_number({argname})'
     elif argtype == 'float':
         return f'is_float({argname})'
-    elif argtype == 'String' or argtype == 'c_string':
+    elif argtype == 'String' or argtype == 'c_string' or argtype == 'string':
         return f'is_list({argname})'
     elif argtype == 'char':
         return f'is_list({argname})'
-    elif argtype == 'Size' or argtype == 'Scalar':
-        return f'is_list({argname})'
-    elif argtype == 'Point2f' or argtype == 'Point':
-        return f'is_list({argname})'
-    elif argtype[:7] == 'vector_':
+    elif is_tuple_type(argtype):
+        return f'is_tuple({argname})'
+    elif is_ref_or_struct(argtype):
+        return f'is_reference({argname})'
+    elif is_list_type(argtype):
         return f'is_list({argname})'
     else:
         if argtype == 'LayerId':
             return ''
-        elif argtype == 'TermCriteria':
-            return f'is_tuple({argname})'
+        if argtype == 'GpuMat' or argtype == 'cuda::GpuMat':
+            return f'is_list({argname})'
+        if argtype == 'IndexParams' or argtype == 'SearchParams' or argtype == 'Moments':
+            return f'is_map({argname})'
         else:
-            return f'(is_reference({argname}) or is_map({argname}))'
+            return ''
 
 
 def map_uppercase_to_erlang_name(name):
