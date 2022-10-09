@@ -1,6 +1,6 @@
 defmodule Evision.HighGui do
   @moduledoc """
-  OpenCV High-level Graphical User Interface
+  High-level Graphical User Interface
   """
 
   import Evision.Errorize
@@ -30,7 +30,7 @@ defmodule Evision.HighGui do
 
   """
   @doc namespace: :"cv.highgui"
-  @spec imshow(String.t(), reference() | Evision.Mat.t() | Nx.Tensor.t()) :: :ok | {:error, String.t()}
+  @spec imshow(String.t(), Evision.Mat.maybe_mat_in() | Nx.Tensor.t()) :: :ok | {:error, String.t()}
   def imshow(winname, mat) when is_binary(winname) and (is_reference(mat) or is_struct(mat))do
     mat = Evision.Internal.Structurise.from_struct(mat)
     :evision_nif.imshow(winname: winname, mat: mat)
