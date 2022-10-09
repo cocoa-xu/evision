@@ -15,6 +15,7 @@ jobs:
       ELIXIR_VERSION: "1.14.0"
       EVISION_PREFER_PRECOMPILED: "false"
       EVISION_GENERATE_LANG: "erlang,elixir"
+      MAKE: "nmake"
 
     steps:
       - uses: actions/checkout@v3
@@ -70,10 +71,10 @@ jobs:
 
       - name: Mix compile
         if: steps.cache-mix-compile.outputs.cache-hit != 'true'
+        shell: bash
         run: |
-          $Env:MAKE = "nmake"
-          $Env:CMAKE_OPENCV_OPTIONS = "-D WITH_FFMPEG=OFF"
-          Remove-Item Makefile
+          export CMAKE_OPENCV_OPTIONS="-D WITH_FFMPEG=OFF"
+          rm -f Makefile
           mix compile
 
       - name: Create precompiled library
