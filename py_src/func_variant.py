@@ -3,7 +3,9 @@
 
 from io import StringIO
 from pydoc import describe
-from helper import handle_ptr, forbidden_arg_types, ignored_arg_types, map_argtype_to_guard, map_argname, map_argtype_to_type, handle_inline_math_escaping
+from tkinter.messagebox import NO
+from typing import Tuple
+from helper import handle_ptr, forbidden_arg_types, ignored_arg_types, map_argtype_to_guard, map_argname, map_argtype_to_type, handle_inline_math_escaping, map_argtype_in_docs, map_argtype_in_spec
 from arg_info import ArgInfo
 import re
 
@@ -205,7 +207,7 @@ class FuncVariant(object):
             line_index = peak_line_index - 1
         return is_multiline, line_index
 
-    def inline_docs_elixir(self, beam_generator=None):
+    def inline_docs_elixir(self) -> str:
         parameter_info = {}
         doc_string = "\n".join('  {}'.format(line.strip()) for line in self.docstring.split("\n")).strip()
         if len(doc_string) > 0:
@@ -369,7 +371,7 @@ class FuncVariant(object):
             if len(positional_args) > 0:
                 parameter_info_doc.write("\n  ##### Positional Arguments\n")
                 for (arg_name, _, argtype) in positional_args:
-                    argtype1 = self.__map_argtype_in_docs__(argtype)
+                    argtype1 = map_argtype_in_docs(argtype)
                     normalized_arg_name = map_argname('elixir', arg_name)
                     normalized_arg_name = normalized_arg_name.replace(":", "")
                     if parameter_info.get(normalized_arg_name, None) is None:
@@ -387,7 +389,7 @@ class FuncVariant(object):
             if len(optional_args) > 0:
                 parameter_info_doc.write("  ##### Keyword Arguments\n")
                 for (arg_name, _, argtype) in optional_args:
-                    argtype1 = self.__map_argtype_in_docs__(argtype)
+                    argtype1 = map_argtype_in_docs(argtype)
                     normalized_arg_name = map_argname('elixir', arg_name)
                     normalized_arg_name = normalized_arg_name.replace(":", "")
                     if parameter_info.get(normalized_arg_name, None) is None:
@@ -398,6 +400,7 @@ class FuncVariant(object):
                             parameter_info_doc.write(f"  - **{normalized_arg_name}**: `{argtype1}`.\n")
                         else:
                             parameter_info_doc.write(f"  - **{normalized_arg_name}**: `{argtype1}`.\n\n    {info['desc']}\n")
+                parameter_info_doc.write("\n")
 
         if len(out_args) > 0:
             return_values = []
@@ -407,7 +410,7 @@ class FuncVariant(object):
             if len(return_values) > 0:
                 parameter_info_doc.write("  ##### Return\n")
                 for (arg_name, argtype) in return_values:
-                    argtype1 = self.__map_argtype_in_docs__(argtype)
+                    argtype1 = map_argtype_in_docs(argtype)
                     normalized_arg_name = map_argname('elixir', arg_name)
                     normalized_arg_name = normalized_arg_name.replace(":", "")
                     if parameter_info.get(normalized_arg_name, None) is None:
@@ -418,21 +421,96 @@ class FuncVariant(object):
                             parameter_info_doc.write(f"  - **{normalized_arg_name}**: `{argtype1}`.\n")
                         else:
                             parameter_info_doc.write(f"  - **{normalized_arg_name}**: `{argtype1}`.\n\n    {info['desc']}\n")
-        return inline_doc.replace('<evision_param_info>', parameter_info_doc.getvalue())
 
-    def __map_argtype_in_docs__(self, argtype: str):
-        is_array = argtype.startswith('vector_')
-        if is_array:
-            argtype = argtype[len('vector_'):]
-        mapping = {
-            'UMat': 'Evision.Mat',
-            'Mat': 'Evision.Mat',
-            'RotatedRect': '{centre={x, y}, size={s1, s2}, angle}'
-        }
-        mapped_type = mapping.get(argtype, argtype)
-        if is_array:
-            mapped_type = f'[{mapped_type}]'
-        return mapped_type
+        if '\n<evision_param_info>' in inline_doc:
+            inline_doc = inline_doc.replace('<evision_param_info>', parameter_info_doc.getvalue())
+        else:
+            inline_doc.replace('<evision_param_info>', '\n' + parameter_info_doc.getvalue())
+        return inline_doc
+
+    def generate_spec(self, kind: str, module_func_name: str, is_instance_method: bool, include_opts: bool, in_args: list=None, out_args: list=None) -> str:
+        spec = StringIO()
+
+        classname_override = self.classname
+        if self.derived_class is not None:
+            classname_override = self.derived_class
+            print(f"{self.classname} => {classname_override}")
+        if out_args is None:
+            out_args = self.py_outlist
+            out_args_name = [o[0] for o in out_args]
+
+            if len(out_args_name) > 0 and (out_args_name[0] in ['retval', 'self']) and self.py_outlist[0][1] == -1:
+                if out_args_name[0] == 'retval':
+                    out_args = [self.rettype]
+                    if self.rettype == self.classname:
+                        out_args = [classname_override]
+                elif out_args_name[0] == 'self':
+                    out_args = [self.name]
+                out_args_name = out_args_name[1:]
+            elif self.isconstructor:
+                out_args = [classname_override]
+            else:
+                out_args = []
+
+            for arg in self.args:
+                if arg.name in out_args_name:
+                    out_args.append(arg.tp)
+
+        if in_args is None:
+            if self.min_args > 0:
+                in_args = []
+                for (arg_name, _, argtype) in self.py_arglist[:self.pos_end]:
+                    if arg_name not in out_args:
+                        in_args.append(argtype)
+
+        spec.write(f'@spec {module_func_name}(')
+        in_args_spec = []
+        if in_args is not None:
+            for argtype in in_args:
+                in_args_spec.append(map_argtype_in_spec(classname_override, argtype, is_in=True))
+        if self.has_opts and include_opts:
+            in_args_spec.append('Keyword.t()')
+        if is_instance_method:
+            self.spec_self = ''
+            if len(classname_override) > 0:
+                tmp_name = classname_override
+                is_param = False
+                if tmp_name.endswith('_Param'):
+                    tmp_name = tmp_name[:len('_Param')]
+                    is_param = True
+                parts = tmp_name.split('_')
+                self.spec_self = parts[-1]
+                if is_param:
+                    self.spec_self += '_Param'
+            in_args_spec.insert(0, f'Evision.{self.spec_self}.t()')
+
+        spec.write(", ".join(in_args_spec))
+        spec.write(") :: ")
+
+        out_spec = ''
+        out_args_spec = []
+        if out_args is not None and len(out_args) > 0:
+            for argtype in out_args:
+                out_args_spec.append(map_argtype_in_spec(classname_override, argtype, is_in=False))
+            out_spec = ", ".join(out_args_spec)
+        else:
+            out_args_spec = [':ok']
+
+        ok_error = True
+        if len(out_args_spec) == 1:
+            if out_args_spec[0] == 'boolean()':
+                out_spec = 'boolean() | {:error, String.t()}'
+                ok_error = False
+            elif out_args_spec[0] == ':ok':
+                out_spec = ':ok | {:error, String.t()}'
+                ok_error = False
+
+        if ok_error:
+            out_spec = f'{{:ok, {out_spec}}} | {{:error, String.t()}}'
+        spec.write(out_spec)
+
+        spec = spec.getvalue()
+        return spec
 
     def opts_args(self, kind: str, in_func_body: bool = False):
         if self.has_opts:
