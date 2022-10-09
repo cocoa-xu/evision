@@ -27,8 +27,8 @@ defmodule Evision.Nx do
 
   """
   @doc namespace: :external
-  @spec to_nx(Evision.Mat.t(), module()) :: Nx.Tensor.t() | {:error, String.()}
-  def to_nx(mat, backend \\ Evision.Backend) do
+  @spec to_nx(Evision.Mat.t(), module()) :: Nx.Tensor.t() | {:error, String.t()}
+  def to_nx(mat, backend \\ Evision.Backend) when is_struct(mat, Evision.Mat) do
     with {:ok, mat_type} <- Evision.Mat.type(mat),
          {:ok, mat_shape} <- Evision.Mat.shape(mat),
          {:ok, bin} <- Evision.Mat.to_binary(mat) do
