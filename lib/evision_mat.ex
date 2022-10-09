@@ -1,6 +1,6 @@
 defmodule Evision.Mat do
   @moduledoc """
-  OpenCV Mat
+  Evision Mat
   """
 
   import Evision.Errorize
@@ -73,7 +73,7 @@ defmodule Evision.Mat do
 
   - **ref**: `reference`.
 
-    The erlang reference(resource).
+    The underlying erlang resource variable.
 
   """
   @type t :: %__MODULE__{
@@ -110,7 +110,7 @@ defmodule Evision.Mat do
   @type maybe_mat_in :: reference() | Evision.Mat.t() | Nx.Tensor.t()
 
   @doc false
-  def __make_struct__(%{:channels => channels, :dims => dims, :type => type, :raw_type => raw_type, :shape => shape, :ref => ref}) do
+  def __to_struct__(%{:channels => channels, :dims => dims, :type => type, :raw_type => raw_type, :shape => shape, :ref => ref}) do
     %T{
       channels: channels,
       dims: dims,
@@ -119,6 +119,14 @@ defmodule Evision.Mat do
       shape: shape,
       ref: ref
     }
+  end
+
+  def __to_struct__({:ok, ret=%{:class => :Mat}}) do
+    {:ok, __to_struct__(ret)}
+  end
+
+  def __to_struct__(ret) do
+    Evision.Internal.Structurise.to_struct(ret)
   end
 
   @doc false
@@ -1190,16 +1198,15 @@ defmodule Evision.Mat do
 
   def from_binary_by_shape(binary, type, shape)
   when is_binary(binary) and is_atom(type) and is_tuple(shape) do
-    from_binary_by_shape(binary, check_unsupported_type(type), shape)
+    from_binary_by_shape_impl(binary, check_unsupported_type(type), shape)
   end
 
   def from_binary_by_shape(binary, {t, l}, shape)
       when is_binary(binary) and is_atom(t) and is_integer(l) and is_tuple(shape) do
-    from_binary_by_shape(binary, {t, l}, shape)
+    from_binary_by_shape_impl(binary, {t, l}, shape)
   end
 
-  @doc namespace: :"cv.Mat"
-  def from_binary_by_shape(binary, {t, l}, shape)
+  defp from_binary_by_shape_impl(binary, {t, l}, shape)
       when is_binary(binary) and is_atom(t) and is_integer(l) and is_tuple(shape) do
     :evision_nif.mat_from_binary_by_shape(
       binary: binary,
