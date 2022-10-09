@@ -1,10 +1,21 @@
 # Changelog
 
-## v0.1.9 (2022-10-08)
+## v0.1.9 (2022-10-09)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.9) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.9)
 ### Bug Fixes
 - `Mix.Tasks.Compile.EvisionPrecompiled`: using `File.cp_r/2` instead of calling `cp -a` via `System.cmd/3`.
 - Fixed TLS warnings when downloading precompiled tarball file. Thanks to @kipcole9!
+- Only include `evision_custom_headers/evision_ml.hpp` if the `HAVE_OPENCV_ML` macro is defined.
+- Support parsing `RefWrapper<T> (&value)[N]` from list or tuple. ([#99](https://github.com/cocoa-xu/evision/issues/99))
+
+  See the function in `c_src/evision.cpp`.
+
+  ```cpp
+  bool parseSequence(ErlNifEnv *env, ERL_NIF_TERM obj, RefWrapper<T> (&value)[N], const ArgInfo& info)
+  ```
+
+### Changed
+- Display `RotatedRect` type as `{centre={x, y}, size={s1, s2}, angle}` in docs.
 
 ## v0.1.8 (2022-10-08)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.8) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.8)
