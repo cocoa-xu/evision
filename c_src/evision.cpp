@@ -1641,16 +1641,26 @@ template<> inline bool evision_to_generic_vec(ErlNifEnv *env, ERL_NIF_TERM obj, 
 
     const ERL_NIF_TERM *terms;
     int length;
-    if (!enif_get_tuple(env, obj, &length, &terms)) {
-        // also try parsing from list
-        if (!enif_is_list(env, obj))
+    if (enif_get_tuple(env, obj, &length, &terms)) {
+        const size_t n = static_cast<size_t>(length);
+        value.resize(n);
+        for (size_t i = 0; i < n; i++)
         {
-            failmsgp(env, "Can't parse '%s' to a generic array."
-                "Input argument is not a tuple or a list",
-                info.name);
-            return false;
+            bool elem{};
+            if (!evision_to(env, terms[i], elem, info))
+            {
+                failmsg(env, "Can't parse '%s'. Sequence item with index %lu has a wrong type", info.name, i);
+                return false;
+            }
+            value[i] = elem;
         }
+        
+        return true;
+    }
 
+    // also try parsing from list
+    if (enif_is_list(env, obj))
+    {
         unsigned n = 0;
         enif_get_list_length(env, obj, &n);
         value.resize(n);
@@ -1665,29 +1675,22 @@ template<> inline bool evision_to_generic_vec(ErlNifEnv *env, ERL_NIF_TERM obj, 
 
         for (size_t i = 0; i < n; i++)
         {
-            if (!evision_to(env, cells[i], value[i], info))
+            bool elem{};
+            if (!evision_to(env, cells[i], elem, info))
             {
                 failmsgp(env, "Can't parse '%s'. Sequence item with index %lu has a wrong type", info.name, i);
                 return false;
             }
+            value[i] = elem;
         }
-
+        
         return true;
     }
 
-    const size_t n = static_cast<size_t>(length);
-    value.resize(n);
-    for (size_t i = 0; i < n; i++)
-    {
-        bool elem{};
-        if (!evision_to(env, terms[i], elem, info))
-        {
-            failmsg(env, "Can't parse '%s'. Sequence item with index %lu has a wrong type", info.name, i);
-            return false;
-        }
-        value[i] = elem;
-    }
-    return true;
+    failmsgp(env, "Can't parse '%s' to a generic array."
+            "Input argument is not a tuple or a list",
+            info.name);
+    return false;
 }
 
 

@@ -425,7 +425,7 @@ class FuncVariant(object):
         if '\n<evision_param_info>' in inline_doc:
             inline_doc = inline_doc.replace('<evision_param_info>', parameter_info_doc.getvalue())
         else:
-            inline_doc.replace('<evision_param_info>', '\n' + parameter_info_doc.getvalue())
+            inline_doc = inline_doc.replace('<evision_param_info>', '\n' + parameter_info_doc.getvalue())
         return inline_doc
 
     def generate_spec(self, kind: str, module_func_name: str, is_instance_method: bool, include_opts: bool, in_args: list=None, out_args: list=None) -> str:
