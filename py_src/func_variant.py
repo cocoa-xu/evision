@@ -9,7 +9,7 @@ import re
 
 
 class FuncVariant(object):
-    def __init__(self, classname, name, decl, isconstructor, isphantom=False):
+    def __init__(self, classname: str, name: str, decl: list, isconstructor: bool, isphantom: bool = False):
         self.inline_docs_code_type_re = re.compile(r'@code{.(.*)}')
         self.classname = classname
         self.from_base = False
@@ -141,9 +141,9 @@ class FuncVariant(object):
     def function_signature(self):
         return ''.join(filter(lambda x: x != '', [map_argtype_to_type(argtype) for _, _, argtype in self.py_arglist[:self.pos_end]]))
     
-    def inline_docs(self, kind):
+    def inline_docs(self, kind, beam_generator=None):
         if kind == 'elixir':
-            return self.inline_docs_elixir()
+            return self.inline_docs_elixir(beam_generator)
         else:
             return ''
 
@@ -205,7 +205,7 @@ class FuncVariant(object):
             line_index = peak_line_index - 1
         return is_multiline, line_index
 
-    def inline_docs_elixir(self):
+    def inline_docs_elixir(self, beam_generator=None):
         parameter_info = {}
         doc_string = "\n".join('  {}'.format(line.strip()) for line in self.docstring.split("\n")).strip()
         if len(doc_string) > 0:
@@ -298,6 +298,23 @@ class FuncVariant(object):
                         last_in_list = False
                         last_is_code = False
                         inline_doc1 += "  ```\n"
+                    elif strip_line.startswith("@see set"):
+                        parts = strip_line.split(' ')
+                        if len(parts) == 2:
+                            inline_doc1 += "  @see `{}/2`\n".format(parts[1])
+                        else:
+                            inline_doc1 += "  {}\n".format(strip_line)
+                        last_in_list = False
+                    elif strip_line.startswith("@copybrief "):
+                        # upstream: hdr_parser.py
+                        parts = strip_line.split(' ')
+                        if len(parts) == 2 and parts[1].startswith("get"):
+                            inline_doc1 += "  @see `{}/1`\n".format(parts[1])
+                        elif len(parts) == 4 and parts[2] == "@see" and parts[3].startswith("get"):
+                            inline_doc1 += "  @see `{}/1`\n".format(parts[1])
+                        else:
+                            inline_doc1 += "  {}\n".format(strip_line)
+                        last_in_list = False
                     else:
                         inline_doc1 += "  {}\n".format(strip_line)
                         last_in_list = False

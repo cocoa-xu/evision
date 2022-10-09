@@ -44,7 +44,7 @@ class FuncInfo(object):
         return copy_info
 
     def add_variant(self, decl, isphantom=False):
-        self.variants.append(FuncVariant(self.classname, self.name, decl, self.isconstructor, isphantom))
+        self.variants.append(FuncVariant(self.classname, self.name, decl, self.isconstructor, isphantom=isphantom))
 
     def get_wrapper_name(self, add_cv):
         name = self.name
