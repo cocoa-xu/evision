@@ -442,6 +442,7 @@ config :evision, enabled_img_codecs: [
     ```
 
 - How do I set the number of jobs for compiling?
+
     ```shell
     # use all logical cores, by default
     # `"-j#{System.schedulers_online()}"`. In `mix.exs`.
@@ -452,11 +453,13 @@ config :evision, enabled_img_codecs: [
     ```
 
 - How do I set up for cross-compile or specify the toolchain?
+
     ```shell
     export CMAKE_TOOLCHAIN_FILE="/path/to/toolchain.cmake"
     ```
 
 - How do I make my own adjustments to the OpenCV CMake options?
+
     ```shell
     export CMAKE_OPENCV_OPTIONS="YOUR CMAKE OPTIONS FOR OPENCV"
     ```
@@ -490,6 +493,7 @@ MIX_TARGET=rpi4
 ```
 
 - How do I delete OpenCV related CMake build caches?
+
     ```shell
     # delete OpenCV related CMake build caches.
     rm -rf "_build/${MIX_ENV}/lib/evision/cmake_opencv_${OPENCV_VER}"
@@ -498,12 +502,14 @@ MIX_TARGET=rpi4
     ```
   
 - How do I remove downloaded OpenCV source zip file.
+
     ```shell
     rm -f "3rd_party/cache/opencv-${OPENCV_VER}"
     ```
 
 - Can I manually edit the generated files and compile them?
   1. First, delete evision.so (so that `cmake` can rebuild it)  
+  
       ```shell
       # 
       rm -f "_build/${MIX_ENV}/lib/evision/priv/evision.so"
@@ -534,6 +540,7 @@ MIX_TARGET=rpi4
     ```
 
   3. Then you can edit the source files and recompile `evision.so`.
+
     ```shell
     mix compile
     ```
@@ -541,6 +548,7 @@ MIX_TARGET=rpi4
 #### Runtime related
 
 - How do I enable debug logging for OpenCV (prints to stderr).
+
     ```shell
     export OPENCV_EVISION_DEBUG=1
     ```
