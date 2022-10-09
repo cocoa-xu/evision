@@ -58,7 +58,7 @@ bool evision_to(ErlNifEnv *env, ERL_NIF_TERM dst, TYPE& src, const ArgInfo& info
     return true;                                                                                      \
 }
 
-#define CV_ERL_FROM_CLASS(TYPE)                                                                        \
+#define CV_ERL_FROM_CLASS(TYPE)                                                                       \
 template<>                                                                                            \
 ERL_NIF_TERM evision_from(ErlNifEnv *env, const TYPE& src)                                            \
 {                                                                                                     \
@@ -107,7 +107,7 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const TYPE& src)                      
 
 //==================================================================================================
 
-#define CV_ERL_TYPE_DECLARE_DYNAMIC(WNAME, NAME, STORAGE, SNAME) \
+#define CV_ERL_TYPE_DECLARE_DYNAMIC(WNAME, NAME, STORAGE, SNAME)                                      \
     static bool evision_##NAME##_getp(ErlNifEnv *env, ERL_NIF_TERM self, STORAGE * & dst)             \
     {                                                                                                 \
         evision_res<STORAGE> * VAR;                                                                   \
@@ -135,7 +135,7 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const TYPE& src)                      
 
 #define CV_ERL_TYPE_INIT_DYNAMIC(WNAME, NAME, STORAGE, ERROR_HANDLER)                                 \
     {                                                                                                 \
-        rt = enif_open_resource_type(env, "evision", "erl_cv_" #NAME "_type", destruct_##NAME ,     \
+        rt = enif_open_resource_type(env, "evision", "Evision." #NAME ".t", destruct_##NAME ,         \
                 ERL_NIF_RT_CREATE, NULL);                                                             \
         if (!rt) ERROR_HANDLER;                                                                       \
         evision_res<STORAGE>::type = rt;                                                              \
