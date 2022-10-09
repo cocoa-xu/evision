@@ -66,6 +66,37 @@ videocapture_struct = '  @typedoc """\n' + \
   end
 """
 
+
+generic_struct_template = Template(
+  '  @typedoc """\n'
+  '  Type that represents an `Evision.${elixir_module_name}` struct.\n\n'
+  '  - **ref**. `reference()`\n\n'
+  '    The underlying erlang resource variable.\n\n'
+  '  """\n'
+  """  @type t :: %__MODULE__{
+    ref: reference()
+  }
+  @enforce_keys [:ref]
+  defstruct [:ref]
+  alias __MODULE__, as: T
+
+  @doc false
+  def __to_struct__({:ok, %{class: :${atom_elixir_module_name}, ref: ref}}) do
+    {:ok, %T{ref: ref}}
+  end
+
+  def __to_struct__(%{class: :${atom_elixir_module_name}, ref: ref}) do
+    %T{
+      ref: ref
+    }
+  end
+
+  def __to_struct__(ret) do
+    Evision.Internal.Structurise.to_struct(ret)
+  end
+"""
+)
+
 evision_structs = {
     "VideoCapture": videocapture_struct
 }
