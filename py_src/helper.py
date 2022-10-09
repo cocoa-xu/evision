@@ -314,10 +314,6 @@ def is_int_type(argtype):
 def is_list_type(argtype):
     list_types = [
         'ImageFeatures',
-        'Point2f',
-        'Point',
-        'Size',
-        'Scalar',
         'MatchesInfo',
         'CameraParams',
         'VideoCaptureAPIs',
@@ -341,6 +337,18 @@ def is_tuple_type(argtype):
         'CvSlice'
     ]
     return argtype in tuple_types
+
+def is_list_or_tuple(argtype):
+    list_or_tuple_types = [
+        'Point',
+        'Point2f',
+        'Point2d',
+        'Point3f',
+        'Point3d',
+        'Size',
+        'Scalar',
+    ]
+    return argtype in list_or_tuple_types
 
 def is_ref_or_struct(argtype: str):
     ref_or_struct_types = [
@@ -367,6 +375,8 @@ def map_argtype_to_guard_elixir(argname, argtype):
         return f'is_binary({argname})'
     elif argtype == 'char':
         return f'is_binary({argname})'
+    elif is_list_or_tuple(argtype):
+        return f'(is_tuple({argname}) or is_list({argname}))'
     elif is_tuple_type(argtype):
         return f'is_tuple({argname})'
     elif is_ref_or_struct(argtype):
@@ -397,6 +407,8 @@ def map_argtype_to_guard_erlang(argname, argtype):
         return f'is_list({argname})'
     elif argtype == 'char':
         return f'is_list({argname})'
+    elif is_list_or_tuple(argtype):
+        return f'(is_tuple({argname}) or is_list({argname}))'
     elif is_tuple_type(argtype):
         return f'is_tuple({argname})'
     elif is_ref_or_struct(argtype):
