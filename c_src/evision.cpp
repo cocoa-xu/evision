@@ -337,26 +337,51 @@ bool parseSequence(ErlNifEnv *env, ERL_NIF_TERM obj, RefWrapper<T> (&value)[N], 
         return true;
     }
 
-    if (!enif_is_list(env, obj))
-    {
-        return failmsg(env, "Can't parse '%s'. Input argument is not a list ", info.name);
-    }
-    unsigned sequenceSize = 0;
-    enif_get_list_length(env, obj, &sequenceSize);
-    if (sequenceSize != N)
-    {
-        return failmsg(env, "Can't parse '%s'. Expected sequence length %lu, got %lu",
-                info.name, N, sequenceSize);
-    }
-    for (std::size_t i = 0; i < N; ++i)
-    {
-        SafeSeqItem seqItem(env, obj, i);
-        if (!evision_to(env, seqItem.item, value[i].get(), info))
+    // parse from list
+    if (enif_is_list(env, obj)) {
+        unsigned sequenceSize = 0;
+        enif_get_list_length(env, obj, &sequenceSize);
+        if (sequenceSize != N)
         {
-            return failmsg(env, "Can't parse '%s'. Sequence item with index %lu has a "
-                    "wrong type", info.name, i);
+            failmsgp(env, "Can't parse '%s'. Expected sequence length %lu, got %lu",
+                    info.name, N, sequenceSize);
+            return false;
         }
+        for (std::size_t i = 0; i < N; ++i)
+        {
+            SafeSeqItem seqItem(env, obj, i);
+            if (!evision_to(env, seqItem.item, value[i].get(), info))
+            {
+                failmsgp(env, "Can't parse '%s'. Sequence item with index %lu has a "
+                        "wrong type", info.name, i);
+                return false;
+            }
+        }
+    } else if (enif_is_tuple(env, obj)) {
+        const ERL_NIF_TERM *terms;
+        int sz = 0;
+        enif_get_tuple(env, obj, &sz, &terms);
+        if (sz != N)
+        {
+            failmsgp(env, "Can't parse '%s'. Expected sequence length %lu, got %lu",
+                    info.name, N, sz);
+            return false;
+        }
+        for (std::size_t i = 0; i < N; ++i)
+        {
+            if (!evision_to(env, terms[i], value[i].get(), info))
+            {
+                failmsgp(env, "Can't parse '%s'. Sequence item with index %lu has a "
+                        "wrong type", info.name, i);
+                return false;
+            }
+        }
+    } else {
+        failmsgp(env, "Can't parse '%s'. Expected a tuple/list with length %lu.",
+            info.name, N);
+        return false;
     }
+
     return true;
 }
 } // namespace
@@ -1327,7 +1352,7 @@ bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, RotatedRect& dst, const ArgInf
     const ERL_NIF_TERM *terms;
     int length;
     if (!enif_get_tuple(env, obj, &length, &terms)) {
-        failmsg(env, "Can't parse '%s' as TermCriteria."
+        failmsg(env, "Can't parse '%s' as RotatedRect."
                 "Input argument is not a tuple",
                 info.name);
         return false;
