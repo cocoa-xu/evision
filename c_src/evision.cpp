@@ -702,6 +702,28 @@ bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, bool& value, const ArgInfo& in
             return true;
         }
     }
+    else if (enif_is_number(env, obj)) {
+        double f64;
+        ErlNifSInt64 i64;
+        ErlNifUInt64 u64;
+        if (enif_get_double(env, obj, &f64)) {
+            if (f64 != 0) {
+                value = true;
+                return true;
+            }
+        } else if (enif_get_int64(env, obj, (ErlNifSInt64 *)&i64)) {
+            if (i64 != 0) {
+                value = true;
+                return true;
+            }
+        } else if (enif_get_uint64(env, obj, (ErlNifUInt64 *)&u64)) {
+            if (u64 != 0) {
+                value = true;
+                return true;
+            }
+        }
+    }
+
     failmsg(env, "Argument '%s' is not convertable to bool", info.name);
     return false;
 }
@@ -1620,10 +1642,37 @@ template<> inline bool evision_to_generic_vec(ErlNifEnv *env, ERL_NIF_TERM obj, 
     const ERL_NIF_TERM *terms;
     int length;
     if (!enif_get_tuple(env, obj, &length, &terms)) {
-        failmsg(env, "Can't parse '%s' to a generic array."
-                "Input argument is not a tuple",
+        // also try parsing from list
+        if (!enif_is_list(env, obj))
+        {
+            failmsgp(env, "Can't parse '%s' to a generic array."
+                "Input argument is not a tuple or a list",
                 info.name);
-        return false;
+            return false;
+        }
+
+        unsigned n = 0;
+        enif_get_list_length(env, obj, &n);
+        value.resize(n);
+
+        std::vector<ERL_NIF_TERM> cells;
+        ERL_NIF_TERM head, tail, arr = obj;
+        for (size_t i = 0; i < n; i++) {
+            enif_get_list_cell(env, arr, &head, &tail);
+            arr = tail;
+            cells.push_back(head);
+        }
+
+        for (size_t i = 0; i < n; i++)
+        {
+            if (!evision_to(env, cells[i], value[i], info))
+            {
+                failmsgp(env, "Can't parse '%s'. Sequence item with index %lu has a wrong type", info.name, i);
+                return false;
+            }
+        }
+
+        return true;
     }
 
     const size_t n = static_cast<size_t>(length);
