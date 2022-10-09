@@ -345,10 +345,10 @@ class FuncInfo(object):
                     code_ret = "return evision::nif::ok(env, self)"
             elif len(v.py_outlist) == 1:
                 if self.isconstructor:
-                    if self.classname in ["VideoCapture"]:
-                        code_ret = ET.code_ret_constructor_structurise % (self.classname,)
-                    else:
-                        code_ret = ET.code_ret_constructor
+                    selftype = selfinfo.cname
+                    if not selfinfo.issimple:
+                        selftype = "Ptr<{}>".format(selfinfo.cname)
+                    code_ret = ET.code_ret_constructor % (selftype, selfinfo.get_elixir_module_name())
                 else:
                     aname, argno = v.py_outlist[0]
                     if v.rettype == 'bool':
