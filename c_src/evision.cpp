@@ -183,7 +183,30 @@ template<typename T> static
 ERL_NIF_TERM evision_from_as_binary(ErlNifEnv *env, const T& src, bool& success) { return Evision_Converter<T>::from_as_binary(env, src, success); }
 
 template<typename T> static
-ERL_NIF_TERM evision_from_as_map(ErlNifEnv *env, const T& src, ERL_NIF_TERM res_term) { return res_term; }
+ERL_NIF_TERM evision_from_as_map(ErlNifEnv *env, const T& src, ERL_NIF_TERM res_term, const char * class_name, bool& success) {
+    const size_t num_items = 2;
+    size_t item_index = 0;
+
+    ERL_NIF_TERM keys[num_items];
+    ERL_NIF_TERM values[num_items];
+
+    keys[item_index] = enif_make_atom(env, "ref");
+    values[item_index] = res_term;
+    item_index++;
+
+    keys[item_index] = enif_make_atom(env, "class");
+    values[item_index] = enif_make_atom(env, class_name);
+    item_index++;
+
+    ERL_NIF_TERM map;
+    if (enif_make_map_from_arrays(env, keys, values, item_index, &map)) {
+        success = true;
+        return map;
+    } else {
+        success = false;
+        return evision::nif::error(env, "enif_make_map_from_arrays failed in evision_from_as_map");
+    }
+}
 
 template <>
 ERL_NIF_TERM evision_from_as_binary(ErlNifEnv *env, const std::vector<uchar>& src, bool& success) {
@@ -1597,7 +1620,7 @@ template<> inline bool evision_to_generic_vec(ErlNifEnv *env, ERL_NIF_TERM obj, 
     const ERL_NIF_TERM *terms;
     int length;
     if (!enif_get_tuple(env, obj, &length, &terms)) {
-        failmsg(env, "Can't parse '%s' as TermCriteria."
+        failmsg(env, "Can't parse '%s' to a generic array."
                 "Input argument is not a tuple",
                 info.name);
         return false;
@@ -1704,12 +1727,12 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const std::tuple<Ts...>& cpp_tuple)
 {
     std::vector<ERL_NIF_TERM> erl_tuple;
     convert_to_erlang_tuple(env, cpp_tuple, erl_tuple);
-    ERL_NIF_TERM * terms = (ERL_NIF_TERM *)malloc(sizeof(ERL_NIF_TERM) * erl_tuple.size());
+    ERL_NIF_TERM * terms = (ERL_NIF_TERM *)enif_alloc(sizeof(ERL_NIF_TERM) * erl_tuple.size());
     for (size_t i = 0; i < erl_tuple.size(); i++) {
         terms[i] = erl_tuple[i];
     }
     ERL_NIF_TERM ret = enif_make_list_from_array(env, terms, erl_tuple.size());
-    free(terms);
+    enif_free(terms);
     return ret;
 }
 
