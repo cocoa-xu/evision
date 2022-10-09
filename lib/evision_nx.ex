@@ -26,6 +26,7 @@ defmodule Evision.Nx do
   ```
   """
   @doc namespace: :external
+  @spec to_nx(Evision.Mat.t(), module()) :: Nx.Tensor.t() | {:error, String.()}
   def to_nx(mat, backend \\ Evision.Backend) do
     with {:ok, mat_type} <- Evision.Mat.type(mat),
          {:ok, mat_shape} <- Evision.Mat.shape(mat),
@@ -49,7 +50,7 @@ defmodule Evision.Nx do
   to have shape`{height, width, channels}`.
   """
   @doc namespace: :external
-  @spec to_mat(Nx.t()) :: {:ok, reference()} | {:error, String.t()}
+  @spec to_mat(Nx.t()) :: {:ok, Evision.Mat.t()} | {:error, String.t()}
   def to_mat(t) when is_struct(t, Nx.Tensor) do
     case Nx.shape(t) do
       {} ->
@@ -87,6 +88,7 @@ defmodule Evision.Nx do
   deferror(to_mat(binary, type, rows, cols, channels))
 
   @doc namespace: :external
+  @spec to_mat_2d(Nx.t()) :: {:ok, Evision.Mat.t()} | {:error, String.t()}
   def to_mat_2d(t) do
     case Nx.shape(t) do
       {height, width} ->
