@@ -1,5 +1,32 @@
 # Changelog
 
+## v0.1.10 (main)
+[Browse the Repository](https://github.com/cocoa-xu/evision)
+### Changed
+- Improved cross reference in inline docs. For example,
+
+  #### Before
+  ```elixir
+  @doc """
+  ...
+  @see setCVFolds
+  ...
+  """
+  def getCVFolds(self) do
+  ```
+
+  #### After
+  ```elixir
+  @doc """
+  ...
+  @see `setCVFolds/2`
+  ...
+  """
+  def getCVFolds(self) do
+  ```
+
+  In this way, you can navigate to the referenced function in the generated html docs.
+
 ## v0.1.9 (2022-10-09)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.9) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.9)
 ### Bug Fixes
@@ -114,7 +141,7 @@
 - Better inline docs.
   - Inline docs will have a section for `Positional Arguments` and a section for `Keyword Arguments`. For example,
 
-    ```elixir
+    ~~~elixir
     @doc """
     ### Positional Arguments
     - **bboxes**: vector_Rect2d. 
@@ -129,17 +156,17 @@
     Performs non maximum suppression given boxes and corresponding scores.
 
     Python prototype (for reference): 
-    \```
+    ```
     NMSBoxes(bboxes, scores, score_threshold, nms_threshold[, eta[, top_k]]) -> indices
-    \```
+    ```
     """
     @doc namespace: :"cv.dnn"
     def nmsBoxes(bboxes, scores, score_threshold, nms_threshold, opts)
-    ```
+    ~~~
 
   - If a function (same name and arity) has multiple variants, the inline docs will show each of them in section `## Variant VAR_INDEX`. For example,
   
-    ```elixir
+    ~~~elixir
     @doc """
     #### Variant 1:
 
@@ -160,9 +187,9 @@
         L2gradient=false ).
 
     Python prototype (for reference): 
-    \```
+    ```
     Canny(dx, dy, threshold1, threshold2[, edges[, L2gradient]]) -> edges
-    \```
+    ```
     #### Variant 2:
 
     ##### Positional Arguments
@@ -185,9 +212,9 @@
         L2gradient=false ).
 
     Python prototype (for reference): 
-    \```
+    ```
     Canny(image, threshold1, threshold2[, edges[, apertureSize[, L2gradient]]]) -> edges
-    \```
+    ```
 
     """
     @doc namespace: :cv
@@ -196,7 +223,7 @@
 
     def canny(dx, dy, threshold1, threshold2)
     when (is_reference(dx) or is_struct(dx)) and (is_reference(dy) or is_struct(dy)) and is_number(threshold1) and is_number(threshold2), do: # variant 1
-    ```
+    ~~~
 
 - Better integration with `:nx`.
 
