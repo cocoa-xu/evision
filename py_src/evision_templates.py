@@ -265,16 +265,17 @@ code_ret_ge_10_tuple = """ERL_NIF_TERM arr[] = {%s};
             return evision::nif::ok(env, enif_make_tuple_from_array(env, arr, %d))"""
 
 code_ret_constructor = """ERL_NIF_TERM ret = enif_make_resource(env, self);
-        enif_release_resource(self);
-        return evision::nif::ok(env, ret);"""
+            enif_release_resource(self);
+            bool success;
+            ret = evision_from_as_map<%s>(env, self->val, ret, "%s", success);
 
-code_ret_constructor_structurise = """ERL_NIF_TERM ret = enif_make_resource(env, self);
-        enif_release_resource(self);
-        return evision::nif::ok(env, evision_from_as_map<Ptr<%s>>(env, self->val, ret));"""
+            if (success) return evision::nif::ok(env, ret);
+            else return ret;"""
 
-elixir_property_getter = Template("""  def get_${property_name}(self) do
+elixir_property_getter = Template("""  @spec get_${property_name}(${self_spec}) :: ${prop_spec}
+  def get_${property_name}(self) do
     :evision_nif.${nif_name}(Evision.Internal.Structurise.from_struct(self))
-    |> Evision.Internal.Structurise.to_struct()
+    |> __to_struct__()
   end
 """)
 
@@ -283,9 +284,10 @@ erlang_property_getter = Template("""get_${property_name}(Self) ->
 
 """)
 
-elixir_property_setter = Template("""  def set_${property_name}(self, prop) do
+elixir_property_setter = Template("""  @spec set_${property_name}(${self_spec_in}, ${prop_spec}) :: ${self_spec_out}
+  def set_${property_name}(self, prop) do
     :evision_nif.${nif_name}(Evision.Internal.Structurise.from_struct(self), [${property_name}: Evision.Internal.Structurise.from_struct(prop)])
-    |> Evision.Internal.Structurise.to_struct()
+    |> __to_struct__()
   end
 """)
 
@@ -478,7 +480,13 @@ static ERL_NIF_TERM evision_${name}_set_${member}(ErlNifEnv *env, int argc, cons
     }
 
     if (evision_to_safe(env, argv[1], self_ptr->${member}, ArgInfo("${member}", false))) {
-        return evision::nif::ok(env, self);
+        bool success;
+        ERL_NIF_TERM ret = evision_from_as_map<${storage_name}>(env, *self_ptr, self, "${elixir_module_name}", success);
+        if (success) {
+            return evision::nif::ok(env, ret);
+        } else {
+            return ret;
+        }
     }
 
     return failmsgp(env, "cannot assign new value, mismatched type?");
@@ -501,7 +509,13 @@ static ERL_NIF_TERM evision_${name}_set_${member}(ErlNifEnv *env, int argc, cons
     evision::nif::parse_arg(env, 1, argv, erl_terms);
 
     if (evision_to_safe(env, evision_get_kw(env, erl_terms, "${member}"), _self_${access}${member}, ArgInfo("${member}", false))) {
-        return evision::nif::ok(env, self);
+        bool success;
+        ERL_NIF_TERM ret = evision_from_as_map<${storage_name}>(env, _self_, self, "${elixir_module_name}", success);
+        if (success) {
+            return evision::nif::ok(env, ret);
+        } else {
+            return ret;
+        }
     }
 
     return failmsgp(env, "cannot assign new value, mismatched type?");
@@ -523,7 +537,13 @@ static ERL_NIF_TERM evision_${name}_set_${member}(ErlNifEnv *env, int argc, cons
     }
 
     if (evision_to_safe(env, argv[1], _self_algo_${access}${member}, ArgInfo("${member}", false))) {
-        return evision::nif::ok(env, self);
+        bool success;
+        ERL_NIF_TERM ret = evision_from_as_map<${cname}>(env, *_self_algo_, self, "${elixir_module_name}", success);
+        if (success) {
+            return evision::nif::ok(env, ret);
+        } else {
+            return ret;
+        }
     }
 
     return failmsgp(env, "cannot assign new value, mismatched type?");
