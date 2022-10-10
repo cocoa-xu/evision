@@ -418,11 +418,6 @@ class ModuleGenerator(object):
                                 'getLayersShapes': '@spec getLayerShapes(Evision.Net.t(), Keyword.t()) :: {:ok, list(integer()), list(list(list(integer()))), list(list(list(integer())))} | {:error, String.t()}'
                             }
                             spec = specs[module_func_name]
-
-                            # todo: find a way to apply patches to opencv source code on windows
-                            if sys.platform == 'win32' and module_func_name == 'getLayerShapes':
-                                spec = ''
-
                             function_code.write(f'  {spec}\n'
                                 f'  def {module_func_name}(self, opts \\\\ []) when is_list(opts) and (opts == [] or is_tuple(hd(opts))) do\n'
                                 '    self = Evision.Internal.Structurise.from_struct(self)\n'
