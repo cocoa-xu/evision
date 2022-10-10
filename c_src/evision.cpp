@@ -2089,7 +2089,7 @@ static int convert_to_char(ErlNifEnv *env, ERL_NIF_TERM o, char *dst, const ArgI
 
 
 #include "evision_generated_enums.h"
-#define CV_ERL_TYPE(WNAME, NAME, STORAGE, SNAME, _1, _2) CV_ERL_TYPE_DECLARE_DYNAMIC(WNAME, NAME, STORAGE, SNAME)
+#define CV_ERL_TYPE(WNAME, NAME, STORAGE, SNAME, _1, _2, MODULE_NAME) CV_ERL_TYPE_DECLARE_DYNAMIC(WNAME, NAME, STORAGE, SNAME, MODULE_NAME)
 #include "evision_generated_types.h"
 #undef CV_ERL_TYPE
 #include "evision_custom_headers.h"
@@ -2135,7 +2135,7 @@ on_load(ErlNifEnv* env, void**, ERL_NIF_TERM)
 {
     ErlNifResourceType *rt;
 
-#define CV_ERL_TYPE(WNAME, NAME, STORAGE, _1, BASE, CONSTRUCTOR) CV_ERL_TYPE_INIT_DYNAMIC(WNAME, NAME, STORAGE, return -1)
+#define CV_ERL_TYPE(WNAME, NAME, STORAGE, _1, BASE, CONSTRUCTOR, _2) CV_ERL_TYPE_INIT_DYNAMIC(WNAME, NAME, STORAGE, return -1)
 #include "evision_generated_types.h"
 #undef CV_ERL_TYPE
     rt = enif_open_resource_type(env, "evision", "erl_cv_Mat_type", destruct_Mat, ERL_NIF_RT_CREATE, NULL);                                                             \
