@@ -34,6 +34,6 @@ defmodule Evision.VideoCapture.Test do
     assert :ok == elem(ret, 0)
 
     ret = Evision.VideoCapture.read(video)
-    assert :error == ret
+    assert false == ret
   end
 end
