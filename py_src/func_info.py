@@ -340,8 +340,9 @@ class FuncInfo(object):
                 code_parse = "if((argc - nif_opts_index == 1) && erl_terms.size() == 0)"
 
             if len(v.py_outlist) == 0:
-                code_ret = "return evision::nif::atom(env, \"nil\")"
+                code_ret = "return evision::nif::atom(env, \"ok\")"
                 if not v.isphantom and ismethod and not self.is_static:
+                    # todo: make struct
                     code_ret = "return evision::nif::ok(env, self)"
             elif len(v.py_outlist) == 1:
                 if self.isconstructor:
@@ -358,6 +359,7 @@ class FuncInfo(object):
                                    "            if (enif_is_ref(env, mat_ret) || enif_is_map(env, mat_ret)) return evision::nif::ok(env, mat_ret);\n" \
                                    "            else return mat_ret;"
                     else:
+                        # todo: ensure this returns a struct
                         code_ret = "return evision::nif::ok(env, evision_from(env, %s))" % (aname,)
             else:
                 # there is more than 1 return parameter; form the tuple out of them
