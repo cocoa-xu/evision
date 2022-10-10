@@ -38,6 +38,17 @@
     iex> false = Evision.SomeModule.some_function!(capture) # when failed
     ```
 
+- `std::string` and `cv::String` will be wrapped in a binary term instead of a list.
+
+  For example,
+
+  ```elixir
+  # before
+  iex> {'detected text', _, _} = Evision.QRCodeDetector.detectAndDecode!(qr, img)
+  # after
+  iex> {"detected text", _, _} = Evision.QRCodeDetector.detectAndDecode!(qr, img)
+  ```
+
 - Structurised all `#reference`s that have their own module.
 
   For example, 
