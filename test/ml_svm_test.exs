@@ -31,8 +31,8 @@ defmodule Evision.ML.SVM.Test do
     {:ok, svm} = Cv.ML.SVM.setType(svm, Cv.cv_C_SVC())
     {:ok, svm} = Cv.ML.SVM.setKernel(svm, Cv.cv_LINEAR())
     {:ok, svm} = Cv.ML.SVM.setTermCriteria(svm, {Cv.cv_MAX_ITER(), 100, 0.000001})
-    assert :ok = Cv.ML.SVM.train(svm, training_data_mat, Cv.cv_ROW_SAMPLE(), labels_mat)
-    assert :ok = Cv.ML.SVM.isTrained(svm)
+    assert true = Cv.ML.SVM.train(svm, training_data_mat, Cv.cv_ROW_SAMPLE(), labels_mat)
+    assert true = Cv.ML.SVM.isTrained(svm)
 
     {:ok, sv} = Cv.ML.SVM.getUncompressedSupportVectors(svm)
     {:ok, {rows, cols}} = Cv.Mat.shape(sv)

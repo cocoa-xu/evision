@@ -105,17 +105,15 @@ class ModuleGenerator(object):
                 if len(docs_mfa) > 0:
                     if len(docs_mfa) == 1:
                         self.write_elixir('\n  @doc """\n')
-                        self.write_elixir(docs_mfa[0][0])
+                        self.write_elixir(docs_mfa[0])
                         self.write_elixir('\n  """\n')
                     else:
                         self.write_elixir('\n  @doc """\n')
                         for i in range(len(docs_mfa)):
                             self.write_elixir(f'  #### Variant {i+1}:\n')
-                            self.write_elixir(docs_mfa[i][0])
+                            self.write_elixir(docs_mfa[i])
                             self.write_elixir('\n')
                         self.write_elixir('\n  """\n')
-                    # function group
-                    self.write_elixir(docs_mfa[0][1])
                 functions = sorted(functions, key=lambda x: -x[0])
                 for _, function_code in functions:
                     self.write_elixir(function_code)
@@ -144,13 +142,21 @@ class ModuleGenerator(object):
     def gen_property(self, full_qualified_name: str, class_name: str, property_name: str, property: ClassProp):
         # ======== step 1. generate property getter ========
         func_arity = 1
+        ns = full_qualified_name.split('::')
+        cname = ns[-1]
+        if cname == 'Params':
+            cname = '_'.join(ns[-2:])
+        self_spec_in = map_argtype_in_spec(class_name, cname, is_in=True)
+        prop_spec_out = map_argtype_in_spec(class_name, property.tp, is_in=False)
         generating_type = 'get'
         property_templates = {
             "elixir": {
                 "getter_template": ET.elixir_property_getter,
                 "nif_args": '_self',
                 "nif_template": Template('  def ${nif_name}(${nif_args}), do: :erlang.nif_error("${nif_error_msg}")\n'),
-                "nif_error_msg": f"{class_name}::{property_name} {generating_type}ter not loaded"
+                "nif_error_msg": f"{class_name}::{property_name} {generating_type}ter not loaded",
+                "self_spec": self_spec_in,
+                'prop_spec': prop_spec_out
             },
             "erlang": {
                 "getter_template": ET.erlang_property_getter,
@@ -163,13 +169,18 @@ class ModuleGenerator(object):
         # ======== step 2. generate property setter if the property if not readonly ========
         if not property.readonly:
             func_arity = 2
+            self_spec_out = map_argtype_in_spec(class_name, cname, is_in=False)
+            prop_spec_in = map_argtype_in_spec(class_name, property.tp, is_in=True)
             generating_type = 'set'
             property_templates = {
                 "elixir": {
                     "setter_template": ET.elixir_property_setter,
                     "nif_args": '_self, _prop',
                     "nif_template": Template('  def ${nif_name}(${nif_args}), do: :erlang.nif_error("${nif_error_msg}")\n'),
-                    "nif_error_msg": f"{class_name}::{property_name} {generating_type}ter not loaded"
+                    "nif_error_msg": f"{class_name}::{property_name} {generating_type}ter not loaded",
+                    "self_spec_in": self_spec_in,
+                    "self_spec_out": self_spec_out,
+                    'prop_spec': prop_spec_in
                 },
                 "erlang": {
                     "setter_template": ET.erlang_property_setter,
@@ -198,7 +209,7 @@ class ModuleGenerator(object):
         for kind, template in property_templates.items():
             if kind == 'erlang':
                 property_name = map_argname('elixir', property_name)
-            property_code[kind] = template[f"{generating_type}ter_template"].substitute(property_name=property_name, nif_name=nif_name)
+            property_code[kind] = template[f"{generating_type}ter_template"].substitute(property_name=property_name, nif_name=nif_name, **template)
 
         if 'elixir' in property_templates and not self.has_deferror(func_name, func_arity):
             if generating_type == 'set':
@@ -286,14 +297,6 @@ class ModuleGenerator(object):
                 if is_instance_method:
                     func_arity += 1
 
-                # generate `namespace` tag for `@doc`
-                function_group = ""
-                if len(func.namespace) > 0:
-                    if func.namespace == "cv":
-                        function_group = f"  @doc namespace: :cv\n"
-                    else:
-                        function_group = f"  @doc namespace: :\"{func.namespace}\"\n"
-
                 # module_func_name will be used to generate function declaration
                 #   def {module_func_name}...
                 module_func_name = func_name
@@ -323,6 +326,19 @@ class ModuleGenerator(object):
                 rejected, module_func_name = get_module_func_name(module_func_name, is_ns, full_qualified_name)
                 if rejected:
                     return
+                
+                if '_' in module_func_name and len(namespace_list) > 1:
+                    prefix = '_'.join([map_argname('elixir', ns) for ns in namespace_list[:-1]])
+                    prefix += '_'
+                    if module_func_name.startswith(prefix):
+                        module_func_name = module_func_name[len(prefix):]
+
+                if len(module_func_name) > 0 and not ('a' <= module_func_name[0] <= 'z'):
+                    module_func_name = module_func_name[:1].lower() + module_func_name[1:]
+                    if module_func_name == 'textDetectionModel_DB':
+                        module_func_name = 'textDetectionModelDB'
+                    elif module_func_name == 'textDetectionModel_EAST':
+                        module_func_name = 'textDetectionModelEAST'
 
                 if func_name.startswith(evision_nif_prefix() + "dnn") and module_func_name == "forward":
                     function_sign = evision_nif_prefix() + "dnn_forward"
@@ -348,6 +364,8 @@ class ModuleGenerator(object):
 
                     positional_args, positional_var = func_variant.positional_args(kind)
                     opts_args = func_variant.opts_args(kind, in_func_body=True)
+                    function_spec = func_variant.generate_spec(kind, module_func_name, is_instance_method, include_opts=False)
+                    function_spec_opts = func_variant.generate_spec(kind, module_func_name, is_instance_method, include_opts=True)
 
                     # merge positional args and opts args
                     func_args = positional_var
@@ -363,18 +381,25 @@ class ModuleGenerator(object):
                     if func_name.startswith(evision_nif_prefix() + "dnn") and module_func_name == "forward":
                         func_arity = 2
                         if kind == 'elixir':
-                            function_code.write(f'  def {module_func_name}(self, opts \\\\ [])\n'
+                            function_code.write(f'  @spec forward(Evision.Net.t(), Keyword.t()) :: {{:ok, list(Evision.Mat.maybe_mat_in())}} | {{:error, String.t()}}\n'
+                                f'  def {module_func_name}(self, opts \\\\ [])\n'
                                 f'  def {module_func_name}(self, opts) when is_list(opts) and (opts == [] or is_tuple(hd(opts))) do\n'
                                 '    self = Evision.Internal.Structurise.from_struct(self)\n'
                                 '    opts = Evision.Internal.Structurise.from_struct(opts)\n'
                                 f'    :evision_nif.{nif_name}(self, opts)\n'
-                                '    |> Evision.Internal.Structurise.to_struct()\n'
+                                '    |> __to_struct__()\n'
                                 '  end\n')
                             if not self.has_deferror(func_name, func_arity):
                                 function_code.write(f"  deferror {module_func_name}(self, opts)\n\n")
                                 self.register_deferror(func_name, func_arity)
-                            self.add_function(kind, module_func_name, func_arity, guards_count=3, generated_code=function_code.getvalue())
-                            self.add_function_docs(kind, module_func_name, 2, inline_doc, function_group)
+                            self.add_function(kind, module_func_name, func_arity, 
+                                guards_count=3, 
+                                generated_code=function_code.getvalue()
+                            )
+                            self.add_function_docs(kind, module_func_name, 
+                                function_arity=2,
+                                inline_docs=inline_doc
+                            )
                         elif kind == 'erlang':
                             function_code.write(f'{module_func_name}(Self) ->\n'
                                 f'  evision_nif:{nif_name}(Self, []).\n')
@@ -388,25 +413,45 @@ class ModuleGenerator(object):
                     if func_name.startswith(evision_nif_prefix() + "dnn_dnn_Net") and (module_func_name == "getLayerShapes" or module_func_name == "getLayersShapes"):
                         func_arity = 2
                         if kind == 'elixir':
-                            function_code.write(f'  def {module_func_name}(self, opts \\\\ []) when is_list(opts) and (opts == [] or is_tuple(hd(opts))) do\n'
+                            specs = {
+                                'getLayerShapes': '@spec getLayerShapes(Evision.Net.t(), Keyword.t()) :: {:ok, list(list(integer())), list(list(integer()))} | {:error, String.t()}',
+                                'getLayersShapes': '@spec getLayerShapes(Evision.Net.t(), Keyword.t()) :: {:ok, list(integer()), list(list(list(integer()))), list(list(list(integer())))} | {:error, String.t()}'
+                            }
+                            spec = specs[module_func_name]
+                            function_code.write(f'  {spec}\n'
+                                f'  def {module_func_name}(self, opts \\\\ []) when is_list(opts) and (opts == [] or is_tuple(hd(opts))) do\n'
                                 '    self = Evision.Internal.Structurise.from_struct(self)\n'
                                 '    opts = Evision.Internal.Structurise.from_struct(opts)\n'
                                 f'    :evision_nif.{nif_name}(self, opts)\n'
-                                '    |> Evision.Internal.Structurise.to_struct()\n'
+                                '    |> __to_struct__()\n'
                                 '  end\n')
                             if not self.has_deferror(func_name, func_arity):
                                 function_code.write(f"  deferror {module_func_name}(self, opts)\n\n")
                                 self.register_deferror(func_name, func_arity)
-                            self.add_function(kind, module_func_name, func_arity, guards_count=3, generated_code=function_code.getvalue())
-                            self.add_function_docs(kind, module_func_name, 2, inline_doc, function_group)
+                            self.add_function(kind, module_func_name, func_arity,
+                                guards_count=3,
+                                generated_code=function_code.getvalue()
+                            )
+                            self.add_function_docs(kind, module_func_name, 
+                                function_arity=2,
+                                inline_docs=inline_doc,
+                            )
                         elif kind == 'erlang':
                             function_code.write(f'{module_func_name}(Self) ->\n'
                                 f'  evision_nif:{nif_name}(Self, []).\n')
-                            self.add_function(kind, module_func_name, function_arity=1, guards_count=0, generated_code=function_code.getvalue())
+                            self.add_function(kind, module_func_name, 
+                                function_arity=1, 
+                                guards_count=0,
+                                generated_code=function_code.getvalue()
+                            )
                             function_code = StringIO()
                             function_code.write(f'{module_func_name}(Self, Options) when is_list(Options), is_tuple(hd(Options)), tuple_size(hd(Options)) == 2 ->\n'
                                 f'  evision_nif:{nif_name}(Self, Options).\n')
-                            self.add_function(kind, module_func_name, function_arity=2, guards_count=3, generated_code=function_code.getvalue())
+                            self.add_function(kind, module_func_name, 
+                                function_arity=2,
+                                guards_count=3,
+                                generated_code=function_code.getvalue()
+                            )
                         continue
 
                     # if func_args_with_opts is not None
@@ -436,11 +481,11 @@ class ModuleGenerator(object):
                         # generate binding code with opts args
                         func_arity = len(module_func_args_with_opts.split(','))
                         if kind == 'elixir':
-                            # function_code.write(f'  def {module_func_name}({module_func_args_with_opts})\n')
-                            function_code.write(f'  def {module_func_name}({module_func_args_with_opts}){when_guard_with_opts}do\n'
+                            function_code.write(f'  {function_spec_opts}\n'
+                                f'  def {module_func_name}({module_func_args_with_opts}){when_guard_with_opts}do\n'
                                 f'    {positional_args}\n'
                                 f'    :evision_nif.{nif_name}({func_args_with_opts})\n'
-                                '     |> Evision.Internal.Structurise.to_struct()\n'
+                                '     |> __to_struct__()\n'
                                 '  end\n')
 
                             # remove the default value, i.e., `..., opts \\ []` => `..., opts`
@@ -449,7 +494,9 @@ class ModuleGenerator(object):
                             if not self.has_deferror(func_name, func_arity):
                                 function_code.write(f"  deferror({module_func_name}({module_func_args_with_opts}))\n\n")
                                 self.register_deferror(func_name, func_arity)
-                            self.add_function_docs(kind, module_func_name, func_arity, inline_doc, function_group)
+                            self.add_function_docs(kind, module_func_name, func_arity,
+                                inline_docs=inline_doc,
+                            )
                         elif kind == 'erlang':
                             function_code.write(f'{module_func_name}({module_func_args_with_opts}){when_guard_with_opts} ->\n'
                                 f'  {positional_args},\n'
@@ -459,7 +506,10 @@ class ModuleGenerator(object):
                             raise RuntimeError(f"unknown kind `{kind}`")
 
                         # add this function to the collection
-                        self.add_function(kind, module_func_name, func_arity, guards_count=3 + len(func_guard), generated_code=function_code.getvalue())
+                        self.add_function(kind, module_func_name, func_arity,
+                            guards_count=3 + len(func_guard),
+                            generated_code=function_code.getvalue()
+                        )
                         # "empty" buffer in function_code
                         # so that we can use it later
                         function_code = StringIO()
@@ -471,17 +521,18 @@ class ModuleGenerator(object):
                         func_arity = 0
 
                     if kind == 'elixir':
-                        function_code.write(f'  def {module_func_name}({module_func_args}){func_when_guard}do\n'
+                        function_code.write(f'  {function_spec}\n'
+                            f'  def {module_func_name}({module_func_args}){func_when_guard}do\n'
                             f'    {positional_args}\n'
                             f'    :evision_nif.{nif_name}({func_args})\n'
-                            '    |> Evision.Internal.Structurise.to_struct()\n'
+                            '    |> __to_struct__()\n'
                             '  end\n')
                         # generate the bang(!) version for elixir
                         if not self.has_deferror(func_name, func_arity):
                             # remove the default value, i.e., `..., opts \\ []` => `..., opts`
                             function_code.write(f"  deferror({module_func_name}({module_func_args}))\n\n")
                             self.register_deferror(func_name, func_arity)
-                        self.add_function_docs(kind, module_func_name, func_arity, inline_doc, function_group)
+                        self.add_function_docs(kind, module_func_name, func_arity, inline_doc)
                     elif kind == 'erlang':
                         function_code.write(f'{module_func_name}({module_func_args}){func_when_guard} ->\n'
                             f'  {positional_args},\n'
@@ -577,7 +628,7 @@ class ModuleGenerator(object):
             function_dict[function_name][function_arity] = []
         function_dict[function_name][function_arity].append((guards_count, generated_code))
 
-    def add_function_docs(self, kind: str, function_name: str, function_arity: int, inline_docs: str, function_group: str):
+    def add_function_docs(self, kind: str, function_name: str, function_arity: int, inline_docs: str):
         if self.inline_docs.get(kind, None) is None:
             self.inline_docs[kind] = {}
         inline_docs_dict = self.inline_docs[kind]
@@ -585,7 +636,7 @@ class ModuleGenerator(object):
             inline_docs_dict[function_name] = {}
         if function_arity not in inline_docs_dict[function_name]:
             inline_docs_dict[function_name][function_arity] = []
-        inline_docs_dict[function_name][function_arity].append((inline_docs, function_group))
+        inline_docs_dict[function_name][function_arity].append(inline_docs)
 
     def print_functions(self, kind: str):
         for function_name, function in self.function[kind].items():

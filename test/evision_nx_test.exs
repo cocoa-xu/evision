@@ -3,9 +3,7 @@ defmodule Evision.Nx.Test do
 
   @tag :nx
   test "load an image from file and convert to Nx.tensor" do
-    {:ok, mat} =
-      Path.join(__DIR__, ["test.png"])
-      |> Evision.imread()
+    {:ok, mat} = Evision.imread(Path.join(__DIR__, ["test.png"]))
 
     t = Evision.Nx.to_nx(mat)
 

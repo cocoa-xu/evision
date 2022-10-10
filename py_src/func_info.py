@@ -154,8 +154,6 @@ class FuncInfo(object):
 
         selfinfo = None
         ismethod = self.classname != "" and not self.isconstructor
-        # full name is needed for error diagnostic in PyArg_ParseTupleAndKeywords
-        fullname = self.name
 
         if self.classname:
             selfinfo = all_classes[self.classname]
@@ -170,7 +168,6 @@ class FuncInfo(object):
                         pname=(selfinfo.cname + '*') if selfinfo.issimple else "Ptr<{}>".format(selfinfo.cname),
                         cvt='' if selfinfo.issimple else '*'
                     )
-            fullname = selfinfo.wname + "." + fullname
 
         all_code_variants = []
 
@@ -258,7 +255,6 @@ class FuncInfo(object):
                     defval = ""
                 if defval:
                     if arg_type_info.atype == "QRCodeEncoder_Params":
-                        # arg_type_info.atype = ""
                         code_decl += "    QRCodeEncoder::Params %s=%s;\n" % (a.name, defval)
                     else:
                         code_decl += "    %s %s=%s;\n" % (arg_type_info.atype, a.name, defval)
@@ -340,25 +336,33 @@ class FuncInfo(object):
                 code_parse = "if((argc - nif_opts_index == 1) && erl_terms.size() == 0)"
 
             if len(v.py_outlist) == 0:
-                code_ret = "return evision::nif::atom(env, \"nil\")"
+                code_ret = "return evision::nif::atom(env, \"ok\")"
                 if not v.isphantom and ismethod and not self.is_static:
-                    code_ret = "return evision::nif::ok(env, self)"
+                    module_name = get_elixir_module_name(selfinfo.cname)
+                    code_ret = "bool success;\n" \
+                        f"            ERL_NIF_TERM map_self = evision_from_as_map(env, _self_, self, \"{module_name}\", success);\n" \
+                        "            if (success) return evision::nif::ok(env, map_self);\n" \
+                        "            else return map_self"
             elif len(v.py_outlist) == 1:
                 if self.isconstructor:
-                    if self.classname in ["VideoCapture"]:
-                        code_ret = ET.code_ret_constructor_structurise % (self.classname,)
-                    else:
-                        code_ret = ET.code_ret_constructor
+                    selftype = selfinfo.cname
+                    if not selfinfo.issimple:
+                        selftype = "Ptr<{}>".format(selfinfo.cname)
+                    code_ret = ET.code_ret_constructor % (selftype, get_elixir_module_name(selfinfo.cname))
                 else:
-                    aname, argno = v.py_outlist[0]
+                    aname, _ = v.py_outlist[0]
                     if v.rettype == 'bool':
-                        code_ret = "if (%s) {\n                return evision::nif::atom(env, \"ok\");\n            } else {\n                return evision::nif::atom(env, \"error\");\n            }" % (aname,)
+                        code_ret = f"if ({aname}) {{\n" \
+                        '                return evision::nif::atom(env, "true");\n' \
+                        '            } else {\n' \
+                        '                return evision::nif::atom(env, "false");\n'\
+                        '            }'
                     elif v.rettype == 'Mat':
                         code_ret = f"ERL_NIF_TERM mat_ret = evision_from(env, {aname});\n" \
                                    "            if (enif_is_ref(env, mat_ret) || enif_is_map(env, mat_ret)) return evision::nif::ok(env, mat_ret);\n" \
                                    "            else return mat_ret;"
                     else:
-                        code_ret = "return evision::nif::ok(env, evision_from(env, %s))" % (aname,)
+                        code_ret = f"return evision::nif::ok(env, evision_from(env, {aname}))"
             else:
                 # there is more than 1 return parameter; form the tuple out of them
                 n_tuple = len(v.py_outlist)

@@ -16,7 +16,7 @@ defmodule Evision.VideoWriter.Test do
       {:ok, writer} =
         Cv.VideoWriter.videoWriter(output_video_file, fourcc, output_fps / 1, [width, height])
 
-      assert :ok == Cv.VideoWriter.isOpened(writer)
+      assert true == Cv.VideoWriter.isOpened(writer)
       {:ok, frame} = Cv.VideoCapture.read(reader)
       Cv.VideoCapture.release(reader)
       encode(frame, writer, output_fps * output_seconds)

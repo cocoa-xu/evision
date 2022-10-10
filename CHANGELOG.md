@@ -2,6 +2,214 @@
 
 ## v0.1.10 (main)
 [Browse the Repository](https://github.com/cocoa-xu/evision)
+### Breaking Changes
+- Return value changed if the first return type of the function is `bool`
+
+  - If the function only returns a `bool`, the updated return value will simple be `true` or `false`.
+  
+    ```elixir
+    # before
+    iex> :ok = Evision.imwrite!("/path/to/image.png", img)
+    iex> :error = Evision.imwrite!("/path/to/image.png", invalid_img)
+    # after
+    iex> true = Evision.imwrite!("/path/to/image.png", img)
+    iex> true = Evision.imwrite!("/path/to/image.png", invalid_img)
+    ```
+
+  - If the first return type is `bool`, and there is another value to return:
+  
+    ```elixir
+    # before
+    iex> frame = Evision.VideoCapture.read!(capture) # has a frame available
+    iex> :error = Evision.VideoCapture.read!(capture) # cannot read / no more available frames
+    # after
+    iex> frame = Evision.VideoCapture.read!(capture) # has a frame available
+    iex> false = Evision.VideoCapture.read!(capture) # cannot read / no more available frames
+    ```
+  
+  - If the first return type is `bool`, and there are more than one value to return:
+
+    ```elixir
+    # before
+    iex> {val1, val2} = Evision.SomeModule.some_function!(arg1) # when succeeded
+    iex> :error = Evision.SomeModule.some_function!(capture) # when failed
+    # after
+    iex> {val1, val2} = Evision.SomeModule.some_function!(arg1) # when succeeded
+    iex> false = Evision.SomeModule.some_function!(capture) # when failed
+    ```
+
+- `std::string` and `cv::String` will be wrapped in a binary term instead of a list.
+
+  For example,
+
+  ```elixir
+  # before
+  iex> {'detected text', _, _} = Evision.QRCodeDetector.detectAndDecode!(qr, img)
+  # after
+  iex> {"detected text", _, _} = Evision.QRCodeDetector.detectAndDecode!(qr, img)
+  ```
+
+- Structurised all `#reference`s that have their own module.
+
+  For example, 
+
+  List of modules that are now wrapped in structs.
+
+  - `Evision.AKAZE`
+  - `Evision.AffineFeature`
+  - `Evision.AgastFeatureDetector`
+  - `Evision.Algorithm`
+  - `Evision.AlignExposures`
+  - `Evision.AlignMTB`
+  - `Evision.AsyncArray`
+  - `Evision.BFMatcher`
+  - `Evision.BOWImgDescriptorExtractor`
+  - `Evision.BOWKMeansTrainer`
+  - `Evision.BOWTrainer`
+  - `Evision.BRISK`
+  - `Evision.BackgroundSubtractor`
+  - `Evision.BackgroundSubtractorKNN`
+  - `Evision.BackgroundSubtractorMOG2`
+  - `Evision.CLAHE`
+  - `Evision.CUDA`
+  - `Evision.CUDA.BufferPool`
+  - `Evision.CUDA.DeviceInfo`
+  - `Evision.CUDA.Event`
+  - `Evision.CUDA.GpuMat`
+  - `Evision.CUDA.HostMem`
+  - `Evision.CUDA.Stream`
+  - `Evision.CUDA.TargetArchs`
+  - `Evision.CalibrateCRF`
+  - `Evision.CalibrateDebevec`
+  - `Evision.CalibrateRobertson`
+  - `Evision.CascadeClassifier`
+  - `Evision.CirclesGridFinderParameters`
+  - `Evision.DISOpticalFlow`
+  - `Evision.DMatch`
+  - `Evision.DNN.ClassificationModel`
+  - `Evision.DNN.DetectionModel`
+  - `Evision.DNN.DictValue`
+  - `Evision.DNN.KeypointsModel`
+  - `Evision.DNN.Layer`
+  - `Evision.DNN.Model`
+  - `Evision.DNN.Net`
+  - `Evision.DNN.SegmentationModel`
+  - `Evision.DNN.TextDetectionModel`
+  - `Evision.DNN.TextDetectionModelDB`
+  - `Evision.DNN.TextDetectionModelEAST`
+  - `Evision.DNN.TextRecognitionModel`
+  - `Evision.DenseOpticalFlow`
+  - `Evision.DescriptorMatcher`
+  - `Evision.Detail.AffineBasedEstimator`
+  - `Evision.Detail.AffineBestOf2NearestMatcher`
+  - `Evision.Detail.BestOf2NearestMatcher`
+  - `Evision.Detail.BestOf2NearestRangeMatcher`
+  - `Evision.Detail.Blender`
+  - `Evision.Detail.BlocksChannelsCompensator`
+  - `Evision.Detail.BlocksCompensator`
+  - `Evision.Detail.BlocksGainCompensator`
+  - `Evision.Detail.BundleAdjusterAffine`
+  - `Evision.Detail.BundleAdjusterAffinePartial`
+  - `Evision.Detail.BundleAdjusterBase`
+  - `Evision.Detail.BundleAdjusterRay`
+  - `Evision.Detail.BundleAdjusterReproj`
+  - `Evision.Detail.CameraParams`
+  - `Evision.Detail.ChannelsCompensator`
+  - `Evision.Detail.DpSeamFinder`
+  - `Evision.Detail.Estimator`
+  - `Evision.Detail.ExposureCompensator`
+  - `Evision.Detail.FeatherBlender`
+  - `Evision.Detail.FeaturesMatcher`
+  - `Evision.Detail.GainCompensator`
+  - `Evision.Detail.GraphCutSeamFinder`
+  - `Evision.Detail.HomographyBasedEstimator`
+  - `Evision.Detail.ImageFeatures`
+  - `Evision.Detail.MatchesInfo`
+  - `Evision.Detail.MultiBandBlender`
+  - `Evision.Detail.NoBundleAdjuster`
+  - `Evision.Detail.NoExposureCompensator`
+  - `Evision.Detail.NoSeamFinder`
+  - `Evision.Detail.PairwiseSeamFinder`
+  - `Evision.Detail.SeamFinder`
+  - `Evision.Detail.SphericalProjector`
+  - `Evision.Detail.Timelapser`
+  - `Evision.Detail.VoronoiSeamFinder`
+  - `Evision.FaceDetectorYN`
+  - `Evision.FaceRecognizerSF`
+  - `Evision.FarnebackOpticalFlow`
+  - `Evision.FastFeatureDetector`
+  - `Evision.Feature2D`
+  - `Evision.FileNode`
+  - `Evision.FileStorage`
+  - `Evision.Flann.Index`
+  - `Evision.FlannBasedMatcher`
+  - `Evision.GFTTDetector`
+  - `Evision.GeneralizedHough`
+  - `Evision.GeneralizedHoughBallard`
+  - `Evision.GeneralizedHoughGuil`
+  - `Evision.HOGDescriptor`
+  - `Evision.KAZE`
+  - `Evision.KalmanFilter`
+  - `Evision.KeyPoint`
+  - `Evision.LineSegmentDetector`
+  - `Evision.ML.ANNMLP`
+  - `Evision.ML.Boost`
+  - `Evision.ML.DTrees`
+  - `Evision.ML.EM`
+  - `Evision.ML.KNearest`
+  - `Evision.ML.LogisticRegression`
+  - `Evision.ML.NormalBayesClassifier`
+  - `Evision.ML.ParamGrid`
+  - `Evision.ML.RTrees`
+  - `Evision.ML.SVM`
+  - `Evision.ML.SVMSGD`
+  - `Evision.ML.StatModel`
+  - `Evision.ML.TrainData`
+  - `Evision.MSER`
+  - `Evision.MergeDebevec`
+  - `Evision.MergeExposures`
+  - `Evision.MergeMertens`
+  - `Evision.MergeRobertson`
+  - `Evision.OCL`
+  - `Evision.OCL.Device`
+  - `Evision.ORB`
+  - `Evision.Parallel`
+  - `Evision.PyRotationWarper`
+  - `Evision.QRCodeDetector`
+  - `Evision.QRCodeEncoder`
+  - `Evision.QRCodeEncoder.Params`
+  - `Evision.SIFT`
+  - `Evision.Samples`
+  - `Evision.Segmentation.IntelligentScissorsMB`
+  - `Evision.SimpleBlobDetector`
+  - `Evision.SimpleBlobDetector.Params`
+  - `Evision.SparseOpticalFlow`
+  - `Evision.SparsePyrLKOpticalFlow`
+  - `Evision.StereoBM`
+  - `Evision.StereoMatcher`
+  - `Evision.StereoSGBM`
+  - `Evision.Stitcher`
+  - `Evision.Subdiv2D`
+  - `Evision.TickMeter`
+  - `Evision.Tonemap`
+  - `Evision.TonemapDrago`
+  - `Evision.TonemapMantiuk`
+  - `Evision.TonemapReinhard`
+  - `Evision.Tracker`
+  - `Evision.TrackerDaSiamRPN`
+  - `Evision.TrackerDaSiamRPN.Params`
+  - `Evision.TrackerGOTURN`
+  - `Evision.TrackerGOTURN.Params`
+  - `Evision.TrackerMIL`
+  - `Evision.TrackerMIL.Params`
+  - `Evision.UMat`
+  - `Evision.UsacParams`
+  - `Evision.Utils.Nested.OriginalClassName`
+  - `Evision.Utils.Nested.OriginalClassName.Params`
+  - `Evision.VariationalRefinement`
+  - `Evision.VideoCapture`
+  - `Evision.VideoWriter`
+
 ### Changed
 - Improved cross reference in inline docs. For example,
 
@@ -26,6 +234,12 @@
   ```
 
   In this way, you can navigate to the referenced function in the generated html docs.
+
+### Fixed
+- Docs: included `retval` and `self` in the `Return` section.
+
+### Added
+- Function spec for all functions, including generated ones.
 
 ## v0.1.9 (2022-10-09)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.9) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.9)

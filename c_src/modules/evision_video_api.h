@@ -4,7 +4,7 @@
 #define EVISION_VIDEO_API_H
 
 template <>
-ERL_NIF_TERM evision_from_as_map(ErlNifEnv *env, const cv::Ptr<cv::VideoCapture>& cap, ERL_NIF_TERM res_term) {
+ERL_NIF_TERM evision_from_as_map(ErlNifEnv *env, const cv::Ptr<cv::VideoCapture>& cap, ERL_NIF_TERM res_term, const char * class_name, bool& success) {
     const size_t num_items = 7;
     size_t item_index = 0;
 
@@ -36,14 +36,16 @@ ERL_NIF_TERM evision_from_as_map(ErlNifEnv *env, const cv::Ptr<cv::VideoCapture>
     item_index++;
 
     keys[item_index] = enif_make_atom(env, "class");
-    values[item_index] = enif_make_atom(env, "VideoCapture");
+    values[item_index] = enif_make_atom(env, class_name);
     item_index++;
 
     ERL_NIF_TERM map;
     if (enif_make_map_from_arrays(env, keys, values, item_index, &map)) {
+        success = true;
         return map;
     } else {
-        return enif_make_atom(env, "error when making map from arrays");
+        success = false;
+        return evision::nif::error(env, "enif_make_map_from_arrays failed in evision_from_as_map");
     }
 }
 

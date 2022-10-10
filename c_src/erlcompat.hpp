@@ -58,7 +58,7 @@ bool evision_to(ErlNifEnv *env, ERL_NIF_TERM dst, TYPE& src, const ArgInfo& info
     return true;                                                                                      \
 }
 
-#define CV_ERL_FROM_CLASS(TYPE)                                                                        \
+#define CV_ERL_FROM_CLASS(TYPE)                                                                       \
 template<>                                                                                            \
 ERL_NIF_TERM evision_from(ErlNifEnv *env, const TYPE& src)                                            \
 {                                                                                                     \
@@ -107,7 +107,7 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const TYPE& src)                      
 
 //==================================================================================================
 
-#define CV_ERL_TYPE_DECLARE_DYNAMIC(WNAME, NAME, STORAGE, SNAME) \
+#define CV_ERL_TYPE_DECLARE_DYNAMIC(WNAME, NAME, STORAGE, SNAME, MODULE_NAME)                         \
     static bool evision_##NAME##_getp(ErlNifEnv *env, ERL_NIF_TERM self, STORAGE * & dst)             \
     {                                                                                                 \
         evision_res<STORAGE> * VAR;                                                                   \
@@ -126,7 +126,9 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const TYPE& src)                      
         new (&(VAR->val)) STORAGE(r);                                                                 \
         ERL_NIF_TERM ret = enif_make_resource(env, VAR);                                              \
         enif_release_resource(VAR);                                                                   \
-        return ret;                                                                                   \
+        bool success;                                                                                 \
+        ERL_NIF_TERM map = evision_from_as_map(env, r, ret, #MODULE_NAME, success);                   \
+        return map;                                                                                   \
     }                                                                                                 \
     static void destruct_##NAME(ErlNifEnv *env, void *args)                                           \
     {                                                                                                 \
@@ -135,7 +137,7 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const TYPE& src)                      
 
 #define CV_ERL_TYPE_INIT_DYNAMIC(WNAME, NAME, STORAGE, ERROR_HANDLER)                                 \
     {                                                                                                 \
-        rt = enif_open_resource_type(env, "evision", "erl_cv_" #NAME "_type", destruct_##NAME ,     \
+        rt = enif_open_resource_type(env, "evision", "Evision." #NAME ".t", destruct_##NAME ,         \
                 ERL_NIF_RT_CREATE, NULL);                                                             \
         if (!rt) ERROR_HANDLER;                                                                       \
         evision_res<STORAGE>::type = rt;                                                              \

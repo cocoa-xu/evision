@@ -183,7 +183,30 @@ template<typename T> static
 ERL_NIF_TERM evision_from_as_binary(ErlNifEnv *env, const T& src, bool& success) { return Evision_Converter<T>::from_as_binary(env, src, success); }
 
 template<typename T> static
-ERL_NIF_TERM evision_from_as_map(ErlNifEnv *env, const T& src, ERL_NIF_TERM res_term) { return res_term; }
+ERL_NIF_TERM evision_from_as_map(ErlNifEnv *env, const T& src, ERL_NIF_TERM res_term, const char * class_name, bool& success) {
+    const size_t num_items = 2;
+    size_t item_index = 0;
+
+    ERL_NIF_TERM keys[num_items];
+    ERL_NIF_TERM values[num_items];
+
+    keys[item_index] = enif_make_atom(env, "ref");
+    values[item_index] = res_term;
+    item_index++;
+
+    keys[item_index] = enif_make_atom(env, "class");
+    values[item_index] = enif_make_atom(env, class_name);
+    item_index++;
+
+    ERL_NIF_TERM map;
+    if (enif_make_map_from_arrays(env, keys, values, item_index, &map)) {
+        success = true;
+        return map;
+    } else {
+        success = false;
+        return evision::nif::error(env, "enif_make_map_from_arrays failed in evision_from_as_map");
+    }
+}
 
 template <>
 ERL_NIF_TERM evision_from_as_binary(ErlNifEnv *env, const std::vector<uchar>& src, bool& success) {
@@ -679,6 +702,28 @@ bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, bool& value, const ArgInfo& in
             return true;
         }
     }
+    else if (enif_is_number(env, obj)) {
+        double f64;
+        ErlNifSInt64 i64;
+        ErlNifUInt64 u64;
+        if (enif_get_double(env, obj, &f64)) {
+            if (f64 != 0) {
+                value = true;
+                return true;
+            }
+        } else if (enif_get_int64(env, obj, (ErlNifSInt64 *)&i64)) {
+            if (i64 != 0) {
+                value = true;
+                return true;
+            }
+        } else if (enif_get_uint64(env, obj, (ErlNifUInt64 *)&u64)) {
+            if (u64 != 0) {
+                value = true;
+                return true;
+            }
+        }
+    }
+
     failmsg(env, "Argument '%s' is not convertable to bool", info.name);
     return false;
 }
@@ -910,14 +955,30 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const int64& value)
 template<>
 ERL_NIF_TERM evision_from(ErlNifEnv *env, const String& value)
 {
-    return enif_make_string(env, value.empty() ? "" : value.c_str(), ERL_NIF_LATIN1);
+    ERL_NIF_TERM erl_string;
+    unsigned char * ptr;
+    size_t len = strlen(value.c_str());
+    if ((ptr = enif_make_new_binary(env, len, &erl_string)) != nullptr) {
+        strncpy((char *)ptr, value.c_str(), len);
+        return erl_string;
+    } else {
+        return evision::nif::atom(env, "out of memory");
+    }
 }
 
 #if CV_VERSION_MAJOR == 3
 template<>
 ERL_NIF_TERM evision_from(ErlNifEnv *env, const std::string& value)
 {
-    return enif_make_string(env, value.empty() ? "" : value.c_str(), ERL_NIF_LATIN1);
+    ERL_NIF_TERM erl_string;
+    unsigned char * ptr;
+    size_t len = strlen(value.c_str());
+    if ((ptr = enif_make_new_binary(env, len, &erl_string)) != nullptr) {
+        strncpy((char *)ptr, value.c_str(), len);
+        return erl_string;
+    } else {
+        return evision::nif::atom(env, "out of memory");
+    }
 }
 #endif
 
@@ -1596,26 +1657,56 @@ template<> inline bool evision_to_generic_vec(ErlNifEnv *env, ERL_NIF_TERM obj, 
 
     const ERL_NIF_TERM *terms;
     int length;
-    if (!enif_get_tuple(env, obj, &length, &terms)) {
-        failmsg(env, "Can't parse '%s' as TermCriteria."
-                "Input argument is not a tuple",
-                info.name);
-        return false;
+    if (enif_get_tuple(env, obj, &length, &terms)) {
+        const size_t n = static_cast<size_t>(length);
+        value.resize(n);
+        for (size_t i = 0; i < n; i++)
+        {
+            bool elem{};
+            if (!evision_to(env, terms[i], elem, info))
+            {
+                failmsg(env, "Can't parse '%s'. Sequence item with index %lu has a wrong type", info.name, i);
+                return false;
+            }
+            value[i] = elem;
+        }
+        
+        return true;
     }
 
-    const size_t n = static_cast<size_t>(length);
-    value.resize(n);
-    for (size_t i = 0; i < n; i++)
+    // also try parsing from list
+    if (enif_is_list(env, obj))
     {
-        bool elem{};
-        if (!evision_to(env, terms[i], elem, info))
-        {
-            failmsg(env, "Can't parse '%s'. Sequence item with index %lu has a wrong type", info.name, i);
-            return false;
+        unsigned n = 0;
+        enif_get_list_length(env, obj, &n);
+        value.resize(n);
+
+        std::vector<ERL_NIF_TERM> cells;
+        ERL_NIF_TERM head, tail, arr = obj;
+        for (size_t i = 0; i < n; i++) {
+            enif_get_list_cell(env, arr, &head, &tail);
+            arr = tail;
+            cells.push_back(head);
         }
-        value[i] = elem;
+
+        for (size_t i = 0; i < n; i++)
+        {
+            bool elem{};
+            if (!evision_to(env, cells[i], elem, info))
+            {
+                failmsgp(env, "Can't parse '%s'. Sequence item with index %lu has a wrong type", info.name, i);
+                return false;
+            }
+            value[i] = elem;
+        }
+        
+        return true;
     }
-    return true;
+
+    failmsgp(env, "Can't parse '%s' to a generic array."
+            "Input argument is not a tuple or a list",
+            info.name);
+    return false;
 }
 
 
@@ -1704,12 +1795,12 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const std::tuple<Ts...>& cpp_tuple)
 {
     std::vector<ERL_NIF_TERM> erl_tuple;
     convert_to_erlang_tuple(env, cpp_tuple, erl_tuple);
-    ERL_NIF_TERM * terms = (ERL_NIF_TERM *)malloc(sizeof(ERL_NIF_TERM) * erl_tuple.size());
+    ERL_NIF_TERM * terms = (ERL_NIF_TERM *)enif_alloc(sizeof(ERL_NIF_TERM) * erl_tuple.size());
     for (size_t i = 0; i < erl_tuple.size(); i++) {
         terms[i] = erl_tuple[i];
     }
     ERL_NIF_TERM ret = enif_make_list_from_array(env, terms, erl_tuple.size());
-    free(terms);
+    enif_free(terms);
     return ret;
 }
 
@@ -2014,7 +2105,7 @@ static int convert_to_char(ErlNifEnv *env, ERL_NIF_TERM o, char *dst, const ArgI
 
 
 #include "evision_generated_enums.h"
-#define CV_ERL_TYPE(WNAME, NAME, STORAGE, SNAME, _1, _2) CV_ERL_TYPE_DECLARE_DYNAMIC(WNAME, NAME, STORAGE, SNAME)
+#define CV_ERL_TYPE(WNAME, NAME, STORAGE, SNAME, _1, _2, MODULE_NAME) CV_ERL_TYPE_DECLARE_DYNAMIC(WNAME, NAME, STORAGE, SNAME, MODULE_NAME)
 #include "evision_generated_types.h"
 #undef CV_ERL_TYPE
 #include "evision_custom_headers.h"
@@ -2060,10 +2151,10 @@ on_load(ErlNifEnv* env, void**, ERL_NIF_TERM)
 {
     ErlNifResourceType *rt;
 
-#define CV_ERL_TYPE(WNAME, NAME, STORAGE, _1, BASE, CONSTRUCTOR) CV_ERL_TYPE_INIT_DYNAMIC(WNAME, NAME, STORAGE, return -1)
+#define CV_ERL_TYPE(WNAME, NAME, STORAGE, _1, BASE, CONSTRUCTOR, _2) CV_ERL_TYPE_INIT_DYNAMIC(WNAME, NAME, STORAGE, return -1)
 #include "evision_generated_types.h"
 #undef CV_ERL_TYPE
-    rt = enif_open_resource_type(env, "evision", "erl_cv_Mat_type", destruct_Mat, ERL_NIF_RT_CREATE, NULL);                                                             \
+    rt = enif_open_resource_type(env, "evision", "Evision.Mat.t", destruct_Mat, ERL_NIF_RT_CREATE, NULL);
     if (!rt) return -1;
     evision_res<cv::Mat *>::type = rt;
     return 0;

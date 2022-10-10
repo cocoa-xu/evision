@@ -102,7 +102,7 @@ $(CONFIGURATION_PRIVATE_HPP): $(OPENCV_CONFIGURATION_PRIVATE_HPP)
 
 $(HEADERS_TXT): $(CONFIGURATION_PRIVATE_HPP)
 	@ if [ "$(EVISION_PREFER_PRECOMPILED)" != "true" ]; then \
-		sh -c "OPENCV_DIR=\"$(OPENCV_DIR)\" \"$(shell pwd)/patches/$(OPENCV_VER)/apply_patch.sh\" || true" ; \
+		python3 "$(shell pwd)/patches/apply_patch.py" "$(OPENCV_DIR)" "$(OPENCV_VER)" ; \
 		mkdir -p "$(CMAKE_OPENCV_BUILD_DIR)" && \
 		cd "$(CMAKE_OPENCV_BUILD_DIR)" && \
 		cmake -D CMAKE_BUILD_TYPE="$(CMAKE_BUILD_TYPE)" \

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from helper import normalize_class_name
+from helper import normalize_class_name, get_elixir_module_name
 from class_prop import ClassProp
 import evision_templates as ET
 import sys
@@ -66,7 +66,7 @@ class ClassInfo(object):
         code = "static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM src, %s& dst, const ArgInfo& info)\n{\n    ERL_NIF_TERM tmp;\n    bool ok;\n" % (self.cname)
         code += "".join([ET.gen_template_set_prop_from_map.substitute(propname=p.name,proptype=p.tp) for p in self.props])
         if self.base:
-            code += "\n    return evision_to_safe(env, src, (%s&)dst, info);\n}\n" % all_classes[self.base].cname
+            code += "\n    return evision_to_safe(env, src, (%s&)dst, info); // gen_template_set_prop_from_map!\n}\n" % all_classes[self.base].cname
         else:
             code += "\n    return true;\n}\n"
         return code
@@ -90,6 +90,8 @@ class ClassInfo(object):
                         if base_method_name not in methods:
                             base_method = base_class.methods[base_method_name].__deepcopy__()
                             base_method.classname = self.name
+                            for v in base_method.variants:
+                                v.classname = self.name
                             methods[base_method_name] = base_method
                         else:
                             # print(self.cname, "overrides base method:", base_method_name)
@@ -159,17 +161,35 @@ class ClassInfo(object):
             else:
                 if self.isalgorithm:
                     getset_code.write(ET.gen_template_set_prop_algo.substitute(
-                        name=self.name, cname=self.cname, member=pname,  membertype=p.tp, access=access_op,
-                        storage_name=self.cname if self.issimple else "Ptr<{}>".format(self.cname)))
+                        name=self.name,
+                        cname=self.cname,
+                        member=pname,
+                        membertype=p.tp,
+                        access=access_op,
+                        storage_name=self.cname if self.issimple else "Ptr<{}>".format(self.cname),
+                        elixir_module_name=get_elixir_module_name(self.cname, double_quote_if_has_dot=True).replace('"', '\\"')
+                    ))
                 else:
                     if self.issimple:
                         getset_code.write(ET.gen_template_set_prop.substitute(
-                        name=self.name, member=pname, membertype=p.tp, access=access_op, cname=self.cname,
-                        storage_name=self.cname))
+                            name=self.name,
+                            member=pname,
+                            membertype=p.tp,
+                            access=access_op,
+                            cname=self.cname,
+                            storage_name=self.cname,
+                            elixir_module_name=get_elixir_module_name(self.cname, double_quote_if_has_dot=True).replace('"', '\\"')
+                        ))
                     else:
                         getset_code.write(ET.gen_template_set_prop_cv_ptr.substitute(
-                            name=self.name, member=pname, membertype=p.tp, access=access_op, cname=self.cname,
-                            storage_name="Ptr<{}>".format(self.cname)))
+                            name=self.name,
+                            member=pname,
+                            membertype=p.tp,
+                            access=access_op,
+                            cname=self.cname,
+                            storage_name="Ptr<{}>".format(self.cname),
+                            elixir_module_name=get_elixir_module_name(self.cname, double_quote_if_has_dot=True).replace('"', '\\"')
+                        ))
                 getset_inits.write(ET.gen_template_rw_prop_init.substitute(
                     name=self.name, member=pname,
                     storage_name=self.cname if self.issimple else "Ptr<{}>".format(self.cname)))
@@ -217,6 +237,7 @@ class ClassInfo(object):
 
         return code
 
+
     def gen_def(self, codegen):
         all_classes = codegen.classes
         baseptr = "NoBase"
@@ -227,11 +248,12 @@ class ClassInfo(object):
         if self.constructor is not None:
             constructor_name = self.constructor.get_wrapper_name(True)
 
-        return "CV_ERL_TYPE({}, {}, {}, {}, {}, {});\n".format(
+        return "CV_ERL_TYPE({}, {}, {}, {}, {}, {}, {});\n".format(
             self.wname,
             self.name,
             self.cname if self.issimple else "Ptr<{}>".format(self.cname),
             self.sname if self.issimple else "Ptr",
             baseptr,
-            constructor_name
+            constructor_name,
+            get_elixir_module_name(self.cname)
         )
