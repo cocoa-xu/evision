@@ -955,14 +955,30 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const int64& value)
 template<>
 ERL_NIF_TERM evision_from(ErlNifEnv *env, const String& value)
 {
-    return enif_make_string(env, value.empty() ? "" : value.c_str(), ERL_NIF_LATIN1);
+    ERL_NIF_TERM erl_string;
+    unsigned char * ptr;
+    size_t len = strlen(value.c_str());
+    if ((ptr = enif_make_new_binary(env, len, &erl_string)) != nullptr) {
+        strncpy((char *)ptr, value.c_str(), len);
+        return erl_string;
+    } else {
+        return evision::nif::atom(env, "out of memory");
+    }
 }
 
 #if CV_VERSION_MAJOR == 3
 template<>
 ERL_NIF_TERM evision_from(ErlNifEnv *env, const std::string& value)
 {
-    return enif_make_string(env, value.empty() ? "" : value.c_str(), ERL_NIF_LATIN1);
+    ERL_NIF_TERM erl_string;
+    unsigned char * ptr;
+    size_t len = strlen(value.c_str());
+    if ((ptr = enif_make_new_binary(env, len, &erl_string)) != nullptr) {
+        strncpy((char *)ptr, value.c_str(), len);
+        return erl_string;
+    } else {
+        return evision::nif::atom(env, "out of memory");
+    }
 }
 #endif
 
@@ -2138,7 +2154,7 @@ on_load(ErlNifEnv* env, void**, ERL_NIF_TERM)
 #define CV_ERL_TYPE(WNAME, NAME, STORAGE, _1, BASE, CONSTRUCTOR, _2) CV_ERL_TYPE_INIT_DYNAMIC(WNAME, NAME, STORAGE, return -1)
 #include "evision_generated_types.h"
 #undef CV_ERL_TYPE
-    rt = enif_open_resource_type(env, "evision", "erl_cv_Mat_type", destruct_Mat, ERL_NIF_RT_CREATE, NULL);                                                             \
+    rt = enif_open_resource_type(env, "evision", "Evision.Mat.t", destruct_Mat, ERL_NIF_RT_CREATE, NULL);
     if (!rt) return -1;
     evision_res<cv::Mat *>::type = rt;
     return 0;
