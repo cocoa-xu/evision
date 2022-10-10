@@ -490,7 +490,7 @@ class FuncVariant(object):
             else:
                 print(f'warning: {self.spec_self} shoud be a struct. classname={self.classname}')
                 self.spec_self = f'Evision.{self.spec_self}.t()'
-            in_args_spec.insert(0, f'Evision.{self.spec_self}.t()')
+            in_args_spec.insert(0, self.spec_self)
 
         spec.write(", ".join(in_args_spec))
         spec.write(") :: ")
