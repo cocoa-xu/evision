@@ -260,11 +260,12 @@ class ClassInfo(object):
         if self.constructor is not None:
             constructor_name = self.constructor.get_wrapper_name(True)
 
-        return "CV_ERL_TYPE({}, {}, {}, {}, {}, {});\n".format(
+        return "CV_ERL_TYPE({}, {}, {}, {}, {}, {}, {});\n".format(
             self.wname,
             self.name,
             self.cname if self.issimple else "Ptr<{}>".format(self.cname),
             self.sname if self.issimple else "Ptr",
             baseptr,
             constructor_name,
+            self.get_elixir_module_name()
         )
