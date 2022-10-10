@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from helper import normalize_class_name, make_elixir_module_names
+from helper import normalize_class_name, get_elixir_module_name
 from class_prop import ClassProp
 import evision_templates as ET
 import sys
@@ -167,7 +167,7 @@ class ClassInfo(object):
                         membertype=p.tp,
                         access=access_op,
                         storage_name=self.cname if self.issimple else "Ptr<{}>".format(self.cname),
-                        elixir_module_name=self.get_elixir_module_name(double_quote_if_has_dot=True).replace('"', '\\"')
+                        elixir_module_name=get_elixir_module_name(self.cname, double_quote_if_has_dot=True).replace('"', '\\"')
                     ))
                 else:
                     if self.issimple:
@@ -178,7 +178,7 @@ class ClassInfo(object):
                             access=access_op,
                             cname=self.cname,
                             storage_name=self.cname,
-                            elixir_module_name=self.get_elixir_module_name(double_quote_if_has_dot=True).replace('"', '\\"')
+                            elixir_module_name=get_elixir_module_name(self.cname, double_quote_if_has_dot=True).replace('"', '\\"')
                         ))
                     else:
                         getset_code.write(ET.gen_template_set_prop_cv_ptr.substitute(
@@ -188,7 +188,7 @@ class ClassInfo(object):
                             access=access_op,
                             cname=self.cname,
                             storage_name="Ptr<{}>".format(self.cname),
-                            elixir_module_name=self.get_elixir_module_name(double_quote_if_has_dot=True).replace('"', '\\"')
+                            elixir_module_name=get_elixir_module_name(self.cname, double_quote_if_has_dot=True).replace('"', '\\"')
                         ))
                 getset_inits.write(ET.gen_template_rw_prop_init.substitute(
                     name=self.name, member=pname,
@@ -237,18 +237,6 @@ class ClassInfo(object):
 
         return code
 
-    def get_elixir_module_name(self, double_quote_if_has_dot=False):
-        wname = self.cname
-        elixir_module_name = make_elixir_module_names(module_name=wname)
-        inner_ns = []
-        if wname.startswith('cv::'):
-            wname = wname[4:]
-            inner_ns = wname.split('::')
-            elixir_module_name = make_elixir_module_names(separated_ns=inner_ns)
-        elixir_module_name = elixir_module_name.replace('_', '').strip()
-        if double_quote_if_has_dot and '.' in elixir_module_name:
-            elixir_module_name = f'"{elixir_module_name}"'
-        return elixir_module_name
 
     def gen_def(self, codegen):
         all_classes = codegen.classes
@@ -267,5 +255,5 @@ class ClassInfo(object):
             self.sname if self.issimple else "Ptr",
             baseptr,
             constructor_name,
-            self.get_elixir_module_name()
+            get_elixir_module_name(self.cname)
         )

@@ -463,6 +463,19 @@ def is_ref_or_struct(argtype: str):
         return True
     return argtype in ref_or_struct_types
 
+def get_elixir_module_name(cname, double_quote_if_has_dot=False):
+    wname = cname
+    elixir_module_name = make_elixir_module_names(module_name=wname)
+    inner_ns = []
+    if wname.startswith('cv::'):
+        wname = wname[4:]
+        inner_ns = wname.split('::')
+        elixir_module_name = make_elixir_module_names(separated_ns=inner_ns)
+    elixir_module_name = elixir_module_name.replace('_', '').strip()
+    if double_quote_if_has_dot and '.' in elixir_module_name:
+        elixir_module_name = f'"{elixir_module_name}"'
+    return elixir_module_name
+
 def is_struct(argtype: str, also_get: Optional[str] = None):
     special_structs = {
         'UMat': 'Evision.Mat'
