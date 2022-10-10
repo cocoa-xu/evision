@@ -499,6 +499,15 @@ class FuncVariant(object):
             elif out_args_spec[0] == ':ok':
                 out_spec = ':ok | {:error, String.t()}'
                 ok_error = False
+        else:
+            if out_args_spec[0] == 'boolean()':
+                out_spec = ", ".join(out_args_spec[1:])
+                if len(out_args_spec) == 2:
+                    out_spec = f'{out_spec} | false | {{:error, String.t()}}'
+                else:
+                    out_spec = f'{{{out_spec}}} | false | {{:error, String.t()}}'
+                print(spec.getvalue(), out_spec)
+                ok_error = False
 
         if ok_error:
             out_spec = f'{{:ok, {out_spec}}} | {{:error, String.t()}}'
