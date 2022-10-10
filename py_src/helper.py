@@ -654,13 +654,16 @@ def map_argtype_in_docs(argtype: str):
     mapping = {
         'UMat': 'Evision.Mat',
         'Mat': 'Evision.Mat',
+        'std::string': 'String',
+        'cv::String': 'String',
         'RotatedRect': '{centre={x, y}, size={s1, s2}, angle}'
     }
     mapped_type = mapping.get(argtype, None)
-    if mapped_type is None and is_struct(argtype):
-        _, mapped_type = is_struct(argtype, 'struct_name')
-    else:
-        mapped_type = argtype
+    if mapped_type is None:
+        if is_struct(argtype):
+            _, mapped_type = is_struct(argtype, 'struct_name')
+        else:
+            mapped_type = argtype
     return mapped_type
 
 vec_out_types = {}

@@ -407,6 +407,15 @@ class FuncVariant(object):
             for arg in self.args:
                 if arg.name in out_args:
                     return_values.append((arg.name, arg.tp))
+            out_args_name = [o[0] for o in self.py_outlist]
+            if len(out_args_name) > 0 and (out_args_name[0] in ['retval', 'self']) and self.py_outlist[0][1] == -1:
+                if out_args_name[0] == 'retval':
+                    return_values.insert(0, ('retval', map_argtype_in_docs(self.rettype)))
+                elif out_args_name[0] == 'self':
+                    return_values.insert(0, ('self', map_argtype_in_docs(self.name)))
+            elif self.isconstructor:
+                return_values.insert(0, ('self', map_argtype_in_docs(self.classname)))
+
             if len(return_values) > 0:
                 parameter_info_doc.write("  ##### Return\n")
                 for (arg_name, argtype) in return_values:
