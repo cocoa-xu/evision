@@ -506,7 +506,6 @@ class FuncVariant(object):
                     out_spec = f'{out_spec} | false | {{:error, String.t()}}'
                 else:
                     out_spec = f'{{{out_spec}}} | false | {{:error, String.t()}}'
-                print(spec.getvalue(), out_spec)
                 ok_error = False
 
         if ok_error:
