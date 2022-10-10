@@ -47,10 +47,11 @@ jobs:
       OTP_VERSION: "25.0.4"
       ELIXIR_VERSION: "1.14.0"
       EVISION_PREFER_PRECOMPILED: "false"
+      MAKE: "nmake"
 
     steps:
-      - uses: actions/checkout@v2
-      
+      - uses: actions/checkout@v3
+
       - uses: erlef/setup-beam@v1
         with:
           otp-version: ${{ env.OTP_VERSION }}
@@ -102,10 +103,10 @@ jobs:
 
       - name: Mix Compile
         if: steps.cache-mix-compile.outputs.cache-hit != 'true'
+        shell: bash
         run: |
-          $Env:MAKE = "nmake"
-          Remove-Item Makefile
-          if (Test-Path "_build/dev/lib/evision/priv/evision.dll") { Remove-Item _build/dev/lib/evision/priv/evision.dll }
+          rm -f Makefile
+          rm -f "_build/${MIX_ENV}/lib/evision/priv/evision.dll"
           mix compile
 
       - name: Mix Test
