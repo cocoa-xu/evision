@@ -16,5 +16,9 @@ defmodule Evision.QRCodeDetector.Test do
     ]], type: :f32)
     points_out = Evision.Nx.to_nx!(points, Nx.BinaryBackend)
     assert 1 == Nx.to_number(Nx.all_close(points_nx, points_out))
+
+    bin = Evision.Mat.to_binary!(straight_qrcode)
+    expected = File.read!(Path.join([__DIR__, "straight_qrcode.bin"]))
+    assert bin == expected
   end
 end
