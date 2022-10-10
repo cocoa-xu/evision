@@ -237,26 +237,29 @@ code_ret_as_binary = """if (retval) {
                     return evision::nif::error(env, \"out of memory\");
                 }
             } else {
-                return evision::nif::atom(env, \"error\");
+                return evision::nif::atom(env, \"false\");
             }"""
 
 code_ret_1_tuple_except_bool = """if (retval) {
+                // code_ret_1_tuple_except_bool
                 return evision::nif::ok(env, %s);
             } else {
-                return evision::nif::atom(env, \"error\");
+                return evision::nif::atom(env, \"false\");
             }"""
 
 code_ret_2_to_10_tuple_except_bool = """if (retval) {
+                // code_ret_2_to_10_tuple_except_bool
                 return evision::nif::ok(env, enif_make_tuple%d(env, %s));
             } else {
-                return evision::nif::atom(env, \"error\");
+                return evision::nif::atom(env, \"false\");
             }"""
 
 code_ret_ge_10_tuple_except_bool = """ERL_NIF_TERM arr[] = {%s};
-            if (retval234) {
+            // code_ret_ge_10_tuple_except_bool
+            if (retval) {
                 return evision::nif::ok(env, enif_make_tuple_from_array(env, arr, %d));
             } else {
-                return evision::nif::atom(env, \"error\");
+                return evision::nif::atom(env, \"false\");
             }"""
 
 code_ret_lt_10_tuple = "return evision::nif::ok(env, enif_make_tuple%d(env, %s))"
