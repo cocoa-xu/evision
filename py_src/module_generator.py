@@ -326,6 +326,19 @@ class ModuleGenerator(object):
                 rejected, module_func_name = get_module_func_name(module_func_name, is_ns, full_qualified_name)
                 if rejected:
                     return
+                
+                if '_' in module_func_name and len(namespace_list) > 1:
+                    prefix = '_'.join([map_argname('elixir', ns) for ns in namespace_list[:-1]])
+                    prefix += '_'
+                    if module_func_name.startswith(prefix):
+                        module_func_name = module_func_name[len(prefix):]
+
+                if len(module_func_name) > 0 and not ('a' <= module_func_name[0] <= 'z'):
+                    module_func_name = module_func_name[:1].lower() + module_func_name[1:]
+                    if module_func_name == 'textDetectionModel_DB':
+                        module_func_name = 'textDetectionModelDB'
+                    elif module_func_name == 'textDetectionModel_EAST':
+                        module_func_name = 'textDetectionModelEAST'
 
                 if func_name.startswith(evision_nif_prefix() + "dnn") and module_func_name == "forward":
                     function_sign = evision_nif_prefix() + "dnn_forward"
