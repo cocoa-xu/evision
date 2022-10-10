@@ -4,7 +4,6 @@
 from __future__ import print_function
 
 import ast
-from cmath import sin
 import sys
 from pathlib import Path
 
