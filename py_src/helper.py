@@ -293,8 +293,7 @@ def map_argname_elixir(argname, ignore_upper_starting=False, argtype=None, from_
     if not ignore_upper_starting:
         name = f"{name[0:1].lower()}{name[1:]}"
     if from_struct and argtype is not None:
-        if argtype in struct_types:
-            name = f"Evision.Internal.Structurise.from_struct({name})"
+        name = f"Evision.Internal.Structurise.from_struct({name})"
     return name
 
 def map_argname_erlang(argname):
@@ -644,7 +643,11 @@ def map_argtype_in_docs(argtype: str):
         'Mat': 'Evision.Mat',
         'RotatedRect': '{centre={x, y}, size={s1, s2}, angle}'
     }
-    mapped_type = mapping.get(argtype, argtype)
+    mapped_type = mapping.get(argtype, None)
+    if mapped_type is None and is_struct(argtype):
+        _, mapped_type = is_struct(argtype, 'struct_name')
+    else:
+        mapped_type = argtype
     return mapped_type
 
 vec_out_types = {}
