@@ -5,7 +5,7 @@ from io import StringIO
 from pydoc import describe
 from tkinter.messagebox import NO
 from typing import Tuple
-from helper import handle_ptr, forbidden_arg_types, ignored_arg_types, map_argtype_to_guard, map_argname, map_argtype_to_type, handle_inline_math_escaping, map_argtype_in_docs, map_argtype_in_spec
+from helper import handle_ptr, forbidden_arg_types, ignored_arg_types, map_argtype_to_guard, map_argname, map_argtype_to_type, handle_inline_math_escaping, map_argtype_in_docs, map_argtype_in_spec, is_struct
 from arg_info import ArgInfo
 import re
 
@@ -477,6 +477,19 @@ class FuncVariant(object):
                 self.spec_self = parts[-1]
                 if is_param:
                     self.spec_self += '_Param'
+                if tmp_name == 'ml_ANN_MLP':
+                    self.spec_self = 'ANN_MLP'
+                elif tmp_name == 'dnn_TextDetectionModel_DB':
+                    self.spec_self = 'TextDetectionModel_DB'
+                elif tmp_name == 'dnn_TextDetectionModel_EAST':
+                    self.spec_self = 'TextDetectionModel_EAST'
+
+            if is_struct(self.spec_self):
+                _, struct_name = is_struct(self.spec_self, also_get='struct_name')
+                self.spec_self = f'{struct_name}.t()'
+            else:
+                print(f'warning: {self.spec_self} shoud be a struct. classname={self.classname}')
+                self.spec_self = f'Evision.{self.spec_self}.t()'
             in_args_spec.insert(0, f'Evision.{self.spec_self}.t()')
 
         spec.write(", ".join(in_args_spec))
