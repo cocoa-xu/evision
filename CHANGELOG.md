@@ -235,6 +235,9 @@
 
   In this way, you can navigate to the referenced function in the generated html docs.
 
+### Fixed
+- Docs: included `retval` and `self` in the `Return` section.
+
 ### Added
 - Function spec for all functions, including generated ones.
 
