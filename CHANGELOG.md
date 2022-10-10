@@ -236,7 +236,7 @@
   In this way, you can navigate to the referenced function in the generated html docs.
 
 ### Added
-- Function spec for all functions including generated ones.
+- Function spec for all functions, including generated ones.
 
 ## v0.1.9 (2022-10-09)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.9) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.9)
