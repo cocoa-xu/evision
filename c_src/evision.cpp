@@ -741,6 +741,27 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const int& value)
 }
 
 template<>
+bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, unsigned int& value, const ArgInfo& info)
+{
+    if (evision::nif::check_nil(env, obj)) {
+        return true;
+    }
+
+    uint32_t u32;
+
+    if (enif_get_uint(env, obj, &u32))
+    {
+        value = u32;
+    }
+    else
+    {
+        failmsg(env, "Argument '%s' is required to be an integer", info.name);
+        return false;
+    }
+    return true;
+}
+
+template<>
 bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, int& value, const ArgInfo& info)
 {
     if (evision::nif::check_nil(env, obj)) {

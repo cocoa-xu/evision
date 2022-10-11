@@ -26,7 +26,7 @@ static ERL_NIF_TERM evision_cv_mat_eye(ErlNifEnv *env, int argc, const ERL_NIF_T
 
             Mat ret;
             int error_flag = false;
-            ERRWRAP2(ret = Mat::eye(n, n, type), env, error_flag, error_term);
+            ERRWRAP2(ret = Mat::eye((int)n, (int)n, type), env, error_flag, error_term);
             if (!error_flag) {
                 return evision::nif::ok(env, evision_from(env, ret));
             } else {

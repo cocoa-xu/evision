@@ -191,7 +191,7 @@ static ERL_NIF_TERM evision_cv_mat_arange(ErlNifEnv *env, int argc, const ERL_NI
     evision::nif::parse_arg(env, nif_opts_index, argv, erl_terms);
 
     {
-        int64_t from = 0, to = 0, step = 0;
+        int32_t from = 0, to = 0, step = 0;
         std::string t;
         int l = 0;
 
@@ -203,19 +203,19 @@ static ERL_NIF_TERM evision_cv_mat_arange(ErlNifEnv *env, int argc, const ERL_NI
             int type;
             if (!get_binary_type(t, l, 0, type)) return evision::nif::error(env, "not implemented for the given type");
 
-            int64_t count = (to - from) / step;
+            int32_t count = (to - from) / step;
             int dims[1] = {0};
             dims[0] = (int)count;
             if (count <= 0) return evision::nif::error(env, "invalid values for start/end/step");
 
-            std::vector<double> values(count);
-            int64_t v = from;
-            for (int64_t i = 0; i < count; i++) {
+            std::vector<int32_t> values(count);
+            int32_t v = from;
+            for (int32_t i = 0; i < count; i++) {
                 values[i] = v;
                 v += step;
             }
 
-            Mat out = Mat(1, dims, CV_64F, values.data());
+            Mat out = Mat(1, dims, CV_32S, values.data());
             Mat ret;
             out.convertTo(ret, type);
             return evision::nif::ok(env, evision_from(env, ret));
