@@ -7,8 +7,6 @@ defmodule Evision.Nx do
     @compile {:no_warn_undefined, Nx}
   end
 
-  alias Evision.Mat
-
   @doc """
   Transform an `Evision.Mat` reference to `Nx.tensor`.
 
