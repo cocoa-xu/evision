@@ -53,7 +53,7 @@ defmodule Evision.Backend do
   end
 
   @impl true
-  @spec eye(Nx.Tensor.t(), any) :: Nx.Tensor.t()
+  @spec eye(Nx.Tensor.t(), any()) :: Nx.Tensor.t()
   def eye(%T{shape: {n, n}, type: type} = out, _backend_options) do
     Evision.Mat.eye(n, type)
     |> reject_error()
@@ -210,17 +210,23 @@ defmodule Evision.Backend do
 
   @impl true
   def squeeze(out, %T{data: %EB{ref: mat}}, _axes) do
-    Evision.Mat.squeeze(mat) |> to_nx(out)
+    Evision.Mat.squeeze(mat)
+    |> reject_error()
+    |> to_nx(out)
   end
 
   @impl true
   def broadcast(out, %T{} = t, shape, axes) do
     {tensor, reshape} = maybe_reshape(t, shape, axes)
     Evision.Mat.broadcast_to(tensor |> from_nx(), shape, reshape)
+    |> reject_error()
     |> to_nx(out)
   end
 
-  defp maybe_reshape(%T{shape: {n}} = t, {n, _}, [0]), do: {Nx.reshape(t, {n, 1}), {n, 1}}
+  defp maybe_reshape(%T{shape: {n}} = t, {n, _}, [0]) do
+    {Nx.reshape(t, {n, 1}), {n, 1}}
+  end
+
   defp maybe_reshape(%T{shape: shape} = t, to_shape, _axes) do
     l_shape = Tuple.to_list(shape)
     l_to_shape = Tuple.to_list(to_shape)
@@ -255,6 +261,7 @@ defmodule Evision.Backend do
     a, _left_axes, [],
     b, _right_axes, []) do
     Evision.Mat.matrix_multiply(from_nx(a), from_nx(b), out_type)
+    |> reject_error()
     |> to_nx(out)
   end
 
@@ -264,6 +271,7 @@ defmodule Evision.Backend do
     |> Nx.as_type(out.type)
     |> from_nx()
     |> Evision.Mat.clip(to_number(min), to_number(max))
+    |> reject_error()
     |> to_nx(out)
   end
 

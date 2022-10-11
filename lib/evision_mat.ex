@@ -42,6 +42,11 @@ defmodule Evision.Mat do
           | :f64
           | :f16
 
+  @type mat_type_tuple_form ::
+          {:u, 8 | 16}
+          | {:s, 8 | 16 | 32}
+          | {:f, 32 | 64 | 16}
+
   @typedoc """
   Type that represents an `Evision.Mat` struct.
 
@@ -534,14 +539,22 @@ defmodule Evision.Mat do
   @spec bitwise_not(maybe_mat_in()) :: maybe_mat_out()
   def bitwise_not(mat) do
     mat = __from_struct__(mat)
-    type = {s, _} = Evision.Mat.type!(mat)
-
-    if s in [:s, :u] do
-      :evision_nif.mat_bitwise_not(img: mat)
-      |> Evision.Internal.Structurise.to_struct()
-    else
-      {:error,
-       "bitwise operators expect integer tensors as inputs and outputs an integer tensor, got: #{inspect(type)}"}
+    case Evision.Mat.type(mat) do
+      {:error, msg} ->
+        {:error, msg}
+      type ->
+        case check_unsupported_type(type) do
+          {s, _} ->
+            if s in [:s, :u] do
+              :evision_nif.mat_bitwise_not(img: mat)
+              |> Evision.Internal.Structurise.to_struct()
+            else
+              {:error,
+               "bitwise operators expect integer tensors as inputs and outputs an integer tensor, got: #{inspect(type)}"}
+            end
+          {:error, msg} ->
+            {:error, msg}
+        end
     end
   end
 
@@ -1036,6 +1049,7 @@ defmodule Evision.Mat do
     |> Evision.Internal.Structurise.to_struct()
   end
 
+  @spec check_unsupported_type(mat_type()) :: mat_type_tuple_form()
   defp check_unsupported_type({:f, 32} = type), do: type
   defp check_unsupported_type({:f, 64} = type), do: type
   defp check_unsupported_type({:u, 8} = type), do: type
@@ -1177,8 +1191,13 @@ defmodule Evision.Mat do
   @spec squeeze(maybe_mat_in()) :: maybe_mat_out()
   def squeeze(mat) do
     mat = __from_struct__(mat)
-    shape = Tuple.to_list(Evision.Mat.shape!(mat))
-    Evision.Mat.reshape(mat, Enum.reject(shape, fn d -> d == 1 end))
+    case Evision.Mat.shape(mat) do
+      {:error, msg} ->
+        {:error, msg}
+      mat_shape ->
+        shape = Tuple.to_list(mat_shape)
+        Evision.Mat.reshape(mat, Enum.reject(shape, fn d -> d == 1 end))
+    end
   end
 
   @spec broadcast_to(maybe_mat_in(), tuple()) :: maybe_mat_out()

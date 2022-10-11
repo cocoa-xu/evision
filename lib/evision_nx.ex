@@ -52,7 +52,7 @@ defmodule Evision.Nx do
   Converts a tensor from `Nx.Tensor` to `Evision.Mat`.
   """
   @doc namespace: :external
-  @spec to_mat(Nx.t()) :: {:ok, Evision.Mat.t()} | {:error, String.t()}
+  @spec to_mat(Nx.t()) :: Evision.Mat.t() | {:error, String.t()}
   def to_mat(t) when is_struct(t, Nx.Tensor) do
     case Nx.shape(t) do
       {} ->
