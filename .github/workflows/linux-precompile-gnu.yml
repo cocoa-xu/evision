@@ -4,7 +4,7 @@ on:
   push:
     tags:
       - 'v*'
-      - 'gtk*'
+      - 'gtk-gnu-*'
 
 jobs:
   mix_compile:
