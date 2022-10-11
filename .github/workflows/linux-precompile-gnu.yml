@@ -69,14 +69,14 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y build-essential automake autoconf pkg-config bc m4 unzip zip curl git libssl-dev gzip libncurses5-dev python3 ca-certificates ${{ matrix.pair.c_compiler }} ${{ matrix.pair.cpp_compiler }} libgtk2.0-dev
           if [ "${deb_arch}" != "amd64" ]; then
-            cp "/etc/apt/sources.list" "/etc/apt/sources.list.d/${deb_arch}.list"
-            sed -i "s/deb-src/deb-src [arch=${deb_arch}]/g" "/etc/apt/sources.list.d/${deb_arch}.list"
-            sed -i "s/deb /deb [arch=${deb_arch}] /g" "/etc/apt/sources.list.d/${deb_arch}.list"
-            sed -i "s#archive.ubuntu.com/ubuntu#ports.ubuntu.com/ubuntu-ports#g" "/etc/apt/sources.list.d/${deb_arch}.list"
-            sed -i "s#security.ubuntu.com/ubuntu#ports.ubuntu.com/ubuntu-ports#g" "/etc/apt/sources.list.d/${deb_arch}.list"
-            apt-get update -q -y
-            dpkg --add-architecture "${deb_arch}"
-            apt-get install -y "crossbuild-essential-${deb_arch}" libgtk2.0-dev "libgtk2.0-dev:${deb_arch}" libssl-dev "libssl-dev:${deb_arch}" libncurses5-dev "libncurses5-dev:${deb_arch}"
+            sudo cp "/etc/apt/sources.list" "/etc/apt/sources.list.d/${deb_arch}.list"
+            sudo sed -i "s/deb-src/deb-src [arch=${deb_arch}]/g" "/etc/apt/sources.list.d/${deb_arch}.list"
+            sudo sed -i "s/deb /deb [arch=${deb_arch}] /g" "/etc/apt/sources.list.d/${deb_arch}.list"
+            sudo sed -i "s#archive.ubuntu.com/ubuntu#ports.ubuntu.com/ubuntu-ports#g" "/etc/apt/sources.list.d/${deb_arch}.list"
+            sudo sed -i "s#security.ubuntu.com/ubuntu#ports.ubuntu.com/ubuntu-ports#g" "/etc/apt/sources.list.d/${deb_arch}.list"
+            sudo apt-get update -q -y
+            sudo dpkg --add-architecture "${deb_arch}"
+            sudo apt-get install -y "crossbuild-essential-${deb_arch}" libgtk2.0-dev "libgtk2.0-dev:${deb_arch}" libssl-dev "libssl-dev:${deb_arch}" libncurses5-dev "libncurses5-dev:${deb_arch}"
           fi
 
       - name: Cache mix packages
