@@ -1,3 +1,5 @@
+**If you found the precompiled binaries does not suit your needs (e.g., perhaps you need OpenCV to be compiled with FFmpeg to handle more video formats.), it's possible to override the behaviour by setting the environment variable `EVISION_PREFER_PRECOMPILED` to `false`**
+
 # evision [WIP]
 
 | OS               | Arch           | ABI  | Build Status | Has Precompiled Library |
