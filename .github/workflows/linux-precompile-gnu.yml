@@ -70,6 +70,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y build-essential automake autoconf pkg-config bc m4 unzip zip curl git gzip python3 ca-certificates ${{ matrix.pair.c_compiler }} ${{ matrix.pair.cpp_compiler }}
           if [ "${{ matrix.pair.deb_arch }}" != "amd64" ]; then
+            sudo cat /etc/apt/sources.list
             sudo cp "/etc/apt/sources.list" "/etc/apt/sources.list.d/${{ matrix.pair.deb_arch }}.list"
             sudo sed -i "s/deb-src/deb-src [arch=${{ matrix.pair.deb_arch }}]/g" "/etc/apt/sources.list.d/${{ matrix.pair.deb_arch }}.list"
             sudo sed -i "s/deb /deb [arch=${{ matrix.pair.deb_arch }}] /g" "/etc/apt/sources.list.d/${{ matrix.pair.deb_arch }}.list"
