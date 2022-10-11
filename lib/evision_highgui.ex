@@ -3,8 +3,6 @@ defmodule Evision.HighGui do
   High-level Graphical User Interface
   """
 
-  import Evision.Errorize
-
   @doc """
   Show a mat in a named window
 

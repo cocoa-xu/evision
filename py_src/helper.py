@@ -710,8 +710,12 @@ manual_type_spec_map = {
 def map_argtype_in_spec(classname: str, argtype: str, is_in: bool):
     global vec_out_types
     if len(argtype) > 0 and argtype[-1] == '*':
+        if argtype == 'char*' or argtype == 'uchar*':
+            return 'binary()'
         argtype = argtype[:-1]
     if argtype.startswith('Ptr<'):
+        if argtype == 'Ptr<char>' or argtype == 'Ptr<uchar>':
+            return 'binary()'
         argtype = argtype[len('Ptr<'):-1]
 
     if is_int_type(argtype):
@@ -723,9 +727,9 @@ def map_argtype_in_spec(classname: str, argtype: str, is_in: bool):
     elif argtype == 'float':
         return 'number()'
     elif argtype in ['String', 'c_string', 'string', 'cv::String', 'std::string']:
-        return 'String.t()'
+        return 'binary()'
     elif argtype in ['char', 'uchar']:
-        return 'String.t() | char()'
+        return 'char()'
     elif argtype == 'void':
         return ':ok'
     elif is_in and argtype in ['Mat', 'UMat', 'cv::Mat', 'cv::UMat']:
@@ -736,9 +740,13 @@ def map_argtype_in_spec(classname: str, argtype: str, is_in: bool):
         return 'Evision.Mat.t()'
     elif argtype.startswith('vector_'):
         argtype_inner = argtype[len('vector_'):]
+        if argtype == 'vector_char' or argtype == 'vector_uchar':
+            return 'binary()'
         spec_type = 'list(' + map_argtype_in_spec(classname, argtype_inner, is_in) + ')'
         return spec_type
     elif argtype.startswith('std::vector<'):
+        if argtype == 'std::vector<char>' or argtype == 'std::vector<uchar>':
+            return 'binary()'
         argtype_inner = argtype[len('std::vector<'):-1]
         spec_type = 'list(' + map_argtype_in_spec(classname, argtype_inner, is_in) + ')'
         return spec_type

@@ -49,8 +49,6 @@ class ModuleGenerator(object):
             "erlang": {}
         }
 
-        self.deferror = {}
-
         # key: kind
         # value: StringIO()
         #
@@ -209,13 +207,6 @@ class ModuleGenerator(object):
             if kind == 'erlang':
                 property_name = map_argname('elixir', property_name)
             property_code[kind] = template[f"{generating_type}ter_template"].substitute(property_name=property_name, nif_name=nif_name, **template)
-
-        if 'elixir' in property_templates and not self.has_deferror(func_name, func_arity):
-            if generating_type == 'set':
-                property_code['elixir'] += f"  deferror({func_name}(self, prop))\n\n"
-            else:
-                property_code['elixir'] += f"  deferror({func_name}(self))\n\n"
-            self.register_deferror(func_name, func_arity)
 
         for kind, template in property_templates.items():
             self.register_nif(kind, nif_name, template)
@@ -388,9 +379,6 @@ class ModuleGenerator(object):
                                 f'    :evision_nif.{nif_name}(self, opts)\n'
                                 '    |> __to_struct__()\n'
                                 '  end\n')
-                            if not self.has_deferror(func_name, func_arity):
-                                function_code.write(f"  deferror {module_func_name}(self, opts)\n\n")
-                                self.register_deferror(func_name, func_arity)
                             self.add_function(kind, module_func_name, func_arity, 
                                 guards_count=3, 
                                 generated_code=function_code.getvalue()
@@ -424,9 +412,6 @@ class ModuleGenerator(object):
                                 f'    :evision_nif.{nif_name}(self, opts)\n'
                                 '    |> __to_struct__()\n'
                                 '  end\n')
-                            if not self.has_deferror(func_name, func_arity):
-                                function_code.write(f"  deferror {module_func_name}(self, opts)\n\n")
-                                self.register_deferror(func_name, func_arity)
                             self.add_function(kind, module_func_name, func_arity,
                                 guards_count=3,
                                 generated_code=function_code.getvalue()
@@ -489,10 +474,6 @@ class ModuleGenerator(object):
 
                             # remove the default value, i.e., `..., opts \\ []` => `..., opts`
                             module_func_args_with_opts = module_func_args_with_opts.replace('\\\\ []', '').strip()
-                            # generate the bang(!) version for elixir
-                            if not self.has_deferror(func_name, func_arity):
-                                function_code.write(f"  deferror({module_func_name}({module_func_args_with_opts}))\n\n")
-                                self.register_deferror(func_name, func_arity)
                             self.add_function_docs(kind, module_func_name, func_arity,
                                 inline_docs=inline_doc,
                             )
@@ -526,11 +507,6 @@ class ModuleGenerator(object):
                             f'    :evision_nif.{nif_name}({func_args})\n'
                             '    |> __to_struct__()\n'
                             '  end\n')
-                        # generate the bang(!) version for elixir
-                        if not self.has_deferror(func_name, func_arity):
-                            # remove the default value, i.e., `..., opts \\ []` => `..., opts`
-                            function_code.write(f"  deferror({module_func_name}({module_func_args}))\n\n")
-                            self.register_deferror(func_name, func_arity)
                         self.add_function_docs(kind, module_func_name, func_arity, inline_doc)
                     elif kind == 'erlang':
                         function_code.write(f'{module_func_name}({module_func_args}){func_when_guard} ->\n'
@@ -585,12 +561,6 @@ class ModuleGenerator(object):
                 return True, func_name
 
         return False, func_name
-
-    def has_deferror(self, func_name: str, func_arity: int):
-        return self.deferror.get(f"{func_name}!/{func_arity}", False)
-
-    def register_deferror(self, func_name: str, func_arity: int):
-        self.deferror[f"{func_name}!/{func_arity}"] = True
 
     def register_erl_nif_func(self, nif_name: str, c_func_name: str, func_arity: int, bound: str = None):
         function_bound_macro = 'F'

@@ -974,6 +974,20 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const int64& value)
 }
 
 template<>
+ERL_NIF_TERM evision_from(ErlNifEnv *env, const std::vector<char>& value)
+{
+    ERL_NIF_TERM erl_string;
+    unsigned char * ptr;
+    size_t len = value.size();
+    if ((ptr = enif_make_new_binary(env, len, &erl_string)) != nullptr) {
+        strncpy((char *)ptr, value.data(), len);
+        return erl_string;
+    } else {
+        return evision::nif::atom(env, "out of memory");
+    }
+}
+
+template<>
 ERL_NIF_TERM evision_from(ErlNifEnv *env, const String& value)
 {
     ERL_NIF_TERM erl_string;

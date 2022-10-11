@@ -3,7 +3,6 @@ defmodule Evision.Mat do
   Evision Mat
   """
 
-  import Evision.Errorize
   import Kernel, except: [abs: 1, floor: 1, ceil: 1, round: 1]
 
   @typedoc """
@@ -31,14 +30,9 @@ defmodule Evision.Mat do
 
   """
   @type mat_type ::
-          {:u, 8}
-          | {:u, 16}
-          | {:s, 8}
-          | {:s, 16}
-          | {:s, 32}
-          | {:f, 32}
-          | {:f, 64}
-          | {:f, 16}
+          {:u, 8 | 16}
+          | {:s, 8 | 16 | 32}
+          | {:f, 32 | 64 | 16}
           | :u8
           | :u16
           | :s8
@@ -92,7 +86,7 @@ defmodule Evision.Mat do
   @typedoc """
   The resulting ok-error tuple when a NIF function can return `Evision.Mat`.
   """
-  @type maybe_mat_out :: {:ok, Evision.Mat.t()} | {:error, String.t()}
+  @type maybe_mat_out :: Evision.Mat.t() | {:error, String.t()}
 
   @typedoc """
   Input argument, `Evision.Mat`, `Nx.Tensor` or `#reference`.
@@ -152,17 +146,18 @@ defmodule Evision.Mat do
 
       defp is_2d_image(_), do: false
 
-      def to_livebook(mat) do
+      @spec to_livebook(Evision.Mat.t()) :: Kino.Output.t()
+      def to_livebook(mat) when is_struct(mat, Evision.Mat) do
         raw = Kino.Inspect.new(mat)
-        numerical = Kino.Inspect.new(Evision.Nx.to_nx!(mat))
+        numerical = Kino.Inspect.new(Evision.Nx.to_nx(mat))
         with true <- is_2d_image(mat),
-            {:ok, encoded} <- Evision.imencode(".png", mat) do
+            encoded <- Evision.imencode(".png", mat) do
           image = Kino.Image.new(encoded, :png)
-          tabs = Kino.Layout.tabs("Raw": raw, "Image": image, "Numerical": numerical)
+          tabs = Kino.Layout.tabs([{"Raw", raw}, {"Image", image}, {"Numerical", numerical}])
           Kino.Render.to_livebook(tabs)
         else
           false ->
-            tabs = Kino.Layout.tabs("Raw": raw, "Numerical": numerical)
+            tabs = Kino.Layout.tabs([{"Raw", raw}, {"Numerical", numerical}])
             Kino.Render.to_livebook(tabs)
         end
       end
@@ -247,7 +242,7 @@ defmodule Evision.Mat do
   end
 
   @doc namespace: :"cv.Mat"
-  @spec at(maybe_mat_in(), integer()) :: maybe_mat_out() | {:ok, number()}
+  @spec at(maybe_mat_in(), integer()) :: number() | {:error, String.t()}
   def at(mat, position) when is_integer(position) and position >= 0 do
     mat = __from_struct__(mat)
     :evision_nif.mat_at(img: mat, pos: position)
@@ -503,11 +498,15 @@ defmodule Evision.Mat do
   @spec transpose(maybe_mat_in()) :: maybe_mat_out()
   def transpose(mat) do
     mat = __from_struct__(mat)
-    as_shape = shape!(mat)
-    ndims = Enum.count(as_shape)
-    uniq_axes = Enum.reverse(0..(ndims - 1))
-    :evision_nif.mat_transpose(img: mat, axes: uniq_axes, as_shape: as_shape)
-    |> Evision.Internal.Structurise.to_struct()
+    with {:error, message} <- shape(mat) do
+      {:error, message}
+    else
+      as_shape ->
+        ndims = Enum.count(as_shape)
+        uniq_axes = Enum.reverse(0..(ndims - 1))
+        :evision_nif.mat_transpose(img: mat, axes: uniq_axes, as_shape: as_shape)
+        |> Evision.Internal.Structurise.to_struct()
+    end
   end
 
   @doc namespace: :"cv.Mat"
@@ -515,11 +514,11 @@ defmodule Evision.Mat do
   This method returns the type-tuple used by Nx. To get the raw value of `cv::Mat.type()`, please use
   `Evision.Mat.raw_type/1`.
   """
-  @spec type(maybe_mat_in()) :: maybe_mat_out() | {:error, String.t()}
+  @spec type(maybe_mat_in()) :: mat_type() | {:error, String.t()}
   def type(mat)
 
   def type(%T{type: type}) do
-    {:ok, type}
+    type
   end
 
   def type(mat) when is_struct(mat) do
@@ -619,7 +618,7 @@ defmodule Evision.Mat do
   end
 
   @doc namespace: :"cv.Mat"
-  @spec shape(maybe_mat_in()) :: {:ok, tuple()} | {:error, String.t()}
+  @spec shape(maybe_mat_in()) :: tuple() | {:error, String.t()}
   def shape(mat)
 
   def shape(%T{shape: shape}) do
@@ -806,13 +805,21 @@ defmodule Evision.Mat do
   end
 
   def channel_as_last_dim(mat) when is_reference(mat) do
-    {num_dims, _} = size!(mat)
-    shape = shape!(mat)
-    num_shape = tuple_size(shape)
-    if num_shape == num_dims do
-      mat
+    with {:error, msg} <- size(mat) do
+      {:error, msg}
     else
-      Evision.Mat.as_shape(mat, shape)
+      {num_dims, _} ->
+        with {:error, msg} <- shape(mat) do
+          {:error, msg}
+        else
+          shape ->
+            num_shape = tuple_size(shape)
+            if num_shape == num_dims do
+              mat
+            else
+              Evision.Mat.as_shape(mat, shape)
+            end
+        end
     end
   end
 
@@ -946,14 +953,18 @@ defmodule Evision.Mat do
       when is_integer(batch_size) and batch_size >= 1 and is_list(opts) do
     leftover = opts[:leftover] || :repeat
     mat = __from_struct__(mat)
-
-    :evision_nif.mat_to_batched(
-      img: mat,
-      batch_size: batch_size,
-      as_shape: shape!(mat),
-      leftover: leftover
-    )
-    |> Evision.Internal.Structurise.to_struct()
+    with {:error, msg} <- shape(mat) do
+      {:error, msg}
+    else
+      as_shape ->
+        :evision_nif.mat_to_batched(
+          img: mat,
+          batch_size: batch_size,
+          as_shape: as_shape,
+          leftover: leftover
+        )
+        |> Evision.Internal.Structurise.to_struct()
+    end
   end
 
   @spec to_batched(maybe_mat_in(), non_neg_integer(), tuple(), Keyword.t()) :: maybe_mat_out()
@@ -972,7 +983,7 @@ defmodule Evision.Mat do
   end
 
   @doc namespace: :"cv.Mat"
-  @spec to_binary(maybe_mat_in(), non_neg_integer()) :: {:ok, binary()} | {:error, String.t()}
+  @spec to_binary(maybe_mat_in(), non_neg_integer()) :: binary() | {:error, String.t()}
   def to_binary(mat, limit \\ 0) when is_integer(limit) and limit >= 0 do
     mat = __from_struct__(mat)
     :evision_nif.mat_to_binary(img: mat, limit: limit)

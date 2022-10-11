@@ -529,7 +529,7 @@ class FuncVariant(object):
                 ok_error = False
 
         if ok_error:
-            out_spec = f'{{:ok, {out_spec}}} | {{:error, String.t()}}'
+            out_spec = f'{out_spec} | {{:error, String.t()}}'
         spec.write(out_spec)
 
         spec = spec.getvalue()
