@@ -296,16 +296,20 @@ defmodule Evision.Backend do
   end
 
   @impl true
+  @spec add(Nx.Tensor.t(), Nx.Tensor.t(), Nx.Tensor.t()) :: Nx.Tensor.t()
   def add(%T{type: type, shape: out_shape}=out, l, r) do
     {l, r} = enforce_same_shape(l, r, out_shape)
     Evision.Mat.add(from_nx(l), from_nx(r), type)
+    |> reject_error()
     |> to_nx(out)
   end
 
   @impl true
+  @spec subtract(Nx.Tensor.t(), Nx.Tensor.t(), Nx.Tensor.t()) :: Nx.Tensor.t()
   def subtract(%T{type: type, shape: out_shape}=out, l, r) do
     {l, r} = enforce_same_shape(l, r, out_shape)
     Evision.Mat.subtract(from_nx(l), from_nx(r), type)
+    |> reject_error()
     |> to_nx(out)
   end
 
@@ -557,6 +561,7 @@ defmodule Evision.Backend do
     |> to_nx(out)
   end
 
+  @spec enforce_same_shape(Nx.Tensor.t(), Nx.Tensor.t(), tuple()) :: {Nx.Tensor.t(), Nx.Tensor.t()}
   defp enforce_same_shape(l, r, out_shape) do
     l_mat = Evision.Mat.reshape(from_nx(Nx.broadcast(l, out_shape)), out_shape)
     b_mat = Evision.Mat.reshape(from_nx(Nx.broadcast(r, out_shape)), out_shape)
@@ -564,10 +569,12 @@ defmodule Evision.Backend do
   end
 
   @impl true
+  @spec logical_and(Nx.Tensor.t(), Nx.Tensor.t(), Nx.Tensor.t()) :: Nx.Tensor.t()
   def logical_and(%T{shape: out_shape} = out, l, r) do
     {l, r} = enforce_same_shape(l, r, out_shape)
     {l, r} = enforce_same_type(l, r)
     Evision.Mat.logical_and(from_nx(l), from_nx(r))
+    |> reject_error()
     |> to_nx(out)
     |> Nx.not_equal(0)
   end

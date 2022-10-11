@@ -29,7 +29,7 @@ defmodule Evision.Nx do
   @doc namespace: :external
   @spec to_nx(Evision.Mat.t(), module()) :: Nx.Tensor.t() | {:error, String.t()}
   def to_nx(mat, backend \\ Evision.Backend) when is_struct(mat, Evision.Mat) do
-    with %Mat{} = mat_type <- Evision.Mat.type(mat),
+    with mat_type <- Evision.Mat.type(mat),
          mat_shape <- Evision.Mat.shape(mat),
          {:not_empty_shape, true} <- {:not_empty_shape, tuple_size(mat_shape) > 0},
          {:not_error, true, _} <- {:not_error, elem(mat_shape, 0) != :error, mat_shape},
@@ -64,6 +64,7 @@ defmodule Evision.Nx do
   end
 
   @doc namespace: :external
+  @spec to_mat(Nx.Tensor.t(), any) :: Evision.Mat.t() | {:error, String.t()}
   def to_mat(t, as_shape) when is_struct(t, Nx.Tensor) do
     case Nx.shape(t) do
       {} ->
@@ -79,6 +80,7 @@ defmodule Evision.Nx do
   end
 
   @doc namespace: :external
+  @spec to_mat(binary(), Evision.Mat.mat_type(), non_neg_integer(), non_neg_integer(), non_neg_integer()) :: Evision.Mat.maybe_mat_out()
   def to_mat(binary, type, rows, cols, channels) do
     Evision.Mat.from_binary(binary, type, rows, cols, channels)
   end

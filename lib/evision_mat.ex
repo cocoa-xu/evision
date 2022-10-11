@@ -543,17 +543,13 @@ defmodule Evision.Mat do
       {:error, msg} ->
         {:error, msg}
       type ->
-        case check_unsupported_type(type) do
-          {s, _} ->
-            if s in [:s, :u] do
-              :evision_nif.mat_bitwise_not(img: mat)
-              |> Evision.Internal.Structurise.to_struct()
-            else
-              {:error,
-               "bitwise operators expect integer tensors as inputs and outputs an integer tensor, got: #{inspect(type)}"}
-            end
-          {:error, msg} ->
-            {:error, msg}
+        {s, _} = check_unsupported_type(type)
+        if s in [:s, :u] do
+          :evision_nif.mat_bitwise_not(img: mat)
+          |> Evision.Internal.Structurise.to_struct()
+        else
+          {:error,
+           "bitwise operators expect integer tensors as inputs and outputs an integer tensor, got: #{inspect(type)}"}
         end
     end
   end
@@ -758,7 +754,7 @@ defmodule Evision.Mat do
 
   The method returns a tuple `{dims, p}` where `dims` is the number of dimensions, and `p` is a list with `dims` elements.
   """
-  @spec size(maybe_mat_in()) :: {:ok, {non_neg_integer(), [non_neg_integer()]}} | {:error, String.t()}
+  @spec size(maybe_mat_in()) :: {non_neg_integer(), [non_neg_integer()]} | {:error, String.t()}
   def size(mat) do
     mat = __from_struct__(mat)
     :evision_nif.mat_size(img: mat)
@@ -877,11 +873,16 @@ defmodule Evision.Mat do
              step: step,
              t: t,
              l: l
-           ) do
-      {length, _} = Evision.Mat.shape!(mat)
+           ),
+          ret = {length, _} <- Evision.Mat.shape(mat),
+          {:mat_shape_error, false, _} <- {:mat_shape_error, length == :error, ret}
+      do
       Evision.Mat.reshape(mat, {1, length})
     else
-      error -> error
+      {:mat_shape_error, true, error} ->
+        error
+      {:error, msg} ->
+        {:error, msg}
     end
   end
 

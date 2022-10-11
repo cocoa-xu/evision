@@ -6,14 +6,6 @@ defmodule Evision.Internal.Structurise do
 
   def to_struct({:ok, ret}), do: to_struct_ok(ret)
 
-  def to_struct(mat = %{:class => :Mat}) do
-    Evision.Mat.__to_struct__(mat)
-  end
-
-  def to_struct(cap = %{:class => :VideoCapture}) do
-    Evision.VideoCapture.__to_struct__(cap)
-  end
-
   def to_struct(ret = %{:class => module_name}) when is_atom(module_name) do
     module = Module.concat([Evision, Atom.to_string(module_name)])
     module.__to_struct__(ret)
@@ -54,30 +46,28 @@ defmodule Evision.Internal.Structurise do
 
   def to_struct_ok(pass_through), do: {:ok, pass_through}
 
-  @spec from_struct(%{ref: reference()} | reference() | term()) :: reference() | term()
-  def from_struct(maybe_struct)
-
-  def from_struct(%Evision.Mat{ref: ref}) do
-    ref
-  end
-
+  @spec from_struct(Nx.Tensor.t()) :: reference()
   def from_struct(%Nx.Tensor{}=tensor) do
     case Evision.Nx.to_mat(tensor) do
-      
+      {:error, msg} ->
+        raise RuntimeError, msg
+      %Evision.Mat{ref: ref} ->
+        ref
     end
-    %Evision.Mat{ref: ref} = Evision.Nx.to_mat(tensor)
-    ref
   end
 
+  @spec from_struct(%{ref: reference()}) :: reference()
   def from_struct(%{ref: ref}) do
     ref
   end
 
+  @spec from_struct(tuple()) :: tuple()
   def from_struct(tuple) when is_tuple(tuple) do
     from_struct(Tuple.to_list(tuple))
     |> List.to_tuple()
   end
 
+  @spec from_struct(list()) :: list()
   def from_struct(list) when is_list(list) do
     if Keyword.keyword?(list) do
       Enum.map(Keyword.keys(list), fn key ->
@@ -91,5 +81,6 @@ defmodule Evision.Internal.Structurise do
     end
   end
 
+  @spec from_struct(term()) :: term()
   def from_struct(pass_through), do: pass_through
 end
