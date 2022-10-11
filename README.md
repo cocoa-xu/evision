@@ -200,8 +200,7 @@ Therefore, it's recommended to use a specific version (i.e., include the minor v
 ### Use Precompiled Library (Default)
 The following environment variables can be set based on your needs.
 
-(Note that precompiled binaries do not use FFmpeg. 
-'d like to use FFmpeg, please compile from source (please see instructions in the next section) and set corresponding environment variables. We're considering this option at the moment.)
+(Note that precompiled binaries do not use FFmpeg. If you'd like to use FFmpeg, please compile from source (please see instructions in the next section) and set corresponding environment variables. We're considering this option at the moment.)
 
 #### Important notes
 When using `:evision` from git, version "0.1.1" to "0.1.7" are available.
