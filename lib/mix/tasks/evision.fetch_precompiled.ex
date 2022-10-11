@@ -53,8 +53,8 @@ defmodule Mix.Tasks.Evision.Fetch do
     result =
       Task.async_stream(urls, fn url ->
           filename = basename_from_url(url)
-          {:ok, algo, checksum} = Precompile.download!(url, Path.join([Precompile.app_priv(), filename]))
-          Logger.info("downloaded: #{url}, checksum=#{checksum}")
+          {:ok, algo, checksum} = Precompile.download!(url, Path.join([Precompile.cache_dir(), filename]))
+          Logger.info("downloaded: url=#{url}, checksum=#{checksum}")
           %{
             url: url,
             path: filename,
@@ -80,7 +80,7 @@ defmodule Mix.Tasks.Evision.Fetch do
   end
 
   defp write_checksum!(result, app \\ Mix.Project.config()[:app]) do
-    file = Precompile.checksum_file(app)
+    {elixir_file, erlang_file} = Precompile.checksum_file(app)
 
     pairs =
       for %{path: path, checksum: checksum, checksum_algo: algo} <- result, into: %{} do
@@ -94,7 +94,22 @@ defmodule Mix.Tasks.Evision.Fetch do
         ~s(  "#{filename}" => #{inspect(checksum, limit: :infinity)},\n)
       end
 
-    File.write!(file, ["%{\n", lines, "}\n"])
+    File.write!(elixir_file, ["%{\n", lines, "}\n"])
+
+    lines =
+      for {filename, checksum} <- Enum.sort(pairs) do
+        "    \"#{filename}\" => #{inspect(checksum, limit: :infinity)}"
+      end
+    lines = Enum.join(lines, ",\n")
+
+    File.write!(erlang_file, [
+      """
+      -module(checksum_evision).
+      -export([checksum/0]).
+
+      checksum() ->
+        \#{
+      """, lines, "\n  }.\n"])
   end
 
   defp basename_from_url(url) do
