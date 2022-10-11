@@ -289,7 +289,7 @@ class FuncVariant(object):
                     elif strip_line.startswith("@code"):
                         last_in_list = False
                         last_is_code = True
-                        code_type_match = self.inline_docs_code_type_re.match(strip_line)
+                        code_type_match = inline_docs_code_type_re.match(strip_line)
                         inline_doc1 += "  ```"
                         if code_type_match:
                             inline_doc1 += code_type_match.group(1)

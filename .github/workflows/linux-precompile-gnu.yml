@@ -27,6 +27,12 @@ jobs:
               cpp_compiler: g++
               deb_arch: amd64
           - pair:
+              arch: i686-linux-gnu
+              cmake_toolchain_file: cc_toolchain/i686-linux-gnu.cmake
+              c_compiler: gcc-i686-linux-gnu
+              cpp_compiler: g++-i686-linux-gnu
+              deb_arch: i386
+          - pair:
               arch: aarch64-linux-gnu
               cmake_toolchain_file: cc_toolchain/aarch64-linux-gnu.cmake
               c_compiler: gcc-aarch64-linux-gnu
