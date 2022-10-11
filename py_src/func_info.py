@@ -340,9 +340,7 @@ class FuncInfo(object):
                 if not v.isphantom and ismethod and not self.is_static:
                     module_name = get_elixir_module_name(selfinfo.cname)
                     code_ret = "bool success;\n" \
-                        f"            ERL_NIF_TERM map_self = evision_from_as_map(env, _self_, self, \"{module_name}\", success);\n" \
-                        "            if (success) return evision::nif::ok(env, map_self);\n" \
-                        "            else return map_self"
+                        f"            return evision_from_as_map(env, _self_, self, \"{module_name}\", success)"
             elif len(v.py_outlist) == 1:
                 if self.isconstructor:
                     selftype = selfinfo.cname
@@ -357,12 +355,8 @@ class FuncInfo(object):
                         '            } else {\n' \
                         '                return evision::nif::atom(env, "false");\n'\
                         '            }'
-                    elif v.rettype == 'Mat':
-                        code_ret = f"ERL_NIF_TERM mat_ret = evision_from(env, {aname});\n" \
-                                   "            if (enif_is_ref(env, mat_ret) || enif_is_map(env, mat_ret)) return evision::nif::ok(env, mat_ret);\n" \
-                                   "            else return mat_ret;"
                     else:
-                        code_ret = f"return evision::nif::ok(env, evision_from(env, {aname}))"
+                        code_ret = f"return evision_from(env, {aname})"
             else:
                 # there is more than 1 return parameter; form the tuple out of them
                 n_tuple = len(v.py_outlist)
@@ -396,9 +390,9 @@ class FuncInfo(object):
             code += '    \n'.join(ET.gen_template_overloaded_function_call.substitute(variant=v)
                                   for v in all_code_variants)
 
-        def_ret = "if (error_term != 0) return error_term;\n    else return evision::nif::error(env, \"overload resolution failed\");"
+        def_ret = "if (error_term != 0) return error_term;\n    else return enif_make_badarg(env);"
         if self.isconstructor:
-            def_ret = "return evision::nif::error(env, \"overload resolution failed\");"
+            def_ret = "return enif_make_badarg(env);"
         code += "\n    %s\n}\n\n" % def_ret
 
         cname = self.cname

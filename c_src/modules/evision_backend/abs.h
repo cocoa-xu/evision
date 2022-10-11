@@ -21,15 +21,13 @@ static ERL_NIF_TERM evision_cv_mat_abs(ErlNifEnv *env, int argc, const ERL_NIF_T
             int error_flag = false;
             ERRWRAP2(ret = Mat(cv::abs(img)), env, error_flag, error_term);
             if (!error_flag) {
-                return evision::nif::ok(env, evision_from(env, ret));
-            } else {
-                return error_term;
+                return evision_from(env, ret);
             }
         }
     }
 
     if (error_term != 0) return error_term;
-    else return evision::nif::error(env, "overload resolution failed");
+    else return enif_make_badarg(env);
 }
 
 #endif // EVISION_BACKEND_ABS_H

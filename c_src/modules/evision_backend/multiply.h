@@ -24,15 +24,13 @@ static ERL_NIF_TERM evision_cv_mat_multiply(ErlNifEnv *env, int argc, const ERL_
             int error_flag = false;
             ERRWRAP2(cv::multiply(l, r, ret, 1, -1), env, error_flag, error_term);
             if (!error_flag) {
-                return evision::nif::ok(env, evision_from(env, ret));
-            } else {
-                return error_term;
+                return evision_from(env, ret);
             }
         }
     }
 
     if (error_term != 0) return error_term;
-    else return evision::nif::error(env, "overload resolution failed");
+    else return enif_make_badarg(env);
 }
 
 // @evision c: mat_multiply_typed,evision_cv_mat_multiply_typed,1
@@ -58,12 +56,12 @@ static ERL_NIF_TERM evision_cv_mat_multiply_typed(ErlNifEnv *env, int argc, cons
             if (!get_binary_type(t, l, 0, type)) return evision::nif::error(env, "not implemented for the given type");
             Mat ret;
             cv::multiply(lhs, rhs, ret, 1, type);
-            return evision::nif::ok(env, evision_from(env, ret));
+            return evision_from(env, ret);
         }
     }
 
     if (error_term != 0) return error_term;
-    else return evision::nif::error(env, "overload resolution failed");
+    else return enif_make_badarg(env);
 }
 
 #endif // EVISION_BACKEND_MULTIPLY_H

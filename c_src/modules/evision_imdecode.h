@@ -33,13 +33,13 @@ static ERL_NIF_TERM evision_cv_imdecode(ErlNifEnv *env, int argc, const ERL_NIF_
             cv::Mat bufMat = cv::Mat(1, buf.size, CV_8UC1, buf.data);
             ERRWRAP2(retval = cv::imdecode(bufMat, flags), env, error_flag, error_term);
             if (!error_flag) {
-                return evision::nif::ok(env, evision_from(env, retval));
+                return evision_from(env, retval);
             }
         }
     }
 
     if (error_term != 0) return error_term;
-    else return evision::nif::error(env, "overload resolution failed");
+    else return enif_make_badarg(env);
 }
 
 #endif // EVISION_OPENCV_IMDECODE_H

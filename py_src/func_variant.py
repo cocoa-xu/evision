@@ -471,7 +471,7 @@ class FuncVariant(object):
             for argtype in in_args:
                 in_args_spec.append(map_argtype_in_spec(self.classname, argtype, is_in=True))
         if self.has_opts and include_opts:
-            in_args_spec.append('Keyword.t()')
+            in_args_spec.append('[{atom(), term()}]')
         if is_instance_method:
             self.spec_self = ''
             if len(self.classname) > 0:

@@ -17,13 +17,13 @@ static ERL_NIF_TERM evision_cv_mat_empty(ErlNifEnv *env, int argc, const ERL_NIF
     if (alloc_resource(&res)) {
         res->val = new cv::Mat();
     } else {
-        return evision::nif::error(env, "no memory");
+        return evision::nif::error(env, "out of memory");
     }
 
     ERL_NIF_TERM ret = enif_make_resource(env, res);
     enif_release_resource(res);
 
-    return evision::nif::ok(env, _evision_make_mat_resource_into_map(env, *res->val, ret));
+    return _evision_make_mat_resource_into_map(env, *res->val, ret);
 }
 
 // @evision c: mat_type,evision_cv_mat_type,1
@@ -39,12 +39,12 @@ static ERL_NIF_TERM evision_cv_mat_type(ErlNifEnv *env, int argc, const ERL_NIF_
         Mat img;
 
         if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0))) {
-            return evision::nif::ok(env, _evision_get_mat_type(env, img));
+            return _evision_get_mat_type(env, img);
         }
     }
 
     if (error_term != 0) return error_term;
-    else return evision::nif::error(env, "overload resolution failed");
+    else return enif_make_badarg(env);
 }
 
 // @evision c: mat_as_type,evision_cv_mat_as_type,1
@@ -68,7 +68,7 @@ static ERL_NIF_TERM evision_cv_mat_as_type(ErlNifEnv *env, int argc, const ERL_N
             if (get_binary_type(t, l, 0, type)) {
                 Mat ret;
                 img.convertTo(ret, type);
-                return evision::nif::ok(env, evision_from(env, ret));
+                return evision_from(env, ret);
             } else {
                 return evision::nif::error(env, "unsupported target type");
             }
@@ -76,7 +76,7 @@ static ERL_NIF_TERM evision_cv_mat_as_type(ErlNifEnv *env, int argc, const ERL_N
     }
 
     if (error_term != 0) return error_term;
-    else return evision::nif::error(env, "overload resolution failed");
+    else return enif_make_badarg(env);
 }
 
 // @evision c: mat_shape,evision_cv_mat_shape,1
@@ -94,12 +94,12 @@ static ERL_NIF_TERM evision_cv_mat_shape(ErlNifEnv *env, int argc, const ERL_NIF
         // const char *keywords[] = {"img", NULL};
         if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0))) {
             ERL_NIF_TERM ret = _evision_get_mat_shape(env, img);
-            return evision::nif::ok(env, ret);
+            return ret;
         }
     }
 
     if (error_term != 0) return error_term;
-    else return evision::nif::error(env, "overload resolution failed");
+    else return enif_make_badarg(env);
 }
 
 // @evision c: mat_clone,evision_cv_mat_clone,1
@@ -117,12 +117,12 @@ static ERL_NIF_TERM evision_cv_mat_clone(ErlNifEnv *env, int argc, const ERL_NIF
         // const char *keywords[] = {"img", NULL};
         if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0))) {
             // no need to do clone here as evision_from will copy the data
-            return evision::nif::ok(env, evision_from(env, img));
+            return evision_from(env, img);
         }
     }
 
     if (error_term != 0) return error_term;
-    else return evision::nif::error(env, "overload resolution failed");
+    else return enif_make_badarg(env);
 }
 
 // @evision c: mat_zeros, evision_cv_mat_zeros, 1
@@ -145,12 +145,12 @@ static ERL_NIF_TERM evision_cv_mat_zeros(ErlNifEnv *env, int argc, const ERL_NIF
             int type;
             if (!get_binary_type(t, l, 0, type)) return evision::nif::error(env, "not implemented for the given type");
             Mat out = Mat(Mat::zeros(shape.size(), shape.data(), type));
-            return evision::nif::ok(env, evision_from(env, out));
+            return evision_from(env, out);
         }
     }
 
     if (error_term != 0) return error_term;
-    else return evision::nif::error(env, "overload resolution failed");
+    else return enif_make_badarg(env);
 }
 
 // @evision c: mat_ones, evision_cv_mat_ones, 1
@@ -173,12 +173,12 @@ static ERL_NIF_TERM evision_cv_mat_ones(ErlNifEnv *env, int argc, const ERL_NIF_
             int type;
             if (!get_binary_type(t, l, 0, type)) return evision::nif::error(env, "not implemented for the given type");
             Mat out = Mat(Mat::ones(shape.size(), shape.data(), type));
-            return evision::nif::ok(env, evision_from(env, out));
+            return evision_from(env, out);
         }
     }
 
     if (error_term != 0) return error_term;
-    else return evision::nif::error(env, "overload resolution failed");
+    else return enif_make_badarg(env);
 }
 
 // @evision c: mat_arange, evision_cv_mat_arange, 1
@@ -218,12 +218,12 @@ static ERL_NIF_TERM evision_cv_mat_arange(ErlNifEnv *env, int argc, const ERL_NI
             Mat out = Mat(1, dims, CV_32S, values.data());
             Mat ret;
             out.convertTo(ret, type);
-            return evision::nif::ok(env, evision_from(env, ret));
+            return evision_from(env, ret);
         }
     }
 
     if (error_term != 0) return error_term;
-    else return evision::nif::error(env, "overload resolution failed");
+    else return enif_make_badarg(env);
 }
 
 // @evision c: mat_full, evision_cv_mat_full, 1
@@ -251,12 +251,12 @@ static ERL_NIF_TERM evision_cv_mat_full(ErlNifEnv *env, int argc, const ERL_NIF_
             Mat out = Mat(Mat::ones(shape.size(), shape.data(), CV_64F) * number);
             Mat ret;
             out.convertTo(ret, type);
-            return evision::nif::ok(env, evision_from(env, ret));
+            return evision_from(env, ret);
         }
     }
 
     if (error_term != 0) return error_term;
-    else return evision::nif::error(env, "overload resolution failed");
+    else return enif_make_badarg(env);
 }
 
 // @evision c: mat_at, evision_cv_mat_at, 1
@@ -316,9 +316,9 @@ static ERL_NIF_TERM evision_cv_mat_at(ErlNifEnv *env, int argc, const ERL_NIF_TE
 
             ERL_NIF_TERM ret;
             if (type == 0) {
-                ret = evision::nif::ok(env, enif_make_int(env, i32));
+                ret = enif_make_int(env, i32);
             } else if (type == 1) {
-                ret = evision::nif::ok(env, enif_make_double(env, f64));
+                ret = enif_make_double(env, f64);
             } else {
                 ret = evision::nif::error(env, "unknown data type");
             }
@@ -328,7 +328,7 @@ static ERL_NIF_TERM evision_cv_mat_at(ErlNifEnv *env, int argc, const ERL_NIF_TE
     }
 
     if (error_term != 0) return error_term;
-    else return evision::nif::error(env, "overload resolution failed");
+    else return enif_make_badarg(env);
 }
 
 // @evision c: mat_set_to, evision_cv_mat_set_to, 1
@@ -349,12 +349,12 @@ static ERL_NIF_TERM evision_cv_mat_set_to(ErlNifEnv *env, int argc, const ERL_NI
             evision_to_safe(env, evision_get_kw(env, erl_terms, "value"), value, ArgInfo("value", 0)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "mask"), mask, ArgInfo("mask", 0))) {
             img.setTo(value, mask);
-            return evision::nif::ok(env, evision_from(env, img));
+            return evision_from(env, img);
         }
     }
 
     if (error_term != 0) return error_term;
-    else return evision::nif::error(env, "overload resolution failed");
+    else return enif_make_badarg(env);
 }
 
 // @evision c: mat_dot, evision_cv_mat_dot, 1
@@ -372,12 +372,12 @@ static ERL_NIF_TERM evision_cv_mat_dot(ErlNifEnv *env, int argc, const ERL_NIF_T
         if (evision_to_safe(env, evision_get_kw(env, erl_terms, "a"), a, ArgInfo("a", 0)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "b"), b, ArgInfo("b", 0))) {
             Mat out = a.cross(b);
-            return evision::nif::ok(env, evision_from(env, out));
+            return evision_from(env, out);
         }
     }
 
     if (error_term != 0) return error_term;
-    else return evision::nif::error(env, "overload resolution failed");
+    else return enif_make_badarg(env);
 }
 
 // @evision c: mat_channels, evision_cv_mat_channels, 1
@@ -399,7 +399,7 @@ static ERL_NIF_TERM evision_cv_mat_channels(ErlNifEnv *env, int argc, const ERL_
     }
 
     if (error_term != 0) return error_term;
-    else return evision::nif::error(env, "overload resolution failed");
+    else return enif_make_badarg(env);
 }
 
 // @evision c: mat_depth, evision_cv_mat_depth, 1
@@ -421,7 +421,7 @@ static ERL_NIF_TERM evision_cv_mat_depth(ErlNifEnv *env, int argc, const ERL_NIF
     }
 
     if (error_term != 0) return error_term;
-    else return evision::nif::error(env, "overload resolution failed");
+    else return enif_make_badarg(env);
 }
 
 // @evision c: mat_isSubmatrix, evision_cv_mat_isSubmatrix, 1
@@ -447,7 +447,7 @@ static ERL_NIF_TERM evision_cv_mat_isSubmatrix(ErlNifEnv *env, int argc, const E
     }
 
     if (error_term != 0) return error_term;
-    else return evision::nif::error(env, "overload resolution failed");
+    else return enif_make_badarg(env);
 }
 
 // @evision c: mat_isContinuous, evision_cv_mat_isContinuous, 1
@@ -473,7 +473,7 @@ static ERL_NIF_TERM evision_cv_mat_isContinuous(ErlNifEnv *env, int argc, const 
     }
 
     if (error_term != 0) return error_term;
-    else return evision::nif::error(env, "overload resolution failed");
+    else return enif_make_badarg(env);
 }
 
 // @evision c: mat_total, evision_cv_mat_total, 1
@@ -505,7 +505,7 @@ static ERL_NIF_TERM evision_cv_mat_total(ErlNifEnv *env, int argc, const ERL_NIF
     }
 
     if (error_term != 0) return error_term;
-    else return evision::nif::error(env, "overload resolution failed");
+    else return enif_make_badarg(env);
 }
 
 // @evision c: mat_elemSize, evision_cv_mat_elemSize, 1
@@ -526,7 +526,7 @@ static ERL_NIF_TERM evision_cv_mat_elemSize(ErlNifEnv *env, int argc, const ERL_
     }
 
     if (error_term != 0) return error_term;
-    else return evision::nif::error(env, "overload resolution failed");
+    else return enif_make_badarg(env);
 }
 
 // @evision c: mat_elemSize1, evision_cv_mat_elemSize1, 1
@@ -547,7 +547,7 @@ static ERL_NIF_TERM evision_cv_mat_elemSize1(ErlNifEnv *env, int argc, const ERL
     }
 
     if (error_term != 0) return error_term;
-    else return evision::nif::error(env, "overload resolution failed");
+    else return enif_make_badarg(env);
 }
 
 // @evision c: mat_raw_type, evision_cv_mat_raw_type, 1
@@ -568,7 +568,7 @@ static ERL_NIF_TERM evision_cv_mat_raw_type(ErlNifEnv *env, int argc, const ERL_
     }
 
     if (error_term != 0) return error_term;
-    else return evision::nif::error(env, "overload resolution failed");
+    else return enif_make_badarg(env);
 }
 
 // @evision c: mat_dims, evision_cv_mat_dims, 1
@@ -589,7 +589,7 @@ static ERL_NIF_TERM evision_cv_mat_dims(ErlNifEnv *env, int argc, const ERL_NIF_
     }
 
     if (error_term != 0) return error_term;
-    else return evision::nif::error(env, "overload resolution failed");
+    else return enif_make_badarg(env);
 }
 
 // @evision c: mat_size, evision_cv_mat_size, 1
@@ -613,7 +613,7 @@ static ERL_NIF_TERM evision_cv_mat_size(ErlNifEnv *env, int argc, const ERL_NIF_
     }
 
     if (error_term != 0) return error_term;
-    else return evision::nif::error(env, "overload resolution failed");
+    else return enif_make_badarg(env);
 }
 
 // @evision c: mat_as_shape, evision_cv_mat_as_shape, 1
@@ -632,12 +632,12 @@ static ERL_NIF_TERM evision_cv_mat_as_shape(ErlNifEnv *env, int argc, const ERL_
         if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "as_shape"), as_shape, ArgInfo("as_shape", 0))) {
             Mat ret = Mat((int)as_shape.size(), as_shape.data(), img.depth(), img.data);
-            return evision::nif::ok(env, evision_from(env, ret.clone()));
+            return evision_from(env, ret.clone());
         }
     }
 
     if (error_term != 0) return error_term;
-    else return evision::nif::error(env, "overload resolution failed");
+    else return enif_make_badarg(env);
 }
 
 // @evision c: mat_last_dim_as_channel, evision_cv_mat_last_dim_as_channel, 1
@@ -667,7 +667,7 @@ static ERL_NIF_TERM evision_cv_mat_last_dim_as_channel(ErlNifEnv *env, int argc,
                 }
                 int type = CV_MAKETYPE(src.type(), src.size.p[ndims - 1]);
                 Mat ret = Mat(ndims - 1, new_shape.data(), type, src.data);
-                return evision::nif::ok(env, evision_from(env, ret.clone()));
+                return evision_from(env, ret.clone());
             } else {
                 return evision::nif::error(env, "image already has channel info");
             }
@@ -675,7 +675,7 @@ static ERL_NIF_TERM evision_cv_mat_last_dim_as_channel(ErlNifEnv *env, int argc,
     }
 
     if (error_term != 0) return error_term;
-    else return evision::nif::error(env, "overload resolution failed");
+    else return enif_make_badarg(env);
 }
 
 #endif // EVISION_OPENCV_MAT_H

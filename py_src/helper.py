@@ -248,22 +248,36 @@ def when_guard_erlang(func_guard_data: list):
         when_guard += ', '.join(func_guard_data)
     return when_guard
 
-def map_argtype_to_type(argtype):
-    if argtype == 'int' or argtype == 'size_t':
-        return 'int'
+def map_argtype_to_type(argtype: str):
+    if len(argtype) > 0 and argtype.startswith('Ptr<') and argtype.endswith('>'):
+        argtype = argtype[4:-1]
+    if len(argtype) > 0 and argtype[-1] == '*':
+        argtype = argtype[:-1]
+
+    if is_int_type(argtype):
+        return 'i'
     elif argtype == 'bool':
-        return 'bool'
+        return 'b'
     elif argtype == 'double':
-        return 'numerical'
+        return 'd'
     elif argtype == 'float':
-        return 'float'
-    elif argtype == 'String' or argtype == 'c_string' or argtype == 'char':
-        return 'binary'
+        return 'd'
+    elif argtype == 'vector_char' or argtype == 'vector_uchar' or argtype == 'std::vector<char>' or argtype == 'std::vector<uchar>':
+        return 'b'
+    elif argtype == 'String' or argtype == 'c_string' or argtype == 'char' or argtype == 'string':
+        return 'b'
     elif argtype == 'Size' or argtype == 'Scalar' or argtype == 'Point2f' or argtype == 'Point':
-        return 'list'
-    elif argtype[:7] == 'vector_':
-        return 'list'
+        return 'l'
+    elif argtype[:7] == 'vector_' or argtype[:12] == 'std::vector<':
+        return 'l'
+    elif is_list_type(argtype):
+        return 'l'
+    elif is_tuple_type(argtype):
+        return 'T'
     else:
+        if is_struct(argtype):
+            return argtype
+        print(argtype)
         return 't'
 
 
@@ -781,6 +795,9 @@ def map_argtype_in_spec(classname: str, argtype: str, is_in: bool):
             return 'term()'
 
 def map_argtype_to_guard_elixir(argname, argtype):
+    if argtype == 'vector_char' or argtype == 'vector_uchar' or argtype == 'std::vector<char>' or argtype == 'std::vector<uchar>':
+        return f'is_binary({argname})'
+
     if is_int_type(argtype):
         return f'is_integer({argname})'
     elif argtype == 'bool':
@@ -797,6 +814,9 @@ def map_argtype_to_guard_elixir(argname, argtype):
         return f'(is_tuple({argname}) or is_list({argname}))'
     elif is_tuple_type(argtype):
         return f'is_tuple({argname})'
+    elif is_struct(argtype):
+        _, struct_name = is_struct(argtype, also_get='struct_name')
+        return f'is_struct({argname}, {struct_name})'
     elif is_ref_or_struct(argtype):
         return f'(is_reference({argname}) or is_struct({argname}))'
     elif is_list_type(argtype):
@@ -813,6 +833,9 @@ def map_argtype_to_guard_elixir(argname, argtype):
 
 
 def map_argtype_to_guard_erlang(argname, argtype):
+    if argtype == 'vector_char' or argtype == 'vector_uchar' or argtype == 'std::vector<char>' or argtype == 'std::vector<uchar>':
+        return f'is_binary({argname})'
+
     if is_int_type(argtype):
         return f'is_integer({argname})'
     elif argtype == 'bool':

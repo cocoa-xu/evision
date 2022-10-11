@@ -284,7 +284,7 @@ static ERL_NIF_TERM evision_cv_imshow(ErlNifEnv *env, int argc, const ERL_NIF_TE
     }
 
     if (error_term != 0) return error_term;
-    else return evision::nif::error(env, "overload resolution failed");
+    else return enif_make_badarg(env);
 }
 
 // @evision c: waitKey,evision_cv_waitKey,1
@@ -317,7 +317,7 @@ static ERL_NIF_TERM evision_cv_waitKey(ErlNifEnv *env, int argc, const ERL_NIF_T
     }
 
     if (error_term != 0) return error_term;
-    else return evision::nif::error(env, "overload resolution failed");
+    else return enif_make_badarg(env);
 }
 
 // @evision c: destroyWindow,evision_cv_destroyWindow,1
@@ -350,7 +350,7 @@ static ERL_NIF_TERM evision_cv_destroyWindow(ErlNifEnv *env, int argc, const ERL
     }
 
     if (error_term != 0) return error_term;
-    else return evision::nif::error(env, "overload resolution failed");
+    else return enif_make_badarg(env);
 }
 
 // @evision c: destroyAllWindows,evision_cv_destroyAllWindows,0
