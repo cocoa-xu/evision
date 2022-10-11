@@ -67,20 +67,20 @@ jobs:
 
       - name: Install system dependecies
         run: |
-          if [ "${{ matrix.pair.deb_arch }}" != "amd64" ]; then
-            sudo cat /etc/apt/sources.list
-            sudo cp "/etc/apt/sources.list" "/etc/apt/sources.list.d/${{ matrix.pair.deb_arch }}.list"
-            sudo sed -i "s/deb-src/deb-src [arch=${{ matrix.pair.deb_arch }}]/g" "/etc/apt/sources.list.d/${{ matrix.pair.deb_arch }}.list"
-            sudo sed -i "s/deb /deb [arch=${{ matrix.pair.deb_arch }}] /g" "/etc/apt/sources.list.d/${{ matrix.pair.deb_arch }}.list"
-            sudo sed -i "s#azure.archive.ubuntu.com/ubuntu#ports.ubuntu.com/ubuntu-ports#g" "/etc/apt/sources.list.d/${{ matrix.pair.deb_arch }}.list"
-            sudo sed -i "s#azure.ports.ubuntu.com/ubuntu-ports#ports.ubuntu.com/ubuntu-ports#g" "/etc/apt/sources.list.d/${{ matrix.pair.deb_arch }}.list"
-            sudo apt-get update -q -y
-            sudo dpkg --add-architecture "${{ matrix.pair.deb_arch }}"
-            sudo apt-get update
-            sudo apt-get install -y build-essential automake autoconf pkg-config bc m4 unzip zip curl git gzip python3 ca-certificates ${{ matrix.pair.c_compiler }} ${{ matrix.pair.cpp_compiler }} "crossbuild-essential-${{ matrix.pair.deb_arch }}" libgtk2.0-dev "libgtk2.0-dev:${{ matrix.pair.deb_arch }}" libncurses5-dev "libncurses5-dev:${{ matrix.pair.deb_arch }}" libssl-dev "libssl-dev:${{ matrix.pair.deb_arch }}"
-          else
-            sudo apt-get install -y build-essential automake autoconf pkg-config bc m4 unzip zip curl git gzip python3 ca-certificates ${{ matrix.pair.c_compiler }} ${{ matrix.pair.cpp_compiler }} libgtk2.0-dev libncurses5-dev libssl-dev
-          fi
+          # if [ "${{ matrix.pair.deb_arch }}" != "amd64" ]; then
+          #   sudo cat /etc/apt/sources.list
+          #   sudo cp "/etc/apt/sources.list" "/etc/apt/sources.list.d/${{ matrix.pair.deb_arch }}.list"
+          #   sudo sed -i "s/deb-src/deb-src [arch=${{ matrix.pair.deb_arch }}]/g" "/etc/apt/sources.list.d/${{ matrix.pair.deb_arch }}.list"
+          #   sudo sed -i "s/deb /deb [arch=${{ matrix.pair.deb_arch }}] /g" "/etc/apt/sources.list.d/${{ matrix.pair.deb_arch }}.list"
+          #   sudo sed -i "s#azure.archive.ubuntu.com/ubuntu#ports.ubuntu.com/ubuntu-ports#g" "/etc/apt/sources.list.d/${{ matrix.pair.deb_arch }}.list"
+          #   sudo sed -i "s#azure.ports.ubuntu.com/ubuntu-ports#ports.ubuntu.com/ubuntu-ports#g" "/etc/apt/sources.list.d/${{ matrix.pair.deb_arch }}.list"
+          #   sudo apt-get update -q -y
+          #   sudo dpkg --add-architecture "${{ matrix.pair.deb_arch }}"
+          #   sudo apt-get update
+          #   sudo apt-get install -y build-essential automake autoconf pkg-config bc m4 unzip zip curl git gzip python3 ca-certificates ${{ matrix.pair.c_compiler }} ${{ matrix.pair.cpp_compiler }} "crossbuild-essential-${{ matrix.pair.deb_arch }}" libgtk2.0-dev "libgtk2.0-dev:${{ matrix.pair.deb_arch }}" libncurses5-dev "libncurses5-dev:${{ matrix.pair.deb_arch }}" libssl-dev "libssl-dev:${{ matrix.pair.deb_arch }}"
+          # else
+          sudo apt-get install -y build-essential automake autoconf pkg-config bc m4 unzip zip curl git gzip python3 ca-certificates ${{ matrix.pair.c_compiler }} ${{ matrix.pair.cpp_compiler }} libgtk2.0-dev libncurses5-dev libssl-dev
+          # fi
 
       - name: Cache mix packages
         id: cache-mix-deps

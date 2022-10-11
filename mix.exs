@@ -567,7 +567,8 @@ defmodule Evision.MixProject do
 
   def project do
     {compilers, make_env} =
-      if System.get_env("EVISION_FETCH_PRECOMPILED") != "true" do
+      # if System.get_env("EVISION_FETCH_PRECOMPILED") != "true" do
+      if true do
         {deploy_type, target_abi} = EvisionPrecompiled.deploy_type(false)
         if deploy_type == :build_from_source do
           {cmake_options, enabled_modules} = generate_cmake_options()
