@@ -72,8 +72,8 @@ jobs:
             sudo cp "/etc/apt/sources.list" "/etc/apt/sources.list.d/${{ matrix.pair.deb_arch }}.list"
             sudo sed -i "s/deb-src/deb-src [arch=${{ matrix.pair.deb_arch }}]/g" "/etc/apt/sources.list.d/${{ matrix.pair.deb_arch }}.list"
             sudo sed -i "s/deb /deb [arch=${{ matrix.pair.deb_arch }}] /g" "/etc/apt/sources.list.d/${{ matrix.pair.deb_arch }}.list"
-            sudo sed -i "s#archive.ubuntu.com/ubuntu#ports.ubuntu.com/ubuntu-ports#g" "/etc/apt/sources.list.d/${{ matrix.pair.deb_arch }}.list"
-            sudo sed -i "s#security.ubuntu.com/ubuntu#ports.ubuntu.com/ubuntu-ports#g" "/etc/apt/sources.list.d/${{ matrix.pair.deb_arch }}.list"
+            sudo sed -i "s#azure.archive.ubuntu.com/ubuntu#ports.ubuntu.com/ubuntu-ports#g" "/etc/apt/sources.list.d/${{ matrix.pair.deb_arch }}.list"
+            sudo sed -i "s#azure.ports.ubuntu.com/ubuntu-ports#ports.ubuntu.com/ubuntu-ports#g" "/etc/apt/sources.list.d/${{ matrix.pair.deb_arch }}.list"
             sudo apt-get update -q -y
             sudo dpkg --add-architecture "${{ matrix.pair.deb_arch }}"
             sudo apt-get install -y "crossbuild-essential-${{ matrix.pair.deb_arch }}" libgtk2.0-dev "libgtk2.0-dev:${{ matrix.pair.deb_arch }}" libncurses5-dev "libncurses5-dev:${{ matrix.pair.deb_arch }}" libssl-dev "libssl-dev:${{ matrix.pair.deb_arch }}"
