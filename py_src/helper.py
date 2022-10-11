@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 from io import StringIO
-from lib2to3.pgen2.token import OP
 import re
 import inspect
 from collections import namedtuple

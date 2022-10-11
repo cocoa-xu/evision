@@ -4,7 +4,6 @@
 import sys
 from string import Template
 from func_info import FuncInfo
-from class_info import ClassInfo
 from class_prop import ClassProp
 from helper import *
 import evision_templates as ET
