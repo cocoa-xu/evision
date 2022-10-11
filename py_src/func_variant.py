@@ -471,7 +471,7 @@ class FuncVariant(object):
             for argtype in in_args:
                 in_args_spec.append(map_argtype_in_spec(self.classname, argtype, is_in=True))
         if self.has_opts and include_opts:
-            in_args_spec.append('[{atom(), term()}]')
+            in_args_spec.append('[{atom(), term()},...] | nil')
         if is_instance_method:
             self.spec_self = ''
             if len(self.classname) > 0:
@@ -554,7 +554,7 @@ class FuncVariant(object):
         opts_args = ''
         if self.has_opts:
             if in_func_body:
-                opts_args = ' ++ Evision.Internal.Structurise.from_struct(opts)'
+                opts_args = ' ++ Evision.Internal.Structurise.from_struct(opts || [])'
             else:
                 opts_args = 'opts' if self.min_args == 0 else ', opts'
         return opts_args

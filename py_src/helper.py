@@ -276,7 +276,11 @@ def map_argtype_to_type(argtype: str):
         return 'T'
     else:
         if is_struct(argtype):
+            if argtype == 'UMat':
+                return 'Mat'
             return argtype
+        if argtype == 'Moments':
+            return '(map)'
         print(argtype)
         return 't'
 
@@ -291,7 +295,6 @@ def map_argname(kind, argname, **kwargs):
 
 
 def map_argname_elixir(argname, ignore_upper_starting=False, argtype=None, from_struct=False):
-    struct_types = ["Mat", "vector_Mat", "UMat", "vector_UMat", "GpuMat", "VideoCapture"]
     argname_prefix_re = re.compile(r'^[_]*')
     name = ""
     if argname in reserved_keywords():
@@ -372,6 +375,7 @@ def is_list_type(argtype):
         'CirclesGridFinderParameters',
         'KeyPoint'
     ]
+    # todo: check std::vector<
     if argtype[:7] == 'vector_':
         return True
     return argtype in list_types
@@ -495,6 +499,8 @@ def is_struct(argtype: str, also_get: Optional[str] = None):
     }
     struct_types = {
         'Mat': 'Evision.Mat',
+        'GpuMat': 'Evision.CUDA.GpuMat',
+        'cuda::GpuMat': 'Evision.CUDA.GpuMat',
         'AKAZE': 'Evision.AKAZE',
         'AffineFeature': 'Evision.AffineFeature',
         'AgastFeatureDetector': 'Evision.AgastFeatureDetector',
@@ -780,14 +786,14 @@ def map_argtype_in_spec(classname: str, argtype: str, is_in: bool):
     elif argtype == 'Status' and classname == 'Stitcher':
         return 'integer()'
     elif argtype == 'Device' and classname == 'ocl_Device':
-        return 'reference()'
+        return 'Evision.OCL.Device.t()'
     elif argtype == 'Index' and classname == 'flann_Index':
          return 'Evision.Flann.Index.t()'
     else:
         if argtype == 'LayerId':
             return 'term()'
         if argtype == 'GpuMat' or argtype == 'cuda::GpuMat':
-            return f'reference()'
+            return f'Evision.CUDA.GpuMat.t()'
         if argtype == 'IndexParams' or argtype == 'SearchParams' or argtype == 'Moments':
             return f'map()'
         else:
@@ -809,7 +815,7 @@ def map_argtype_to_guard_elixir(argname, argtype):
     elif argtype == 'String' or argtype == 'c_string' or argtype == 'string':
         return f'is_binary({argname})'
     elif argtype == 'char':
-        return f'is_binary({argname})'
+        return f'(0 <= {argname} and {argname} <= 0x10FFFF)'
     elif is_list_or_tuple(argtype):
         return f'(is_tuple({argname}) or is_list({argname}))'
     elif is_tuple_type(argtype):

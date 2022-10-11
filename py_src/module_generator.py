@@ -372,10 +372,10 @@ class ModuleGenerator(object):
                         func_arity = 2
                         if kind == 'elixir':
                             function_code.write(f'  @spec forward(Evision.Net.t(), Keyword.t()) :: {{:ok, list(Evision.Mat.maybe_mat_in())}} | {{:error, String.t()}}\n'
-                                f'  def {module_func_name}(self, opts \\\\ [])\n'
-                                f'  def {module_func_name}(self, opts) when is_list(opts) and (opts == [] or is_tuple(hd(opts))) do\n'
+                                f'  def {module_func_name}(self, opts \\\\ nil)\n'
+                                f'  def {module_func_name}(self, opts) when opts == nil or (is_list(opts) and is_tuple(hd(opts))) do\n'
                                 '    self = Evision.Internal.Structurise.from_struct(self)\n'
-                                '    opts = Evision.Internal.Structurise.from_struct(opts)\n'
+                                '    opts = Evision.Internal.Structurise.from_struct(opts || [])\n'
                                 f'    :evision_nif.{nif_name}(self, opts)\n'
                                 '    |> __to_struct__()\n'
                                 '  end\n')
@@ -406,9 +406,9 @@ class ModuleGenerator(object):
                             }
                             spec = specs[module_func_name]
                             function_code.write(f'  {spec}\n'
-                                f'  def {module_func_name}(self, opts \\\\ []) when is_list(opts) and (opts == [] or is_tuple(hd(opts))) do\n'
+                                f'  def {module_func_name}(self, opts \\\\ nil) when opts == nil or (is_list(opts) and is_tuple(hd(opts))) do\n'
                                 '    self = Evision.Internal.Structurise.from_struct(self)\n'
-                                '    opts = Evision.Internal.Structurise.from_struct(opts)\n'
+                                '    opts = Evision.Internal.Structurise.from_struct(opts || [])\n'
                                 f'    :evision_nif.{nif_name}(self, opts)\n'
                                 '    |> __to_struct__()\n'
                                 '  end\n')
@@ -448,7 +448,7 @@ class ModuleGenerator(object):
                         if len(when_guard_with_opts.strip()) > 0:
                             # when there are some positional args
                             if kind == 'elixir':
-                                when_guard_with_opts = f' {when_guard_with_opts.strip()} and is_list(opts) and (opts == [] or is_tuple(hd(opts)))\n  '
+                                when_guard_with_opts = f' {when_guard_with_opts.strip()} and (opts == nil or (is_list(opts) and is_tuple(hd(opts))))\n  '
                             elif kind == 'erlang':
                                 when_guard_with_opts = f' {when_guard_with_opts.strip()}, is_list(Options), is_tuple(hd(Options)), tuple_size(hd(Options)) == 2'
                             else:
@@ -456,7 +456,7 @@ class ModuleGenerator(object):
                         else:
                             # when there is no positional args
                             if kind == 'elixir':
-                                when_guard_with_opts = ' when is_list(opts) and (opts == [] or is_tuple(hd(opts)))\n  '
+                                when_guard_with_opts = ' when opts == nil or (is_list(opts) and is_tuple(hd(opts)))\n  '
                             elif kind == 'erlang':
                                 when_guard_with_opts = ' when is_list(Options), is_tuple(hd(Options)), tuple_size(hd(Options)) == 2'
                             else:
