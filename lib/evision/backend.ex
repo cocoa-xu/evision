@@ -5,7 +5,9 @@ defmodule Evision.Backend do
   alias Nx.Tensor, as: T
   alias Evision.Backend, as: EB
 
-  @spec reject_error(Evision.Mat.maybe_mat_in() | {:error, String.t()}) :: Evision.Mat.t()
+  @dialyzer :no_contracts
+
+  @spec reject_error(Evision.Mat.maybe_mat_out()) :: Evision.Mat.t()
   defp reject_error(maybe_error) do
     case maybe_error do
       {:error, message} ->
@@ -31,13 +33,14 @@ defmodule Evision.Backend do
       >
 
   """
-  @spec constant(Nx.Tensor.t(), number(), any()) :: Nx.Tensor.t()
+  @spec constant(Nx.Tensor.t(shape: {}), number(), any()) :: Nx.Tensor.t()
   def constant(%T{shape: {}, type: type} = out, scalar, _backend_options) do
     Evision.Mat.number(scalar, type)
     |> reject_error()
     |> to_nx(out)
   end
 
+  @spec constant(Nx.Tensor.t(shape: tuple()), number(), any()) :: Nx.Tensor.t()
   def constant(%T{shape: shape, type: type} = out, scalar, _backend_options) do
     Evision.Mat.full(shape, scalar, type)
     |> reject_error()
@@ -92,11 +95,11 @@ defmodule Evision.Backend do
     dim = elem(shape, axis)
 
     # build the iota in one dimension
-    aten = Evision.Mat.arange(0, dim, 1, type)
+    aten = reject_error(Evision.Mat.arange(0, dim, 1, type))
 
     # reshape the tensor above to be have shape where everything is 1, except for dim
     reshape = Tuple.duplicate(1, Nx.rank(shape)) |> put_elem(axis, dim)
-    aten = Evision.Mat.reshape(aten, reshape)
+    aten = reject_error(Evision.Mat.reshape(aten, reshape))
 
     # Now broadcast the tensor using the original shape
     Evision.Mat.broadcast_to(aten, shape)
@@ -127,17 +130,21 @@ defmodule Evision.Backend do
   end
 
   @impl true
+  @spec random_normal(Nx.Tensor.t(), number | Nx.Tensor.t(), number | Nx.Tensor.t(), any) ::
+          Nx.Tensor.t()
   def random_normal(%T{type: {s, _} = type, shape: shape} = out, mu, sigma, _backend_options)
       when s in [:u, :s, :f] do
     mu = to_number(mu)
     sigma = to_number(sigma)
 
     Evision.randn(
-      Evision.Mat.zeros(shape, type),
-      Evision.Mat.number(mu, type),
-      Evision.Mat.number(sigma, type)
+      reject_error(Evision.Mat.zeros(shape, type)),
+      reject_error(Evision.Mat.number(mu, type)),
+      reject_error(Evision.Mat.number(sigma, type))
     )
+    |> reject_error()
     |> Evision.Mat.as_type(type)
+    |> reject_error()
     |> to_nx(out)
   end
 
@@ -146,6 +153,7 @@ defmodule Evision.Backend do
   end
 
   @impl true
+  @spec backend_copy(Nx.Tensor.t(), atom, any) :: Nx.Tensor.t()
   def backend_copy(tensor, Nx.Tensor, opts) do
     backend_copy(tensor, Nx.BinaryBackend, opts)
   end
@@ -157,14 +165,18 @@ defmodule Evision.Backend do
   end
 
   def backend_copy(tensor, backend, opts) do
-    backend.from_binary(tensor, reject_error(Evision.Mat.to_binary(from_nx(tensor), 0)), opts)
+    case Evision.Mat.to_binary(from_nx(tensor), 0) do
+      {:error, msg} ->
+        raise RuntimeError, msg
+      binary ->
+        backend.from_binary(tensor, binary, opts)
+    end
   end
 
   @impl true
+  @spec backend_transfer(Nx.Tensor.t(), atom, any) :: Nx.Tensor.t()
   def backend_transfer(tensor, backend, opts) do
     backend_copy(tensor, backend, opts)
-  after
-    backend_deallocate(tensor)
   end
 
   @impl true
@@ -181,34 +193,50 @@ defmodule Evision.Backend do
   end
 
   @impl true
-  def to_binary(%T{data: %EB{ref: mat}}, limit) when (is_reference(mat) or is_struct(mat)) and is_integer(limit) and limit >= 0 do
+  @spec to_binary(Nx.Tensor.t(), non_neg_integer) :: binary | {:error, binary}
+  def to_binary(%T{data: %EB{ref: mat}}, limit) when is_struct(mat, Evision.Mat) and is_integer(limit) and limit >= 0 do
     Evision.Mat.to_binary(mat, limit)
   end
 
   @impl true
+  @spec inspect(Nx.Tensor.t(), Inspect.Opts.t()) :: String.t()
   def inspect(%T{data: %EB{ref: mat}} = tensor, inspect_opts) do
     limit = if inspect_opts.limit == :infinity, do: :infinity, else: inspect_opts.limit + 1
 
-    mat
-    |> Evision.Mat.to_binary(min(limit, Nx.size(tensor)))
+    Evision.Mat.to_binary(mat, min(limit, Nx.size(tensor)))
     |> then(&Nx.Backend.inspect(tensor, &1, inspect_opts))
     |> maybe_add_signature(tensor)
   end
 
   @impl true
+  @spec as_type(Nx.Tensor.t(), Nx.Tensor.t()) :: Nx.Tensor.t()
   def as_type(%T{type: type} = out, %T{data: %EB{ref: mat}}) do
-    Evision.Mat.as_type(mat, type) |> to_nx(out)
+    Evision.Mat.as_type(mat, type)
+    |> reject_error()
+    |> to_nx(out)
   end
 
   @impl true
-  def bitcast(out, tensor), do: from_binary(out, Evision.Mat.to_binary(from_nx(tensor), 0), [])
+  @spec bitcast(Nx.Tensor.t(), Nx.Tensor.t()) :: Nx.Tensor.t()
+  def bitcast(out, tensor) do
+    case Evision.Mat.to_binary(from_nx(tensor), 0) do
+      {:error, msg} ->
+        raise RuntimeError, msg
+      binary ->
+        from_binary(out, binary, [])
+    end
+  end
 
   @impl true
+  @spec reshape(Nx.Tensor.t(), Nx.Tensor.t()) :: Nx.Tensor.t()
   def reshape(%T{shape: shape} = out, %T{data: %EB{ref: mat}}) do
-    Evision.Mat.reshape(mat, Tuple.to_list(shape)) |> to_nx(out)
+    Evision.Mat.reshape(mat, Tuple.to_list(shape))
+    |> reject_error()
+    |> to_nx(out)
   end
 
   @impl true
+  @spec squeeze(Nx.Tensor.t(), Nx.Tensor.t(), term()) :: Nx.Tensor.t()
   def squeeze(out, %T{data: %EB{ref: mat}}, _axes) do
     Evision.Mat.squeeze(mat)
     |> reject_error()
@@ -216,6 +244,7 @@ defmodule Evision.Backend do
   end
 
   @impl true
+  @spec broadcast(Nx.Tensor.t(), Nx.Tensor.t(), tuple, any) :: Nx.Tensor.t()
   def broadcast(out, %T{} = t, shape, axes) do
     {tensor, reshape} = maybe_reshape(t, shape, axes)
     Evision.Mat.broadcast_to(tensor |> from_nx(), shape, reshape)
@@ -256,6 +285,7 @@ defmodule Evision.Backend do
   end
 
   @impl true
+  @spec dot(Nx.Tensor.t(), Nx.Tensor.t(), any, [], Nx.Tensor.t(), any, []) :: Nx.Tensor.t()
   def dot(
     %T{type: out_type} = out,
     a, _left_axes, [],
@@ -266,6 +296,7 @@ defmodule Evision.Backend do
   end
 
   @impl true
+  @spec clip(Nx.Tensor.t(), Nx.Tensor.t(), Nx.Tensor.t(), Nx.Tensor.t()) :: Nx.Tensor.t()
   def clip(%T{} = out, %T{} = t, %T{} = min, %T{} = max) do
     t
     |> Nx.as_type(out.type)
@@ -276,6 +307,7 @@ defmodule Evision.Backend do
   end
 
   @impl true
+  @spec transpose(Nx.Tensor.t(), Nx.Tensor.t(), [integer]) :: Nx.Tensor.t()
   def transpose(out, %T{shape: shape} = tensor, axes) do
     Evision.Mat.transpose(from_nx(tensor), axes, as_shape: shape)
     |> to_nx(out)
@@ -481,6 +513,7 @@ defmodule Evision.Backend do
   end
 
   @impl true
+  @spec bitwise_xor(Nx.Tensor.t(), Nx.Tensor.t(), Nx.Tensor.t()) :: Nx.Tensor.t()
   def bitwise_xor(out, l, r) do
     {left, right} = maybe_cast_u8(l, r)
 
@@ -495,6 +528,7 @@ defmodule Evision.Backend do
     |> to_nx(out)
   end
 
+  @spec maybe_cast_u8(Nx.Tensor.t(), Nx.Tensor.t()) :: {Nx.Tensor.t(), Nx.Tensor.t()}
   defp maybe_cast_u8(%T{type: {t, _}} = left, %T{type: {t, _}} = right),
        do: {left, right}
 
@@ -508,20 +542,24 @@ defmodule Evision.Backend do
        do: {left, right}
 
   @impl true
+  @spec equal(Nx.Tensor.t(), Nx.Tensor.t(), Nx.Tensor.t()) :: Nx.Tensor.t()
   def equal(%T{shape: out_shape} = out, l, r) do
     {l, r} = enforce_same_shape(l, r, out_shape)
     {l, r} = enforce_same_type(l, r)
     from_nx(l)
     |> Evision.Mat.cmp(from_nx(r), :eq)
+    |> reject_error()
     |> to_nx(out)
   end
 
   @impl true
+  @spec not_equal(Nx.Tensor.t(), Nx.Tensor.t(), Nx.Tensor.t()) :: Nx.Tensor.t()
   def not_equal(%T{shape: out_shape} = out, l, r) do
     {l, r} = enforce_same_shape(l, r, out_shape)
     {l, r} = enforce_same_type(l, r)
     from_nx(l)
     |> Evision.Mat.cmp(from_nx(r), :ne)
+    |> reject_error()
     |> to_nx(out)
   end
 
@@ -531,24 +569,29 @@ defmodule Evision.Backend do
     {l, r} = enforce_same_type(l, r)
     from_nx(l)
     |> Evision.Mat.cmp(from_nx(r), :gt)
+    |> reject_error()
     |> to_nx(out)
   end
 
   @impl true
+  @spec less(Nx.Tensor.t(), Nx.Tensor.t(), Nx.Tensor.t()) :: Nx.Tensor.t()
   def less(%T{shape: out_shape} = out, l, r) do
     {l, r} = enforce_same_shape(l, r, out_shape)
     {l, r} = enforce_same_type(l, r)
     from_nx(l)
     |> Evision.Mat.cmp(from_nx(r), :lt)
+    |> reject_error()
     |> to_nx(out)
   end
 
   @impl true
+  @spec greater_equal(Nx.Tensor.t(), Nx.Tensor.t(), Nx.Tensor.t()) :: Nx.Tensor.t()
   def greater_equal(%T{shape: out_shape} = out, l, r) do
     {l, r} = enforce_same_shape(l, r, out_shape)
     {l, r} = enforce_same_type(l, r)
     from_nx(l)
     |> Evision.Mat.cmp(from_nx(r), :ge)
+    |> reject_error()
     |> to_nx(out)
   end
 
@@ -580,32 +623,40 @@ defmodule Evision.Backend do
   end
 
   @impl true
+  @spec logical_or(Nx.Tensor.t(), Nx.Tensor.t(), Nx.Tensor.t()) :: Nx.Tensor.t()
   def logical_or(%T{shape: out_shape} = out, l, r) do
     {l, r} = enforce_same_shape(l, r, out_shape)
     {l, r} = enforce_same_type(l, r)
     Evision.Mat.logical_or(from_nx(l), from_nx(r))
+    |> reject_error()
     |> to_nx(out)
     |> Nx.not_equal(0)
   end
 
   @impl true
+  @spec logical_xor(Nx.Tensor.t(), Nx.Tensor.t(), Nx.Tensor.t()) :: Nx.Tensor.t()
   def logical_xor(%T{shape: out_shape} =out, l, r) do
     {l, r} = enforce_same_shape(l, r, out_shape)
     {l, r} = enforce_same_type(l, r)
     Evision.Mat.logical_xor(from_nx(l), from_nx(r))
+    |> reject_error()
     |> to_nx(out)
     |> Nx.not_equal(0)
   end
 
   @impl true
+  @spec abs(Nx.Tensor.t(), Nx.Tensor.t()) :: Nx.Tensor.t()
   def abs(%T{} = out, tensor) do
     Evision.Mat.abs(from_nx(tensor))
+    |> reject_error()
     |> to_nx(out)
   end
 
   @impl true
+  @spec bitwise_not(Nx.Tensor.t(), Nx.Tensor.t()) :: Nx.Tensor.t()
   def bitwise_not(%T{type: {s, _}} = out, tensor) when s in [:s, :u] do
     Evision.Mat.bitwise_not(from_nx(tensor))
+    |> reject_error()
     |> to_nx(out)
   end
 
@@ -615,8 +666,10 @@ defmodule Evision.Backend do
   end
 
   @impl true
+  @spec ceil(Nx.Tensor.t(), Nx.Tensor.t()) :: Nx.Tensor.t()
   def ceil(%T{type: {s, _}} = out, tensor) when s == :f do
     Evision.Mat.ceil(from_nx(tensor))
+    |> reject_error()
     |> to_nx(out)
   end
 
@@ -625,8 +678,10 @@ defmodule Evision.Backend do
   end
 
   @impl true
+  @spec floor(Nx.Tensor.t(), Nx.Tensor.t()) :: Nx.Tensor.t()
   def floor(%T{type: {s, _}} = out, tensor) when s == :f do
     Evision.Mat.floor(from_nx(tensor))
+    |> reject_error()
     |> to_nx(out)
   end
 
@@ -635,14 +690,18 @@ defmodule Evision.Backend do
   end
 
   @impl true
+  @spec negate(Nx.Tensor.t(), Nx.Tensor.t()) :: Nx.Tensor.t()
   def negate(%T{} = out, tensor) do
     Evision.Mat.negate(from_nx(tensor))
+    |> reject_error()
     |> to_nx(out)
   end
 
   @impl true
+  @spec round(Nx.Tensor.t(), Nx.Tensor.t()) :: Nx.Tensor.t()
   def round(%T{type: {s, _}} = out, tensor) when s == :f do
     Evision.Mat.round(from_nx(tensor))
+    |> reject_error()
     |> to_nx(out)
   end
 
@@ -651,36 +710,47 @@ defmodule Evision.Backend do
   end
 
   @impl true
+  @spec sign(Nx.Tensor.t(), Nx.Tensor.t()) :: Nx.Tensor.t()
   def sign(%T{} = out, tensor) do
     Evision.Mat.sign(from_nx(tensor))
+    |> reject_error()
     |> to_nx(out)
   end
 
   @impl true
+  @spec exp(Nx.Tensor.t(), Nx.Tensor.t()) :: Nx.Tensor.t()
   def exp(%T{} = out, tensor) do
     Evision.exp(from_nx(tensor))
+    |> reject_error()
     |> to_nx(out)
   end
 
   @impl true
+  @spec expm1(Nx.Tensor.t(), Nx.Tensor.t()) :: Nx.Tensor.t()
   def expm1(%T{} = out, tensor) do
     Evision.Mat.expm1(from_nx(tensor))
+    |> reject_error()
     |> to_nx(out)
   end
 
   @impl true
+  @spec log(Nx.Tensor.t(), Nx.Tensor.t()) :: Nx.Tensor.t()
   def log(%T{} = out, tensor) do
     Evision.log(from_nx(tensor))
+    |> reject_error()
     |> to_nx(out)
   end
 
   @doc false
   def from_nx(%T{data: %EB{ref: mat_ref}}), do: mat_ref
-  def from_nx(%T{} = tensor), do: Nx.backend_transfer(tensor, EB) |> from_nx()
+  def from_nx(%T{} = tensor) do
+    Nx.backend_transfer(tensor, EB)
+    |> from_nx()
+  end
 
   @doc false
-  @spec to_nx(Evision.Mat.maybe_mat_in(), Nx.Tensor.t()) :: Nx.Tensor.t()
-  def to_nx(mat_ref, %T{shape: shape} = t) when is_reference(mat_ref) or is_struct(mat_ref) do
+  @spec to_nx(Evision.Mat.t(), Nx.Tensor.t()) :: Nx.Tensor.t()
+  def to_nx(mat_ref, %T{shape: shape} = t) when is_struct(mat_ref, Evision.Mat) do
     mat_ref = Evision.Internal.Structurise.from_struct(mat_ref)
     type = Evision.Mat.type(mat_ref)
     %{t | type: type, data: %__MODULE__{ref: check_shape_and_type(mat_ref, shape, type)}}
@@ -1051,6 +1121,7 @@ defmodule Evision.Backend do
   end
 
   if Application.compile_env(:evision, :check_shape_and_type, false) do
+    @spec check_shape_and_type(Evision.Mat.t(), tuple, Evision.Mat.mat_type()) :: Evision.Mat.t()
     defp check_shape_and_type(mat_ref, shape, type) do
       current_type = Evision.Mat.type(mat_ref)
 
@@ -1069,6 +1140,7 @@ defmodule Evision.Backend do
       mat_ref
     end
   else
+    @spec check_shape_and_type(Evision.Mat.t(), any, any) :: Evision.Mat.t()
     defp check_shape_and_type(mat_ref, _, _), do: mat_ref
   end
 
@@ -1076,14 +1148,6 @@ defmodule Evision.Backend do
     defp maybe_add_signature(result, %T{data: %EB{ref: _mat_ref}}) do
       Inspect.Algebra.concat([
         "Evision.Backend",
-        Inspect.Algebra.line(),
-        result
-      ])
-    end
-
-    defp maybe_add_signature(result, %Evision.Mat{ref: _ref}) do
-      Inspect.Algebra.concat([
-        "Evision.Mat",
         Inspect.Algebra.line(),
         result
       ])

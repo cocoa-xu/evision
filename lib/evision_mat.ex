@@ -83,6 +83,14 @@ defmodule Evision.Mat do
     shape: tuple(),
     ref: reference()
   }
+  @type t_nx :: %__MODULE__{
+    channels: integer(),
+    dims: integer(),
+    type: mat_type_tuple_form(),
+    raw_type: integer(),
+    shape: tuple(),
+    ref: reference()
+  }
   @enforce_keys [:channels, :dims, :type, :raw_type, :shape, :ref]
   defstruct [:channels, :dims, :type, :raw_type, :shape, :ref]
 
@@ -467,12 +475,17 @@ defmodule Evision.Mat do
     as_shape = opts[:as_shape] || shape(mat)
 
     as_shape =
-      case is_tuple(as_shape) do
-        true ->
-          Tuple.to_list(as_shape)
-
+      case as_shape do
+        {:error, msg} ->
+          raise RuntimeError, msg
         _ ->
-          as_shape
+          case is_tuple(as_shape) do
+            true ->
+              Tuple.to_list(as_shape)
+
+            _ ->
+              as_shape
+          end
       end
 
     ndims = Enum.count(as_shape)
