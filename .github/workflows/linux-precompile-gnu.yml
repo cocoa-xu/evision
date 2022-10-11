@@ -24,34 +24,40 @@ jobs:
               cmake_toolchain_file: ""
               c_compiler: gcc
               cpp_compiler: g++
+              deb_arch: amd64
           - pair:
               arch: aarch64-linux-gnu
               cmake_toolchain_file: cc_toolchain/aarch64-linux-gnu.cmake
               c_compiler: gcc-aarch64-linux-gnu
               cpp_compiler: g++-aarch64-linux-gnu
+              deb_arch: arm64
           - pair:
               arch: armv7l-linux-gnueabihf
               cmake_toolchain_file: cc_toolchain/armv7l-linux-gnueabihf.cmake
               c_compiler: gcc-arm-linux-gnueabihf
               cpp_compiler: g++-arm-linux-gnueabihf
+              deb_arch: armhf
           - pair:
               arch: ppc64le-linux-gnu
               cmake_toolchain_file: cc_toolchain/ppc64le-linux-gnu.cmake
               c_compiler: gcc-powerpc64le-linux-gnu
               cpp_compiler: g++-powerpc64le-linux-gnu
+              deb_arch: ppc64el
           - pair:
               arch: s390x-linux-gnu
               cmake_toolchain_file: cc_toolchain/s390x-linux-gnu.cmake
               c_compiler: gcc-s390x-linux-gnu
               cpp_compiler: g++-s390x-linux-gnu
+              deb_arch: s390x
           - pair:
               arch: riscv64-linux-gnu
               cmake_toolchain_file: cc_toolchain/riscv64-linux-gnu.cmake
               c_compiler: gcc-riscv64-linux-gnu
               cpp_compiler: g++-riscv64-linux-gnu
+              deb_arch: riscv64
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - uses: erlef/setup-beam@v1
         with:
@@ -61,8 +67,18 @@ jobs:
       - name: Install system dependecies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential automake autoconf pkg-config bc m4 unzip zip curl git libssl-dev gzip libncurses5-dev python3 ca-certificates ${{ matrix.pair.c_compiler }} ${{ matrix.pair.cpp_compiler }}
-      
+          sudo apt-get install -y build-essential automake autoconf pkg-config bc m4 unzip zip curl git libssl-dev gzip libncurses5-dev python3 ca-certificates ${{ matrix.pair.c_compiler }} ${{ matrix.pair.cpp_compiler }} libgtk2.0-dev
+          if [ "${deb_arch}" != "amd64" ]; then
+            cp "/etc/apt/sources.list" "/etc/apt/sources.list.d/${deb_arch}.list"
+            sed -i "s/deb-src/deb-src [arch=${deb_arch}]/g" "/etc/apt/sources.list.d/${deb_arch}.list"
+            sed -i "s/deb /deb [arch=${deb_arch}] /g" "/etc/apt/sources.list.d/${deb_arch}.list"
+            sed -i "s#archive.ubuntu.com/ubuntu#ports.ubuntu.com/ubuntu-ports#g" "/etc/apt/sources.list.d/${deb_arch}.list"
+            sed -i "s#security.ubuntu.com/ubuntu#ports.ubuntu.com/ubuntu-ports#g" "/etc/apt/sources.list.d/${deb_arch}.list"
+            apt-get update -q -y
+            dpkg --add-architecture "${deb_arch}"
+            apt-get install -y "crossbuild-essential-${deb_arch}" libgtk2.0-dev "libgtk2.0-dev:${deb_arch}" libssl-dev "libssl-dev:${deb_arch}" libncurses5-dev "libncurses5-dev:${deb_arch}"
+          fi
+
       - name: Cache mix packages
         id: cache-mix-deps
         uses: actions/cache@v3
