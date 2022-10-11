@@ -6,11 +6,10 @@ from typing import Tuple
 from helper import handle_ptr, forbidden_arg_types, ignored_arg_types, map_argtype_to_guard, map_argname, map_argtype_to_type, handle_inline_math_escaping, map_argtype_in_docs, map_argtype_in_spec, is_struct
 from arg_info import ArgInfo
 import re
-
+inline_docs_code_type_re = re.compile(r'@code{.(.*)}')
 
 class FuncVariant(object):
     def __init__(self, classname: str, name: str, decl: list, isconstructor: bool, isphantom: bool = False):
-        self.inline_docs_code_type_re = re.compile(r'@code{.(.*)}')
         self.classname = classname
         self.from_base = False
         self.base_classname = None
@@ -206,6 +205,7 @@ class FuncVariant(object):
         return is_multiline, line_index
 
     def inline_docs_elixir(self) -> str:
+        global inline_docs_code_type_re
         parameter_info = {}
         doc_string = "\n".join('  {}'.format(line.strip()) for line in self.docstring.split("\n")).strip()
         if len(doc_string) > 0:
