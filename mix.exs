@@ -56,7 +56,10 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
 
   def checksum_file(app \\ Mix.Project.config()[:app]) when is_atom(app) do
     # Saves the file in the project root.
-    Path.join(File.cwd!(), "checksum-#{to_string(app)}.exs")
+    {
+      Path.join(File.cwd!(), "checksum-#{to_string(app)}.exs"),
+      Path.join([File.cwd!(), "checksum_#{to_string(app)}.erl"])
+    }
   end
 
   defp read_checksum_map(app \\ Mix.Project.config()[:app]) when is_atom(app) do
