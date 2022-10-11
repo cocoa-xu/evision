@@ -44,7 +44,7 @@ jobs:
       MIX_ENV: prod
       NERVES_PROJ_NAME: nerves_evision
       OPENCV_VER: "4.6.0"
-      NERVES_LIVEBOOK_VER: "v0.6.5"
+      NERVES_LIVEBOOK_VER: "v0.7.0"
       OTP_VERSION: "25.0.4"
       ELIXIR_VERSION: "1.14.0"
       EVISION_PREFER_PRECOMPILED: "false"
@@ -111,8 +111,6 @@ jobs:
           mv mix.exs.tmp mix.exs
           cat mix.exs
           export MIX_TARGET=${{ matrix.target }}
-          sed -i 's/nx, "~> 0.2.0/nx, "~> 0.3/g' mix.exs
-          sed -i 's/kino, "~> 0.6"/kino, "~> 0.7", override: true/g' mix.exs
           mix deps.get
           mix deps.update nx
           mix deps.update kino
