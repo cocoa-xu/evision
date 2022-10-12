@@ -751,7 +751,6 @@ defmodule Evision.Backend do
   @doc false
   @spec to_nx(Evision.Mat.t(), Nx.Tensor.t()) :: Nx.Tensor.t()
   def to_nx(mat_ref, %T{shape: shape} = t) when is_struct(mat_ref, Evision.Mat) do
-    mat_ref = Evision.Internal.Structurise.from_struct(mat_ref)
     type = Evision.Mat.type(mat_ref)
     %{t | type: type, data: %__MODULE__{ref: check_shape_and_type(mat_ref, shape, type)}}
   end
