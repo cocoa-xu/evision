@@ -7,7 +7,7 @@
 
   Thanks to @josevalim who wrote me this `Errorize` module back in Feb 2022, and in v0.1.10 this module will be removed. There are two main reasons for this:
 
-  - I've managed to structurise all `#references` that have their own modules in #101.
+  - I've managed to structurise all `#references` that have their own modules in [#101](https://github.com/cocoa-xu/evision/pull/101).
   - After generating function specs, dialyzer seems to be really upset about these bang(!) version functions, and would emit a few thousand warnings.
 
 - Return value changed if the first return type of the function is `bool`
