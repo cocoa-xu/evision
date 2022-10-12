@@ -106,7 +106,71 @@
 - Docs: included `retval` and `self` in the `Return` section.
 
 ### Added
-- Function spec for all functions, including generated ones.
+- [Spec] Function spec for all Elixir functions, including generated ones.
+- [Evision.Mat] Added `Evision.Mat.roi/{2,3}`.
+
+  ```elixir
+  iex> img = Evision.imread("test/qr_detector_test.png")
+  %Evision.Mat{
+    channels: 3,
+    dims: 2,
+    type: {:u, 8},
+    raw_type: 16,
+    shape: {300, 300, 3},
+    ref: #Reference<0.3957900973.802816029.173984>
+  }
+
+  # Mat operator()( const Rect& roi ) const;
+  iex> sub_img = Evision.Mat.roi(img, {10, 10, 100, 200})
+  %Evision.Mat{
+    channels: 3,
+    dims: 2,
+    type: {:u, 8},
+    raw_type: 16,
+    shape: {200, 100, 3},
+    ref: #Reference<0.3957900973.802816020.173569>
+  }
+
+  # Mat operator()( Range rowRange, Range colRange ) const;
+  iex> sub_img = Evision.Mat.roi(img, {10, 100}, {20, 200}) 
+  %Evision.Mat{
+    channels: 3,
+    dims: 2,
+    type: {:u, 8},
+    raw_type: 16,
+    shape: {90, 180, 3},
+    ref: #Reference<0.3957900973.802816020.173570>
+  }
+  iex> sub_img = Evision.Mat.roi(img, :all, {20, 200}) 
+  %Evision.Mat{
+    channels: 3,
+    dims: 2,
+    type: {:u, 8},
+    raw_type: 16,
+    shape: {300, 180, 3},
+    ref: #Reference<0.3957900973.802816020.173571>
+  }
+
+  # Mat operator()(const std::vector<Range>& ranges) const;
+  iex> sub_img = Evision.Mat.roi(img, [{10, 100}, {10, 100}])
+  %Evision.Mat{
+    channels: 3,
+    dims: 2,
+    type: {:u, 8},
+    raw_type: 16,
+    shape: {90, 90, 3},
+    ref: #Reference<0.3957900973.802816020.173567>
+  }
+  iex> sub_img = Evision.Mat.roi(img, [{10, 100}, :all])
+  %Evision.Mat{
+    channels: 3,
+    dims: 2,
+    type: {:u, 8},
+    raw_type: 16,
+    shape: {90, 300, 3},
+    ref: #Reference<0.3957900973.802816020.173568>
+  }
+  ```
 
 ### Appendix
 List of modules that are now wrapped in structs.
