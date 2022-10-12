@@ -95,15 +95,15 @@ Helper.download!(
 ### Stitching
 
 ```elixir
-a1 = Cv.imread!("./a1.png")
-a2 = Cv.imread!("./a2.png")
-a3 = Cv.imread!("./a3.png")
-sticher = Cv.Stitcher.create!()
-{status_code, result} = Cv.Stitcher.stitch!(sticher, [a1, a2, a3])
+a1 = Cv.imread("./a1.png")
+a2 = Cv.imread("./a2.png")
+a3 = Cv.imread("./a3.png")
+sticher = Cv.Stitcher.create()
+{status_code, result} = Cv.Stitcher.stitch(sticher, [a1, a2, a3])
 0 = status_code
 # status_code should be 0 (OK),
 # for other status_code, please refer to https://github.com/opencv/opencv/blob/4.5.4/modules/stitching/include/opencv2/stitching.hpp#L152
 
-Cv.imencode!(".png", result)
+Cv.imencode(".png", result)
 |> Kino.Image.new(:png)
 ```

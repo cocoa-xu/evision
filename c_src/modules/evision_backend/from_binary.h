@@ -59,12 +59,10 @@ static ERL_NIF_TERM evision_cv_mat_from_binary(ErlNifEnv *env, int argc, const E
                     ERL_NIF_TERM term = enif_make_resource(env, res);
                     enif_release_resource(res);
 
-                    return evision::nif::ok(env, _evision_make_mat_resource_into_map(env, *res->val, term));
+                    return _evision_make_mat_resource_into_map(env, *res->val, term);
                 } else {
                     return evision::nif::error(env, "no memory");
                 }
-
-                // return evision::nif::ok(env, evision_from(env, retval));
             } else {
                 // invalid binary data
                 return enif_make_badarg(env);
@@ -73,7 +71,7 @@ static ERL_NIF_TERM evision_cv_mat_from_binary(ErlNifEnv *env, int argc, const E
     }
 
     if (error_term != 0) return error_term;
-    else return evision::nif::error(env, "overload resolution failed");
+    else return enif_make_badarg(env);
 }
 
 // @evision c: mat_from_binary_by_shape,evision_cv_mat_from_binary_by_shape,1
@@ -130,12 +128,10 @@ static ERL_NIF_TERM evision_cv_mat_from_binary_by_shape(ErlNifEnv *env, int argc
                     ERL_NIF_TERM term = enif_make_resource(env, res);
                     enif_release_resource(res);
 
-                    return evision::nif::ok(env, _evision_make_mat_resource_into_map(env, *res->val, term));
+                    return _evision_make_mat_resource_into_map(env, *res->val, term);
                 } else {
                     return evision::nif::error(env, "no memory");
                 }
-
-                // return evision::nif::ok(env, evision_from(env, retval));
             } else {
                 // invalid binary data
                 return enif_make_badarg(env);
@@ -144,7 +140,7 @@ static ERL_NIF_TERM evision_cv_mat_from_binary_by_shape(ErlNifEnv *env, int argc
     }
 
     if (error_term != 0) return error_term;
-    else return evision::nif::error(env, "overload resolution failed");
+    else return enif_make_badarg(env);
 }
 
 #endif // EVISION_BACKEND_FROM_BINARY_H

@@ -64,8 +64,7 @@ class BeamWrapperGenerator(object):
         self.evision_ex = ModuleGenerator("Evision")
         self.evision_elixir.write('defmodule Evision do\n')
         self.evision_elixir.write('  import Bitwise\n')
-        self.evision_elixir.write('  import Kernel, except: [apply: 2, apply: 3, min: 2, max: 2]\n')
-        self.evision_elixir.write('  import Evision.Errorize\n\n')
+        self.evision_elixir.write('  import Kernel, except: [apply: 2, apply: 3, min: 2, max: 2]\n\n')
         self.evision_elixir.write('  @doc false\n')
         self.evision_elixir.write('  def __to_struct__(any), do: Evision.Internal.Structurise.to_struct(any)\n\n')
 
@@ -344,9 +343,7 @@ class BeamWrapperGenerator(object):
             module_file_generator = ModuleGenerator(elixir_module_name)
             module_file_generator.write_elixir(f'defmodule Evision.{elixir_module_name} do\n')
             if elixir_module_name not in ['Flann', 'Segmentation', 'ML']:
-                module_file_generator.write_elixir('  import Kernel, except: [apply: 2, apply: 3]\n')
-            if elixir_module_name not in ['Flann', 'Segmentation', 'ML']:
-                module_file_generator.write_elixir('  import Evision.Errorize\n\n')
+                module_file_generator.write_elixir('  import Kernel, except: [apply: 2, apply: 3]\n\n')
             if ES.evision_structs.get(elixir_module_name, None) is not None:
                 module_file_generator.write_elixir(ES.evision_structs[elixir_module_name])
                 module_file_generator.write_elixir("\n")

@@ -129,12 +129,12 @@ static ERL_NIF_TERM evision_cv_mat_broadcast_to(ErlNifEnv *env, int argc, const 
             result = result.clone();
             enif_free((void *)dst_data);
             enif_free((void *)tmp_data);
-            return evision::nif::ok(env, evision_from(env, result));
+            return evision_from(env, result);
         }
     }
 
     if (error_term != 0) return error_term;
-    else return evision::nif::error(env, "overload resolution failed");
+    else return enif_make_badarg(env);
 }
 
 #endif // EVISION_BACKEND_BROADCAST_H

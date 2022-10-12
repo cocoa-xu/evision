@@ -1,9 +1,7 @@
 defmodule Evision.Nx do
   @moduledoc """
-  OpenCV's cv::mat to Nx tensor.
+  Conversion functions between `Evision.Mat` and `Nx.tensor`.
   """
-
-  import Evision.Errorize
 
   unless Code.ensure_loaded?(Nx) do
     @compile {:no_warn_undefined, Nx}
@@ -17,7 +15,7 @@ defmodule Evision.Nx do
   ### Example
 
   ```elixir
-  iex> {:ok, mat} = Evision.imread("/path/to/exist/img.png")
+  iex> mat = %Mat{} = Evision.imread("/path/to/exist/img.png")
   iex> nx_tensor = Evision.Nx.to_nx(mat)
   #Nx.Tensor<
     u8[1080][1920][3]
@@ -29,26 +27,30 @@ defmodule Evision.Nx do
   @doc namespace: :external
   @spec to_nx(Evision.Mat.t(), module()) :: Nx.Tensor.t() | {:error, String.t()}
   def to_nx(mat, backend \\ Evision.Backend) when is_struct(mat, Evision.Mat) do
-    with {:ok, mat_type} <- Evision.Mat.type(mat),
-         {:ok, mat_shape} <- Evision.Mat.shape(mat),
-         {:ok, bin} <- Evision.Mat.to_binary(mat) do
-      bin
-      |> Nx.from_binary(mat_type, backend: backend)
-      |> Nx.reshape(mat_shape)
+    with mat_type <- Evision.Mat.type(mat),
+         mat_shape <- Evision.Mat.shape(mat),
+         {:not_empty_shape, true} <- {:not_empty_shape, tuple_size(mat_shape) > 0},
+         {:not_error, true, _} <- {:not_error, elem(mat_shape, 0) != :error, mat_shape},
+         bin <- Evision.Mat.to_binary(mat),
+         {:is_binary, true, _} <- {:is_binary, is_binary(bin), bin} do
+      Nx.reshape(Nx.from_binary(bin, mat_type, backend: backend), mat_shape)
     else
       {:error, reason} ->
         {:error, reason}
+      {:not_empty_shape, false} ->
+        {:error, "shape is {}"}
+      {:not_error, false, error} ->
+        error
+      {:is_binary, false, error} ->
+        error
     end
   end
-
-  deferror(to_nx(mat))
-  deferror(to_nx(mat, backend))
 
   @doc """
   Converts a tensor from `Nx.Tensor` to `Evision.Mat`.
   """
   @doc namespace: :external
-  @spec to_mat(Nx.t()) :: {:ok, Evision.Mat.t()} | {:error, String.t()}
+  @spec to_mat(Nx.t()) :: Evision.Mat.t() | {:error, String.t()}
   def to_mat(t) when is_struct(t, Nx.Tensor) do
     case Nx.shape(t) do
       {} ->
@@ -59,9 +61,8 @@ defmodule Evision.Nx do
     end
   end
 
-  deferror(to_mat(t))
-
   @doc namespace: :external
+  @spec to_mat(Nx.Tensor.t(), any) :: Evision.Mat.t() | {:error, String.t()}
   def to_mat(t, as_shape) when is_struct(t, Nx.Tensor) do
     case Nx.shape(t) do
       {} ->
@@ -76,14 +77,11 @@ defmodule Evision.Nx do
     end
   end
 
-  deferror(to_mat(t, as_shape))
-
   @doc namespace: :external
+  @spec to_mat(binary(), Evision.Mat.mat_type(), non_neg_integer(), non_neg_integer(), non_neg_integer()) :: Evision.Mat.maybe_mat_out()
   def to_mat(binary, type, rows, cols, channels) do
     Evision.Mat.from_binary(binary, type, rows, cols, channels)
   end
-
-  deferror(to_mat(binary, type, rows, cols, channels))
 
   @doc namespace: :external
   @doc """
@@ -107,6 +105,4 @@ defmodule Evision.Nx do
         {:error, "Cannot convert tensor(#{inspect(shape)}) to a 2D image"}
     end
   end
-
-  deferror(to_mat_2d(t))
 end
