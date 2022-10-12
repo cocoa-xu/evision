@@ -281,7 +281,6 @@ def map_argtype_to_type(argtype: str):
             return argtype
         if argtype == 'Moments':
             return '(map)'
-        print(argtype)
         return 't'
 
 
@@ -369,14 +368,9 @@ def is_list_type(argtype):
         'MatchesInfo',
         'CameraParams',
         'VideoCaptureAPIs',
-        'MatShape',
-
-        'UsacParams',
-        'CirclesGridFinderParameters',
-        'KeyPoint'
+        'MatShape'
     ]
-    # todo: check std::vector<
-    if argtype[:7] == 'vector_':
+    if argtype[:7] == 'vector_' or argtype[len('std::vector<'):] == 'std::vector<':
         return True
     return argtype in list_types
 

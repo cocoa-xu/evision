@@ -371,7 +371,7 @@ class ModuleGenerator(object):
                     if func_name.startswith(evision_nif_prefix() + "dnn") and module_func_name == "forward":
                         func_arity = 2
                         if kind == 'elixir':
-                            function_code.write(f'  @spec forward(Evision.Net.t(), Keyword.t()) :: {{:ok, list(Evision.Mat.maybe_mat_in())}} | {{:error, String.t()}}\n'
+                            function_code.write(f'  @spec forward(Evision.Net.t(), [{{atom(), term()}},...] | nil) :: list(Evision.Mat.t()) | {{:error, String.t()}}\n'
                                 f'  def {module_func_name}(self, opts \\\\ nil)\n'
                                 f'  def {module_func_name}(self, opts) when opts == nil or (is_list(opts) and is_tuple(hd(opts))) do\n'
                                 '    self = Evision.Internal.Structurise.from_struct(self)\n'
@@ -401,8 +401,8 @@ class ModuleGenerator(object):
                         func_arity = 2
                         if kind == 'elixir':
                             specs = {
-                                'getLayerShapes': '@spec getLayerShapes(Evision.Net.t(), Keyword.t()) :: {:ok, list(list(integer())), list(list(integer()))} | {:error, String.t()}',
-                                'getLayersShapes': '@spec getLayerShapes(Evision.Net.t(), Keyword.t()) :: {:ok, list(integer()), list(list(list(integer()))), list(list(list(integer())))} | {:error, String.t()}'
+                                'getLayerShapes': '@spec getLayerShapes(Evision.Net.t(), [{{atom(), term()}},...] | nil) :: {list(list(integer())), list(list(integer()))} | {:error, String.t()}',
+                                'getLayersShapes': '@spec getLayerShapes(Evision.Net.t(), [{{atom(), term()}},...] | nil) :: {list(integer()), list(list(list(integer()))), list(list(list(integer())))} | {:error, String.t()}'
                             }
                             spec = specs[module_func_name]
                             function_code.write(f'  {spec}\n'
