@@ -16,33 +16,33 @@
   
     ```elixir
     # before
-    iex> :ok = Evision.imwrite!("/path/to/image.png", img)
-    iex> :error = Evision.imwrite!("/path/to/image.png", invalid_img)
+    iex> :ok = Evision.imwrite("/path/to/image.png", img)
+    iex> :error = Evision.imwrite("/path/to/image.png", invalid_img)
     # after
-    iex> true = Evision.imwrite!("/path/to/image.png", img)
-    iex> true = Evision.imwrite!("/path/to/image.png", invalid_img)
+    iex> true = Evision.imwrite("/path/to/image.png", img)
+    iex> true = Evision.imwrite("/path/to/image.png", invalid_img)
     ```
 
   - If the first return type is `bool`, and there is another value to return:
   
     ```elixir
     # before
-    iex> frame = Evision.VideoCapture.read!(capture) # has a frame available
-    iex> :error = Evision.VideoCapture.read!(capture) # cannot read / no more available frames
+    iex> frame = Evision.VideoCapture.read(capture) # has a frame available
+    iex> :error = Evision.VideoCapture.read(capture) # cannot read / no more available frames
     # after
-    iex> frame = Evision.VideoCapture.read!(capture) # has a frame available
-    iex> false = Evision.VideoCapture.read!(capture) # cannot read / no more available frames
+    iex> frame = Evision.VideoCapture.read(capture) # has a frame available
+    iex> false = Evision.VideoCapture.read(capture) # cannot read / no more available frames
     ```
   
   - If the first return type is `bool`, and there are more than one value to return:
 
     ```elixir
     # before
-    iex> {val1, val2} = Evision.SomeModule.some_function!(arg1) # when succeeded
-    iex> :error = Evision.SomeModule.some_function!(capture) # when failed
+    iex> {val1, val2} = Evision.SomeModule.some_function(arg1) # when succeeded
+    iex> :error = Evision.SomeModule.some_function(capture) # when failed
     # after
-    iex> {val1, val2} = Evision.SomeModule.some_function!(arg1) # when succeeded
-    iex> false = Evision.SomeModule.some_function!(capture) # when failed
+    iex> {val1, val2} = Evision.SomeModule.some_function(arg1) # when succeeded
+    iex> false = Evision.SomeModule.some_function(capture) # when failed
     ```
 
 - `std::string` and `cv::String` will be wrapped in a binary term instead of a list.
@@ -51,9 +51,9 @@
 
   ```elixir
   # before
-  iex> {'detected text', _, _} = Evision.QRCodeDetector.detectAndDecode!(qr, img)
+  iex> {'detected text', _, _} = Evision.QRCodeDetector.detectAndDecode(qr, img)
   # after
-  iex> {"detected text", _, _} = Evision.QRCodeDetector.detectAndDecode!(qr, img)
+  iex> {"detected text", _, _} = Evision.QRCodeDetector.detectAndDecode(qr, img)
   ```
 
 - Structurised all `#reference`s that have their own module.
