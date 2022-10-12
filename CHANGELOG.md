@@ -218,7 +218,24 @@
   - `Evision.VideoWriter`
 
 ### Changed
-- Improved cross reference in inline docs. For example,
+- [Evision.Backend] raise a better error message for callbacks that haven't been implemented in `Evision.Backend`. Thanks to @josevalim
+
+  An example of the updated error message:
+  
+  ```elixir
+  iex> Evision.Backend.slice(1,2,3,4,5)
+  ** (RuntimeError) operation slice is not yet supported on Evision.Backend.
+  Please use another backend like Nx.BinaryBackend or Torchx.Backend.
+    To use Torchx.Backend, :torchx should be added to your app's deps.
+    Please see https://github.com/elixir-nx/nx/tree/main/torchx for more information on how to install and use it.
+  To convert the tensor to another backend, please use Evision.Nx.to_nx(tensor, Backend.ModuleName)
+    for example, Evision.Nx.to_nx(tensor, Nx.BinaryBackend) or Evision.Nx.to_nx(tensor, Torchx.Backend).
+  Pull request would be more than welcomed if you'd like to implmenent this function and make contributions.
+      (evision 0.1.10-dev) lib/evision/backend.ex:815: Evision.Backend.slice/5
+      iex:1: (file)
+  ```
+
+- [Docs] Improved cross reference in inline docs. For example,
 
   #### Before
   ```elixir
