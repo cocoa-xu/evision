@@ -383,7 +383,6 @@ def is_tuple_type(argtype):
         'Rect2i',
         'RotatedRect',
         'cv::RotatedRect',
-        'Range',
         'TermCriteria',
         'cv::TermCriteria',
         'CvTermCriteria',
@@ -746,6 +745,8 @@ def map_argtype_in_spec(classname: str, argtype: str, is_in: bool):
         return 'char()'
     elif argtype == 'void':
         return ':ok'
+    elif argtype == 'Range':
+        return '{integer(), integer()} | :all'
     elif is_in and argtype in ['Mat', 'UMat', 'cv::Mat', 'cv::UMat']:
         return 'Evision.Mat.maybe_mat_in()'
     elif argtype in evision_structrised_classes:
@@ -810,6 +811,8 @@ def map_argtype_to_guard_elixir(argname, argtype):
         return f'is_binary({argname})'
     elif argtype == 'char':
         return f'(-128 <= {argname} and {argname} <= 127)'
+    elif argtype == 'Range':
+        return f'(is_tuple({argname}) or {argname} == :all)'
     elif is_list_or_tuple(argtype):
         return f'(is_tuple({argname}) or is_list({argname}))'
     elif is_tuple_type(argtype):
@@ -848,6 +851,8 @@ def map_argtype_to_guard_erlang(argname, argtype):
         return f'is_list({argname})'
     elif argtype == 'char':
         return f'is_list({argname})'
+    elif argtype == 'Range':
+        return f'(is_tuple({argname}) or {argname} == all)'
     elif is_list_or_tuple(argtype):
         return f'(is_tuple({argname}) or is_list({argname}))'
     elif is_tuple_type(argtype):

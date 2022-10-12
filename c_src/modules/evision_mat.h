@@ -102,6 +102,65 @@ static ERL_NIF_TERM evision_cv_mat_shape(ErlNifEnv *env, int argc, const ERL_NIF
     else return enif_make_badarg(env);
 }
 
+// @evision c: mat_roi,evision_cv_mat_roi,1
+// @evision nif: def mat_roi(_opts \\ []), do: :erlang.nif_error("Mat::operator() not loaded")
+static ERL_NIF_TERM evision_cv_mat_roi(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
+    using namespace cv;
+    ERL_NIF_TERM error_term = 0;
+    std::map<std::string, ERL_NIF_TERM> erl_terms;
+    int nif_opts_index = 0;
+    evision::nif::parse_arg(env, nif_opts_index, argv, erl_terms);
+
+    int error_flag = false;
+    Mat img;
+    if (evision_to_safe(env, evision_get_kw(env, erl_terms, "mat"), img, ArgInfo("mat", 0)))
+    {
+        {
+            // Mat operator()( const Rect& roi ) const;
+            cv::Rect2i rect;
+            if (erl_terms.find("rect") != erl_terms.end() &&
+                evision_to_safe(env, evision_get_kw(env, erl_terms, "rect"), rect, ArgInfo("rect", 0))) {
+                Mat ret;
+                ERRWRAP2(ret = img(rect), env, error_flag, error_term);
+                if (!error_flag) {
+                    return evision_from(env, ret);
+                }
+            }
+        }
+
+        {
+            // Mat operator()( Range rowRange, Range colRange ) const;
+            cv::Range rowRange, colRange;
+            if (erl_terms.find("rowRange") != erl_terms.end() &&
+                erl_terms.find("colRange") != erl_terms.end() &&
+                evision_to_safe(env, evision_get_kw(env, erl_terms, "rowRange"), rowRange, ArgInfo("rowRange", 0)) &&
+                evision_to_safe(env, evision_get_kw(env, erl_terms, "colRange"), colRange, ArgInfo("colRange", 0))) {
+                Mat ret;
+                ERRWRAP2(ret = img(rowRange, colRange), env, error_flag, error_term);
+                if (!error_flag) {
+                    return evision_from(env, ret);
+                }
+            }
+        }
+
+        {
+            // Mat operator()(const std::vector<Range>& ranges) const;
+            std::vector<cv::Range> ranges;
+            if (erl_terms.find("ranges") != erl_terms.end() &&
+                evision_to_safe(env, evision_get_kw(env, erl_terms, "ranges"), ranges, ArgInfo("ranges", 0))) {
+                Mat ret;
+                ERRWRAP2(ret = img(ranges), env, error_flag, error_term);
+                if (!error_flag) {
+                    return evision_from(env, ret);
+                }
+            }
+        }
+    }
+
+    if (error_term != 0) return error_term;
+    else return enif_make_badarg(env);
+}
+
 // @evision c: mat_clone,evision_cv_mat_clone,1
 // @evision nif: def mat_clone(_opts \\ []), do: :erlang.nif_error("Mat::clone not loaded")
 static ERL_NIF_TERM evision_cv_mat_clone(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
@@ -116,7 +175,7 @@ static ERL_NIF_TERM evision_cv_mat_clone(ErlNifEnv *env, int argc, const ERL_NIF
 
         // const char *keywords[] = {"img", NULL};
         if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0))) {
-            // no need to do clone here as evision_from will copy the data
+            // no need to do clone here as `evision_to_safe` will copy the data to img.
             return evision_from(env, img);
         }
     }

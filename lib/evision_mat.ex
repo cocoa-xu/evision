@@ -138,6 +138,85 @@ defmodule Evision.Mat do
     ref
   end
 
+  @doc """
+  Extracts a rectangular submatrix.
+
+  The submatrix data is copied.
+
+  ##### Positional Arguments
+
+  - **mat**. `Evision.Mat`
+
+    The matrix.
+
+  - **rowRange**. `{int, int} | :all`.
+
+    Start and end row of the extracted submatrix. The upper boundary is not included.
+
+  - **colRange**. `{int, int} | :all`.
+
+    Start and end column of the extracted submatrix. The upper boundary is not included.
+
+  ##### Return
+
+  Extracted submatrix (data is copied).
+
+  """
+  @spec roi(maybe_mat_in(), {integer(), integer()} | :all, {integer(), integer()} | :all) :: maybe_mat_out()
+  def roi(mat, rowRange, colRange) when (is_tuple(rowRange) or rowRange == :all) and (is_tuple(colRange) or colRange == :all) do
+    mat = __from_struct__(mat)
+    :evision_nif.mat_roi(mat: mat, rowRange: rowRange, colRange: colRange)
+    |> Evision.Internal.Structurise.to_struct()
+  end
+
+  @doc """
+  Extracts a rectangular submatrix.
+
+  #### Variant 1
+  ##### Positional Arguments
+
+  - **mat**. `Evision.Mat`
+
+    The matrix.
+
+  - **rect**. `{int, int, int, int}`
+
+    The rect that specifies `{x, y, width, height}`.
+
+  ##### Return
+
+  Extracted submatrix specified as a rectangle. (data is copied)
+
+  #### Variant 2
+  ##### Positional Arguments
+
+  - **mat**. `Evision.Mat`
+
+    The matrix.
+
+  - **ranges**. `[{int, int} | :all]`
+
+    Array of selected ranges along each array dimension.
+
+  ##### Return
+
+  Extracted submatrix. (data is copied)
+
+  """
+  @spec roi(maybe_mat_in(), {integer(), integer(), integer(), integer()}) :: maybe_mat_out()
+  def roi(mat, rect={_, _, _, _}) when is_tuple(rect) do
+    mat = __from_struct__(mat)
+    :evision_nif.mat_roi(mat: mat, rect: rect)
+    |> Evision.Internal.Structurise.to_struct()
+  end
+
+  @spec roi(maybe_mat_in(), [{integer(), integer()} | :all]) :: maybe_mat_out()
+  def roi(mat, ranges) when is_list(ranges) do
+    mat = __from_struct__(mat)
+    :evision_nif.mat_roi(mat: mat, ranges: ranges)
+    |> Evision.Internal.Structurise.to_struct()
+  end
+
   if Code.ensure_loaded?(Kino.Render) do
     defimpl Kino.Render do
       defp is_2d_image(%Evision.Mat{dims: 2}), do: true
