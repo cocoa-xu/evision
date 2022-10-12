@@ -84,7 +84,7 @@ defmodule Evision.Test do
     encoded = Evision.imencode(".png", mat)
     assert is_binary(encoded)
 
-    %Mat{shape: ^shape, type: ^type} = ret = Evision.imdecode(encoded, Evision.cv_IMREAD_ANYCOLOR())
+    %Mat{shape: ^shape, type: ^type} = Evision.imdecode(encoded, Evision.cv_IMREAD_ANYCOLOR())
   end
 
   test "Evision.resize" do
@@ -92,7 +92,7 @@ defmodule Evision.Test do
 
     resize_height = 4
     resize_width = 6
-    %Mat{shape: {^resize_width, ^resize_height, 3}} = resized_mat = Evision.resize(mat, [resize_height, resize_width])
+    %Mat{shape: {^resize_width, ^resize_height, 3}} = Evision.resize(mat, [resize_height, resize_width])
   end
 
   test "Evision.imwrite" do
@@ -236,5 +236,54 @@ defmodule Evision.Test do
   test "Evision.boxPoints/1" do
     # `RotatedRect` has to be a tuple, {centre, size, angle}
     Evision.boxPoints({{224.0, 262.5}, {343.0, 344.0}, 90.0})
+  end
+
+  test "Evision.Mat.roi/2" do
+    %Evision.Mat{} = img = Evision.imread("test/qr_detector_test.png")
+
+    # Mat operator()( const Rect& roi ) const;
+    %Evision.Mat{
+      channels: 3,
+      dims: 2,
+      type: {:u, 8},
+      raw_type: 16,
+      shape: {200, 100, 3},
+    } = Evision.Mat.roi(img, {10, 10, 100, 200})
+
+    # Mat operator()(const std::vector<Range>& ranges) const;
+    %Evision.Mat{
+      channels: 3,
+      dims: 2,
+      type: {:u, 8},
+      raw_type: 16,
+      shape: {90, 90, 3},
+    } = Evision.Mat.roi(img, [{10, 100}, {10, 100}])
+    %Evision.Mat{
+      channels: 3,
+      dims: 2,
+      type: {:u, 8},
+      raw_type: 16,
+      shape: {90, 300, 3},
+    } = Evision.Mat.roi(img, [{10, 100}, :all])
+  end
+
+  test "Evision.Mat.roi/3" do
+    %Evision.Mat{} = img = Evision.imread("test/qr_detector_test.png")
+
+    # Mat operator()( Range rowRange, Range colRange ) const;
+    %Evision.Mat{
+      channels: 3,
+      dims: 2,
+      type: {:u, 8},
+      raw_type: 16,
+      shape: {90, 180, 3},
+    } = Evision.Mat.roi(img, {10, 100}, {20, 200})
+    %Evision.Mat{
+      channels: 3,
+      dims: 2,
+      type: {:u, 8},
+      raw_type: 16,
+      shape: {300, 180, 3},
+    } = Evision.Mat.roi(img, :all, {20, 200})
   end
 end
