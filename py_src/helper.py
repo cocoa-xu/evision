@@ -809,7 +809,7 @@ def map_argtype_to_guard_elixir(argname, argtype):
     elif argtype == 'String' or argtype == 'c_string' or argtype == 'string':
         return f'is_binary({argname})'
     elif argtype == 'char':
-        return f'(0 <= {argname} and {argname} <= 0x10FFFF)'
+        return f'(-128 <= {argname} and {argname} <= 127)'
     elif is_list_or_tuple(argtype):
         return f'(is_tuple({argname}) or is_list({argname}))'
     elif is_tuple_type(argtype):
