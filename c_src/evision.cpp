@@ -222,25 +222,6 @@ ERL_NIF_TERM evision_from_as_binary(ErlNifEnv *env, const std::vector<uchar>& sr
 
 #include "modules/evision_video_api.h"
 
-// static ERL_NIF_TERM evisionRaiseCVException(ErlNifEnv *env, const cv::Exception &e)
-// {
-//     return enif_make_tuple2(env,
-//         evision::nif::atom(env, "error"),
-//         enif_make_tuple2(env,
-//             evision::nif::atom(env, "reason"),
-//             enif_make_tuple7(env,
-//                 enif_make_tuple2(env, enif_make_atom(env, "file"), evision::nif::make(env, e.file.c_str())),
-//                 enif_make_tuple2(env, enif_make_atom(env, "func"), evision::nif::make(env, e.func.c_str())),
-//                 enif_make_tuple2(env, enif_make_atom(env, "line"), evision::nif::make(env, e.line)),
-//                 enif_make_tuple2(env, enif_make_atom(env, "code"), evision::nif::make(env, e.code)),
-//                 enif_make_tuple2(env, enif_make_atom(env, "msg"), evision::nif::make(env, e.msg.c_str())),
-//                 enif_make_tuple2(env, enif_make_atom(env, "err"), evision::nif::make(env, e.err.c_str())),
-//                 enif_make_tuple2(env, enif_make_atom(env, "what"), evision::nif::make(env, e.what()))
-//             )
-//         )
-//     );
-// }
-
 #define ERRWRAP2(expr, env, error_flag, error_term)         \
 try                                                         \
 {                                                           \
@@ -280,43 +261,6 @@ inline void pyPrepareArgumentConversionErrorsStorage(std::size_t size)
     std::vector<std::string>& conversionErrors = conversionErrorsTLS.getRef();
     conversionErrors.clear();
     conversionErrors.reserve(size);
-}
-
-static ERL_NIF_TERM evisionRaiseCVOverloadException(ErlNifEnv *env, const std::string& functionName)
-{
-    const std::vector<std::string>& conversionErrors = conversionErrorsTLS.getRef();
-    const std::size_t conversionErrorsCount = conversionErrors.size();
-    if (conversionErrorsCount > 0)
-    {
-        // In modern std libraries small string optimization is used = no dynamic memory allocations,
-        // but it can be applied only for string with length < 18 symbols (in GCC)
-        const std::string bullet = "\n - ";
-
-        // Estimate required buffer size - save dynamic memory allocations = faster
-        std::size_t requiredBufferSize = bullet.size() * conversionErrorsCount;
-        for (std::size_t i = 0; i < conversionErrorsCount; ++i)
-        {
-            requiredBufferSize += conversionErrors[i].size();
-        }
-
-        // Only string concatenation is required so std::string is way faster than
-        // std::ostringstream
-        std::string errorMessage("Overload resolution failed:");
-        errorMessage.reserve(errorMessage.size() + requiredBufferSize);
-        for (std::size_t i = 0; i < conversionErrorsCount; ++i)
-        {
-            errorMessage += bullet;
-            errorMessage += conversionErrors[i];
-        }
-        cv::Exception exception(CV_StsBadArg, errorMessage, functionName, "", -1);
-        return evisionRaiseCVException(env, exception);
-    }
-    else
-    {
-        cv::Exception exception(CV_StsInternal, "Overload resolution failed, but no errors reported",
-                                functionName, "", -1);
-        return evisionRaiseCVException(env, exception);
-    }
 }
 
 struct SafeSeqItem
