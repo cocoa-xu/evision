@@ -141,7 +141,7 @@ classes =
 ### Load DNN model
 
 ```elixir
-{:ok, model} =
+model =
   Cv.DNN.readNet("bvlc_googlenet.caffemodel",
     config: "bvlc_googlenet.prototxt",
     framework: ""
@@ -163,7 +163,7 @@ classes =
 # "3: OpenCV implementation, "
 # "4: VKCOM, "
 # "5: CUDA
-{:ok, model} = Cv.DNN.Net.setPreferableBackend(model, 0)
+model = Cv.DNN.Net.setPreferableBackend(model, 0)
 
 # "0: CPU target (by default), "
 # "1: OpenCL, "
@@ -172,7 +172,7 @@ classes =
 # "4: Vulkan, "
 # "6: CUDA, "
 # "7: CUDA fp16 (half-float preprocess)
-{:ok, model} = Cv.DNN.Net.setPreferableTarget(model, 0)
+model = Cv.DNN.Net.setPreferableTarget(model, 0)
 ```
 
 <!-- livebook:{"output":true} -->
@@ -184,9 +184,9 @@ classes =
 ### Read the test image and set as input
 
 ```elixir
-mat = Cv.imread!("space_shuttle.jpg")
+mat = Cv.imread("space_shuttle.jpg")
 
-{:ok, blob} =
+blob =
   Cv.DNN.blobFromImage(mat,
     scalefactor: 1,
     swapRB: true,
@@ -194,7 +194,7 @@ mat = Cv.imread!("space_shuttle.jpg")
     size: [224, 224]
   )
 
-{:ok, model} = Cv.DNN.Net.setInput(model, blob, name: "", scalefactor: 1.0, mean: [0, 0, 0])
+model = Cv.DNN.Net.setInput(model, blob, name: "", scalefactor: 1.0, mean: [0, 0, 0])
 ```
 
 <!-- livebook:{"output":true} -->
@@ -207,7 +207,7 @@ mat = Cv.imread!("space_shuttle.jpg")
 
 ```elixir
 start_time = :os.system_time(:millisecond)
-{:ok, pred} = Cv.DNN.Net.forward(model, outputName: "")
+pred = Cv.DNN.Net.forward(model, outputName: "")
 end_time = :os.system_time(:millisecond)
 "Inference time=>#{end_time - start_time} ms"
 ```

@@ -65,10 +65,10 @@ alias Evision, as: Cv
 ```elixir
 # in real-life use cases, the input source might be a camera
 # instead of downloading a file and reading it
-{:ok, img} = Cv.imread("cat.jpg", flags: Cv.cv_IMREAD_ANYCOLOR())
-{:ok, resized_img} = Cv.resize(img, [128, 128])
+img = Cv.imread("cat.jpg", flags: Cv.cv_IMREAD_ANYCOLOR())
+resized_img = Cv.resize(img, [128, 128])
 
-Cv.imencode!(".png", resized_img)
+Cv.imencode(".png", resized_img)
 |> Kino.Image.new(:png)
 ```
 
@@ -332,8 +332,8 @@ params = Demo.run(backend: Torchx.Backend, epochs: 50)
 ## Test
 
 ```elixir
-resized_img = Cv.resize!(img, [128, 128])
-Cv.imencode!(".png", resized_img)
+resized_img = Cv.resize(img, [128, 128])
+Cv.imencode(".png", resized_img)
 |> Kino.Image.new(:png)
 ```
 
@@ -342,7 +342,7 @@ classes = [:airplane, :automobile, :bird, :cat, :deer, :dog, :frog, :horse, :shi
 
 input_tensor =
   img
-  |> Cv.resize!([32, 32])
+  |> Cv.resize([32, 32])
   |> Cv.Nx.to_nx(Nx.BinaryBackend)
   |> Nx.backend_transfer(Torchx.Backend)
   |> Nx.flatten()
