@@ -19,30 +19,30 @@ defmodule Evision.DNN.Test do
       confidence = "#{Float.round(confidence, 2)}"
       label = Enum.at(labels, class_id)
       text = "#{label}: #{confidence}"
-      {:ok, mat} = Cv.rectangle(mat, [l, t], [r, b], [255, 0, 0])
+      mat = Cv.rectangle(mat, [l, t], [r, b], [255, 0, 0])
 
-      {:ok, {{label_weight, label_height}, baseline}} =
+      {{label_weight, label_height}, baseline} =
         Cv.getTextSize(text, Cv.cv_FONT_HERSHEY_SIMPLEX(), 0.5, 1)
 
       label_weight = trunc(label_weight)
       label_height = trunc(label_height)
       top = max(t, label_height)
 
-      {:ok, mat} =
+      mat =
         Cv.rectangle(mat, [l, top - label_height], [l + label_weight, top + baseline], [
           255,
           255,
           255
         ])
 
-      {:ok, mat} = Cv.putText(mat, text, [l, top], Cv.cv_FONT_HERSHEY_SIMPLEX(), 0.5, [0, 0, 255])
+      mat = Cv.putText(mat, text, [l, top], Cv.cv_FONT_HERSHEY_SIMPLEX(), 0.5, [0, 0, 255])
 
       _visualise_pred(mat, labels, outs)
     end
 
     def postprocess(mat, detections, net, confidence_threshold) do
-      {:ok, out_layers} = Cv.DNN.Net.getUnconnectedOutLayers(net)
-      {:ok, out_layer} = Cv.DNN.Net.getLayer(net, Enum.at(out_layers, 0))
+      out_layers = Cv.DNN.Net.getUnconnectedOutLayers(net)
+      out_layer = Cv.DNN.Net.getLayer(net, Enum.at(out_layers, 0))
       out_layer_type = Cv.DNN.Layer.get_type(out_layer) |> IO.iodata_to_binary()
       _postprocess(mat, detections, net, confidence_threshold, out_layer_type, [])
     end
@@ -51,15 +51,14 @@ defmodule Evision.DNN.Test do
       do: {:ok, Enum.reverse(acc)}
 
     defp _postprocess(
-           mat,
+           %Evision.Mat{shape: {h, w, _}}=mat,
            [outs | detections],
            net,
            confidence_threshold,
            <<"DetectionOutput">>,
            acc
          ) do
-      {:ok, data} = Cv.Mat.to_binary(outs)
-      {:ok, {h, w, _}} = Cv.Mat.shape(mat)
+      data = Cv.Mat.to_binary(outs)
       {:ok, translated_outs} = _translate_outs(confidence_threshold, data, h, w, [])
 
       _postprocess(mat, detections, net, confidence_threshold, "DetectionOutput", [
@@ -108,26 +107,26 @@ defmodule Evision.DNN.Test do
     end
 
     def predict(image_file, model, out_names, opts \\ []) do
-      {:ok, mat} = Cv.imread(image_file)
-      {:ok, blob} = Cv.DNN.blobFromImage(mat, opts)
+      mat = Cv.imread(image_file)
+      blob = Cv.DNN.blobFromImage(mat, opts)
 
-      {:ok, model} = Cv.DNN.Net.setInput(model, blob, name: "", scalefactor: 1.0, mean: [0, 0, 0])
+      model = Cv.DNN.Net.setInput(model, blob, name: "", scalefactor: 1.0, mean: [0, 0, 0])
 
       start_time = :os.system_time(:millisecond)
-      {:ok, detections} = Cv.DNN.Net.forward(model, outBlobNames: out_names)
+      detections = Cv.DNN.Net.forward(model, outBlobNames: out_names)
       end_time = :os.system_time(:millisecond)
       IO.puts("Inference time=>#{end_time - start_time} ms")
       {:ok, mat, detections}
     end
 
     def get_model(params, config, framework \\ "") do
-      {:ok, net} =
+      net =
         Cv.DNN.readNet(params,
           config: config,
           framework: framework
         )
 
-      {:ok, out_names} = Cv.DNN.Net.getUnconnectedOutLayersNames(net)
+      out_names = Cv.DNN.Net.getUnconnectedOutLayersNames(net)
       {:ok, net, out_names}
     end
   end
