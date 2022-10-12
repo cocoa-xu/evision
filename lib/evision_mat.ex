@@ -83,14 +83,6 @@ defmodule Evision.Mat do
     shape: tuple(),
     ref: reference()
   }
-  @type t_nx :: %__MODULE__{
-    channels: integer(),
-    dims: integer(),
-    type: mat_type_tuple_form(),
-    raw_type: integer(),
-    shape: tuple(),
-    ref: reference()
-  }
   @enforce_keys [:channels, :dims, :type, :raw_type, :shape, :ref]
   defstruct [:channels, :dims, :type, :raw_type, :shape, :ref]
 
@@ -126,10 +118,6 @@ defmodule Evision.Mat do
       shape: shape,
       ref: ref
     }
-  end
-
-  def __to_struct__({:ok, ret=%{:class => :Mat}}) do
-    {:ok, __to_struct__(ret)}
   end
 
   def __to_struct__(ret) do
@@ -644,7 +632,7 @@ defmodule Evision.Mat do
   def shape(mat)
 
   def shape(%T{shape: shape}) do
-    {:ok, shape}
+    shape
   end
 
   def shape(mat) when is_struct(mat) do
@@ -1187,18 +1175,19 @@ defmodule Evision.Mat do
 
   def as_shape(mat, as_shape) when is_list(as_shape) do
     mat = __from_struct__(mat)
-    with {:ok, old_shape} <- Evision.Mat.shape(mat) do
-      if Tuple.product(old_shape) == Enum.product(as_shape) do
-        :evision_nif.mat_as_shape(
-          img: mat,
-          as_shape: as_shape
-        )
-        |> Evision.Internal.Structurise.to_struct()
-      else
-        {:error, "Cannot treat mat with shape #{inspect(old_shape)} as the requested new shape #{inspect(as_shape)}: mismatching number of elements"}
-      end
-    else
-      error -> error
+    case Evision.Mat.shape(mat) do
+      {:error, msg} ->
+        {:error, msg}
+      old_shape ->
+        if Tuple.product(old_shape) == Enum.product(as_shape) do
+          :evision_nif.mat_as_shape(
+            img: mat,
+            as_shape: as_shape
+          )
+          |> Evision.Internal.Structurise.to_struct()
+        else
+          {:error, "Cannot treat mat with shape #{inspect(old_shape)} as the requested new shape #{inspect(as_shape)}: mismatching number of elements"}
+        end
     end
   end
 
