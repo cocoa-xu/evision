@@ -172,6 +172,20 @@
   }
   ```
 
+- [Evision.Mat] Added `Evision.Mat.quicklook/1`.
+
+  This function will check the value of `:display_inline_image_iterm2` in the application config. If is `true`,
+  then it will detect if current session is running in `iTerm2` (by checking the environment variable `LC_TERMINAL`).
+
+  If both are `true`, we next check if the image is a 2D image, also if its size is within the limits. The maximum size can be set in the application config, for example,
+
+  ```elixir
+  config :evision, display_inline_image_iterm2: true
+  config :evision, display_inline_image_max_size: {8192, 8192}
+  ```
+
+  If it passes all the checks, then it will be displayed as an inline image in iTerm2.
+
 ### Appendix
 List of modules that are now wrapped in structs.
 

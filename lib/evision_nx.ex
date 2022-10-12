@@ -94,7 +94,7 @@ defmodule Evision.Nx do
 
   Otherwise, it's not possible to convert the tensor to a 2D image.
   """
-  @spec to_mat_2d(Nx.t()) :: {:ok, Evision.Mat.t()} | {:error, String.t()}
+  @spec to_mat_2d(Nx.t()) :: Evision.Mat.t() | {:error, String.t()}
   def to_mat_2d(t) do
     case Nx.shape(t) do
       {height, width} ->

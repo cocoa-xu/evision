@@ -217,6 +217,60 @@ defmodule Evision.Mat do
     |> Evision.Internal.Structurise.to_struct()
   end
 
+  @doc """
+  Display inline image in terminal for iTerm2 users.
+
+  This function will check the value of `:display_inline_image_iterm2` in the application config.
+
+  If is `true`, then it will detect if current session is running in `iTerm2` (by checking the environment variable `LC_TERMINAL`).
+
+  If both are `true`, we next check if the image is a 2D image, also if its size is within the limits.
+
+  The maximum size can be set in the application config, for example,
+
+  ```elixir
+  config :evision, display_inline_image_iterm2: true
+  config :evision, display_inline_image_max_size: {8192, 8192}
+  ```
+
+  If it passes all the checks, then it will be displayed as an inline image in iTerm2.
+  """
+  @spec quicklook(Nx.Tensor.t()) :: nil
+  def quicklook(%Nx.Tensor{}=tensor) do
+    case Evision.Nx.to_mat_2d(tensor) do
+      %Evision.Mat{}=mat ->
+        quicklook(mat)
+    end
+    nil
+  end
+
+  @spec quicklook(Evision.Mat.t()) :: nil
+  def quicklook(%Evision.Mat{dims: dims, channels: c, shape: shape} = mat) do
+    if Application.get_env(:evision, :display_inline_image_max_size) == :error do
+      Application.put_env(:evision, :display_inline_image_max_size, {8192, 8192}, persistent: true)
+    end
+    is_2d_image = dims == 2 or (c == 1 and tuple_size(shape) == 3 and elem(shape, 2) == 1)
+    with {:display_image_if_in_iterm2, {:ok, true}} <-
+           {:display_image_if_in_iterm2, Application.fetch_env(:evision, :display_inline_image_iterm2)},
+         {:is_2d, true} <- {:is_2d, is_2d_image},
+         {:is_iterm2, true} <- {:is_iterm2, System.get_env("LC_TERMINAL") == "iTerm2"},
+         {:get_maximum_size, {:ok, {h, w}}} <- {:get_maximum_size, Application.get_env(:evision, :display_inline_image_max_size)},
+         {:within_maximum_size, true} <- {:within_maximum_size, ((0 < h and h < elem(shape, 0)) or h == :infinity) and ((0 < w and w < elem(shape, 1)) or w == :infinity)}  do
+      {osc, st} =
+        if String.starts_with?(System.get_env("TERM"), "screen") do
+          {<< 27 >> <> "Ptmux;" <> << 27, 27 >>, "\a" <> << 27 >> <> "\\\r\n"}
+        else
+          {<< 27 >>, <<7>> <> "\r\n"}
+        end
+      binary = Evision.imencode(".png", mat)
+      b64 = Base.encode64(binary, padding: true)
+      bin_size = byte_size(binary)
+      head = osc <> "]1337;File=size=#{bin_size};inline=1:"
+      :evision_nif.internal_mat_inspect(head, b64, st)
+    end
+    nil
+  end
+
   if Code.ensure_loaded?(Kino.Render) do
     defimpl Kino.Render do
       defp is_2d_image(%Evision.Mat{dims: 2}), do: true

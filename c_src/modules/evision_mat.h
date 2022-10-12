@@ -3,6 +3,10 @@
 
 #include <erl_nif.h>
 #include <math.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
 #include "../nif_utils.hpp"
 #include "evision_mat_utils.hpp"
 #include "evision_backend/backend.h"
@@ -96,6 +100,41 @@ static ERL_NIF_TERM evision_cv_mat_shape(ErlNifEnv *env, int argc, const ERL_NIF
             ERL_NIF_TERM ret = _evision_get_mat_shape(env, img);
             return ret;
         }
+    }
+
+    if (error_term != 0) return error_term;
+    else return enif_make_badarg(env);
+}
+
+static void evision_cv_internal_write_binary(int fd, ErlNifBinary& bin) {
+    size_t written = 0;
+    char * ptr = (char *)bin.data;
+    const size_t chunk_size = 1024;
+    while (written != bin.size) {
+        size_t to_write = bin.size - written;
+        if (to_write > chunk_size) to_write = chunk_size;
+        ssize_t bytes_written = write(STDOUT_FILENO, ptr, to_write);
+        if (bytes_written <= 0) {
+            continue;
+        }
+        ptr += bytes_written;
+        written += bytes_written;
+    }
+}
+
+// @evision c: internal_mat_inspect,evision_cv_internal_mat_inspect,3
+// @evision nif: def internal_mat_inspect(_head, _b64, _st), do: :erlang.nif_error("internal_mat_inspect not loaded")
+static ERL_NIF_TERM evision_cv_internal_mat_inspect(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
+    using namespace cv;
+    ERL_NIF_TERM error_term = 0;
+
+    ErlNifBinary head, b64, st;
+    if (enif_inspect_binary(env, argv[0], &head) && enif_inspect_binary(env, argv[1], &b64) && enif_inspect_binary(env, argv[2], &st))
+    {
+        evision_cv_internal_write_binary(STDOUT_FILENO, head);
+        evision_cv_internal_write_binary(STDOUT_FILENO, b64);
+        evision_cv_internal_write_binary(STDOUT_FILENO, st);
+        return evision::nif::ok(env);
     }
 
     if (error_term != 0) return error_term;
