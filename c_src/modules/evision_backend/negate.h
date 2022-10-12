@@ -26,23 +26,23 @@ static ERL_NIF_TERM evision_cv_mat_negate(ErlNifEnv *env, int argc, const ERL_NI
                 for (size_t i = 0; i < count; ++i) {
                     ptr[i] = 0 - ptr[i];
                 }
-                return evision::nif::ok(env, evision_from(env, img));
+                return evision_from(env, img);
             } else if (depth == CV_16U) {
                 auto ptr = img.ptr<uint16_t>();
                 size_t count = img.total();
                 for (size_t i = 0; i < count; ++i) {
                     ptr[i] = 0 - ptr[i];
                 }
-                return evision::nif::ok(env, evision_from(env, img));
+                return evision_from(env, img);
             } else {
                 Mat out = Mat(-img);
-                return evision::nif::ok(env, evision_from(env, out));
+                return evision_from(env, out);
             }
         }
     }
 
     if (error_term != 0) return error_term;
-    else return evision::nif::error(env, "overload resolution failed");
+    else return enif_make_badarg(env);
 }
 
 #endif // EVISION_BACKEND_NEGATE_H

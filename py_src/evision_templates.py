@@ -232,7 +232,7 @@ code_ret_as_binary = """if (retval) {
                 bool success = false;
                 ERL_NIF_TERM binary_erl_term = %s;
                 if (success) {
-                    return evision::nif::ok(env, binary_erl_term);
+                    return binary_erl_term;
                 } else {
                     return evision::nif::error(env, \"out of memory\");
                 }
@@ -242,14 +242,14 @@ code_ret_as_binary = """if (retval) {
 
 code_ret_1_tuple_except_bool = """if (retval) {
                 // code_ret_1_tuple_except_bool
-                return evision::nif::ok(env, %s);
+                return %s;
             } else {
                 return evision::nif::atom(env, \"false\");
             }"""
 
 code_ret_2_to_10_tuple_except_bool = """if (retval) {
                 // code_ret_2_to_10_tuple_except_bool
-                return evision::nif::ok(env, enif_make_tuple%d(env, %s));
+                return enif_make_tuple%d(env, %s);
             } else {
                 return evision::nif::atom(env, \"false\");
             }"""
@@ -257,23 +257,20 @@ code_ret_2_to_10_tuple_except_bool = """if (retval) {
 code_ret_ge_10_tuple_except_bool = """ERL_NIF_TERM arr[] = {%s};
             // code_ret_ge_10_tuple_except_bool
             if (retval) {
-                return evision::nif::ok(env, enif_make_tuple_from_array(env, arr, %d));
+                return enif_make_tuple_from_array(env, arr, %d);
             } else {
                 return evision::nif::atom(env, \"false\");
             }"""
 
-code_ret_lt_10_tuple = "return evision::nif::ok(env, enif_make_tuple%d(env, %s))"
+code_ret_lt_10_tuple = "return enif_make_tuple%d(env, %s)"
 
 code_ret_ge_10_tuple = """ERL_NIF_TERM arr[] = {%s};
-            return evision::nif::ok(env, enif_make_tuple_from_array(env, arr, %d))"""
+            return enif_make_tuple_from_array(env, arr, %d)"""
 
 code_ret_constructor = """ERL_NIF_TERM ret = enif_make_resource(env, self);
             enif_release_resource(self);
             bool success;
-            ret = evision_from_as_map<%s>(env, self->val, ret, "%s", success);
-
-            if (success) return evision::nif::ok(env, ret);
-            else return ret;"""
+            return evision_from_as_map<%s>(env, self->val, ret, "%s", success);"""
 
 elixir_property_getter = Template("""  @spec get_${property_name}(${self_spec}) :: ${prop_spec}
   def get_${property_name}(self) do
@@ -484,12 +481,7 @@ static ERL_NIF_TERM evision_${name}_set_${member}(ErlNifEnv *env, int argc, cons
 
     if (evision_to_safe(env, argv[1], self_ptr->${member}, ArgInfo("${member}", false))) {
         bool success;
-        ERL_NIF_TERM ret = evision_from_as_map<${storage_name}>(env, *self_ptr, self, "${elixir_module_name}", success);
-        if (success) {
-            return evision::nif::ok(env, ret);
-        } else {
-            return ret;
-        }
+        return evision_from_as_map<${storage_name}>(env, *self_ptr, self, "${elixir_module_name}", success);
     }
 
     return failmsgp(env, "cannot assign new value, mismatched type?");
@@ -513,12 +505,7 @@ static ERL_NIF_TERM evision_${name}_set_${member}(ErlNifEnv *env, int argc, cons
 
     if (evision_to_safe(env, evision_get_kw(env, erl_terms, "${member}"), _self_${access}${member}, ArgInfo("${member}", false))) {
         bool success;
-        ERL_NIF_TERM ret = evision_from_as_map<${storage_name}>(env, _self_, self, "${elixir_module_name}", success);
-        if (success) {
-            return evision::nif::ok(env, ret);
-        } else {
-            return ret;
-        }
+        return evision_from_as_map<${storage_name}>(env, _self_, self, "${elixir_module_name}", success);
     }
 
     return failmsgp(env, "cannot assign new value, mismatched type?");
@@ -541,12 +528,7 @@ static ERL_NIF_TERM evision_${name}_set_${member}(ErlNifEnv *env, int argc, cons
 
     if (evision_to_safe(env, argv[1], _self_algo_${access}${member}, ArgInfo("${member}", false))) {
         bool success;
-        ERL_NIF_TERM ret = evision_from_as_map<${cname}>(env, *_self_algo_, self, "${elixir_module_name}", success);
-        if (success) {
-            return evision::nif::ok(env, ret);
-        } else {
-            return ret;
-        }
+        return evision_from_as_map<${cname}>(env, *_self_algo_, self, "${elixir_module_name}", success);
     }
 
     return failmsgp(env, "cannot assign new value, mismatched type?");

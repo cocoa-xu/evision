@@ -741,6 +741,27 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const int& value)
 }
 
 template<>
+bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, unsigned int& value, const ArgInfo& info)
+{
+    if (evision::nif::check_nil(env, obj)) {
+        return true;
+    }
+
+    uint32_t u32;
+
+    if (enif_get_uint(env, obj, &u32))
+    {
+        value = u32;
+    }
+    else
+    {
+        failmsg(env, "Argument '%s' is required to be an integer", info.name);
+        return false;
+    }
+    return true;
+}
+
+template<>
 bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, int& value, const ArgInfo& info)
 {
     if (evision::nif::check_nil(env, obj)) {
@@ -950,6 +971,20 @@ template<>
 ERL_NIF_TERM evision_from(ErlNifEnv *env, const int64& value)
 {
     return enif_make_int64(env, value);
+}
+
+template<>
+ERL_NIF_TERM evision_from(ErlNifEnv *env, const std::vector<char>& value)
+{
+    ERL_NIF_TERM erl_string;
+    unsigned char * ptr;
+    size_t len = value.size();
+    if ((ptr = enif_make_new_binary(env, len, &erl_string)) != nullptr) {
+        strncpy((char *)ptr, value.data(), len);
+        return erl_string;
+    } else {
+        return evision::nif::atom(env, "out of memory");
+    }
 }
 
 template<>
@@ -2093,16 +2128,15 @@ static int convert_to_char(ErlNifEnv *env, ERL_NIF_TERM o, char **dst, const Arg
 
 static int convert_to_char(ErlNifEnv *env, ERL_NIF_TERM o, char *dst, const ArgInfo& info)
 {
-    std::string str;
-    if (evision::nif::get(env, o, str))
+    int i32;
+    if (evision::nif::get(env, o, &i32))
     {
-        *dst = str[0];
+        *dst = (char)i32;
         return 1;
     }
     (*dst) = 0;
-    return failmsg(env, "Expected single character string for argument '%s'", info.name);
+    return failmsg(env, "Expected a char [-128, 127] '%s'", info.name);
 }
-
 
 #include "evision_generated_enums.h"
 #define CV_ERL_TYPE(WNAME, NAME, STORAGE, SNAME, _1, _2, MODULE_NAME) CV_ERL_TYPE_DECLARE_DYNAMIC(WNAME, NAME, STORAGE, SNAME, MODULE_NAME)

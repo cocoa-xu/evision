@@ -2,16 +2,14 @@
 # -*- coding: utf-8 -*-
 
 from io import StringIO
-from pydoc import describe
 from typing import Tuple
 from helper import handle_ptr, forbidden_arg_types, ignored_arg_types, map_argtype_to_guard, map_argname, map_argtype_to_type, handle_inline_math_escaping, map_argtype_in_docs, map_argtype_in_spec, is_struct
 from arg_info import ArgInfo
 import re
-
+inline_docs_code_type_re = re.compile(r'@code{.(.*)}')
 
 class FuncVariant(object):
     def __init__(self, classname: str, name: str, decl: list, isconstructor: bool, isphantom: bool = False):
-        self.inline_docs_code_type_re = re.compile(r'@code{.(.*)}')
         self.classname = classname
         self.from_base = False
         self.base_classname = None
@@ -207,6 +205,7 @@ class FuncVariant(object):
         return is_multiline, line_index
 
     def inline_docs_elixir(self) -> str:
+        global inline_docs_code_type_re
         parameter_info = {}
         doc_string = "\n".join('  {}'.format(line.strip()) for line in self.docstring.split("\n")).strip()
         if len(doc_string) > 0:
@@ -290,7 +289,7 @@ class FuncVariant(object):
                     elif strip_line.startswith("@code"):
                         last_in_list = False
                         last_is_code = True
-                        code_type_match = self.inline_docs_code_type_re.match(strip_line)
+                        code_type_match = inline_docs_code_type_re.match(strip_line)
                         inline_doc1 += "  ```"
                         if code_type_match:
                             inline_doc1 += code_type_match.group(1)
@@ -472,7 +471,7 @@ class FuncVariant(object):
             for argtype in in_args:
                 in_args_spec.append(map_argtype_in_spec(self.classname, argtype, is_in=True))
         if self.has_opts and include_opts:
-            in_args_spec.append('Keyword.t()')
+            in_args_spec.append('[{atom(), term()},...] | nil')
         if is_instance_method:
             self.spec_self = ''
             if len(self.classname) > 0:
@@ -530,7 +529,10 @@ class FuncVariant(object):
                 ok_error = False
 
         if ok_error:
-            out_spec = f'{{:ok, {out_spec}}} | {{:error, String.t()}}'
+            if len(out_args_spec) == 1:
+                out_spec = f'{out_spec} | {{:error, String.t()}}'
+            else:
+                out_spec = f'{{{out_spec}}} | {{:error, String.t()}}'
         spec.write(out_spec)
 
         spec = spec.getvalue()
@@ -552,7 +554,7 @@ class FuncVariant(object):
         opts_args = ''
         if self.has_opts:
             if in_func_body:
-                opts_args = ' ++ Evision.Internal.Structurise.from_struct(opts)'
+                opts_args = ' ++ Evision.Internal.Structurise.from_struct(opts || [])'
             else:
                 opts_args = 'opts' if self.min_args == 0 else ', opts'
         return opts_args

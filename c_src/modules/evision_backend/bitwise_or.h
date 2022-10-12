@@ -24,15 +24,13 @@ static ERL_NIF_TERM evision_cv_mat_bitwise_or(ErlNifEnv *env, int argc, const ER
             int error_flag = false;
             ERRWRAP2(cv::bitwise_or(l, r, ret), env, error_flag, error_term);
             if (!error_flag) {
-                return evision::nif::ok(env, evision_from(env, ret));
-            } else {
-                return error_term;
+                return evision_from(env, ret);
             }
         }
     }
 
     if (error_term != 0) return error_term;
-    else return evision::nif::error(env, "overload resolution failed");
+    else return enif_make_badarg(env);
 }
 
 #endif // EVISION_BACKEND_BITWISE_OR_H

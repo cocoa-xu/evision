@@ -3,8 +3,6 @@ defmodule Evision.HighGui do
   High-level Graphical User Interface
   """
 
-  import Evision.Errorize
-
   @doc """
   Show a mat in a named window
 
@@ -36,8 +34,6 @@ defmodule Evision.HighGui do
     :evision_nif.imshow(winname: winname, mat: mat)
   end
 
-  deferror(imshow(winname, mat))
-
   @doc """
   Wait for user keyboard event for a `delay` amount of time (ms)
 
@@ -53,8 +49,6 @@ defmodule Evision.HighGui do
   def waitKey(delay) when is_integer(delay) do
     :evision_nif.waitKey(delay: delay)
   end
-
-  deferror(waitKey(delay))
 
   @doc """
   Close a named window
@@ -72,8 +66,6 @@ defmodule Evision.HighGui do
     :evision_nif.destroyWindow(winname: winname)
   end
 
-  deferror(destroyWindow(winname))
-
   @doc """
   Close all windows
   """
@@ -82,6 +74,4 @@ defmodule Evision.HighGui do
   def destroyAllWindows do
     :evision_nif.destroyAllWindows()
   end
-
-  deferror(destroyAllWindows())
 end

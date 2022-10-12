@@ -1,3 +1,5 @@
+**If you found the precompiled binaries does not suit your needs (e.g., perhaps you need OpenCV to be compiled with FFmpeg to handle more video formats.), it's possible to override the behaviour by setting the environment variable `EVISION_PREFER_PRECOMPILED` to `false`**
+
 # evision [WIP]
 
 | OS               | Arch           | ABI  | Build Status | Has Precompiled Library |
@@ -40,10 +42,7 @@ The default password of the livebook is `nerves` (as the time of writing, if it 
 `Evision.Nx` module converts `Evision.Mat` to `Nx.tensor`:
 
 ```elixir
-iex> {:ok, mat} = Evision.imread("/path/to/image.png")
-# Or you can use the !(bang) version, but if the image cannot be read by OpenCV for whatever reason
-# the bang version will raise a RuntimeError exception
-iex> mat = Evision.imread!("/path/to/image.png")
+iex> mat = Evision.imread("/path/to/image.png")
 %Evision.Mat{
   channels: 3,
   dims: 2,
@@ -86,10 +85,10 @@ iex> t = Evision.Nx.to_nx(mat)
 and vice-versa:
 
 ```elixir
-iex> mat = Evision.imread!("/path/to/image.png")
+iex> %Evision.Mat{} = mat = Evision.imread("/path/to/image.png")
 iex> t = Evision.Nx.to_nx(mat)
 # convert a tensor to a mat
-iex> mat_from_tensor = Evision.Nx.to_mat!(t)
+iex> mat_from_tensor = Evision.Nx.to_mat(t)
 %Evision.Mat{
   channels: 1,
   dims: 3,
@@ -106,7 +105,7 @@ iex> mat_from_tensor = Evision.Nx.to_mat!(t)
 # should be used instead
 #
 # Noticing the changes in `channels`, `dims` and `raw_type`
-iex> mat_from_tensor = Evision.Nx.to_mat_2d!(t)
+iex> mat_from_tensor = Evision.Nx.to_mat_2d(t)
 %Evision.Mat{
   channels: 3,
   dims: 2,
@@ -118,7 +117,7 @@ iex> mat_from_tensor = Evision.Nx.to_mat_2d!(t)
 
 # and it works for tensors with any shapes
 iex> t = Nx.iota({2, 3, 2, 3, 2, 3}, type: :s32)
-iex> mat = Evision.Nx.to_mat!(t)
+iex> mat = Evision.Nx.to_mat(t)
 %Evision.Mat{
   channels: 1,
   dims: 6,
@@ -258,7 +257,7 @@ target_abi =
 export EVISION_PREFER_PRECOMPILED=false
 ```
 
-If you found the precompiled binaries does not suit your needs (e.g., perhaps you need OpenCV to be compiled with FFmpeg to handle more video formats.), it's possible to override the behaviour by setting the environment variable `EVISION_PREFER_PRECOMPILED` to `false`
+**If you found the precompiled binaries does not suit your needs (e.g., perhaps you need OpenCV to be compiled with FFmpeg to handle more video formats.), it's possible to override the behaviour by setting the environment variable `EVISION_PREFER_PRECOMPILED` to `false`**
 
 ```shell
 export EVISION_PREFER_PRECOMPILED=false

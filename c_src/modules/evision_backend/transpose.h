@@ -155,11 +155,11 @@ static ERL_NIF_TERM evision_cv_mat_transpose(ErlNifEnv *env, int argc, const ERL
             img = img.clone();
         }
         transpose(img.data, ret.data, ndims, as_shape.data(), axes.data(), img.elemSize());
-        return evision::nif::ok(env, evision_from(env, ret));
+        return evision_from(env, ret);
     }
 
     if (error_term != 0) return error_term;
-    else return evision::nif::error(env, "overload resolution failed");
+    else return enif_make_badarg(env);
 }
 
 #endif // EVISION_BACKEND_TRANSPOSE_H

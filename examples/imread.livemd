@@ -84,7 +84,7 @@ Helper.download!(
 ```
 
 ```elixir
-mat = Cv.imread!(lenna_test_image_path)
+mat = Cv.imread(lenna_test_image_path)
 ```
 
 <!-- livebook:{"output":true} -->
@@ -101,14 +101,14 @@ mat = Cv.imread!(lenna_test_image_path)
 ```
 
 ```elixir
-encoded = Cv.imencode!(".png", mat)
+encoded = Cv.imencode(".png", mat)
 Kino.Image.new(encoded, :png)
 ```
 
 ### Resize image `Cv.resize`
 
 ```elixir
-resized_mat = Cv.resize!(mat, [_width = 256, _height = 128])
+resized_mat = Cv.resize(mat, [_width = 256, _height = 128])
 ```
 
 <!-- livebook:{"output":true} -->
@@ -125,7 +125,7 @@ resized_mat = Cv.resize!(mat, [_width = 256, _height = 128])
 ```
 
 ```elixir
-encoded = Cv.imencode!(".png", resized_mat)
+encoded = Cv.imencode(".png", resized_mat)
 Kino.Image.new(encoded, :png)
 ```
 
@@ -133,7 +133,7 @@ Kino.Image.new(encoded, :png)
 
 ```elixir
 # encode in memory
-encoded_in_memory = Cv.imencode!(".png", resized_mat)
+encoded_in_memory = Cv.imencode(".png", resized_mat)
 ```
 
 <!-- livebook:{"output":true} -->
@@ -146,7 +146,7 @@ encoded_in_memory = Cv.imencode!(".png", resized_mat)
 
 ```elixir
 # decode in memory
-decoded_mat = Cv.imdecode!(encoded_in_memory, Cv.cv_IMREAD_ANYCOLOR())
+decoded_mat = Cv.imdecode(encoded_in_memory, Cv.cv_IMREAD_ANYCOLOR())
 ```
 
 <!-- livebook:{"output":true} -->
@@ -185,7 +185,7 @@ Helper.download!("https://github.com/cocoa-xu/evision/raw/main/test/test.png", d
 ```
 
 ```elixir
-without_alpha = Cv.imread!(download_path)
+without_alpha = Cv.imread(download_path)
 ```
 
 <!-- livebook:{"output":true} -->
@@ -202,7 +202,7 @@ without_alpha = Cv.imread!(download_path)
 ```
 
 ```elixir
-Cv.imread!(download_path, flags: Cv.cv_IMREAD_UNCHANGED())
+Cv.imread(download_path, flags: Cv.cv_IMREAD_UNCHANGED())
 ```
 
 <!-- livebook:{"output":true} -->
@@ -221,7 +221,7 @@ Cv.imread!(download_path, flags: Cv.cv_IMREAD_UNCHANGED())
 ### Read an image as grayscale
 
 ```elixir
-gray_scale_mat = Cv.imread!(lenna_test_image_path, flags: Cv.cv_IMREAD_GRAYSCALE())
+gray_scale_mat = Cv.imread(lenna_test_image_path, flags: Cv.cv_IMREAD_GRAYSCALE())
 ```
 
 <!-- livebook:{"output":true} -->
@@ -238,6 +238,6 @@ gray_scale_mat = Cv.imread!(lenna_test_image_path, flags: Cv.cv_IMREAD_GRAYSCALE
 ```
 
 ```elixir
-gray_scale = Cv.imencode!(".png", gray_scale_mat)
+gray_scale = Cv.imencode(".png", gray_scale_mat)
 Kino.Image.new(gray_scale, :png)
 ```

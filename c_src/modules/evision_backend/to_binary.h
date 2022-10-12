@@ -20,12 +20,12 @@ static ERL_NIF_TERM evision_cv_mat_to_binary(ErlNifEnv *env, int argc, const ERL
         if( enif_get_resource(env, evision_get_kw(env, erl_terms, "img"), evision_res<cv::Mat *>::type, (void **)&res) ) {
             size_t bin_size = res->val->total() * res->val->elemSize();
             ERL_NIF_TERM out_bin_term = enif_make_resource_binary(env, res, res->val->data, bin_size);
-            return evision::nif::ok(env, out_bin_term);
+            return out_bin_term;
         }
     }
 
     if (error_term != 0) return error_term;
-    else return evision::nif::error(env, "overload resolution failed");
+    else return enif_make_badarg(env);
 }
 
 #endif // EVISION_BACKEND_TO_BINARY_H

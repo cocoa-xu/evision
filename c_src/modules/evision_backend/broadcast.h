@@ -77,7 +77,7 @@ static ERL_NIF_TERM evision_cv_mat_broadcast_to(ErlNifEnv *env, int argc, const 
             int64_t ndims = to_shape.size();
             std::vector<int> src_shape(ndims);
 
-            int diff_dims = ndims;
+            int diff_dims = (int)ndims;
             if (force_src_shape.size() > 0) {
                 diff_dims -= force_src_shape.size();
             } else {
@@ -125,16 +125,16 @@ static ERL_NIF_TERM evision_cv_mat_broadcast_to(ErlNifEnv *env, int argc, const 
             broadcast(img, dst_data, tmp_data, src_shape, to_shape, elem_size);
 
             int type = img.type() & CV_MAT_DEPTH_MASK;
-            Mat result = Mat(ndims, to_shape.data(), type, dst_data);
+            Mat result = Mat((int)ndims, to_shape.data(), type, dst_data);
             result = result.clone();
             enif_free((void *)dst_data);
             enif_free((void *)tmp_data);
-            return evision::nif::ok(env, evision_from(env, result));
+            return evision_from(env, result);
         }
     }
 
     if (error_term != 0) return error_term;
-    else return evision::nif::error(env, "overload resolution failed");
+    else return enif_make_badarg(env);
 }
 
 #endif // EVISION_BACKEND_BROADCAST_H

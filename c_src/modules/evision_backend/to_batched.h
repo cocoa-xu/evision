@@ -81,11 +81,11 @@ static ERL_NIF_TERM evision_cv_mat_to_batched(ErlNifEnv *env, int argc, const ER
         ERL_NIF_TERM ret = enif_make_list_from_array(env, batches, num_batches);
         enif_free(batches);
 
-        return evision::nif::ok(env, ret);
+        return ret;
     }
 
     if (error_term != 0) return error_term;
-    else return evision::nif::error(env, "overload resolution failed");
+    else return enif_make_badarg(env);
 }
 
 #endif // EVISION_BACKEND_TO_BATCHED_LIST_H

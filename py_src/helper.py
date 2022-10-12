@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 from io import StringIO
-from lib2to3.pgen2.token import OP
 import re
 import inspect
 from collections import namedtuple
@@ -249,22 +248,39 @@ def when_guard_erlang(func_guard_data: list):
         when_guard += ', '.join(func_guard_data)
     return when_guard
 
-def map_argtype_to_type(argtype):
-    if argtype == 'int' or argtype == 'size_t':
-        return 'int'
+def map_argtype_to_type(argtype: str):
+    if len(argtype) > 0 and argtype.startswith('Ptr<') and argtype.endswith('>'):
+        argtype = argtype[4:-1]
+    if len(argtype) > 0 and argtype[-1] == '*':
+        argtype = argtype[:-1]
+
+    if is_int_type(argtype):
+        return 'i'
     elif argtype == 'bool':
-        return 'bool'
+        return 'b'
     elif argtype == 'double':
-        return 'numerical'
+        return 'd'
     elif argtype == 'float':
-        return 'float'
-    elif argtype == 'String' or argtype == 'c_string' or argtype == 'char':
-        return 'binary'
+        return 'd'
+    elif argtype == 'vector_char' or argtype == 'vector_uchar' or argtype == 'std::vector<char>' or argtype == 'std::vector<uchar>':
+        return 'b'
+    elif argtype == 'String' or argtype == 'c_string' or argtype == 'char' or argtype == 'string':
+        return 'b'
     elif argtype == 'Size' or argtype == 'Scalar' or argtype == 'Point2f' or argtype == 'Point':
-        return 'list'
-    elif argtype[:7] == 'vector_':
-        return 'list'
+        return 'l'
+    elif argtype[:7] == 'vector_' or argtype[:12] == 'std::vector<':
+        return 'l'
+    elif is_list_type(argtype):
+        return 'l'
+    elif is_tuple_type(argtype):
+        return 'T'
     else:
+        if is_struct(argtype):
+            if argtype == 'UMat':
+                return 'Mat'
+            return argtype
+        if argtype == 'Moments':
+            return '(map)'
         return 't'
 
 
@@ -278,7 +294,6 @@ def map_argname(kind, argname, **kwargs):
 
 
 def map_argname_elixir(argname, ignore_upper_starting=False, argtype=None, from_struct=False):
-    struct_types = ["Mat", "vector_Mat", "UMat", "vector_UMat", "GpuMat", "VideoCapture"]
     argname_prefix_re = re.compile(r'^[_]*')
     name = ""
     if argname in reserved_keywords():
@@ -353,13 +368,9 @@ def is_list_type(argtype):
         'MatchesInfo',
         'CameraParams',
         'VideoCaptureAPIs',
-        'MatShape',
-
-        'UsacParams',
-        'CirclesGridFinderParameters',
-        'KeyPoint'
+        'MatShape'
     ]
-    if argtype[:7] == 'vector_':
+    if argtype[:7] == 'vector_' or argtype[len('std::vector<'):] == 'std::vector<':
         return True
     return argtype in list_types
 
@@ -482,6 +493,8 @@ def is_struct(argtype: str, also_get: Optional[str] = None):
     }
     struct_types = {
         'Mat': 'Evision.Mat',
+        'GpuMat': 'Evision.CUDA.GpuMat',
+        'cuda::GpuMat': 'Evision.CUDA.GpuMat',
         'AKAZE': 'Evision.AKAZE',
         'AffineFeature': 'Evision.AffineFeature',
         'AgastFeatureDetector': 'Evision.AgastFeatureDetector',
@@ -711,8 +724,12 @@ manual_type_spec_map = {
 def map_argtype_in_spec(classname: str, argtype: str, is_in: bool):
     global vec_out_types
     if len(argtype) > 0 and argtype[-1] == '*':
+        if argtype == 'char*' or argtype == 'uchar*':
+            return 'binary()'
         argtype = argtype[:-1]
     if argtype.startswith('Ptr<'):
+        if argtype == 'Ptr<char>' or argtype == 'Ptr<uchar>':
+            return 'binary()'
         argtype = argtype[len('Ptr<'):-1]
 
     if is_int_type(argtype):
@@ -724,9 +741,9 @@ def map_argtype_in_spec(classname: str, argtype: str, is_in: bool):
     elif argtype == 'float':
         return 'number()'
     elif argtype in ['String', 'c_string', 'string', 'cv::String', 'std::string']:
-        return 'String.t()'
+        return 'binary()'
     elif argtype in ['char', 'uchar']:
-        return 'String.t() | char()'
+        return 'char()'
     elif argtype == 'void':
         return ':ok'
     elif is_in and argtype in ['Mat', 'UMat', 'cv::Mat', 'cv::UMat']:
@@ -737,9 +754,13 @@ def map_argtype_in_spec(classname: str, argtype: str, is_in: bool):
         return 'Evision.Mat.t()'
     elif argtype.startswith('vector_'):
         argtype_inner = argtype[len('vector_'):]
+        if argtype == 'vector_char' or argtype == 'vector_uchar':
+            return 'binary()'
         spec_type = 'list(' + map_argtype_in_spec(classname, argtype_inner, is_in) + ')'
         return spec_type
     elif argtype.startswith('std::vector<'):
+        if argtype == 'std::vector<char>' or argtype == 'std::vector<uchar>':
+            return 'binary()'
         argtype_inner = argtype[len('std::vector<'):-1]
         spec_type = 'list(' + map_argtype_in_spec(classname, argtype_inner, is_in) + ')'
         return spec_type
@@ -759,14 +780,14 @@ def map_argtype_in_spec(classname: str, argtype: str, is_in: bool):
     elif argtype == 'Status' and classname == 'Stitcher':
         return 'integer()'
     elif argtype == 'Device' and classname == 'ocl_Device':
-        return 'reference()'
+        return 'Evision.OCL.Device.t()'
     elif argtype == 'Index' and classname == 'flann_Index':
          return 'Evision.Flann.Index.t()'
     else:
         if argtype == 'LayerId':
             return 'term()'
         if argtype == 'GpuMat' or argtype == 'cuda::GpuMat':
-            return f'reference()'
+            return f'Evision.CUDA.GpuMat.t()'
         if argtype == 'IndexParams' or argtype == 'SearchParams' or argtype == 'Moments':
             return f'map()'
         else:
@@ -774,6 +795,9 @@ def map_argtype_in_spec(classname: str, argtype: str, is_in: bool):
             return 'term()'
 
 def map_argtype_to_guard_elixir(argname, argtype):
+    if argtype == 'vector_char' or argtype == 'vector_uchar' or argtype == 'std::vector<char>' or argtype == 'std::vector<uchar>':
+        return f'is_binary({argname})'
+
     if is_int_type(argtype):
         return f'is_integer({argname})'
     elif argtype == 'bool':
@@ -785,11 +809,14 @@ def map_argtype_to_guard_elixir(argname, argtype):
     elif argtype == 'String' or argtype == 'c_string' or argtype == 'string':
         return f'is_binary({argname})'
     elif argtype == 'char':
-        return f'is_binary({argname})'
+        return f'(-128 <= {argname} and {argname} <= 127)'
     elif is_list_or_tuple(argtype):
         return f'(is_tuple({argname}) or is_list({argname}))'
     elif is_tuple_type(argtype):
         return f'is_tuple({argname})'
+    elif is_struct(argtype):
+        _, struct_name = is_struct(argtype, also_get='struct_name')
+        return f'is_struct({argname}, {struct_name})'
     elif is_ref_or_struct(argtype):
         return f'(is_reference({argname}) or is_struct({argname}))'
     elif is_list_type(argtype):
@@ -806,6 +833,9 @@ def map_argtype_to_guard_elixir(argname, argtype):
 
 
 def map_argtype_to_guard_erlang(argname, argtype):
+    if argtype == 'vector_char' or argtype == 'vector_uchar' or argtype == 'std::vector<char>' or argtype == 'std::vector<uchar>':
+        return f'is_binary({argname})'
+
     if is_int_type(argtype):
         return f'is_integer({argname})'
     elif argtype == 'bool':

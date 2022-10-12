@@ -3,6 +3,13 @@
 ## v0.1.10 (main)
 [Browse the Repository](https://github.com/cocoa-xu/evision)
 ### Breaking Changes
+- Say goodbye to the bang(!) version functions!
+
+  Thanks to @josevalim who wrote me this `Errorize` module back in Feb 2022, and in v0.1.10 this module will be removed. There are two main reasons for this:
+
+  - I've managed to structurise all `#references` that have their own modules in #101.
+  - After generating function specs, dialyzer seems to be really upset about these bang(!) version functions, and would emit a few thousand warnings.
+
 - Return value changed if the first return type of the function is `bool`
 
   - If the function only returns a `bool`, the updated return value will simple be `true` or `false`.

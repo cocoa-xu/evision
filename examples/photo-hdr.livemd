@@ -175,7 +175,7 @@ exposure_sequences =
   |> Enum.map(&String.split(&1, " "))
   |> Enum.map(&List.to_tuple(&1))
   |> Enum.map(fn {image_filename, times} ->
-    {:ok, mat} = Cv.imread(Path.join([__DIR__, "photo_hdr_test", image_filename]))
+    mat = Cv.imread(Path.join([__DIR__, "photo_hdr_test", image_filename]))
     {val, ""} = Float.parse(times)
     {mat, 1 / val}
   end)
@@ -185,7 +185,7 @@ images =
   |> Enum.map(&elem(&1, 0))
 
 # `times` HAS to be float32, otherwise OpenCV will crash
-{:ok, times} =
+times =
   exposure_sequences
   |> Enum.map(&elem(&1, 1))
   |> Enum.into(<<>>, fn d -> <<d::float-size(32)-little>> end)
@@ -211,8 +211,8 @@ images =
 ```elixir
 # It is necessary to know camera response function (CRF) for a lot of HDR construction algorithms.
 # We use one of the calibration algorithms to estimate inverse CRF for all 256 pixel values.
-{:ok, calibrate} = Cv.createCalibrateDebevec()
-{:ok, response} = Cv.CalibrateDebevec.process(calibrate, images, times)
+calibrate = Cv.createCalibrateDebevec()
+response = Cv.CalibrateDebevec.process(calibrate, images, times)
 ```
 
 <!-- livebook:{"output":true} -->
@@ -234,8 +234,8 @@ images =
 ```elixir
 # We use Debevec's weighting scheme to construct HDR image
 # using response calculated in the previous item.
-{:ok, merge_debevec} = Cv.createMergeDebevec()
-{:ok, hdr} = Cv.MergeDebevec.process(merge_debevec, images, times, response: response)
+merge_debevec = Cv.createMergeDebevec()
+hdr = Cv.MergeDebevec.process(merge_debevec, images, times, response: response)
 ```
 
 <!-- livebook:{"output":true} -->
@@ -259,8 +259,8 @@ images =
 # preserving most details.
 # It is the main goal of tonemapping methods.
 # We use tonemapper with bilateral filtering and set 2.2 as the value for gamma correction.
-{:ok, tonemap} = Cv.createTonemap(gamma: 2.2)
-{:ok, ldr} = Cv.Tonemap.process(tonemap, hdr)
+tonemap = Cv.createTonemap(gamma: 2.2)
+ldr = Cv.Tonemap.process(tonemap, hdr)
 ```
 
 <!-- livebook:{"output":true} -->
@@ -283,8 +283,8 @@ images =
 # There is an alternative way to merge our exposures in case when we don't need HDR image.
 # This process is called exposure fusion and produces LDR image that doesn't require gamma correction.
 # It also doesn't use exposure values of the photographs.
-{:ok, merge_mertens} = Cv.createMergeMertens()
-{:ok, fusion} = Cv.MergeMertens.process(merge_mertens, images)
+merge_mertens = Cv.createMergeMertens()
+fusion = Cv.MergeMertens.process(merge_mertens, images)
 ```
 
 <!-- livebook:{"output":true} -->
@@ -313,7 +313,7 @@ result =
   |> Nx.clip(0, 255)
   |> Nx.as_type({:u, 8})
   |> Cv.Nx.to_mat_2d()
-  |> then(fn {:ok, result} ->
+  |> then(fn result ->
     Cv.imwrite(output_fusion_file, result)
     result
   end)
@@ -333,7 +333,7 @@ result =
 ```
 
 ```elixir
-result = Cv.imencode!(".png", result)
+result = Cv.imencode(".png", result)
 
 Kino.Image.new(result, :png)
 ```
@@ -342,7 +342,7 @@ Kino.Image.new(result, :png)
 
 ```elixir
 output_ldr_file = Path.join([__DIR__, "photo_hdr_test", "ldr.png"])
-{:ok, f32_shape} = Cv.Mat.shape(ldr)
+f32_shape = Cv.Mat.shape(ldr)
 nan = <<0, 0, 192, 255>>
 positive_inf = <<0, 0, 128, 127>>
 negative_inf = <<0, 0, 128, 255>>
@@ -350,7 +350,6 @@ negative_inf = <<0, 0, 128, 255>>
 result =
   ldr
   |> Cv.Mat.to_binary()
-  |> elem(1)
   |> Helper.chunk_binary(4)
   |> Enum.map(fn f32 ->
     case f32 do
@@ -374,9 +373,9 @@ result =
   |> Nx.multiply(255)
   |> Nx.clip(0, 255)
   |> Nx.as_type({:u, 8})
-  |> Cv.Nx.to_mat_2d!()
+  |> Cv.Nx.to_mat_2d()
 
-result = Cv.imencode!(".png", result)
+result = Cv.imencode(".png", result)
 
 Kino.Image.new(result, :png)
 ```

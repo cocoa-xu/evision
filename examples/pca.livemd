@@ -80,13 +80,13 @@ Helper.download!("https://docs.opencv.org/4.x/pca_test1.jpg", "pca_test.jpg")
 import Bitwise
 
 # Load image in grayscale
-gray = Cv.imread!("pca_test.jpg", flags: Cv.cv_IMREAD_GRAYSCALE())
+gray = Cv.imread("pca_test.jpg", flags: Cv.cv_IMREAD_GRAYSCALE())
 
 # Convert image to binary
-{_, bw} = Cv.threshold!(gray, 50, 255, Cv.cv_THRESH_BINARY() ||| Cv.cv_THRESH_OTSU())
+{_, bw} = Cv.threshold(gray, 50, 255, Cv.cv_THRESH_BINARY() ||| Cv.cv_THRESH_OTSU())
 
 # Find all the contours in the thresholded image
-{contours, _} = Cv.findContours!(bw, Cv.cv_RETR_LIST(), Cv.cv_CHAIN_APPROX_NONE())
+{contours, _} = Cv.findContours(bw, Cv.cv_RETR_LIST(), Cv.cv_CHAIN_APPROX_NONE())
 
 contours =
   contours
@@ -114,20 +114,19 @@ pca_analysis =
   for c <- contours, reduce: [] do
     acc ->
       # Construct a buffer used by the pca analysis
-      {:ok, shape} = Cv.Mat.shape(c)
+      %Evision.Mat{shape: shape, type: type} = c
       sz = elem(shape, 0)
-      {:ok, pts_binary} = Cv.Mat.to_binary(c)
-      {:ok, type} = Cv.Mat.type(c)
-      {:ok, data_pts} = Cv.Mat.from_binary(pts_binary, type, sz, 2, 1)
-      {:ok, data_pts} = Cv.Mat.as_type(data_pts, {:f, 64})
+      pts_binary = Cv.Mat.to_binary(c)
+      data_pts = Cv.Mat.from_binary(pts_binary, type, sz, 2, 1)
+      data_pts = Cv.Mat.as_type(data_pts, {:f, 64})
 
       # Perform PCA analysis
-      {:ok, {mean, eigenvectors, eigenvalues}} = Cv.pcaCompute2(data_pts, Cv.Mat.empty!())
+      {mean, eigenvectors, eigenvalues} = Cv.pcaCompute2(data_pts, Cv.Mat.empty())
       eigenvectors = Cv.Nx.to_nx(eigenvectors, Nx.BinaryBackend)
       eigenvalues = Cv.Nx.to_nx(eigenvalues, Nx.BinaryBackend)
 
       # Store the center of the object
-      {:ok, <<centre_x::float-size(64)-little, centre_y::float-size(64)-little, _::binary>>} =
+      <<centre_x::float-size(64)-little, centre_y::float-size(64)-little, _::binary>> =
         Cv.Mat.to_binary(mean)
 
       centre_x = trunc(centre_x)
@@ -174,14 +173,13 @@ pca_analysis = Enum.reverse(pca_analysis)
 ### visualisation
 
 ```elixir
-src = Cv.imread!("pca_test.jpg")
+src = Cv.imread("pca_test.jpg")
 
 # Draw each contour
 src =
   for index <- 0..(Enum.count(contours) - 1), reduce: src do
     src ->
-      src = Cv.drawContours!(src, contours, index, [0, 0, 255], thickness: 2)
-      src
+      Cv.drawContours(src, contours, index, [0, 0, 255], thickness: 2)
   end
 ```
 
@@ -207,11 +205,11 @@ defmodule PACHelper do
     hypotenuse = :math.sqrt((py - qy) * (py - qy) + (px - qx) * (px - qx))
     qx = trunc(px - scale * hypotenuse * :math.cos(angle))
     qy = trunc(py - scale * hypotenuse * :math.sin(angle))
-    {:ok, src} = Cv.line(src, [px, py], [qx, qy], colour, thickness: 1, style: Cv.cv_LINE_AA())
+    src = Cv.line(src, [px, py], [qx, qy], colour, thickness: 1, style: Cv.cv_LINE_AA())
 
     px = trunc(qx + 9 * :math.cos(angle + :math.pi() / 4))
     py = trunc(qy + 9 * :math.sin(angle + :math.pi() / 4))
-    {:ok, src} = Cv.line(src, [px, py], [qx, qy], colour, thickness: 1, style: Cv.cv_LINE_AA())
+    src = Cv.line(src, [px, py], [qx, qy], colour, thickness: 1, style: Cv.cv_LINE_AA())
 
     px = trunc(qx + 9 * :math.cos(angle - :math.pi() / 4))
     py = trunc(qy + 9 * :math.sin(angle - :math.pi() / 4))
@@ -232,13 +230,12 @@ end
 src =
   for {cntr, p1, p2} <- pca_analysis, reduce: src do
     src ->
-      {:ok, src} = Cv.circle(src, cntr, 3, [255, 0, 255], thickness: 2)
-      {:ok, src} = PACHelper.drawAxis(src, List.to_tuple(cntr), p1, [0, 255, 0], 1)
-      {:ok, src} = PACHelper.drawAxis(src, List.to_tuple(cntr), p2, [255, 255, 0], 5)
-      src
+      src = Cv.circle(src, cntr, 3, [255, 0, 255], thickness: 2)
+      src = PACHelper.drawAxis(src, List.to_tuple(cntr), p1, [0, 255, 0], 1)
+      PACHelper.drawAxis(src, List.to_tuple(cntr), p2, [255, 255, 0], 5)
   end
 
-result = Cv.imencode!(".png", src)
+result = Cv.imencode(".png", src)
 
 Kino.Image.new(result, :png)
 ```
