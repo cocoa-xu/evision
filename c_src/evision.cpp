@@ -263,26 +263,6 @@ inline void pyPrepareArgumentConversionErrorsStorage(std::size_t size)
     conversionErrors.reserve(size);
 }
 
-struct SafeSeqItem
-{
-    ERL_NIF_TERM item;
-    SafeSeqItem(ErlNifEnv* env, ERL_NIF_TERM obj, size_t idx) {
-        ERL_NIF_TERM head, tail;
-        size_t i = 0;
-        while (i != idx + 1) {
-            enif_get_list_cell(env, obj, &head, &tail);
-            obj = tail;
-            i++;
-        }
-
-        item = head;
-    }
-
-private:
-    SafeSeqItem(const SafeSeqItem&); // = delete
-    SafeSeqItem& operator=(const SafeSeqItem&); // = delete
-};
-
 template <class T>
 class RefWrapper
 {
@@ -306,21 +286,28 @@ bool parseSequence(ErlNifEnv *env, ERL_NIF_TERM obj, RefWrapper<T> (&value)[N], 
 
     // parse from list
     if (enif_is_list(env, obj)) {
-        unsigned sequenceSize = 0;
-        enif_get_list_length(env, obj, &sequenceSize);
-        if (sequenceSize != N)
-        {
+        unsigned n = 0;
+        enif_get_list_length(env, obj, &n);
+        if (n != N) {
             failmsgp(env, "Can't parse '%s'. Expected sequence length %lu, got %lu",
-                    info.name, N, sequenceSize);
+                    info.name, N, n);
             return false;
         }
-        for (std::size_t i = 0; i < N; ++i)
-        {
-            SafeSeqItem seqItem(env, obj, i);
-            if (!evision_to(env, seqItem.item, value[i].get(), info))
-            {
-                failmsgp(env, "Can't parse '%s'. Sequence item with index %lu has a "
-                        "wrong type", info.name, i);
+
+        ERL_NIF_TERM head, tail, cur_obj = obj;
+        size_t i = 0;
+        while (i < n) {
+            if (enif_get_list_cell(env, cur_obj, &head, &tail)) {
+                if (!evision_to(env, head, value[i].get(), info))
+                {
+                    failmsgp(env, "Can't parse '%s'. Sequence item with index %lu has a "
+                            "wrong type", info.name, i);
+                    return false;
+                }
+
+                cur_obj = tail;
+                i++;
+            } else {
                 return false;
             }
         }
@@ -579,23 +566,49 @@ static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Scalar& s, const ArgInfo&
 
     double dval;
     int ival;
-    if (enif_is_list(env, o)) {
-        unsigned n = 0;
-        enif_get_list_length(env, o, &n);
-        if (4 < n)
-        {
+
+    if (enif_is_tuple(env, o)) {
+        int n = 0;
+        const ERL_NIF_TERM * terms;
+        enif_get_tuple(env, o, &n, &terms);
+        if (n > 4) {
             failmsg(env, "Scalar value for argument '%s' is longer than 4", info.name);
             return false;
         }
-        for (size_t i = 0; i < n; i++) {
-            SafeSeqItem item_wrap(env, o, i);
-            ERL_NIF_TERM item = item_wrap.item;
-            if (enif_get_double(env, item, &dval)) {
-                s[(int)i] = dval;
-            } else if (enif_get_int(env, item, &ival)){
-                s[(int)i] = (double)ival;
+
+        for (int i = 0; i < n; i++) {
+            if (enif_get_double(env, terms[i], &dval)) {
+                s[i] = dval;
+            } else if (enif_get_int(env, terms[i], &ival)){
+                s[i] = (double)ival;
             } else {
                 failmsg(env, "Scalar value for argument '%s' is not numeric", info.name);
+                return false;
+            }
+        }
+    } else if (enif_is_list(env, o)) {
+        unsigned n = 0;
+        enif_get_list_length(env, o, &n);
+        if (n > 4) {
+            failmsg(env, "Scalar value for argument '%s' is longer than 4", info.name);
+            return false;
+        }
+
+        ERL_NIF_TERM head, tail, obj = o;
+        size_t i = 0;
+        while (i < n) {
+            if (enif_get_list_cell(env, obj, &head, &tail)) {
+                if (enif_get_double(env, head, &dval)) {
+                    s[i] = dval;
+                } else if (enif_get_int(env, head, &ival)){
+                    s[i] = (double)ival;
+                } else {
+                    failmsg(env, "Scalar value for argument '%s' is not numeric", info.name);
+                    return false;
+                }
+                obj = tail;
+                i++;
+            } else {
                 return false;
             }
         }
@@ -857,6 +870,8 @@ bool evision_to_safe(ErlNifEnv *env, ERL_NIF_TERM o, std::vector<uchar>& data, c
                 data.push_back(item);
                 obj = tail;
                 i++;
+            } else {
+                return false;
             }
         }
         return true;
@@ -1598,9 +1613,12 @@ static bool evision_to_generic_vec(ErlNifEnv *env, ERL_NIF_TERM obj, std::vector
     std::vector<ERL_NIF_TERM> cells;
     ERL_NIF_TERM head, tail, arr = obj;
     for (size_t i = 0; i < n; i++) {
-        enif_get_list_cell(env, arr, &head, &tail);
-        arr = tail;
-        cells.push_back(head);
+        if (enif_get_list_cell(env, arr, &head, &tail)) {
+            arr = tail;
+            cells.push_back(head);
+        } else {
+            return false;
+        }
     }
 
     for (size_t i = 0; i < n; i++)
@@ -1709,9 +1727,12 @@ template<> inline bool evision_to_generic_vec(ErlNifEnv *env, ERL_NIF_TERM obj, 
         std::vector<ERL_NIF_TERM> cells;
         ERL_NIF_TERM head, tail, arr = obj;
         for (size_t i = 0; i < n; i++) {
-            enif_get_list_cell(env, arr, &head, &tail);
-            arr = tail;
-            cells.push_back(head);
+            if (enif_get_list_cell(env, arr, &head, &tail)) {
+                arr = tail;
+                cells.push_back(head);
+            } else {
+                return false;
+            }
         }
 
         for (size_t i = 0; i < n; i++)
@@ -1724,7 +1745,7 @@ template<> inline bool evision_to_generic_vec(ErlNifEnv *env, ERL_NIF_TERM obj, 
             }
             value[i] = elem;
         }
-        
+
         return true;
     }
 
@@ -1787,6 +1808,8 @@ bool evision_to(ErlNifEnv * env, ERL_NIF_TERM o, std::vector<Range>& p, const Ar
             p.push_back(item);
             obj = tail;
             i++;
+        } else {
+            return false;
         }
     }
 
@@ -1796,24 +1819,66 @@ bool evision_to(ErlNifEnv * env, ERL_NIF_TERM o, std::vector<Range>& p, const Ar
 template<>
 bool evision_to(ErlNifEnv * env, ERL_NIF_TERM o, cv::Vec<float, 6>& p, const ArgInfo& info)
 {
-    if (evision::nif::check_nil(env, o))
+    if (evision::nif::check_nil(env, o)) {
         return true;
-    if (!enif_is_list(env, o)) {
-        return false;
     }
-    unsigned n = 0;
-    enif_get_list_length(env, o, &n);
-    if (n != 6) return false;
-    for (size_t i = 0; i < n; i++)
-    {
-        SafeSeqItem item_wrap(env, o, i);
-        if (!evision_to(env, item_wrap.item, p[i], info))
-        {
-            failmsg(env, "Can't parse '%s'. Sequence item with index %lu has a wrong type", info.name, i);
+
+    if (enif_is_tuple(env, o)) {
+        int n = 0;
+        const ERL_NIF_TERM * terms;
+        enif_get_tuple(env, o, &n, &terms);
+
+        if (n != 6) {
             return false;
         }
+
+        ERL_NIF_TERM head, tail, obj = o;
+        int i = 0;
+        while (i < n) {
+            if (enif_get_list_cell(env, obj, &head, &tail)) {
+                if (!evision_to(env, head, p[i], info))
+                {
+                    failmsg(env, "Can't parse '%s'. Sequence item with index %lu has a wrong type", info.name, i);
+                    return false;
+                }
+
+                obj = tail;
+                i++;
+            } else {
+                return false;
+            }
+        }
+        return true;
     }
-    return true;
+
+    if (enif_is_list(env, o)) {
+        unsigned n = 0;
+        enif_get_list_length(env, o, &n);
+        if (n != 6) {
+            return false;
+        }
+
+        ERL_NIF_TERM head, tail, obj = o;
+        size_t i = 0;
+        while (i < n) {
+            if (enif_get_list_cell(env, obj, &head, &tail)) {
+                if (!evision_to(env, head, p[i], info))
+                {
+                    failmsg(env, "Can't parse '%s'. Sequence item with index %lu has a wrong type", info.name, i);
+                    return false;
+                }
+
+                obj = tail;
+                i++;
+            } else {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    return false;
 }
 
 template<> inline ERL_NIF_TERM evision_from_generic_vec(ErlNifEnv *env, const std::vector<bool>& value)
