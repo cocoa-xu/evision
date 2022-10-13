@@ -140,7 +140,8 @@ $(EVISION_SO): $(HEADERS_TXT)
 	@ if [ ! -f "${EVISION_SO}" ]; then \
 		mkdir -p "$(CMAKE_EVISION_BUILD_DIR)" && \
 		cd "$(CMAKE_EVISION_BUILD_DIR)" && \
-			{ cmake -D C_SRC="$(C_SRC)" \
+			{ cmake --no-warn-unused-cli \
+			-D C_SRC="$(C_SRC)" \
 			-D CMAKE_TOOLCHAIN_FILE="$(TOOLCHAIN_FILE)" \
 			-D GENERATED_ELIXIR_SRC_DIR="$(GENERATED_ELIXIR_SRC_DIR)" \
 			-D GENERATED_ERLANG_SRC_DIR="$(GENERATED_ERLANG_SRC_DIR)" \

@@ -120,6 +120,7 @@ $(EVISION_SO): $(HEADERS_TXT)
 	@ if not exist "$(GENERATED_ERLANG_SRC_DIR)" mkdir "$(GENERATED_ERLANG_SRC_DIR)"
 	@ cd "$(CMAKE_EVISION_BUILD_DIR)" && \
 		cmake -G $(CMAKE_GENERATE_TYPE) \
+		  --no-warn-unused-cli \
 		  -D CMAKE_BUILD_TYPE=Release \
 		  -D C_SRC="$(C_SRC)" \
 		  -D CMAKE_TOOLCHAIN_FILE="$(TOOLCHAIN_FILE)" \
