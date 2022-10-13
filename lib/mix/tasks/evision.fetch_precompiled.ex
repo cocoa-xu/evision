@@ -54,7 +54,7 @@ defmodule Mix.Tasks.Evision.Fetch do
       Task.async_stream(urls, fn url ->
           filename = basename_from_url(url)
           cache_to = Path.join([Precompile.cache_dir(), filename])
-          {:ok, algo, checksum} = Precompile.download!(url, cache_to)
+          {:ok, algo, checksum} = Precompile.download!(url, cache_to, true)
           Logger.info("downloaded: url=#{url}, file=#{cache_to}, checksum[#{algo}]=#{checksum}")
           %{
             url: url,
