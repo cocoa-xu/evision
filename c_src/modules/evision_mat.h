@@ -6,7 +6,11 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#if defined(_WIN32) || defined(WINRT) || defined(_WIN32_WCE) || defined(__WIN32__) || defined(_MSC_VER)
+#include <io.h>
+#else
 #include <unistd.h>
+#endif
 #include "../nif_utils.hpp"
 #include "evision_mat_utils.hpp"
 #include "evision_backend/backend.h"
