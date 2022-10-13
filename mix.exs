@@ -18,6 +18,7 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
   alias Evision.MixProject.Metadata
 
   @available_versions [
+    "0.1.10",
     "0.1.9",
     "0.1.8",
     "0.1.7",
@@ -42,6 +43,7 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
     "s390x-linux-gnu",
     "riscv64-linux-gnu",
     "riscv64-linux-musl",
+    "i686-linux-gnu",
     "x86_64-windows-msvc",
   ]
 
