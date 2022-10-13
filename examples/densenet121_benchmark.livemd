@@ -70,7 +70,7 @@ defmodule DetectionModel do
   end
 
   def get_model(filename) do
-    net = Cv.DNN.readNetFromONNX(File.read!(filename))
+    net = Cv.DNN.readNetFromONNX(filename)
     out_names = Cv.DNN.Net.getUnconnectedOutLayersNames(net)
     {:ok, net, out_names}
   end

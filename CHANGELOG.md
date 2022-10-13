@@ -60,6 +60,18 @@
 
   A list of modules that are now wrapped in structs can be found in the appendix section.
 
+- [Evision.DNN] As it's not possible to distinguish `std::vector<uchar>` and `String` in Elixir, `Evision.DNN::readNet*` functions that load a model from in-memoy buffer will be renamed to `Evision.DNN::readNet*Buffer`.
+
+  For example, 
+
+  ```elixir
+  @spec readNetFromONNX(binary()) :: Evision.DNN.Net.t() | {:error, String.t()}
+  def readNetFromONNX(onnxFile)
+
+  @spec readNetFromONNXBuffer(binary()) :: Evision.DNN.Net.t() | {:error, String.t()}
+  def readNetFromONNXBuffer(buffer)
+  ```
+
 ### Changed
 - [Evision.Backend] raise a better error message for callbacks that haven't been implemented in `Evision.Backend`. Thanks to @josevalim
 
