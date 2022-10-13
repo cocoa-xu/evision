@@ -1,7 +1,14 @@
 # Changelog
 
+## v0.1.12-dev (main)
+[Browse the Repository](https://github.com/cocoa-xu/evision)
+
 ## v0.1.11 (2022-10-13)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.11) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.11)
+### Important Note
+In `v0.1.10`, an invalid checksum file was pushed to hex.pm, please read the changelog, especially the breaking changes in `v0.1.10`. [Changelog for `v0.1.10`](https://github.com/cocoa-xu/evision/releases/tag/v0.1.10).
+
+### Fixed
 - [Precomoile] `Mix.Tasks.Evision.Fetch` should always download and oerwrite existsing files.
 
 ## v0.1.10 (2022-10-13)
@@ -32,7 +39,7 @@ Invalid checksum file was pushed to hex.pm, please use `v0.1.11` instead.
     iex> :error = Evision.imwrite("/path/to/image.png", invalid_img)
     # after
     iex> true = Evision.imwrite("/path/to/image.png", img)
-    iex> true = Evision.imwrite("/path/to/image.png", invalid_img)
+    iex> false = Evision.imwrite("/path/to/image.png", invalid_img)
     ```
 
   - If the first return type is `bool`, and there is another value to return:
