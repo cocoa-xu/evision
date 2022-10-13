@@ -12,7 +12,7 @@ defmodule Evision.VideoCapture.Test do
     fourcc = Evision.VideoCapture.get(video, Evision.cv_CAP_PROP_FOURCC())
     assert 828_601_960.0 == fourcc
 
-    %Evision.Mat{shape: {1080, 1920, 3}} = frame = Evision.VideoCapture.read(video)
+    %Evision.Mat{shape: {1080, 1920, 3}} = Evision.VideoCapture.read(video)
 
     video = Evision.VideoCapture.release(video)
     false = Evision.VideoCapture.read(video)
