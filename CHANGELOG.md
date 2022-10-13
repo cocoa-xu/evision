@@ -1,7 +1,14 @@
 # Changelog
 
+## v0.1.11 (2022-10-13)
+[Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.11) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.11)
+- [Precomoile] `Mix.Tasks.Evision.Fetch` should always download and oerwrite existsing files.
+
 ## v0.1.10 (2022-10-13)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.10) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.10)
+### Important Note
+Invalid checksum file was pushed to hex.pm, please use `v0.1.11` instead.
+
 ### Breaking Changes
 - Say goodbye to the bang(!) version functions!
 
