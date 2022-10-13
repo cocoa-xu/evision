@@ -1,7 +1,7 @@
 # Changelog
 
-## v0.1.10 (main)
-[Browse the Repository](https://github.com/cocoa-xu/evision)
+## v0.1.10 (2022-10-13)
+[Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.10) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.10)
 ### Breaking Changes
 - Say goodbye to the bang(!) version functions!
 
