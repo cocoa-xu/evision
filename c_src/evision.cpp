@@ -833,6 +833,38 @@ bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, uchar& value, const ArgInfo& i
     }
 }
 
+template <>
+bool evision_to_safe(ErlNifEnv *env, ERL_NIF_TERM o, std::vector<uchar>& data, const ArgInfo& info)
+{
+    ErlNifBinary erl_bin;
+    if (enif_inspect_binary(env, o, &erl_bin)) {
+        data.assign(erl_bin.data, erl_bin.data + erl_bin.size);
+        return true;
+    }
+
+    if (enif_is_list(env, o)) {
+        unsigned n = 0;
+        enif_get_list_length(env, o, &n);
+
+        ERL_NIF_TERM head, tail, obj = o;
+        size_t i = 0;
+        while (i < n) {
+            if (enif_get_list_cell(env, obj, &head, &tail)) {
+                uchar item;
+                if (!evision_to(env, head, item, info)) {
+                    return false;
+                }
+                data.push_back(item);
+                obj = tail;
+                i++;
+            }
+        }
+        return true;
+    }
+
+    return false;
+}
+
 template<>
 bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, char& value, const ArgInfo& info)
 {
