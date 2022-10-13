@@ -12,17 +12,17 @@ defmodule Evision.PCA.Test do
     qy = trunc(py - scale * hypotenuse * :math.sin(angle))
 
     %Mat{} = src =
-      Evision.line(src, [px, py], [qx, qy], colour, thickness: 1, style: Evision.cv_LINE_AA())
+      Evision.line(src, {px, py}, {qx, qy}, colour, thickness: 1, style: Evision.cv_LINE_AA())
 
     px = trunc(qx + 9 * :math.cos(angle + :math.pi() / 4))
     py = trunc(qy + 9 * :math.sin(angle + :math.pi() / 4))
 
     %Mat{} = src =
-      Evision.line(src, [px, py], [qx, qy], colour, thickness: 1, style: Evision.cv_LINE_AA())
+      Evision.line(src, {px, py}, {qx, qy}, colour, thickness: 1, style: Evision.cv_LINE_AA())
 
     px = trunc(qx + 9 * :math.cos(angle - :math.pi() / 4))
     py = trunc(qy + 9 * :math.sin(angle - :math.pi() / 4))
-    Evision.line(src, [px, py], [qx, qy], colour, thickness: 1, style: Evision.cv_LINE_AA())
+    Evision.line(src, {px, py}, {qx, qy}, colour, thickness: 1, style: Evision.cv_LINE_AA())
   end
 
   @tag :nx
@@ -82,7 +82,7 @@ defmodule Evision.PCA.Test do
             {trunc(Float.round(centre_x - 0.02 * evec10 * eval10)),
              trunc(Float.round(centre_y - 0.02 * evec11 * eval10))}
 
-          cntr = [centre_x, centre_y]
+          cntr = {centre_x, centre_y}
           [{cntr, p1, p2} | acc]
       end
 
@@ -94,15 +94,15 @@ defmodule Evision.PCA.Test do
     src =
       for index <- 0..(Enum.count(contours) - 1), reduce: src do
         src ->
-          Evision.drawContours(src, contours, index, [0, 0, 255], thickness: 2)
+          Evision.drawContours(src, contours, index, {0, 0, 255}, thickness: 2)
       end
 
     src =
       for {cntr, p1, p2} <- pca_analysis, reduce: src do
         src ->
-          src = Evision.circle(src, cntr, 3, [255, 0, 255], thickness: 2)
-          src = drawAxis(src, List.to_tuple(cntr), p1, [0, 255, 0], 1)
-          drawAxis(src, List.to_tuple(cntr), p2, [255, 255, 0], 5)
+          src = Evision.circle(src, cntr, 3, {255, 0, 255}, thickness: 2)
+          src = drawAxis(src, cntr, p1, {0, 255, 0}, 1)
+          drawAxis(src, cntr, p2, {255, 255, 0}, 5)
       end
 
     output_path = Path.join([__DIR__, "pca_test_out.png"])

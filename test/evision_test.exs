@@ -92,7 +92,7 @@ defmodule Evision.Test do
 
     resize_height = 4
     resize_width = 6
-    %Mat{shape: {^resize_width, ^resize_height, 3}} = Evision.resize(mat, [resize_height, resize_width])
+    %Mat{shape: {^resize_width, ^resize_height, 3}} = Evision.resize(mat, {resize_height, resize_width})
   end
 
   test "Evision.imwrite" do

@@ -19,7 +19,7 @@ defmodule Evision.DNN.Test do
       confidence = "#{Float.round(confidence, 2)}"
       label = Enum.at(labels, class_id)
       text = "#{label}: #{confidence}"
-      mat = Cv.rectangle(mat, [l, t], [r, b], [255, 0, 0])
+      mat = Cv.rectangle(mat, {l, t}, {r, b}, {255, 0, 0})
 
       {{label_weight, label_height}, baseline} =
         Cv.getTextSize(text, Cv.cv_FONT_HERSHEY_SIMPLEX(), 0.5, 1)
@@ -29,13 +29,13 @@ defmodule Evision.DNN.Test do
       top = max(t, label_height)
 
       mat =
-        Cv.rectangle(mat, [l, top - label_height], [l + label_weight, top + baseline], [
+        Cv.rectangle(mat, {l, top - label_height}, {l + label_weight, top + baseline}, {
           255,
           255,
           255
-        ])
+        })
 
-      mat = Cv.putText(mat, text, [l, top], Cv.cv_FONT_HERSHEY_SIMPLEX(), 0.5, [0, 0, 255])
+      mat = Cv.putText(mat, text, {l, top}, Cv.cv_FONT_HERSHEY_SIMPLEX(), 0.5, {0, 0, 255})
 
       _visualise_pred(mat, labels, outs)
     end
@@ -110,7 +110,7 @@ defmodule Evision.DNN.Test do
       mat = Cv.imread(image_file)
       blob = Cv.DNN.blobFromImage(mat, opts)
 
-      model = Cv.DNN.Net.setInput(model, blob, name: "", scalefactor: 1.0, mean: [0, 0, 0])
+      model = Cv.DNN.Net.setInput(model, blob, name: "", scalefactor: 1.0, mean: {0, 0, 0})
 
       start_time = :os.system_time(:millisecond)
       detections = Cv.DNN.Net.forward(model, outBlobNames: out_names)
@@ -208,8 +208,8 @@ defmodule Evision.DNN.Test do
           DetectionModel.predict(filename, net, out_names,
             scalefactor: 1,
             swapRB: true,
-            mean: [0, 0, 0],
-            size: [300, 300]
+            mean: {0, 0, 0},
+            size: {300, 300}
           )
 
         {:ok, translated_outs} =
