@@ -13,7 +13,7 @@
 # System.put_env("EVISION_PREFER_PRECOMPILED", "false")
 
 Mix.install([
-  {:evision, "~> 0.1.10"},
+  {:evision, "~> 0.1.11"},
   {:req, "~> 0.3"},
   {:torchx, "~> 0.3"},
   {:nx, "~> 0.3", override: true},

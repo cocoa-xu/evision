@@ -7,7 +7,7 @@
 # System.put_env("EVISION_PREFER_PRECOMPILED", "false")
 
 Mix.install([
-  {:evision, "~> 0.1.10", path: "/Users/cocoa/Git/evision"},
+  {:evision, "~> 0.1.11", path: "/Users/cocoa/Git/evision"},
   {:kino, "~> 0.7"},
   {:req, "~> 0.3"}
 ])
