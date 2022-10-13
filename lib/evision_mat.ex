@@ -235,16 +235,16 @@ defmodule Evision.Mat do
 
   If it passes all the checks, then it will be displayed as an inline image in iTerm2.
   """
-  @spec quicklook(Nx.Tensor.t()) :: nil
+  @spec quicklook(Nx.Tensor.t()) :: Nx.Tensor.t()
   def quicklook(%Nx.Tensor{}=tensor) do
     case Evision.Nx.to_mat_2d(tensor) do
       %Evision.Mat{}=mat ->
         quicklook(mat)
     end
-    nil
+    tensor
   end
 
-  @spec quicklook(Evision.Mat.t()) :: nil
+  @spec quicklook(Evision.Mat.t()) :: Evision.Mat.t()
   def quicklook(%Evision.Mat{dims: dims, channels: c, shape: shape} = mat) do
     if Application.get_env(:evision, :display_inline_image_max_size) == :error do
       Application.put_env(:evision, :display_inline_image_max_size, {8192, 8192}, persistent: true)
@@ -254,8 +254,8 @@ defmodule Evision.Mat do
            {:display_image_if_in_iterm2, Application.fetch_env(:evision, :display_inline_image_iterm2)},
          {:is_2d, true} <- {:is_2d, is_2d_image},
          {:is_iterm2, true} <- {:is_iterm2, System.get_env("LC_TERMINAL") == "iTerm2"},
-         {:get_maximum_size, {:ok, {h, w}}} <- {:get_maximum_size, Application.get_env(:evision, :display_inline_image_max_size)},
-         {:within_maximum_size, true} <- {:within_maximum_size, ((0 < h and h < elem(shape, 0)) or h == :infinity) and ((0 < w and w < elem(shape, 1)) or w == :infinity)}  do
+         {:get_maximum_size, {h, w}} <- {:get_maximum_size, Application.get_env(:evision, :display_inline_image_max_size)},
+         {:within_maximum_size, true} <- {:within_maximum_size, ((0 < h and elem(shape, 0) < h) or h == :infinity) and ((0 < w and elem(shape, 1) < w) or w == :infinity)}  do
       {osc, st} =
         if String.starts_with?(System.get_env("TERM"), "screen") do
           {<< 27 >> <> "Ptmux;" <> << 27, 27 >>, "\a" <> << 27 >> <> "\\\r\n"}
@@ -268,7 +268,12 @@ defmodule Evision.Mat do
       head = osc <> "]1337;File=size=#{bin_size};inline=1:"
       :evision_nif.internal_mat_inspect(head, b64, st)
     end
-    nil
+    mat
+  end
+
+  @spec quicklook(term()) :: term()
+  def quicklook(any) do
+    any
   end
 
   if Code.ensure_loaded?(Kino.Render) do
