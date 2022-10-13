@@ -47,6 +47,10 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
     "x86_64-windows-msvc",
   ]
 
+  @available_nif_versions [
+    "2.16"
+  ]
+
   def available_nif_urls(version \\ Metadata.version()) do
     Enum.map(@available_targets, fn target -> get_download_url(target, version) end)
   end
@@ -69,6 +73,10 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
     else
       _ -> %{}
     end
+  end
+
+  def get_nif_version do
+    System.get_env("TARGET_NIF_VERSION", to_string(:erlang.system_info(:nif_version)))
   end
 
   def get_target do
@@ -158,6 +166,20 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
     end
 
     available_for_target?
+  end
+
+  def available_for_nif_version?(nif_version, log? \\ false) do
+    available_for_nif_version? = Enum.member?(@available_nif_versions, nif_version)
+
+    if log? do
+      if available_for_nif_version? do
+        Logger.info("Current NIF version `#{nif_version}` has precompiled binaries.")
+      else
+        Logger.warning("Current NIF version `#{nif_version}` does not have precompiled binaries.")
+      end
+    end
+
+    available_for_nif_version?
   end
 
   # https_opts and related code are taken from
@@ -342,8 +364,8 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
     end
   end
 
-  def filename(target, version, with_ext \\ "") do
-    "evision-#{target}-#{version}#{with_ext}"
+  def filename(target, version, nif_version, with_ext \\ "") do
+    "evision-nif_#{nif_version}-#{target}-#{version}#{with_ext}"
   end
 
   def get_download_url(target, version) do
@@ -384,9 +406,9 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
     Path.join([build_path, "lib", "#{app}", "priv"])
   end
 
-  def prepare(target, os, version) do
-    name = filename(target, version)
-    filename = filename(target, version, ".tar.gz")
+  def prepare(target, os, version, nif_version) do
+    name = filename(target, version, nif_version)
+    filename = filename(target, version, nif_version, ".tar.gz")
     cache_dir = cache_dir()
     cache_file = Path.join([cache_dir, filename])
     unarchive_dest_dir = Path.join([cache_dir, name])
@@ -539,7 +561,8 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
   def deploy_type(log? \\ false) do
     {target, [_arch, _os, abi]} = get_target()
     version = Metadata.last_released_version()
-    if use_precompiled?(log?) and available_for_version?(version, log?) and available_for_target?(target, log?) do
+    nif_version = get_nif_version()
+    if use_precompiled?(log?) and available_for_version?(version, log?) and available_for_target?(target, log?) and available_for_nif_version?(nif_version, log?) do
       {:precompiled, abi}
     else
       {:build_from_source, abi}
@@ -551,7 +574,8 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
     with {:precompiled, _} <- deploy_type(true) do
       {target, [_arch, os, _abi]} = get_target()
       version = Metadata.last_released_version()
-      prepare(target, os, version)
+      nif_version = get_nif_version()
+      prepare(target, os, version, nif_version)
     else
       _ ->
         raise RuntimeError, "Cannot use precompiled binaries."

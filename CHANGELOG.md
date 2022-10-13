@@ -9,6 +9,11 @@
 
   - I've managed to structurise all `#references` that have their own modules in [#101](https://github.com/cocoa-xu/evision/pull/101).
   - After generating function specs, dialyzer seems to be really upset about these bang(!) version functions, and would emit a few thousand warnings.
+- [Precompile] Include NIF version in precompiled tarball filename.
+
+  ```elixir
+  "evision-nif_#{nif_version}-#{target}-#{version}"
+  ```
 
 - Return value changed if the first return type of the function is `bool`
 

@@ -14,6 +14,7 @@ jobs:
       MIX_ENV: prod
       OPENCV_VER: "4.6.0"
       OTP_VERSION: "25.0.4"
+      NIF_VERSION: "2.16"
       ELIXIR_VERSION: "1.14.0"
       EVISION_PREFER_PRECOMPILED: "false"
       EVISION_GENERATE_LANG: "erlang,elixir"
@@ -86,7 +87,7 @@ jobs:
 
       - name: Create precompiled library
         run: |
-          export PKG_NAME=evision-x86_64-linux-musl-${GITHUB_REF##*/v}
+          export PKG_NAME=evision-nif_${NIF_VERSION}-x86_64-linux-musl-${GITHUB_REF##*/v}
           export PATH="${PATH}:${HOME}/.elixir/elixir-${ELIXIR_VERSION}/bin"
           mkdir -p "${PKG_NAME}"
           cp -a _build/${MIX_ENV}/lib/evision/priv "${PKG_NAME}"
@@ -108,6 +109,7 @@ jobs:
       OPENCV_VER: "4.6.0"
       MIX_ENV: prod
       OTP_VERSION: "25.0.4"
+      NIF_VERSION: "2.16"
       ELIXIR_VERSION: "1.14.0"
       ZIG_VERSION: "0.8.0"
       EVISION_PREFER_PRECOMPILED: "false"
@@ -185,7 +187,7 @@ jobs:
 
       - name: Create precompiled library
         run: |
-          export PKG_NAME=evision-${{ matrix.arch }}-${GITHUB_REF##*/v}
+          export PKG_NAME=evision-nif_${NIF_VERSION}-${{ matrix.arch }}-${GITHUB_REF##*/v}
           mkdir -p "${PKG_NAME}"
           cp -a _build/${MIX_ENV}/lib/evision/priv "${PKG_NAME}"
           cp -a lib/generated "${PKG_NAME}/elixir_generated"

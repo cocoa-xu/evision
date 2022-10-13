@@ -13,6 +13,7 @@ jobs:
       OPENCV_VER: "4.6.0"
       EVISION_PREFER_PRECOMPILED: "false"
       EVISION_GENERATE_LANG: "erlang,elixir"
+      NIF_VERSION: "2.16"
     strategy:
       fail-fast: false
       matrix:
@@ -85,7 +86,7 @@ jobs:
 
       - name: Create precompiled library
         run: |
-          export PKG_NAME=evision-${{ matrix.pair.arch_name }}-apple-darwin-${GITHUB_REF##*/v}
+          export PKG_NAME=evision-nif_${NIF_VERSION}-${{ matrix.pair.arch_name }}-apple-darwin-${GITHUB_REF##*/v}
           mkdir -p "${PKG_NAME}"
           cp -a _build/${MIX_ENV}/lib/evision/priv "${PKG_NAME}"
           cp -a lib/generated "${PKG_NAME}/elixir_generated"
