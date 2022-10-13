@@ -11,10 +11,16 @@
 # System.put_env("EVISION_PREFER_PRECOMPILED", "false")
 
 Mix.install([
-  {:evision, "~> 0.1.9"},
+  {:evision, "~> 0.1.10"},
   {:req, "~> 0.3"},
   {:kino, "~> 0.7"}
 ])
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+:ok
 ```
 
 ## Helper Function
@@ -96,7 +102,7 @@ mat = Cv.imread(lenna_test_image_path)
   type: {:u, 8},
   raw_type: 16,
   shape: {512, 512, 3},
-  ref: #Reference<0.2992585850.4173463580.172624>
+  ref: #Reference<0.2845725607.2514092053.18350>
 }
 ```
 
@@ -108,7 +114,7 @@ Kino.Image.new(encoded, :png)
 ### Resize image `Cv.resize`
 
 ```elixir
-resized_mat = Cv.resize(mat, [_width = 256, _height = 128])
+resized_mat = Cv.resize(mat, {_width = 256, _height = 128})
 ```
 
 <!-- livebook:{"output":true} -->
@@ -120,13 +126,22 @@ resized_mat = Cv.resize(mat, [_width = 256, _height = 128])
   type: {:u, 8},
   raw_type: 16,
   shape: {128, 256, 3},
-  ref: #Reference<0.2992585850.4173463572.169509>
+  ref: #Reference<0.2845725607.2514092052.18171>
 }
 ```
 
 ```elixir
 encoded = Cv.imencode(".png", resized_mat)
 Kino.Image.new(encoded, :png)
+```
+
+### Get a subarea
+
+`Evision.Mat.roi`
+
+```elixir
+Cv.imencode(".png", Cv.Mat.roi(mat, {10, 10, 130, 200}))
+|> Kino.Image.new(:png)
 ```
 
 ### Encode and decode image in memory
@@ -158,7 +173,7 @@ decoded_mat = Cv.imdecode(encoded_in_memory, Cv.cv_IMREAD_ANYCOLOR())
   type: {:u, 8},
   raw_type: 16,
   shape: {128, 256, 3},
-  ref: #Reference<0.2992585850.4173463572.169510>
+  ref: #Reference<0.2845725607.2514092052.18187>
 }
 ```
 
@@ -168,14 +183,6 @@ decoded_mat = Cv.imdecode(encoded_in_memory, Cv.cv_IMREAD_ANYCOLOR())
 # download the test image (has alpha channel)
 download_path = Path.join(__DIR__, "test.png")
 Helper.download!("https://github.com/cocoa-xu/evision/raw/main/test/test.png", download_path)
-```
-
-<!-- livebook:{"output":true} -->
-
-```
-
-21:54:43.110 [debug] follow_redirects: redirecting to https://raw.githubusercontent.com/cocoa-xu/evision/main/test/test.png
-
 ```
 
 <!-- livebook:{"output":true} -->
@@ -197,7 +204,7 @@ without_alpha = Cv.imread(download_path)
   type: {:u, 8},
   raw_type: 16,
   shape: {2, 3, 3},
-  ref: #Reference<0.2992585850.4173463580.172680>
+  ref: #Reference<0.2845725607.2514092053.18729>
 }
 ```
 
@@ -214,7 +221,7 @@ Cv.imread(download_path, flags: Cv.cv_IMREAD_UNCHANGED())
   type: {:u, 8},
   raw_type: 24,
   shape: {2, 3, 4},
-  ref: #Reference<0.2992585850.4173463580.172696>
+  ref: #Reference<0.2845725607.2514092053.18730>
 }
 ```
 
@@ -233,7 +240,7 @@ gray_scale_mat = Cv.imread(lenna_test_image_path, flags: Cv.cv_IMREAD_GRAYSCALE(
   type: {:u, 8},
   raw_type: 0,
   shape: {512, 512},
-  ref: #Reference<0.2992585850.4173463580.172727>
+  ref: #Reference<0.2845725607.2514092053.18731>
 }
 ```
 

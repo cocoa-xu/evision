@@ -4,8 +4,6 @@
 
 # Evision DNN - GoogleNet
 
-## Setup
-
 ```elixir
 # set `EVISION_PREFER_PRECOMPILED` to `false` 
 # if you prefer `:evision` to be compiled from source
@@ -13,10 +11,16 @@
 # System.put_env("EVISION_PREFER_PRECOMPILED", "false")
 
 Mix.install([
-  {:evision, "~> 0.1.9"},
+  {:evision, "~> 0.1.10"},
   {:kino, "~> 0.7"},
   {:req, "~> 0.3"}
 ])
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+:ok
 ```
 
 ## Helper Function
@@ -151,7 +155,7 @@ model =
 <!-- livebook:{"output":true} -->
 
 ```
-{:ok, #Reference<0.910554608.1494089757.145770>}
+%Evision.DNN.Net{ref: #Reference<0.4003430890.1440088085.55917>}
 ```
 
 ### Set backend and target
@@ -178,7 +182,7 @@ model = Cv.DNN.Net.setPreferableTarget(model, 0)
 <!-- livebook:{"output":true} -->
 
 ```
-{:ok, #Reference<0.910554608.1494089757.145770>}
+%Evision.DNN.Net{ref: #Reference<0.4003430890.1440088085.55917>}
 ```
 
 ### Read the test image and set as input
@@ -200,7 +204,7 @@ model = Cv.DNN.Net.setInput(model, blob, name: "", scalefactor: 1.0, mean: [0, 0
 <!-- livebook:{"output":true} -->
 
 ```
-{:ok, #Reference<0.910554608.1494089757.145770>}
+%Evision.DNN.Net{ref: #Reference<0.4003430890.1440088085.55917>}
 ```
 
 ### Forward
@@ -215,7 +219,7 @@ end_time = :os.system_time(:millisecond)
 <!-- livebook:{"output":true} -->
 
 ```
-"Inference time=>48 ms"
+"Inference time=>49 ms"
 ```
 
 ```elixir

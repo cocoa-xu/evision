@@ -11,10 +11,16 @@
 # System.put_env("EVISION_PREFER_PRECOMPILED", "false")
 
 Mix.install([
-  {:evision, "~> 0.1.9"},
-  {:req, "~> 0.3"},
-  {:kino, "~> 0.7"}
+    {:evision, "~> 0.1.10"},
+    {:req, "~> 0.3"},
+    {:kino, "~> 0.7"}
 ])
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+:ok
 ```
 
 ## Helper Function
@@ -49,7 +55,7 @@ end
 <!-- livebook:{"output":true} -->
 
 ```
-{:module, Helper, <<70, 79, 82, 49, 0, 0, 16, ...>>, {:download!, 3}}
+{:module, Helper, <<70, 79, 82, 49, 0, 0, 10, ...>>, {:download!, 3}}
 ```
 
 ### alias

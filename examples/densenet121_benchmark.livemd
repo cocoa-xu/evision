@@ -7,7 +7,7 @@
 # System.put_env("EVISION_PREFER_PRECOMPILED", "false")
 
 Mix.install([
-  {:evision, "~> 0.1.9"},
+  {:evision, "~> 0.1.10", path: "/Users/cocoa/Git/evision"},
   {:kino, "~> 0.7"},
   {:req, "~> 0.3"}
 ])
@@ -70,7 +70,7 @@ defmodule DetectionModel do
   end
 
   def get_model(filename) do
-    net = Cv.DNN.readNetFromONNX(filename)
+    net = Cv.DNN.readNetFromONNX(File.read!(filename))
     out_names = Cv.DNN.Net.getUnconnectedOutLayersNames(net)
     {:ok, net, out_names}
   end
@@ -84,7 +84,7 @@ defmodule DenseNet121 do
     test_filename = "CyprusShorthair.jpg"
 
     Helper.download!(
-      "https://github.com/onnx/models/blob/main/vision/classification/densenet-121/model/densenet-#{opset_version}.onnx",
+      "https://github.com/onnx/models/raw/main/vision/classification/densenet-121/model/densenet-#{opset_version}.onnx",
       onnx_filename
     )
 
