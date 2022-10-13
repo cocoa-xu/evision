@@ -51,13 +51,13 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
     "2.16"
   ]
 
-  def available_nif_urls(version \\ Metadata.version()) do
-    Enum.map(@available_targets, fn target -> get_download_url(target, version) end)
+  def available_nif_urls(nif_version, version \\ Metadata.version()) do
+    Enum.map(@available_targets, fn target -> get_download_url(target, version, nif_version) end)
   end
 
-  def current_target_nif_url(version \\ Metadata.version()) do
+  def current_target_nif_url(nif_version, version \\ Metadata.version()) do
     {target, _} = get_target()
-    get_download_url(target, version)
+    get_download_url(target, version, nif_version)
   end
 
   def checksum_file(app \\ Mix.Project.config()[:app]) when is_atom(app) do
@@ -368,8 +368,8 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
     "evision-nif_#{nif_version}-#{target}-#{version}#{with_ext}"
   end
 
-  def get_download_url(target, version) do
-    tar_file = filename(target, version, ".tar.gz")
+  def get_download_url(target, version, nif_version) do
+    tar_file = filename(target, version, nif_version, ".tar.gz")
     "#{Metadata.github_url()}/releases/download/v#{version}/#{tar_file}"
   end
 
@@ -468,7 +468,7 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
           end
 
         if needs_download do
-          download_url = get_download_url(target, version)
+          download_url = get_download_url(target, version, nif_version)
 
           {:ok, _} = Application.ensure_all_started(:inets)
           {:ok, _} = Application.ensure_all_started(:ssl)

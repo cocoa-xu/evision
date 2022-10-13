@@ -37,14 +37,14 @@ defmodule Mix.Tasks.Evision.Fetch do
   @impl true
   def run(flags) when is_list(flags) do
     {options, _args, _invalid} = OptionParser.parse(flags, strict: @switches)
-
+    nif_version = Precompile.get_nif_version()
     urls =
       cond do
         Keyword.get(options, :all) ->
-          Precompile.available_nif_urls()
+          Precompile.available_nif_urls(nif_version)
 
         Keyword.get(options, :only_local) ->
-          [Precompile.current_target_nif_url()]
+          [Precompile.current_target_nif_url(nif_version)]
 
         true ->
           raise "you need to specify either \"--all\" or \"--only-local\" flags"
