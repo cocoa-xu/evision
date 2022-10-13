@@ -586,6 +586,7 @@ static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Scalar& s, const ArgInfo&
                 return false;
             }
         }
+        return true;
     } else if (enif_is_list(env, o)) {
         unsigned n = 0;
         enif_get_list_length(env, o, &n);

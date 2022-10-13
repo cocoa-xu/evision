@@ -28,6 +28,8 @@ set(EVISION_AVAILABLE_PRECOMPILED_BINARIES
 )
 
 set(EVISION_AVAILABLE_PRECOMPILED_VERSIONS
+    "0.1.10"
+    "0.1.9"
     "0.1.8"
     "0.1.7"
     "0.1.6"
@@ -208,20 +210,20 @@ else()
         cmake_policy(SET CMP0068 NEW)
     endif()
 
-    if(WIN32)
-        execute_process(COMMAND "rmdir ${GENERATED_ELIXIR_SRC_DIR} /s /q && rmdir ${GENERATED_ERLANG_SRC_DIR} /s /q  && mkdir ${GENERATED_ELIXIR_SRC_DIR} && mkdir ${GENERATED_ERLANG_SRC_DIR}")
-        message(STATUS "Enabled modules: ${ENABLED_CV_MODULES}")
-        execute_process(COMMAND python3.exe "${PY_SRC}\\gen2.py" "${C_SRC}" "${GENERATED_ELIXIR_SRC_DIR}" "${GENERATED_ERLANG_SRC_DIR}" "${C_SRC}\\headers.txt" "${EVISION_GENERATE_LANG}" "${ENABLED_CV_MODULES}" RESULT_VARIABLE STATUS)
-    else()
-        execute_process(COMMAND bash -c "rm -rf ${GENERATED_ELIXIR_SRC_DIR} && rm -rf ${GENERATED_ERLANG_SRC_DIR} && mkdir -p ${GENERATED_ELIXIR_SRC_DIR} && mkdir -p ${GENERATED_ERLANG_SRC_DIR}")
-        message(STATUS "Enabled modules: ${ENABLED_CV_MODULES}")
-        execute_process(COMMAND bash -c "python3 ${PY_SRC}/gen2.py ${C_SRC} ${GENERATED_ELIXIR_SRC_DIR} ${GENERATED_ERLANG_SRC_DIR} ${C_SRC}/headers.txt ${EVISION_GENERATE_LANG} ${ENABLED_CV_MODULES}" RESULT_VARIABLE STATUS)
-    endif()
-    if(STATUS STREQUAL "0")
-        message(STATUS "Successfully generated binding code for: ${EVISION_GENERATE_LANG}")
-    else()
-        message(FATAL_ERROR "Failed to generate binding code for: ${EVISION_GENERATE_LANG}")
-    endif()
+    # if(WIN32)
+    #     execute_process(COMMAND "rmdir ${GENERATED_ELIXIR_SRC_DIR} /s /q && rmdir ${GENERATED_ERLANG_SRC_DIR} /s /q  && mkdir ${GENERATED_ELIXIR_SRC_DIR} && mkdir ${GENERATED_ERLANG_SRC_DIR}")
+    #     message(STATUS "Enabled modules: ${ENABLED_CV_MODULES}")
+    #     execute_process(COMMAND python3.exe "${PY_SRC}\\gen2.py" "${C_SRC}" "${GENERATED_ELIXIR_SRC_DIR}" "${GENERATED_ERLANG_SRC_DIR}" "${C_SRC}\\headers.txt" "${EVISION_GENERATE_LANG}" "${ENABLED_CV_MODULES}" RESULT_VARIABLE STATUS)
+    # else()
+    #     execute_process(COMMAND bash -c "rm -rf ${GENERATED_ELIXIR_SRC_DIR} && rm -rf ${GENERATED_ERLANG_SRC_DIR} && mkdir -p ${GENERATED_ELIXIR_SRC_DIR} && mkdir -p ${GENERATED_ERLANG_SRC_DIR}")
+    #     message(STATUS "Enabled modules: ${ENABLED_CV_MODULES}")
+    #     execute_process(COMMAND bash -c "python3 ${PY_SRC}/gen2.py ${C_SRC} ${GENERATED_ELIXIR_SRC_DIR} ${GENERATED_ERLANG_SRC_DIR} ${C_SRC}/headers.txt ${EVISION_GENERATE_LANG} ${ENABLED_CV_MODULES}" RESULT_VARIABLE STATUS)
+    # endif()
+    # if(STATUS STREQUAL "0")
+    #     message(STATUS "Successfully generated binding code for: ${EVISION_GENERATE_LANG}")
+    # else()
+    #     message(FATAL_ERROR "Failed to generate binding code for: ${EVISION_GENERATE_LANG}")
+    # endif()
 
     if(WIN32)
         string(REPLACE "\\" "/" C_SRC "${C_SRC}")
