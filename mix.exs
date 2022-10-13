@@ -28,7 +28,7 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
     "0.1.3",
     "0.1.2",
     "0.1.1",
-    "0.1.0-dev",
+    "0.1.0-dev"
   ]
 
   @available_targets [
@@ -44,7 +44,7 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
     "riscv64-linux-gnu",
     "riscv64-linux-musl",
     "i686-linux-gnu",
-    "x86_64-windows-msvc",
+    "x86_64-windows-msvc"
   ]
 
   @available_nif_versions [
@@ -67,6 +67,7 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
 
   defp read_checksum_map(app \\ Mix.Project.config()[:app]) when is_atom(app) do
     file = checksum_file(app)
+
     with {:ok, contents} <- File.read(file),
          {%{} = contents, _} <- Code.eval_string(contents) do
       contents
@@ -81,20 +82,24 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
 
   def get_target do
     target = String.split(to_string(:erlang.system_info(:system_architecture)), "-")
-    [arch, os, abi] = case Enum.count(target) do
-      3 ->
-        target
-      4 ->
-        [arch, _vendor, os, abi] = target
-        [arch, os, abi]
-      1 ->
-        with ["win32"] <- target do
-          ["x86_64", "windows", "msvc"]
-        else
-          [unknown_target] ->
-            [unknown_target, "unknown", nil]
-        end
-    end
+
+    [arch, os, abi] =
+      case Enum.count(target) do
+        3 ->
+          target
+
+        4 ->
+          [arch, _vendor, os, abi] = target
+          [arch, os, abi]
+
+        1 ->
+          with ["win32"] <- target do
+            ["x86_64", "windows", "msvc"]
+          else
+            [unknown_target] ->
+              [unknown_target, "unknown", nil]
+          end
+      end
 
     abi =
       case abi do
@@ -126,14 +131,19 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
       else
         "true"
       end
+
     prefer_precompiled = System.get_env("EVISION_PREFER_PRECOMPILED", prefer_precompiled_default)
     use_precompiled? = prefer_precompiled == "true"
 
     if log? do
       if use_precompiled? do
-        Logger.info("EVISION_PREFER_PRECOMPILED: true; try to download and use the precompiled library.")
+        Logger.info(
+          "EVISION_PREFER_PRECOMPILED: true; try to download and use the precompiled library."
+        )
       else
-        Logger.info("EVISION_PREFER_PRECOMPILED: #{prefer_precompiled}; will not use precompiled binaries.")
+        Logger.info(
+          "EVISION_PREFER_PRECOMPILED: #{prefer_precompiled}; will not use precompiled binaries."
+        )
       end
     end
 
@@ -185,39 +195,39 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
   # https_opts and related code are taken from
   # https://github.com/elixir-cldr/cldr_utils/blob/master/lib/cldr/http/http.ex
   @certificate_locations [
-    # Configured cacertfile
-    System.get_env("ELIXIR_MAKE_CACERT"),
+                           # Configured cacertfile
+                           System.get_env("ELIXIR_MAKE_CACERT"),
 
-    # Populated if hex package CAStore is configured
-    if(Code.ensure_loaded?(CAStore), do: CAStore.file_path()),
+                           # Populated if hex package CAStore is configured
+                           if(Code.ensure_loaded?(CAStore), do: CAStore.file_path()),
 
-    # Populated if hex package certfi is configured
-    if(Code.ensure_loaded?(:certifi),
-      do: :certifi.cacertfile() |> List.to_string()
-    ),
+                           # Populated if hex package certfi is configured
+                           if(Code.ensure_loaded?(:certifi),
+                             do: :certifi.cacertfile() |> List.to_string()
+                           ),
 
-    # Debian/Ubuntu/Gentoo etc.
-    "/etc/ssl/certs/ca-certificates.crt",
+                           # Debian/Ubuntu/Gentoo etc.
+                           "/etc/ssl/certs/ca-certificates.crt",
 
-    # Fedora/RHEL 6
-    "/etc/pki/tls/certs/ca-bundle.crt",
+                           # Fedora/RHEL 6
+                           "/etc/pki/tls/certs/ca-bundle.crt",
 
-    # OpenSUSE
-    "/etc/ssl/ca-bundle.pem",
+                           # OpenSUSE
+                           "/etc/ssl/ca-bundle.pem",
 
-    # OpenELEC
-    "/etc/pki/tls/cacert.pem",
+                           # OpenELEC
+                           "/etc/pki/tls/cacert.pem",
 
-    # CentOS/RHEL 7
-    "/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem",
+                           # CentOS/RHEL 7
+                           "/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem",
 
-    # Open SSL on MacOS
-    "/usr/local/etc/openssl/cert.pem",
+                           # Open SSL on MacOS
+                           "/usr/local/etc/openssl/cert.pem",
 
-    # MacOS & Alpine Linux
-    "/etc/ssl/cert.pem"
-  ]
-  |> Enum.reject(&is_nil/1)
+                           # MacOS & Alpine Linux
+                           "/etc/ssl/cert.pem"
+                         ]
+                         |> Enum.reject(&is_nil/1)
 
   @doc false
   def certificate_store do
@@ -421,6 +431,7 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
       else
         "evision.so"
       end
+
     evision_so_file = Path.join([app_priv(), evision_so_file])
 
     # first we check if we already have the NIF file
@@ -442,16 +453,24 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
             if File.regular?(cache_file) do
               # of course we have to compute its checksum
               {:ok, algo, cache_file_checksum} = checksum(cache_file)
-              Logger.info("Precompiled binary tarball cached at #{cache_file}, #{algo}=#{cache_file_checksum}")
+
+              Logger.info(
+                "Precompiled binary tarball cached at #{cache_file}, #{algo}=#{cache_file_checksum}"
+              )
 
               # and verify the checksum in the map
-              {checksum_matched?, algo_in_map, checksum_in_map} = verify_checksum(cache_file, algo, cache_file_checksum)
+              {checksum_matched?, algo_in_map, checksum_in_map} =
+                verify_checksum(cache_file, algo, cache_file_checksum)
+
               if checksum_matched? do
                 # if these checksum matches
                 # we can extract files from the tarball
                 {false, true}
               else
-                Logger.error("Checksum mismatched: #{cache_file}[#{algo}=#{cache_file_checksum}], expected:[#{algo_in_map}=#{checksum_in_map}]")
+                Logger.error(
+                  "Checksum mismatched: #{cache_file}[#{algo}=#{cache_file_checksum}], expected:[#{algo_in_map}=#{checksum_in_map}]"
+                )
+
                 Logger.warning("Will delete cached tarball #{cache_file} and re-download")
                 # otherwise we delete the cached file and download it again
                 {true, true}
@@ -460,7 +479,11 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
               # not a regular file
               # remove it and download again
               File.rm_rf!(cache_file)
-              Logger.warning("Cached file at #{cache_file} is not a regular file, will delete it and re-download")
+
+              Logger.warning(
+                "Cached file at #{cache_file} is not a regular file, will delete it and re-download"
+              )
+
               {true, true}
             end
           else
@@ -475,11 +498,18 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
 
           # of course we have to verify its checksum too
           {:ok, algo, checksum} = download!(download_url, cache_file, true)
-          Logger.info("Precompiled binary tarball downloaded and saved to #{cache_file}, #{algo}=#{checksum}")
 
-          {checksum_matched?, algo_in_map, checksum_in_map} = verify_checksum(cache_file, algo, checksum)
+          Logger.info(
+            "Precompiled binary tarball downloaded and saved to #{cache_file}, #{algo}=#{checksum}"
+          )
+
+          {checksum_matched?, algo_in_map, checksum_in_map} =
+            verify_checksum(cache_file, algo, checksum)
+
           if !checksum_matched? do
-            msg = "Checksum mismatched: downloaded file: #{cache_file}[#{algo}=#{checksum}], expected:[#{algo_in_map}=#{checksum_in_map}]"
+            msg =
+              "Checksum mismatched: downloaded file: #{cache_file}[#{algo}=#{checksum}], expected:[#{algo_in_map}=#{checksum_in_map}]"
+
             Logger.error(msg)
             raise RuntimeError, msg
           end
@@ -490,6 +520,7 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
           unarchive!(cache_file, cache_dir)
         end
       end
+
       # if `unarchive_dest_dir` exists and is a directory
       # then we can simply copy they to the expected locations
 
@@ -517,15 +548,18 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
 
   def deploy_from_dir!(cached_priv_dir, cached_elixir_dir) do
     app_priv = app_priv()
-    generated_elixir_dir = Path.join([File.cwd!, "lib", "generated"])
+    generated_elixir_dir = Path.join([File.cwd!(), "lib", "generated"])
+
     if File.exists?(app_priv) do
       File.rm_rf!(app_priv)
     end
+
     if File.exists?(generated_elixir_dir) do
       File.rm_rf!(generated_elixir_dir)
     end
 
     Logger.info("Copying priv directory: #{cached_priv_dir} => #{app_priv}")
+
     with {:ok, _} <- File.cp_r(cached_priv_dir, app_priv) do
       :ok
     else
@@ -535,12 +569,17 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
         raise RuntimeError, msg
     end
 
-    Logger.info("Copying generated Elixir binding files: #{cached_elixir_dir} => #{generated_elixir_dir}")
+    Logger.info(
+      "Copying generated Elixir binding files: #{cached_elixir_dir} => #{generated_elixir_dir}"
+    )
+
     with {:ok, _} <- File.cp_r(cached_elixir_dir, generated_elixir_dir) do
       :ok
     else
       {msg, code} ->
-        msg = "Failed to copy generated Elixir binding files, `cp` exited with code #{code}: #{inspect(msg)}"
+        msg =
+          "Failed to copy generated Elixir binding files, `cp` exited with code #{code}: #{inspect(msg)}"
+
         Logger.info(msg)
         raise RuntimeError, msg
     end
@@ -548,6 +587,7 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
 
   def unarchive!(filepath, to_directory) do
     File.mkdir_p!(to_directory)
+
     with :ok <- :erl_tar.extract(filepath, [:compressed, {:cwd, to_directory}]) do
       :ok
     else
@@ -562,7 +602,9 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
     {target, [_arch, _os, abi]} = get_target()
     version = Metadata.last_released_version()
     nif_version = get_nif_version()
-    if use_precompiled?(log?) and available_for_version?(version, log?) and available_for_target?(target, log?) and available_for_nif_version?(nif_version, log?) do
+
+    if use_precompiled?(log?) and available_for_version?(version, log?) and
+         available_for_target?(target, log?) and available_for_nif_version?(nif_version, log?) do
       {:precompiled, abi}
     else
       {:build_from_source, abi}
@@ -595,11 +637,14 @@ defmodule Evision.MixProject do
     {compilers, make_env} =
       if System.get_env("EVISION_FETCH_PRECOMPILED") != "true" do
         {deploy_type, target_abi} = EvisionPrecompiled.deploy_type(false)
+
         if deploy_type == :build_from_source do
           {cmake_options, enabled_modules} = generate_cmake_options()
+
           make_env = %{
             "HAVE_NINJA" => "#{System.find_executable("ninja") != nil}",
-            "OPENCV_VER" => opencv_versions(System.get_env("OPENCV_VER", Metadata.opencv_version())),
+            "OPENCV_VER" =>
+              opencv_versions(System.get_env("OPENCV_VER", Metadata.opencv_version())),
             "MAKE_BUILD_FLAGS" =>
               System.get_env("MAKE_BUILD_FLAGS", "-j#{System.schedulers_online()}"),
             "CMAKE_OPTIONS" => cmake_options,
@@ -607,15 +652,16 @@ defmodule Evision.MixProject do
             "EVISION_PREFER_PRECOMPILED" => "false",
             "EVISION_PRECOMPILED_VERSION" => Metadata.last_released_version(),
             "TARGET_ABI" => System.get_env("TARGET_ABI", target_abi),
-            "EVISION_GENERATE_LANG" => System.get_env("EVISION_GENERATE_LANG", "elixir"),
+            "EVISION_GENERATE_LANG" => System.get_env("EVISION_GENERATE_LANG", "elixir")
           }
+
           {[:elixir_make] ++ Mix.compilers(), make_env}
         else
           {[:evision_precompiled] ++ Mix.compilers(), %{}}
         end
-    else
-      {Mix.compilers(), %{}}
-    end
+      else
+        {Mix.compilers(), %{}}
+      end
 
     [
       app: Metadata.app(),
@@ -659,7 +705,8 @@ defmodule Evision.MixProject do
       )
 
       Logger.warning(
-        "Compatible OpenCV versions: " <> (Metadata.compatible_opencv_versions() |> Enum.join(", "))
+        "Compatible OpenCV versions: " <>
+          (Metadata.compatible_opencv_versions() |> Enum.join(", "))
       )
 
       version
@@ -890,8 +937,7 @@ defmodule Evision.MixProject do
     [
       name: "evision",
       # These are the default files included in the package
-      files:
-        ~w(
+      files: ~w(
           c_src/evision_custom_headers
           c_src/modules
           c_src/ArgInfo.hpp

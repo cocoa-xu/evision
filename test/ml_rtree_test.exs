@@ -15,7 +15,8 @@ defmodule Evision.ML.RTrees.Test do
     dataset = Evision.ML.TrainData.create(features, Evision.cv_ROW_SAMPLE(), labels)
     dataset = Evision.ML.TrainData.setTrainTestSplitRatio(dataset, 0.8, shuffle: true)
 
-    rtree = Evision.ML.RTrees.create()
+    rtree =
+      Evision.ML.RTrees.create()
       |> Evision.ML.RTrees.setMaxDepth(10)
       |> Evision.ML.RTrees.setMaxCategories(categories)
       |> Evision.ML.RTrees.setCVFolds(1)

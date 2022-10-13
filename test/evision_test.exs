@@ -35,20 +35,24 @@ defmodule Evision.Test do
     %Mat{type: {:u, 8}, shape: {2, 3, 3}} = mat = Evision.imread(Path.join([__DIR__, "test.png"]))
 
     img_data = Evision.Mat.to_binary(mat)
+
     assert <<126, 145, 241, 78, 190, 136, 183, 122, 68, 187, 196, 244, 145, 205, 190, 200, 184,
              144>> == img_data
   end
 
   test "decode png from file w/ alpha channel" do
-    %Mat{type: {:u, 8}, shape: {2, 3, 4}} = mat = Evision.imread(Path.join([__DIR__, "test.png"]), flags: Evision.cv_IMREAD_UNCHANGED())
+    %Mat{type: {:u, 8}, shape: {2, 3, 4}} =
+      mat = Evision.imread(Path.join([__DIR__, "test.png"]), flags: Evision.cv_IMREAD_UNCHANGED())
 
     img_data = Evision.Mat.to_binary(mat)
+
     assert <<126, 145, 241, 255, 78, 190, 136, 255, 183, 122, 68, 255, 187, 196, 244, 255, 145,
              205, 190, 255, 200, 184, 144, 255>> == img_data
   end
 
   test "decode image from file grayscale" do
-    %Mat{type: {:u, 8}, shape: {2, 3}} = mat = Evision.imread(Path.join([__DIR__, "test.png"]), flags: Evision.cv_IMREAD_GRAYSCALE())
+    %Mat{type: {:u, 8}, shape: {2, 3}} =
+      mat = Evision.imread(Path.join([__DIR__, "test.png"]), flags: Evision.cv_IMREAD_GRAYSCALE())
 
     img_data = Evision.Mat.to_binary(mat)
     assert <<171, 161, 112, 209, 193, 173>> == img_data
@@ -58,6 +62,7 @@ defmodule Evision.Test do
     %Mat{type: {:u, 8}, shape: {2, 3, 3}} = mat = Evision.imread(Path.join([__DIR__, "test.jpg"]))
 
     img_data = Evision.Mat.to_binary(mat)
+
     assert <<70, 128, 180, 61, 119, 171, 117, 143, 65, 112, 170, 222, 95, 153, 205, 140, 166, 88>> ==
              img_data
   end
@@ -92,7 +97,9 @@ defmodule Evision.Test do
 
     resize_height = 4
     resize_width = 6
-    %Mat{shape: {^resize_width, ^resize_height, 3}} = Evision.resize(mat, {resize_height, resize_width})
+
+    %Mat{shape: {^resize_width, ^resize_height, 3}} =
+      Evision.resize(mat, {resize_height, resize_width})
   end
 
   test "Evision.imwrite" do
@@ -104,6 +111,7 @@ defmodule Evision.Test do
     %Mat{type: {:u, 8}, shape: {2, 3, 3}} = mat = Evision.imread(output_path)
 
     img_data = Evision.Mat.to_binary(mat)
+
     assert <<126, 145, 241, 78, 190, 136, 183, 122, 68, 187, 196, 244, 145, 205, 190, 200, 184,
              144>> == img_data
 
@@ -186,6 +194,7 @@ defmodule Evision.Test do
       shape: {},
       ref: any_ref
     } = Evision.Mat.literal([])
+
     assert is_reference(any_ref)
   end
 
@@ -197,7 +206,8 @@ defmodule Evision.Test do
       raw_type: 0,
       shape: {1, 3, 3},
       ref: any_ref
-    } = Evision.Mat.literal([[[1,1,1],[2,2,2],[3,3,3]]], :u8)
+    } = Evision.Mat.literal([[[1, 1, 1], [2, 2, 2], [3, 3, 3]]], :u8)
+
     assert is_reference(any_ref)
 
     %Evision.Mat{
@@ -207,7 +217,8 @@ defmodule Evision.Test do
       raw_type: 5,
       shape: {1, 3, 3},
       ref: any_ref
-    } = Evision.Mat.literal([[[1,1,1],[2,2,2],[3,3,3]]], :f32)
+    } = Evision.Mat.literal([[[1, 1, 1], [2, 2, 2], [3, 3, 3]]], :f32)
+
     assert is_reference(any_ref)
   end
 
@@ -219,7 +230,8 @@ defmodule Evision.Test do
       raw_type: 16,
       shape: {1, 3, 3},
       ref: any_ref
-    } = Evision.Mat.literal([[[1,1,1],[2,2,2],[3,3,3]]], :u8, as_2d: true)
+    } = Evision.Mat.literal([[[1, 1, 1], [2, 2, 2], [3, 3, 3]]], :u8, as_2d: true)
+
     assert is_reference(any_ref)
 
     %Evision.Mat{
@@ -229,7 +241,8 @@ defmodule Evision.Test do
       raw_type: 21,
       shape: {1, 3, 3},
       ref: any_ref
-    } = Evision.Mat.literal([[[1,1,1],[2,2,2],[3,3,3]]], :f32, as_2d: true)
+    } = Evision.Mat.literal([[[1, 1, 1], [2, 2, 2], [3, 3, 3]]], :f32, as_2d: true)
+
     assert is_reference(any_ref)
   end
 
@@ -247,7 +260,7 @@ defmodule Evision.Test do
       dims: 2,
       type: {:u, 8},
       raw_type: 16,
-      shape: {200, 100, 3},
+      shape: {200, 100, 3}
     } = Evision.Mat.roi(img, {10, 10, 100, 200})
 
     # Mat operator()(const std::vector<Range>& ranges) const;
@@ -256,14 +269,15 @@ defmodule Evision.Test do
       dims: 2,
       type: {:u, 8},
       raw_type: 16,
-      shape: {90, 90, 3},
+      shape: {90, 90, 3}
     } = Evision.Mat.roi(img, [{10, 100}, {10, 100}])
+
     %Evision.Mat{
       channels: 3,
       dims: 2,
       type: {:u, 8},
       raw_type: 16,
-      shape: {90, 300, 3},
+      shape: {90, 300, 3}
     } = Evision.Mat.roi(img, [{10, 100}, :all])
   end
 
@@ -276,14 +290,15 @@ defmodule Evision.Test do
       dims: 2,
       type: {:u, 8},
       raw_type: 16,
-      shape: {90, 180, 3},
+      shape: {90, 180, 3}
     } = Evision.Mat.roi(img, {10, 100}, {20, 200})
+
     %Evision.Mat{
       channels: 3,
       dims: 2,
       type: {:u, 8},
       raw_type: 16,
-      shape: {300, 180, 3},
+      shape: {300, 180, 3}
     } = Evision.Mat.roi(img, :all, {20, 200})
   end
 end

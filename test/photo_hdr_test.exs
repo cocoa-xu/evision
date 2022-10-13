@@ -45,7 +45,8 @@ defmodule Evision.Photo.HDR.Test do
       |> File.read!()
       |> String.split("\n")
       |> Enum.reject(&(String.length(&1) == 0))
-      |> Enum.map(&String.replace(&1, "\r", "")) # remove "\r" for Windows
+      # remove "\r" for Windows
+      |> Enum.map(&String.replace(&1, "\r", ""))
       |> Enum.map(&String.split(&1, " "))
       |> Enum.map(&List.to_tuple(&1))
       |> Enum.map(fn {image_filename, times} ->

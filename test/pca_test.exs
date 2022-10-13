@@ -11,13 +11,15 @@ defmodule Evision.PCA.Test do
     qx = trunc(px - scale * hypotenuse * :math.cos(angle))
     qy = trunc(py - scale * hypotenuse * :math.sin(angle))
 
-    %Mat{} = src =
+    %Mat{} =
+      src =
       Evision.line(src, {px, py}, {qx, qy}, colour, thickness: 1, style: Evision.cv_LINE_AA())
 
     px = trunc(qx + 9 * :math.cos(angle + :math.pi() / 4))
     py = trunc(qy + 9 * :math.sin(angle + :math.pi() / 4))
 
-    %Mat{} = src =
+    %Mat{} =
+      src =
       Evision.line(src, {px, py}, {qx, qy}, colour, thickness: 1, style: Evision.cv_LINE_AA())
 
     px = trunc(qx + 9 * :math.cos(angle - :math.pi() / 4))
@@ -27,7 +29,8 @@ defmodule Evision.PCA.Test do
 
   @tag :nx
   test "Use the OpenCV class Evision.PCA to calculate the orientation of an object." do
-    gray = Evision.imread(Path.join([__DIR__, "pca_test.jpg"]), flags: Evision.cv_IMREAD_GRAYSCALE())
+    gray =
+      Evision.imread(Path.join([__DIR__, "pca_test.jpg"]), flags: Evision.cv_IMREAD_GRAYSCALE())
 
     {_, bw} =
       Evision.threshold(gray, 50, 255, Evision.cv_THRESH_BINARY() ||| Evision.cv_THRESH_OTSU())
@@ -55,13 +58,13 @@ defmodule Evision.PCA.Test do
           data_pts = Evision.Mat.as_type(data_pts, {:f, 64})
 
           # Perform PCA analysis
-          {mean, eigenvectors, eigenvalues} =
-            Evision.pcaCompute2(data_pts, Evision.Mat.empty())
+          {mean, eigenvectors, eigenvalues} = Evision.pcaCompute2(data_pts, Evision.Mat.empty())
 
           eigenvectors = Evision.Nx.to_nx(eigenvectors, Nx.BinaryBackend)
           eigenvalues = Evision.Nx.to_nx(eigenvalues, Nx.BinaryBackend)
 
-          <<centre_x::float-size(64)-little, centre_y::float-size(64)-little, _::binary>> = Evision.Mat.to_binary(mean)
+          <<centre_x::float-size(64)-little, centre_y::float-size(64)-little, _::binary>> =
+            Evision.Mat.to_binary(mean)
 
           centre_x = trunc(centre_x)
           centre_y = trunc(centre_y)

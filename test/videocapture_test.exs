@@ -7,7 +7,14 @@ defmodule Evision.VideoCapture.Test do
   @tag :require_ffmpeg
   test "open a video file and read one frame" do
     video = Evision.VideoCapture.videoCapture(Path.join([__DIR__, "videocapture_test.mp4"]))
-    %Evision.VideoCapture{isOpened: true, fps: 43.2, frame_count: 18.0, frame_height: 1080.0, frame_width: 1920.0} = video
+
+    %Evision.VideoCapture{
+      isOpened: true,
+      fps: 43.2,
+      frame_count: 18.0,
+      frame_height: 1080.0,
+      frame_width: 1920.0
+    } = video
 
     fourcc = Evision.VideoCapture.get(video, Evision.cv_CAP_PROP_FOURCC())
     assert 828_601_960.0 == fourcc

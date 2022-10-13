@@ -6,12 +6,18 @@ defmodule Evision.VideoWriter.Test do
   defmodule WriteVideo do
     def given(input_video_file, output_video_file, output_fps, output_seconds) do
       reader = Evision.VideoCapture.videoCapture(input_video_file)
-      fourcc = Evision.VideoWriter.fourcc(109, 112, 52, 118) # mp4v
+      # mp4v
+      fourcc = Evision.VideoWriter.fourcc(109, 112, 52, 118)
       height = Evision.VideoCapture.get(reader, Evision.cv_CAP_PROP_FRAME_HEIGHT()) |> trunc()
       width = Evision.VideoCapture.get(reader, Evision.cv_CAP_PROP_FRAME_WIDTH()) |> trunc()
 
       writer =
-        Evision.VideoWriter.videoWriter(output_video_file, fourcc, output_fps / 1, {width, height})
+        Evision.VideoWriter.videoWriter(
+          output_video_file,
+          fourcc,
+          output_fps / 1,
+          {width, height}
+        )
 
       assert true == Evision.VideoWriter.isOpened(writer)
       frame = Evision.VideoCapture.read(reader)

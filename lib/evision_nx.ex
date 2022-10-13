@@ -37,10 +37,13 @@ defmodule Evision.Nx do
     else
       {:error, reason} ->
         {:error, reason}
+
       {:not_empty_shape, false} ->
         {:error, "shape is {}"}
+
       {:not_error, false, error} ->
         error
+
       {:is_binary, false, error} ->
         error
     end
@@ -72,13 +75,20 @@ defmodule Evision.Nx do
         if Tuple.product(shape) == Tuple.product(as_shape) do
           Evision.Mat.from_binary_by_shape(Nx.to_binary(t), Nx.type(t), as_shape)
         else
-          {:error, "cannot convert tensor(#{inspect(shape)}) to mat as shape #{inspect(as_shape)}"}
+          {:error,
+           "cannot convert tensor(#{inspect(shape)}) to mat as shape #{inspect(as_shape)}"}
         end
     end
   end
 
   @doc namespace: :external
-  @spec to_mat(binary(), Evision.Mat.mat_type(), non_neg_integer(), non_neg_integer(), non_neg_integer()) :: Evision.Mat.maybe_mat_out()
+  @spec to_mat(
+          binary(),
+          Evision.Mat.mat_type(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer()
+        ) :: Evision.Mat.maybe_mat_out()
   def to_mat(binary, type, rows, cols, channels) do
     Evision.Mat.from_binary(binary, type, rows, cols, channels)
   end
@@ -99,8 +109,10 @@ defmodule Evision.Nx do
     case Nx.shape(t) do
       {height, width} ->
         Evision.Mat.from_binary(Nx.to_binary(t), Nx.type(t), height, width, 1)
+
       {height, width, channels} ->
         Evision.Mat.from_binary(Nx.to_binary(t), Nx.type(t), height, width, channels)
+
       shape ->
         {:error, "Cannot convert tensor(#{inspect(shape)}) to a 2D image"}
     end

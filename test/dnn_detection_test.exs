@@ -51,7 +51,7 @@ defmodule Evision.DNN.Test do
       do: {:ok, Enum.reverse(acc)}
 
     defp _postprocess(
-           %Evision.Mat{shape: {h, w, _}}=mat,
+           %Evision.Mat{shape: {h, w, _}} = mat,
            [outs | detections],
            net,
            confidence_threshold,
