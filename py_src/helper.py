@@ -266,8 +266,6 @@ def map_argtype_to_type(argtype: str):
         return 'b'
     elif argtype == 'String' or argtype == 'c_string' or argtype == 'char' or argtype == 'string':
         return 'b'
-    elif argtype == 'Size' or argtype == 'Scalar' or argtype == 'Point2f' or argtype == 'Point':
-        return 'l'
     elif argtype[:7] == 'vector_' or argtype[:12] == 'std::vector<':
         return 'l'
     elif is_list_type(argtype):
@@ -386,21 +384,18 @@ def is_tuple_type(argtype):
         'TermCriteria',
         'cv::TermCriteria',
         'CvTermCriteria',
-        'CvSlice'
-    ]
-    return argtype in tuple_types
-
-def is_list_or_tuple(argtype):
-    list_or_tuple_types = [
+        'CvSlice',
         'Point',
+        'Point2i',
         'Point2f',
         'Point2d',
+        'Point3i',
         'Point3f',
         'Point3d',
         'Size',
         'Scalar',
     ]
-    return argtype in list_or_tuple_types
+    return argtype in tuple_types
 
 def is_ref_or_struct(argtype: str):
     ref_or_struct_types = [
@@ -813,8 +808,6 @@ def map_argtype_to_guard_elixir(argname, argtype):
         return f'(-128 <= {argname} and {argname} <= 127)'
     elif argtype == 'Range':
         return f'(is_tuple({argname}) or {argname} == :all)'
-    elif is_list_or_tuple(argtype):
-        return f'(is_tuple({argname}) or is_list({argname}))'
     elif is_tuple_type(argtype):
         return f'is_tuple({argname})'
     elif is_struct(argtype):
@@ -853,8 +846,6 @@ def map_argtype_to_guard_erlang(argname, argtype):
         return f'is_list({argname})'
     elif argtype == 'Range':
         return f'(is_tuple({argname}) or {argname} == all)'
-    elif is_list_or_tuple(argtype):
-        return f'(is_tuple({argname}) or is_list({argname}))'
     elif is_tuple_type(argtype):
         return f'is_tuple({argname})'
     elif is_struct(argtype):
