@@ -2,7 +2,7 @@
 
 <!-- livebook:{"persist_outputs":true} -->
 
-# Stitcher Demo
+# Evision Example - Stitching Multiple Photos
 
 ```elixir
 # set `EVISION_PREFER_PRECOMPILED` to `false` 
@@ -23,7 +23,7 @@ Mix.install([
 :ok
 ```
 
-## Helper Function
+## Define Some Helper Functions
 
 ```elixir
 defmodule Helper do
@@ -58,17 +58,7 @@ end
 {:module, Helper, <<70, 79, 82, 49, 0, 0, 10, ...>>, {:download!, 3}}
 ```
 
-### alias
-
-```elixir
-alias Evision, as: Cv
-```
-
-<!-- livebook:{"output":true} -->
-
-```
-Evision
-```
+## Download Test Images
 
 ```elixir
 # change to the file's directory
@@ -98,9 +88,11 @@ Helper.download!(
 :ok
 ```
 
-### Stitching
+## Stitching
 
 ```elixir
+alias Evision, as: Cv
+
 a1 = Cv.imread("./a1.png")
 a2 = Cv.imread("./a2.png")
 a3 = Cv.imread("./a3.png")

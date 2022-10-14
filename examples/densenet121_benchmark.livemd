@@ -1,4 +1,8 @@
-# Evision Benchmark - Densenet121
+<!-- vim: syntax=markdown -->
+
+<!-- livebook:{"persist_outputs":true} -->
+
+# Evision.DNN Example - Benchmark using Densenet121
 
 ```elixir
 # set `EVISION_PREFER_PRECOMPILED` to `false` 
@@ -7,17 +11,13 @@
 # System.put_env("EVISION_PREFER_PRECOMPILED", "false")
 
 Mix.install([
-  {:evision, "~> 0.1.11", path: "/Users/cocoa/Git/evision"},
+  {:evision, "~> 0.1.11"},
   {:kino, "~> 0.7"},
   {:req, "~> 0.3"}
 ])
 ```
 
-## Section
-
-```elixir
-alias Evision, as: Cv
-```
+## Define Some Helper Functions
 
 ```elixir
 defmodule Helper do
@@ -46,7 +46,11 @@ defmodule Helper do
 end
 ```
 
+## Write the Benchmark Module
+
 ```elixir
+alias Evision, as: Cv
+
 defmodule DetectionModel do
   def benchmark(times, mat, model, out_names, opts \\ []) do
     mean = opts[:mean] || [0, 0, 0]
@@ -76,6 +80,8 @@ defmodule DetectionModel do
   end
 end
 ```
+
+## Write the DenseNet121 Module
 
 ```elixir
 defmodule DenseNet121 do
@@ -109,12 +115,14 @@ defmodule DenseNet121 do
     DetectionModel.benchmark(times, test_mat, net, out_names,
       scalefactor: 1,
       swapRB: true,
-      mean: [128, 128, 128],
-      size: [224, 224]
+      mean: {128, 128, 128},
+      size: {224, 224}
     )
   end
 end
 ```
+
+## Load and Run
 
 ```elixir
 {forward_only, all} = DenseNet121.benchmark(50)

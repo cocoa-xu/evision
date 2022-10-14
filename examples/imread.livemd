@@ -2,7 +2,7 @@
 
 <!-- livebook:{"persist_outputs":true} -->
 
-# core - imread related
+# Evision Example - Get Started with Some Basic Functions
 
 ```elixir
 # set `EVISION_PREFER_PRECOMPILED` to `false` 
@@ -23,7 +23,7 @@ Mix.install([
 :ok
 ```
 
-## Helper Function
+## Define Some Helper Functions
 
 ```elixir
 defmodule Helper do
@@ -58,38 +58,19 @@ end
 {:module, Helper, <<70, 79, 82, 49, 0, 0, 10, ...>>, {:download!, 3}}
 ```
 
-## alias
+## Read an Image From File
 
 ```elixir
 alias Evision, as: Cv
-```
 
-<!-- livebook:{"output":true} -->
-
-```
-Evision
-```
-
-## Cv.imread
-
-### Read an image from file
-
-```elixir
+# Download the test image
 lenna_test_image_path = Path.join(__DIR__, "lenna_test_image.png")
-
 Helper.download!(
   "https://upload.wikimedia.org/wikipedia/en/7/7d/Lenna_%28test_image%29.png",
   lenna_test_image_path
 )
-```
 
-<!-- livebook:{"output":true} -->
-
-```
-:ok
-```
-
-```elixir
+# Read the test image
 mat = Cv.imread(lenna_test_image_path)
 ```
 
@@ -106,12 +87,13 @@ mat = Cv.imread(lenna_test_image_path)
 }
 ```
 
+## Encode an Image
 ```elixir
 encoded = Cv.imencode(".png", mat)
 Kino.Image.new(encoded, :png)
 ```
 
-### Resize image `Cv.resize`
+## Resize an Image
 
 ```elixir
 resized_mat = Cv.resize(mat, {_width = 256, _height = 128})
@@ -135,7 +117,7 @@ encoded = Cv.imencode(".png", resized_mat)
 Kino.Image.new(encoded, :png)
 ```
 
-### Get a subarea
+## Get a Subarea in an Image
 
 `Evision.Mat.roi`
 
@@ -144,7 +126,7 @@ Cv.imencode(".png", Cv.Mat.roi(mat, {10, 10, 130, 200}))
 |> Kino.Image.new(:png)
 ```
 
-### Encode and decode image in memory
+## Encode and Decode Image in Memory
 
 ```elixir
 # encode in memory
@@ -177,7 +159,7 @@ decoded_mat = Cv.imdecode(encoded_in_memory, Cv.cv_IMREAD_ANYCOLOR())
 }
 ```
 
-### Read png file with/without alpha channel
+## Read an PNG File With/Without Alpha Channel
 
 ```elixir
 # download the test image (has alpha channel)
@@ -225,7 +207,7 @@ Cv.imread(download_path, flags: Cv.cv_IMREAD_UNCHANGED())
 }
 ```
 
-### Read an image as grayscale
+## Read an Image and Convert It to Grayscale in a Single Call
 
 ```elixir
 gray_scale_mat = Cv.imread(lenna_test_image_path, flags: Cv.cv_IMREAD_GRAYSCALE())

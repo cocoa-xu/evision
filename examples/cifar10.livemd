@@ -2,9 +2,7 @@
 
 <!-- livebook:{"persist_outputs":true} -->
 
-# CVML Demo
-
-## Install deps
+# Example - Simple use of Evision in a Machine Learning Pipeline with Nx and torhcx
 
 ```elixir
 # set `EVISION_PREFER_PRECOMPILED` to `false` 
@@ -28,7 +26,7 @@ Mix.install([
 :ok
 ```
 
-## Download a file
+## Define Some Helper Functions and Download the Test Image
 
 ```elixir
 # change to the file's directory
@@ -72,31 +70,22 @@ Helper.download!(
 :ok
 ```
 
-## alias
-
-```elixir
-alias Evision, as: Cv
-```
-
-<!-- livebook:{"output":true} -->
-
-```
-Evision
-```
-
-## Get input from OpenCV
+## Read the Test Image
 
 ```elixir
 # in real-life use cases, the input source might be a camera
 # instead of downloading a file and reading it
+
+alias Evision, as: Cv
+
 img = Cv.imread("cat.jpg", flags: Cv.cv_IMREAD_ANYCOLOR())
-resized_img = Cv.resize(img, [128, 128])
+resized_img = Cv.resize(img, {128, 128})
 
 Cv.imencode(".png", resized_img)
 |> Kino.Image.new(:png)
 ```
 
-## Demo
+## Select a Default Nx Backend
 
 ```elixir
 # by default we don't have the LibTorch backend
@@ -111,6 +100,8 @@ Cv.imencode(".png", resized_img)
 ```
 nil
 ```
+
+## Write a Module for the CIFAR10 Dataset
 
 ```elixir
 defmodule CIFAR10Dataset do
@@ -139,7 +130,7 @@ end
 {:module, CIFAR10Dataset, <<70, 79, 82, 49, 0, 0, 10, ...>>, {:fetch, 1}}
 ```
 
-## A tiny dense neural network
+## Write A Tiny Linear Neural Network
 
 ```elixir
 # training code
@@ -269,7 +260,7 @@ end
 {:module, DenseNN, <<70, 79, 82, 49, 0, 0, 45, ...>>, {:train, 4}}
 ```
 
-## To onehot encoding
+## Convert Label to One-hot Encoding
 
 ```elixir
 defmodule Helper do
@@ -311,7 +302,7 @@ end
 {:module, Helper, <<70, 79, 82, 49, 0, 0, 10, ...>>, {:to_onehot, 2}}
 ```
 
-## Load and run
+## Train the Neural Network
 
 ```elixir
 defmodule Demo do
@@ -490,7 +481,7 @@ Epoch 50 Time: 1.522726s, loss: 44.57, acc: 0.471
  >}
 ```
 
-## Test
+## Classify the Test Image with the Neural Network
 
 ```elixir
 resized_img = Cv.resize(img, {128, 128})

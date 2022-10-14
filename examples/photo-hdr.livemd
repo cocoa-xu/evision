@@ -2,7 +2,7 @@
 
 <!-- livebook:{"persist_outputs":true} -->
 
-# photo - High Dynamic Range Imaging
+# Evision Example - High Dynamic Range Imaging
 
 ```elixir
 # set `EVISION_PREFER_PRECOMPILED` to `false` 
@@ -23,7 +23,7 @@ Mix.install([
 :ok
 ```
 
-## Helper Function
+## Define Some Helper Functions
 
 ```elixir
 defmodule Helper do
@@ -93,36 +93,18 @@ end
 {:module, Helper, <<70, 79, 82, 49, 0, 0, 16, ...>>, {:chunk_binary, 2}}
 ```
 
-### alias
+## Download the Test Images
 
 ```elixir
 alias Evision, as: Cv
-```
 
-<!-- livebook:{"output":true} -->
-
-```
-Evision
-```
-
-```elixir
 # change to the file's directory
 # or somewhere you have write permission
 File.cd!(__DIR__)
 
 # create a directory for storing the test images
 File.mkdir_p!("photo_hdr_test")
-```
 
-<!-- livebook:{"output":true} -->
-
-```
-:ok
-```
-
-### Download the test images
-
-```elixir
 exposure_filenames =
   0..15
   |> Enum.map(&Integer.to_string(&1))
@@ -151,7 +133,7 @@ exposure_file_urls
 true
 ```
 
-### Download `list.txt`
+## Download `list.txt` that Stores the Exposure Sequences
 
 ```elixir
 list_txt_file = Path.join([__DIR__, "photo_hdr_test", "list.txt"])
@@ -168,7 +150,7 @@ Helper.download!(
 :ok
 ```
 
-### Load exposure sequences
+## Load the Exposure Sequences
 
 ```elixir
 # Firstly we load input images and exposure times from user-defined folder.
@@ -211,7 +193,7 @@ times =
 }
 ```
 
-### Estimate camera response
+## Estimate Camera Response
 
 ```elixir
 # It is necessary to know camera response function (CRF) for a lot of HDR construction algorithms.
@@ -233,7 +215,7 @@ response = Cv.CalibrateDebevec.process(calibrate, images, times)
 }
 ```
 
-### Make HDR image
+## Process and Get the HDR Image
 
 ```elixir
 # We use Debevec's weighting scheme to construct HDR image
@@ -255,7 +237,7 @@ hdr = Cv.MergeDebevec.process(merge_debevec, images, times, response: response)
 }
 ```
 
-### Tonemap HDR image
+## Tonemap the HDR image
 
 ```elixir
 # Since we want to see our results on common LDR display we have to map our HDR image to 8-bit range
@@ -279,7 +261,7 @@ ldr = Cv.Tonemap.process(tonemap, hdr)
 }
 ```
 
-### Perform exposure fusions
+## Perform Exposure Fusions
 
 ```elixir
 # There is an alternative way to merge our exposures in case when we don't need HDR image.
@@ -302,7 +284,7 @@ fusion = Cv.MergeMertens.process(merge_mertens, images)
 }
 ```
 
-### Write fusion
+## Write Fusion
 
 ```elixir
 output_fusion_file = Path.join([__DIR__, "photo_hdr_test", "fusion.png"])
@@ -339,7 +321,7 @@ result = Cv.imencode(".png", result)
 Kino.Image.new(result, :png)
 ```
 
-### Write LDR image
+## Write LDR Image
 
 ```elixir
 output_ldr_file = Path.join([__DIR__, "photo_hdr_test", "ldr.png"])
@@ -381,7 +363,7 @@ result = Cv.imencode(".png", result)
 Kino.Image.new(result, :png)
 ```
 
-### Write HDR image
+## Write HDR Image
 
 ```elixir
 output_hdr_file = Path.join([__DIR__, "photo_hdr_test", "hdr.hdr"])

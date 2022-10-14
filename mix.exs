@@ -866,7 +866,20 @@ defmodule Evision.MixProject do
       source_url: @source_url,
       extras: [
         "CHANGELOG.md",
-        "README.md"
+        "README.md",
+        # Evision
+        "examples/imread.livemd",
+        "examples/stitching.livemd",
+        "examples/pca.livemd",
+        "examples/photo-hdr.livemd",
+        "examples/cifar10.livemd",
+        # Evision.DNN
+        "examples/dnn-googlenet.livemd",
+        "examples/dnn-detection-model.livemd",
+        "examples/densenet121_benchmark.livemd",
+        # Evision.ML
+        "examples/ml-svm.livemd",
+        "examples/ml-decision_tree_and_random_forest.livemd",
       ],
       before_closing_body_tag: &before_closing_body_tag/1,
       groups_for_functions: [

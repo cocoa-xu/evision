@@ -2,7 +2,7 @@
 
 <!-- livebook:{"persist_outputs":true} -->
 
-# Evision ML - SVM
+# Evision.ML.SVM Example - Support Vector Machine
 
 ```elixir
 # set `EVISION_PREFER_PRECOMPILED` to `false` 
@@ -23,25 +23,15 @@ Mix.install([
 :ok
 ```
 
-## Set up training data
+## Set Up Training Data
 
 This example is based on the [Introduction to Support Vector Machines](https://docs.Cv.org/4.x/d1/d73/tutorial_introduction_to_svm.html) from Cv.
 
 <!-- livebook:{"break_markdown":true} -->
 
-### alias
-
 ```elixir
 alias Evision, as: Cv
-```
 
-<!-- livebook:{"output":true} -->
-
-```
-Evision
-```
-
-```elixir
 labels = [1, -1, -1, -1]
 training_data = [[501, 10], [255, 10], [501, 255], [10, 501]]
 
@@ -62,7 +52,7 @@ training_data_mat = Cv.Mat.literal(training_data, :f32)
 }
 ```
 
-### Train the SVM
+## Create an SVM and Train It With the Data
 
 ```elixir
 svm = Cv.ML.SVM.create()
@@ -79,7 +69,7 @@ true = Cv.ML.SVM.isTrained(svm)
 true
 ```
 
-### Show support vectors
+## Get Support Vectors
 
 ```elixir
 %Evision.Mat{shape: {rows, cols}} = sv = Cv.ML.SVM.getUncompressedSupportVectors(svm)
@@ -111,7 +101,7 @@ support_vector
 [[501, 10], [255, 10], [501, 255]]
 ```
 
-### Data for visual representation
+## Visualise the Training Result in A Response Map
 
 ```elixir
 green = [0, 255, 0]

@@ -2,7 +2,7 @@
 
 <!-- livebook:{"persist_outputs":true} -->
 
-# Detection Model
+# Evision.DNN Example - Generic Object Detection Task
 
 ```elixir
 # set `EVISION_PREFER_PRECOMPILED` to `false` 
@@ -11,9 +11,9 @@
 # System.put_env("EVISION_PREFER_PRECOMPILED", "false")
 
 Mix.install([
-    {:evision, "~> 0.1.11"},
-    {:req, "~> 0.3"},
-    {:kino, "~> 0.7"}
+  {:evision, "~> 0.1.10"},
+  {:req, "~> 0.3"},
+  {:kino, "~> 0.7"}
 ])
 ```
 
@@ -23,7 +23,7 @@ Mix.install([
 :ok
 ```
 
-## Helper Function
+## Define Some Helper Functions
 
 ```elixir
 defmodule Helper do
@@ -58,21 +58,11 @@ end
 {:module, Helper, <<70, 79, 82, 49, 0, 0, 10, ...>>, {:download!, 3}}
 ```
 
-## alias
+## Write the Generic DetectionModel Module
 
 ```elixir
 alias Evision, as: Cv
-```
 
-<!-- livebook:{"output":true} -->
-
-```
-Evision
-```
-
-### Detection Model Module
-
-```elixir
 # change to the file's directory
 # or somewhere you have write permission
 File.cd!(__DIR__)
@@ -213,7 +203,7 @@ end
 {:module, DetectionModel, <<70, 79, 82, 49, 0, 0, 34, ...>>, {:get_model, 3}}
 ```
 
-## Example: SSD MobileNetv2
+## Example Detect Model: SSD MobileNetv2
 
 Basic steps:
 
@@ -293,7 +283,8 @@ defmodule SSDMobileNetV2 do
     {:ok, translated_outs} =
       DetectionModel.postprocess(mat, detections, net, confidence_threshold)
 
-    DetectionModel.visualise_pred(mat, labels, translated_outs)
+    {:ok, mat} = DetectionModel.visualise_pred(mat, labels, translated_outs)
+    mat
   end
 
   def predict_and_show(net, out_names, labels, mat, confidence_threshold \\ 0.5)
@@ -309,7 +300,8 @@ defmodule SSDMobileNetV2 do
     {:ok, translated_outs} =
       DetectionModel.postprocess(mat, detections, net, confidence_threshold)
 
-    DetectionModel.visualise_pred(mat, labels, translated_outs)
+    {:ok, mat} = DetectionModel.visualise_pred(mat, labels, translated_outs)
+    mat
   end
 end
 ```
@@ -317,10 +309,10 @@ end
 <!-- livebook:{"output":true} -->
 
 ```
-{:module, SSDMobileNetV2, <<70, 79, 82, 49, 0, 0, 21, ...>>, {:predict_and_show, 5}}
+{:module, SSDMobileNetV2, <<70, 79, 82, 49, 0, 0, 22, ...>>, {:predict_and_show, 5}}
 ```
 
-### Detect objects in an image file
+## Detect Objects in An Image
 
 ```elixir
 Helper.download!(
@@ -328,27 +320,26 @@ Helper.download!(
   "dnn_detection_test.jpg"
 )
 
-{:ok, mat} = SSDMobileNetV2.predict_file_and_show("dnn_detection_test.jpg")
+%Evision.Mat{type: type} = mat = SSDMobileNetV2.predict_file_and_show("dnn_detection_test.jpg")
 ```
 
 <!-- livebook:{"output":true} -->
 
 ```
-Inference time=>41 ms
+Inference time=>35 ms
 ```
 
 <!-- livebook:{"output":true} -->
 
 ```
-{:ok,
- %Evision.Mat{
-   channels: 3,
-   dims: 2,
-   type: {:u, 8},
-   raw_type: 16,
-   shape: {586, 872, 3},
-   ref: #Reference<0.1834280076.3317825552.216560>
- }}
+%Evision.Mat{
+  channels: 3,
+  dims: 2,
+  type: {:u, 8},
+  raw_type: 16,
+  shape: {586, 872, 3},
+  ref: #Reference<0.1834280076.3317825552.216669>
+}
 ```
 
 ```elixir
@@ -356,7 +347,7 @@ Cv.imencode(".png", mat)
 |> Kino.Image.new(:png)
 ```
 
-### Detect objects in a video stream
+## Detect Objects in a Video Stream
 
 ```elixir
 # if you have a camera available

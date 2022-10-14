@@ -1,4 +1,8 @@
-# Decision Tree and Random Forest
+<!-- vim: syntax=markdown -->
+
+<!-- livebook:{"persist_outputs":true} -->
+
+# Evision.ML Example - Decision Tree and Random Forest
 
 ```elixir
 # set `EVISION_PREFER_PRECOMPILED` to `false` 
@@ -16,7 +20,7 @@ Mix.install([
 ])
 ```
 
-## Dataset
+## Download the Dataset
 
 ### Get the Wine dataset with `Scidata`
 
@@ -25,7 +29,7 @@ Mix.install([
 :ok
 ```
 
-### Make a dataset with `Evision.ML.TrainData`
+## Make a dataset with `Evision.ML.TrainData`
 
 <!-- livebook:{"attrs":{"data_layout":"row","shuffle_dataset":true,"split_ratio":0.8,"to_variable":"dataset","x":"features","x_type":"f32","y":"labels","y_type":"s32"},"kind":"Elixir.EvisionSmartCell.ML.TrainData","livebook_object":"smart_cell"} -->
 
@@ -43,7 +47,7 @@ IO.puts("#Training samples: #{Evision.ML.TrainData.getNTrainSamples(dataset)}")
 IO.puts("#Test samples: #{Evision.ML.TrainData.getNTestSamples(dataset)}")
 ```
 
-### Use Decision Tree
+## Train the Dataset with Decision Tree, `Evision.ML.DTrees`
 
 <!-- livebook:{"attrs":{"cv_folds":0,"data_from":"traindata_var","max_categories":3,"max_depth":8,"min_sample_count":10,"to_variable":"dtree","traindata_var":"dataset"},"kind":"Elixir.EvisionSmartCell.ML.DTrees","livebook_object":"smart_cell"} -->
 
@@ -68,7 +72,7 @@ dtree =
 )
 ```
 
-### Calculate confusion matrix
+## Calculate Confusion Matrix
 
 ```elixir
 {_test_error, results} = Evision.ML.DTrees.calcError(dtree, dataset, true)
@@ -86,7 +90,7 @@ y_pred =
 Scholar.Metrics.confusion_matrix(y_true, y_pred, num_classes: 3)
 ```
 
-### Save and Load
+## Save the Trained Model and Load It Back
 
 It's also possible to save the trained model to a file and load it back!
 
@@ -104,7 +108,7 @@ dtree_from_file = Evision.ML.DTrees.load(filename)
 test_error == test_error_2
 ```
 
-## Use Random Forest
+## Train the Dataset with Random Forest, `Evision.ML.RTrees`
 
 <!-- livebook:{"attrs":{"active_var_count":0,"calculate_var_importance":false,"data_from":"traindata","dtrees":{"cv_folds":0,"data_from":"traindata_var","max_categories":3,"max_depth":10,"min_sample_count":10,"to_variable":"dtree","traindata_var":"dataset"},"term_criteria_count":30,"term_criteria_eps":5.0e-5,"term_criteria_type":"max_count+eps","to_variable":"rtree","traindata":{"data_layout":"row","shuffle_dataset":true,"split_ratio":0.8,"to_variable":"dataset","x":"features","x_type":"f32","y":"labels","y_type":"s32"},"traindata_var":"dataset"},"kind":"Elixir.EvisionSmartCell.ML.RTrees","livebook_object":"smart_cell"} -->
 
@@ -151,7 +155,7 @@ rtree =
 )
 ```
 
-### Calculate confusion matrix
+### Calculate Confusion Matrix
 
 ```elixir
 {_test_error, results} = Evision.ML.RTrees.calcError(rtree, dataset, true)
@@ -169,7 +173,7 @@ y_pred =
 Scholar.Metrics.confusion_matrix(y_true, y_pred, num_classes: 3)
 ```
 
-### Save and Load
+## Save the Trained Model and Load It Back
 
 ```elixir
 # save to file
