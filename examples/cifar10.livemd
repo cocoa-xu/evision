@@ -2,7 +2,7 @@
 
 <!-- livebook:{"persist_outputs":true} -->
 
-# Example - Simple use of Evision in a Machine Learning Pipeline with Nx and torhcx
+# Evision Example - Simple use of Evision in a Machine Learning Pipeline with Nx and torhcx
 
 ```elixir
 # set `EVISION_PREFER_PRECOMPILED` to `false` 
