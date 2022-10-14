@@ -33,14 +33,14 @@ defmodule Evision.Backend do
       >
 
   """
-  @spec constant(Nx.Tensor.t(shape: {}), number(), any()) :: Nx.Tensor.t()
+  @spec constant(Nx.Tensor.t(), number(), any()) :: Nx.Tensor.t()
   def constant(%T{shape: {}, type: type} = out, scalar, _backend_options) do
     Evision.Mat.number(scalar, type)
     |> reject_error()
     |> to_nx(out)
   end
 
-  @spec constant(Nx.Tensor.t(shape: tuple()), number(), any()) :: Nx.Tensor.t()
+  @spec constant(Nx.Tensor.t(), number(), any()) :: Nx.Tensor.t()
   def constant(%T{shape: shape, type: type} = out, scalar, _backend_options) do
     Evision.Mat.full(shape, scalar, type)
     |> reject_error()

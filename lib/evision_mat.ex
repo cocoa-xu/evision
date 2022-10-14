@@ -145,14 +145,32 @@ defmodule Evision.Mat do
     ref
   end
 
+  @doc false
+  @spec __from_elixir_range__(Range.t(), Keyword.t()) :: {number(), number()}
+  def __from_elixir_range__(first..last//step, opts \\ []) do
+    swap_if_neg_step = opts[:swap_if_neg_step] || false
+    allowed_step_size = opts[:allowed_step_size]
+
+    if is_list(allowed_step_size) and !Enum.member?(allowed_step_size, step) do
+      raise "Invalid step size, only supports step size in #{inspect{allowed_step_size}} at the moment."
+    end
+
+    if swap_if_neg_step and step < 0 do
+      {last, first}
+    else
+      {first, last}
+    end
+  end
+
   @doc """
   Extracts a rectangular submatrix.
 
   The submatrix data is copied.
 
+  #### Variant 1
   ##### Positional Arguments
 
-  - **mat**. `Evision.Mat`
+  - **mat**. `maybe_mat_in()`
 
     The matrix.
 
@@ -161,6 +179,25 @@ defmodule Evision.Mat do
     Start and end row of the extracted submatrix. The upper boundary is not included.
 
   - **colRange**. `{int, int} | :all`.
+
+    Start and end column of the extracted submatrix. The upper boundary is not included.
+
+  ##### Return
+
+  Extracted submatrix (data is copied).
+
+  #### Variant 2
+  ##### Positional Arguments
+
+  - **mat**. `maybe_mat_in()`
+
+    The matrix.
+
+  - **rowRange**. `Range.t(step: 1)`.
+
+    Start and end row of the extracted submatrix. The upper boundary is not included.
+
+  - **colRange**. `Range.t(step: 1)`.
 
     Start and end column of the extracted submatrix. The upper boundary is not included.
 
@@ -179,13 +216,21 @@ defmodule Evision.Mat do
     |> Evision.Internal.Structurise.to_struct()
   end
 
+  @spec roi(maybe_mat_in(), Range.t(), Range.t()) :: maybe_mat_out()
+  def roi(mat, firstRow..lastRow//1, firstCol..lastCol//1) do
+    roi(mat, {firstRow, lastRow}, {firstCol, lastCol})
+  end
+  def roi(_, _.._//_, _.._//_) do
+    raise ArgumentError, "Evision.Mat.roi does not support step size other than 1."
+  end
+
   @doc """
   Extracts a rectangular submatrix.
 
   #### Variant 1
   ##### Positional Arguments
 
-  - **mat**. `Evision.Mat`
+  - **mat**. `maybe_mat_in()`
 
     The matrix.
 
@@ -200,7 +245,7 @@ defmodule Evision.Mat do
   #### Variant 2
   ##### Positional Arguments
 
-  - **mat**. `Evision.Mat`
+  - **mat**. `maybe_mat_in()`
 
     The matrix.
 
@@ -221,10 +266,21 @@ defmodule Evision.Mat do
     |> Evision.Internal.Structurise.to_struct()
   end
 
-  @spec roi(maybe_mat_in(), [{integer(), integer()} | :all]) :: maybe_mat_out()
+  @spec roi(maybe_mat_in(), [{integer(), integer()} | Range.t() | :all]) :: maybe_mat_out()
   def roi(mat, ranges) when is_list(ranges) do
     mat = __from_struct__(mat)
-
+    ranges = Enum.map(ranges, fn r ->
+      case r do
+        :all ->
+          :all
+        {first, last} ->
+          {first, last}
+        first..last//step ->
+          __from_elixir_range__(first..last//step, allowed_step_size: [1])
+        unknown ->
+          raise "Cannot convert from `#{inspect(unknown)}` to a valid range."
+      end
+    end)
     :evision_nif.mat_roi(mat: mat, ranges: ranges)
     |> Evision.Internal.Structurise.to_struct()
   end
