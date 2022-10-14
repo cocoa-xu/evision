@@ -2,7 +2,7 @@
 
 <!-- livebook:{"persist_outputs":true} -->
 
-# Evision Example - Stitching Multiple Photos
+# Evision Example - Stitching Multiple Photos into A Panorama Photo
 
 ```elixir
 # set `EVISION_PREFER_PRECOMPILED` to `false` 

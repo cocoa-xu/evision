@@ -747,7 +747,10 @@ def map_argtype_in_spec(classname: str, argtype: str, is_in: bool):
     elif argtype in evision_structrised_classes:
         return f'Evision.{argtype}.t()'
     elif argtype in ['Mat', 'cv::Mat', 'UMat', 'cv::UMat']:
-        return 'Evision.Mat.t()'
+        if is_in:
+            return 'Evision.Mat.maybe_mat_in()'
+        else:
+            return 'Evision.Mat.t()'
     elif argtype.startswith('vector_'):
         argtype_inner = argtype[len('vector_'):]
         if argtype == 'vector_char' or argtype == 'vector_uchar':
@@ -812,7 +815,10 @@ def map_argtype_to_guard_elixir(argname, argtype):
         return f'is_tuple({argname})'
     elif is_struct(argtype):
         _, struct_name = is_struct(argtype, also_get='struct_name')
-        return f'is_struct({argname}, {struct_name})'
+        if struct_name == 'Evision.Mat':
+            return f'(is_struct({argname}, Evision.Mat) or is_struct({argname}, Nx.Tensor))'
+        else:
+            return f'is_struct({argname}, {struct_name})'
     elif is_ref_or_struct(argtype):
         return f'(is_reference({argname}) or is_struct({argname}))'
     elif is_list_type(argtype):

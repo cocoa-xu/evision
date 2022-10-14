@@ -3,13 +3,19 @@
 ## v0.1.12-dev (main)
 [Browse the Repository](https://github.com/cocoa-xu/evision)
 
+### Fixes
+- Function guard should also allow `Nx.Tensor` when the corresponding input argument is `Evision.Mat.maybe_mat_in()`.
+
+### Changed
+- [Docs] Example Livebooks is now included in docs as extras.
+
 ## v0.1.11 (2022-10-13)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.11) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.11)
 ### Important Note
 In `v0.1.10`, an invalid checksum file was pushed to hex.pm, please read the changelog, especially the breaking changes in `v0.1.10`. [Changelog for `v0.1.10`](https://github.com/cocoa-xu/evision/releases/tag/v0.1.10).
 
 ### Fixed
-- [Precomoile] `Mix.Tasks.Evision.Fetch` should always download and oerwrite existsing files.
+- [Precompile] `Mix.Tasks.Evision.Fetch` should always download and oerwrite existsing files.
 
 ## v0.1.10 (2022-10-13)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.10) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.10)
