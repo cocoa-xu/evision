@@ -11,7 +11,7 @@
 # System.put_env("EVISION_PREFER_PRECOMPILED", "false")
 
 Mix.install([
-  {:evision, "~> 0.1.11"},
+  {:evision, "~> 0.1.12"},
   {:kino, "~> 0.7"},
   {:req, "~> 0.3"}
 ])
