@@ -4,6 +4,7 @@ defmodule Evision.Mat do
   """
 
   import Kernel, except: [abs: 1, floor: 1, ceil: 1, round: 1]
+  @behaviour Access
 
   @typedoc """
   Types for `Evision.Mat`
@@ -162,6 +163,24 @@ defmodule Evision.Mat do
     end
   end
 
+  @doc false
+  def __standardise_range_list__(ranges) do
+    Enum.map(ranges, fn r ->
+      case r do
+        :all ->
+          :all
+        {first, last} ->
+          {first, last}
+        first..last//step ->
+          __from_elixir_range__(first..last//step, allowed_step_size: [1])
+        number when is_integer(number) ->
+          {number, number+1}
+        unknown ->
+          raise "Cannot convert from `#{inspect(unknown)}` to a valid range."
+      end
+    end)
+  end
+
   @doc """
   Extracts a rectangular submatrix.
 
@@ -269,19 +288,17 @@ defmodule Evision.Mat do
   @spec roi(maybe_mat_in(), [{integer(), integer()} | Range.t() | :all]) :: maybe_mat_out()
   def roi(mat, ranges) when is_list(ranges) do
     mat = __from_struct__(mat)
-    ranges = Enum.map(ranges, fn r ->
-      case r do
-        :all ->
-          :all
-        {first, last} ->
-          {first, last}
-        first..last//step ->
-          __from_elixir_range__(first..last//step, allowed_step_size: [1])
-        unknown ->
-          raise "Cannot convert from `#{inspect(unknown)}` to a valid range."
-      end
-    end)
+    ranges = __standardise_range_list__(ranges)
     :evision_nif.mat_roi(mat: mat, ranges: ranges)
+    |> Evision.Internal.Structurise.to_struct()
+  end
+
+  @spec roi(maybe_mat_in(), [{integer(), integer()} | Range.t() | :all], maybe_mat_in()) :: maybe_mat_out()
+  def update_roi(mat, ranges, with_mat) do
+    mat = __from_struct__(mat)
+    ranges = __standardise_range_list__(ranges)
+    with_mat = __from_struct__(with_mat)
+    :evision_nif.mat_update_roi(mat: mat, ranges: ranges, with_mat: with_mat)
     |> Evision.Internal.Structurise.to_struct()
   end
 
@@ -319,12 +336,12 @@ defmodule Evision.Mat do
       Application.put_env(:evision, :display_inline_image_max_size, {8192, 8192}, persistent: true)
     end
 
-    is_2d_image = dims == 2 or (c == 1 and tuple_size(shape) == 3 and elem(shape, 2) == 1)
+    is_2d_image = (dims == 2 and Enum.member?([1, 3, 4], c)) or (c == 1 and tuple_size(shape) == 3 and elem(shape, 2) == 1)
 
-    with {:display_image_if_in_iterm2, {:ok, true}} <-
+    with {:is_2d, true} <- {:is_2d, is_2d_image},
+         {:display_image_if_in_iterm2, {:ok, true}} <-
            {:display_image_if_in_iterm2,
             Application.fetch_env(:evision, :display_inline_image_iterm2)},
-         {:is_2d, true} <- {:is_2d, is_2d_image},
          {:is_iterm2, true} <- {:is_iterm2, System.get_env("LC_TERMINAL") == "iTerm2"},
          {:get_maximum_size, {h, w}} <-
            {:get_maximum_size, Application.get_env(:evision, :display_inline_image_max_size)},
@@ -381,6 +398,61 @@ defmodule Evision.Mat do
         end
       end
     end
+  end
+
+  @doc false
+  def __generate_complete_range__(dims, number) when is_integer(number) do
+    [{number, number + 1}] ++ List.duplicate(:all, dims - 1)
+  end
+
+  def __generate_complete_range__(dims, maybe_incomplete) when is_list(maybe_incomplete) do
+    indices_given = Enum.count(maybe_incomplete)
+    if indices_given <= dims do
+      maybe_incomplete ++ List.duplicate(:all, dims - indices_given)
+    else
+      if indices_given == dims + 1 do
+        maybe_incomplete
+      else
+        {:error, "too many indices, got #{indices_given} index ranges, while the matrix.dims is #{dims}"}
+      end
+    end
+  end
+
+  @impl Access
+  @spec fetch(Evision.Mat.t(), term()) :: {:ok, Evision.Mat.t()} | :error
+  def fetch(mat, key) do
+    if is_list(key) or is_number(key) do
+      ranges = __generate_complete_range__(mat.dims, key)
+      {:ok, roi(mat, ranges)}
+    else
+      :error
+    end
+  end
+
+  @impl Access
+  @spec get_and_update(Evision.Mat.t(), term(), (Evision.Mat.t() -> Evision.Mat.t())) :: {Evision.Mat.t(), Evision.Mat.t()}
+  def get_and_update(mat, key, function) do
+    if is_list(key) or is_integer(key) do
+      ranges = __generate_complete_range__(mat.dims, key)
+      roi = roi(mat, ranges)
+      case function.(roi) do
+        {^roi, modified_roi} ->
+          if is_struct(modified_roi, Nx.Tensor) or is_struct(modified_roi, Evision.Mat) do
+            {mat, update_roi(mat, ranges, modified_roi)}
+          else
+            raise RuntimeError, "Cannot update the requested sub-matrix with unsupported value #{inspect(modified_roi)}"
+          end
+        _ ->
+          {mat, mat}
+      end
+    else
+      raise ArgumentError, "Evision.Mat does not support get_and_update with key=#{inspect(key)}"
+    end
+  end
+
+  @impl Access
+  def pop(_mat, _key) do
+    raise RuntimeError, "Evision.Mat does not support Access.pop/2 yet"
   end
 
   @doc namespace: :"cv.Mat"
