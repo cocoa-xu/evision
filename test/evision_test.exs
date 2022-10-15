@@ -348,5 +348,13 @@ defmodule Evision.Test do
         borderMode: Evision.cv_BORDER_CONSTANT(),
         borderValue: {0, 0, 0}
     )
+
+    # expecting error when any input argument is invalid
+    {:error, _} = Evision.warpPerspective(
+        img, img, {w, h},
+        flags: Evision.cv_INTER_LINEAR(),
+        borderMode: Evision.cv_BORDER_CONSTANT(),
+        borderValue: {0, 0, 0}
+    )
   end
 end
