@@ -199,11 +199,132 @@ static ERL_NIF_TERM evision_cv_mat_roi(ErlNifEnv *env, int argc, const ERL_NIF_T
             if (erl_terms.find("ranges") != erl_terms.end() &&
                 evision_to_safe(env, evision_get_kw(env, erl_terms, "ranges"), ranges, ArgInfo("ranges", 0))) {
                 Mat ret;
-                ERRWRAP2(ret = img(ranges), env, error_flag, error_term);
+                int dims = img.size.dims();
+                if ((int)ranges.size() == dims + 1) {
+                    int img_channels = img.channels();
+                    Range last = ranges[dims];
+                    ranges.pop_back();
+
+                    // deal with cv::Range::all()
+                    if (last == cv::Range::all()) {
+                        last.start = 0;
+                        last.end = img_channels - 1;
+                    }
+
+                    // if definitely out of range
+                    if (last.start > img_channels - 1 || last.end < 0) {
+                        char msg[128] = {'\0'};
+                        if (enif_snprintf(msg, 127, "index %d is out of bounds for axis %d with size %d", last.start, ranges.size(), img_channels)) {
+                            return evision::nif::error(env, msg);
+                        } else {
+                            return evision::nif::error(env, "index out of bounds");
+                        }
+                    }
+
+                    // start and end should be index
+                    // and we will take channel in [start, end] instead of [start, end)
+                    if (last.start < 0) {
+                        last.start = 0;
+                    }
+                    if (last.end >= img_channels) {
+                        last.end = img_channels - 1;
+                    }
+
+                    if (last.start == 0 && last.end == img_channels - 1) {
+                        ERRWRAP2(ret = img(ranges), env, error_flag, error_term);
+                    } else {
+                        // because we are taking channel in [start, end]
+                        // if start == end, we would still have 1 channel to extract
+                        // this follows the convention in elixir as 0..0 is effectively [0]
+                        std::vector<cv::Mat> by_channel(last.end - last.start + 1);
+                        size_t by_channel_index = 0;
+                        for (int channel_index = last.start; channel_index <= last.end; channel_index++) {
+                            ERRWRAP2(cv::extractChannel(img, by_channel[by_channel_index], channel_index), env, error_flag, error_term);
+                            if (error_flag) break;
+
+                            ERRWRAP2(by_channel[by_channel_index] = by_channel[by_channel_index](ranges), env, error_flag, error_term);
+                            if (error_flag) break;
+
+                            by_channel_index++;
+                        }
+
+                        if (!error_flag) {
+                            ERRWRAP2(cv::merge(by_channel, ret), env, error_flag, error_term);
+                        }
+                    }
+                } else {
+                    ERRWRAP2(ret = img(ranges), env, error_flag, error_term);
+                }
+
                 if (!error_flag) {
                     return evision_from(env, ret);
                 }
             }
+        }
+    }
+
+    if (error_term != 0) return error_term;
+    else return enif_make_badarg(env);
+}
+
+// @evision c: mat_update_roi,evision_cv_mat_update_roi,1
+// @evision nif: def mat_update_roi(_opts \\ []), do: :erlang.nif_error("Mat::update_roi() not loaded")
+static ERL_NIF_TERM evision_cv_mat_update_roi(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
+    using namespace cv;
+    ERL_NIF_TERM error_term = 0;
+    std::map<std::string, ERL_NIF_TERM> erl_terms;
+    int nif_opts_index = 0;
+    evision::nif::parse_arg(env, nif_opts_index, argv, erl_terms);
+
+    int error_flag = false;
+    Mat mat, with_mat;
+    std::vector<cv::Range> ranges;
+
+    if (erl_terms.find("mat") != erl_terms.end() &&
+        erl_terms.find("with_mat") != erl_terms.end() &&
+        erl_terms.find("ranges") != erl_terms.end() &&
+        evision_to_safe(env, evision_get_kw(env, erl_terms, "mat"), mat, ArgInfo("mat", 0)) &&
+        evision_to_safe(env, evision_get_kw(env, erl_terms, "with_mat"), with_mat, ArgInfo("with_mat", 0)) &&
+        evision_to_safe(env, evision_get_kw(env, erl_terms, "ranges"), ranges, ArgInfo("ranges", 0)))
+    {
+        Mat roi = mat(ranges);
+        if (roi.channels() != with_mat.channels()) {
+            // `with_mat` could be an Nx.tensor
+            // hence the last dim should actually be the channel
+            int with_mat_dims = with_mat.size.dims();
+            int roi_dims = roi.size.dims();
+
+            // basically last_dim_as_channel
+            bool last_dim_as_channel = true;
+            if (with_mat_dims == roi_dims + 1 && with_mat.size.p[with_mat_dims - 1] == roi.channels()) {
+                for (int i = 0; i < roi_dims; i++) {
+                    if (with_mat.size.p[i] != roi.size.p[i]) {
+                        last_dim_as_channel = false;
+                        break;
+                    }
+                }
+            }
+
+            if (last_dim_as_channel) {
+                // we can still fix this
+                std::vector<int> new_shape(with_mat_dims - 1);
+                for (size_t i = 0; i < (size_t)(with_mat_dims - 1); i++) {
+                    new_shape[i] = with_mat.size.p[i];
+                }
+                int type = CV_MAKETYPE(with_mat.type(), with_mat.size.p[with_mat_dims - 1]);
+
+                // zero-copy constructor
+                Mat copy_from = Mat(with_mat_dims - 1, new_shape.data(), type, with_mat.data);
+                ERRWRAP2(copy_from.copyTo(roi), env, error_flag, error_term);
+            } else {
+                error_term = evision::nif::error(env, "Cannot update roi: shape mismatch");
+            }
+        } else {
+            ERRWRAP2(with_mat.copyTo(roi), env, error_flag, error_term);
+        }
+
+        if (!error_flag) {
+            return evision_from(env, mat);
         }
     }
 
