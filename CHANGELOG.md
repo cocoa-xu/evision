@@ -7,6 +7,7 @@
 - Function guard should also allow `Nx.Tensor` when the corresponding input argument is `Evision.Mat.maybe_mat_in()`.
 - [Evision.Mat] `Evision.Mat.quicklook/1`  should also check the number of channels is one of `[1, 3, 4]` when `dims == 2`.
 - [c_src] `evision_cv_mat_broadcast_to` should call `enif_free((void *)dst_data);` if `void * tmp_data = (void *)enif_alloc(elem_size * count_new_elem);` failed.
+- [py_src] Fixed the template of simple call constructor.
 
 ### Changed
 - [Docs] Example Livebooks is now included in docs as extras.
