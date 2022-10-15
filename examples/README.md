@@ -4,7 +4,7 @@
 ### Get Started with Some Basic Functions
 [![Run in Livebook](https://livebook.dev/badge/v1/gray.svg)](https://livebook.dev/run?url=https%3A%2F%2Fgithub.com%2Fcocoa-xu%2Fevision%2Fblob%2Fmain%2Fexamples%2Fimread.livemd)
 
-## Stitching Multiple Photos into A Panorama Photo
+### Stitching Multiple Photos into A Panorama Photo
 [![Run in Livebook](https://livebook.dev/badge/v1/gray.svg)](https://livebook.dev/run?url=https%3A%2F%2Fgithub.com%2Fcocoa-xu%2Fevision%2Fblob%2Fmain%2Fexamples%2Fstitching.livemd)
 
 ### Warp Perspective
