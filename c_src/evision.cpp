@@ -284,34 +284,7 @@ bool parseSequence(ErlNifEnv *env, ERL_NIF_TERM obj, RefWrapper<T> (&value)[N], 
         return true;
     }
 
-    // parse from list
-    if (enif_is_list(env, obj)) {
-        unsigned n = 0;
-        enif_get_list_length(env, obj, &n);
-        if (n != N) {
-            failmsgp(env, "Can't parse '%s'. Expected sequence length %lu, got %lu",
-                    info.name, N, n);
-            return false;
-        }
-
-        ERL_NIF_TERM head, tail, cur_obj = obj;
-        size_t i = 0;
-        while (i < n) {
-            if (enif_get_list_cell(env, cur_obj, &head, &tail)) {
-                if (!evision_to(env, head, value[i].get(), info))
-                {
-                    failmsgp(env, "Can't parse '%s'. Sequence item with index %lu has a "
-                            "wrong type", info.name, i);
-                    return false;
-                }
-
-                cur_obj = tail;
-                i++;
-            } else {
-                return false;
-            }
-        }
-    } else if (enif_is_tuple(env, obj)) {
+    if (enif_is_tuple(env, obj)) {
         const ERL_NIF_TERM *terms;
         int sz = 0;
         enif_get_tuple(env, obj, &sz, &terms);
@@ -458,6 +431,27 @@ static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Mat& m, const ArgInfo& in
             }
         }
         return true;
+    }
+
+    return false;
+}
+
+static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, cv::UMat& m, const ArgInfo& info)
+{
+    if(evision::nif::check_nil(env, o)) {
+        return true;
+    }
+
+    evision_res<cv::UMat *> * in_res;
+    if( enif_get_resource(env, o, evision_res<cv::UMat *>::type, (void **)&in_res) ) {
+        if (in_res->val) {
+            // should we copy the matrix?
+            // probably yes so that the original matrix is not modified
+            // because erlang/elixir users would expect that the original matrix to be unchanged
+            in_res->val->copyTo(m);
+            return true;
+        }
+        return false;
     }
 
     return false;
@@ -1106,11 +1100,6 @@ bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, Range& r, const ArgInfo& info)
         if (evision_to(env, terms[0], r.start, info) && evision_to(env, terms[1], r.end, info)) {
             return true;
         }
-    }
-    
-    if (enif_is_list(env, obj)) {
-        RefWrapper<int> values[] = {RefWrapper<int>(r.start), RefWrapper<int>(r.end)};
-        return parseSequence(env, obj, values, info);
     }
 
     String all;
