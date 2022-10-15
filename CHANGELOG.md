@@ -88,6 +88,18 @@
   # when index is out of bounds
   iex> img[[:all, :all, 42]]
   {:error, "index 42 is out of bounds for axis 2 with size 3"}
+
+  # it works the same way for any dimensional Evision.Mat
+  iex> mat = Evision.Mat.ones({10, 10, 10, 10, 10}, :u8)
+  iex> mat[[1..7, :all, 2..6, 3..9, :all]]
+  %Evision.Mat{
+    channels: 1,
+    dims: 5,
+    type: {:u, 8},
+    raw_type: 0,
+    shape: {7, 10, 5, 7, 10},
+    ref: #Reference<0.3015448455.3766878228.259075>
+  }
   ```
 
 ## v0.1.11 (2022-10-13)

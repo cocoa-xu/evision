@@ -314,7 +314,7 @@ defmodule Evision.Mat do
     |> Evision.Internal.Structurise.to_struct()
   end
 
-  @spec roi(maybe_mat_in(), [{integer(), integer()} | Range.t() | :all], maybe_mat_in()) :: maybe_mat_out()
+  @spec update_roi(maybe_mat_in(), [{integer(), integer()} | Range.t() | :all], maybe_mat_in()) :: maybe_mat_out()
   def update_roi(mat, ranges, with_mat) do
     mat = __from_struct__(mat)
     ranges = __standardise_range_list__(ranges, true)
@@ -436,6 +436,98 @@ defmodule Evision.Mat do
   end
 
   @impl Access
+  @doc """
+  Access.fetch implementation for Evision.Mat.
+
+  ```elixir
+  iex> img = Evision.imread("test/qr_detector_test.png")
+  %Evision.Mat{
+    channels: 3,
+    dims: 2,
+    type: {:u, 8},
+    raw_type: 16,
+    shape: {300, 300, 3},
+    ref: #Reference<0.809884129.802291734.78316>
+  }
+
+  # Same behaviour as Nx.
+  # Also, img[0] gives the same result as img[[0]]
+  # For this example, they are both equvilent of img[[0, :all, :all]]
+  iex> img[[0]]
+  %Evision.Mat{
+    channels: 3,
+    dims: 2,
+    type: {:u, 8},
+    raw_type: 16,
+    shape: {1, 300, 3},
+    ref: #Reference<0.809884129.802291731.77296>
+  }
+
+  # same as img[[0..100, 50..200, :all]]
+  # however, currently we only support ranges with step size 1
+  #
+  # **IMPORTANT NOTE**
+  #
+  # also, please note that we are using Elixir.Range here
+  # and Elixir.Range is **inclusive**, i.e, [start, end]
+  # while cv::Range `{integer(), integer()}` is `[start, end)`
+  # the difference can be observed in the `shape` field
+  iex> img[[0..100, 50..200]]
+  %Evision.Mat{
+    channels: 3,
+    dims: 2,
+    type: {:u, 8},
+    raw_type: 16,
+    shape: {101, 151, 3},
+    ref: #Reference<0.809884129.802291731.77297>
+  }
+  iex> img[[{0, 100}, {50, 200}]]
+  %Evision.Mat{
+    channels: 3,
+    dims: 2,
+    type: {:u, 8},
+    raw_type: 16,
+    shape: {100, 150, 3},
+    ref: #Reference<0.809884129.802291731.77297>
+  }
+
+  # for this example, the result is the same as `Evision.extractChannel(img, 0)`
+  iex> img[[:all, :all, 0]]
+  %Evision.Mat{
+    channels: 1,
+    dims: 2,
+    type: {:u, 8},
+    raw_type: 0,
+    shape: {300, 300},
+    ref: #Reference<0.809884129.802291731.77298>
+  }
+  iex> img[[:all, :all, 0..1]]
+  %Evision.Mat{
+    channels: 2,
+    dims: 2,
+    type: {:u, 8},
+    raw_type: 8,
+    shape: {300, 300, 2},
+    ref: #Reference<0.809884129.802291731.77299>
+  }
+
+  # when index is out of bounds
+  iex> img[[:all, :all, 42]]
+  {:error, "index 42 is out of bounds for axis 2 with size 3"}
+
+  # it works the same way for any dimensional Evision.Mat
+  iex> mat = Evision.Mat.ones({10, 10, 10, 10, 10}, :u8)
+  iex> mat[[1..7, :all, 2..6, 3..9, :all]]
+  %Evision.Mat{
+    channels: 1,
+    dims: 5,
+    type: {:u, 8},
+    raw_type: 0,
+    shape: {7, 10, 5, 7, 10},
+    ref: #Reference<0.3015448455.3766878228.259075>
+  }
+  ```
+  """
   @spec fetch(Evision.Mat.t(), list() | integer()) :: {:ok, maybe_mat_out() | nil}
   def fetch(mat, key) when is_list(key) do
     ranges = __generate_complete_range__(mat.dims, key)
