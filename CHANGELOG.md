@@ -3,6 +3,9 @@
 ## v0.1.12 (2022-10-15)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.12) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.12)
 
+### Breaking Changes
+- [Evision.QRCodeEncoder.Params] Renamed `Evision.QRCodeEncoder.Params.qrcodeencoder_params/0` to `Evision.QRCodeEncoder.Params.params/0`.
+
 ### Fixes
 - Function guard should also allow `Nx.Tensor` when the corresponding input argument is `Evision.Mat.maybe_mat_in()`.
 - [Evision.Mat] `Evision.Mat.quicklook/1`  should also check the number of channels is one of `[1, 3, 4]` when `dims == 2`.

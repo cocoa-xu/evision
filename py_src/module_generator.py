@@ -348,6 +348,9 @@ class ModuleGenerator(object):
                         argname, _, argtype = func_variant.py_arglist[0]
                         if 'buffer' in argname and argtype == 'vector_uchar':
                             module_func_name += 'Buffer'
+                
+                if "qrcodeencoder_params" == module_func_name:
+                    module_func_name = 'params'
 
                 global unique_signatures
                 usign = ''
