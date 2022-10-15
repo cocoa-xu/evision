@@ -1,7 +1,7 @@
 # Changelog
 
-## v0.1.12-dev (main)
-[Browse the Repository](https://github.com/cocoa-xu/evision)
+## v0.1.12 (2022-10-15)
+[Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.12) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.12)
 
 ### Fixes
 - Function guard should also allow `Nx.Tensor` when the corresponding input argument is `Evision.Mat.maybe_mat_in()`.
