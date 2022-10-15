@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.1.13-dev (main)
+[Browse the Repository](https://github.com/cocoa-xu/evision)
+### Fixes
+- [c_src] Specialised function `evision_to [with Tp_=cv::UMat]`.
+
+### Changed
+- [c_src] `parseSequence` will only handle tuples.
+
+### Added
+- [test] Added a test for `Evision.warpPerspective`.
+- [example] Added an example for `Evision.warpPerspective`.
+
 ## v0.1.12 (2022-10-15)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.12) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.12)
 

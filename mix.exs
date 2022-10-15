@@ -2,7 +2,7 @@ defmodule Evision.MixProject.Metadata do
   @moduledoc false
 
   def app, do: :evision
-  def version, do: "0.1.12"
+  def version, do: "0.1.13-dev"
   def last_released_version, do: "0.1.12"
   def github_url, do: "https://github.com/cocoa-xu/evision"
   def opencv_version, do: "4.6.0"
