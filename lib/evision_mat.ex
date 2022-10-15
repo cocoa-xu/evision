@@ -545,6 +545,40 @@ defmodule Evision.Mat do
   end
 
   @impl Access
+  @doc """
+  Access.get_and_update/3 implementation for Evision.Mat
+
+  ```elixir
+  iex> mat = Evision.Mat.zeros({5, 5}, :u8)
+  iex> Evision.Nx.to_nx(mat)
+  #Nx.Tensor<
+    u8[5][5]
+    Evision.Backend
+    [
+      [0, 0, 0, 0, 0],
+      [0, 0, 0, 0, 0],
+      [0, 0, 0, 0, 0],
+      [0, 0, 0, 0, 0],
+      [0, 0, 0, 0, 0]
+    ]
+  >
+  iex> {old, new} = Evision.Mat.get_and_update(mat, [1..3, 1..3], fn roi ->
+      {roi, Nx.broadcast(Nx.tensor(255, type: roi.type), roi.shape)}
+  end)
+  iex> Evision.Nx.to_nx(new)
+  #Nx.Tensor<
+    u8[5][5]
+    Evision.Backend
+    [
+      [0, 0, 0, 0, 0],
+      [0, 255, 255, 255, 0],
+      [0, 255, 255, 255, 0],
+      [0, 255, 255, 255, 0],
+      [0, 0, 0, 0, 0]
+    ]
+  >
+  ```
+  """
   @spec get_and_update(Evision.Mat.t(), term(), (Evision.Mat.t() -> Evision.Mat.t())) :: {Evision.Mat.t(), Evision.Mat.t()}
   def get_and_update(mat, key, function) when is_list(key) do
     ranges = __generate_complete_range__(mat.dims, key)
@@ -565,7 +599,15 @@ defmodule Evision.Mat do
     get_and_update(mat, [{key, key + 1}], function)
   end
 
+  def get_and_update(_mat, key, _function) do
+    raise RuntimeError, "Evision.Mat.get_and_update/3: unknown/unsupported key #{inspect(key)}"
+  end
+
   @impl Access
+  @doc """
+  Access.pop/2 is not implemented yet
+  """
+  @spec pop(any, any) :: none
   def pop(_mat, _key) do
     raise RuntimeError, "Evision.Mat does not support Access.pop/2 yet"
   end

@@ -11,96 +11,131 @@
 ### Changed
 - [Docs] Example Livebooks is now included in docs as extras.
 - [Evision.Mat] `Evision.Mat.roi/{2,3}` now supports Elixir Range.
-- [Evision.Mat] Implemented Access behaviour. For example,
+- [Evision.Mat] Implemented Access behaviour. 
 
-  ```elixir
-  iex> img = Evision.imread("test/qr_detector_test.png")
-  %Evision.Mat{
-    channels: 3,
-    dims: 2,
-    type: {:u, 8},
-    raw_type: 16,
-    shape: {300, 300, 3},
-    ref: #Reference<0.809884129.802291734.78316>
-  }
+  - `Access.fetch/2` examples:
 
-  # Same behaviour as Nx. 
-  # Also, img[0] gives the same result as img[[0]]
-  # For this example, they are both equvilent of img[[0, :all, :all]]
-  iex> img[[0]]
-  %Evision.Mat{
-    channels: 3,
-    dims: 2,
-    type: {:u, 8},
-    raw_type: 16,
-    shape: {1, 300, 3},
-    ref: #Reference<0.809884129.802291731.77296>
-  }
+    ```elixir
+    iex> img = Evision.imread("test/qr_detector_test.png")
+    %Evision.Mat{
+      channels: 3,
+      dims: 2,
+      type: {:u, 8},
+      raw_type: 16,
+      shape: {300, 300, 3},
+      ref: #Reference<0.809884129.802291734.78316>
+    }
 
-  # same as img[[0..100, 50..200, :all]]
-  # however, currently we only support ranges with step size 1
-  #
-  # **IMPORTANT NOTE**
-  #
-  # also, please note that we are using Elixir.Range here
-  # and Elixir.Range is **inclusive**, i.e, [start, end] 
-  # while cv::Range `{integer(), integer()}` is `[start, end)`
-  # the difference can be observed in the `shape` field
-  iex> img[[0..100, 50..200]]
-  %Evision.Mat{
-    channels: 3,
-    dims: 2,
-    type: {:u, 8},
-    raw_type: 16,
-    shape: {101, 151, 3},
-    ref: #Reference<0.809884129.802291731.77297>
-  }
-  iex> img[[{0, 100}, {50, 200}]]
-  %Evision.Mat{
-    channels: 3,
-    dims: 2,
-    type: {:u, 8},
-    raw_type: 16,
-    shape: {100, 150, 3},
-    ref: #Reference<0.809884129.802291731.77297>
-  }
+    # Same behaviour as Nx. 
+    # Also, img[0] gives the same result as img[[0]]
+    # For this example, they are both equvilent of img[[0, :all, :all]]
+    iex> img[[0]]
+    %Evision.Mat{
+      channels: 3,
+      dims: 2,
+      type: {:u, 8},
+      raw_type: 16,
+      shape: {1, 300, 3},
+      ref: #Reference<0.809884129.802291731.77296>
+    }
 
-  # for this example, the result is the same as `Evision.extractChannel(img, 0)`
-  iex> img[[:all, :all, 0]]
-  %Evision.Mat{
-    channels: 1,
-    dims: 2,
-    type: {:u, 8},
-    raw_type: 0,
-    shape: {300, 300},
-    ref: #Reference<0.809884129.802291731.77298>
-  }
-  iex> img[[:all, :all, 0..1]]
-  %Evision.Mat{
-    channels: 2,
-    dims: 2,
-    type: {:u, 8},
-    raw_type: 8,
-    shape: {300, 300, 2},
-    ref: #Reference<0.809884129.802291731.77299>
-  }
+    # same as img[[0..100, 50..200, :all]]
+    # however, currently we only support ranges with step size 1
+    #
+    # **IMPORTANT NOTE**
+    #
+    # also, please note that we are using Elixir.Range here
+    # and Elixir.Range is **inclusive**, i.e, [start, end] 
+    # while cv::Range `{integer(), integer()}` is `[start, end)`
+    # the difference can be observed in the `shape` field
+    iex> img[[0..100, 50..200]]
+    %Evision.Mat{
+      channels: 3,
+      dims: 2,
+      type: {:u, 8},
+      raw_type: 16,
+      shape: {101, 151, 3},
+      ref: #Reference<0.809884129.802291731.77297>
+    }
+    iex> img[[{0, 100}, {50, 200}]]
+    %Evision.Mat{
+      channels: 3,
+      dims: 2,
+      type: {:u, 8},
+      raw_type: 16,
+      shape: {100, 150, 3},
+      ref: #Reference<0.809884129.802291731.77297>
+    }
 
-  # when index is out of bounds
-  iex> img[[:all, :all, 42]]
-  {:error, "index 42 is out of bounds for axis 2 with size 3"}
+    # for this example, the result is the same as `Evision.extractChannel(img, 0)`
+    iex> img[[:all, :all, 0]]
+    %Evision.Mat{
+      channels: 1,
+      dims: 2,
+      type: {:u, 8},
+      raw_type: 0,
+      shape: {300, 300},
+      ref: #Reference<0.809884129.802291731.77298>
+    }
+    iex> img[[:all, :all, 0..1]]
+    %Evision.Mat{
+      channels: 2,
+      dims: 2,
+      type: {:u, 8},
+      raw_type: 8,
+      shape: {300, 300, 2},
+      ref: #Reference<0.809884129.802291731.77299>
+    }
 
-  # it works the same way for any dimensional Evision.Mat
-  iex> mat = Evision.Mat.ones({10, 10, 10, 10, 10}, :u8)
-  iex> mat[[1..7, :all, 2..6, 3..9, :all]]
-  %Evision.Mat{
-    channels: 1,
-    dims: 5,
-    type: {:u, 8},
-    raw_type: 0,
-    shape: {7, 10, 5, 7, 10},
-    ref: #Reference<0.3015448455.3766878228.259075>
-  }
-  ```
+    # when index is out of bounds
+    iex> img[[:all, :all, 42]]
+    {:error, "index 42 is out of bounds for axis 2 with size 3"}
+
+    # it works the same way for any dimensional Evision.Mat
+    iex> mat = Evision.Mat.ones({10, 10, 10, 10, 10}, :u8)
+    iex> mat[[1..7, :all, 2..6, 3..9, :all]]
+    %Evision.Mat{
+      channels: 1,
+      dims: 5,
+      type: {:u, 8},
+      raw_type: 0,
+      shape: {7, 10, 5, 7, 10},
+      ref: #Reference<0.3015448455.3766878228.259075>
+    }
+    ```
+
+  - `Access.get_and_update/3` examples:
+
+    ```elixir
+    iex> mat = Evision.Mat.zeros({5, 5}, :u8)
+    iex> Evision.Nx.to_nx(mat)
+    #Nx.Tensor<
+      u8[5][5]
+      Evision.Backend
+      [
+        [0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0]
+      ]
+    >
+    iex> {old, new} = Evision.Mat.get_and_update(mat, [1..3, 1..3], fn roi ->
+        {roi, Nx.broadcast(Nx.tensor(255, type: roi.type), roi.shape)}
+    end)
+    iex> Evision.Nx.to_nx(new)
+    #Nx.Tensor<
+      u8[5][5]
+      Evision.Backend
+      [
+        [0, 0, 0, 0, 0],
+        [0, 255, 255, 255, 0],
+        [0, 255, 255, 255, 0],
+        [0, 255, 255, 255, 0],
+        [0, 0, 0, 0, 0]
+      ]
+    >
+    ```
 
 ## v0.1.11 (2022-10-13)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.11) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.11)
