@@ -208,11 +208,11 @@ static ERL_NIF_TERM evision_cv_mat_roi(ErlNifEnv *env, int argc, const ERL_NIF_T
                     // deal with cv::Range::all()
                     if (last == cv::Range::all()) {
                         last.start = 0;
-                        last.end = img_channels - 1;
+                        last.end = img_channels;
                     }
 
                     // if definitely out of range
-                    if (last.start > img_channels - 1 || last.end < 0) {
+                    if (last.start > img_channels - 1 || last.end < 0 || last.start < 0 || last.end > img_channels) {
                         char msg[128] = {'\0'};
                         if (enif_snprintf(msg, 127, "index %d is out of bounds for axis %d with size %d", last.start, ranges.size(), img_channels)) {
                             return evision::nif::error(env, msg);
@@ -221,24 +221,19 @@ static ERL_NIF_TERM evision_cv_mat_roi(ErlNifEnv *env, int argc, const ERL_NIF_T
                         }
                     }
 
-                    // start and end should be index
-                    // and we will take channel in [start, end] instead of [start, end)
-                    if (last.start < 0) {
-                        last.start = 0;
-                    }
-                    if (last.end >= img_channels) {
-                        last.end = img_channels - 1;
+                    if (last.end <= last.start) {
+                        return evision_cv_mat_empty(env, 0, argv);
                     }
 
-                    if (last.start == 0 && last.end == img_channels - 1) {
+                    if (last.start == 0 && last.end == img_channels) {
                         ERRWRAP2(ret = img(ranges), env, error_flag, error_term);
                     } else {
-                        // because we are taking channel in [start, end]
+                        // because we are taking channel in [start, end)
                         // if start == end, we would still have 1 channel to extract
                         // this follows the convention in elixir as 0..0 is effectively [0]
-                        std::vector<cv::Mat> by_channel(last.end - last.start + 1);
+                        std::vector<cv::Mat> by_channel(last.end - last.start);
                         size_t by_channel_index = 0;
-                        for (int channel_index = last.start; channel_index <= last.end; channel_index++) {
+                        for (int channel_index = last.start; channel_index < last.end; channel_index++) {
                             ERRWRAP2(cv::extractChannel(img, by_channel[by_channel_index], channel_index), env, error_flag, error_term);
                             if (error_flag) break;
 

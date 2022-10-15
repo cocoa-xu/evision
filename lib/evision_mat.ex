@@ -164,17 +164,38 @@ defmodule Evision.Mat do
   end
 
   @doc false
-  def __standardise_range_list__(ranges) do
+  def __standardise_range_list__(ranges, inclusive_range) do
     Enum.map(ranges, fn r ->
       case r do
         :all ->
           :all
         {first, last} ->
+          # {_, _} is cv::Range
+          # hence we don't need to do anything to it
           {first, last}
         first..last//step ->
-          __from_elixir_range__(first..last//step, allowed_step_size: [1])
+          # first..last//step is Elixir.Range
+          # 0..0 should give [0] if `inclusive_range` is true
+          {first, last} = __from_elixir_range__(first..last//step, allowed_step_size: [1])
+          if inclusive_range do
+            # note that what we are going return is cv::Range
+            # which is [start, end)
+            {first, last + 1}
+          else
+            {first, last}
+          end
         number when is_integer(number) ->
-          {number, number+1}
+          # cv::Range is [start, end)
+          # while Elixir.Range is [first, last]
+          if inclusive_range do
+            # [first, last), [0, 1) will give [0]
+            # note that what we are going return is cv::Range
+            # which is [start, end)
+            {number, number + 1}
+          else
+            # [first, last], [0, 0] will give []
+            {number, number}
+          end
         unknown ->
           raise "Cannot convert from `#{inspect(unknown)}` to a valid range."
       end
@@ -288,7 +309,7 @@ defmodule Evision.Mat do
   @spec roi(maybe_mat_in(), [{integer(), integer()} | Range.t() | :all]) :: maybe_mat_out()
   def roi(mat, ranges) when is_list(ranges) do
     mat = __from_struct__(mat)
-    ranges = __standardise_range_list__(ranges)
+    ranges = __standardise_range_list__(ranges, true)
     :evision_nif.mat_roi(mat: mat, ranges: ranges)
     |> Evision.Internal.Structurise.to_struct()
   end
@@ -296,7 +317,7 @@ defmodule Evision.Mat do
   @spec roi(maybe_mat_in(), [{integer(), integer()} | Range.t() | :all], maybe_mat_in()) :: maybe_mat_out()
   def update_roi(mat, ranges, with_mat) do
     mat = __from_struct__(mat)
-    ranges = __standardise_range_list__(ranges)
+    ranges = __standardise_range_list__(ranges, true)
     with_mat = __from_struct__(with_mat)
     :evision_nif.mat_update_roi(mat: mat, ranges: ranges, with_mat: with_mat)
     |> Evision.Internal.Structurise.to_struct()
@@ -401,10 +422,6 @@ defmodule Evision.Mat do
   end
 
   @doc false
-  def __generate_complete_range__(dims, number) when is_integer(number) do
-    [{number, number + 1}] ++ List.duplicate(:all, dims - 1)
-  end
-
   def __generate_complete_range__(dims, maybe_incomplete) when is_list(maybe_incomplete) do
     indices_given = Enum.count(maybe_incomplete)
     if indices_given <= dims do
@@ -419,35 +436,41 @@ defmodule Evision.Mat do
   end
 
   @impl Access
-  @spec fetch(Evision.Mat.t(), term()) :: {:ok, Evision.Mat.t()} | :error
-  def fetch(mat, key) do
-    if is_list(key) or is_number(key) do
-      ranges = __generate_complete_range__(mat.dims, key)
-      {:ok, roi(mat, ranges)}
-    else
-      :error
-    end
+  @spec fetch(Evision.Mat.t(), list() | integer()) :: {:ok, maybe_mat_out() | nil}
+  def fetch(mat, key) when is_list(key) do
+    ranges = __generate_complete_range__(mat.dims, key)
+    ranges = __standardise_range_list__(ranges, true)
+    {:ok, roi(mat, ranges)}
+  end
+
+  def fetch(mat, key) when is_integer(key) do
+    # cv::Range is [start, end)
+    fetch(mat, [{key, key + 1}])
+  end
+
+  def fetch(_mat, _key) do
+    {:ok, nil}
   end
 
   @impl Access
   @spec get_and_update(Evision.Mat.t(), term(), (Evision.Mat.t() -> Evision.Mat.t())) :: {Evision.Mat.t(), Evision.Mat.t()}
-  def get_and_update(mat, key, function) do
-    if is_list(key) or is_integer(key) do
-      ranges = __generate_complete_range__(mat.dims, key)
-      roi = roi(mat, ranges)
-      case function.(roi) do
-        {^roi, modified_roi} ->
-          if is_struct(modified_roi, Nx.Tensor) or is_struct(modified_roi, Evision.Mat) do
-            {mat, update_roi(mat, ranges, modified_roi)}
-          else
-            raise RuntimeError, "Cannot update the requested sub-matrix with unsupported value #{inspect(modified_roi)}"
-          end
-        _ ->
-          {mat, mat}
-      end
-    else
-      raise ArgumentError, "Evision.Mat does not support get_and_update with key=#{inspect(key)}"
+  def get_and_update(mat, key, function) when is_list(key) do
+    ranges = __generate_complete_range__(mat.dims, key)
+    roi = roi(mat, ranges)
+    case function.(roi) do
+      {^roi, modified_roi} ->
+        if is_struct(modified_roi, Nx.Tensor) or is_struct(modified_roi, Evision.Mat) do
+          {mat, update_roi(mat, ranges, modified_roi)}
+        else
+          raise RuntimeError, "Cannot update the requested sub-matrix with unsupported value #{inspect(modified_roi)}"
+        end
+      _ ->
+        {mat, mat}
     end
+  end
+
+  def get_and_update(mat, key, function) when is_integer(key) do
+    get_and_update(mat, [{key, key + 1}], function)
   end
 
   @impl Access
