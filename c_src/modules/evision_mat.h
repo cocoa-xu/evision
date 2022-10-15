@@ -173,7 +173,7 @@ static ERL_NIF_TERM evision_cv_mat_roi(ErlNifEnv *env, int argc, const ERL_NIF_T
                 Mat ret;
                 ERRWRAP2(ret = img(rect), env, error_flag, error_term);
                 if (!error_flag) {
-                    return evision_from(env, ret);
+                    return evision_from(env, ret.clone());
                 }
             }
         }
@@ -188,7 +188,7 @@ static ERL_NIF_TERM evision_cv_mat_roi(ErlNifEnv *env, int argc, const ERL_NIF_T
                 Mat ret;
                 ERRWRAP2(ret = img(rowRange, colRange), env, error_flag, error_term);
                 if (!error_flag) {
-                    return evision_from(env, ret);
+                    return evision_from(env, ret.clone());
                 }
             }
         }
@@ -227,6 +227,7 @@ static ERL_NIF_TERM evision_cv_mat_roi(ErlNifEnv *env, int argc, const ERL_NIF_T
 
                     if (last.start == 0 && last.end == img_channels) {
                         ERRWRAP2(ret = img(ranges), env, error_flag, error_term);
+                        ret = ret.clone();
                     } else {
                         // because we are taking channel in [start, end)
                         // if start == end, we would still have 1 channel to extract
@@ -249,6 +250,7 @@ static ERL_NIF_TERM evision_cv_mat_roi(ErlNifEnv *env, int argc, const ERL_NIF_T
                     }
                 } else {
                     ERRWRAP2(ret = img(ranges), env, error_flag, error_term);
+                    ret = ret.clone();
                 }
 
                 if (!error_flag) {
