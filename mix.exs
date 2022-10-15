@@ -871,6 +871,7 @@ defmodule Evision.MixProject do
         # Evision
         "examples/imread.livemd",
         "examples/stitching.livemd",
+        "examples/warp_perspective.livemd",
         "examples/pca.livemd",
         "examples/photo-hdr.livemd",
         "examples/cifar10.livemd",
