@@ -110,48 +110,6 @@ static ERL_NIF_TERM evision_cv_mat_shape(ErlNifEnv *env, int argc, const ERL_NIF
     else return enif_make_badarg(env);
 }
 
-static void evision_cv_internal_write_binary(int fd, ErlNifBinary& bin) {
-#if defined(_WIN32) || defined(WINRT) || defined(_WIN32_WCE) || defined(__WIN32__) || defined(_MSC_VER)
-#else
-    size_t written = 0;
-    char * ptr = (char *)bin.data;
-    const size_t chunk_size = 1024;
-    while (written != bin.size) {
-        size_t to_write = bin.size - written;
-        if (to_write > chunk_size) to_write = chunk_size;
-        ssize_t bytes_written = write(STDOUT_FILENO, ptr, to_write);
-        if (bytes_written <= 0) {
-            continue;
-        }
-        ptr += bytes_written;
-        written += bytes_written;
-    }
-#endif
-}
-
-// @evision c: internal_mat_inspect,evision_cv_internal_mat_inspect,3
-// @evision nif: def internal_mat_inspect(_head, _b64, _st), do: :erlang.nif_error("internal_mat_inspect not loaded")
-static ERL_NIF_TERM evision_cv_internal_mat_inspect(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
-#if defined(_WIN32) || defined(WINRT) || defined(_WIN32_WCE) || defined(__WIN32__) || defined(_MSC_VER)
-    return evision::nif::ok(env);
-#else
-    using namespace cv;
-    ERL_NIF_TERM error_term = 0;
-
-    ErlNifBinary head, b64, st;
-    if (enif_inspect_binary(env, argv[0], &head) && enif_inspect_binary(env, argv[1], &b64) && enif_inspect_binary(env, argv[2], &st))
-    {
-        evision_cv_internal_write_binary(STDOUT_FILENO, head);
-        evision_cv_internal_write_binary(STDOUT_FILENO, b64);
-        evision_cv_internal_write_binary(STDOUT_FILENO, st);
-        return evision::nif::ok(env);
-    }
-
-    if (error_term != 0) return error_term;
-    else return enif_make_badarg(env);
-#endif
-}
-
 // @evision c: mat_roi,evision_cv_mat_roi,1
 // @evision nif: def mat_roi(_opts \\ []), do: :erlang.nif_error("Mat::operator() not loaded")
 static ERL_NIF_TERM evision_cv_mat_roi(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {

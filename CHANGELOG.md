@@ -7,6 +7,11 @@
 
 ### Changed
 - [c_src] `parseSequence` will only handle tuples.
+- [Evision.Mat] `Evision.Mat.quicklook` will use alternative escaping sequence to avoid having a dedicate function in NIF. Thanks to @akash-akya and @kipcole9 ([vix#68](https://github.com/akash-akya/vix/pull/68)).
+
+  ```
+  ST means either BEL (hex code 0x07) or ESC \\.
+  ```
 
 ### Added
 - [test] Added a test for `Evision.warpPerspective`.

@@ -372,16 +372,20 @@ defmodule Evision.Mat do
               ((0 < w and elem(shape, 1) < w) or w == :infinity)} do
       {osc, st} =
         if String.starts_with?(System.get_env("TERM"), "screen") do
-          {<<27>> <> "Ptmux;" <> <<27, 27>>, "\a" <> <<27>> <> "\\\r\n"}
+          {"\ePtmux;\e\e", "\a\e\\\r\n"}
         else
-          {<<27>>, <<7>> <> "\r\n"}
+          {"\e", "\e\\\r\n"}
         end
 
       binary = Evision.imencode(".png", mat)
-      b64 = Base.encode64(binary, padding: true)
+      b64 = Base.encode64(binary)
       bin_size = byte_size(binary)
-      head = osc <> "]1337;File=size=#{bin_size};inline=1:"
-      :evision_nif.internal_mat_inspect(head, b64, st)
+
+      IO.puts([
+        "#{osc}]1337;File=size=#{bin_size};inline=1:",
+        b64,
+        st
+      ])
     end
 
     mat
