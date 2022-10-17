@@ -412,7 +412,8 @@ defmodule Evision.Mat do
         numerical = Kino.Inspect.new(Evision.Nx.to_nx(mat))
 
         with true <- is_2d_image(mat),
-             encoded <- Evision.imencode(".png", mat) do
+             encoded <- Evision.imencode(".png", mat),
+             true <- is_binary(encoded) do
           image = Kino.Image.new(encoded, :png)
           tabs = Kino.Layout.tabs([{"Raw", raw}, {"Image", image}, {"Numerical", numerical}])
           Kino.Render.to_livebook(tabs)
