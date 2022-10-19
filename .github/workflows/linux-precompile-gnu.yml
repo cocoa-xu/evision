@@ -86,7 +86,7 @@ jobs:
           #   sudo apt-get update
           #   sudo apt-get install -y build-essential automake autoconf pkg-config bc m4 unzip zip curl git gzip python3 ca-certificates ${{ matrix.pair.c_compiler }} ${{ matrix.pair.cpp_compiler }} "crossbuild-essential-${{ matrix.pair.deb_arch }}" libgtk2.0-dev "libgtk2.0-dev:${{ matrix.pair.deb_arch }}" libncurses5-dev "libncurses5-dev:${{ matrix.pair.deb_arch }}" libssl-dev "libssl-dev:${{ matrix.pair.deb_arch }}"
           # else
-          sudo apt-get install -y build-essential automake autoconf pkg-config bc m4 unzip zip curl git gzip python3 ca-certificates ${{ matrix.pair.c_compiler }} ${{ matrix.pair.cpp_compiler }} libgtk2.0-dev libncurses5-dev libssl-dev
+          sudo apt-get install -y build-essential automake autoconf pkg-config bc m4 unzip zip curl git gzip python3 ca-certificates ${{ matrix.pair.c_compiler }} ${{ matrix.pair.cpp_compiler }} libgtk2.0-dev libgtk-3-dev libncurses5-dev libssl-dev
           # fi
 
       - name: Cache mix packages
