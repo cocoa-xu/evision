@@ -867,6 +867,7 @@ defmodule Evision.MixProject do
       source_url: @source_url,
       extras: [
         "CHANGELOG.md",
+        "Cheatsheet.cheatmd",
         "README.md",
         # Evision
         "examples/imread.livemd",
