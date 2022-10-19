@@ -1,5 +1,9 @@
 defmodule Evision.Nx do
-  @moduledoc false
+  @moduledoc """
+  Conversion between Nx.Tensor and Evision.Mat.
+
+  Will be deprecated in v0.1.14.
+  """
 
   @spec to_nx(Evision.Mat.t(), module()) :: Nx.Tensor.t() | {:error, String.t()}
   def to_nx(mat, backend \\ Evision.Backend) when is_struct(mat, Evision.Mat) do
