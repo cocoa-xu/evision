@@ -135,27 +135,39 @@ static ERL_NIF_TERM evision_cv_mat_transpose(ErlNifEnv *env, int argc, const ERL
     evision::nif::parse_arg(env, nif_opts_index, argv, erl_terms);
 
     Mat img;
-    std::vector<size_t> axes;
+    std::vector<int> axes;
     std::vector<int> as_shape;
+    bool as_shaped = true;
 
     if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0)) &&
         evision_to_safe(env, evision_get_kw(env, erl_terms, "axes"), axes, ArgInfo("axes", 0)) &&
-        evision_to_safe(env, evision_get_kw(env, erl_terms, "as_shape"), as_shape, ArgInfo("as_shape", 0))) {        
+        evision_to_safe(env, evision_get_kw(env, erl_terms, "as_shape"), as_shape, ArgInfo("as_shape", 0)) &&
+        evision_to_safe(env, evision_get_kw(env, erl_terms, "as_shaped"), as_shaped, ArgInfo("as_shaped", 0))) {
         int ndims = (int)as_shape.size();
         std::vector<int> new_shape(ndims);
         for (size_t i = 0; i < axes.size(); i++) {
             new_shape[i] = as_shape[axes[i]];
         }
 
-        int type = img.type() & CV_MAT_DEPTH_MASK;
-        cv::Mat ret = cv::Mat::zeros(ndims, new_shape.data(), type);
-        // the data of img must be countinous
-        if (!img.isContinuous()) {
-            // if not, call clone to force opencv make a continuous matrix for us
-            img = img.clone();
+        int error_flag = false;
+        cv::Mat ret;
+        if (as_shaped) {
+            // the data of img must be countinous
+            if (!img.isContinuous()) {
+                // if not, call clone to force opencv make a continuous matrix for us
+                img = img.clone();
+                img = Mat((int)as_shape.size(), as_shape.data(), img.depth(), img.data);
+            }
+            int type = img.type() & CV_MAT_DEPTH_MASK;
+            ret = cv::Mat::zeros(ndims, new_shape.data(), type);
+            ERRWRAP2(transpose(img.data, ret.data, ndims, as_shape.data(), axes.data(), img.elemSize()), env, error_flag, error_term);
+        } else {
+            ERRWRAP2(cv::transposeND(img, axes, ret), env, error_flag, error_term);
         }
-        transpose(img.data, ret.data, ndims, as_shape.data(), axes.data(), img.elemSize());
-        return evision_from(env, ret);
+
+        if (!error_flag) {
+            return evision_from(env, ret);
+        }
     }
 
     if (error_term != 0) return error_term;
