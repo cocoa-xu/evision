@@ -291,11 +291,11 @@ output_fusion_file = Path.join([__DIR__, "photo_hdr_test", "fusion.png"])
 
 result =
   fusion
-  |> Cv.Nx.to_nx(Nx.BinaryBackend)
+  |> Cv.Mat.to_nx(Nx.BinaryBackend)
   |> Nx.multiply(255)
   |> Nx.clip(0, 255)
   |> Nx.as_type({:u, 8})
-  |> Cv.Nx.to_mat_2d()
+  |> Cv.Mat.from_nx_2d()
   |> then(fn result ->
     Cv.imwrite(output_fusion_file, result)
     result
@@ -356,7 +356,7 @@ result =
   |> Nx.multiply(255)
   |> Nx.clip(0, 255)
   |> Nx.as_type({:u, 8})
-  |> Cv.Nx.to_mat_2d()
+  |> Cv.Mat.from_nx_2d()
 
 result = Cv.imencode(".png", result)
 

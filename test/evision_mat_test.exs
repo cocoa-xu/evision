@@ -28,7 +28,7 @@ defmodule Evision.Mat.Test do
 
     t = Evision.Mat.to_nx(mat)
 
-    %Mat{} = mat = Evision.Mat.to_mat(t)
+    %Mat{} = mat = Evision.Mat.from_nx(t)
     shape = Nx.shape(t)
     mat_shape = Evision.Mat.shape(mat)
     assert shape == mat_shape
@@ -46,7 +46,7 @@ defmodule Evision.Mat.Test do
   test "convert from arbitrary tensor" do
     t = Nx.iota({2, 3, 2, 3, 2, 3}, type: {:s, 32})
 
-    mat = Evision.Mat.to_mat(t)
+    mat = Evision.Mat.from_nx(t)
     shape = Nx.shape(t)
     mat_shape = Evision.Mat.shape(mat)
     assert shape == mat_shape
@@ -62,7 +62,7 @@ defmodule Evision.Mat.Test do
 
   @tag :nx
   test "expecting correct shaoe after transposing" do
-    from_tensor = Evision.Mat.to_mat(Nx.iota({4, 3, 3}, type: :f32))
+    from_tensor = Evision.Mat.from_nx(Nx.iota({4, 3, 3}, type: :f32))
     assert {4, 3, 3} = Evision.Mat.shape(from_tensor)
     transposed = Evision.Mat.transpose(from_tensor, [1, 0, 2])
     assert {3, 4, 3} = Evision.Mat.shape(transposed)
@@ -71,7 +71,7 @@ defmodule Evision.Mat.Test do
   @tag :nx
   test "transpose" do
     tensor = File.read!(Path.join(__DIR__, ["color_checker.etf"])) |> :erlang.binary_to_term()
-    mat = Evision.Mat.to_mat(tensor, {297, 441, 3})
+    mat = Evision.Mat.from_nx(tensor, {297, 441, 3})
     assert {297, 441, 3} = Evision.Mat.shape(mat)
 
     transposed = Evision.Mat.transpose(mat, [1, 0, 2])

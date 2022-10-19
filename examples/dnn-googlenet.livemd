@@ -214,7 +214,7 @@ end_time = :os.system_time(:millisecond)
 
 ## Get the Classification Result
 ```elixir
-pred = pred |> Cv.Nx.to_nx(Nx.BinaryBackend)
+pred = pred |> Cv.Mat.to_nx(Nx.BinaryBackend)
 pred_class_id = pred |> Nx.argmax() |> Nx.to_flat_list() |> Enum.at(0)
 
 confidence =

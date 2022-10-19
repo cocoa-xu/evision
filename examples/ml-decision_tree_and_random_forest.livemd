@@ -132,9 +132,9 @@ rtree =
   (
     dataset =
       Evision.ML.TrainData.create(
-        Evision.Mat.to_mat(Nx.tensor(features, type: :f32, backend: Evision.Backend)),
+        Evision.Mat.from_nx(Nx.tensor(features, type: :f32, backend: Evision.Backend)),
         Evision.cv_ROW_SAMPLE(),
-        Evision.Mat.to_mat(Nx.tensor(labels, type: :s32, backend: Evision.Backend))
+        Evision.Mat.from_nx(Nx.tensor(labels, type: :s32, backend: Evision.Backend))
       )
       |> Evision.ML.TrainData.setTrainTestSplitRatio(0.8, shuffle: true)
 
