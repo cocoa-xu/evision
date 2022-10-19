@@ -4,11 +4,11 @@
 #include <erl_nif.h>
 #include "../../ArgInfo.hpp"
 
-std::vector<size_t> transpose_axes(uint64_t ndims, size_t * axes,
+std::vector<int> transpose_axes(uint64_t ndims, int * axes,
                     int64_t& min_axis, int64_t& max_axis) {
-    std::vector<size_t> axes_to_transpose;
+    std::vector<int> axes_to_transpose;
     min_axis = -1;
-    for (uint64_t i = 0; i < ndims; i++) {
+    for (int64_t i = 0; i < (int64_t)ndims; i++) {
         if (axes[i] == i) {
             min_axis = i;
         } else {
@@ -91,12 +91,12 @@ void weighted_traverse(const std::vector<transpose_shape_info>& traverse_list, s
 /// @param shape the shape of the original matrix, a list of positive integers
 /// @param new_axes the new arrangement of the axes, a list of non-negative integers, 0 <= i < ndims.
 /// @param elem_size element size in bytes.
-void transpose(void * original, void * out, uint64_t ndims, int * shape, size_t * new_axes, size_t elem_size) {
+void transpose(void * original, void * out, uint64_t ndims, int * shape, int * new_axes, size_t elem_size) {
     if (original == nullptr || out == nullptr) return;
     if (ndims == 0 || shape == nullptr || new_axes == nullptr) return;
 
     int64_t min_axis, max_axis;
-    std::vector<size_t> axes = transpose_axes(ndims, new_axes, min_axis, max_axis);
+    std::vector<int> axes = transpose_axes(ndims, new_axes, min_axis, max_axis);
     auto weighted_shape_info = weighted_shape(ndims, shape, elem_size);
 
     size_t chunk_size = weighted_shape_info[min_axis].total_size;
