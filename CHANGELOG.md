@@ -13,6 +13,19 @@
   ST means either BEL (hex code 0x07) or ESC \\.
   ```
 
+- [nx-integration] Functions in `Evision.Nx` are now moved to `Evision.Mat`.
+
+  | Old                      | New                         |
+  |:------------------------:|:---------------------------:|
+  |`Evision.Nx.to_mat/{1,2}` | `Evision.Mat.from_nx/{1,2}` |
+  |`Evision.Nx.to_mat/5`     | `Evision.Mat.from_binary/5` |
+  |`Evision.Nx.to_mat_2d/1`  | `Evision.Mat.from_nx_2d/1`  |
+  |`Evision.Nx.to_nx/1`      | `Evision.Mat.to_nx/1`       |
+
+As of v0.1.13, calls to these old functions will be forwarded to the corresponding new ones. 
+
+In the next release (v0.1.14), `Evision.Nx` will be removed.
+
 ### Added
 - [test] Added a test for `Evision.warpPerspective`.
 - [example] Added an example for `Evision.warpPerspective`.

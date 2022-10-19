@@ -913,6 +913,123 @@ defmodule Evision.Mat do
   end
 
   @doc """
+  Transform an `Evision.Mat` to `Nx.tensor`.
+
+  If the input `Evision.Mat` represents an image, the resulting tensor
+  will have shape `{height, width, channels}`.
+
+  ### Example
+
+  ```elixir
+  iex> %Evision.Mat{} = mat = Evision.imread("/path/to/exist/img.png")
+  iex> nx_tensor = Evision.Mat.to_nx(mat)
+  #Nx.Tensor<
+    u8[1080][1920][3]
+    [[ ... pixel data ... ]]
+  >
+  ```
+
+  """
+  @spec to_nx(maybe_mat_in(), module()):: Nx.Tensor.t() | {:error, String.t()}
+  def to_nx(mat, backend \\ Evision.Backend) when is_struct(mat, Evision.Mat) do
+    mat = __from_struct__(mat)
+    with mat_type <- Evision.Mat.type(mat),
+         mat_shape <- Evision.Mat.shape(mat),
+         {:not_empty_shape, true} <- {:not_empty_shape, tuple_size(mat_shape) > 0},
+         {:not_error, true, _} <- {:not_error, elem(mat_shape, 0) != :error, mat_shape},
+         bin <- Evision.Mat.to_binary(mat),
+         {:is_binary, true, _} <- {:is_binary, is_binary(bin), bin} do
+      Nx.reshape(Nx.from_binary(bin, mat_type, backend: backend), mat_shape)
+    else
+      {:error, reason} ->
+        {:error, reason}
+
+      {:not_empty_shape, false} ->
+        {:error, "shape is {}"}
+
+      {:not_error, false, error} ->
+        error
+
+      {:is_binary, false, error} ->
+        error
+    end
+  end
+
+  @doc """
+  Converts a tensor from `Nx.Tensor` to `Evision.Mat`.
+
+  ##### Positional Arguments
+
+  - **t**. `Nx.Tensor`
+
+  ##### Return
+  An `Evision.Mat` that has the same shape and type.
+  (except for `:s64`, `:u32` and `:u64`, please see more details at https://github.com/cocoa-xu/evision/issues/48).
+  """
+  @spec from_nx(Nx.t()) :: Evision.Mat.t() | {:error, String.t()}
+  def from_nx(t) when is_struct(t, Nx.Tensor) do
+    case Nx.shape(t) do
+      {} ->
+        Evision.Mat.from_binary_by_shape(Nx.to_binary(t), Nx.type(t), {1})
+
+      shape ->
+        Evision.Mat.from_binary_by_shape(Nx.to_binary(t), Nx.type(t), shape)
+    end
+  end
+
+  @doc """
+  Converts a tensor from `Nx.Tensor` to `Evision.Mat`.
+
+  ##### Positional Arguments
+
+  - **t**. `Nx.Tensor`
+  - **as_shape**. `tuple`.
+
+  ##### Return
+  An `Evision.Mat` that has the specified shape (if the number of elements matches) and the same type as the given tensor.
+  (except for `:s64`, `:u32` and `:u64`, please see more details at https://github.com/cocoa-xu/evision/issues/48).
+  """
+  @spec from_nx(Nx.Tensor.t(), tuple()) :: Evision.Mat.t() | {:error, String.t()}
+  def from_nx(t, as_shape) when is_struct(t, Nx.Tensor) do
+    case Nx.shape(t) do
+      {} ->
+        Evision.Mat.from_binary_by_shape(Nx.to_binary(t), Nx.type(t), {1})
+
+      shape ->
+        if Tuple.product(shape) == Tuple.product(as_shape) do
+          Evision.Mat.from_binary_by_shape(Nx.to_binary(t), Nx.type(t), as_shape)
+        else
+          {:error,
+           "cannot convert tensor(#{inspect(shape)}) to mat as shape #{inspect(as_shape)}"}
+        end
+    end
+  end
+
+  @doc """
+  Converts a tensor from `Nx.Tensor` to a 2D `Evision.Mat`.
+
+  If the tuple size of the shape is 3, the resulting `Evision.Mat` will be a `c`-channel 2D image,
+  where `c` is the last number in the shape tuple.
+
+  If the tuple size of the shape is 2, the resulting `Evision.Mat` will be a 1-channel 2D image.
+
+  Otherwise, it's not possible to convert the tensor to a 2D image.
+  """
+  @spec from_nx_2d(Nx.t()) :: Evision.Mat.t() | {:error, String.t()}
+  def from_nx_2d(t) do
+    case Nx.shape(t) do
+      {height, width} ->
+        Evision.Mat.from_binary(Nx.to_binary(t), Nx.type(t), height, width, 1)
+
+      {height, width, channels} ->
+        Evision.Mat.from_binary(Nx.to_binary(t), Nx.type(t), height, width, channels)
+
+      shape ->
+        {:error, "Cannot convert tensor(#{inspect(shape)}) to a 2D image"}
+    end
+  end
+
+  @doc """
   Transpose a matrix
 
   ## Parameters
@@ -934,22 +1051,23 @@ defmodule Evision.Mat do
   @spec transpose(maybe_mat_in(), [integer()], Keyword.t()) :: maybe_mat_out()
   def transpose(mat, axes, opts \\ []) do
     mat = __from_struct__(mat)
-    # todo: check return value of shape(mat)
-    as_shape = opts[:as_shape] || shape(mat)
-
-    as_shape =
-      case as_shape do
+    self_shape =
+      case shape(mat) do
         {:error, msg} ->
           raise RuntimeError, msg
+        self_shape ->
+          Tuple.to_list(self_shape)
+        end
+
+    as_shape = opts[:as_shape] || self_shape
+
+    as_shape =
+      case is_tuple(as_shape) do
+        true ->
+          Tuple.to_list(as_shape)
 
         _ ->
-          case is_tuple(as_shape) do
-            true ->
-              Tuple.to_list(as_shape)
-
-            _ ->
-              as_shape
-          end
+          as_shape
       end
 
     ndims = Enum.count(as_shape)
@@ -963,7 +1081,9 @@ defmodule Evision.Mat do
     if Enum.count(uniq_axes) != ndims do
       {:error, "invalid transpose axes #{inspect(axes)} for shape #{inspect(as_shape)}"}
     else
-      :evision_nif.mat_transpose(img: mat, axes: uniq_axes, as_shape: as_shape)
+      as_shaped = as_shape != self_shape
+      IO.puts("as_shaped: #{as_shaped}")
+      :evision_nif.mat_transpose(img: mat, axes: uniq_axes, as_shape: as_shape, as_shaped: as_shaped)
       |> Evision.Internal.Structurise.to_struct()
     end
   end
