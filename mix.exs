@@ -853,7 +853,7 @@ defmodule Evision.MixProject do
       # optional
       {:kino, "~> 0.7", optional: true},
       # docs
-      {:ex_doc, "~> 0.28", only: :docs, runtime: false},
+      {:ex_doc, "~> 0.29", only: :docs, runtime: false},
       # test
       {:scidata, "~> 0.1", only: :test},
       {:castore, "~> 0.1", only: :test, override: true}
