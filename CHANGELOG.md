@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.1.14-dev (main)
+[Browse the Repository](https://github.com/cocoa-xu/evision)
+### Breaking Changes
+- [Evision.Nx] Module `Evision.Nx` is now removed. Functions in `Evision.Nx` were moved to `Evision.Mat` in v0.1.13. Many thanks to @zacky1972 and @josevalim for their contributions to this module in very early days of the development.
+
+  | Old                      | New                         |
+  |:------------------------:|:---------------------------:|
+  |`Evision.Nx.to_mat/{1,2}` | `Evision.Mat.from_nx/{1,2}` |
+  |`Evision.Nx.to_mat/5`     | `Evision.Mat.from_binary/5` |
+  |`Evision.Nx.to_mat_2d/1`  | `Evision.Mat.from_nx_2d/1`  |
+  |`Evision.Nx.to_nx/1`      | `Evision.Mat.to_nx/1`       |
+
 ## v0.1.13 (2022-10-19)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.13) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.13)
 ### Fixes

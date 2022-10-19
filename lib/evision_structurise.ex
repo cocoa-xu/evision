@@ -49,7 +49,7 @@ defmodule Evision.Internal.Structurise do
 
   @spec from_struct(Nx.Tensor.t()) :: reference()
   def from_struct(%Nx.Tensor{} = tensor) do
-    case Evision.Nx.to_mat(tensor) do
+    case Evision.Mat.from_nx(tensor) do
       {:error, msg} ->
         raise RuntimeError, msg
 

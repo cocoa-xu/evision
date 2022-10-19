@@ -39,8 +39,6 @@ The default password of the livebook is `nerves` (as the time of writing, if it 
 
 ## Integration with Nx
 
-`Evision.Nx` module converts `Evision.Mat` to `Nx.tensor`:
-
 ```elixir
 iex> mat = Evision.imread("/path/to/image.png")
 %Evision.Mat{
@@ -52,7 +50,7 @@ iex> mat = Evision.imread("/path/to/image.png")
   ref: #Reference<0.2992585850.4173463580.172624>
 }
 
-iex> t = Evision.Nx.to_nx(mat)
+iex> t = Evision.Mat.to_nx(mat)
 #Nx.Tensor<
   u8[512][512][3]
   Evision.Backend
@@ -86,9 +84,9 @@ and vice-versa:
 
 ```elixir
 iex> %Evision.Mat{} = mat = Evision.imread("/path/to/image.png")
-iex> t = Evision.Nx.to_nx(mat)
+iex> t = Evision.Mat.to_nx(mat)
 # convert a tensor to a mat
-iex> mat_from_tensor = Evision.Nx.to_mat(t)
+iex> mat_from_tensor = Evision.Mat.from_nx(t)
 %Evision.Mat{
   channels: 1,
   dims: 3,
@@ -98,14 +96,14 @@ iex> mat_from_tensor = Evision.Nx.to_mat(t)
   ref: #Reference<0.1086574232.1510342676.18186>
 }
 
-# Note that `Evision.Nx.to_mat` gives a tensor
+# Note that `Evision.Mat.from_nx` gives a tensor
 # however, some OpenCV functions expect the mat
 # to be a "valid 2D image"
-# therefore, in such cases `Evision.Nx.to_mat_2d`
+# therefore, in such cases `Evision.Mat.from_nx_2d`
 # should be used instead
 #
 # Noticing the changes in `channels`, `dims` and `raw_type`
-iex> mat_from_tensor = Evision.Nx.to_mat_2d(t)
+iex> mat_from_tensor = Evision.Mat.from_nx_2d(t)
 %Evision.Mat{
   channels: 3,
   dims: 2,
@@ -117,7 +115,7 @@ iex> mat_from_tensor = Evision.Nx.to_mat_2d(t)
 
 # and it works for tensors with any shapes
 iex> t = Nx.iota({2, 3, 2, 3, 2, 3}, type: :s32)
-iex> mat = Evision.Nx.to_mat(t)
+iex> mat = Evision.Mat.from_nx(t)
 %Evision.Mat{
   channels: 1,
   dims: 6,

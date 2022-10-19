@@ -816,8 +816,8 @@ defmodule Evision.Backend do
       "Please use another backend like Nx.BinaryBackend or Torchx.Backend.\n" <>
       "  To use Torchx.Backend, :torchx should be added to your app's deps.\n" <>
       "  Please see https://github.com/elixir-nx/nx/tree/main/torchx for more information on how to install and use it.\n" <>
-      "To convert the tensor to another backend, please use Evision.Nx.to_nx(tensor, Backend.ModuleName)\n" <>
-      "  for example, Evision.Nx.to_nx(tensor, Nx.BinaryBackend) or Evision.Nx.to_nx(tensor, Torchx.Backend).\n" <>
+      "To convert the tensor to another backend, please use Evision.Mat.to_nx(tensor, Backend.ModuleName)\n" <>
+      "  for example, Evision.Mat.to_nx(tensor, Nx.BinaryBackend) or Evision.Mat.to_nx(tensor, Torchx.Backend).\n" <>
       "Pull request would be more than welcomed if you'd like to implmenent this function and make contributions."
     end
   end

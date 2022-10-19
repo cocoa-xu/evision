@@ -12,7 +12,7 @@
 
 Mix.install([
   {:evision, "~> 0.1.13"},
-  {:evision_smartcell, "~> 0.2", github: "cocoa-xu/evision_smartcell"},
+  {:evision_smartcell, "~> 0.3", github: "cocoa-xu/evision_smartcell"},
   {:scidata, "~> 0.1"},
   {:kino, "~> 0.7"},
   {:nx, "~> 0.3", override: true},
@@ -36,9 +36,9 @@ Mix.install([
 ```elixir
 dataset =
   Evision.ML.TrainData.create(
-    Evision.Nx.to_mat(Nx.tensor(features, type: :f32, backend: Evision.Backend)),
+    Evision.Mat.from_nx(Nx.tensor(features, type: :f32, backend: Evision.Backend)),
     Evision.cv_ROW_SAMPLE(),
-    Evision.Nx.to_mat(Nx.tensor(labels, type: :s32, backend: Evision.Backend))
+    Evision.Mat.from_nx(Nx.tensor(labels, type: :s32, backend: Evision.Backend))
   )
   |> Evision.ML.TrainData.setTrainTestSplitRatio(0.8, shuffle: true)
 
@@ -78,12 +78,12 @@ dtree =
 {_test_error, results} = Evision.ML.DTrees.calcError(dtree, dataset, true)
 
 y_true =
-  Evision.Nx.to_nx(results, Nx.BinaryBackend)
+  Evision.Mat.to_nx(results, Nx.BinaryBackend)
   |> Nx.reshape({:auto})
   |> Nx.as_type(:s32)
 
 y_pred =
-  Evision.Nx.to_nx(Evision.ML.TrainData.getTestResponses(dataset), Nx.BinaryBackend)
+  Evision.Mat.to_nx(Evision.ML.TrainData.getTestResponses(dataset), Nx.BinaryBackend)
   |> Nx.reshape({:auto})
   |> Nx.as_type(:s32)
 
@@ -132,9 +132,9 @@ rtree =
   (
     dataset =
       Evision.ML.TrainData.create(
-        Evision.Nx.to_mat(Nx.tensor(features, type: :f32, backend: Evision.Backend)),
+        Evision.Mat.to_mat(Nx.tensor(features, type: :f32, backend: Evision.Backend)),
         Evision.cv_ROW_SAMPLE(),
-        Evision.Nx.to_mat(Nx.tensor(labels, type: :s32, backend: Evision.Backend))
+        Evision.Mat.to_mat(Nx.tensor(labels, type: :s32, backend: Evision.Backend))
       )
       |> Evision.ML.TrainData.setTrainTestSplitRatio(0.8, shuffle: true)
 
@@ -161,12 +161,12 @@ rtree =
 {_test_error, results} = Evision.ML.RTrees.calcError(rtree, dataset, true)
 
 y_true =
-  Evision.Nx.to_nx(results, Nx.BinaryBackend)
+  Evision.Mat.to_nx(results, Nx.BinaryBackend)
   |> Nx.reshape({:auto})
   |> Nx.as_type(:s32)
 
 y_pred =
-  Evision.Nx.to_nx(Evision.ML.TrainData.getTestResponses(dataset), Nx.BinaryBackend)
+  Evision.Mat.to_nx(Evision.ML.TrainData.getTestResponses(dataset), Nx.BinaryBackend)
   |> Nx.reshape({:auto})
   |> Nx.as_type(:s32)
 

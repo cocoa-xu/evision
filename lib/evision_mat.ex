@@ -343,7 +343,7 @@ defmodule Evision.Mat do
   """
   @spec quicklook(Nx.Tensor.t()) :: Nx.Tensor.t()
   def quicklook(%Nx.Tensor{} = tensor) do
-    case Evision.Nx.to_mat_2d(tensor) do
+    case Evision.Mat.from_nx_2d(tensor) do
       %Evision.Mat{} = mat ->
         quicklook(mat)
     end
@@ -409,7 +409,7 @@ defmodule Evision.Mat do
       @spec to_livebook(Evision.Mat.t()) :: Kino.Output.t()
       def to_livebook(mat) when is_struct(mat, Evision.Mat) do
         raw = Kino.Inspect.new(mat)
-        numerical = Kino.Inspect.new(Evision.Nx.to_nx(mat))
+        numerical = Kino.Inspect.new(Evision.Mat.to_nx(mat))
 
         with true <- is_2d_image(mat),
              encoded <- Evision.imencode(".png", mat),
@@ -555,7 +555,7 @@ defmodule Evision.Mat do
 
   ```elixir
   iex> mat = Evision.Mat.zeros({5, 5}, :u8)
-  iex> Evision.Nx.to_nx(mat)
+  iex> Evision.Mat.to_nx(mat)
   #Nx.Tensor<
     u8[5][5]
     Evision.Backend
@@ -570,7 +570,7 @@ defmodule Evision.Mat do
   iex> {old, new} = Evision.Mat.get_and_update(mat, [1..3, 1..3], fn roi ->
       {roi, Nx.broadcast(Nx.tensor(255, type: roi.type), roi.shape)}
   end)
-  iex> Evision.Nx.to_nx(new)
+  iex> Evision.Mat.to_nx(new)
   #Nx.Tensor<
     u8[5][5]
     Evision.Backend
@@ -683,9 +683,9 @@ defmodule Evision.Mat do
     tensor = Nx.tensor(literal, type: type, backend: Evision.Backend)
 
     if as_2d_image do
-      Evision.Nx.to_mat_2d(tensor)
+      Evision.Mat.from_nx_2d(tensor)
     else
-      Evision.Nx.to_mat(tensor)
+      Evision.Mat.from_nx(tensor)
     end
   end
 

@@ -19,7 +19,7 @@ defmodule Evision.Test do
     %Mat{type: {:f, 32}} = mat = Evision.Mat.as_type(mat, {:f, 32})
     %Mat{type: {:f, 64}} = Evision.Mat.as_type(mat, {:f, 64})
 
-    assert [1.0, 2.0, 3.0, 4.0] == Nx.to_flat_list(Evision.Nx.to_nx(mat))
+    assert [1.0, 2.0, 3.0, 4.0] == Nx.to_flat_list(Evision.Mat.to_nx(mat))
   end
 
   test "Evision.Mat.clone" do

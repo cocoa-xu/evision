@@ -76,7 +76,7 @@ decoded_string
 #  - 1: number of QRCode
 #  - 4: always 4, 4 keypoints: top_left, bottom_left, bottom_right, top_right
 #  - 2: always 2, (x, y)
-points = Evision.Nx.to_nx(points, Nx.BinaryBackend)
+points = Evision.Mat.to_nx(points, Nx.BinaryBackend)
 ```
 
 <!-- livebook:{"output":true} -->

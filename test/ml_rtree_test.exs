@@ -9,8 +9,8 @@ defmodule Evision.ML.RTrees.Test do
   test "random forest" do
     {features, labels} = Scidata.Wine.download(base_url: @wine_mirror_base)
     categories = Enum.count(Enum.uniq(labels))
-    features = Evision.Nx.to_mat(Nx.tensor(features, type: :f32, backend: Evision.Backend))
-    labels = Evision.Nx.to_mat(Nx.tensor(labels, type: :s32, backend: Evision.Backend))
+    features = Evision.Mat.from_nx(Nx.tensor(features, type: :f32, backend: Evision.Backend))
+    labels = Evision.Mat.from_nx(Nx.tensor(labels, type: :s32, backend: Evision.Backend))
 
     dataset = Evision.ML.TrainData.create(features, Evision.cv_ROW_SAMPLE(), labels)
     dataset = Evision.ML.TrainData.setTrainTestSplitRatio(dataset, 0.8, shuffle: true)

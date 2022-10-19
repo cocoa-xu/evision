@@ -80,11 +80,11 @@ defmodule Evision.Photo.HDR.Test do
     output_fusion_file = Path.join([__DIR__, "photo_hdr_test", "fusion.png"])
 
     fusion
-    |> Evision.Nx.to_nx(Nx.BinaryBackend)
+    |> Evision.Mat.to_nx(Nx.BinaryBackend)
     |> Nx.multiply(255)
     |> Nx.clip(0, 255)
     |> Nx.as_type({:u, 8})
-    |> Evision.Nx.to_mat_2d()
+    |> Evision.Mat.from_nx_2d()
     |> then(&Evision.imwrite(output_fusion_file, &1))
 
     output_ldr_file = Path.join([__DIR__, "photo_hdr_test", "ldr.png"])
@@ -118,7 +118,7 @@ defmodule Evision.Photo.HDR.Test do
     |> Nx.multiply(255)
     |> Nx.clip(0, 255)
     |> Nx.as_type({:u, 8})
-    |> Evision.Nx.to_mat_2d()
+    |> Evision.Mat.from_nx_2d()
     |> then(&Evision.imwrite(output_ldr_file, &1))
 
     output_hdr_file = Path.join([__DIR__, "photo_hdr_test", "hdr.hdr"])
