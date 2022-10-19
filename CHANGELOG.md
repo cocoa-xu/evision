@@ -1,7 +1,7 @@
 # Changelog
 
-## v0.1.13-dev (main)
-[Browse the Repository](https://github.com/cocoa-xu/evision)
+## v0.1.13 (2022-10-19)
+[Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.13) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.13)
 ### Fixes
 - [c_src] Specialised function `evision_to [with Tp_=cv::UMat]`.
 - [Evision.Backend] ensure that an `Evision.Mat` is returned from `reject_error/1`.
