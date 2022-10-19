@@ -18,6 +18,7 @@ set(EVISION_AVAILABLE_PRECOMPILED_BINARIES
     "aarch64-linux-gnu"
     "aarch64-linux-musl"
     "x86_64-linux-gnu"
+    "i686-linux-gnu"
     "x86_64-linux-musl"
     "armv7l-linux-gnueabihf"
     "ppc64le-linux-gnu"
@@ -28,6 +29,7 @@ set(EVISION_AVAILABLE_PRECOMPILED_BINARIES
 )
 
 set(EVISION_AVAILABLE_PRECOMPILED_VERSIONS
+    "0.1.13"
     "0.1.12"
     "0.1.11"
     "0.1.9"
