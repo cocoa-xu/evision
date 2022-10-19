@@ -13,7 +13,7 @@ defmodule Evision.Backend do
       {:error, message} ->
         raise RuntimeError, message
       mat ->
-        mat
+        Evision.Internal.Structurise.to_struct(mat)
     end
   end
 
