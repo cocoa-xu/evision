@@ -12,6 +12,9 @@
   |`Evision.Nx.to_mat_2d/1`  | `Evision.Mat.from_nx_2d/1`  |
   |`Evision.Nx.to_nx/1`      | `Evision.Mat.to_nx/1`       |
 
+### Changes
+- [precompile] linux: remove gtk support in precompiled binaries.
+
 ## v0.1.13 (2022-10-19)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.13) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.13)
 ### Fixes
