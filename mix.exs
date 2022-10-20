@@ -871,7 +871,7 @@ defmodule Evision.MixProject do
         "Cheatsheet.cheatmd",
         "README.md",
         # Evision
-        "examples/imread.livemd",
+        "examples/getting_started.livemd",
         "examples/qrcode.livemd",
         "examples/warp_perspective.livemd",
         "examples/warp_polar.livemd",
