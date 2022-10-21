@@ -15,6 +15,9 @@
 ### Changes
 - [precompile] linux: remove gtk support in precompiled binaries.
 
+### Added
+- [Evision.Wx] implemented `imshow/2`, `destroyWindow/1` and `destroyAllWindows/0`.
+
 ## v0.1.13 (2022-10-19)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.13) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.13)
 ### Fixes
