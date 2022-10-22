@@ -23,6 +23,32 @@
 
 ### Added
 - [Evision.Wx] implemented `imshow/2`, `destroyWindow/1` and `destroyAllWindows/0`.
+- [SmartCell] Added SmartCells. They are optional and `:kino >= 0.7` will be required to use them.
+
+  If you'd like to use smartcells, please add `:kino` to `deps` in the `mix.exs` file.
+
+  ```elixir
+  defp deps do
+    [
+      # ...
+      {:kino, "~> 0.7"},
+      # ...
+    ]
+  end
+  ```
+
+  And then please register smartcells to `:kino` by invoking `Evision.SmartCell.register_smartcells()`.
+
+  `Evision.SmartCell.available_smartcells/0` will return all available smartcells.
+
+  (Optional step) It's also possible to add only some of these smartcells, for example,
+
+  ```elixir
+  Evision.SmartCell.register_smartcells([
+    Evision.SmartCell.ML.TrainData,
+    Evision.SmartCell.ML.SVM
+  ])
+  ```
 
 ## v0.1.13 (2022-10-19)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.13) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.13)
