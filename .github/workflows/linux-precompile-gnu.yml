@@ -6,7 +6,7 @@ on:
       - 'v*'
 
 concurrency:
-  group: ${{ github.event.pull_request.number }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
