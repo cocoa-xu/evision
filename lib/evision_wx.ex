@@ -20,7 +20,6 @@ defmodule Evision.Wx do
         wx_window = :wx.new()
         wx_obj = {:wx_ref, _, :wxFrame, window} = :wx_object.start(__MODULE__, {window_name, wx_window}, [])
         Process.put(@process_env_key, Map.put(windows, window_name, wx_obj))
-        |> IO.inspect(label: "put")
         window
       else
         {:wx_ref, _, :wxFrame, window} = window
