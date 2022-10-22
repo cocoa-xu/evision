@@ -36,7 +36,10 @@ on:
       - '.github/workflows/macos-*.yml'
       - '.github/workflows/test-*.yml'
       - '.github/workflows/windows-precompile.yml'
-  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.event.pull_request.number }}
+  cancel-in-progress: true
 
 jobs:
   mix_test:

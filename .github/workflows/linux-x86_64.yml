@@ -47,7 +47,10 @@ on:
       - '.github/workflows/linux-ppc64le.yml'
       - '.github/workflows/linux-s390x.yml'
       - '.github/workflows/linux-precompile-*.yml'
-  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.event.pull_request.number }}
+  cancel-in-progress: true
 
 jobs:
   musl:
