@@ -990,6 +990,9 @@ defmodule Evision.MixProject do
           CMakeLists.txt
           lib/*.ex
           lib/evision
+          lib/smartcell
+          lib/assets
+          lib/mix
           .formatter.exs
           mix.exs
           checksum-evision.exs
