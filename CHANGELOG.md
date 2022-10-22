@@ -1,7 +1,7 @@
 # Changelog
 
 ## v0.1.14 (2022-10-22)
-[Browse the Repository](https://github.com/cocoa-xu/evision)
+[Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.14) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.14)
 ### Breaking Changes
 - [Precompile] Linux: remove GTK support in precompiled binaries. (This change only affects users on Linux.)
 
