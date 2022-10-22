@@ -153,7 +153,7 @@ defmodule Evision.Mat do
     allowed_step_size = opts[:allowed_step_size]
 
     if is_list(allowed_step_size) and !Enum.member?(allowed_step_size, step) do
-      raise "Invalid step size, only supports step size in #{inspect{allowed_step_size}} at the moment."
+      raise "Invalid step size, only supports step size in #{inspect({allowed_step_size})} at the moment."
     end
 
     if swap_if_neg_step and step < 0 do
@@ -169,14 +169,17 @@ defmodule Evision.Mat do
       case r do
         :all ->
           :all
+
         {first, last} ->
           # {_, _} is cv::Range
           # hence we don't need to do anything to it
           {first, last}
+
         first..last//step ->
           # first..last//step is Elixir.Range
           # 0..0 should give [0] if `inclusive_range` is true
           {first, last} = __from_elixir_range__(first..last//step, allowed_step_size: [1])
+
           if inclusive_range do
             # note that what we are going return is cv::Range
             # which is [start, end)
@@ -184,6 +187,7 @@ defmodule Evision.Mat do
           else
             {first, last}
           end
+
         number when is_integer(number) ->
           # cv::Range is [start, end)
           # while Elixir.Range is [first, last]
@@ -196,6 +200,7 @@ defmodule Evision.Mat do
             # [first, last], [0, 0] will give []
             {number, number}
           end
+
         unknown ->
           raise "Cannot convert from `#{inspect(unknown)}` to a valid range."
       end
@@ -260,6 +265,7 @@ defmodule Evision.Mat do
   def roi(mat, firstRow..lastRow//1, firstCol..lastCol//1) do
     roi(mat, {firstRow, lastRow}, {firstCol, lastCol})
   end
+
   def roi(_, _.._//_, _.._//_) do
     raise ArgumentError, "Evision.Mat.roi does not support step size other than 1."
   end
@@ -310,15 +316,18 @@ defmodule Evision.Mat do
   def roi(mat, ranges) when is_list(ranges) do
     mat = __from_struct__(mat)
     ranges = __standardise_range_list__(ranges, true)
+
     :evision_nif.mat_roi(mat: mat, ranges: ranges)
     |> Evision.Internal.Structurise.to_struct()
   end
 
-  @spec update_roi(maybe_mat_in(), [{integer(), integer()} | Range.t() | :all], maybe_mat_in()) :: maybe_mat_out()
+  @spec update_roi(maybe_mat_in(), [{integer(), integer()} | Range.t() | :all], maybe_mat_in()) ::
+          maybe_mat_out()
   def update_roi(mat, ranges, with_mat) do
     mat = __from_struct__(mat)
     ranges = __standardise_range_list__(ranges, true)
     with_mat = __from_struct__(with_mat)
+
     :evision_nif.mat_update_roi(mat: mat, ranges: ranges, with_mat: with_mat)
     |> Evision.Internal.Structurise.to_struct()
   end
@@ -357,7 +366,9 @@ defmodule Evision.Mat do
       Application.put_env(:evision, :display_inline_image_max_size, {8192, 8192}, persistent: true)
     end
 
-    is_2d_image = (dims == 2 and Enum.member?([1, 3, 4], c)) or (c == 1 and tuple_size(shape) == 3 and elem(shape, 2) == 1)
+    is_2d_image =
+      (dims == 2 and Enum.member?([1, 3, 4], c)) or
+        (c == 1 and tuple_size(shape) == 3 and elem(shape, 2) == 1)
 
     with {:is_2d, true} <- {:is_2d, is_2d_image},
          {:display_image_if_in_iterm2, {:ok, true}} <-
@@ -429,13 +440,15 @@ defmodule Evision.Mat do
   @doc false
   def __generate_complete_range__(dims, maybe_incomplete) when is_list(maybe_incomplete) do
     indices_given = Enum.count(maybe_incomplete)
+
     if indices_given <= dims do
       maybe_incomplete ++ List.duplicate(:all, dims - indices_given)
     else
       if indices_given == dims + 1 do
         maybe_incomplete
       else
-        {:error, "too many indices, got #{indices_given} index ranges, while the matrix.dims is #{dims}"}
+        {:error,
+         "too many indices, got #{indices_given} index ranges, while the matrix.dims is #{dims}"}
       end
     end
   end
@@ -584,17 +597,21 @@ defmodule Evision.Mat do
   >
   ```
   """
-  @spec get_and_update(Evision.Mat.t(), term(), (Evision.Mat.t() -> Evision.Mat.t())) :: {Evision.Mat.t(), Evision.Mat.t()}
+  @spec get_and_update(Evision.Mat.t(), term(), (Evision.Mat.t() -> Evision.Mat.t())) ::
+          {Evision.Mat.t(), Evision.Mat.t()}
   def get_and_update(mat, key, function) when is_list(key) do
     ranges = __generate_complete_range__(mat.dims, key)
     roi = roi(mat, ranges)
+
     case function.(roi) do
       {^roi, modified_roi} ->
         if is_struct(modified_roi, Nx.Tensor) or is_struct(modified_roi, Evision.Mat) do
           {mat, update_roi(mat, ranges, modified_roi)}
         else
-          raise RuntimeError, "Cannot update the requested sub-matrix with unsupported value #{inspect(modified_roi)}"
+          raise RuntimeError,
+                "Cannot update the requested sub-matrix with unsupported value #{inspect(modified_roi)}"
         end
+
       _ ->
         {mat, mat}
     end
@@ -930,9 +947,10 @@ defmodule Evision.Mat do
   ```
 
   """
-  @spec to_nx(maybe_mat_in(), module()):: Nx.Tensor.t() | {:error, String.t()}
+  @spec to_nx(maybe_mat_in(), module()) :: Nx.Tensor.t() | {:error, String.t()}
   def to_nx(mat, backend \\ Evision.Backend) when is_struct(mat, Evision.Mat) do
     mat = __from_struct__(mat)
+
     with mat_type <- Evision.Mat.type(mat),
          mat_shape <- Evision.Mat.shape(mat),
          {:not_empty_shape, true} <- {:not_empty_shape, tuple_size(mat_shape) > 0},
@@ -1051,13 +1069,15 @@ defmodule Evision.Mat do
   @spec transpose(maybe_mat_in(), [integer()], Keyword.t()) :: maybe_mat_out()
   def transpose(mat, axes, opts \\ []) do
     mat = __from_struct__(mat)
+
     self_shape =
       case shape(mat) do
         {:error, msg} ->
           raise RuntimeError, msg
+
         self_shape ->
           Tuple.to_list(self_shape)
-        end
+      end
 
     as_shape = opts[:as_shape] || self_shape
 
@@ -1083,7 +1103,13 @@ defmodule Evision.Mat do
     else
       as_shaped = as_shape != self_shape
       IO.puts("as_shaped: #{as_shaped}")
-      :evision_nif.mat_transpose(img: mat, axes: uniq_axes, as_shape: as_shape, as_shaped: as_shaped)
+
+      :evision_nif.mat_transpose(
+        img: mat,
+        axes: uniq_axes,
+        as_shape: as_shape,
+        as_shaped: as_shaped
+      )
       |> Evision.Internal.Structurise.to_struct()
     end
   end

@@ -305,7 +305,8 @@ defmodule Evision.Test do
   test "Evision.warpPerspective" do
     # Code translated from https://stackoverflow.com/a/64837860
     # read input
-    %Evision.Mat{shape: {h, w, _}} = img = Evision.imread(Path.join(["test", "warp_perspective.png"]))
+    %Evision.Mat{shape: {h, w, _}} =
+      img = Evision.imread(Path.join(["test", "warp_perspective.png"]))
 
     # hypot.(list(number())) function returns the Euclidean norm
     hypot = fn l -> :math.sqrt(Enum.sum(Enum.map(l, fn i -> i * i end))) end
@@ -315,14 +316,17 @@ defmodule Evision.Test do
 
     # get top and left dimensions and set to output dimensions of red rectangle
     output_width = [
-        Nx.to_number(Nx.subtract(input[[0, 0]], input[[1, 0]])),
-        Nx.to_number(Nx.subtract(input[[0, 1]], input[[1, 1]]))
+      Nx.to_number(Nx.subtract(input[[0, 0]], input[[1, 0]])),
+      Nx.to_number(Nx.subtract(input[[0, 1]], input[[1, 1]]))
     ]
+
     output_width = round(hypot.(output_width))
+
     output_height = [
-        Nx.to_number(Nx.subtract(input[[0, 0]], input[[3, 0]])),
-        Nx.to_number(Nx.subtract(input[[0, 1]], input[[3, 1]]))
+      Nx.to_number(Nx.subtract(input[[0, 0]], input[[3, 0]])),
+      Nx.to_number(Nx.subtract(input[[0, 1]], input[[3, 1]]))
     ]
+
     output_height = round(hypot.(output_height))
 
     # set upper left coordinates for output rectangle
@@ -330,31 +334,41 @@ defmodule Evision.Test do
     y = Nx.to_number(input[[0, 1]])
 
     # specify output coordinates for corners of red quadrilateral in order TL, TR, BR, BL as x,
-    output = Nx.tensor([
-        [x, y],
-        [x + output_width - 1, y],
-        [x + output_width - 1, y + output_height - 1],
-        [x, y + output_height - 1]
-    ], type: :f32)
+    output =
+      Nx.tensor(
+        [
+          [x, y],
+          [x + output_width - 1, y],
+          [x + output_width - 1, y + output_height - 1],
+          [x, y + output_height - 1]
+        ],
+        type: :f32
+      )
 
     # compute perspective matrix
     matrix = Evision.getPerspectiveTransform(input, output)
 
     # do perspective transformation setting area outside input to black
     # Note that output size is the same as the input image size
-    %Evision.Mat{} = Evision.warpPerspective(
-        img, matrix, {w, h},
+    %Evision.Mat{} =
+      Evision.warpPerspective(
+        img,
+        matrix,
+        {w, h},
         flags: Evision.cv_INTER_LINEAR(),
         borderMode: Evision.cv_BORDER_CONSTANT(),
         borderValue: {0, 0, 0}
-    )
+      )
 
     # expecting error when any input argument is invalid
-    {:error, _} = Evision.warpPerspective(
-        img, img, {w, h},
+    {:error, _} =
+      Evision.warpPerspective(
+        img,
+        img,
+        {w, h},
         flags: Evision.cv_INTER_LINEAR(),
         borderMode: Evision.cv_BORDER_CONSTANT(),
         borderValue: {0, 0, 0}
-    )
+      )
   end
 end
