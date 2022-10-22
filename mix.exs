@@ -680,7 +680,23 @@ defmodule Evision.MixProject do
       package: package(),
       make_executable: make_executable(),
       make_makefile: make_makefile(),
-      make_env: make_env
+      make_env: make_env,
+      xref: [
+        exclude: [
+          :wx,
+          :wxBitmap,
+          :wxBoxSizer,
+          :wxDC,
+          :wxFrame,
+          :wxImage,
+          :wxMemoryDC,
+          :wxPanel,
+          :wxSizer,
+          :wxStaticBoxSizer,
+          :wxWindowDC,
+          :wx_object
+        ]
+      ]
     ]
   end
 
@@ -717,7 +733,7 @@ defmodule Evision.MixProject do
 
   def application do
     [
-      extra_applications: [:logger, :wx]
+      extra_applications: [:logger]
     ]
   end
 
@@ -885,7 +901,7 @@ defmodule Evision.MixProject do
         "examples/densenet121_benchmark.livemd",
         # Evision.ML
         "examples/ml-svm.livemd",
-        "examples/ml-decision_tree_and_random_forest.livemd",
+        "examples/ml-decision_tree_and_random_forest.livemd"
       ],
       before_closing_body_tag: &before_closing_body_tag/1,
       groups_for_functions: [
