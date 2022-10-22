@@ -1,8 +1,17 @@
 # Changelog
 
-## v0.1.14-dev (main)
+## v0.1.14 (2022-10-22)
 [Browse the Repository](https://github.com/cocoa-xu/evision)
 ### Breaking Changes
+- [Precompile] Linux: remove GTK support in precompiled binaries. (This change only affects users on Linux.)
+
+  This means functions in the `Evision.HighGui` module will return error if you are using precompiled binaries. This follows the convention in `opencv-python`.
+
+  Workarounds for this:
+  1. compile `evision` from source so that OpenCV will try to use the GUI backends they support on your system.
+  2. use `Evision.Wx`. still in developement, but basic functions like `imshow/2` are available. However, it requires Erlang to be compiled with `wxWidgets`.
+  3. use Livebook with `:kino >= 0.7`. `evision` has built-in support for `Kino.Render` which can automatically give a visualised result in Livebook. This requires `:kino >= 0.7`.
+
 - [Evision.Nx] Module `Evision.Nx` is now removed. Functions in `Evision.Nx` were moved to `Evision.Mat` in v0.1.13. Many thanks to @zacky1972 and @josevalim for their contributions to this module in very early days of the development.
 
   | Old                      | New                         |
@@ -11,9 +20,6 @@
   |`Evision.Nx.to_mat/5`     | `Evision.Mat.from_binary/5` |
   |`Evision.Nx.to_mat_2d/1`  | `Evision.Mat.from_nx_2d/1`  |
   |`Evision.Nx.to_nx/1`      | `Evision.Mat.to_nx/1`       |
-
-### Changes
-- [precompile] linux: remove gtk support in precompiled binaries.
 
 ### Added
 - [Evision.Wx] implemented `imshow/2`, `destroyWindow/1` and `destroyAllWindows/0`.
