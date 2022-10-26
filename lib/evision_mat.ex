@@ -1102,7 +1102,6 @@ defmodule Evision.Mat do
       {:error, "invalid transpose axes #{inspect(axes)} for shape #{inspect(as_shape)}"}
     else
       as_shaped = as_shape != self_shape
-      IO.puts("as_shaped: #{as_shaped}")
 
       :evision_nif.mat_transpose(
         img: mat,

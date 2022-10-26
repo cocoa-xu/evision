@@ -56,9 +56,6 @@ CONFIGURATION_PRIVATE_HPP = $(C_SRC)\configuration.private.hpp
 GENERATED_ELIXIR_SRC_DIR = $(LIB_SRC)\generated
 GENERATED_ERLANG_SRC_DIR = $(SRC)\generated
 CMAKE_EVISION_BUILD_DIR = $(MIX_APP_PATH)/cmake_evision
-!IFNDEF MAKE_BUILD_FLAGS
-MAKE_BUILD_FLAGS = "-j1"
-!ENDIF
 !IFNDEF EVISION_PREFER_PRECOMPILED
 EVISION_PREFER_PRECOMPILED = "false"
 !ENDIF
@@ -69,10 +66,26 @@ EVISION_PRECOMPILED_CACHE_DIR = $(MAKEDIR)\.cache
 EVISION_GENERATE_LANG = elixir
 !ENDIF
 
+!IFNDEF CMAKE_GENERATOR_TYPE
+!IFNDEF MSBUILD_PLATFORM
+
 !IF "$(HAVE_NINJA)" == "true"
-CMAKE_GENERATE_TYPE="Ninja"
+CMAKE_GENERATOR_TYPE=Ninja
 !ELSE
-CMAKE_GENERATE_TYPE="NMake Makefiles"
+CMAKE_GENERATOR_TYPE=NMake Makefiles
+!ENDIF
+
+!ENDIF
+!ENDIF
+
+!IFNDEF CMAKE_BUILD_TYPE
+CMAKE_BUILD_TYPE=Release
+!ENDIF
+
+!IFDEF MSBUILD_PLATFORM
+CMAKE_BUILD_PARAMETER= --config "$(CMAKE_BUILD_TYPE)" -- /p:Platform=$(MSBUILD_PLATFORM)
+!ELSE
+CMAKE_BUILD_PARAMETER= --config "$(CMAKE_BUILD_TYPE)"
 !ENDIF
 
 build: $(EVISION_SO)
@@ -85,11 +98,11 @@ $(CONFIGURATION_PRIVATE_HPP):
 
 $(HEADERS_TXT): $(CONFIGURATION_PRIVATE_HPP)
 !IF "$(EVISION_PREFER_PRECOMPILED)" != "true"
-	@ if not exist "$(CMAKE_OPENCV_BUILD_DIR)" mkdir "$(CMAKE_OPENCV_BUILD_DIR)" && \
-	python3 "$(PATCHES_DIR)\apply_patch.py" "$(OPENCV_DIR)" "$(OPENCV_VER)" && \
+	@ if not exist "$(CMAKE_OPENCV_BUILD_DIR)" mkdir "$(CMAKE_OPENCV_BUILD_DIR)"
+	python3 "$(PATCHES_DIR)\apply_patch.py" "$(OPENCV_DIR)" "$(OPENCV_VER)"
 	cd "$(CMAKE_OPENCV_BUILD_DIR)" && \
-	cmake -G $(CMAKE_GENERATE_TYPE) \
-	    -D CMAKE_BUILD_TYPE=Release \
+	cmake -G "$(CMAKE_GENERATOR_TYPE)" \
+	    -D CMAKE_BUILD_TYPE="$(CMAKE_BUILD_TYPE)" \
 		-D CMAKE_INSTALL_PREFIX="$(PRIV_DIR)" \
 		-D PYTHON3_EXECUTABLE="$(PYTHON3_EXECUTABLE)" \
 		-D INSTALL_PYTHON_EXAMPLES=OFF \
@@ -106,9 +119,9 @@ $(HEADERS_TXT): $(CONFIGURATION_PRIVATE_HPP)
 		-D CMAKE_CXX_FLAGS="/D PNG_ARM_NEON_OPT=0" \
 		-D CMAKE_TOOLCHAIN_FILE="$(TOOLCHAIN_FILE)" \
 		$(CMAKE_WIN_FINAL_OPTIONS) "$(OPENCV_DIR)" && \
-		cmake --build . --config Release "$(MAKE_BUILD_FLAGS)" && \
-		cd "$(CMAKE_OPENCV_BUILD_DIR)" && cmake --install . --config Release
-	@ copy "$(HEADERS_TXT)" "$(C_SRC)/headers.txt" && \
+		cmake --build . $(CMAKE_BUILD_PARAMETER) && \
+		cd "$(CMAKE_OPENCV_BUILD_DIR)" && cmake --install . --config "$(CMAKE_BUILD_TYPE)" && \
+	copy "$(HEADERS_TXT)" "$(C_SRC)/headers.txt" && \
 	cd "$(CMAKE_OPENCV_BUILD_DIR)\bin" && \
 	powershell -command "Get-ChildItem *.dll -Recurse | Copy-Item -Destination \"$(PRIV_DIR)\""
 !ENDIF
@@ -118,10 +131,10 @@ $(EVISION_SO): $(HEADERS_TXT)
 	@ if not exist "$(CMAKE_EVISION_BUILD_DIR)" mkdir "$(CMAKE_EVISION_BUILD_DIR)"
 	@ if not exist "$(GENERATED_ELIXIR_SRC_DIR)" mkdir "$(GENERATED_ELIXIR_SRC_DIR)"
 	@ if not exist "$(GENERATED_ERLANG_SRC_DIR)" mkdir "$(GENERATED_ERLANG_SRC_DIR)"
-	@ cd "$(CMAKE_EVISION_BUILD_DIR)" && \
-		cmake -G $(CMAKE_GENERATE_TYPE) \
+	cd "$(CMAKE_EVISION_BUILD_DIR)" && \
+		cmake -G "$(CMAKE_GENERATOR_TYPE)" \
 		  --no-warn-unused-cli \
-		  -D CMAKE_BUILD_TYPE=Release \
+		  -D CMAKE_BUILD_TYPE="$(CMAKE_BUILD_TYPE)" \
 		  -D C_SRC="$(C_SRC)" \
 		  -D CMAKE_TOOLCHAIN_FILE="$(TOOLCHAIN_FILE)" \
 		  -D GENERATED_ELIXIR_SRC_DIR="$(GENERATED_ELIXIR_SRC_DIR)" \
@@ -136,8 +149,7 @@ $(EVISION_SO): $(HEADERS_TXT)
           -D EVISION_PRECOMPILED_VERSION="$(EVISION_PRECOMPILED_VERSION)" \
           -D EVISION_PRECOMPILED_CACHE_DIR="$(EVISION_PRECOMPILED_CACHE_DIR)" \
 		  $(CMAKE_CONFIGURE_FLAGS) "$(MAKEDIR)" && \
-		cmake --build . --config Release "$(MAKE_BUILD_FLAGS)"
+		cmake --build . $(CMAKE_BUILD_PARAMETER)
 !IF "$(EVISION_PREFER_PRECOMPILED)" != "true"
     @ powershell -command Copy-Item -Path (Get-ChildItem -Path "*evision.so" -Recurse).FullName -Destination "$(EVISION_SO)"
 !ENDIF
-
