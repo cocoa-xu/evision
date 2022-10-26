@@ -236,12 +236,12 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
   def certificate_store do
     @certificate_locations
     |> Enum.find(&File.exists?/1)
-    |> raise_if_no_cacertfile!
+    |> warning_if_no_cacertfile!
     |> :erlang.binary_to_list()
   end
 
-  defp raise_if_no_cacertfile!(nil) do
-    raise RuntimeError, """
+  defp warning_if_no_cacertfile!(nil) do
+    Logger.warn """
     No certificate trust store was found.
     Tried looking for: #{inspect(@certificate_locations)}
     A certificate trust store is required in
@@ -259,14 +259,16 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
         cacertfile: "/path/to/cacertfile",
         ...
     """
+    ""
   end
 
-  defp raise_if_no_cacertfile!(file) do
+  defp warning_if_no_cacertfile!(file) do
     file
   end
 
   defp https_opts(hostname) do
-    if secure_ssl?() do
+    cert_file = certificate_store()
+    if secure_ssl?() and cert_file != [] do
       [
         ssl: [
           verify: :verify_peer,
