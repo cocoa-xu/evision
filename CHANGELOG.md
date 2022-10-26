@@ -1,10 +1,13 @@
 # Changelog
 
-## v0.1.15 (main)
-[Browse the Repository](https://github.com/cocoa-xu/evision)
+## v0.1.15 (2022-10-26)
+[Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.15) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.15)
 ## Changes
 - [mix compile] Surpress logs if `evision.so` is already presented when compiling from source.
 - [Precompile] Added precompile target `aarch64-windows-msvc`.
+
+## Fixes
+- [deps] `:kino` should be a required dependency
 
 ## v0.1.14 (2022-10-22)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.14) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.14)

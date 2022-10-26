@@ -2,8 +2,8 @@ defmodule Evision.MixProject.Metadata do
   @moduledoc false
 
   def app, do: :evision
-  def version, do: "0.1.15-dev"
-  def last_released_version, do: "0.1.14"
+  def version, do: "0.1.15"
+  def last_released_version, do: "0.1.15"
   def github_url, do: "https://github.com/cocoa-xu/evision"
   def opencv_version, do: "4.6.0"
   # only means compatible. need to write more tests
@@ -18,6 +18,7 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
   alias Evision.MixProject.Metadata
 
   @available_versions [
+    "0.1.15",
     "0.1.14",
     "0.1.13",
     "0.1.12",
@@ -883,8 +884,7 @@ defmodule Evision.MixProject do
       # runtime
       {:dll_loader_helper, "~> 0.1"},
       {:nx, "~> 0.3"},
-      # optional
-      {:kino, "~> 0.7", optional: true},
+      {:kino, "~> 0.7"},
       # docs
       {:ex_doc, "~> 0.29", only: :docs, runtime: false},
       # test

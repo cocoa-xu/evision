@@ -26,9 +26,11 @@ set(EVISION_AVAILABLE_PRECOMPILED_BINARIES
     "riscv64-linux-gnu"
     "riscv64-linux-musl"
     "x86_64-windows-msvc"
+    "aarch64-windows-msvc"
 )
 
 set(EVISION_AVAILABLE_PRECOMPILED_VERSIONS
+    "0.1.15"
     "0.1.14"
     "0.1.13"
     "0.1.12"
