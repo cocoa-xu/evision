@@ -2,7 +2,7 @@ defmodule Evision.MixProject.Metadata do
   @moduledoc false
 
   def app, do: :evision
-  def version, do: "0.1.14"
+  def version, do: "0.1.15-dev"
   def last_released_version, do: "0.1.14"
   def github_url, do: "https://github.com/cocoa-xu/evision"
   def opencv_version, do: "4.6.0"
@@ -619,14 +619,26 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
 
   @impl true
   def run(_args) do
-    with {:precompiled, _} <- deploy_type(true) do
-      {target, [_arch, os, _abi]} = get_target()
-      version = Metadata.last_released_version()
-      nif_version = get_nif_version()
-      prepare(target, os, version, nif_version)
+    {target, [_arch, os, _abi]} = get_target()
+    evision_so_file =
+      if os == "windows" do
+        "evision.dll"
+      else
+        "evision.so"
+      end
+    evision_so_file = Path.join([app_priv(), evision_so_file])
+
+    if !File.exists?(evision_so_file) do
+      with {:precompiled, _} <- deploy_type(true) do
+        version = Metadata.last_released_version()
+        nif_version = get_nif_version()
+        prepare(target, os, version, nif_version)
+      else
+        _ ->
+          raise RuntimeError, "Cannot use precompiled binaries."
+      end
     else
-      _ ->
-        raise RuntimeError, "Cannot use precompiled binaries."
+      :ok
     end
   end
 end
