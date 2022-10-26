@@ -123,6 +123,20 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
           abi
       end
 
+    arch =
+      if os == "win32" do
+        case String.downcase(System.get_env("PROCESSOR_ARCHITECTURE")) do
+          "arm64" ->
+            "aarch64"
+          arch when arch in ["x64", "x86_64", "amd64"] ->
+            "x86_64"
+          arch ->
+            arch
+        end
+      else
+        arch
+      end
+
     abi = System.get_env("TARGET_ABI", abi)
     os = System.get_env("TARGET_OS", os)
     arch = System.get_env("TARGET_ARCH", arch)
