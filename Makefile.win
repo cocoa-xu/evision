@@ -132,7 +132,7 @@ $(EVISION_SO): $(HEADERS_TXT)
 	@ if not exist "$(GENERATED_ELIXIR_SRC_DIR)" mkdir "$(GENERATED_ELIXIR_SRC_DIR)"
 	@ if not exist "$(GENERATED_ERLANG_SRC_DIR)" mkdir "$(GENERATED_ERLANG_SRC_DIR)"
 	cd "$(CMAKE_EVISION_BUILD_DIR)" && \
-		cmake -G "$(CMAKE_GENERATE_TYPE)" \
+		cmake -G "$(CMAKE_GENERATOR_TYPE)" \
 		  --no-warn-unused-cli \
 		  -D CMAKE_BUILD_TYPE="$(CMAKE_BUILD_TYPE)" \
 		  -D C_SRC="$(C_SRC)" \
