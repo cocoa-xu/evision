@@ -96,11 +96,12 @@ jobs:
         shell: bash
         run: |
           export CMAKE_OPENCV_OPTIONS="-D WITH_FFMPEG=OFF"
-          if [ -n "${{ matrix.pair.CMAKE_TOOLCHAIN_FILE }}" ]; then
+          if [ "${{ matrix.pair.vcvarsall }}" = "amd64_arm64" ]; then
             export CMAKE_GENERATOR_TYPE="${{ matrix.pair.CMAKE_GENERATOR_TYPE }}"
             export MSBUILD_PLATFORM="${{ matrix.pair.MSBUILD_PLATFORM }}"
             export CMAKE_TOOLCHAIN_FILE="$(pwd)/${{ matrix.pair.CMAKE_TOOLCHAIN_FILE }}"
             export TOOLCHAIN_FILE="$(pwd)/${{ matrix.pair.CMAKE_TOOLCHAIN_FILE }}"
+            rm -rf ./_build
           fi
           rm -f Makefile
           mix compile
