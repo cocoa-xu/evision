@@ -29,7 +29,7 @@ jobs:
               arch: arm64
               arch_name: aarch64
               msbuild_platform: ARM64
-              vcvarsall: x64_arm64
+              vcvarsall: amd64_arm64
               CMAKE_GENERATE_TYPE: "Visual Studio 17"
               CMAKE_TOOLCHAIN_FILE: "cc_toolchain/aarch64-windows-msvc.cmake"
           - pair:
