@@ -132,7 +132,7 @@ qrcode[[col_start..col_end, row_start..row_end]]
 ## The Third Value In the Returned Tuple
 
 ```elixir
-# the thrid value is `straight_qrcode`, which is the minimal possible image
+# the third value is `straight_qrcode`, which is the minimal possible image
 # for the QRCode
 Evision.resize(straight_qrcode, {300, 300}, interpolation: Evision.cv_INTER_AREA())
 ```

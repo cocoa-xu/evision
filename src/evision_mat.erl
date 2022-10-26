@@ -56,7 +56,7 @@ cmp(Lhs, Rhs, Op) when is_reference(Lhs), is_reference(Rhs) ->
         true ->
             evision_nif:mat_cmp([{l, Lhs}, {r, Rhs}, {type, Op}]);
         false ->
-            {error, "Unknown cmp opeator"}
+            {error, "Unknown cmp operator"}
     end.
 
 logical_and(Lhs, Rhs) when is_reference(Lhs), is_reference(Rhs) ->

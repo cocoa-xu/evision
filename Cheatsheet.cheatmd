@@ -120,7 +120,7 @@ iex> img[[:all, :all, 2]]
 }
 ```
 
-### Extract An Abritray Continous Sub-matrix
+### Extract An Abritray Continuous Sub-matrix
 ```elixir
 iex> img = Evision.imread("image.png")
 %Evision.Mat{

@@ -3,7 +3,7 @@
 ## v0.1.15 (2022-10-26)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.15) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.15)
 ## Changes
-- [mix compile] Surpress logs if `evision.so` is already presented when compiling from source.
+- [mix compile] Suppress logs if `evision.so` is already presented when compiling from source.
 - [Precompile] Added precompile target `aarch64-windows-msvc`.
 
 ## Fixes
@@ -18,7 +18,7 @@
 
   Workarounds for this:
   1. compile `evision` from source so that OpenCV will try to use the GUI backends they support on your system.
-  2. use `Evision.Wx`. still in developement, but basic functions like `imshow/2` are available. However, it requires Erlang to be compiled with `wxWidgets`.
+  2. use `Evision.Wx`. still in development, but basic functions like `imshow/2` are available. However, it requires Erlang to be compiled with `wxWidgets`.
   3. use Livebook with `:kino >= 0.7`. `evision` has built-in support for `Kino.Render` which can automatically give a visualised result in Livebook. This requires `:kino >= 0.7`.
 
 - [Evision.Nx] Module `Evision.Nx` is now removed. Functions in `Evision.Nx` were moved to `Evision.Mat` in v0.1.13. Many thanks to @zacky1972 and @josevalim for their contributions to this module in very early days of the development.
@@ -243,7 +243,7 @@ In the next release (v0.1.14), `Evision.Nx` will be removed.
 In `v0.1.10`, an invalid checksum file was pushed to hex.pm, please read the changelog, especially the breaking changes in `v0.1.10`. [Changelog for `v0.1.10`](https://github.com/cocoa-xu/evision/releases/tag/v0.1.10).
 
 ### Fixed
-- [Precompile] `Mix.Tasks.Evision.Fetch` should always download and oerwrite existsing files.
+- [Precompile] `Mix.Tasks.Evision.Fetch` should always download and oerwrite existing files.
 
 ## v0.1.10 (2022-10-13)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.10) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.10)
@@ -959,7 +959,7 @@ List of modules that are now wrapped in structs.
   }
   ```
 
-  `Evision.Mat.literal/3` will return a vaild 2D image if the keyword argument, `as_2d`, is set to `true` and if the list literal can be represented as a 2D image.
+  `Evision.Mat.literal/3` will return a valid 2D image if the keyword argument, `as_2d`, is set to `true` and if the list literal can be represented as a 2D image.
   ```elixir
   iex> Evision.Mat.literal!([[[1,1,1],[2,2,2],[3,3,3]]], :u8, as_2d: true)
   %Evision.Mat{

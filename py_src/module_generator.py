@@ -275,12 +275,12 @@ class ModuleGenerator(object):
             # i.e., function variant that has the most number of constraints will be the first element in the list
             func_guards_len_desc = list(reversed(argsort([len(g) for g in func_guards[kind]])))
 
-            # start from the variant with the most number of constaints/guards
+            # start from the variant with the most number of constraints/guards
             for i in func_guards_len_desc:
                 # generated binding code will be written to this variable
                 function_code = StringIO()
 
-                # gather some basic infomation of current function variant
+                # gather some basic information of current function variant
                 func_variant = func.variants[i]
                 function_sign = erl_signatures[i]
                 func_guard = func_guards[kind][i]

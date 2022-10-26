@@ -275,7 +275,7 @@ export EVISION_PRECOMPILED_CACHE_DIR="$(pwd)/.cache"
 
 - Python3 (Only during the compilation, to generate binding files)
 
-  Tested Python verisons (on `ubuntu:20.04`, see [workflow file](https://github.com/cocoa-xu/evision/blob/main/.github/workflows/test-python-compatibility.yml)):
+  Tested Python versions (on `ubuntu:20.04`, see [workflow file](https://github.com/cocoa-xu/evision/blob/main/.github/workflows/test-python-compatibility.yml)):
   - 3.6.15
   - 3.7.12
   - 3.8.12
@@ -352,7 +352,7 @@ export OPENCV_USE_GIT_BRANCH=4.x
 
 # optional.
 # set this env var to specify which git repo to use
-# default value is https://github.com/opencv/opencv.git, which is the offical git repo of OpenCV
+# default value is https://github.com/opencv/opencv.git, which is the official git repo of OpenCV
 export OPENCV_GIT_REPO="https://github.com/opencv/opencv.git"
 ```
 

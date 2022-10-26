@@ -64,7 +64,7 @@ jobs:
       EVISION_PREFER_PRECOMPILED: "false"
     steps:
       - uses: actions/checkout@v3
-      - name: Install system dependecies
+      - name: Install system dependencies
         run: |
           apk add cmake make python3 bash curl unzip gcc g++ ncurses-dev openssl-dev linux-headers perl git ffmpeg ffmpeg-dev dpkg patch
           curl -fSL "https://repo.uwucocoa.moe/pool/main/erlang_${OTP_VERSION}_musl-linux-amd64.deb" -o "erlang_${OTP_VERSION}_musl-linux-amd64.deb"
@@ -151,7 +151,7 @@ jobs:
           otp-version: ${{ env.OTP_VERSION }}
           elixir-version: ${{ env.ELIXIR_VERSION }}
 
-      - name: Install system dependecies
+      - name: Install system dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential automake autoconf pkg-config bc m4 unzip zip curl git libssl-dev gzip libncurses5-dev erlang-inets erlang-os-mon erlang-runtime-tools erlang-ssl erlang-dev python3 ca-certificates

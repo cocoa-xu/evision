@@ -25,7 +25,7 @@ defmodule Evision.ML.RTrees.Test do
     # train
     Evision.ML.RTrees.train(rtree, dataset)
 
-    # calculcate test error
+    # calculate test error
     {test_error, _results} = Evision.ML.RTrees.calcError(rtree, dataset, true)
 
     # save to file

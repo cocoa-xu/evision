@@ -667,7 +667,7 @@ defmodule Evision.Mat do
   }
   ```
 
-  `Evision.Mat.literal/3` will return a vaild 2D image
+  `Evision.Mat.literal/3` will return a valid 2D image
   if the keyword argument, `as_2d`, is set to `true`
   and if the list literal can be represented as a 2D image.
   ```elixir
@@ -1527,7 +1527,7 @@ defmodule Evision.Mat do
 
   @doc """
   Generate a Mat with a list of number starting from `from` to `to` with step size `step`.
-  The genrated Mat will then be reshaped to the requested `shape` if applicable.
+  The generated Mat will then be reshaped to the requested `shape` if applicable.
   """
   @spec arange(integer(), integer(), integer(), mat_type(), tuple()) :: maybe_mat_out()
   def arange(from, to, step, type, shape) when step != 0 do

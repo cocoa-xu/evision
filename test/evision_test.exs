@@ -3,7 +3,7 @@ defmodule Evision.Test do
 
   alias Evision.Mat
 
-  test "imread non-exist image shoud return error message: \"empty matrix\"" do
+  test "imread non-exist image should return error message: \"empty matrix\"" do
     assert {:error, "empty matrix"} == Evision.imread("/dev/null")
   end
 

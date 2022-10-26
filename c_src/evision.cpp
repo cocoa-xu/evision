@@ -676,7 +676,7 @@ bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, bool& value, const ArgInfo& in
         }
     }
 
-    failmsg(env, "Argument '%s' is not convertable to bool", info.name);
+    failmsg(env, "Argument '%s' is not convertible to bool", info.name);
     return false;
 }
 
