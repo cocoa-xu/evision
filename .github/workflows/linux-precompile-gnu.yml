@@ -4,7 +4,10 @@ on:
   push:
     tags:
       - 'v*'
-      - 'gtk-gnu-*'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   mix_compile:
@@ -13,6 +16,7 @@ jobs:
       OPENCV_VER: "4.6.0"
       MIX_ENV: prod
       OTP_VERSION: "25.0.4"
+      NIF_VERSION: "2.16"
       ELIXIR_VERSION: "1.14.0"
       EVISION_PREFER_PRECOMPILED: "false"
       EVISION_GENERATE_LANG: "erlang,elixir"
@@ -83,9 +87,9 @@ jobs:
           #   sudo apt-get update -q -y
           #   sudo dpkg --add-architecture "${{ matrix.pair.deb_arch }}"
           #   sudo apt-get update
-          #   sudo apt-get install -y build-essential automake autoconf pkg-config bc m4 unzip zip curl git gzip python3 ca-certificates ${{ matrix.pair.c_compiler }} ${{ matrix.pair.cpp_compiler }} "crossbuild-essential-${{ matrix.pair.deb_arch }}" libgtk2.0-dev "libgtk2.0-dev:${{ matrix.pair.deb_arch }}" libncurses5-dev "libncurses5-dev:${{ matrix.pair.deb_arch }}" libssl-dev "libssl-dev:${{ matrix.pair.deb_arch }}"
+          #   sudo apt-get install -y build-essential automake autoconf pkg-config bc m4 unzip zip curl git gzip python3 ca-certificates ${{ matrix.pair.c_compiler }} ${{ matrix.pair.cpp_compiler }} "crossbuild-essential-${{ matrix.pair.deb_arch }}" libncurses5-dev "libncurses5-dev:${{ matrix.pair.deb_arch }}" libssl-dev "libssl-dev:${{ matrix.pair.deb_arch }}"
           # else
-          sudo apt-get install -y build-essential automake autoconf pkg-config bc m4 unzip zip curl git gzip python3 ca-certificates ${{ matrix.pair.c_compiler }} ${{ matrix.pair.cpp_compiler }} libgtk2.0-dev libncurses5-dev libssl-dev
+          sudo apt-get install -y build-essential automake autoconf pkg-config bc m4 unzip zip curl git gzip python3 ca-certificates ${{ matrix.pair.c_compiler }} ${{ matrix.pair.cpp_compiler }} libncurses5-dev libssl-dev
           # fi
 
       - name: Cache mix packages
@@ -139,7 +143,7 @@ jobs:
 
       - name: Create precompiled library
         run: |
-          export PKG_NAME=evision-${{ matrix.pair.arch }}-${GITHUB_REF##*/v}
+          export PKG_NAME=evision-nif_${NIF_VERSION}-${{ matrix.pair.arch }}-${GITHUB_REF##*/v}
           mkdir -p "${PKG_NAME}"
           cp -a _build/${MIX_ENV}/lib/evision/priv "${PKG_NAME}"
           cp -a lib/generated "${PKG_NAME}/elixir_generated"

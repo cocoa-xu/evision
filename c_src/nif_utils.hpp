@@ -415,13 +415,16 @@ namespace evision
         ERL_NIF_TERM opts = argv[opt_arg_index];
         if (enif_is_list(env, opts)) {
             unsigned length = 0;
-            enif_get_list_length(env, opts, &length);
+            if (!enif_get_list_length(env, opts, &length)) {
+              return false;
+            }
             unsigned list_index = 0;
 
             ERL_NIF_TERM term, rest;
             while (list_index != length) {
-                enif_get_list_cell(env, opts, &term, &rest);
-
+                if (!enif_get_list_cell(env, opts, &term, &rest)) {
+                  return false;
+                }
                 if (enif_is_tuple(env, term)) {
                     int arity;
                     const ERL_NIF_TERM * arr = nullptr;
@@ -433,9 +436,11 @@ namespace evision
                             }
                         }
                     }
+                    list_index++;
+                    opts = rest;
+                } else {
+                  return false;
                 }
-                list_index++;
-                opts = rest;
             }
             return true;
         }

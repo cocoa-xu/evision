@@ -1,4 +1,8 @@
-# Decision Tree and Random Forest
+<!-- vim: syntax=markdown -->
+
+<!-- livebook:{"persist_outputs":true} -->
+
+# Evision.ML Example - Decision Tree and Random Forest
 
 ```elixir
 # set `EVISION_PREFER_PRECOMPILED` to `false` 
@@ -7,16 +11,21 @@
 # System.put_env("EVISION_PREFER_PRECOMPILED", "false")
 
 Mix.install([
-  {:evision, "~> 0.1.9"},
-  {:evision_smartcell, "~> 0.1", github: "cocoa-xu/evision_smartcell"},
-  {:scidata, "~> 0.1"},
+  {:evision, "~> 0.1.14"},
   {:kino, "~> 0.7"},
+  {:scidata, "~> 0.1"},
   {:nx, "~> 0.3", override: true},
   {:scholar, "~> 0.1", github: "elixir-nx/scholar"}
 ])
 ```
 
-## Dataset
+## Register SmartCells
+
+```elixir
+:ok = Evision.SmartCell.register_smartcells()
+```
+
+## Download the Dataset
 
 ### Get the Wine dataset with `Scidata`
 
@@ -25,16 +34,16 @@ Mix.install([
 :ok
 ```
 
-### Make a dataset with `Evision.ML.TrainData`
+## Make a dataset with `Evision.ML.TrainData`
 
-<!-- livebook:{"attrs":{"data_layout":"row","shuffle_dataset":true,"split_ratio":0.8,"to_variable":"dataset","x":"features","x_type":"f32","y":"labels","y_type":"s32"},"kind":"Elixir.EvisionSmartCell.ML.TrainData","livebook_object":"smart_cell"} -->
+<!-- livebook:{"attrs":{"data_layout":"row","shuffle_dataset":true,"split_ratio":0.8,"to_variable":"dataset","x":"features","x_type":"f32","y":"labels","y_type":"s32"},"kind":"Elixir.Evision.SmartCell.ML.TrainData","livebook_object":"smart_cell"} -->
 
 ```elixir
 dataset =
   Evision.ML.TrainData.create(
-    Evision.Nx.to_mat(Nx.tensor(features, type: :f32, backend: Evision.Backend)),
+    Evision.Mat.from_nx(Nx.tensor(features, type: :f32, backend: Evision.Backend)),
     Evision.cv_ROW_SAMPLE(),
-    Evision.Nx.to_mat(Nx.tensor(labels, type: :s32, backend: Evision.Backend))
+    Evision.Mat.from_nx(Nx.tensor(labels, type: :s32, backend: Evision.Backend))
   )
   |> Evision.ML.TrainData.setTrainTestSplitRatio(0.8, shuffle: true)
 
@@ -43,9 +52,9 @@ IO.puts("#Training samples: #{Evision.ML.TrainData.getNTrainSamples(dataset)}")
 IO.puts("#Test samples: #{Evision.ML.TrainData.getNTestSamples(dataset)}")
 ```
 
-### Use Decision Tree
+## Train the Dataset with Decision Tree, `Evision.ML.DTrees`
 
-<!-- livebook:{"attrs":{"cv_folds":0,"data_from":"traindata_var","max_categories":3,"max_depth":8,"min_sample_count":10,"to_variable":"dtree","traindata_var":"dataset"},"kind":"Elixir.EvisionSmartCell.ML.DTrees","livebook_object":"smart_cell"} -->
+<!-- livebook:{"attrs":{"cv_folds":0,"data_from":"traindata_var","max_categories":3,"max_depth":8,"min_sample_count":10,"to_variable":"dtree","traindata_var":"dataset"},"kind":"Elixir.Evision.SmartCell.ML.DTrees","livebook_object":"smart_cell"} -->
 
 ```elixir
 dtree =
@@ -68,25 +77,25 @@ dtree =
 )
 ```
 
-### Calculate confusion matrix
+## Calculate Confusion Matrix
 
 ```elixir
 {_test_error, results} = Evision.ML.DTrees.calcError(dtree, dataset, true)
 
 y_true =
-  Evision.Nx.to_nx(results, Nx.BinaryBackend)
+  Evision.Mat.to_nx(results, Nx.BinaryBackend)
   |> Nx.reshape({:auto})
   |> Nx.as_type(:s32)
 
 y_pred =
-  Evision.Nx.to_nx(Evision.ML.TrainData.getTestResponses(dataset), Nx.BinaryBackend)
+  Evision.Mat.to_nx(Evision.ML.TrainData.getTestResponses(dataset), Nx.BinaryBackend)
   |> Nx.reshape({:auto})
   |> Nx.as_type(:s32)
 
 Scholar.Metrics.confusion_matrix(y_true, y_pred, num_classes: 3)
 ```
 
-### Save and Load
+## Save the Trained Model and Load It Back
 
 It's also possible to save the trained model to a file and load it back!
 
@@ -104,9 +113,9 @@ dtree_from_file = Evision.ML.DTrees.load(filename)
 test_error == test_error_2
 ```
 
-## Use Random Forest
+## Train the Dataset with Random Forest, `Evision.ML.RTrees`
 
-<!-- livebook:{"attrs":{"active_var_count":0,"calculate_var_importance":false,"data_from":"traindata","dtrees":{"cv_folds":0,"data_from":"traindata_var","max_categories":3,"max_depth":10,"min_sample_count":10,"to_variable":"dtree","traindata_var":"dataset"},"term_criteria_count":30,"term_criteria_eps":5.0e-5,"term_criteria_type":"max_count+eps","to_variable":"rtree","traindata":{"data_layout":"row","shuffle_dataset":true,"split_ratio":0.8,"to_variable":"dataset","x":"features","x_type":"f32","y":"labels","y_type":"s32"},"traindata_var":"dataset"},"kind":"Elixir.EvisionSmartCell.ML.RTrees","livebook_object":"smart_cell"} -->
+<!-- livebook:{"attrs":{"active_var_count":0,"calculate_var_importance":false,"data_from":"traindata","dtrees":{"cv_folds":0,"data_from":"traindata_var","max_categories":3,"max_depth":10,"min_sample_count":10,"to_variable":"dtree","traindata_var":"dataset"},"term_criteria_count":30,"term_criteria_eps":5.0e-5,"term_criteria_type":"max_count+eps","to_variable":"rtree","traindata":{"data_layout":"row","shuffle_dataset":true,"split_ratio":0.8,"to_variable":"dataset","x":"features","x_type":"f32","y":"labels","y_type":"s32"},"traindata_var":"dataset"},"kind":"Elixir.Evision.SmartCell.ML.RTrees","livebook_object":"smart_cell"} -->
 
 ```elixir
 rtree =
@@ -128,9 +137,9 @@ rtree =
   (
     dataset =
       Evision.ML.TrainData.create(
-        Evision.Nx.to_mat(Nx.tensor(features, type: :f32, backend: Evision.Backend)),
+        Evision.Mat.from_nx(Nx.tensor(features, type: :f32, backend: Evision.Backend)),
         Evision.cv_ROW_SAMPLE(),
-        Evision.Nx.to_mat(Nx.tensor(labels, type: :s32, backend: Evision.Backend))
+        Evision.Mat.from_nx(Nx.tensor(labels, type: :s32, backend: Evision.Backend))
       )
       |> Evision.ML.TrainData.setTrainTestSplitRatio(0.8, shuffle: true)
 
@@ -151,25 +160,25 @@ rtree =
 )
 ```
 
-### Calculate confusion matrix
+### Calculate Confusion Matrix
 
 ```elixir
 {_test_error, results} = Evision.ML.RTrees.calcError(rtree, dataset, true)
 
 y_true =
-  Evision.Nx.to_nx(results, Nx.BinaryBackend)
+  Evision.Mat.to_nx(results, Nx.BinaryBackend)
   |> Nx.reshape({:auto})
   |> Nx.as_type(:s32)
 
 y_pred =
-  Evision.Nx.to_nx(Evision.ML.TrainData.getTestResponses(dataset), Nx.BinaryBackend)
+  Evision.Mat.to_nx(Evision.ML.TrainData.getTestResponses(dataset), Nx.BinaryBackend)
   |> Nx.reshape({:auto})
   |> Nx.as_type(:s32)
 
 Scholar.Metrics.confusion_matrix(y_true, y_pred, num_classes: 3)
 ```
 
-### Save and Load
+## Save the Trained Model and Load It Back
 
 ```elixir
 # save to file

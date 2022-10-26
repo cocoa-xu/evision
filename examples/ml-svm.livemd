@@ -2,7 +2,7 @@
 
 <!-- livebook:{"persist_outputs":true} -->
 
-# Evision ML - SVM
+# Evision.ML.SVM Example - Support Vector Machine
 
 ```elixir
 # set `EVISION_PREFER_PRECOMPILED` to `false` 
@@ -11,31 +11,27 @@
 # System.put_env("EVISION_PREFER_PRECOMPILED", "false")
 
 Mix.install([
-  {:evision, "~> 0.1.9"},
-  {:req, "~> 0.3"},
-  {:kino, "~> 0.7"}
+    {:evision, "~> 0.1.14"},
+    {:req, "~> 0.3"},
+    {:kino, "~> 0.7"}
 ])
-```
-
-## Set up training data
-
-This example is based on the [Introduction to Support Vector Machines](https://docs.Cv.org/4.x/d1/d73/tutorial_introduction_to_svm.html) from Cv.
-
-<!-- livebook:{"break_markdown":true} -->
-
-### alias
-
-```elixir
-alias Evision, as: Cv
 ```
 
 <!-- livebook:{"output":true} -->
 
 ```
-Evision
+:ok
 ```
 
+## Set Up Training Data
+
+This example is based on the [Introduction to Support Vector Machines](https://docs.Cv.org/4.x/d1/d73/tutorial_introduction_to_svm.html) from Cv.
+
+<!-- livebook:{"break_markdown":true} -->
+
 ```elixir
+alias Evision, as: Cv
+
 labels = [1, -1, -1, -1]
 training_data = [[501, 10], [255, 10], [501, 255], [10, 501]]
 
@@ -46,27 +42,34 @@ training_data_mat = Cv.Mat.literal(training_data, :f32)
 <!-- livebook:{"output":true} -->
 
 ```
-{:ok, #Reference<0.910554608.1494089745.145367>}
+%Evision.Mat{
+  channels: 1,
+  dims: 2,
+  type: {:f, 32},
+  raw_type: 5,
+  shape: {4, 2},
+  ref: #Reference<0.1481828880.2785148948.120970>
+}
 ```
 
-### Train the SVM
+## Create an SVM and Train It With the Data
 
 ```elixir
 svm = Cv.ML.SVM.create()
 svm = Cv.ML.SVM.setType(svm, Cv.cv_C_SVC())
 svm = Cv.ML.SVM.setKernel(svm, Cv.cv_LINEAR())
 svm = Cv.ML.SVM.setTermCriteria(svm, {Cv.cv_MAX_ITER(), 100, 0.000001})
-:ok = Cv.ML.SVM.train(svm, training_data_mat, Cv.cv_ROW_SAMPLE(), labels_mat)
-:ok = Cv.ML.SVM.isTrained(svm)
+true = Cv.ML.SVM.train(svm, training_data_mat, Cv.cv_ROW_SAMPLE(), labels_mat)
+true = Cv.ML.SVM.isTrained(svm)
 ```
 
 <!-- livebook:{"output":true} -->
 
 ```
-:ok
+true
 ```
 
-### Show support vectors
+## Get Support Vectors
 
 ```elixir
 %Evision.Mat{shape: {rows, cols}} = sv = Cv.ML.SVM.getUncompressedSupportVectors(svm)
@@ -98,7 +101,7 @@ support_vector
 [[501, 10], [255, 10], [501, 255]]
 ```
 
-### Data for visual representation
+## Visualise the Training Result in A Response Map
 
 ```elixir
 green = [0, 255, 0]
@@ -118,7 +121,7 @@ response_data =
           1
         )
 
-      {_, %Mat{shape: {1, 1}}=response_mat} = Cv.ML.SVM.predict(svm, sample)
+      {_, %Cv.Mat{shape: {1, 1}} = response_mat} = Cv.ML.SVM.predict(svm, sample)
       <<response::float-size(32)-little>> = Cv.Mat.to_binary(response_mat)
       response = trunc(response)
 
@@ -138,26 +141,40 @@ response_map = Cv.Mat.from_binary(response_data, {:u, 8}, height, width, 3)
 thickness = 1
 
 response_map =
-  Cv.circle(response_map, Enum.at(training_data, 0), 5, [0, 0, 0], thickness: thickness)
+  Cv.circle(response_map, List.to_tuple(Enum.at(training_data, 0)), 5, {0, 0, 0},
+    thickness: thickness
+  )
 
 response_map =
-  Cv.circle(response_map, Enum.at(training_data, 1), 5, [255, 255, 255], thickness: thickness)
+  Cv.circle(response_map, List.to_tuple(Enum.at(training_data, 1)), 5, {255, 255, 255},
+    thickness: thickness
+  )
 
 response_map =
-  Cv.circle(response_map, Enum.at(training_data, 2), 5, [255, 255, 255], thickness: thickness)
+  Cv.circle(response_map, List.to_tuple(Enum.at(training_data, 2)), 5, {255, 255, 255},
+    thickness: thickness
+  )
 
 response_map =
-  Cv.circle(response_map, Enum.at(training_data, 3), 5, [255, 255, 255], thickness: thickness)
+  Cv.circle(response_map, List.to_tuple(Enum.at(training_data, 3)), 5, {255, 255, 255},
+    thickness: thickness
+  )
 
 # show support vectors
 response_map =
-  Cv.circle(response_map, Enum.at(support_vector, 0), 6, [128, 128, 128], thickness: thickness)
+  Cv.circle(response_map, List.to_tuple(Enum.at(support_vector, 0)), 6, {128, 128, 128},
+    thickness: thickness
+  )
 
 response_map =
-  Cv.circle(response_map, Enum.at(support_vector, 1), 6, [128, 128, 128], thickness: thickness)
+  Cv.circle(response_map, List.to_tuple(Enum.at(support_vector, 1)), 6, {128, 128, 128},
+    thickness: thickness
+  )
 
 response_map =
-  Cv.circle(response_map, Enum.at(support_vector, 2), 6, [128, 128, 128], thickness: thickness)
+  Cv.circle(response_map, List.to_tuple(Enum.at(support_vector, 2)), 6, {128, 128, 128},
+    thickness: thickness
+  )
 
 Cv.imencode(".png", response_map)
 |> Kino.Image.new(:png)

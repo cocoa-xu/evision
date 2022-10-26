@@ -19,7 +19,7 @@ defmodule Evision.Test do
     %Mat{type: {:f, 32}} = mat = Evision.Mat.as_type(mat, {:f, 32})
     %Mat{type: {:f, 64}} = Evision.Mat.as_type(mat, {:f, 64})
 
-    assert [1.0, 2.0, 3.0, 4.0] == Nx.to_flat_list(Evision.Nx.to_nx(mat))
+    assert [1.0, 2.0, 3.0, 4.0] == Nx.to_flat_list(Evision.Mat.to_nx(mat))
   end
 
   test "Evision.Mat.clone" do
@@ -35,20 +35,24 @@ defmodule Evision.Test do
     %Mat{type: {:u, 8}, shape: {2, 3, 3}} = mat = Evision.imread(Path.join([__DIR__, "test.png"]))
 
     img_data = Evision.Mat.to_binary(mat)
+
     assert <<126, 145, 241, 78, 190, 136, 183, 122, 68, 187, 196, 244, 145, 205, 190, 200, 184,
              144>> == img_data
   end
 
   test "decode png from file w/ alpha channel" do
-    %Mat{type: {:u, 8}, shape: {2, 3, 4}} = mat = Evision.imread(Path.join([__DIR__, "test.png"]), flags: Evision.cv_IMREAD_UNCHANGED())
+    %Mat{type: {:u, 8}, shape: {2, 3, 4}} =
+      mat = Evision.imread(Path.join([__DIR__, "test.png"]), flags: Evision.cv_IMREAD_UNCHANGED())
 
     img_data = Evision.Mat.to_binary(mat)
+
     assert <<126, 145, 241, 255, 78, 190, 136, 255, 183, 122, 68, 255, 187, 196, 244, 255, 145,
              205, 190, 255, 200, 184, 144, 255>> == img_data
   end
 
   test "decode image from file grayscale" do
-    %Mat{type: {:u, 8}, shape: {2, 3}} = mat = Evision.imread(Path.join([__DIR__, "test.png"]), flags: Evision.cv_IMREAD_GRAYSCALE())
+    %Mat{type: {:u, 8}, shape: {2, 3}} =
+      mat = Evision.imread(Path.join([__DIR__, "test.png"]), flags: Evision.cv_IMREAD_GRAYSCALE())
 
     img_data = Evision.Mat.to_binary(mat)
     assert <<171, 161, 112, 209, 193, 173>> == img_data
@@ -58,6 +62,7 @@ defmodule Evision.Test do
     %Mat{type: {:u, 8}, shape: {2, 3, 3}} = mat = Evision.imread(Path.join([__DIR__, "test.jpg"]))
 
     img_data = Evision.Mat.to_binary(mat)
+
     assert <<70, 128, 180, 61, 119, 171, 117, 143, 65, 112, 170, 222, 95, 153, 205, 140, 166, 88>> ==
              img_data
   end
@@ -84,7 +89,7 @@ defmodule Evision.Test do
     encoded = Evision.imencode(".png", mat)
     assert is_binary(encoded)
 
-    %Mat{shape: ^shape, type: ^type} = ret = Evision.imdecode(encoded, Evision.cv_IMREAD_ANYCOLOR())
+    %Mat{shape: ^shape, type: ^type} = Evision.imdecode(encoded, Evision.cv_IMREAD_ANYCOLOR())
   end
 
   test "Evision.resize" do
@@ -92,7 +97,9 @@ defmodule Evision.Test do
 
     resize_height = 4
     resize_width = 6
-    %Mat{shape: {^resize_width, ^resize_height, 3}} = resized_mat = Evision.resize(mat, [resize_height, resize_width])
+
+    %Mat{shape: {^resize_width, ^resize_height, 3}} =
+      Evision.resize(mat, {resize_height, resize_width})
   end
 
   test "Evision.imwrite" do
@@ -104,6 +111,7 @@ defmodule Evision.Test do
     %Mat{type: {:u, 8}, shape: {2, 3, 3}} = mat = Evision.imread(output_path)
 
     img_data = Evision.Mat.to_binary(mat)
+
     assert <<126, 145, 241, 78, 190, 136, 183, 122, 68, 187, 196, 244, 145, 205, 190, 200, 184,
              144>> == img_data
 
@@ -186,6 +194,7 @@ defmodule Evision.Test do
       shape: {},
       ref: any_ref
     } = Evision.Mat.literal([])
+
     assert is_reference(any_ref)
   end
 
@@ -197,7 +206,8 @@ defmodule Evision.Test do
       raw_type: 0,
       shape: {1, 3, 3},
       ref: any_ref
-    } = Evision.Mat.literal([[[1,1,1],[2,2,2],[3,3,3]]], :u8)
+    } = Evision.Mat.literal([[[1, 1, 1], [2, 2, 2], [3, 3, 3]]], :u8)
+
     assert is_reference(any_ref)
 
     %Evision.Mat{
@@ -207,7 +217,8 @@ defmodule Evision.Test do
       raw_type: 5,
       shape: {1, 3, 3},
       ref: any_ref
-    } = Evision.Mat.literal([[[1,1,1],[2,2,2],[3,3,3]]], :f32)
+    } = Evision.Mat.literal([[[1, 1, 1], [2, 2, 2], [3, 3, 3]]], :f32)
+
     assert is_reference(any_ref)
   end
 
@@ -219,7 +230,8 @@ defmodule Evision.Test do
       raw_type: 16,
       shape: {1, 3, 3},
       ref: any_ref
-    } = Evision.Mat.literal([[[1,1,1],[2,2,2],[3,3,3]]], :u8, as_2d: true)
+    } = Evision.Mat.literal([[[1, 1, 1], [2, 2, 2], [3, 3, 3]]], :u8, as_2d: true)
+
     assert is_reference(any_ref)
 
     %Evision.Mat{
@@ -229,12 +241,134 @@ defmodule Evision.Test do
       raw_type: 21,
       shape: {1, 3, 3},
       ref: any_ref
-    } = Evision.Mat.literal([[[1,1,1],[2,2,2],[3,3,3]]], :f32, as_2d: true)
+    } = Evision.Mat.literal([[[1, 1, 1], [2, 2, 2], [3, 3, 3]]], :f32, as_2d: true)
+
     assert is_reference(any_ref)
   end
 
   test "Evision.boxPoints/1" do
     # `RotatedRect` has to be a tuple, {centre, size, angle}
     Evision.boxPoints({{224.0, 262.5}, {343.0, 344.0}, 90.0})
+  end
+
+  test "Evision.Mat.roi/2" do
+    %Evision.Mat{} = img = Evision.imread("test/qr_detector_test.png")
+
+    # Mat operator()( const Rect& roi ) const;
+    %Evision.Mat{
+      channels: 3,
+      dims: 2,
+      type: {:u, 8},
+      raw_type: 16,
+      shape: {200, 100, 3}
+    } = Evision.Mat.roi(img, {10, 10, 100, 200})
+
+    # Mat operator()(const std::vector<Range>& ranges) const;
+    %Evision.Mat{
+      channels: 3,
+      dims: 2,
+      type: {:u, 8},
+      raw_type: 16,
+      shape: {90, 90, 3}
+    } = Evision.Mat.roi(img, [{10, 100}, {10, 100}])
+
+    %Evision.Mat{
+      channels: 3,
+      dims: 2,
+      type: {:u, 8},
+      raw_type: 16,
+      shape: {90, 300, 3}
+    } = Evision.Mat.roi(img, [{10, 100}, :all])
+  end
+
+  test "Evision.Mat.roi/3" do
+    %Evision.Mat{} = img = Evision.imread("test/qr_detector_test.png")
+
+    # Mat operator()( Range rowRange, Range colRange ) const;
+    %Evision.Mat{
+      channels: 3,
+      dims: 2,
+      type: {:u, 8},
+      raw_type: 16,
+      shape: {90, 180, 3}
+    } = Evision.Mat.roi(img, {10, 100}, {20, 200})
+
+    %Evision.Mat{
+      channels: 3,
+      dims: 2,
+      type: {:u, 8},
+      raw_type: 16,
+      shape: {300, 180, 3}
+    } = Evision.Mat.roi(img, :all, {20, 200})
+  end
+
+  test "Evision.warpPerspective" do
+    # Code translated from https://stackoverflow.com/a/64837860
+    # read input
+    %Evision.Mat{shape: {h, w, _}} =
+      img = Evision.imread(Path.join(["test", "warp_perspective.png"]))
+
+    # hypot.(list(number())) function returns the Euclidean norm
+    hypot = fn l -> :math.sqrt(Enum.sum(Enum.map(l, fn i -> i * i end))) end
+
+    # specify input coordinates for corners of red quadrilateral in order TL, TR, BR, BL as x,
+    input = Nx.tensor([[136, 113], [206, 130], [173, 207], [132, 196]], type: :f32)
+
+    # get top and left dimensions and set to output dimensions of red rectangle
+    output_width = [
+      Nx.to_number(Nx.subtract(input[[0, 0]], input[[1, 0]])),
+      Nx.to_number(Nx.subtract(input[[0, 1]], input[[1, 1]]))
+    ]
+
+    output_width = round(hypot.(output_width))
+
+    output_height = [
+      Nx.to_number(Nx.subtract(input[[0, 0]], input[[3, 0]])),
+      Nx.to_number(Nx.subtract(input[[0, 1]], input[[3, 1]]))
+    ]
+
+    output_height = round(hypot.(output_height))
+
+    # set upper left coordinates for output rectangle
+    x = Nx.to_number(input[[0, 0]])
+    y = Nx.to_number(input[[0, 1]])
+
+    # specify output coordinates for corners of red quadrilateral in order TL, TR, BR, BL as x,
+    output =
+      Nx.tensor(
+        [
+          [x, y],
+          [x + output_width - 1, y],
+          [x + output_width - 1, y + output_height - 1],
+          [x, y + output_height - 1]
+        ],
+        type: :f32
+      )
+
+    # compute perspective matrix
+    matrix = Evision.getPerspectiveTransform(input, output)
+
+    # do perspective transformation setting area outside input to black
+    # Note that output size is the same as the input image size
+    %Evision.Mat{} =
+      Evision.warpPerspective(
+        img,
+        matrix,
+        {w, h},
+        flags: Evision.cv_INTER_LINEAR(),
+        borderMode: Evision.cv_BORDER_CONSTANT(),
+        borderValue: {0, 0, 0}
+      )
+
+    # expecting error when any input argument is invalid
+    {:error, _} =
+      Evision.warpPerspective(
+        img,
+        img,
+        {w, h},
+        flags: Evision.cv_INTER_LINEAR(),
+        borderMode: Evision.cv_BORDER_CONSTANT(),
+        borderValue: {0, 0, 0}
+      )
   end
 end

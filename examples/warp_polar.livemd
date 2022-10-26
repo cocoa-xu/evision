@@ -1,0 +1,425 @@
+<!-- livebook:{"persist_outputs":true} -->
+
+# Evision Example - Warp Polar and Reverse
+
+```elixir
+# set `EVISION_PREFER_PRECOMPILED` to `false` 
+# if you prefer `:evision` to be compiled from source
+# note that to compile from source, you may need at least 1GB RAM
+# System.put_env("EVISION_PREFER_PRECOMPILED", "false")
+
+Mix.install([
+  {:evision, "~> 0.1.14"},
+  {:req, "~> 0.3"},
+  {:kino, "~> 0.7"}
+])
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+:ok
+```
+
+## Define Some Helper Functions
+
+```elixir
+defmodule Helper do
+  def download!(url, save_as, overwrite \\ false)
+
+  def download!(url, save_as, false) do
+    unless File.exists?(save_as) do
+      download!(url, save_as, true)
+    end
+
+    :ok
+  end
+
+  def download!(url, save_as, true) do
+    body =
+      case Req.get!(url) do
+        %Req.Response{status: 200, body: body} ->
+          body
+
+        error ->
+          raise inspect(error)
+      end
+
+    File.write!(save_as, body)
+  end
+end
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+{:module, Helper, <<70, 79, 82, 49, 0, 0, 10, ...>>, {:download!, 3}}
+```
+
+## Load the Test Image
+
+```elixir
+test_image_path = Path.join(__DIR__, "warp_polar.png")
+
+Helper.download!(
+  "https://raw.githubusercontent.com/cocoa-xu/evision/main/test/warp_polar.png",
+  test_image_path
+)
+
+# Read the test image
+%Evision.Mat{shape: {rows, cols, 3}} = src = Evision.imread(test_image_path)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+%Evision.Mat{
+  channels: 3,
+  dims: 2,
+  type: {:u, 8},
+  raw_type: 16,
+  shape: {412, 561, 3},
+  ref: #Reference<0.1535381621.3478519834.195361>
+}
+```
+
+The centre point (relative to the source image) of the circle locates at `{x=224, y=206}`.
+
+Of course, you might ask *"how do we find the centre of that circle by code"* or maybe first you wanna ask *"how do we detect if there is any circle in any given image"*. And these questions fall outside the scope of this livebook, and there are really plenty of ways to do it.
+
+## Max Radius
+
+`max_radius` decides the bounding circle. If some part of the bounding circle is outside the range of the source image, then we need to ask OpenCV to fill these outliners by adding another flag `Evision.cv_WARP_FILL_OUTLIERS()`.
+
+We can first plot the bounding circle for some visualisation.
+
+```elixir
+centre = {x = 224, y = 206}
+max_radius = 0.93 * min(x, y)
+red_color = {0, 0, 255}
+
+# convert max_radius to an integer 
+# because Evision.circle expects an integer input for the
+# radius parameter
+int_max_radius = trunc(max_radius)
+
+Evision.circle(src, centre, int_max_radius, red_color, thickness: 2)
+
+# please click the "Image" tab in the output below to see the visualised result
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+%Evision.Mat{
+  channels: 3,
+  dims: 2,
+  type: {:u, 8},
+  raw_type: 16,
+  shape: {412, 561, 3},
+  ref: #Reference<0.1535381621.3478519828.194184>
+}
+```
+
+The processed image will look like this:
+
+```elixir
+Evision.warpPolar(
+  src,
+  {0, 0},
+  centre,
+  int_max_radius,
+  Evision.cv_INTER_LINEAR() + Evision.cv_WARP_FILL_OUTLIERS()
+)
+
+# please click the "Image" tab in the output below to see the visualised result
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+%Evision.Mat{
+  channels: 3,
+  dims: 2,
+  type: {:u, 8},
+  raw_type: 16,
+  shape: {600, 191, 3},
+  ref: #Reference<0.1535381621.3478519828.194187>
+}
+```
+
+if the max radius is too large, then we will have some outliners, as you can see that the red circle (in the output below) is not entirely inside the source image
+
+```elixir
+int_max_radius = trunc(1.2 * min(x, y))
+
+Evision.circle(src, centre, int_max_radius, red_color, thickness: 2)
+
+# please click the "Image" tab in the output below to see the visualised result
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+%Evision.Mat{
+  channels: 3,
+  dims: 2,
+  type: {:u, 8},
+  raw_type: 16,
+  shape: {412, 561, 3},
+  ref: #Reference<0.1535381621.3478519828.194190>
+}
+```
+
+And in such cases, OpenCV will have to fill outliners (in this example, filled outliners reside in the black areas on the right hand side of the output image)
+
+```elixir
+Evision.warpPolar(
+  src,
+  {0, 0},
+  centre,
+  int_max_radius,
+  Evision.cv_INTER_LINEAR() + Evision.cv_WARP_FILL_OUTLIERS()
+)
+
+# please click the "Image" tab in the output below to see the visualised result
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+%Evision.Mat{
+  channels: 3,
+  dims: 2,
+  type: {:u, 8},
+  raw_type: 16,
+  shape: {776, 247, 3},
+  ref: #Reference<0.1535381621.3478519828.194193>
+}
+```
+
+## dsize
+
+The next thing is `dsize={width, height}`, and there are three options:
+
+* if both values in `dsize <=0` (default), the destination image will have (almost) same area of source bounding circle
+
+  $\begin{array}{l} dsize.area \leftarrow (maxRadius^2 \cdot \Pi) \\ dsize.width = \texttt{round}(maxRadius) \\ dsize.height = \texttt{round}(maxRadius \cdot \Pi) \\ \end{array}$
+
+* if only `dsize.height <= 0`, the destination image area will be proportional to the bounding circle area but scaled by `Kx * Kx`:
+
+  $\begin{array}{l} dsize.height = \texttt{round}(dsize.width \cdot \Pi) \\ \end{array}$
+
+* if both values in `dsize > 0`, the destination image will have the given size therefore the area of the bounding circle will be scaled to `dsize`.
+
+<!-- livebook:{"break_markdown":true} -->
+
+#### dsize - option 1
+
+We can first try `dsize={0, 0}`.
+
+```elixir
+dsize = {0, 0}
+max_radius = 0.93 * min(x, y)
+
+Evision.warpPolar(
+  src,
+  dsize,
+  centre,
+  max_radius,
+  Evision.cv_INTER_LINEAR() + Evision.cv_WARP_FILL_OUTLIERS()
+)
+
+# please click the "Image" tab in the output below to see the visualised result
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+%Evision.Mat{
+  channels: 3,
+  dims: 2,
+  type: {:u, 8},
+  raw_type: 16,
+  shape: {602, 192, 3},
+  ref: #Reference<0.1535381621.3478519828.194205>
+}
+```
+
+Looks good. What about `dsize = {240, 800}`
+
+<!-- livebook:{"break_markdown":true} -->
+
+#### dsize - option 2
+
+only `dsize.height <= 0`
+
+```elixir
+dsize = {150, -1}
+max_radius = 0.93 * min(x, y)
+
+Evision.warpPolar(
+  src,
+  dsize,
+  centre,
+  max_radius,
+  Evision.cv_INTER_LINEAR() + Evision.cv_WARP_FILL_OUTLIERS()
+)
+
+# please click the "Image" tab in the output below to see the visualised result
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+%Evision.Mat{
+  channels: 3,
+  dims: 2,
+  type: {:u, 8},
+  raw_type: 16,
+  shape: {471, 150, 3},
+  ref: #Reference<0.1535381621.3478519828.194208>
+}
+```
+
+#### dsize - option 3
+
+both values in `dsize > 0`
+
+```elixir
+dsize = {240, 400}
+max_radius = 0.93 * min(x, y)
+
+Evision.warpPolar(
+  src,
+  dsize,
+  centre,
+  max_radius,
+  Evision.cv_INTER_LINEAR() + Evision.cv_WARP_FILL_OUTLIERS()
+)
+
+# please click the "Image" tab in the output below to see the visualised result
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+%Evision.Mat{
+  channels: 3,
+  dims: 2,
+  type: {:u, 8},
+  raw_type: 16,
+  shape: {400, 240, 3},
+  ref: #Reference<0.1535381621.3478519828.194211>
+}
+```
+
+## Remaps to Semilog-Polar Coordinates Space
+
+```elixir
+dsize = {0, 0}
+max_radius = 0.93 * min(x, y)
+
+log_polar_img =
+  Evision.warpPolar(
+    src,
+    dsize,
+    centre,
+    max_radius,
+    Evision.cv_INTER_LINEAR() + Evision.cv_WARP_FILL_OUTLIERS() + Evision.cv_WARP_POLAR_LOG()
+  )
+
+# please click the "Image" tab in the output below to see the visualised result
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+%Evision.Mat{
+  channels: 3,
+  dims: 2,
+  type: {:u, 8},
+  raw_type: 16,
+  shape: {602, 192, 3},
+  ref: #Reference<0.1535381621.3478519828.194229>
+}
+```
+
+## Reverse the Transformation
+
+#### From Semilog-Polar Coordinates Space
+
+`log_polar_img` is the result image in the cell above.
+
+```elixir
+shape = Evision.Mat.shape(src)
+dsize = {elem(shape, 1), elem(shape, 0)}
+
+Evision.warpPolar(
+  log_polar_img,
+  dsize,
+  centre,
+  max_radius,
+  Evision.cv_INTER_LINEAR() + Evision.cv_WARP_FILL_OUTLIERS() +
+    Evision.cv_WARP_POLAR_LOG() + Evision.cv_WARP_INVERSE_MAP()
+)
+
+# please click the "Image" tab in the output below to see the visualised result
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+%Evision.Mat{
+  channels: 3,
+  dims: 2,
+  type: {:u, 8},
+  raw_type: 16,
+  shape: {412, 561, 3},
+  ref: #Reference<0.1535381621.3478519828.194247>
+}
+```
+
+#### From Polar Coordinates Space
+
+```elixir
+dsize = {0, 0}
+max_radius = 0.93 * min(x, y)
+
+linear_polar_img =
+  Evision.warpPolar(
+    src,
+    dsize,
+    centre,
+    max_radius,
+    Evision.cv_INTER_LINEAR() + Evision.cv_WARP_FILL_OUTLIERS()
+  )
+
+# reverse the transformation
+shape = Evision.Mat.shape(src)
+dsize = {elem(shape, 1), elem(shape, 0)}
+
+Evision.warpPolar(
+  linear_polar_img,
+  dsize,
+  centre,
+  max_radius,
+  Evision.cv_INTER_LINEAR() + Evision.cv_WARP_FILL_OUTLIERS() +
+    Evision.cv_WARP_INVERSE_MAP()
+)
+
+# please click the "Image" tab in the output below to see the visualised result
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+%Evision.Mat{
+  channels: 3,
+  dims: 2,
+  type: {:u, 8},
+  raw_type: 16,
+  shape: {412, 561, 3},
+  ref: #Reference<0.1535381621.3478519828.194251>
+}
+```

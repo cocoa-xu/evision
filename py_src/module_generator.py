@@ -259,7 +259,15 @@ class ModuleGenerator(object):
                 if func_guards.get(kind, None) is None:
                     func_guards[kind] = []
                 func_guards[kind].append(func_variant.function_guard(kind))
-            erl_signatures.append(func.cname + nif_name + func_variant.function_signature())
+            sign_added = False
+            if "readNet" in func_name:
+                if len(func_variant.py_arglist) > 0:
+                    argname, _, argtype = func_variant.py_arglist[0]
+                    if 'buffer' in argname and argtype == 'vector_uchar':
+                        erl_signatures.append(func.cname + 'buffer' + nif_name + func_variant.function_signature())
+                        sign_added = True
+            if not sign_added:
+                erl_signatures.append(func.cname + nif_name + func_variant.function_signature())
 
         # ======== step 4.2 prepare for generating binding code for each kind ========
         for kind in function_templates:
@@ -334,6 +342,15 @@ class ModuleGenerator(object):
                     function_sign = evision_nif_prefix() + "dnn_forward"
                 if func_name.startswith(evision_nif_prefix() + "dnn_dnn_Net") and (module_func_name == "getLayerShapes" or module_func_name == "getLayersShapes"):
                     function_sign = evision_nif_prefix() + "dnn_dnn_Net_" + module_func_name
+
+                if "readNet" in func_name:
+                    if len(func_variant.py_arglist) > 0:
+                        argname, _, argtype = func_variant.py_arglist[0]
+                        if 'buffer' in argname and argtype == 'vector_uchar':
+                            module_func_name += 'Buffer'
+                
+                if "qrcodeencoder_params" == module_func_name:
+                    module_func_name = 'params'
 
                 global unique_signatures
                 usign = ''

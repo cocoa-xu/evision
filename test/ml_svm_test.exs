@@ -10,7 +10,8 @@ defmodule Evision.ML.SVM.Test do
     labels = [1, -1, -1, -1]
     training_data = [[501, 10], [255, 10], [501, 255], [10, 501]]
 
-    %Mat{} = labels_mat =
+    %Mat{} =
+      labels_mat =
       Mat.from_binary(
         Enum.into(labels, <<>>, fn d -> <<d::integer-size(32)-little>> end),
         {:s, 32},
@@ -19,7 +20,8 @@ defmodule Evision.ML.SVM.Test do
         1
       )
 
-    %Mat{} = training_data_mat =
+    %Mat{} =
+      training_data_mat =
       Mat.from_binary(
         Enum.into(List.flatten(training_data), <<>>, fn d -> <<d::float-size(32)-little>> end),
         {:f, 32},
@@ -64,7 +66,8 @@ defmodule Evision.ML.SVM.Test do
     response_data =
       for x <- (width - 1)..0, y <- (height - 1)..0, reduce: [] do
         acc ->
-          %Mat{} = sample =
+          %Mat{} =
+            sample =
             Mat.from_binary(
               <<y::float-size(32)-little, x::float-size(32)-little>>,
               {:f, 32},

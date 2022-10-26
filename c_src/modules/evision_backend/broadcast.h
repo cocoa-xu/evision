@@ -118,6 +118,8 @@ static ERL_NIF_TERM evision_cv_mat_broadcast_to(ErlNifEnv *env, int argc, const 
             }
             void * tmp_data = (void *)enif_alloc(elem_size * count_new_elem);
             if (tmp_data == nullptr) {
+                enif_free((void *)dst_data);
+                dst_data = nullptr;
                 return evision::nif::error(env, "cannot broadcast to specified shape, out of memory");
             }
 

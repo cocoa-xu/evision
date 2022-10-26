@@ -2,9 +2,7 @@
 
 <!-- livebook:{"persist_outputs":true} -->
 
-# Evision DNN - GoogleNet
-
-## Setup
+# Evision.DNN Example - Object Detection Task with GoogleNet
 
 ```elixir
 # set `EVISION_PREFER_PRECOMPILED` to `false` 
@@ -13,13 +11,19 @@
 # System.put_env("EVISION_PREFER_PRECOMPILED", "false")
 
 Mix.install([
-  {:evision, "~> 0.1.9"},
+  {:evision, "~> 0.1.14"},
   {:kino, "~> 0.7"},
   {:req, "~> 0.3"}
 ])
 ```
 
-## Helper Function
+<!-- livebook:{"output":true} -->
+
+```
+:ok
+```
+
+## Define Some Helper Functions
 
 ```elixir
 defmodule Helper do
@@ -54,19 +58,7 @@ end
 {:module, Helper, <<70, 79, 82, 49, 0, 0, 10, ...>>, {:download!, 3}}
 ```
 
-## alias
-
-```elixir
-alias Evision, as: Cv
-```
-
-<!-- livebook:{"output":true} -->
-
-```
-Evision
-```
-
-### Download model and a test image
+## Download GoogLeNet Model and A Test Image
 
 * Model parameters. `bvlc_googlenet.caffemodel`
 * Model config. `bvlc_googlenet.prototxt`
@@ -102,7 +94,7 @@ Helper.download!("https://docs.opencv.org/4.5.4/space_shuttle.jpg", "space_shutt
 :ok
 ```
 
-### Read class names
+## Read Class Names
 
 ```elixir
 classes =
@@ -138,9 +130,11 @@ classes =
  "African crocodile, Nile crocodile, Crocodylus niloticus", ...]
 ```
 
-### Load DNN model
+## Load the GoogLeNet Model
 
 ```elixir
+alias Evision, as: Cv
+
 model =
   Cv.DNN.readNet("bvlc_googlenet.caffemodel",
     config: "bvlc_googlenet.prototxt",
@@ -151,10 +145,10 @@ model =
 <!-- livebook:{"output":true} -->
 
 ```
-{:ok, #Reference<0.910554608.1494089757.145770>}
+%Evision.DNN.Net{ref: #Reference<0.4003430890.1440088085.55917>}
 ```
 
-### Set backend and target
+### Set Backend and Target
 
 ```elixir
 # "0: automatically (by default), "
@@ -178,10 +172,10 @@ model = Cv.DNN.Net.setPreferableTarget(model, 0)
 <!-- livebook:{"output":true} -->
 
 ```
-{:ok, #Reference<0.910554608.1494089757.145770>}
+%Evision.DNN.Net{ref: #Reference<0.4003430890.1440088085.55917>}
 ```
 
-### Read the test image and set as input
+## Read the Test Image and Set It as the Input
 
 ```elixir
 mat = Cv.imread("space_shuttle.jpg")
@@ -200,10 +194,10 @@ model = Cv.DNN.Net.setInput(model, blob, name: "", scalefactor: 1.0, mean: [0, 0
 <!-- livebook:{"output":true} -->
 
 ```
-{:ok, #Reference<0.910554608.1494089757.145770>}
+%Evision.DNN.Net{ref: #Reference<0.4003430890.1440088085.55917>}
 ```
 
-### Forward
+### Run the Forward Function
 
 ```elixir
 start_time = :os.system_time(:millisecond)
@@ -215,11 +209,12 @@ end_time = :os.system_time(:millisecond)
 <!-- livebook:{"output":true} -->
 
 ```
-"Inference time=>48 ms"
+"Inference time=>49 ms"
 ```
 
+## Get the Classification Result
 ```elixir
-pred = pred |> Cv.Nx.to_nx(Nx.BinaryBackend)
+pred = pred |> Cv.Mat.to_nx(Nx.BinaryBackend)
 pred_class_id = pred |> Nx.argmax() |> Nx.to_flat_list() |> Enum.at(0)
 
 confidence =

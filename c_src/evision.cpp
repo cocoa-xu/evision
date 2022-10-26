@@ -222,45 +222,26 @@ ERL_NIF_TERM evision_from_as_binary(ErlNifEnv *env, const std::vector<uchar>& sr
 
 #include "modules/evision_video_api.h"
 
-static ERL_NIF_TERM evisionRaiseCVException(ErlNifEnv *env, const cv::Exception &e)
-{
-    return enif_make_tuple2(env,
-        evision::nif::atom(env, "error"),
-        enif_make_tuple2(env,
-            evision::nif::atom(env, "reason"),
-            enif_make_tuple7(env,
-                enif_make_tuple2(env, enif_make_atom(env, "file"), evision::nif::make(env, e.file.c_str())),
-                enif_make_tuple2(env, enif_make_atom(env, "func"), evision::nif::make(env, e.func.c_str())),
-                enif_make_tuple2(env, enif_make_atom(env, "line"), evision::nif::make(env, e.line)),
-                enif_make_tuple2(env, enif_make_atom(env, "code"), evision::nif::make(env, e.code)),
-                enif_make_tuple2(env, enif_make_atom(env, "msg"), evision::nif::make(env, e.msg.c_str())),
-                enif_make_tuple2(env, enif_make_atom(env, "err"), evision::nif::make(env, e.err.c_str())),
-                enif_make_tuple2(env, enif_make_atom(env, "what"), evision::nif::make(env, e.what()))
-            )
-        )
-    );
-}
-
-#define ERRWRAP2(expr, env, error_flag, error_term)       \
-try                                                  \
-{                                                    \
-    expr;                                            \
-}                                                    \
-catch (const cv::Exception &e)                       \
-{                                                    \
-    error_flag = true;                               \
-    error_term = evisionRaiseCVException(env, e);    \
-}                                                    \
-catch (const std::exception &e)                      \
-{                                                    \
-    error_flag = true;                               \
-    error_term = evision::nif::error(env, e.what()); \
-}                                                    \
-catch (...)                                          \
-{                                                    \
-    error_flag = true;                               \
-    error_term = evision::nif::error(env,            \
-          "Unknown C++ exception from OpenCV code"); \
+#define ERRWRAP2(expr, env, error_flag, error_term)         \
+try                                                         \
+{                                                           \
+    expr;                                                   \
+}                                                           \
+catch (const cv::Exception &e)                              \
+{                                                           \
+    error_flag = true;                                      \
+    error_term = evision::nif::error(env, e.msg.c_str());   \
+}                                                           \
+catch (const std::exception &e)                             \
+{                                                           \
+    error_flag = true;                                      \
+    error_term = evision::nif::error(env, e.what());        \
+}                                                           \
+catch (...)                                                 \
+{                                                           \
+    error_flag = true;                                      \
+    error_term = evision::nif::error(env,                   \
+          "Unknown C++ exception from OpenCV code");        \
 }
 
 using namespace cv;
@@ -281,63 +262,6 @@ inline void pyPrepareArgumentConversionErrorsStorage(std::size_t size)
     conversionErrors.clear();
     conversionErrors.reserve(size);
 }
-
-static ERL_NIF_TERM evisionRaiseCVOverloadException(ErlNifEnv *env, const std::string& functionName)
-{
-    const std::vector<std::string>& conversionErrors = conversionErrorsTLS.getRef();
-    const std::size_t conversionErrorsCount = conversionErrors.size();
-    if (conversionErrorsCount > 0)
-    {
-        // In modern std libraries small string optimization is used = no dynamic memory allocations,
-        // but it can be applied only for string with length < 18 symbols (in GCC)
-        const std::string bullet = "\n - ";
-
-        // Estimate required buffer size - save dynamic memory allocations = faster
-        std::size_t requiredBufferSize = bullet.size() * conversionErrorsCount;
-        for (std::size_t i = 0; i < conversionErrorsCount; ++i)
-        {
-            requiredBufferSize += conversionErrors[i].size();
-        }
-
-        // Only string concatenation is required so std::string is way faster than
-        // std::ostringstream
-        std::string errorMessage("Overload resolution failed:");
-        errorMessage.reserve(errorMessage.size() + requiredBufferSize);
-        for (std::size_t i = 0; i < conversionErrorsCount; ++i)
-        {
-            errorMessage += bullet;
-            errorMessage += conversionErrors[i];
-        }
-        cv::Exception exception(CV_StsBadArg, errorMessage, functionName, "", -1);
-        return evisionRaiseCVException(env, exception);
-    }
-    else
-    {
-        cv::Exception exception(CV_StsInternal, "Overload resolution failed, but no errors reported",
-                                functionName, "", -1);
-        return evisionRaiseCVException(env, exception);
-    }
-}
-
-struct SafeSeqItem
-{
-    ERL_NIF_TERM item;
-    SafeSeqItem(ErlNifEnv* env, ERL_NIF_TERM obj, size_t idx) {
-        ERL_NIF_TERM head, tail;
-        size_t i = 0;
-        while (i != idx + 1) {
-            enif_get_list_cell(env, obj, &head, &tail);
-            obj = tail;
-            i++;
-        }
-
-        item = head;
-    }
-
-private:
-    SafeSeqItem(const SafeSeqItem&); // = delete
-    SafeSeqItem& operator=(const SafeSeqItem&); // = delete
-};
 
 template <class T>
 class RefWrapper
@@ -360,27 +284,7 @@ bool parseSequence(ErlNifEnv *env, ERL_NIF_TERM obj, RefWrapper<T> (&value)[N], 
         return true;
     }
 
-    // parse from list
-    if (enif_is_list(env, obj)) {
-        unsigned sequenceSize = 0;
-        enif_get_list_length(env, obj, &sequenceSize);
-        if (sequenceSize != N)
-        {
-            failmsgp(env, "Can't parse '%s'. Expected sequence length %lu, got %lu",
-                    info.name, N, sequenceSize);
-            return false;
-        }
-        for (std::size_t i = 0; i < N; ++i)
-        {
-            SafeSeqItem seqItem(env, obj, i);
-            if (!evision_to(env, seqItem.item, value[i].get(), info))
-            {
-                failmsgp(env, "Can't parse '%s'. Sequence item with index %lu has a "
-                        "wrong type", info.name, i);
-                return false;
-            }
-        }
-    } else if (enif_is_tuple(env, obj)) {
+    if (enif_is_tuple(env, obj)) {
         const ERL_NIF_TERM *terms;
         int sz = 0;
         enif_get_tuple(env, obj, &sz, &terms);
@@ -532,6 +436,27 @@ static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Mat& m, const ArgInfo& in
     return false;
 }
 
+static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, cv::UMat& m, const ArgInfo& info)
+{
+    if(evision::nif::check_nil(env, o)) {
+        return true;
+    }
+
+    evision_res<cv::UMat *> * in_res;
+    if( enif_get_resource(env, o, evision_res<cv::UMat *>::type, (void **)&in_res) ) {
+        if (in_res->val) {
+            // should we copy the matrix?
+            // probably yes so that the original matrix is not modified
+            // because erlang/elixir users would expect that the original matrix to be unchanged
+            in_res->val->copyTo(m);
+            return true;
+        }
+        return false;
+    }
+
+    return false;
+}
+
 template<typename _Tp, int m, int n>
 bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Matx<_Tp, m, n>& mx, const ArgInfo& info)
 {
@@ -635,23 +560,50 @@ static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Scalar& s, const ArgInfo&
 
     double dval;
     int ival;
-    if (enif_is_list(env, o)) {
-        unsigned n = 0;
-        enif_get_list_length(env, o, &n);
-        if (4 < n)
-        {
+
+    if (enif_is_tuple(env, o)) {
+        int n = 0;
+        const ERL_NIF_TERM * terms;
+        enif_get_tuple(env, o, &n, &terms);
+        if (n > 4) {
             failmsg(env, "Scalar value for argument '%s' is longer than 4", info.name);
             return false;
         }
-        for (size_t i = 0; i < n; i++) {
-            SafeSeqItem item_wrap(env, o, i);
-            ERL_NIF_TERM item = item_wrap.item;
-            if (enif_get_double(env, item, &dval)) {
-                s[(int)i] = dval;
-            } else if (enif_get_int(env, item, &ival)){
-                s[(int)i] = (double)ival;
+
+        for (int i = 0; i < n; i++) {
+            if (enif_get_double(env, terms[i], &dval)) {
+                s[i] = dval;
+            } else if (enif_get_int(env, terms[i], &ival)){
+                s[i] = (double)ival;
             } else {
                 failmsg(env, "Scalar value for argument '%s' is not numeric", info.name);
+                return false;
+            }
+        }
+        return true;
+    } else if (enif_is_list(env, o)) {
+        unsigned n = 0;
+        enif_get_list_length(env, o, &n);
+        if (n > 4) {
+            failmsg(env, "Scalar value for argument '%s' is longer than 4", info.name);
+            return false;
+        }
+
+        ERL_NIF_TERM head, tail, obj = o;
+        size_t i = 0;
+        while (i < n) {
+            if (enif_get_list_cell(env, obj, &head, &tail)) {
+                if (enif_get_double(env, head, &dval)) {
+                    s[i] = dval;
+                } else if (enif_get_int(env, head, &ival)){
+                    s[i] = (double)ival;
+                } else {
+                    failmsg(env, "Scalar value for argument '%s' is not numeric", info.name);
+                    return false;
+                }
+                obj = tail;
+                i++;
+            } else {
                 return false;
             }
         }
@@ -889,6 +841,40 @@ bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, uchar& value, const ArgInfo& i
     }
 }
 
+template <>
+bool evision_to_safe(ErlNifEnv *env, ERL_NIF_TERM o, std::vector<uchar>& data, const ArgInfo& info)
+{
+    ErlNifBinary erl_bin;
+    if (enif_inspect_binary(env, o, &erl_bin)) {
+        data.assign(erl_bin.data, erl_bin.data + erl_bin.size);
+        return true;
+    }
+
+    if (enif_is_list(env, o)) {
+        unsigned n = 0;
+        enif_get_list_length(env, o, &n);
+
+        ERL_NIF_TERM head, tail, obj = o;
+        size_t i = 0;
+        while (i < n) {
+            if (enif_get_list_cell(env, obj, &head, &tail)) {
+                uchar item;
+                if (!evision_to(env, head, item, info)) {
+                    return false;
+                }
+                data.push_back(item);
+                obj = tail;
+                i++;
+            } else {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    return false;
+}
+
 template<>
 bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, char& value, const ArgInfo& info)
 {
@@ -1110,12 +1096,21 @@ bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, Range& r, const ArgInfo& info)
 {
     const ERL_NIF_TERM *terms;
     int length = 0;
-    if (!enif_get_tuple(env, obj, &length, &terms) || length == 0) {
-        r = Range::all();
-        return true;
+    if (enif_get_tuple(env, obj, &length, &terms) && length == 2) {
+        if (evision_to(env, terms[0], r.start, info) && evision_to(env, terms[1], r.end, info)) {
+            return true;
+        }
     }
-    RefWrapper<int> values[] = {RefWrapper<int>(r.start), RefWrapper<int>(r.end)};
-    return parseSequence(env, obj, values, info);
+
+    String all;
+    if (evision::nif::get_atom(env, obj, all)) {
+        if (all == "all") {
+            r = Range::all();
+            return true;
+        }
+    }
+    
+    return false;
 }
 
 template<>
@@ -1608,9 +1603,12 @@ static bool evision_to_generic_vec(ErlNifEnv *env, ERL_NIF_TERM obj, std::vector
     std::vector<ERL_NIF_TERM> cells;
     ERL_NIF_TERM head, tail, arr = obj;
     for (size_t i = 0; i < n; i++) {
-        enif_get_list_cell(env, arr, &head, &tail);
-        arr = tail;
-        cells.push_back(head);
+        if (enif_get_list_cell(env, arr, &head, &tail)) {
+            arr = tail;
+            cells.push_back(head);
+        } else {
+            return false;
+        }
     }
 
     for (size_t i = 0; i < n; i++)
@@ -1719,9 +1717,12 @@ template<> inline bool evision_to_generic_vec(ErlNifEnv *env, ERL_NIF_TERM obj, 
         std::vector<ERL_NIF_TERM> cells;
         ERL_NIF_TERM head, tail, arr = obj;
         for (size_t i = 0; i < n; i++) {
-            enif_get_list_cell(env, arr, &head, &tail);
-            arr = tail;
-            cells.push_back(head);
+            if (enif_get_list_cell(env, arr, &head, &tail)) {
+                arr = tail;
+                cells.push_back(head);
+            } else {
+                return false;
+            }
         }
 
         for (size_t i = 0; i < n; i++)
@@ -1734,7 +1735,7 @@ template<> inline bool evision_to_generic_vec(ErlNifEnv *env, ERL_NIF_TERM obj, 
             }
             value[i] = elem;
         }
-        
+
         return true;
     }
 
@@ -1773,26 +1774,101 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const cv::Vec<float, 6>& p)
 }
 
 template<>
-bool evision_to(ErlNifEnv * env, ERL_NIF_TERM o, cv::Vec<float, 6>& p, const ArgInfo& info)
+bool evision_to(ErlNifEnv * env, ERL_NIF_TERM o, std::vector<Range>& p, const ArgInfo& info)
 {
-    if (evision::nif::check_nil(env, o))
-        return true;
+    if (evision::nif::check_nil(env, o)) {
+        return false;
+    }
+
     if (!enif_is_list(env, o)) {
         return false;
     }
+
     unsigned n = 0;
     enif_get_list_length(env, o, &n);
-    if (n != 6) return false;
-    for (size_t i = 0; i < n; i++)
-    {
-        SafeSeqItem item_wrap(env, o, i);
-        if (!evision_to(env, item_wrap.item, p[i], info))
-        {
-            failmsg(env, "Can't parse '%s'. Sequence item with index %lu has a wrong type", info.name, i);
+
+    ERL_NIF_TERM head, tail, obj = o;
+    size_t i = 0;
+    while (i < n) {
+        if (enif_get_list_cell(env, obj, &head, &tail)) {
+            Range item;
+            if (!evision_to(env, head, item, info)) {
+                return false;
+            }
+            p.push_back(item);
+            obj = tail;
+            i++;
+        } else {
             return false;
         }
     }
+
     return true;
+}
+
+template<>
+bool evision_to(ErlNifEnv * env, ERL_NIF_TERM o, cv::Vec<float, 6>& p, const ArgInfo& info)
+{
+    if (evision::nif::check_nil(env, o)) {
+        return true;
+    }
+
+    if (enif_is_tuple(env, o)) {
+        int n = 0;
+        const ERL_NIF_TERM * terms;
+        enif_get_tuple(env, o, &n, &terms);
+
+        if (n != 6) {
+            return false;
+        }
+
+        ERL_NIF_TERM head, tail, obj = o;
+        int i = 0;
+        while (i < n) {
+            if (enif_get_list_cell(env, obj, &head, &tail)) {
+                if (!evision_to(env, head, p[i], info))
+                {
+                    failmsg(env, "Can't parse '%s'. Sequence item with index %lu has a wrong type", info.name, i);
+                    return false;
+                }
+
+                obj = tail;
+                i++;
+            } else {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    if (enif_is_list(env, o)) {
+        unsigned n = 0;
+        enif_get_list_length(env, o, &n);
+        if (n != 6) {
+            return false;
+        }
+
+        ERL_NIF_TERM head, tail, obj = o;
+        size_t i = 0;
+        while (i < n) {
+            if (enif_get_list_cell(env, obj, &head, &tail)) {
+                if (!evision_to(env, head, p[i], info))
+                {
+                    failmsg(env, "Can't parse '%s'. Sequence item with index %lu has a wrong type", info.name, i);
+                    return false;
+                }
+
+                obj = tail;
+                i++;
+            } else {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    return false;
 }
 
 template<> inline ERL_NIF_TERM evision_from_generic_vec(ErlNifEnv *env, const std::vector<bool>& value)

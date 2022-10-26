@@ -1,4 +1,6 @@
-**If you found the precompiled binaries does not suit your needs (e.g., perhaps you need OpenCV to be compiled with FFmpeg to handle more video formats.), it's possible to override the behaviour by setting the environment variable `EVISION_PREFER_PRECOMPILED` to `false`**
+**If you found the precompiled binaries do not suit your needs (e.g., perhaps you need OpenCV to be compiled with FFmpeg to handle more video formats), it's possible to override the behaviour by setting the environment variable `EVISION_PREFER_PRECOMPILED` to `false`, and then please delete `_build/${MIX_ENV}/lib/evision` and recompile evision**
+
+**Also, for Linux users only, the precompiled binary is not compiled with GTK support, therefore functions like `Evision.HighGui.imshow/2` will not work. However, you can either use `Evision.Wx.imshow/2` (if Erlang on your system is compiled with `wxWidgets`), or set the environment variable `EVISION_PREFER_PRECOMPILED` to `false` so that OpenCV can detect available HighGui backend when compiling from source.**
 
 # evision [WIP]
 
@@ -15,7 +17,8 @@
 | Linux            | riscv64        | musl |[![linux-precompile](https://github.com/cocoa-xu/evision/actions/workflows/linux-precompile-musl.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/linux-precompile-musl.yml) | Yes |
 | macOS 11 Big Sur | x86_64         | darwin |[![CI](https://github.com/cocoa-xu/evision/actions/workflows/macos-x86_64.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/macos-x86_64.yml) | Yes |
 | macOS 11 Big Sur | arm64          | darwin |[![macos-precompile](https://github.com/cocoa-xu/evision/actions/workflows/macos-precompile.yml/badge.svg?branch=v0.1.1)](https://github.com/cocoa-xu/evision/actions/workflows/macos-precompile.yml) | Yes |
-| Windows 2019     | x86_64         | msvc |[![CI](https://github.com/cocoa-xu/evision/actions/workflows/windows-x86_64.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/windows-x86_64.yml) | Yes |
+| Windows 2022     | x86_64         | msvc |[![CI](https://github.com/cocoa-xu/evision/actions/workflows/windows-x86_64.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/windows-x86_64.yml) | Yes |
+| Windows 2022     | arm64         | msvc |[![CI](https://github.com/cocoa-xu/evision/actions/workflows/windows-precompile.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/windows-precompile.yml) | Yes |
 
 ## Docs
 Online docs for the latest released version is available on Hex.pm, [https://hexdocs.pm/evision/](https://hexdocs.pm/evision/).
@@ -39,8 +42,6 @@ The default password of the livebook is `nerves` (as the time of writing, if it 
 
 ## Integration with Nx
 
-`Evision.Nx` module converts `Evision.Mat` to `Nx.tensor`:
-
 ```elixir
 iex> mat = Evision.imread("/path/to/image.png")
 %Evision.Mat{
@@ -52,7 +53,7 @@ iex> mat = Evision.imread("/path/to/image.png")
   ref: #Reference<0.2992585850.4173463580.172624>
 }
 
-iex> t = Evision.Nx.to_nx(mat)
+iex> t = Evision.Mat.to_nx(mat)
 #Nx.Tensor<
   u8[512][512][3]
   Evision.Backend
@@ -86,9 +87,9 @@ and vice-versa:
 
 ```elixir
 iex> %Evision.Mat{} = mat = Evision.imread("/path/to/image.png")
-iex> t = Evision.Nx.to_nx(mat)
+iex> t = Evision.Mat.to_nx(mat)
 # convert a tensor to a mat
-iex> mat_from_tensor = Evision.Nx.to_mat(t)
+iex> mat_from_tensor = Evision.Mat.from_nx(t)
 %Evision.Mat{
   channels: 1,
   dims: 3,
@@ -98,14 +99,14 @@ iex> mat_from_tensor = Evision.Nx.to_mat(t)
   ref: #Reference<0.1086574232.1510342676.18186>
 }
 
-# Note that `Evision.Nx.to_mat` gives a tensor
+# Note that `Evision.Mat.from_nx` gives a tensor
 # however, some OpenCV functions expect the mat
 # to be a "valid 2D image"
-# therefore, in such cases `Evision.Nx.to_mat_2d`
+# therefore, in such cases `Evision.Mat.from_nx_2d`
 # should be used instead
 #
 # Noticing the changes in `channels`, `dims` and `raw_type`
-iex> mat_from_tensor = Evision.Nx.to_mat_2d(t)
+iex> mat_from_tensor = Evision.Mat.from_nx_2d(t)
 %Evision.Mat{
   channels: 3,
   dims: 2,
@@ -117,7 +118,7 @@ iex> mat_from_tensor = Evision.Nx.to_mat_2d(t)
 
 # and it works for tensors with any shapes
 iex> t = Nx.iota({2, 3, 2, 3, 2, 3}, type: :s32)
-iex> mat = Evision.Nx.to_mat(t)
+iex> mat = Evision.Mat.from_nx(t)
 %Evision.Mat{
   channels: 1,
   dims: 6,
@@ -185,7 +186,7 @@ Then you can add `evision` as dependency in your `mix.exs`.
 ```elixir
 def deps do
   [
-    {:evision, "~> 0.1.9"}
+    {:evision, "~> 0.1.14"}
   ]
 end
 ```
@@ -200,23 +201,11 @@ The following environment variables can be set based on your needs.
 (Note that precompiled binaries do not use FFmpeg. If you'd like to use FFmpeg, please compile from source (please see instructions in the next section) and set corresponding environment variables. We're considering this option at the moment.)
 
 #### Important notes
-When using `:evision` from git, version "0.1.1" to "0.1.7" are available.
-
-Starting from `0.1.8` (included) and onwards, using `:evision` from git is no longer supported (unless set `EVISION_PREFER_PRECOMPILED` to `false`) because we started to use checksum file to verify the integrity of the downloaded tarball file, and the checksum file is only tracked in the hex.pm package.
-
+It is recommended to use `:evision` from hex.pm. Currently "0.1.7" to "0.1.9", and "0.1.11" to "0.1.14" are available on hex.pm,
 ```elixir
 def deps do
   [
-    {:evision, "~> 0.1.7", github: "cocoa-xu/evision", tag: "v0.1.7"}
-  ]
-end
-```
-
-It is recommended to use `:evision` from hex.pm. Currently "0.1.7" to "0.1.9" are available on hex.pm,
-```elixir
-def deps do
-  [
-    {:evision, "~> 0.1.9"}
+    {:evision, "~> 0.1.14"}
   ]
 end
 ```
@@ -257,7 +246,9 @@ target_abi =
 export EVISION_PREFER_PRECOMPILED=false
 ```
 
-**If you found the precompiled binaries does not suit your needs (e.g., perhaps you need OpenCV to be compiled with FFmpeg to handle more video formats.), it's possible to override the behaviour by setting the environment variable `EVISION_PREFER_PRECOMPILED` to `false`**
+**If you found the precompiled binaries do not suit your needs (e.g., perhaps you need OpenCV to be compiled with FFmpeg to handle more video formats.), it's possible to override the behaviour by setting the environment variable `EVISION_PREFER_PRECOMPILED` to `false`, and then please delete `_build/${MIX_ENV}/lib/evision` and recompile evision**
+
+**Also, for Linux users only, the precompiled binary is not compiled with GTK support, therefore functions like `Evision.HighGui.imshow/2` will not work. However, you can either use `Evision.Wx.imshow/2` (if Erlang on your system is compiled with `wxWidgets`), or set the environment variable `EVISION_PREFER_PRECOMPILED` to `false` so that OpenCV can detect available HighGui backend when compiling from source.**
 
 ```shell
 export EVISION_PREFER_PRECOMPILED=false
@@ -266,7 +257,7 @@ export EVISION_PREFER_PRECOMPILED=false
 For livebook users, 
 ```elixir
 Mix.install([
-  {:evision, "~> 0.1.9"}
+  {:evision, "~> 0.1.14"}
 ], system_env: [
   {"EVISION_PREFER_PRECOMPILED", "false"}
 ])

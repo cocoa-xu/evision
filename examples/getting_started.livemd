@@ -2,7 +2,7 @@
 
 <!-- livebook:{"persist_outputs":true} -->
 
-# core - imread related
+# Evision Example - Get Started with Some Basic Functions
 
 ```elixir
 # set `EVISION_PREFER_PRECOMPILED` to `false` 
@@ -11,13 +11,19 @@
 # System.put_env("EVISION_PREFER_PRECOMPILED", "false")
 
 Mix.install([
-  {:evision, "~> 0.1.9"},
+  {:evision, "~> 0.1.14"},
   {:req, "~> 0.3"},
   {:kino, "~> 0.7"}
 ])
 ```
 
-## Helper Function
+<!-- livebook:{"output":true} -->
+
+```
+:ok
+```
+
+## Define Some Helper Functions
 
 ```elixir
 defmodule Helper do
@@ -52,38 +58,19 @@ end
 {:module, Helper, <<70, 79, 82, 49, 0, 0, 10, ...>>, {:download!, 3}}
 ```
 
-## alias
+## Read an Image From File
 
 ```elixir
 alias Evision, as: Cv
-```
 
-<!-- livebook:{"output":true} -->
-
-```
-Evision
-```
-
-## Cv.imread
-
-### Read an image from file
-
-```elixir
+# Download the test image
 lenna_test_image_path = Path.join(__DIR__, "lenna_test_image.png")
-
 Helper.download!(
   "https://upload.wikimedia.org/wikipedia/en/7/7d/Lenna_%28test_image%29.png",
   lenna_test_image_path
 )
-```
 
-<!-- livebook:{"output":true} -->
-
-```
-:ok
-```
-
-```elixir
+# Read the test image
 mat = Cv.imread(lenna_test_image_path)
 ```
 
@@ -96,19 +83,20 @@ mat = Cv.imread(lenna_test_image_path)
   type: {:u, 8},
   raw_type: 16,
   shape: {512, 512, 3},
-  ref: #Reference<0.2992585850.4173463580.172624>
+  ref: #Reference<0.2845725607.2514092053.18350>
 }
 ```
 
+## Encode an Image
 ```elixir
 encoded = Cv.imencode(".png", mat)
 Kino.Image.new(encoded, :png)
 ```
 
-### Resize image `Cv.resize`
+## Resize an Image
 
 ```elixir
-resized_mat = Cv.resize(mat, [_width = 256, _height = 128])
+resized_mat = Cv.resize(mat, {_width = 256, _height = 128})
 ```
 
 <!-- livebook:{"output":true} -->
@@ -120,7 +108,7 @@ resized_mat = Cv.resize(mat, [_width = 256, _height = 128])
   type: {:u, 8},
   raw_type: 16,
   shape: {128, 256, 3},
-  ref: #Reference<0.2992585850.4173463572.169509>
+  ref: #Reference<0.2845725607.2514092052.18171>
 }
 ```
 
@@ -129,7 +117,16 @@ encoded = Cv.imencode(".png", resized_mat)
 Kino.Image.new(encoded, :png)
 ```
 
-### Encode and decode image in memory
+## Get a Subarea in an Image
+
+`Evision.Mat.roi`
+
+```elixir
+Cv.imencode(".png", Cv.Mat.roi(mat, {10, 10, 130, 200}))
+|> Kino.Image.new(:png)
+```
+
+## Encode and Decode Image in Memory
 
 ```elixir
 # encode in memory
@@ -158,24 +155,16 @@ decoded_mat = Cv.imdecode(encoded_in_memory, Cv.cv_IMREAD_ANYCOLOR())
   type: {:u, 8},
   raw_type: 16,
   shape: {128, 256, 3},
-  ref: #Reference<0.2992585850.4173463572.169510>
+  ref: #Reference<0.2845725607.2514092052.18187>
 }
 ```
 
-### Read png file with/without alpha channel
+## Read an PNG File With/Without Alpha Channel
 
 ```elixir
 # download the test image (has alpha channel)
 download_path = Path.join(__DIR__, "test.png")
 Helper.download!("https://github.com/cocoa-xu/evision/raw/main/test/test.png", download_path)
-```
-
-<!-- livebook:{"output":true} -->
-
-```
-
-21:54:43.110 [debug] follow_redirects: redirecting to https://raw.githubusercontent.com/cocoa-xu/evision/main/test/test.png
-
 ```
 
 <!-- livebook:{"output":true} -->
@@ -197,7 +186,7 @@ without_alpha = Cv.imread(download_path)
   type: {:u, 8},
   raw_type: 16,
   shape: {2, 3, 3},
-  ref: #Reference<0.2992585850.4173463580.172680>
+  ref: #Reference<0.2845725607.2514092053.18729>
 }
 ```
 
@@ -214,11 +203,11 @@ Cv.imread(download_path, flags: Cv.cv_IMREAD_UNCHANGED())
   type: {:u, 8},
   raw_type: 24,
   shape: {2, 3, 4},
-  ref: #Reference<0.2992585850.4173463580.172696>
+  ref: #Reference<0.2845725607.2514092053.18730>
 }
 ```
 
-### Read an image as grayscale
+## Read an Image and Convert It to Grayscale in a Single Call
 
 ```elixir
 gray_scale_mat = Cv.imread(lenna_test_image_path, flags: Cv.cv_IMREAD_GRAYSCALE())
@@ -233,7 +222,7 @@ gray_scale_mat = Cv.imread(lenna_test_image_path, flags: Cv.cv_IMREAD_GRAYSCALE(
   type: {:u, 8},
   raw_type: 0,
   shape: {512, 512},
-  ref: #Reference<0.2992585850.4173463580.172727>
+  ref: #Reference<0.2845725607.2514092053.18731>
 }
 ```
 

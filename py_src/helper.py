@@ -266,8 +266,6 @@ def map_argtype_to_type(argtype: str):
         return 'b'
     elif argtype == 'String' or argtype == 'c_string' or argtype == 'char' or argtype == 'string':
         return 'b'
-    elif argtype == 'Size' or argtype == 'Scalar' or argtype == 'Point2f' or argtype == 'Point':
-        return 'l'
     elif argtype[:7] == 'vector_' or argtype[:12] == 'std::vector<':
         return 'l'
     elif is_list_type(argtype):
@@ -383,25 +381,21 @@ def is_tuple_type(argtype):
         'Rect2i',
         'RotatedRect',
         'cv::RotatedRect',
-        'Range',
         'TermCriteria',
         'cv::TermCriteria',
         'CvTermCriteria',
-        'CvSlice'
-    ]
-    return argtype in tuple_types
-
-def is_list_or_tuple(argtype):
-    list_or_tuple_types = [
+        'CvSlice',
         'Point',
+        'Point2i',
         'Point2f',
         'Point2d',
+        'Point3i',
         'Point3f',
         'Point3d',
         'Size',
         'Scalar',
     ]
-    return argtype in list_or_tuple_types
+    return argtype in tuple_types
 
 def is_ref_or_struct(argtype: str):
     ref_or_struct_types = [
@@ -746,12 +740,17 @@ def map_argtype_in_spec(classname: str, argtype: str, is_in: bool):
         return 'char()'
     elif argtype == 'void':
         return ':ok'
+    elif argtype == 'Range':
+        return '{integer(), integer()} | :all'
     elif is_in and argtype in ['Mat', 'UMat', 'cv::Mat', 'cv::UMat']:
         return 'Evision.Mat.maybe_mat_in()'
     elif argtype in evision_structrised_classes:
         return f'Evision.{argtype}.t()'
     elif argtype in ['Mat', 'cv::Mat', 'UMat', 'cv::UMat']:
-        return 'Evision.Mat.t()'
+        if is_in:
+            return 'Evision.Mat.maybe_mat_in()'
+        else:
+            return 'Evision.Mat.t()'
     elif argtype.startswith('vector_'):
         argtype_inner = argtype[len('vector_'):]
         if argtype == 'vector_char' or argtype == 'vector_uchar':
@@ -810,13 +809,16 @@ def map_argtype_to_guard_elixir(argname, argtype):
         return f'is_binary({argname})'
     elif argtype == 'char':
         return f'(-128 <= {argname} and {argname} <= 127)'
-    elif is_list_or_tuple(argtype):
-        return f'(is_tuple({argname}) or is_list({argname}))'
+    elif argtype == 'Range':
+        return f'(is_tuple({argname}) or {argname} == :all)'
     elif is_tuple_type(argtype):
         return f'is_tuple({argname})'
     elif is_struct(argtype):
         _, struct_name = is_struct(argtype, also_get='struct_name')
-        return f'is_struct({argname}, {struct_name})'
+        if struct_name == 'Evision.Mat':
+            return f'(is_struct({argname}, Evision.Mat) or is_struct({argname}, Nx.Tensor))'
+        else:
+            return f'is_struct({argname}, {struct_name})'
     elif is_ref_or_struct(argtype):
         return f'(is_reference({argname}) or is_struct({argname}))'
     elif is_list_type(argtype):
@@ -848,8 +850,8 @@ def map_argtype_to_guard_erlang(argname, argtype):
         return f'is_list({argname})'
     elif argtype == 'char':
         return f'is_list({argname})'
-    elif is_list_or_tuple(argtype):
-        return f'(is_tuple({argname}) or is_list({argname}))'
+    elif argtype == 'Range':
+        return f'(is_tuple({argname}) or {argname} == all)'
     elif is_tuple_type(argtype):
         return f'is_tuple({argname})'
     elif is_struct(argtype):

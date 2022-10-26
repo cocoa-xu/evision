@@ -13,7 +13,7 @@ defmodule Evision.Backend do
       {:error, message} ->
         raise RuntimeError, message
       mat ->
-        mat
+        Evision.Internal.Structurise.to_struct(mat)
     end
   end
 
@@ -33,14 +33,14 @@ defmodule Evision.Backend do
       >
 
   """
-  @spec constant(Nx.Tensor.t(shape: {}), number(), any()) :: Nx.Tensor.t()
+  @spec constant(Nx.Tensor.t(), number(), any()) :: Nx.Tensor.t()
   def constant(%T{shape: {}, type: type} = out, scalar, _backend_options) do
     Evision.Mat.number(scalar, type)
     |> reject_error()
     |> to_nx(out)
   end
 
-  @spec constant(Nx.Tensor.t(shape: tuple()), number(), any()) :: Nx.Tensor.t()
+  @spec constant(Nx.Tensor.t(), number(), any()) :: Nx.Tensor.t()
   def constant(%T{shape: shape, type: type} = out, scalar, _backend_options) do
     Evision.Mat.full(shape, scalar, type)
     |> reject_error()
@@ -764,361 +764,6 @@ defmodule Evision.Backend do
     end
   end
 
-  @impl true
-  def window_reduce(_out, _tensor, _acc, _shape, _keyword, _function) do
-    raise RuntimeError, "not implemented yet"
-  end
-
-  @impl true
-  def reverse(_out, _tensor, _axes) do
-    raise RuntimeError, "not implemented yet"
-  end
-
-  @impl true
-  def reduce_min(_out, _tensor, _keyword) do
-    raise RuntimeError, "not implemented yet"
-  end
-
-  @impl true
-  def cholesky(_out, _tensor) do
-    raise RuntimeError, "not implemented yet"
-  end
-
-  @impl true
-  def any(_out, _tensor, _keyword) do
-    raise RuntimeError, "not implemented yet"
-  end
-
-  @impl true
-  def is_nan(_out, _tensor) do
-    raise RuntimeError, "not implemented yet"
-  end
-
-  @impl true
-  def rsqrt(_out, _tensor) do
-    raise RuntimeError, "not implemented yet"
-  end
-
-  @impl true
-  def take_along_axis(_out, _input, _indices, _axis) do
-    raise RuntimeError, "not implemented yet"
-  end
-
-  @impl true
-  def atanh(_out, _tensor) do
-    raise RuntimeError, "not implemented yet"
-  end
-
-  @impl true
-  def tan(_out, _tensor) do
-    raise RuntimeError, "not implemented yet"
-  end
-
-  @impl true
-  def indexed_add(_out, _target, _indices, _updates) do
-    raise RuntimeError, "not implemented yet"
-  end
-
-  @impl true
-  def imag(_out, _tensor) do
-    raise RuntimeError, "not implemented yet"
-  end
-
-  @impl true
-  def real(_out, _tensor) do
-    raise RuntimeError, "not implemented yet"
-  end
-
-  @impl true
-  def conjugate(_out, _tensor) do
-    raise RuntimeError, "not implemented yet"
-  end
-
-  @impl true
-  def erf(_out, _tensor) do
-    raise RuntimeError, "not implemented yet"
-  end
-
-  @impl true
-  def concatenate(_out, _tensor, _axis) do
-    raise RuntimeError, "not implemented yet"
-  end
-
-  @impl true
-  def count_leading_zeros(_out, _tensor) do
-    raise RuntimeError, "not implemented yet"
-  end
-
-  @impl true
-  def acosh(_out, _tensor) do
-    raise RuntimeError, "not implemented yet"
-  end
-
-  @impl true
-  def asinh(_out, _tensor) do
-    raise RuntimeError, "not implemented yet"
-  end
-
-  @impl true
-  def eigh(_tuple, _tensor, _keyword) do
-    raise RuntimeError, "not implemented yet"
-  end
-
-  @impl true
-  def fft(_out, _tensor, _keyword) do
-    raise RuntimeError, "not implemented yet"
-  end
-
-  @impl true
-  def map(_out, _tensor, _keyword, _function) do
-    raise RuntimeError, "not implemented yet"
-  end
-
-  @impl true
-  def indexed_put(_out, _target, _indices, _updates) do
-    raise RuntimeError, "not implemented yet"
-  end
-
-  @impl true
-  def reduce(_out, _tensor, _acc, _keyword, _function) do
-    raise RuntimeError, "not implemented yet"
-  end
-
-  @impl true
-  def triangular_solve(_out, _a, _b, _keyword) do
-    raise RuntimeError, "not implemented yet"
-  end
-
-  @impl true
-  def reduce_max(_out, _tensor, _keyword) do
-    raise RuntimeError, "not implemented yet"
-  end
-
-  @impl true
-  def window_min(_out, _tensor, _shape, _keyword) do
-    raise RuntimeError, "not implemented yet"
-  end
-
-  @impl true
-  def qr(_tuple, _tensor, _keyword) do
-    raise RuntimeError, "not implemented yet"
-  end
-
-  @impl true
-  def argmin(_out, _tensor, _keyword) do
-    raise RuntimeError, "not implemented yet"
-  end
-
-  @impl true
-  def sum(_out, _tensor, _keyword) do
-    raise RuntimeError, "not implemented yet"
-  end
-
-  @impl true
-  def remainder(_out, _tensor1, _tensor2) do
-    raise RuntimeError, "not implemented yet"
-  end
-
-  @impl true
-  def window_product(_out, _tensor, _shape, _keyword) do
-    raise RuntimeError, "not implemented yet"
-  end
-
-  @impl true
-  def argmax(_out, _tensor, _keyword) do
-    raise RuntimeError, "not implemented yet"
-  end
-
-  @impl true
-  def slice(_out, _tensor, _list1, _list2, _list3) do
-    raise RuntimeError, "not implemented yet"
-  end
-
-  @impl true
-  def window_scatter_max(_out, _tensor1, _tensor2, _tensor3, _shape, _keyword) do
-    raise RuntimeError, "not implemented yet"
-  end
-
-  @impl true
-  def window_scatter_min(_out, _tensor1, _tensor2, _tensor3, _shape, _keyword) do
-    raise RuntimeError, "not implemented yet"
-  end
-
-  @impl true
-  def gather(_out, _input, _indices) do
-    raise RuntimeError, "not implemented yet"
-  end
-
-  @impl true
-  def window_sum(_out, _tensor, _shape, _keyword) do
-    raise RuntimeError, "not implemented yet"
-  end
-
-  @impl true
-  def erf_inv(_out, _tensor) do
-    raise RuntimeError, "not implemented yet"
-  end
-
-  @impl true
-  def acos(_out, _tensor) do
-    raise RuntimeError, "not implemented yet"
-  end
-
-  @impl true
-  def atan(_out, _tensor) do
-    raise RuntimeError, "not implemented yet"
-  end
-
-  @impl true
-  def sqrt(_out, _tensor) do
-    raise RuntimeError, "not implemented yet"
-  end
-
-  @impl true
-  def product(_out, _tensor, _keyword) do
-    raise RuntimeError, "not implemented yet"
-  end
-
-  @impl true
-  def quotient(_out, _tensor1, _tensor2) do
-    raise RuntimeError, "not implemented yet"
-  end
-
-  @impl true
-  def is_infinity(_out, _tensor) do
-    raise RuntimeError, "not implemented yet"
-  end
-
-  @impl true
-  def svd(_tuple, _tensor, _keyword) do
-    raise RuntimeError, "not implemented yet"
-  end
-
-  @impl true
-  def window_max(_out, _tensor, _shape, _keyword) do
-    raise RuntimeError, "not implemented yet"
-  end
-
-  @impl true
-  def cos(_out, _tensor) do
-    raise RuntimeError, "not implemented yet"
-  end
-
-  @impl true
-  def cbrt(_out, _tensor) do
-    raise RuntimeError, "not implemented yet"
-  end
-
-  @impl true
-  def power(_out, _tensor1, _tensor2) do
-    raise RuntimeError, "not implemented yet"
-  end
-
-  @impl true
-  def all(_out, _tensor, _keyword) do
-    raise RuntimeError, "not implemented yet"
-  end
-
-  @impl true
-  def sigmoid(_out, _tensor) do
-    raise RuntimeError, "not implemented yet"
-  end
-
-  @impl true
-  def conv(_out, _tensor, _kernel, _keyword) do
-    raise RuntimeError, "not implemented yet"
-  end
-
-  @impl true
-  def cosh(_out, _tensor) do
-    raise RuntimeError, "not implemented yet"
-  end
-
-  @impl true
-  def left_shift(_out, _tensor1, _tensor2) do
-    raise RuntimeError, "not implemented yet"
-  end
-
-  @impl true
-  def atan2(_out, _tensor1, _tensor2) do
-    raise RuntimeError, "not implemented yet"
-  end
-
-  @impl true
-  def ifft(_out, _tensor, _keyword) do
-    raise RuntimeError, "not implemented yet"
-  end
-
-  @impl true
-  def take(_out, _input, _indices, _axis) do
-    raise RuntimeError, "not implemented yet"
-  end
-
-  @impl true
-  def log1p(_out, _tensor) do
-    raise RuntimeError, "not implemented yet"
-  end
-
-  @impl true
-  def put_slice(_out, _tensor1, _tensor2, _list) do
-    raise RuntimeError, "not implemented yet"
-  end
-
-  @impl true
-  def argsort(_out, _tensor, _keyword) do
-    raise RuntimeError, "not implemented yet"
-  end
-
-  @impl true
-  def asin(_out, _tensor) do
-    raise RuntimeError, "not implemented yet"
-  end
-
-  @impl true
-  def erfc(_out, _tensor) do
-    raise RuntimeError, "not implemented yet"
-  end
-
-  @impl true
-  def lu(_tuple, _tensor, _keyword) do
-    raise RuntimeError, "not implemented yet"
-  end
-
-  @impl true
-  def population_count(_out, _tensor) do
-    raise RuntimeError, "not implemented yet"
-  end
-
-  @impl true
-  def right_shift(_out, _tensor1, _tensor2) do
-    raise RuntimeError, "not implemented yet"
-  end
-
-  @impl true
-  def select(_out, _tensor1, _tensor2, _tensor3) do
-    raise RuntimeError, "not implemented yet"
-  end
-
-  @impl true
-  def sin(_out, _tensor) do
-    raise RuntimeError, "not implemented yet"
-  end
-
-  @impl true
-  def sinh(_out, _tensor) do
-    raise RuntimeError, "not implemented yet"
-  end
-
-  @impl true
-  def sort(_out, _tensor, _keyword) do
-    raise RuntimeError, "not implemented yet"
-  end
-
-  @impl true
-  def tanh(_out, _tensor) do
-    raise RuntimeError, "not implemented yet"
-  end
-
   if Application.compile_env(:evision, :check_shape_and_type, false) do
     @spec check_shape_and_type(Evision.Mat.t(), tuple, Evision.Mat.mat_type()) :: Evision.Mat.t()
     defp check_shape_and_type(mat_ref, shape, type) do
@@ -1154,6 +799,26 @@ defmodule Evision.Backend do
   else
     defp maybe_add_signature(result, _tensor) do
       result
+    end
+  end
+
+  funs = Nx.Backend.behaviour_info(:callbacks) -- Module.definitions_in(__MODULE__, :def)
+
+  @doc false
+  def __unimplemented__, do: unquote(funs)
+
+  for {fun, arity} <- funs do
+    args = Macro.generate_arguments(arity, __MODULE__)
+
+    @impl true
+    def unquote(fun)(unquote_splicing(args)) do
+      raise "operation #{unquote(fun)} is not yet supported on Evision.Backend.\n" <>
+      "Please use another backend like Nx.BinaryBackend or Torchx.Backend.\n" <>
+      "  To use Torchx.Backend, :torchx should be added to your app's deps.\n" <>
+      "  Please see https://github.com/elixir-nx/nx/tree/main/torchx for more information on how to install and use it.\n" <>
+      "To convert the tensor to another backend, please use Evision.Mat.to_nx(tensor, Backend.ModuleName)\n" <>
+      "  for example, Evision.Mat.to_nx(tensor, Nx.BinaryBackend) or Evision.Mat.to_nx(tensor, Torchx.Backend).\n" <>
+      "Pull request would be more than welcomed if you'd like to implmenent this function and make contributions."
     end
   end
 end

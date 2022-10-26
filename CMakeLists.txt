@@ -18,6 +18,7 @@ set(EVISION_AVAILABLE_PRECOMPILED_BINARIES
     "aarch64-linux-gnu"
     "aarch64-linux-musl"
     "x86_64-linux-gnu"
+    "i686-linux-gnu"
     "x86_64-linux-musl"
     "armv7l-linux-gnueabihf"
     "ppc64le-linux-gnu"
@@ -28,6 +29,11 @@ set(EVISION_AVAILABLE_PRECOMPILED_BINARIES
 )
 
 set(EVISION_AVAILABLE_PRECOMPILED_VERSIONS
+    "0.1.14"
+    "0.1.13"
+    "0.1.12"
+    "0.1.11"
+    "0.1.9"
     "0.1.8"
     "0.1.7"
     "0.1.6"
@@ -210,11 +216,11 @@ else()
 
     if(WIN32)
         execute_process(COMMAND "rmdir ${GENERATED_ELIXIR_SRC_DIR} /s /q && rmdir ${GENERATED_ERLANG_SRC_DIR} /s /q  && mkdir ${GENERATED_ELIXIR_SRC_DIR} && mkdir ${GENERATED_ERLANG_SRC_DIR}")
-        message("enabled modules: ${ENABLED_CV_MODULES}")
+        message(STATUS "Enabled modules: ${ENABLED_CV_MODULES}")
         execute_process(COMMAND python3.exe "${PY_SRC}\\gen2.py" "${C_SRC}" "${GENERATED_ELIXIR_SRC_DIR}" "${GENERATED_ERLANG_SRC_DIR}" "${C_SRC}\\headers.txt" "${EVISION_GENERATE_LANG}" "${ENABLED_CV_MODULES}" RESULT_VARIABLE STATUS)
     else()
         execute_process(COMMAND bash -c "rm -rf ${GENERATED_ELIXIR_SRC_DIR} && rm -rf ${GENERATED_ERLANG_SRC_DIR} && mkdir -p ${GENERATED_ELIXIR_SRC_DIR} && mkdir -p ${GENERATED_ERLANG_SRC_DIR}")
-        message("enabled modules: ${ENABLED_CV_MODULES}")
+        message(STATUS "Enabled modules: ${ENABLED_CV_MODULES}")
         execute_process(COMMAND bash -c "python3 ${PY_SRC}/gen2.py ${C_SRC} ${GENERATED_ELIXIR_SRC_DIR} ${GENERATED_ERLANG_SRC_DIR} ${C_SRC}/headers.txt ${EVISION_GENERATE_LANG} ${ENABLED_CV_MODULES}" RESULT_VARIABLE STATUS)
     endif()
     if(STATUS STREQUAL "0")

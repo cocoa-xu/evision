@@ -23,6 +23,7 @@ defmodule Evision.Internal.Structurise do
       to_struct(elem)
     end)
   end
+
   def to_struct(pass_through), do: pass_through
 
   @spec to_struct_ok(term()) :: {:ok, term()}
@@ -47,10 +48,11 @@ defmodule Evision.Internal.Structurise do
   def to_struct_ok(pass_through), do: {:ok, pass_through}
 
   @spec from_struct(Nx.Tensor.t()) :: reference()
-  def from_struct(%Nx.Tensor{}=tensor) do
-    case Evision.Nx.to_mat(tensor) do
+  def from_struct(%Nx.Tensor{} = tensor) do
+    case Evision.Mat.from_nx(tensor) do
       {:error, msg} ->
         raise RuntimeError, msg
+
       %Evision.Mat{ref: ref} ->
         ref
     end

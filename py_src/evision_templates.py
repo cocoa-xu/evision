@@ -345,7 +345,8 @@ gen_template_call_constructor_prelude = Template("""evision_res<Ptr<$cname>> * s
 
 gen_template_call_constructor = Template("""self->val.reset(new ${cname}${py_args})""")
 
-gen_template_simple_call_constructor_prelude = Template("""evision_res<$cname> * self = new evision_res<$cname>();\n    if(self) """)
+gen_template_simple_call_constructor_prelude = Template("""evision_res<$cname> * self = nullptr;
+        if (alloc_resource(&self)) """)
 
 gen_template_simple_call_constructor = Template("""new (&(self->val)) ${cname}${py_args}""")
 

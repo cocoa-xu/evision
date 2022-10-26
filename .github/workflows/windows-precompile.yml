@@ -5,6 +5,10 @@ on:
     tags:
       - 'v*'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   mix_compile:
     runs-on: windows-latest
@@ -12,10 +16,28 @@ jobs:
       MIX_ENV: prod
       OPENCV_VER: "4.6.0"
       OTP_VERSION: "25.0.4"
+      NIF_VERSION: "2.16"
       ELIXIR_VERSION: "1.14.0"
       EVISION_PREFER_PRECOMPILED: "false"
       EVISION_GENERATE_LANG: "erlang,elixir"
       MAKE: "nmake"
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - pair:
+              arch: arm64
+              arch_name: aarch64
+              msbuild_platform: ARM64
+              vcvarsall: amd64_arm64
+              CMAKE_GENERATOR_TYPE: "Visual Studio 17"
+              CMAKE_TOOLCHAIN_FILE: "cc_toolchain/aarch64-windows-msvc.cmake"
+          - pair:
+              arch: x64
+              arch_name: x86_64
+              msbuild_platform: x64
+              vcvarsall: x64
+              CMAKE_GENERATOR_TYPE: "Ninja"
 
     steps:
       - uses: actions/checkout@v3
@@ -27,7 +49,7 @@ jobs:
 
       - uses: ilammy/msvc-dev-cmd@v1
         with:
-          arch: x64
+          arch: ${{ matrix.pair.vcvarsall }}
 
       - name: Cache mix packages
         id: cache-mix-deps
@@ -74,15 +96,21 @@ jobs:
         shell: bash
         run: |
           export CMAKE_OPENCV_OPTIONS="-D WITH_FFMPEG=OFF"
+          if [ -n "${{ matrix.pair.CMAKE_TOOLCHAIN_FILE }}" ]; then
+            export CMAKE_GENERATOR_TYPE="${{ matrix.pair.CMAKE_GENERATOR_TYPE }}"
+            export MSBUILD_PLATFORM="${{ matrix.pair.MSBUILD_PLATFORM }}"
+            export CMAKE_TOOLCHAIN_FILE="$(pwd)/${{ matrix.pair.CMAKE_TOOLCHAIN_FILE }}"
+            export TOOLCHAIN_FILE="$(pwd)/${{ matrix.pair.CMAKE_TOOLCHAIN_FILE }}"
+          fi
           rm -f Makefile
           mix compile
 
       - name: Create precompiled library
         shell: bash
         run: |
-          export PKG_NAME=evision-x86_64-windows-msvc-${GITHUB_REF##*/v}
+          export PKG_NAME=evision-nif_${NIF_VERSION}-${{ matrix.pair.arch_name }}-windows-msvc-${GITHUB_REF##*/v}
           mkdir -p "${PKG_NAME}"
-          rm -rf "_build/${MIX_ENV}/lib/evision/priv/x64"
+          rm -rf "_build/${MIX_ENV}/lib/evision/priv/${{ matrix.pair.msbuild_platform }}"
           cp -a _build/${MIX_ENV}/lib/evision/priv "${PKG_NAME}"
           cp -a lib/generated "${PKG_NAME}/elixir_generated"
           cp -a src/generated "${PKG_NAME}/erlang_generated"

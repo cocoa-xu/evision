@@ -2,7 +2,7 @@
 
 <!-- livebook:{"persist_outputs":true} -->
 
-# core - PCA
+# Evision Example - Principal Components Analysis
 
 ```elixir
 # set `EVISION_PREFER_PRECOMPILED` to `false` 
@@ -11,10 +11,16 @@
 # System.put_env("EVISION_PREFER_PRECOMPILED", "false")
 
 Mix.install([
-  {:evision, "~> 0.1.9"},
-  {:req, "~> 0.3"},
-  {:kino, "~> 0.7"}
+    {:evision, "~> 0.1.14"},
+    {:req, "~> 0.3"},
+    {:kino, "~> 0.7"}
 ])
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+:ok
 ```
 
 ## Helper Function
@@ -91,7 +97,7 @@ gray = Cv.imread("pca_test.jpg", flags: Cv.cv_IMREAD_GRAYSCALE())
 contours =
   contours
   # Calculate the area of each contour
-  |> Enum.map(&{elem(Cv.contourArea(&1), 1), &1})
+  |> Enum.map(&{Cv.contourArea(&1), &1})
   # Ignore contours that are too small or too large
   |> Enum.reject(fn {area, _c} -> area < 100 or area > 100_000 end)
 
@@ -122,8 +128,8 @@ pca_analysis =
 
       # Perform PCA analysis
       {mean, eigenvectors, eigenvalues} = Cv.pcaCompute2(data_pts, Cv.Mat.empty())
-      eigenvectors = Cv.Nx.to_nx(eigenvectors, Nx.BinaryBackend)
-      eigenvalues = Cv.Nx.to_nx(eigenvalues, Nx.BinaryBackend)
+      eigenvectors = Cv.Mat.to_nx(eigenvectors, Nx.BinaryBackend)
+      eigenvalues = Cv.Mat.to_nx(eigenvalues, Nx.BinaryBackend)
 
       # Store the center of the object
       <<centre_x::float-size(64)-little, centre_y::float-size(64)-little, _::binary>> =
@@ -150,7 +156,7 @@ pca_analysis =
         {trunc(Float.round(centre_x - 0.02 * evec10 * eval10)),
          trunc(Float.round(centre_y - 0.02 * evec11 * eval10))}
 
-      cntr = [centre_x, centre_y]
+      cntr = {centre_x, centre_y}
       [{cntr, p1, p2} | acc]
   end
 
@@ -161,12 +167,12 @@ pca_analysis = Enum.reverse(pca_analysis)
 
 ```
 [
-  {[430, 407], {691, 338}, {427, 397}},
-  {[439, 326], {697, 264}, {437, 317}},
-  {[433, 239], {683, 182}, {431, 230}},
-  {[420, 169], {666, 127}, {419, 161}},
-  {[191, 291], {176, 52}, {200, 290}},
-  {[407, 90], {645, 49}, {406, 82}}
+  {{430, 407}, {691, 338}, {427, 397}},
+  {{439, 326}, {697, 264}, {437, 317}},
+  {{433, 239}, {683, 182}, {431, 230}},
+  {{420, 169}, {666, 127}, {419, 161}},
+  {{191, 291}, {176, 52}, {200, 290}},
+  {{407, 90}, {645, 49}, {406, 82}}
 ]
 ```
 
@@ -179,7 +185,7 @@ src = Cv.imread("pca_test.jpg")
 src =
   for index <- 0..(Enum.count(contours) - 1), reduce: src do
     src ->
-      Cv.drawContours(src, contours, index, [0, 0, 255], thickness: 2)
+      Cv.drawContours(src, contours, index, {0, 0, 255}, thickness: 2)
   end
 ```
 
@@ -192,7 +198,7 @@ src =
   type: {:u, 8},
   raw_type: 16,
   shape: {600, 800, 3},
-  ref: #Reference<0.910554608.1494089745.145277>
+  ref: #Reference<0.1624340523.638451732.91783>
 }
 ```
 
@@ -205,15 +211,15 @@ defmodule PACHelper do
     hypotenuse = :math.sqrt((py - qy) * (py - qy) + (px - qx) * (px - qx))
     qx = trunc(px - scale * hypotenuse * :math.cos(angle))
     qy = trunc(py - scale * hypotenuse * :math.sin(angle))
-    src = Cv.line(src, [px, py], [qx, qy], colour, thickness: 1, style: Cv.cv_LINE_AA())
+    src = Cv.line(src, {px, py}, {qx, qy}, colour, thickness: 1, style: Cv.cv_LINE_AA())
 
     px = trunc(qx + 9 * :math.cos(angle + :math.pi() / 4))
     py = trunc(qy + 9 * :math.sin(angle + :math.pi() / 4))
-    src = Cv.line(src, [px, py], [qx, qy], colour, thickness: 1, style: Cv.cv_LINE_AA())
+    src = Cv.line(src, {px, py}, {qx, qy}, colour, thickness: 1, style: Cv.cv_LINE_AA())
 
     px = trunc(qx + 9 * :math.cos(angle - :math.pi() / 4))
     py = trunc(qy + 9 * :math.sin(angle - :math.pi() / 4))
-    Cv.line(src, [px, py], [qx, qy], colour, thickness: 1, style: Cv.cv_LINE_AA())
+    Cv.line(src, {px, py}, {qx, qy}, colour, thickness: 1, style: Cv.cv_LINE_AA())
   end
 end
 ```
@@ -230,9 +236,9 @@ end
 src =
   for {cntr, p1, p2} <- pca_analysis, reduce: src do
     src ->
-      src = Cv.circle(src, cntr, 3, [255, 0, 255], thickness: 2)
-      src = PACHelper.drawAxis(src, List.to_tuple(cntr), p1, [0, 255, 0], 1)
-      PACHelper.drawAxis(src, List.to_tuple(cntr), p2, [255, 255, 0], 5)
+      src = Cv.circle(src, cntr, 3, {255, 0, 255}, thickness: 2)
+      src = PACHelper.drawAxis(src, cntr, p1, {0, 255, 0}, 1)
+      PACHelper.drawAxis(src, cntr, p2, {255, 255, 0}, 5)
   end
 
 result = Cv.imencode(".png", src)

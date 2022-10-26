@@ -1,14 +1,264 @@
 # Changelog
 
-## v0.1.10 (main)
+## v0.1.15 (main)
 [Browse the Repository](https://github.com/cocoa-xu/evision)
+## Changes
+- [mix compile] Surpress logs if `evision.so` is already presented when compiling from source.
+- [Precompile] Added precompile target `aarch64-windows-msvc`.
+
+## v0.1.14 (2022-10-22)
+[Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.14) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.14)
+### Breaking Changes
+- [Precompile] Linux: remove GTK support in precompiled binaries. (This change only affects users on Linux.)
+
+  This means functions in the `Evision.HighGui` module will return error if you are using precompiled binaries. This follows the convention in `opencv-python`.
+
+  Workarounds for this:
+  1. compile `evision` from source so that OpenCV will try to use the GUI backends they support on your system.
+  2. use `Evision.Wx`. still in developement, but basic functions like `imshow/2` are available. However, it requires Erlang to be compiled with `wxWidgets`.
+  3. use Livebook with `:kino >= 0.7`. `evision` has built-in support for `Kino.Render` which can automatically give a visualised result in Livebook. This requires `:kino >= 0.7`.
+
+- [Evision.Nx] Module `Evision.Nx` is now removed. Functions in `Evision.Nx` were moved to `Evision.Mat` in v0.1.13. Many thanks to @zacky1972 and @josevalim for their contributions to this module in very early days of the development.
+
+  | Old                      | New                         |
+  |:------------------------:|:---------------------------:|
+  |`Evision.Nx.to_mat/{1,2}` | `Evision.Mat.from_nx/{1,2}` |
+  |`Evision.Nx.to_mat/5`     | `Evision.Mat.from_binary/5` |
+  |`Evision.Nx.to_mat_2d/1`  | `Evision.Mat.from_nx_2d/1`  |
+  |`Evision.Nx.to_nx/1`      | `Evision.Mat.to_nx/1`       |
+
+### Added
+- [Evision.Wx] implemented `imshow/2`, `destroyWindow/1` and `destroyAllWindows/0`.
+- [SmartCell] Added SmartCells. They are optional and `:kino >= 0.7` will be required to use them.
+
+  If you'd like to use smartcells, please add `:kino` to `deps` in the `mix.exs` file.
+
+  ```elixir
+  defp deps do
+    [
+      # ...
+      {:kino, "~> 0.7"},
+      # ...
+    ]
+  end
+  ```
+
+  And then please register smartcells to `:kino` by invoking `Evision.SmartCell.register_smartcells()`.
+
+  `Evision.SmartCell.available_smartcells/0` will return all available smartcells.
+
+  (Optional step) It's also possible to add only some of these smartcells, for example,
+
+  ```elixir
+  Evision.SmartCell.register_smartcells([
+    Evision.SmartCell.ML.TrainData,
+    Evision.SmartCell.ML.SVM
+  ])
+  ```
+
+## v0.1.13 (2022-10-19)
+[Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.13) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.13)
+### Fixes
+- [c_src] Specialised function `evision_to [with Tp_=cv::UMat]`.
+- [Evision.Backend] ensure that an `Evision.Mat` is returned from `reject_error/1`.
+
+### Changed
+- [c_src] `parseSequence` will only handle tuples.
+- [Evision.Mat] `Evision.Mat.quicklook` will use alternative escaping sequence to avoid having a dedicate function in NIF. Thanks to @akash-akya and @kipcole9 ([vix#68](https://github.com/akash-akya/vix/pull/68)).
+
+  ```
+  ST means either BEL (hex code 0x07) or ESC \\.
+  ```
+
+- [nx-integration] Functions in `Evision.Nx` are now moved to `Evision.Mat`.
+
+  | Old                      | New                         |
+  |:------------------------:|:---------------------------:|
+  |`Evision.Nx.to_mat/{1,2}` | `Evision.Mat.from_nx/{1,2}` |
+  |`Evision.Nx.to_mat/5`     | `Evision.Mat.from_binary/5` |
+  |`Evision.Nx.to_mat_2d/1`  | `Evision.Mat.from_nx_2d/1`  |
+  |`Evision.Nx.to_nx/1`      | `Evision.Mat.to_nx/1`       |
+
+As of v0.1.13, calls to these old functions will be forwarded to the corresponding new ones. 
+
+In the next release (v0.1.14), `Evision.Nx` will be removed.
+
+- [Evision.Mat] `Evision.Mat.tranpose` will use `cv::transposeND` if possible.
+- [Precompile] Try to compile OpenCV with gtk3 support.
+
+### Added
+- [test] Added a test for `Evision.warpPerspective`.
+- [example] Added an example for `Evision.warpPerspective`.
+- [example] Added some examples for `Evision.warpPolar`.
+- [example] Added QRCode encoding and decoding example.
+- [docs] Added a cheatsheet.
+
+## v0.1.12 (2022-10-15)
+[Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.12) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.12)
+
+### Breaking Changes
+- [Evision.QRCodeEncoder.Params] Renamed `Evision.QRCodeEncoder.Params.qrcodeencoder_params/0` to `Evision.QRCodeEncoder.Params.params/0`.
+
+### Fixes
+- Function guard should also allow `Nx.Tensor` when the corresponding input argument is `Evision.Mat.maybe_mat_in()`.
+- [Evision.Mat] `Evision.Mat.quicklook/1`  should also check the number of channels is one of `[1, 3, 4]` when `dims == 2`.
+- [c_src] `evision_cv_mat_broadcast_to` should call `enif_free((void *)dst_data);` if `void * tmp_data = (void *)enif_alloc(elem_size * count_new_elem);` failed.
+- [py_src] Fixed the template of simple call constructor.
+
+### Changed
+- [Docs] Example Livebooks is now included in docs as extras.
+- [Evision.Mat] `Evision.Mat.roi/{2,3}` now supports Elixir Range.
+- [Evision.Mat] Implemented Access behaviour. 
+
+  - `Access.fetch/2` examples:
+
+    ```elixir
+    iex> img = Evision.imread("test/qr_detector_test.png")
+    %Evision.Mat{
+      channels: 3,
+      dims: 2,
+      type: {:u, 8},
+      raw_type: 16,
+      shape: {300, 300, 3},
+      ref: #Reference<0.809884129.802291734.78316>
+    }
+
+    # Same behaviour as Nx. 
+    # Also, img[0] gives the same result as img[[0]]
+    # For this example, they are both equvilent of img[[0, :all, :all]]
+    iex> img[[0]]
+    %Evision.Mat{
+      channels: 3,
+      dims: 2,
+      type: {:u, 8},
+      raw_type: 16,
+      shape: {1, 300, 3},
+      ref: #Reference<0.809884129.802291731.77296>
+    }
+
+    # same as img[[0..100, 50..200, :all]]
+    # however, currently we only support ranges with step size 1
+    #
+    # **IMPORTANT NOTE**
+    #
+    # also, please note that we are using Elixir.Range here
+    # and Elixir.Range is **inclusive**, i.e, [start, end] 
+    # while cv::Range `{integer(), integer()}` is `[start, end)`
+    # the difference can be observed in the `shape` field
+    iex> img[[0..100, 50..200]]
+    %Evision.Mat{
+      channels: 3,
+      dims: 2,
+      type: {:u, 8},
+      raw_type: 16,
+      shape: {101, 151, 3},
+      ref: #Reference<0.809884129.802291731.77297>
+    }
+    iex> img[[{0, 100}, {50, 200}]]
+    %Evision.Mat{
+      channels: 3,
+      dims: 2,
+      type: {:u, 8},
+      raw_type: 16,
+      shape: {100, 150, 3},
+      ref: #Reference<0.809884129.802291731.77297>
+    }
+
+    # for this example, the result is the same as `Evision.extractChannel(img, 0)`
+    iex> img[[:all, :all, 0]]
+    %Evision.Mat{
+      channels: 1,
+      dims: 2,
+      type: {:u, 8},
+      raw_type: 0,
+      shape: {300, 300},
+      ref: #Reference<0.809884129.802291731.77298>
+    }
+    iex> img[[:all, :all, 0..1]]
+    %Evision.Mat{
+      channels: 2,
+      dims: 2,
+      type: {:u, 8},
+      raw_type: 8,
+      shape: {300, 300, 2},
+      ref: #Reference<0.809884129.802291731.77299>
+    }
+
+    # when index is out of bounds
+    iex> img[[:all, :all, 42]]
+    {:error, "index 42 is out of bounds for axis 2 with size 3"}
+
+    # it works the same way for any dimensional Evision.Mat
+    iex> mat = Evision.Mat.ones({10, 10, 10, 10, 10}, :u8)
+    iex> mat[[1..7, :all, 2..6, 3..9, :all]]
+    %Evision.Mat{
+      channels: 1,
+      dims: 5,
+      type: {:u, 8},
+      raw_type: 0,
+      shape: {7, 10, 5, 7, 10},
+      ref: #Reference<0.3015448455.3766878228.259075>
+    }
+    ```
+
+  - `Access.get_and_update/3` examples:
+
+    ```elixir
+    iex> mat = Evision.Mat.zeros({5, 5}, :u8)
+    iex> Evision.Nx.to_nx(mat)
+    #Nx.Tensor<
+      u8[5][5]
+      Evision.Backend
+      [
+        [0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0]
+      ]
+    >
+    iex> {old, new} = Evision.Mat.get_and_update(mat, [1..3, 1..3], fn roi ->
+        {roi, Nx.broadcast(Nx.tensor(255, type: roi.type), roi.shape)}
+    end)
+    iex> Evision.Nx.to_nx(new)
+    #Nx.Tensor<
+      u8[5][5]
+      Evision.Backend
+      [
+        [0, 0, 0, 0, 0],
+        [0, 255, 255, 255, 0],
+        [0, 255, 255, 255, 0],
+        [0, 255, 255, 255, 0],
+        [0, 0, 0, 0, 0]
+      ]
+    >
+    ```
+
+## v0.1.11 (2022-10-13)
+[Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.11) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.11)
+### Important Note
+In `v0.1.10`, an invalid checksum file was pushed to hex.pm, please read the changelog, especially the breaking changes in `v0.1.10`. [Changelog for `v0.1.10`](https://github.com/cocoa-xu/evision/releases/tag/v0.1.10).
+
+### Fixed
+- [Precompile] `Mix.Tasks.Evision.Fetch` should always download and oerwrite existsing files.
+
+## v0.1.10 (2022-10-13)
+[Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.10) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.10)
+### Important Note
+Invalid checksum file was pushed to hex.pm, please use `v0.1.11` instead.
+
 ### Breaking Changes
 - Say goodbye to the bang(!) version functions!
 
   Thanks to @josevalim who wrote me this `Errorize` module back in Feb 2022, and in v0.1.10 this module will be removed. There are two main reasons for this:
 
-  - I've managed to structurise all `#references` that have their own modules in #101.
+  - I've managed to structurise all `#references` that have their own modules in [#101](https://github.com/cocoa-xu/evision/pull/101).
   - After generating function specs, dialyzer seems to be really upset about these bang(!) version functions, and would emit a few thousand warnings.
+- [Precompile] Include NIF version in precompiled tarball filename.
+
+  ```elixir
+  "evision-nif_#{nif_version}-#{target}-#{version}"
+  ```
 
 - Return value changed if the first return type of the function is `bool`
 
@@ -16,33 +266,33 @@
   
     ```elixir
     # before
-    iex> :ok = Evision.imwrite!("/path/to/image.png", img)
-    iex> :error = Evision.imwrite!("/path/to/image.png", invalid_img)
+    iex> :ok = Evision.imwrite("/path/to/image.png", img)
+    iex> :error = Evision.imwrite("/path/to/image.png", invalid_img)
     # after
-    iex> true = Evision.imwrite!("/path/to/image.png", img)
-    iex> true = Evision.imwrite!("/path/to/image.png", invalid_img)
+    iex> true = Evision.imwrite("/path/to/image.png", img)
+    iex> false = Evision.imwrite("/path/to/image.png", invalid_img)
     ```
 
   - If the first return type is `bool`, and there is another value to return:
   
     ```elixir
     # before
-    iex> frame = Evision.VideoCapture.read!(capture) # has a frame available
-    iex> :error = Evision.VideoCapture.read!(capture) # cannot read / no more available frames
+    iex> frame = Evision.VideoCapture.read(capture) # has a frame available
+    iex> :error = Evision.VideoCapture.read(capture) # cannot read / no more available frames
     # after
-    iex> frame = Evision.VideoCapture.read!(capture) # has a frame available
-    iex> false = Evision.VideoCapture.read!(capture) # cannot read / no more available frames
+    iex> frame = Evision.VideoCapture.read(capture) # has a frame available
+    iex> false = Evision.VideoCapture.read(capture) # cannot read / no more available frames
     ```
   
   - If the first return type is `bool`, and there are more than one value to return:
 
     ```elixir
     # before
-    iex> {val1, val2} = Evision.SomeModule.some_function!(arg1) # when succeeded
-    iex> :error = Evision.SomeModule.some_function!(capture) # when failed
+    iex> {val1, val2} = Evision.SomeModule.some_function(arg1) # when succeeded
+    iex> :error = Evision.SomeModule.some_function(capture) # when failed
     # after
-    iex> {val1, val2} = Evision.SomeModule.some_function!(arg1) # when succeeded
-    iex> false = Evision.SomeModule.some_function!(capture) # when failed
+    iex> {val1, val2} = Evision.SomeModule.some_function(arg1) # when succeeded
+    iex> false = Evision.SomeModule.some_function(capture) # when failed
     ```
 
 - `std::string` and `cv::String` will be wrapped in a binary term instead of a list.
@@ -51,16 +301,155 @@
 
   ```elixir
   # before
-  iex> {'detected text', _, _} = Evision.QRCodeDetector.detectAndDecode!(qr, img)
+  iex> {'detected text', _, _} = Evision.QRCodeDetector.detectAndDecode(qr, img)
   # after
-  iex> {"detected text", _, _} = Evision.QRCodeDetector.detectAndDecode!(qr, img)
+  iex> {"detected text", _, _} = Evision.QRCodeDetector.detectAndDecode(qr, img)
   ```
 
 - Structurised all `#reference`s that have their own module.
 
+  A list of modules that are now wrapped in structs can be found in the appendix section.
+
+- [Evision.DNN] As it's not possible to distinguish `std::vector<uchar>` and `String` in Elixir, `Evision.DNN::readNet*` functions that load a model from in-memoy buffer will be renamed to `Evision.DNN::readNet*Buffer`.
+
   For example, 
 
-  List of modules that are now wrapped in structs.
+  ```elixir
+  @spec readNetFromONNX(binary()) :: Evision.DNN.Net.t() | {:error, String.t()}
+  def readNetFromONNX(onnxFile)
+
+  @spec readNetFromONNXBuffer(binary()) :: Evision.DNN.Net.t() | {:error, String.t()}
+  def readNetFromONNXBuffer(buffer)
+  ```
+
+### Changed
+- [Evision.Backend] raise a better error message for callbacks that haven't been implemented in `Evision.Backend`. Thanks to @josevalim
+
+  An example of the updated error message:
+  
+  ```elixir
+  iex> Evision.Backend.slice(1,2,3,4,5)
+  ** (RuntimeError) operation slice is not yet supported on Evision.Backend.
+  Please use another backend like Nx.BinaryBackend or Torchx.Backend.
+    To use Torchx.Backend, :torchx should be added to your app's deps.
+    Please see https://github.com/elixir-nx/nx/tree/main/torchx for more information on how to install and use it.
+  To convert the tensor to another backend, please use Evision.Nx.to_nx(tensor, Backend.ModuleName)
+    for example, Evision.Nx.to_nx(tensor, Nx.BinaryBackend) or Evision.Nx.to_nx(tensor, Torchx.Backend).
+  Pull request would be more than welcomed if you'd like to implmenent this function and make contributions.
+      (evision 0.1.10-dev) lib/evision/backend.ex:815: Evision.Backend.slice/5
+      iex:1: (file)
+  ```
+
+- [Docs] Improved cross reference in inline docs. For example,
+
+  #### Before
+  ```elixir
+  @doc """
+  ...
+  @see setCVFolds
+  ...
+  """
+  def getCVFolds(self) do
+  ```
+
+  #### After
+  ```elixir
+  @doc """
+  ...
+  @see `setCVFolds/2`
+  ...
+  """
+  def getCVFolds(self) do
+  ```
+
+  In this way, you can navigate to the referenced function in the generated html docs.
+
+### Fixed
+- Docs: included `retval` and `self` in the `Return` section.
+
+### Added
+- [Spec] Function spec for all Elixir functions, including generated ones.
+- [Evision.Mat] Added `Evision.Mat.roi/{2,3}`.
+
+  ```elixir
+  iex> img = Evision.imread("test/qr_detector_test.png")
+  %Evision.Mat{
+    channels: 3,
+    dims: 2,
+    type: {:u, 8},
+    raw_type: 16,
+    shape: {300, 300, 3},
+    ref: #Reference<0.3957900973.802816029.173984>
+  }
+
+  # Mat operator()( const Rect& roi ) const;
+  iex> sub_img = Evision.Mat.roi(img, {10, 10, 100, 200})
+  %Evision.Mat{
+    channels: 3,
+    dims: 2,
+    type: {:u, 8},
+    raw_type: 16,
+    shape: {200, 100, 3},
+    ref: #Reference<0.3957900973.802816020.173569>
+  }
+
+  # Mat operator()( Range rowRange, Range colRange ) const;
+  iex> sub_img = Evision.Mat.roi(img, {10, 100}, {20, 200}) 
+  %Evision.Mat{
+    channels: 3,
+    dims: 2,
+    type: {:u, 8},
+    raw_type: 16,
+    shape: {90, 180, 3},
+    ref: #Reference<0.3957900973.802816020.173570>
+  }
+  iex> sub_img = Evision.Mat.roi(img, :all, {20, 200}) 
+  %Evision.Mat{
+    channels: 3,
+    dims: 2,
+    type: {:u, 8},
+    raw_type: 16,
+    shape: {300, 180, 3},
+    ref: #Reference<0.3957900973.802816020.173571>
+  }
+
+  # Mat operator()(const std::vector<Range>& ranges) const;
+  iex> sub_img = Evision.Mat.roi(img, [{10, 100}, {10, 100}])
+  %Evision.Mat{
+    channels: 3,
+    dims: 2,
+    type: {:u, 8},
+    raw_type: 16,
+    shape: {90, 90, 3},
+    ref: #Reference<0.3957900973.802816020.173567>
+  }
+  iex> sub_img = Evision.Mat.roi(img, [{10, 100}, :all])
+  %Evision.Mat{
+    channels: 3,
+    dims: 2,
+    type: {:u, 8},
+    raw_type: 16,
+    shape: {90, 300, 3},
+    ref: #Reference<0.3957900973.802816020.173568>
+  }
+  ```
+
+- [Evision.Mat] Added `Evision.Mat.quicklook/1`.
+
+  This function will check the value of `:display_inline_image_iterm2` in the application config. If is `true`,
+  then it will detect if current session is running in `iTerm2` (by checking the environment variable `LC_TERMINAL`).
+
+  If both are `true`, we next check if the image is a 2D image, also if its size is within the limits. The maximum size can be set in the application config, for example,
+
+  ```elixir
+  config :evision, display_inline_image_iterm2: true
+  config :evision, display_inline_image_max_size: {8192, 8192}
+  ```
+
+  If it passes all the checks, then it will be displayed as an inline image in iTerm2.
+
+### Appendix
+List of modules that are now wrapped in structs.
 
   - `Evision.AKAZE`
   - `Evision.AffineFeature`
@@ -217,36 +606,6 @@
   - `Evision.VideoCapture`
   - `Evision.VideoWriter`
 
-### Changed
-- Improved cross reference in inline docs. For example,
-
-  #### Before
-  ```elixir
-  @doc """
-  ...
-  @see setCVFolds
-  ...
-  """
-  def getCVFolds(self) do
-  ```
-
-  #### After
-  ```elixir
-  @doc """
-  ...
-  @see `setCVFolds/2`
-  ...
-  """
-  def getCVFolds(self) do
-  ```
-
-  In this way, you can navigate to the referenced function in the generated html docs.
-
-### Fixed
-- Docs: included `retval` and `self` in the `Return` section.
-
-### Added
-- Function spec for all functions, including generated ones.
 
 ## v0.1.9 (2022-10-09)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.9) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.9)
