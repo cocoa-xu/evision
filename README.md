@@ -1,4 +1,6 @@
-**If you find the precompiled binaries do not suit your needs (e.g., perhaps you need OpenCV to be compiled with FFmpeg to handle more video formats.), it's possible to override the behaviour by setting the environment variable `EVISION_PREFER_PRECOMPILED` to `false`, and then please delete `_build/${MIX_ENV}/lib/evision` and recompile evision**
+**If you found the precompiled binaries do not suit your needs (e.g., perhaps you need OpenCV to be compiled with FFmpeg to handle more video formats), it's possible to override the behaviour by setting the environment variable `EVISION_PREFER_PRECOMPILED` to `false`, and then please delete `_build/${MIX_ENV}/lib/evision` and recompile evision**
+
+**Also, for Linux users only, the precompiled binary is not compiled with GTK support, therefore functions like `Evision.HighGui.imshow/2` will not work. However, you can either use `Evision.Wx.imshow/2` (if Erlang on your system is compiled with `wxWidgets`), or set the environment variable `EVISION_PREFER_PRECOMPILED` to `false` so that OpenCV can detect available HighGui backend when compiling from source.**
 
 # evision [WIP]
 
@@ -199,18 +201,6 @@ The following environment variables can be set based on your needs.
 (Note that precompiled binaries do not use FFmpeg. If you'd like to use FFmpeg, please compile from source (please see instructions in the next section) and set corresponding environment variables. We're considering this option at the moment.)
 
 #### Important notes
-When using `:evision` from git, version "0.1.1" to "0.1.7" are available.
-
-Starting from `0.1.8` (included) and onwards, using `:evision` from git is no longer supported (unless set `EVISION_PREFER_PRECOMPILED` to `false`) because we started to use checksum file to verify the integrity of the downloaded tarball file, and the checksum file is only tracked in the hex.pm package.
-
-```elixir
-def deps do
-  [
-    {:evision, "~> 0.1.7", github: "cocoa-xu/evision", tag: "v0.1.7"}
-  ]
-end
-```
-
 It is recommended to use `:evision` from hex.pm. Currently "0.1.7" to "0.1.9", and "0.1.11" to "0.1.14" are available on hex.pm,
 ```elixir
 def deps do
@@ -256,7 +246,9 @@ target_abi =
 export EVISION_PREFER_PRECOMPILED=false
 ```
 
-**If you find the precompiled binaries do not suit your needs (e.g., perhaps you need OpenCV to be compiled with FFmpeg to handle more video formats.), it's possible to override the behaviour by setting the environment variable `EVISION_PREFER_PRECOMPILED` to `false`, and then please delete `_build/${MIX_ENV}/lib/evision` and recompile evision**
+**If you found the precompiled binaries do not suit your needs (e.g., perhaps you need OpenCV to be compiled with FFmpeg to handle more video formats.), it's possible to override the behaviour by setting the environment variable `EVISION_PREFER_PRECOMPILED` to `false`, and then please delete `_build/${MIX_ENV}/lib/evision` and recompile evision**
+
+**Also, for Linux users only, the precompiled binary is not compiled with GTK support, therefore functions like `Evision.HighGui.imshow/2` will not work. However, you can either use `Evision.Wx.imshow/2` (if Erlang on your system is compiled with `wxWidgets`), or set the environment variable `EVISION_PREFER_PRECOMPILED` to `false` so that OpenCV can detect available HighGui backend when compiling from source.**
 
 ```shell
 export EVISION_PREFER_PRECOMPILED=false
