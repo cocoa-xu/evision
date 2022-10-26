@@ -102,6 +102,8 @@ jobs:
             export CMAKE_TOOLCHAIN_FILE="$(pwd)/${{ matrix.pair.CMAKE_TOOLCHAIN_FILE }}"
             export TOOLCHAIN_FILE="$(pwd)/${{ matrix.pair.CMAKE_TOOLCHAIN_FILE }}"
             rm -rf ./_build
+            rm -rf ./deps
+            mix deps.get
           fi
           rm -f Makefile
           mix compile
