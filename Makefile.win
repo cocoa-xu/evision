@@ -102,7 +102,7 @@ $(HEADERS_TXT): $(CONFIGURATION_PRIVATE_HPP)
 	python3 "$(PATCHES_DIR)\apply_patch.py" "$(OPENCV_DIR)" "$(OPENCV_VER)"
 	cd "$(CMAKE_OPENCV_BUILD_DIR)" && \
 	cmake -G "$(CMAKE_GENERATOR_TYPE)" \
-	    -D CMAKE_BUILD_TYPE=Release \
+	    -D CMAKE_BUILD_TYPE="$(CMAKE_BUILD_TYPE)" \
 		-D CMAKE_INSTALL_PREFIX="$(PRIV_DIR)" \
 		-D PYTHON3_EXECUTABLE="$(PYTHON3_EXECUTABLE)" \
 		-D INSTALL_PYTHON_EXAMPLES=OFF \
@@ -120,7 +120,7 @@ $(HEADERS_TXT): $(CONFIGURATION_PRIVATE_HPP)
 		-D CMAKE_TOOLCHAIN_FILE="$(TOOLCHAIN_FILE)" \
 		$(CMAKE_WIN_FINAL_OPTIONS) "$(OPENCV_DIR)" && \
 		cmake --build . $(CMAKE_BUILD_PARAMETER) && \
-		cd "$(CMAKE_OPENCV_BUILD_DIR)" && cmake --install . --config Release && \
+		cd "$(CMAKE_OPENCV_BUILD_DIR)" && cmake --install . --config "$(CMAKE_BUILD_TYPE)" && \
 	copy "$(HEADERS_TXT)" "$(C_SRC)/headers.txt" && \
 	cd "$(CMAKE_OPENCV_BUILD_DIR)\bin" && \
 	powershell -command "Get-ChildItem *.dll -Recurse | Copy-Item -Destination \"$(PRIV_DIR)\""
@@ -134,7 +134,7 @@ $(EVISION_SO): $(HEADERS_TXT)
 	cd "$(CMAKE_EVISION_BUILD_DIR)" && \
 		cmake -G "$(CMAKE_GENERATE_TYPE)" \
 		  --no-warn-unused-cli \
-		  -D CMAKE_BUILD_TYPE=Release \
+		  -D CMAKE_BUILD_TYPE="$(CMAKE_BUILD_TYPE)" \
 		  -D C_SRC="$(C_SRC)" \
 		  -D CMAKE_TOOLCHAIN_FILE="$(TOOLCHAIN_FILE)" \
 		  -D GENERATED_ELIXIR_SRC_DIR="$(GENERATED_ELIXIR_SRC_DIR)" \
@@ -153,4 +153,3 @@ $(EVISION_SO): $(HEADERS_TXT)
 !IF "$(EVISION_PREFER_PRECOMPILED)" != "true"
     @ powershell -command Copy-Item -Path (Get-ChildItem -Path "*evision.so" -Recurse).FullName -Destination "$(EVISION_SO)"
 !ENDIF
-
