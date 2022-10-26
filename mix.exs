@@ -124,7 +124,7 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
       end
 
     arch =
-      if os == "win32" do
+      if os == "windows" do
         case String.downcase(System.get_env("PROCESSOR_ARCHITECTURE")) do
           "arm64" ->
             "aarch64"
