@@ -495,7 +495,7 @@ class FuncVariant(object):
                 _, struct_name = is_struct(self.spec_self, also_get='struct_name')
                 self.spec_self = f'{struct_name}.t()'
             else:
-                print(f'warning: {self.spec_self} shoud be a struct. classname={self.classname}')
+                print(f'warning: {self.spec_self} should be a struct. classname={self.classname}')
                 self.spec_self = f'Evision.{self.spec_self}.t()'
             in_args_spec.insert(0, self.spec_self)
 

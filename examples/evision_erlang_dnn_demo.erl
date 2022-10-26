@@ -18,7 +18,7 @@
 %% %CopyrightEnd%
 %%
 %% Copyright Cocoa Xu 2022
-%% modified from the `ex_canvas` exmaple
+%% modified from the `ex_canvas` example
 %%
 
 -module(evision_erlang_dnn_demo).

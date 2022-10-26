@@ -85,7 +85,7 @@ void weighted_traverse(const std::vector<transpose_shape_info>& traverse_list, s
 }
 
 /// Transpose a matrix
-/// @param original matrix data starting address, data must be continous
+/// @param original matrix data starting address, data must be continuous
 /// @param out transposed matrix, buffer must be preallocated with sufficient space to hold the result matrix
 /// @param ndims number of dimensions
 /// @param shape the shape of the original matrix, a list of positive integers
