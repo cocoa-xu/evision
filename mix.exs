@@ -2,7 +2,7 @@ defmodule Evision.MixProject.Metadata do
   @moduledoc false
 
   def app, do: :evision
-  def version, do: "0.1.15"
+  def version, do: "0.1.16-dev"
   def last_released_version, do: "0.1.15"
   def github_url, do: "https://github.com/cocoa-xu/evision"
   def opencv_version, do: "4.6.0"
@@ -898,7 +898,8 @@ defmodule Evision.MixProject do
       # runtime
       {:dll_loader_helper, "~> 0.1"},
       {:nx, "~> 0.3"},
-      {:kino, "~> 0.7"},
+      # optional
+      {:kino, "~> 0.7", optional: true},
       # docs
       {:ex_doc, "~> 0.29", only: :docs, runtime: false},
       # test

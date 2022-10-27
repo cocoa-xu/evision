@@ -30,6 +30,8 @@ defmodule Evision.SmartCell do
     ]
   end
 
+  @compile {:no_warn_undefined, Kino.SmartCell}
+
   @doc """
   Register Smartcells
 

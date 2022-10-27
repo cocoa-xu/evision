@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.1.16 (main)
+[Browse the Repository](https://github.com/cocoa-xu/evision)
+
+## Fixes
+- [deps] revert changes in v0.1.15, `:kino` will be an optional dependency, if we use `if` before `defmodule`.
+
 ## v0.1.15 (2022-10-26)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.15) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.15)
 ## Changes
