@@ -217,13 +217,12 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
                            # Configured cacertfile
                            System.get_env("ELIXIR_MAKE_CACERT"),
 
-                           # Populated if hex package CAStore is configured
-                           if(Code.ensure_loaded?(CAStore), do: CAStore.file_path()),
-
-                           # Populated if hex package certfi is configured
-                           if(Code.ensure_loaded?(:certifi),
-                             do: :certifi.cacertfile() |> List.to_string()
-                           ),
+                           # A little hack to use cacerts.pem in CAStore
+                           ## when `:evision` is a dependency in other application
+                           ## => Mix.ProjectStack.project_file()
+                           ## when `:evision` is the top application
+                           ## => __ENV__.file
+                           Path.join([Path.dirname(Mix.ProjectStack.project_file() || __ENV__.file), "deps/castore/priv/cacerts.pem"]),
 
                            # Debian/Ubuntu/Gentoo etc.
                            "/etc/ssl/certs/ca-certificates.crt",
@@ -895,6 +894,7 @@ defmodule Evision.MixProject do
     [
       # compilation
       {:elixir_make, "~> 0.6", runtime: false},
+      {:castore, "~> 0.1"},
       # runtime
       {:dll_loader_helper, "~> 0.1"},
       {:nx, "~> 0.3"},
@@ -903,8 +903,7 @@ defmodule Evision.MixProject do
       # docs
       {:ex_doc, "~> 0.29", only: :docs, runtime: false},
       # test
-      {:scidata, "~> 0.1", only: :test},
-      {:castore, "~> 0.1", only: :test, override: true}
+      {:scidata, "~> 0.1", only: :test}
     ]
   end
 
