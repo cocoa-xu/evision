@@ -1,0 +1,16 @@
+#!/bin/sh
+
+# optionally check spell if codespell is installed
+# pip install codespell
+# git config --local include.path ../.gitconfig
+
+codespell="$(which codespell)"
+if [ -x "${codespell}" ]; then
+  "${codespell}" -S _build,deps,./lib/generated,3rd_party,.elixir_ls,erl_crash.dump,doc,test,.git,.cache,cmake_opencv_4.6.0,cmake_evision,cover,./c_src/evision_generated_funcs.h,.githook -L usign
+  if [ $? -eq 0 ]; then
+    exit 0
+  else
+    exit 1
+  fi
+fi
+exit 0
