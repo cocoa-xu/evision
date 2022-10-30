@@ -3,6 +3,7 @@ defmodule Evision.Mat do
   Evision Mat
   """
 
+  require Logger
   import Kernel, except: [abs: 1, floor: 1, ceil: 1, round: 1]
   @behaviour Access
 
@@ -408,8 +409,151 @@ defmodule Evision.Mat do
     any
   end
 
+  @default_kino_render_image_encoding Application.compile_env(:evision, :kino_render_image_encoding, :png)
+  @doc """
+  Get preferred image encoding when rendering in Kino.
+
+  Default value is `Application.compile_env(:evision, :kino_render_image_encoding, :png)`.
+  """
+  @spec kino_render_image_encoding() :: term()
+  def kino_render_image_encoding() do
+    Process.get(:evision_kino_render_image_encoding, @default_kino_render_image_encoding)
+  end
+
+  @doc """
+  Set preferred image encoding when rendering in Kino.
+
+  Only valid when `:kino` >= 0.7 and using in livebook
+
+  ##### Positional Arguments
+  - **encoding**. `:png | :jpeg`.
+
+    When rendering a 2D image with Kino in Livebook
+    the image will first be encoded into either :png or :jpeg
+
+    - `:png` usually has better quality because it is lossless compression,
+      however, it uses more bandwidth to transfer
+
+    - `:jpeg` require less bandwidth to pass from the backend to the livebook frontend,
+      but it is lossy compression
+
+  """
+  @spec set_kino_render_image_encoding(:png | :jpeg | term()) :: term()
+  def set_kino_render_image_encoding(encoding) when encoding in [:png, :jpeg] do
+    Process.put(:evision_kino_render_image_encoding, encoding)
+  end
+
+  def set_kino_render_image_encoding(encoding) do
+    raise RuntimeError, """
+    Unknown image encoding `#{inspect(encoding)}`. Supported encoding are either :png or :jpeg.
+    """
+  end
+
+  @default_kino_render_image_max_size Application.compile_env(:evision, :kino_render_image_max_size, {8192, 8192})
+  @doc """
+  Get the maximum allowed image size to render in Kino.
+
+  Default value is `Application.compile_env(:evision, :kino_render_image_max_size, {8192, 8192})`.
+  """
+  @spec kino_render_image_max_size() :: term()
+  def kino_render_image_max_size() do
+    Process.get(:evision_kino_render_image_max_size, @default_kino_render_image_max_size)
+  end
+
+  @doc """
+  Set the maximum allowed image size to render in Kino.
+
+  Only valid when `:kino` >= 0.7 and using in livebook
+
+  ##### Positional Arguments
+  - **size**. `{height, width}`.
+  """
+  @spec set_kino_render_image_max_size({pos_integer(), pos_integer()}) :: term()
+  def set_kino_render_image_max_size({height, width}) when is_integer(height) and height > 0 and is_integer(width) and width > 0 do
+    Process.put(:evision_kino_render_image_max_size, {height, width})
+  end
+
+  def set_kino_render_image_max_size(size) do
+    raise RuntimeError, """
+    Invalid value for setting image max size `#{inspect(size)}`, expecting a 2-tuple with positive integers, `{height, width}`.
+    """
+  end
+
+  @kino_render_tab_order Enum.uniq(Application.compile_env(:evision, :kino_render_tab_order, [:image, :raw, :numerical]))
+  @doc """
+  Get preferred order of Kino.Layout tabs for `Evision.Mat` in Livebook.
+
+  Default value is `Enum.uniq(Application.compile_env(:evision, :kino_render_tab_order, [:image, :raw, :numerical]))`.
+  """
+  @spec kino_render_tab_order() :: term()
+  def kino_render_tab_order() do
+    Process.get(:evision_kino_render_tab_order, @kino_render_tab_order)
+  end
+
+  @supported_kino_render_tab_order [:image, :raw, :numerical]
+  @doc """
+  Set preferred order of Kino.Layout tabs for `Evision.Mat` in Livebook.
+
+  Only valid when `:kino` >= 0.7 and using in Livebook.
+
+  ##### Positional Arguments
+  - **order**: `[atom()]`
+
+    Default order is `[:image, :raw, :numerical]`, and the corresponding tabs will be:
+
+      Image | Raw | Numerical
+
+    Note that the `:image` tab will not show if the `Evision.Mat` is not a 2D image.
+
+    Also, it's possible to specify any combination (any subset) of these tabs,
+    including the empty one, `[]`, and in that case, the output content in the livebook
+    cell will be the same as `:raw` but without any tabs.
+
+    Simply put, `[]` means to only do the basic inspect and not use Kino.Layout.tabs
+
+    **It's worth noting that `[] != nil`, because `nil` is default return value when `kino_render_tab_order`**
+    **is not configured -- hence evision will use the default order, `[:image, :raw, :numerical]` in such case**
+
+    When only specifying one type, i.e., `[:image]`, `[:raw]` or `[:numerical]`, only one tab will be shown.
+
+    Furthermore, when `kino_render_tab_order` is configured to `[:image]` and when the `Evision.Mat` is not a 2D image,
+    it will automatically fallback to `:raw`.
+
+    Simply put, `[:image]` in this case (when only specifying one type) means:
+
+    displaying the `Evision.Mat` as an image whenever possible, and fallback to `:raw`
+    if it's not a 2D image
+
+  """
+  @spec set_kino_render_tab_order([atom()] | term()) :: term()
+  def set_kino_render_tab_order(order) when is_list(order) do
+    render_types =
+      Enum.map(order, fn t ->
+        supported? = Enum.member?(@supported_kino_render_tab_order, t)
+        if !supported? do
+          Logger.warning """
+          Unknown type `#{inspect(t)}` found in `config :evision, kino_render_tab_order`.
+          Supported types are `#{inspect(@supported_kino_render_tab_order)}` and their combinations.
+          """
+          nil
+        else
+          t
+        end
+      end)
+      |> Enum.reject(fn a -> a == nil end)
+    Process.put(:evision_kino_render_tab_order, render_types)
+  end
+
+  def set_kino_render_tab_order(types) do
+    raise RuntimeError, """
+    Unknown types `#{inspect(types)}`. Supported types are `#{inspect(@supported_kino_render_tab_order)}` and their combinations.
+    """
+  end
+
   if Code.ensure_loaded?(Kino.Render) do
     defimpl Kino.Render do
+      require Logger
+
       defp is_2d_image(%Evision.Mat{dims: 2}), do: true
 
       defp is_2d_image(%Evision.Mat{channels: 1, shape: {_h, _w, 1}}) do
@@ -418,22 +562,66 @@ defmodule Evision.Mat do
 
       defp is_2d_image(_), do: false
 
+      defp within_maximum_size(mat) do
+        {max_height, max_width} = Evision.Mat.kino_render_image_max_size()
+        case Evision.Mat.shape(mat) do
+          {h, w} ->
+            h <= max_height and w <= max_width
+          {h, w, _c} ->
+            h <= max_height and w <= max_width
+          _ ->
+            false
+        end
+      end
+
       @spec to_livebook(Evision.Mat.t()) :: Kino.Output.t()
       def to_livebook(mat) when is_struct(mat, Evision.Mat) do
-        raw = Kino.Inspect.new(mat)
-        numerical = Kino.Inspect.new(Evision.Mat.to_nx(mat))
+        render_types = Evision.Mat.kino_render_tab_order()
 
-        with true <- is_2d_image(mat),
-             encoded <- Evision.imencode(".png", mat),
-             true <- is_binary(encoded) do
-          image = Kino.Image.new(encoded, :png)
-          tabs = Kino.Layout.tabs([{"Image", image}, {"Raw", raw}, {"Numerical", numerical}])
-          Kino.Render.to_livebook(tabs)
-        else
-          false ->
-            tabs = Kino.Layout.tabs([{"Raw", raw}, {"Numerical", numerical}])
-            Kino.Render.to_livebook(tabs)
-        end
+        Enum.map(render_types, fn
+          :raw ->
+            {"Raw", Kino.Inspect.new(mat)}
+          :numerical ->
+            {"Numerical", Kino.Inspect.new(Evision.Mat.to_nx(mat))}
+          :image ->
+            {ext, format} =
+              case Evision.Mat.kino_render_image_encoding() do
+                :jpg ->
+                  {".jpg", :jpeg}
+                :jpeg ->
+                  {".jpeg", :jpeg}
+                :png ->
+                  {".png", :png}
+                unknown ->
+                  raise RuntimeError, "Cannot render image with encoding `#{inspect(unknown)}`"
+              end
+            with true <- is_2d_image(mat),
+                 true <- within_maximum_size(mat),
+                  encoded <- Evision.imencode(ext, mat),
+                  true <- is_binary(encoded) do
+              {"Image", Kino.Image.new(encoded, format)}
+            else
+              _ ->
+                nil
+            end
+        end)
+        |> Enum.reject(fn a -> a == nil end)
+        |> to_livebook_tabs(render_types, mat)
+      end
+
+      defp to_livebook_tabs([], [:image], mat) do
+        Kino.Layout.tabs([{"Raw", Kino.Inspect.new(mat)}])
+        |> Kino.Render.to_livebook()
+      end
+
+      defp to_livebook_tabs(_tabs, [], mat) do
+        Kino.Inspect.new(mat)
+        |> Kino.Render.to_livebook()
+      end
+
+      defp to_livebook_tabs(tabs, _types, _mat) do
+        Kino.Layout.tabs(tabs)
+        |> Kino.Render.to_livebook()
       end
     end
   end
