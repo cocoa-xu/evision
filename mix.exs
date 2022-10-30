@@ -897,7 +897,7 @@ defmodule Evision.MixProject do
       {:castore, "~> 0.1"},
       # runtime
       {:dll_loader_helper, "~> 0.1"},
-      {:nx, "~> 0.3"},
+      {:nx, "~> 0.4"},
       # optional
       {:kino, "~> 0.7", optional: true},
       # docs
