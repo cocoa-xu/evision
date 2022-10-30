@@ -427,7 +427,7 @@ defmodule Evision.Mat do
              encoded <- Evision.imencode(".png", mat),
              true <- is_binary(encoded) do
           image = Kino.Image.new(encoded, :png)
-          tabs = Kino.Layout.tabs([{"Raw", raw}, {"Image", image}, {"Numerical", numerical}])
+          tabs = Kino.Layout.tabs([{"Image", image}, {"Raw", raw}{"Numerical", numerical}])
           Kino.Render.to_livebook(tabs)
         else
           false ->
