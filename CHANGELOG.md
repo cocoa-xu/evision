@@ -1,10 +1,31 @@
 # Changelog
 
-## v0.1.16 (main)
-[Browse the Repository](https://github.com/cocoa-xu/evision)
+## v0.1.16 (2022-10-30)
+[Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.16) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.16)
 
 ## Fixes
-- [deps] revert changes in v0.1.15, `:kino` will be an optional dependency, if we use `if` before `defmodule`.
+- [deps] `:kino` will be an optional dependency, if we use `if` before `defmodule`. This reverts the changes in in v0.1.15. 
+  
+  Thanks @josevalim for helping me figuring out why using `if` before `defmodule` would solve the problem. More details can be found [here](https://cocoa-research.works/2022/10/conditional-compliation-with-if-and-use-in-elixir/).
+
+## Changes
+- [config.exs] Added configurable parameters related to rendering `Evision.Mat` in Kino. (They are optional and can also be adjusted in runtime)
+
+  - `config :evision, kino_render_image_encoding: :png`
+  - `config :evision, kino_render_image_max_size: {8192, 8192}`
+  - `config :evision, kino_render_tab_order: [:image, :raw, :numerical]`
+
+## Added
+- [Evision.Mat] Added a few functions related to Kino.Render
+
+  | Function | Description |
+  |:---------|:------------|
+  |`Evision.Mat.kino_render_tab_order/0` | Get preferred order of Kino.Layout tabs for `Evision.Mat` in Livebook. |
+  |`Evision.Mat.set_kino_render_tab_order/1` | Set preferred order of Kino.Layout tabs for `Evision.Mat` in Livebook. |
+  |`Evision.Mat.kino_render_image_max_size/0` | Get the maximum allowed image size to render in Kino. |
+  |`Evision.Mat.set_kino_render_image_max_size/1` | Set the maximum allowed image size to render in Kino. |
+  |`Evision.Mat.kino_render_image_encoding/0` | Get preferred image encoding when rendering in Kino. |
+  |`Evision.Mat.set_kino_render_image_encoding/1` | Set preferred image encoding when rendering in Kino. |
 
 ## v0.1.15 (2022-10-26)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.15) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.15)
