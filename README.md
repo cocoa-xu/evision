@@ -186,7 +186,7 @@ Then you can add `evision` as dependency in your `mix.exs`.
 ```elixir
 def deps do
   [
-    {:evision, "~> 0.1.15"}
+    {:evision, "~> 0.1.16"}
   ]
 end
 ```
@@ -201,11 +201,11 @@ The following environment variables can be set based on your needs.
 (Note that precompiled binaries do not use FFmpeg. If you'd like to use FFmpeg, please compile from source (please see instructions in the next section) and set corresponding environment variables. We're considering this option at the moment.)
 
 #### Important notes
-It is recommended to use `:evision` from hex.pm. Currently "0.1.7" to "0.1.9", and "0.1.11" to "0.1.15" are available on hex.pm,
+It is recommended to use `:evision` from hex.pm. Currently "0.1.7" to "0.1.9", and "0.1.11" to "0.1.16" are available on hex.pm,
 ```elixir
 def deps do
   [
-    {:evision, "~> 0.1.15"}
+    {:evision, "~> 0.1.16"}
   ]
 end
 ```
@@ -257,7 +257,7 @@ export EVISION_PREFER_PRECOMPILED=false
 For livebook users, 
 ```elixir
 Mix.install([
-  {:evision, "~> 0.1.15"}
+  {:evision, "~> 0.1.16"}
 ], system_env: [
   {"EVISION_PREFER_PRECOMPILED", "false"}
 ])
