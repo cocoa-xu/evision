@@ -88,7 +88,7 @@ gray = Evision.imread("pca_test.jpg", flags: Evision.cv_IMREAD_GRAYSCALE())
 ## Get A Binary Image
 
 ```elixir
-# import Bitwise so that we can use `|||` (logic or)
+# import Bitwise so that we can use `|||` (bitwise or)
 import Bitwise
 
 # binarization
