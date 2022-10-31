@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.1.17-dev (main)
+[Browse the Repository](https://github.com/cocoa-xu/evision)
+
+## Added
+- [example] Added an example: find and draw contours in an image.
+
 ## v0.1.16 (2022-10-30)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.16) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.16)
 
