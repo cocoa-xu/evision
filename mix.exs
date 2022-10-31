@@ -2,7 +2,7 @@ defmodule Evision.MixProject.Metadata do
   @moduledoc false
 
   def app, do: :evision
-  def version, do: "0.1.16"
+  def version, do: "0.1.17-dev"
   def last_released_version, do: "0.1.16"
   def github_url, do: "https://github.com/cocoa-xu/evision"
   def opencv_version, do: "4.6.0"
@@ -922,6 +922,7 @@ defmodule Evision.MixProject do
         "examples/qrcode.livemd",
         "examples/warp_perspective.livemd",
         "examples/warp_polar.livemd",
+        "examples/find_and_draw_contours.livemd",
         "examples/stitching.livemd",
         "examples/pca.livemd",
         "examples/photo-hdr.livemd",
