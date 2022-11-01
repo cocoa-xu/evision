@@ -78,10 +78,12 @@ EVISION_GENERATE_LANG ?= elixir
 EVISION_PREFER_PRECOMPILED ?= false
 EVISION_COMPILE_WITH_REBAR ?= false
 EVISION_PRECOMPILED_CACHE_DIR ?= $(shell pwd)/.cache
+EVISION_MAKE ?= make
 
 .DEFAULT_GLOBAL := build
 
 build: $(EVISION_SO)
+	@echo > /dev/null
 
 $(OPENCV_CONFIGURATION_PRIVATE_HPP):
 	@ if [ "$(EVISION_PREFER_PRECOMPILED)" != "true" ]; then \
@@ -138,6 +140,14 @@ $(EVISION_SO): $(HEADERS_TXT)
 	@ mkdir -p "$(PRIV_DIR)"
 	@ mkdir -p "$(GENERATED_ELIXIR_SRC_DIR)"
 	@ mkdir -p "$(GENERATED_ERLANG_SRC_DIR)"
+	@ if [ "$(EVISION_PREFER_PRECOMPILED)" = "true" ] && [ "$(EVISION_COMPILE_WITH_REBAR)" = "true" ]; then \
+		{ \
+			erlc checksum_evision.erl && \
+			erlc evision_precompiled.erl && \
+			erl -noshell -s evision_precompiled install_precompiled_binary_if_available -s init stop ; } || \
+		{ \
+			$(EVISION_MAKE) EVISION_PREFER_PRECOMPILED=false EVISION_COMPILE_WITH_REBAR=true ; } ; \
+	fi
 	@ if [ ! -f "${EVISION_SO}" ]; then \
 		mkdir -p "$(CMAKE_EVISION_BUILD_DIR)" && \
 		cd "$(CMAKE_EVISION_BUILD_DIR)" && \

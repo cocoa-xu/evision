@@ -312,8 +312,7 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
           secure_renegotiate: true,
           reuse_sessions: true,
           versions: protocol_versions(),
-          ciphers: preferred_ciphers(),
-          versions: protocol_versions()
+          ciphers: preferred_ciphers()
         ]
       ]
     end
@@ -587,8 +586,8 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
     with {:ok, _} <- File.cp_r(cached_priv_dir, app_priv) do
       :ok
     else
-      {msg, code} ->
-        msg = "Failed to copy priv directory, `cp` exited with code #{code}: #{inspect(msg)}"
+      error ->
+        msg = "Failed to copy priv directory, `File.cp_r`: #{inspect(error)}"
         Logger.error(msg)
         raise RuntimeError, msg
     end
@@ -600,11 +599,9 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
     with {:ok, _} <- File.cp_r(cached_elixir_dir, generated_elixir_dir) do
       :ok
     else
-      {msg, code} ->
-        msg =
-          "Failed to copy generated Elixir binding files, `cp` exited with code #{code}: #{inspect(msg)}"
-
-        Logger.info(msg)
+      error ->
+        msg = "Failed to copy generated Elixir binding files, `File.cp_r`: #{inspect(error)}"
+        Logger.error(msg)
         raise RuntimeError, msg
     end
   end
@@ -1030,8 +1027,11 @@ defmodule Evision.MixProject do
           .formatter.exs
           mix.exs
           checksum-evision.exs
+          checksum_evision.erl
+          evision_precompiled.erl
           src/evision_mat.erl
           src/evision_highgui.erl
+          src/evision_internal_structurise.erl
           src/evision.app.src
           rebar.config
           README* LICENSE* CHANGELOG*),
