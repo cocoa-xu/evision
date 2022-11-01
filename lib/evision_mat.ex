@@ -1707,14 +1707,16 @@ defmodule Evision.Mat do
   def arange(from, to, step, type) when step != 0 do
     {t, l} = check_unsupported_type(type)
 
-    with {:ok, mat} <-
-           :evision_nif.mat_arange(
-             from: from,
-             to: to,
-             step: step,
-             t: t,
-             l: l
-           ),
+    arange =
+      :evision_nif.mat_arange(
+        from: from,
+        to: to,
+        step: step,
+        t: t,
+        l: l
+      )
+    mat = Evision.Internal.Structurise.to_struct(arange)
+    with %Evision.Mat{} <- mat,
          ret = {length, _} <- Evision.Mat.shape(mat),
          {:mat_shape_error, false, _} <- {:mat_shape_error, length == :error, ret} do
       Evision.Mat.reshape(mat, {1, length})

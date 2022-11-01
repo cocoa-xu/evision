@@ -23,6 +23,7 @@ def evision_erlang_fixes():
     return [
         """
 imdecode(Buf, Flags) ->
-  evision_nif:imdecode([{buf, Buf}, {flags, Flags}]).
+  Ret = evision_nif:imdecode([{buf, Buf}, {flags, Flags}]),
+  evision_internal_structurise:to_struct(Ret).
 """
     ]

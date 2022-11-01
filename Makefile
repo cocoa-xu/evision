@@ -76,6 +76,7 @@ endif
 MAKE_BUILD_FLAGS ?= -j$(DEFAULT_JOBS)
 EVISION_GENERATE_LANG ?= elixir
 EVISION_PREFER_PRECOMPILED ?= false
+EVISION_COMPILE_WITH_REBAR ?= false
 EVISION_PRECOMPILED_CACHE_DIR ?= $(shell pwd)/.cache
 
 .DEFAULT_GLOBAL := build
@@ -101,7 +102,7 @@ $(CONFIGURATION_PRIVATE_HPP): $(OPENCV_CONFIGURATION_PRIVATE_HPP)
 	fi
 
 $(HEADERS_TXT): $(CONFIGURATION_PRIVATE_HPP)
-	@ if [ "$(EVISION_PREFER_PRECOMPILED)" != "true" ]; then \
+	@ if [ "$(EVISION_PREFER_PRECOMPILED)" != "true" ] && [ "$(EVISION_COMPILE_WITH_REBAR)" != "true" ]; then \
 		python3 "$(shell pwd)/patches/apply_patch.py" "$(OPENCV_DIR)" "$(OPENCV_VER)" ; \
 		mkdir -p "$(CMAKE_OPENCV_BUILD_DIR)" && \
 		cd "$(CMAKE_OPENCV_BUILD_DIR)" && \

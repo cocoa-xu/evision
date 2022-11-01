@@ -406,11 +406,12 @@ class ModuleGenerator(object):
                             )
                         elif kind == 'erlang':
                             function_code.write(f'{module_func_name}(Self) ->\n'
-                                f'  evision_nif:{nif_name}(Self, []).\n')
+                                f'  evision_nif:{nif_name}(evision_internal_structurise:from_struct(Self), []).\n')
                             self.add_function(kind, module_func_name, 1, guards_count=0, generated_code=function_code.getvalue())
                             function_code = StringIO()
                             function_code.write(f'{module_func_name}(Self, Options) when is_list(Options), is_tuple(hd(Options)), tuple_size(hd(Options)) == 2 ->\n'
-                                f'  evision_nif:{nif_name}(Self, Options).\n')
+                                f'  Ret = evision_nif:{nif_name}(evision_internal_structurise:from_struct(Self), evision_internal_structurise:from_struct(Options)),\n'
+                                "   '__to_struct__'(Ret).\n\n")
                             self.add_function(kind, module_func_name, 2, guards_count=3, generated_code=function_code.getvalue())
                         continue
 
@@ -426,7 +427,7 @@ class ModuleGenerator(object):
                                 f'  def {module_func_name}(self, opts \\\\ nil) when opts == nil or (is_list(opts) and is_tuple(hd(opts))) do\n'
                                 '    self = Evision.Internal.Structurise.from_struct(self)\n'
                                 '    opts = Evision.Internal.Structurise.from_struct(opts || [])\n'
-                                f'    :evision_nif.{nif_name}(self, opts)\n'
+                                f'   :evision_nif.{nif_name}(self, opts)\n'
                                 '    |> __to_struct__()\n'
                                 '  end\n')
                             self.add_function(kind, module_func_name, func_arity,
@@ -439,7 +440,9 @@ class ModuleGenerator(object):
                             )
                         elif kind == 'erlang':
                             function_code.write(f'{module_func_name}(Self) ->\n'
-                                f'  evision_nif:{nif_name}(Self, []).\n')
+                                f'  Ret = evision_nif:{nif_name}(evision_internal_structurise:from_struct(Self), []),\n'
+                                "   '__to_struct__'(Ret).\n\n"
+                            )
                             self.add_function(kind, module_func_name, 
                                 function_arity=1, 
                                 guards_count=0,
@@ -447,7 +450,9 @@ class ModuleGenerator(object):
                             )
                             function_code = StringIO()
                             function_code.write(f'{module_func_name}(Self, Options) when is_list(Options), is_tuple(hd(Options)), tuple_size(hd(Options)) == 2 ->\n'
-                                f'  evision_nif:{nif_name}(Self, Options).\n')
+                                f'  Ret = evision_nif:{nif_name}(evision_internal_structurise:from_struct(Self), evision_internal_structurise:from_struct(Options)),\n'
+                                "   '__to_struct__'(Ret).\n\n"
+                            )
                             self.add_function(kind, module_func_name, 
                                 function_arity=2,
                                 guards_count=3,
@@ -497,7 +502,8 @@ class ModuleGenerator(object):
                         elif kind == 'erlang':
                             function_code.write(f'{module_func_name}({module_func_args_with_opts}){when_guard_with_opts} ->\n'
                                 f'  {positional_args},\n'
-                                f'  evision_nif:{nif_name}({func_args_with_opts}).\n\n'
+                                f'  Ret = evision_nif:{nif_name}({func_args_with_opts}),\n'
+                                "   '__to_struct__'(Ret).\n\n"
                             )
                         else:
                             raise RuntimeError(f"unknown kind `{kind}`")
@@ -528,7 +534,8 @@ class ModuleGenerator(object):
                     elif kind == 'erlang':
                         function_code.write(f'{module_func_name}({module_func_args}){func_when_guard} ->\n'
                             f'  {positional_args},\n'
-                            f'  evision_nif:{nif_name}({func_args}).\n\n'
+                            f'  Ret = evision_nif:{nif_name}({func_args}),\n'
+                            "   '__to_struct__'(Ret).\n\n"
                         )
                     else:
                         raise RuntimeError(f"unknown kind `{kind}`")
