@@ -1,10 +1,46 @@
 # Changelog
 
-## v0.1.15 (main)
+## v0.1.17-dev (main)
 [Browse the Repository](https://github.com/cocoa-xu/evision)
+
+## Added
+- [example] Added an example: find and draw contours in an image.
+
+## v0.1.16 (2022-10-30)
+[Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.16) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.16)
+
+## Fixes
+- [deps] `:kino` will be an optional dependency, if we use `if` before `defmodule`. This reverts the changes in in v0.1.15. 
+  
+  Thanks @josevalim for helping me figuring out why using `if` before `defmodule` would solve the problem. More details can be found [here](https://cocoa-research.works/2022/10/conditional-compliation-with-if-and-use-in-elixir/).
+
 ## Changes
-- [mix compile] Surpress logs if `evision.so` is already presented when compiling from source.
+- [config.exs] Added configurable parameters related to rendering `Evision.Mat` in Kino. (They are optional and can also be adjusted in runtime)
+
+  - `config :evision, kino_render_image_encoding: :png`
+  - `config :evision, kino_render_image_max_size: {8192, 8192}`
+  - `config :evision, kino_render_tab_order: [:image, :raw, :numerical]`
+
+## Added
+- [Evision.Mat] Added a few functions related to Kino.Render
+
+  | Function | Description |
+  |:---------|:------------|
+  |`Evision.Mat.kino_render_tab_order/0` | Get preferred order of Kino.Layout tabs for `Evision.Mat` in Livebook. |
+  |`Evision.Mat.set_kino_render_tab_order/1` | Set preferred order of Kino.Layout tabs for `Evision.Mat` in Livebook. |
+  |`Evision.Mat.kino_render_image_max_size/0` | Get the maximum allowed image size to render in Kino. |
+  |`Evision.Mat.set_kino_render_image_max_size/1` | Set the maximum allowed image size to render in Kino. |
+  |`Evision.Mat.kino_render_image_encoding/0` | Get preferred image encoding when rendering in Kino. |
+  |`Evision.Mat.set_kino_render_image_encoding/1` | Set preferred image encoding when rendering in Kino. |
+
+## v0.1.15 (2022-10-26)
+[Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.15) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.15)
+## Changes
+- [mix compile] Suppress logs if `evision.so` is already presented when compiling from source.
 - [Precompile] Added precompile target `aarch64-windows-msvc`.
+
+## Fixes
+- [deps] `:kino` should be a required dependency
 
 ## v0.1.14 (2022-10-22)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.14) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.14)
@@ -15,7 +51,7 @@
 
   Workarounds for this:
   1. compile `evision` from source so that OpenCV will try to use the GUI backends they support on your system.
-  2. use `Evision.Wx`. still in developement, but basic functions like `imshow/2` are available. However, it requires Erlang to be compiled with `wxWidgets`.
+  2. use `Evision.Wx`. still in development, but basic functions like `imshow/2` are available. However, it requires Erlang to be compiled with `wxWidgets`.
   3. use Livebook with `:kino >= 0.7`. `evision` has built-in support for `Kino.Render` which can automatically give a visualised result in Livebook. This requires `:kino >= 0.7`.
 
 - [Evision.Nx] Module `Evision.Nx` is now removed. Functions in `Evision.Nx` were moved to `Evision.Mat` in v0.1.13. Many thanks to @zacky1972 and @josevalim for their contributions to this module in very early days of the development.
@@ -240,7 +276,7 @@ In the next release (v0.1.14), `Evision.Nx` will be removed.
 In `v0.1.10`, an invalid checksum file was pushed to hex.pm, please read the changelog, especially the breaking changes in `v0.1.10`. [Changelog for `v0.1.10`](https://github.com/cocoa-xu/evision/releases/tag/v0.1.10).
 
 ### Fixed
-- [Precompile] `Mix.Tasks.Evision.Fetch` should always download and oerwrite existsing files.
+- [Precompile] `Mix.Tasks.Evision.Fetch` should always download and oerwrite existing files.
 
 ## v0.1.10 (2022-10-13)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.10) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.10)
@@ -956,7 +992,7 @@ List of modules that are now wrapped in structs.
   }
   ```
 
-  `Evision.Mat.literal/3` will return a vaild 2D image if the keyword argument, `as_2d`, is set to `true` and if the list literal can be represented as a 2D image.
+  `Evision.Mat.literal/3` will return a valid 2D image if the keyword argument, `as_2d`, is set to `true` and if the list literal can be represented as a 2D image.
   ```elixir
   iex> Evision.Mat.literal!([[[1,1,1],[2,2,2],[3,3,3]]], :u8, as_2d: true)
   %Evision.Mat{

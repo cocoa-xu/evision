@@ -75,7 +75,7 @@ jobs:
           otp-version: ${{ env.OTP_VERSION }}
           elixir-version: ${{ env.ELIXIR_VERSION }}
 
-      - name: Install system dependecies
+      - name: Install system dependencies
         run: |
           # if [ "${{ matrix.pair.deb_arch }}" != "amd64" ]; then
           #   sudo cat /etc/apt/sources.list

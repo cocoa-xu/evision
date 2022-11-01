@@ -5,7 +5,6 @@
 def evision_elixir_fixes(): 
     return [
         """
-    @doc namespace: :cv
     @spec imdecode(binary(), integer()) :: Evision.Mat.maybe_mat_out()
     def imdecode(buf, flags) when is_integer(flags)
     do

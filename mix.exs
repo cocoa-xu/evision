@@ -2,8 +2,8 @@ defmodule Evision.MixProject.Metadata do
   @moduledoc false
 
   def app, do: :evision
-  def version, do: "0.1.15-dev"
-  def last_released_version, do: "0.1.14"
+  def version, do: "0.1.17-dev"
+  def last_released_version, do: "0.1.16"
   def github_url, do: "https://github.com/cocoa-xu/evision"
   def opencv_version, do: "4.6.0"
   # only means compatible. need to write more tests
@@ -18,6 +18,8 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
   alias Evision.MixProject.Metadata
 
   @available_versions [
+    "0.1.16",
+    "0.1.15",
     "0.1.14",
     "0.1.13",
     "0.1.12",
@@ -125,6 +127,20 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
           abi
       end
 
+    arch =
+      if os == "windows" do
+        case String.downcase(System.get_env("PROCESSOR_ARCHITECTURE")) do
+          "arm64" ->
+            "aarch64"
+          arch when arch in ["x64", "x86_64", "amd64"] ->
+            "x86_64"
+          arch ->
+            arch
+        end
+      else
+        arch
+      end
+
     abi = System.get_env("TARGET_ABI", abi)
     os = System.get_env("TARGET_OS", os)
     arch = System.get_env("TARGET_ARCH", arch)
@@ -205,13 +221,12 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
                            # Configured cacertfile
                            System.get_env("ELIXIR_MAKE_CACERT"),
 
-                           # Populated if hex package CAStore is configured
-                           if(Code.ensure_loaded?(CAStore), do: CAStore.file_path()),
-
-                           # Populated if hex package certfi is configured
-                           if(Code.ensure_loaded?(:certifi),
-                             do: :certifi.cacertfile() |> List.to_string()
-                           ),
+                           # A little hack to use cacerts.pem in CAStore
+                           ## when `:evision` is a dependency in other application
+                           ## => Mix.ProjectStack.project_file()
+                           ## when `:evision` is the top application
+                           ## => __ENV__.file
+                           Path.join([Path.dirname(Mix.ProjectStack.project_file() || __ENV__.file), "deps/castore/priv/cacerts.pem"]),
 
                            # Debian/Ubuntu/Gentoo etc.
                            "/etc/ssl/certs/ca-certificates.crt",
@@ -883,16 +898,16 @@ defmodule Evision.MixProject do
     [
       # compilation
       {:elixir_make, "~> 0.6", runtime: false},
+      {:castore, "~> 0.1"},
       # runtime
       {:dll_loader_helper, "~> 0.1"},
-      {:nx, "~> 0.3"},
+      {:nx, "~> 0.4"},
       # optional
       {:kino, "~> 0.7", optional: true},
       # docs
       {:ex_doc, "~> 0.29", only: :docs, runtime: false},
       # test
-      {:scidata, "~> 0.1", only: :test},
-      {:castore, "~> 0.1", only: :test, override: true}
+      {:scidata, "~> 0.1", only: :test}
     ]
   end
 
@@ -910,6 +925,7 @@ defmodule Evision.MixProject do
         "examples/qrcode.livemd",
         "examples/warp_perspective.livemd",
         "examples/warp_polar.livemd",
+        "examples/find_and_draw_contours.livemd",
         "examples/stitching.livemd",
         "examples/pca.livemd",
         "examples/photo-hdr.livemd",

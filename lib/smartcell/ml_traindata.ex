@@ -1,5 +1,8 @@
-defmodule Evision.SmartCell.ML.TrainData do
-  if Code.ensure_loaded?(Kino.SmartCell) do
+if !Code.ensure_loaded?(Kino.SmartCell) do
+  defmodule Evision.SmartCell.ML.TrainData do
+  end
+else
+  defmodule Evision.SmartCell.ML.TrainData do
     use Kino.JS, assets_path: "lib/assets"
     use Kino.JS.Live
     use Kino.SmartCell, name: "Evision: Train Data"

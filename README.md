@@ -186,7 +186,7 @@ Then you can add `evision` as dependency in your `mix.exs`.
 ```elixir
 def deps do
   [
-    {:evision, "~> 0.1.14"}
+    {:evision, "~> 0.1.16"}
   ]
 end
 ```
@@ -201,11 +201,11 @@ The following environment variables can be set based on your needs.
 (Note that precompiled binaries do not use FFmpeg. If you'd like to use FFmpeg, please compile from source (please see instructions in the next section) and set corresponding environment variables. We're considering this option at the moment.)
 
 #### Important notes
-It is recommended to use `:evision` from hex.pm. Currently "0.1.7" to "0.1.9", and "0.1.11" to "0.1.14" are available on hex.pm,
+It is recommended to use `:evision` from hex.pm. Currently "0.1.7" to "0.1.9", and "0.1.11" to "0.1.16" are available on hex.pm,
 ```elixir
 def deps do
   [
-    {:evision, "~> 0.1.14"}
+    {:evision, "~> 0.1.16"}
   ]
 end
 ```
@@ -257,7 +257,7 @@ export EVISION_PREFER_PRECOMPILED=false
 For livebook users, 
 ```elixir
 Mix.install([
-  {:evision, "~> 0.1.14"}
+  {:evision, "~> 0.1.16"}
 ], system_env: [
   {"EVISION_PREFER_PRECOMPILED", "false"}
 ])
@@ -275,7 +275,7 @@ export EVISION_PRECOMPILED_CACHE_DIR="$(pwd)/.cache"
 
 - Python3 (Only during the compilation, to generate binding files)
 
-  Tested Python verisons (on `ubuntu:20.04`, see [workflow file](https://github.com/cocoa-xu/evision/blob/main/.github/workflows/test-python-compatibility.yml)):
+  Tested Python versions (on `ubuntu:20.04`, see [workflow file](https://github.com/cocoa-xu/evision/blob/main/.github/workflows/test-python-compatibility.yml)):
   - 3.6.15
   - 3.7.12
   - 3.8.12
@@ -352,7 +352,7 @@ export OPENCV_USE_GIT_BRANCH=4.x
 
 # optional.
 # set this env var to specify which git repo to use
-# default value is https://github.com/opencv/opencv.git, which is the offical git repo of OpenCV
+# default value is https://github.com/opencv/opencv.git, which is the official git repo of OpenCV
 export OPENCV_GIT_REPO="https://github.com/opencv/opencv.git"
 ```
 

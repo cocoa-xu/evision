@@ -30,6 +30,8 @@ defmodule Evision.SmartCell do
     ]
   end
 
+  @compile {:no_warn_undefined, Kino.SmartCell}
+
   @doc """
   Register Smartcells
 
@@ -44,7 +46,7 @@ defmodule Evision.SmartCell do
         if Code.ensure_loaded?(sc) do
           Kino.SmartCell.register(sc)
         else
-          raise RuntimeError, "Cannot regsiter smartcell: #{inspect(sc)}"
+          raise RuntimeError, "Cannot register smartcell: #{inspect(sc)}"
         end
       end)
     else

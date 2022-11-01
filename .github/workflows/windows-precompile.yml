@@ -83,7 +83,7 @@ jobs:
         id: cache-mix-compile
         uses: actions/cache@v3
         with:
-          key: precompile-${{ runner.os }}-${{ hashFiles('cc_toolchain/**') }}-${{ hashFiles('c_src/**') }}-${{ hashFiles('py_src/**') }}-${{ hashFiles('CMakeLists.txt') }}-${{ hashFiles('Makefile.win') }}-${{ env.OPENCV_VER }}-${{ env.OTP_VERSION }}-${{ env.ELIXIR_VERSION }}
+          key: precompile-${{ runner.os }}-${{ matrix.pair.vcvarsall }}-${{ hashFiles('cc_toolchain/**') }}-${{ hashFiles('c_src/**') }}-${{ hashFiles('py_src/**') }}-${{ hashFiles('CMakeLists.txt') }}-${{ hashFiles('Makefile.win') }}-${{ env.OPENCV_VER }}-${{ env.OTP_VERSION }}-${{ env.ELIXIR_VERSION }}
           path: |
             ./_build
             ./c_src/headers.txt
@@ -96,11 +96,14 @@ jobs:
         shell: bash
         run: |
           export CMAKE_OPENCV_OPTIONS="-D WITH_FFMPEG=OFF"
-          if [ -n "${{ matrix.pair.CMAKE_TOOLCHAIN_FILE }}" ]; then
+          if [ "${{ matrix.pair.vcvarsall }}" = "amd64_arm64" ]; then
             export CMAKE_GENERATOR_TYPE="${{ matrix.pair.CMAKE_GENERATOR_TYPE }}"
             export MSBUILD_PLATFORM="${{ matrix.pair.MSBUILD_PLATFORM }}"
             export CMAKE_TOOLCHAIN_FILE="$(pwd)/${{ matrix.pair.CMAKE_TOOLCHAIN_FILE }}"
             export TOOLCHAIN_FILE="$(pwd)/${{ matrix.pair.CMAKE_TOOLCHAIN_FILE }}"
+            rm -rf ./_build
+            rm -rf ./deps
+            mix deps.get
           fi
           rm -f Makefile
           mix compile

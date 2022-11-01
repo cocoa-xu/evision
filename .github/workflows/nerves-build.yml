@@ -64,7 +64,7 @@ jobs:
           otp-version: ${{ env.OTP_VERSION }}
           elixir-version: ${{ env.ELIXIR_VERSION }}
 
-      - name: Install nerves and system dependecies
+      - name: Install nerves and system dependencies
         run: |
           mkdir -p ~/.ssh
           echo 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCulZpVE/JdpWX53C35n45RSIMtaIIiTMnmRo5oDEMbyh0NnKI5byikkOvGnGLOO2KTlq4We+MF5iKx72B1Ixl8RY7L6Kc/h3R6jG4uOWBhw/WBhIebteJVYDzrlU8fHTewquWYT6tJ7v7g54Qe5vofsDeKBDqTJqJPlwNSxP8AjPZ0vQ4O4IhG0CXaDzU/G50sqzquKckgGWURLN9LcsA+kzciKJRhKw4Q7kpOiTNG/fzYxBpgpNrnyyr7bhj0jdOsg9KoG57aLSqbmEVCOyWa6yh6lOTp37S6ijBfQORxUu3I+6B04zUBSEvN4wgqslHU9pbIio8Szz1vbnlqsgO0tG1yqALfs6RVSjW81AujKefeH/8seE7q0yiHJXkE4tejIcewJT+2e6p/fP2pVSwyRqZ1bObtRUCMG3Pwdi0IpfsyBSa02Qc7eT9VB1WN7XD1vpfMDQ/nIWmoA40VkX3F3v5Mht5PZwVmlRyM8BrLtCYTreUP5xl6ZZCSX2IfOI8= nerves-ci-build' > ~/.ssh/id_rsa.pub
@@ -113,6 +113,7 @@ jobs:
           echo '      {:evision, path: "../evision"},' >> mix.exs.tmp
           tail -n "+${LINE}" mix.exs >> mix.exs.tmp
           mv mix.exs.tmp mix.exs
+          sed -i 's/nx, "~> 0.3.0/nx, "~> 0.4/g' mix.exs
           cat mix.exs
           export MIX_TARGET=${{ matrix.target }}
           mix deps.get
