@@ -309,10 +309,13 @@ def map_argname_elixir(argname, ignore_upper_starting=False, argtype=None, from_
         name = f"Evision.Internal.Structurise.from_struct({name})"
     return name
 
-def map_argname_erlang(argname):
+def map_argname_erlang(argname, argtype=None, from_struct=False):
     argname_prefix_re = re.compile(r'^[_]*')
     name = argname_prefix_re.sub('', argname)
-    return f"{name[0:1].upper()}{name[1:]}"
+    name = f"{name[0:1].upper()}{name[1:]}"
+    if from_struct and argtype is not None:
+        name = f"evision_internal_structurise:from_struct({name})"
+    return name
 
 
 def map_argtype_to_guard(kind, argname, argtype):
@@ -856,7 +859,8 @@ def map_argtype_to_guard_erlang(argname, argtype):
         return f'is_tuple({argname})'
     elif is_struct(argtype):
         _, struct_name = is_struct(argtype, also_get='struct_name')
-        return f'is_struct({argname}, {struct_name})'
+        struct_name = struct_name.replace("Evision.", "evision_").replace(".", "_").lower()
+        return f'(is_tuple({argname}) and tuple_size({argname}) > 0 and (element(1, {argname}) == {struct_name}))'
     elif is_ref_or_struct(argtype):
         return f'is_reference({argname})'
     elif is_list_type(argtype):

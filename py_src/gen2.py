@@ -60,6 +60,8 @@ class BeamWrapperGenerator(object):
 
         # src/generated/evision.erl
         self.evision_erlang = StringIO()
+        # src/evision.hrl
+        self.evision_erlang_hrl = StringIO()
 
         self.evision_ex = ModuleGenerator("Evision")
         self.evision_elixir.write('defmodule Evision do\n')
@@ -67,9 +69,15 @@ class BeamWrapperGenerator(object):
         self.evision_elixir.write('  import Kernel, except: [apply: 2, apply: 3, min: 2, max: 2]\n\n')
         self.evision_elixir.write('  @doc false\n')
         self.evision_elixir.write('  def __to_struct__(any), do: Evision.Internal.Structurise.to_struct(any)\n\n')
-
         self.evision_elixir.write(ET.gen_cv_types_elixir)
+
         self.evision_erlang.write('-module(evision).\n-compile(nowarn_export_all).\n-compile([export_all]).\n\n')
+        self.evision_erlang.write('\'__to_struct__\'(Any) ->\n  evision_internal_structurise:from_struct(Any).\n\n')
+
+        self.evision_erlang_hrl.write(
+            "-record(evision_mat, {channels, dims, type, raw_type, shape, ref}).\n"
+            "-record(evision_videocapture, {fps, frame_count, frame_width, frame_height, isOpened, ref}).\n"
+        )
 
         self.evision_modules = {}
         self.code_type_publish = StringIO()
@@ -344,25 +352,42 @@ class BeamWrapperGenerator(object):
             module_file_generator.write_elixir(f'defmodule Evision.{elixir_module_name} do\n')
             if elixir_module_name not in ['Flann', 'Segmentation', 'ML']:
                 module_file_generator.write_elixir('  import Kernel, except: [apply: 2, apply: 3]\n\n')
+            
+            if not evision_module_filename.startswith("evision_"):
+                module_file_generator.write_erlang(f'-module(evision_{evision_module_filename.lower()}).\n-compile(nowarn_export_all).\n-compile([export_all]).\n-include("evision.hrl").\n\n')
+            else:
+                module_file_generator.write_erlang(f'-module({evision_module_filename.lower()}).\n--compile(nowarn_export_all).\ncompile([export_all]).\n-include("evision.hrl").\n\n')
+
             if ES.evision_structs.get(elixir_module_name, None) is not None:
-                module_file_generator.write_elixir(ES.evision_structs[elixir_module_name])
+                module_file_generator.write_elixir(ES.evision_structs[elixir_module_name]["elixir"])
                 module_file_generator.write_elixir("\n")
+                module_file_generator.write_erlang(ES.evision_structs[elixir_module_name]["erlang"])
+                module_file_generator.write_erlang("\n")
 
             if elixir_module_name not in evision_structrised_classes:
                 atom_elixir_module_name = elixir_module_name
+                atom_erlang_module_name = elixir_module_name
                 if '.' in atom_elixir_module_name:
                     atom_elixir_module_name = f'"{atom_elixir_module_name}"'
                 module_file_generator.write_elixir(
-                    ES.generic_struct_template.substitute(
+                    ES.generic_struct_template_elixir.substitute(
                         atom_elixir_module_name=atom_elixir_module_name,
                         elixir_module_name=elixir_module_name
                     )
                 )
-
-            if not evision_module_filename.startswith("evision_"):
-                module_file_generator.write_erlang(f'-module(evision_{evision_module_filename.lower()}).\n-compile(nowarn_export_all).\n-compile([export_all]).\n\n')
-            else:
-                module_file_generator.write_erlang(f'-module({evision_module_filename.lower()}).\n--compile(nowarn_export_all).\ncompile([export_all]).\n\n')
+                atom_erlang_module_name = atom_erlang_module_name.replace("Evision.", "evision_").replace(".", "_").lower()
+                if not atom_erlang_module_name.startswith("evision_"):
+                    atom_erlang_module_name = f"evision_{atom_erlang_module_name}"
+                module_file_generator.write_erlang(
+                    ES.generic_struct_template_erlang.substitute(
+                        atom_elixir_module_name=elixir_module_name,
+                        atom_erlang_module_name=atom_erlang_module_name
+                    )
+                )
+                self.evision_erlang_hrl.write(
+                    f"-record({atom_erlang_module_name}, "
+                    "{ref}).\n"
+                )
 
             self.evision_modules[evision_module_filename] = module_file_generator
             return self.evision_modules[evision_module_filename], inner_ns
@@ -566,6 +591,9 @@ class BeamWrapperGenerator(object):
             self.evision_ex.end('erlang')
             self.evision_elixir.write(self.evision_ex.get_generated_code('erlang'))
             self.save(erlang_output_path, "evision.erl", self.evision_erlang)            
+
+            # 'evision.hrl'
+            self.save(erlang_output_path, "evision.hrl", self.evision_erlang_hrl)
 
         self.code_ns_reg.write('\n};\n\n')
         self.save(output_path, "evision_generated_modules_content.h", self.code_ns_reg)

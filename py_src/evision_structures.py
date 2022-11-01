@@ -3,7 +3,7 @@
 
 from string import Template
 
-videocapture_struct = '  @typedoc """\n' + \
+videocapture_struct_elixir = '  @typedoc """\n' + \
 """  Type that represents an `Evision.VideoCapture` struct.
 
   - **fps**. `double`.
@@ -66,8 +66,16 @@ videocapture_struct = '  @typedoc """\n' + \
   end
 """
 
+videocapture_struct_erlang = """
+'__to_struct__'(#{class := 'VideoCapture', ref := Ref}) ->
+  #evision_videocapture{
+      ref = Ref
+  };
+'__to_struct__'(Any) ->
+    evision_internal_structurise:to_struct(Any).
+"""
 
-generic_struct_template = Template(
+generic_struct_template_elixir = Template(
   '  @typedoc """\n'
   '  Type that represents an `Evision.${elixir_module_name}` struct.\n\n'
   '  - **ref**. `reference()`\n\n'
@@ -97,8 +105,23 @@ generic_struct_template = Template(
 """
 )
 
+generic_struct_template_erlang = Template(
+  """
+'__to_struct__'(#{class := '${atom_elixir_module_name}', ref := Ref}) ->
+  #${atom_erlang_module_name}{
+      ref = Ref
+  };
+'__to_struct__'(Any) ->
+    evision_internal_structurise:to_struct(Any).
+
+"""
+)
+
 evision_structs = {
-    "VideoCapture": videocapture_struct
+    "VideoCapture": {
+      "elixir": videocapture_struct_elixir, 
+      "erlang": videocapture_struct_erlang
+    }
 }
 
 evision_structrised_classes = list(evision_structs.keys())

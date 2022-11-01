@@ -563,7 +563,7 @@ class FuncVariant(object):
         opts_args = ''
         if self.has_opts:
             if in_func_body:
-                opts_args = ' ++ Options'
+                opts_args = ' ++ evision_internal_structurise:from_struct(Options)'
             else:
                 opts_args = 'Options' if self.min_args == 0 else ', Options'
         return opts_args
@@ -601,6 +601,8 @@ class FuncVariant(object):
                     self_arg = 'Evision.Internal.Structurise.from_struct(self)'
             elif kind == 'erlang':
                 self_arg = 'Self'
+                if in_func_body:
+                    self_arg = 'evision_internal_structurise:from_struct(Self)'
             else:
                 print(f'warning: func_args: unknown kind `{kind}`')
 

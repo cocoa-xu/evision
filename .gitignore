@@ -43,3 +43,6 @@ test/photo_hdr_test/
 # we don't need to track checksum-evision.exs in git
 # it should only be tracked by hex.pm (in `Evision.MixProject.package()[:files]`)
 checksum-evision.exs
+
+# manually track this file in git
+checksum_evision.erl
