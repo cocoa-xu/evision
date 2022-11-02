@@ -724,6 +724,7 @@ predict_cell = fn predict_fn, model_state, input_cell ->
   input_cell =
     Nx.as_type(Evision.Mat.to_nx(Evision.resize(input_cell, {28, 28}), Torchx.Backend), :f32)
     |> Nx.reshape({1, 784})
+    |> Nx.divide(255.0)
 
   pred = predict_fn.(model_state, input_cell)
   Nx.to_number(Nx.argmax(pred))
