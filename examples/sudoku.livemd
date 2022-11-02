@@ -188,8 +188,8 @@ area of the largest contour: 430559.5
 ```elixir
 # 2.the puzzle should be a rectangular
 #   which means its contour should be approximately an rectangular
-#   which means it should have 4 corners (keypoints)
-#   hence we will need to find the contour that has shape {4, 1, 2}
+#   which means the approximated polygonal of the contour should have 4 corners (keypoints)
+#   hence we will need to find the contour which its approximated polygonal's shape is {4, 1, 2}
 puzzle_keypoints =
   Enum.reduce_while(contours, nil, fn c, _acc ->
     peri = Evision.arcLength(c, true)
