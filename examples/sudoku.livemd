@@ -163,8 +163,8 @@ Find 377 contour(s)
 
 ```elixir
 # and our assumptions are that
-#   1. the puzzle should be fairly large: 
-#      hence we are sorting they by size desc
+#   1. the contour that contains the puzzle should be fairly large: 
+#      hence we are sorting them by their area in descending order
 contours =
   Enum.sort_by(contours, fn c ->
     -Evision.contourArea(c)
