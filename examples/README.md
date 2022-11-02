@@ -72,6 +72,12 @@ Related functions:
 
 [![Run in Livebook](https://livebook.dev/badge/v1/gray.svg)](https://livebook.dev/run?url=https%3A%2F%2Fgithub.com%2Fcocoa-xu%2Fevision%2Fblob%2Fmain%2Fexamples%2Fpca.livemd)
 
+### Extracting Sudoku Puzzle from An Image
+
+[sudoku.livemd](sudoku.livemd)
+
+[![Run in Livebook](https://livebook.dev/badge/v1/gray.svg)](https://livebook.dev/run?url=https%3A%2F%2Fgithub.com%2Fcocoa-xu%2Fevision%2Fblob%2Fmain%2Fexamples%2Fsudoku.livemd)
+
 ### Simple use of Evision in a Machine Learning Pipeline with Nx and torhcx
 
 [cifar10.livemd](cifar10.livemd)

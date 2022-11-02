@@ -926,6 +926,7 @@ defmodule Evision.MixProject do
         "examples/stitching.livemd",
         "examples/pca.livemd",
         "examples/photo-hdr.livemd",
+        "examples/sudoku.livemd",
         "examples/cifar10.livemd",
         # Evision.DNN
         "examples/dnn-googlenet.livemd",
