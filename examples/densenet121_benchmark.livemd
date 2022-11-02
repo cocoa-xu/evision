@@ -32,7 +32,7 @@ defmodule Helper do
   end
 
   def download!(url, save_as, true) do
-    body = Req.get!(url, http_errors: :raise)
+    body = Req.get!(url, http_errors: :raise).body
     File.write!(save_as, body)
   end
 end
