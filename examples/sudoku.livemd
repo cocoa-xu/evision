@@ -30,19 +30,12 @@ The code of the neural network was taken from https://github.com/elixir-nx/axon/
 
 ```elixir
 defmodule Helper do
-  def download!(url, save_as, overwrite \\ false)
-
-  def download!(url, save_as, false) do
+  def download!(url, save_as, overwrite? \\ false) do
     unless File.exists?(save_as) do
-      download!(url, save_as, true)
+      Req.get!(url, http_errors: :raise, output: save_as, cache: not overwrite?)
     end
 
     :ok
-  end
-
-  def download!(url, save_as, true) do
-    body = Req.get!(url, http_errors: :raise).body
-    File.write!(save_as, body)
   end
 end
 ```
