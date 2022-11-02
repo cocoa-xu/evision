@@ -38,15 +38,7 @@ defmodule Helper do
   end
 
   def download!(url, save_as, true) do
-    body =
-      case Req.get!(url) do
-        %Req.Response{status: 200, body: body} ->
-          body
-
-        error ->
-          raise inspect(error)
-      end
-
+    body = Req.get!(url, http_errors: :raise)
     File.write!(save_as, body)
   end
 

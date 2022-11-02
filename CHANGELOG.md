@@ -3,6 +3,9 @@
 ## v0.1.17-dev (main)
 [Browse the Repository](https://github.com/cocoa-xu/evision)
 
+## Changed
+- [example] `Req.get!` should only raise on 4xx and 5xx. Thanks @wojtekmach
+
 ## Added
 - [example] Added two examples: 
 

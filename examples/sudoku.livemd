@@ -20,11 +20,11 @@ Mix.install([
 :ok
 ```
 
-## Reference
+## References
 
-Some code in this example is basically literal translation from the code on [OpenCV Sudoku Solver and OCR - PyImageSearch](https://pyimagesearch.com/2020/08/10/opencv-sudoku-solver-and-ocr/). The sample input image is also taken from that post.
+Some code in this example was basically literal translation from the code in [OpenCV Sudoku Solver and OCR - PyImageSearch](https://pyimagesearch.com/2020/08/10/opencv-sudoku-solver-and-ocr/). The sample input image is also taken from that post.
 
-The code of the neural network is taken from https://github.com/elixir-nx/axon/blob/main/examples/vision/mnist.exs with some minor changes.
+The code of the neural network was taken from https://github.com/elixir-nx/axon/blob/main/examples/vision/mnist.exs with some minor changes.
 
 ## Define Some Helper Functions
 
@@ -114,9 +114,6 @@ blurred = Evision.gaussianBlur(gray, {7, 7}, 3)
 ```
 
 ```elixir
-# import Bitwise so that we can use `|||` (bitwise or)
-import Bitwise
-
 # binarization with Evision.adaptiveThreshold
 bw =
   Evision.adaptiveThreshold(
@@ -172,8 +169,9 @@ Find 377 contour(s)
 ```
 
 ```elixir
-# and our assumption is that 
-#   1. the puzzle should be fairly large: hence we sort they by size desc
+# and our assumptions are that
+#   1. the puzzle should be fairly large: 
+#      hence we are sorting they by size desc
 contours =
   Enum.sort_by(contours, fn c ->
     -Evision.contourArea(c)
@@ -254,7 +252,7 @@ To apply any affine transformations, we will first need to know the four corners
 3. Bottom right
 4. Bottom left
 
-And these four points have to be arranged in the above order -- so that when you connect them 1 => 2 => 3=> 4 => 1, they can form a closed rectangular.
+And these four points have to be arranged in the order above -- so that when you connect them 1 => 2 => 3=> 4 => 1, they can form a closed rectangular.
 
 ```elixir
 # this function will arrange the keypoints in the order discussed above
@@ -344,7 +342,7 @@ output_height =
 {609, 771}
 ```
 
-Then we specify output coordinates for corners of the puzzle in order top-left, top-right, bottom-right and bottom-left in `output`.
+Then we specify output coordinates for corners of the puzzle, [`top-left`, `top-right`, `bottom-right`, `bottom-left`] as `output`.
 
 ```elixir
 output =
@@ -374,7 +372,7 @@ output =
 >
 ```
 
-Get the perspective transformation matrix and warp perspective for original image and the grayscale one
+Get the perspective transformation matrix and warp perspective for both the original image and the grayscale one
 
 ```elixir
 matrix = Evision.getPerspectiveTransform(rect, output)
@@ -457,6 +455,9 @@ current_cell = puzzle_gray[[0..round(step), 0..round(step)]]
 ```
 
 ```elixir
+# import Bitwise so that we can use `|||` (bitwise or)
+import Bitwise
+
 extract_digit = fn cell ->
   # get a binary image of the cell
   {_, threshold} =
