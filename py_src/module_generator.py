@@ -119,6 +119,30 @@ class ModuleGenerator(object):
     def end_erlang(self):
         for function_name, function in self.function['erlang'].items():
             for arity, functions in function.items():
+                docs_spec_mfa = self.inline_docs['erlang'].get(function_name, {}).get(arity, [])
+                if len(docs_spec_mfa) > 0:
+                    if len(docs_spec_mfa) == 1:
+                        _docs, spec = docs_spec_mfa[0]
+                        self.write_erlang(spec)
+                        self.write_erlang("\n")
+                    else:
+                        _docs, spec = docs_spec_mfa[0]
+                        prefix = spec[:-1].index("(")
+                        self.write_erlang(spec[:-1])
+                        self.write_erlang("\n")
+                        space = ' ' * (prefix - 1)
+                        for i in range(1, len(docs_spec_mfa) - 1):
+                            _docs, spec = docs_spec_mfa[i]
+                            self.write_erlang(space)
+                            self.write_erlang(';')
+                            self.write_erlang(spec[prefix:-1])
+                            self.write_erlang("\n")
+                        _docs, spec = docs_spec_mfa[-1]
+                        self.write_erlang(space)
+                        self.write_erlang(';')
+                        self.write_erlang(spec[prefix:])
+                        self.write_erlang("\n")
+
                 if len(functions) == 1:
                     self.write_erlang(functions[0][1])
                 else:
@@ -143,8 +167,8 @@ class ModuleGenerator(object):
         cname = ns[-1]
         if cname == 'Params':
             cname = '_'.join(ns[-2:])
-        self_spec_in = map_argtype_in_spec(class_name, cname, is_in=True)
-        prop_spec_out = map_argtype_in_spec(class_name, property.tp, is_in=False)
+        self_spec_in_elixir = map_argtype_in_spec('elixir', class_name, cname, is_in=True)
+        prop_spec_out_elixir = map_argtype_in_spec('elixir', class_name, property.tp, is_in=False)
         generating_type = 'get'
         property_templates = {
             "elixir": {
@@ -152,8 +176,8 @@ class ModuleGenerator(object):
                 "nif_args": '_self',
                 "nif_template": Template('  def ${nif_name}(${nif_args}), do: :erlang.nif_error("${nif_error_msg}")\n'),
                 "nif_error_msg": f"{class_name}::{property_name} {generating_type}ter not loaded",
-                "self_spec": self_spec_in,
-                'prop_spec': prop_spec_out
+                "self_spec": self_spec_in_elixir,
+                'prop_spec': prop_spec_out_elixir
             },
             "erlang": {
                 "getter_template": ET.erlang_property_getter,
@@ -166,8 +190,8 @@ class ModuleGenerator(object):
         # ======== step 2. generate property setter if the property if not readonly ========
         if not property.readonly:
             func_arity = 2
-            self_spec_out = map_argtype_in_spec(class_name, cname, is_in=False)
-            prop_spec_in = map_argtype_in_spec(class_name, property.tp, is_in=True)
+            self_spec_out_elixir = map_argtype_in_spec('elixir', class_name, cname, is_in=False)
+            prop_spec_in_elixir = map_argtype_in_spec('elixir', class_name, property.tp, is_in=True)
             generating_type = 'set'
             property_templates = {
                 "elixir": {
@@ -175,9 +199,9 @@ class ModuleGenerator(object):
                     "nif_args": '_self, _prop',
                     "nif_template": Template('  def ${nif_name}(${nif_args}), do: :erlang.nif_error("${nif_error_msg}")\n'),
                     "nif_error_msg": f"{class_name}::{property_name} {generating_type}ter not loaded",
-                    "self_spec_in": self_spec_in,
-                    "self_spec_out": self_spec_out,
-                    'prop_spec': prop_spec_in
+                    "self_spec_in": self_spec_in_elixir,
+                    "self_spec_out": self_spec_out_elixir,
+                    'prop_spec': prop_spec_in_elixir
                 },
                 "erlang": {
                     "setter_template": ET.erlang_property_setter,
@@ -324,7 +348,7 @@ class ModuleGenerator(object):
                 rejected, module_func_name = get_module_func_name(module_func_name, is_ns, full_qualified_name)
                 if rejected:
                     return
-                
+
                 if '_' in module_func_name and len(namespace_list) > 1:
                     prefix = '_'.join([map_argname('elixir', ns) for ns in namespace_list[:-1]])
                     prefix += '_'
@@ -348,7 +372,7 @@ class ModuleGenerator(object):
                         argname, _, argtype = func_variant.py_arglist[0]
                         if 'buffer' in argname and argtype == 'vector_uchar':
                             module_func_name += 'Buffer'
-                
+
                 if "qrcodeencoder_params" == module_func_name:
                     module_func_name = 'params'
 
@@ -380,7 +404,10 @@ class ModuleGenerator(object):
                         func_args_with_opts = f'{positional_var}{opts_args}'
 
                     if is_instance_method:
-                        self_arg = {'elixir': 'Evision.Internal.Structurise.from_struct(self)', 'erlang': 'Self'}
+                        self_arg = {
+                            'elixir': 'Evision.Internal.Structurise.from_struct(self)', 
+                            'erlang': 'evision_internal_structurise:from_struct(Self)'
+                        }
                         func_args = f'{self_arg[kind]}, {func_args}'
                         if len(func_args_with_opts) > 0:
                             func_args_with_opts = f'{self_arg[kind]}, {func_args_with_opts}'
@@ -411,7 +438,7 @@ class ModuleGenerator(object):
                             function_code = StringIO()
                             function_code.write(f'{module_func_name}(Self, Options) when is_list(Options), is_tuple(hd(Options)), tuple_size(hd(Options)) == 2 ->\n'
                                 f'  Ret = evision_nif:{nif_name}(evision_internal_structurise:from_struct(Self), evision_internal_structurise:from_struct(Options)),\n'
-                                "   '__to_struct__'(Ret).\n\n")
+                                "  '__to_struct__'(Ret).\n\n")
                             self.add_function(kind, module_func_name, 2, guards_count=3, generated_code=function_code.getvalue())
                         continue
 
@@ -441,7 +468,7 @@ class ModuleGenerator(object):
                         elif kind == 'erlang':
                             function_code.write(f'{module_func_name}(Self) ->\n'
                                 f'  Ret = evision_nif:{nif_name}(evision_internal_structurise:from_struct(Self), []),\n'
-                                "   '__to_struct__'(Ret).\n\n"
+                                "  '__to_struct__'(Ret).\n\n"
                             )
                             self.add_function(kind, module_func_name, 
                                 function_arity=1, 
@@ -451,7 +478,7 @@ class ModuleGenerator(object):
                             function_code = StringIO()
                             function_code.write(f'{module_func_name}(Self, Options) when is_list(Options), is_tuple(hd(Options)), tuple_size(hd(Options)) == 2 ->\n'
                                 f'  Ret = evision_nif:{nif_name}(evision_internal_structurise:from_struct(Self), evision_internal_structurise:from_struct(Options)),\n'
-                                "   '__to_struct__'(Ret).\n\n"
+                                "  '__to_struct__'(Ret).\n\n"
                             )
                             self.add_function(kind, module_func_name, 
                                 function_arity=2,
@@ -500,10 +527,15 @@ class ModuleGenerator(object):
                                 inline_docs=inline_doc,
                             )
                         elif kind == 'erlang':
-                            function_code.write(f'{module_func_name}({module_func_args_with_opts}){when_guard_with_opts} ->\n'
+                            function_code.write(
+                                f'{module_func_name}({module_func_args_with_opts}){when_guard_with_opts} ->\n'
                                 f'  {positional_args},\n'
                                 f'  Ret = evision_nif:{nif_name}({func_args_with_opts}),\n'
-                                "   '__to_struct__'(Ret).\n\n"
+                                "  '__to_struct__'(Ret).\n\n"
+                            )
+                            self.add_function_docs(kind, module_func_name, func_arity,
+                                inline_docs=inline_doc,
+                                typespec=function_spec_opts
                             )
                         else:
                             raise RuntimeError(f"unknown kind `{kind}`")
@@ -532,10 +564,15 @@ class ModuleGenerator(object):
                             '  end\n')
                         self.add_function_docs(kind, module_func_name, func_arity, inline_doc)
                     elif kind == 'erlang':
-                        function_code.write(f'{module_func_name}({module_func_args}){func_when_guard} ->\n'
+                        function_code.write(
+                            f'{module_func_name}({module_func_args}){func_when_guard} ->\n'
                             f'  {positional_args},\n'
                             f'  Ret = evision_nif:{nif_name}({func_args}),\n'
-                            "   '__to_struct__'(Ret).\n\n"
+                            "  '__to_struct__'(Ret).\n\n"
+                        )
+                        self.add_function_docs(kind, module_func_name, func_arity,
+                            inline_docs=inline_doc,
+                            typespec=function_spec
                         )
                     else:
                         raise RuntimeError(f"unknown kind `{kind}`")
@@ -621,7 +658,7 @@ class ModuleGenerator(object):
             function_dict[function_name][function_arity] = []
         function_dict[function_name][function_arity].append((guards_count, generated_code))
 
-    def add_function_docs(self, kind: str, function_name: str, function_arity: int, inline_docs: str):
+    def add_function_docs(self, kind: str, function_name: str, function_arity: int, inline_docs: str, typespec: str = None):
         if self.inline_docs.get(kind, None) is None:
             self.inline_docs[kind] = {}
         inline_docs_dict = self.inline_docs[kind]
@@ -629,7 +666,10 @@ class ModuleGenerator(object):
             inline_docs_dict[function_name] = {}
         if function_arity not in inline_docs_dict[function_name]:
             inline_docs_dict[function_name][function_arity] = []
-        inline_docs_dict[function_name][function_arity].append(inline_docs)
+        if kind == 'elixir':
+            inline_docs_dict[function_name][function_arity].append(inline_docs)
+        elif kind == 'erlang':
+            inline_docs_dict[function_name][function_arity].append((inline_docs, typespec))
 
     def print_functions(self, kind: str):
         for function_name, function in self.function[kind].items():

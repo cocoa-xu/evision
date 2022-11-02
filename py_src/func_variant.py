@@ -144,7 +144,7 @@ class FuncVariant(object):
         if kind == 'elixir':
             return self.inline_docs_elixir()
         else:
-            return ''
+            return self.inline_docs_erlang()
 
     def __escape_inline_docs__(self, line: str):
         line = line.replace("\\", r"\\")
@@ -203,6 +203,9 @@ class FuncVariant(object):
         if is_multiline:
             line_index = peak_line_index - 1
         return is_multiline, line_index
+
+    def inline_docs_erlang(self) -> str:
+        return ""
 
     def inline_docs_elixir(self) -> str:
         global inline_docs_code_type_re
@@ -436,6 +439,14 @@ class FuncVariant(object):
         return inline_doc
 
     def generate_spec(self, kind: str, module_func_name: str, is_instance_method: bool, include_opts: bool, in_args: list=None, out_args: list=None) -> str:
+        if kind == 'elixir':
+            return self.generate_spec_elixir(module_func_name, is_instance_method, include_opts, in_args, out_args)
+        elif kind == 'erlang':
+            return self.generate_spec_erlang(module_func_name, is_instance_method, include_opts, in_args, out_args)
+        else:
+            return ''
+
+    def generate_spec_elixir(self, module_func_name: str, is_instance_method: bool, include_opts: bool, in_args: list=None, out_args: list=None) -> str:
         spec = StringIO()
 
         self.classname
@@ -469,7 +480,7 @@ class FuncVariant(object):
         in_args_spec = []
         if in_args is not None:
             for argtype in in_args:
-                in_args_spec.append(map_argtype_in_spec(self.classname, argtype, is_in=True))
+                in_args_spec.append(map_argtype_in_spec('elixir', self.classname, argtype, is_in=True))
         if self.has_opts and include_opts:
             in_args_spec.append('[{atom(), term()},...] | nil')
         if is_instance_method:
@@ -506,7 +517,7 @@ class FuncVariant(object):
         out_args_spec = []
         if out_args is not None and len(out_args) > 0:
             for argtype in out_args:
-                out_args_spec.append(map_argtype_in_spec(self.classname, argtype, is_in=False))
+                out_args_spec.append(map_argtype_in_spec('elixir', self.classname, argtype, is_in=False))
             out_spec = ", ".join(out_args_spec)
         else:
             out_args_spec = [':ok']
@@ -534,6 +545,112 @@ class FuncVariant(object):
             else:
                 out_spec = f'{{{out_spec}}} | {{:error, String.t()}}'
         spec.write(out_spec)
+
+        spec = spec.getvalue()
+        return spec
+
+    def generate_spec_erlang(self, module_func_name: str, is_instance_method: bool, include_opts: bool, in_args: list=None, out_args: list=None) -> str:
+        spec = StringIO()
+
+        self.classname
+        if out_args is None:
+            out_args = self.py_outlist
+            out_args_name = [o[0] for o in out_args]
+
+            if len(out_args_name) > 0 and (out_args_name[0] in ['retval', 'self']) and self.py_outlist[0][1] == -1:
+                if out_args_name[0] == 'retval':
+                    out_args = [self.rettype]
+                elif out_args_name[0] == 'self':
+                    out_args = [self.name]
+                out_args_name = out_args_name[1:]
+            elif self.isconstructor:
+                out_args = [self.classname]
+            else:
+                out_args = []
+
+            for arg in self.args:
+                if arg.name in out_args_name:
+                    out_args.append(arg.tp)
+
+        if in_args is None:
+            if self.min_args > 0:
+                in_args = []
+                for (arg_name, _, argtype) in self.py_arglist[:self.pos_end]:
+                    if arg_name not in out_args:
+                        in_args.append(argtype)
+
+        spec.write(f'-spec {module_func_name}(')
+        in_args_spec = []
+        if in_args is not None:
+            for argtype in in_args:
+                in_args_spec.append(map_argtype_in_spec('erlang', self.classname, argtype, is_in=True))
+        if self.has_opts and include_opts:
+            in_args_spec.append('[{atom(), term()},...] | nil')
+        if is_instance_method:
+            self.spec_self = ''
+            if len(self.classname) > 0:
+                tmp_name = self.classname
+                is_param = False
+                if tmp_name.endswith('_Param'):
+                    tmp_name = tmp_name[:len('_Param')]
+                    is_param = True
+                parts = tmp_name.split('_')
+                self.spec_self = parts[-1]
+                if is_param:
+                    self.spec_self += '_Param'
+                if tmp_name == 'ml_ANN_MLP':
+                    self.spec_self = 'ANN_MLP'
+                elif tmp_name == 'dnn_TextDetectionModel_DB':
+                    self.spec_self = 'TextDetectionModel_DB'
+                elif tmp_name == 'dnn_TextDetectionModel_EAST':
+                    self.spec_self = 'TextDetectionModel_EAST'
+
+            if is_struct(self.spec_self):
+                _, struct_name = is_struct(self.spec_self, also_get='struct_name')
+                ty = struct_name.replace('.', '_').lower()
+                self.spec_self = f'#{ty}'+'{}'
+            else:
+                print(f'warning: {self.spec_self} should be a struct. classname={self.classname}')
+                ty = self.spec_self.replace('.', '_').lower()
+                self.spec_self = f'#evision_{ty}' + '{}'
+            in_args_spec.insert(0, self.spec_self)
+
+        spec.write(", ".join(in_args_spec))
+        spec.write(") -> ")
+
+        out_spec = ''
+        out_args_spec = []
+        if out_args is not None and len(out_args) > 0:
+            for argtype in out_args:
+                out_args_spec.append(map_argtype_in_spec('erlang', self.classname, argtype, is_in=False))
+            out_spec = ", ".join(out_args_spec)
+        else:
+            out_args_spec = ['ok']
+
+        ok_error = True
+        if len(out_args_spec) == 1:
+            if out_args_spec[0] == 'boolean()':
+                out_spec = 'boolean() | {error, binary()}'
+                ok_error = False
+            elif out_args_spec[0] == 'ok':
+                out_spec = 'ok | {error, binary()}'
+                ok_error = False
+        else:
+            if out_args_spec[0] == 'boolean()':
+                out_spec = ", ".join(out_args_spec[1:])
+                if len(out_args_spec) == 2:
+                    out_spec = f'{out_spec} | false | {{error, binary()}}'
+                else:
+                    out_spec = f'{{{out_spec}}} | false | {{error, binary()}}'
+                ok_error = False
+
+        if ok_error:
+            if len(out_args_spec) == 1:
+                out_spec = f'{out_spec} | {{error, binary()}}'
+            else:
+                out_spec = f'{{{out_spec}}} | {{error, binary()}}'
+        spec.write(out_spec)
+        spec.write('.')
 
         spec = spec.getvalue()
         return spec

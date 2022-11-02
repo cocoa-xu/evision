@@ -718,7 +718,92 @@ manual_type_spec_map = {
     'Layer': 'Evision.DNN.Layer.t()'
 }
 
-def map_argtype_in_spec(classname: str, argtype: str, is_in: bool):
+def map_argtype_in_spec(kind: str, classname: str, argtype: str, is_in: bool) -> str:
+    if kind == 'elixir':
+        return map_argtype_in_spec_elixir(classname, argtype, is_in)
+    elif kind == 'erlang':
+        return map_argtype_in_spec_erlang(classname, argtype, is_in)
+    else:
+        return ''
+
+def map_argtype_in_spec_erlang(classname: str, argtype: str, is_in: bool) -> str:
+    global vec_out_types
+    if len(argtype) > 0 and argtype[-1] == '*':
+        if argtype == 'char*' or argtype == 'uchar*':
+            return 'binary()'
+        argtype = argtype[:-1]
+    if argtype.startswith('Ptr<'):
+        if argtype == 'Ptr<char>' or argtype == 'Ptr<uchar>':
+            return 'binary()'
+        argtype = argtype[len('Ptr<'):-1]
+
+    if is_int_type(argtype):
+        return 'integer()'
+    elif argtype == 'bool':
+        return 'boolean()'
+    elif argtype == 'double':
+        return 'number()'
+    elif argtype == 'float':
+        return 'number()'
+    elif argtype in ['String', 'c_string', 'string', 'cv::String', 'std::string']:
+        return 'binary()'
+    elif argtype in ['char', 'uchar']:
+        return 'char()'
+    elif argtype == 'void':
+        return 'ok'
+    elif argtype == 'Range':
+        return '{integer(), integer()} | all'
+    elif is_in and argtype in ['Mat', 'UMat', 'cv::Mat', 'cv::UMat']:
+        return '#evision_mat{}'
+    elif argtype in evision_structrised_classes:
+        ty = argtype.replace('.', '_').lower()
+        return f'#evision_{ty}'+'{}'
+    elif argtype in ['Mat', 'cv::Mat', 'UMat', 'cv::UMat']:
+        return '#evision_mat{}'
+    elif argtype.startswith('vector_'):
+        argtype_inner = argtype[len('vector_'):]
+        if argtype == 'vector_char' or argtype == 'vector_uchar':
+            return 'binary()'
+        spec_type = 'list(' + map_argtype_in_spec_erlang(classname, argtype_inner, is_in) + ')'
+        return spec_type
+    elif argtype.startswith('std::vector<'):
+        if argtype == 'std::vector<char>' or argtype == 'std::vector<uchar>':
+            return 'binary()'
+        argtype_inner = argtype[len('std::vector<'):-1]
+        spec_type = 'list(' + map_argtype_in_spec_erlang(classname, argtype_inner, is_in) + ')'
+        return spec_type
+    elif is_struct(argtype):
+        _, struct_name = is_struct(argtype, also_get='struct_name')
+        ty = struct_name.replace('.', '_').lower()
+        return f'#{ty}' + '{}'
+    elif argtype in manual_type_spec_map:
+        return manual_type_spec_map[argtype]
+    elif argtype in ["FeatureDetector", "DescriptorExtractor"]:
+        return 'reference() | term()'
+    elif argtype in ['GpuMat::Allocator', 'GpuMat_Allocator']:
+        return 'reference()'
+    elif argtype in vec_out_types:
+        return vec_out_types[argtype]
+    elif argtype == 'Target':
+        return 'integer()'
+    elif argtype == 'Status' and classname == 'Stitcher':
+        return 'integer()'
+    elif argtype == 'Device' and classname == 'ocl_Device':
+        return '#evision_ocl_device{}'
+    elif argtype == 'Index' and classname == 'flann_Index':
+         return '#evision_flann_index{}'
+    else:
+        if argtype == 'LayerId':
+            return 'term()'
+        if argtype == 'GpuMat' or argtype == 'cuda::GpuMat':
+            return '#evision_cuda_gpumat{}'
+        if argtype == 'IndexParams' or argtype == 'SearchParams' or argtype == 'Moments':
+            return f'map()'
+        else:
+            print(f'warning: generate_spec: unknown argtype `{argtype}`, input_arg? {is_in}, class={classname}')
+            return 'term()'
+
+def map_argtype_in_spec_elixir(classname: str, argtype: str, is_in: bool) -> str:
     global vec_out_types
     if len(argtype) > 0 and argtype[-1] == '*':
         if argtype == 'char*' or argtype == 'uchar*':
@@ -758,13 +843,13 @@ def map_argtype_in_spec(classname: str, argtype: str, is_in: bool):
         argtype_inner = argtype[len('vector_'):]
         if argtype == 'vector_char' or argtype == 'vector_uchar':
             return 'binary()'
-        spec_type = 'list(' + map_argtype_in_spec(classname, argtype_inner, is_in) + ')'
+        spec_type = 'list(' + map_argtype_in_spec_elixir(classname, argtype_inner, is_in) + ')'
         return spec_type
     elif argtype.startswith('std::vector<'):
         if argtype == 'std::vector<char>' or argtype == 'std::vector<uchar>':
             return 'binary()'
         argtype_inner = argtype[len('std::vector<'):-1]
-        spec_type = 'list(' + map_argtype_in_spec(classname, argtype_inner, is_in) + ')'
+        spec_type = 'list(' + map_argtype_in_spec_elixir(classname, argtype_inner, is_in) + ')'
         return spec_type
     elif is_struct(argtype):
         _, struct_name = is_struct(argtype, also_get='struct_name')

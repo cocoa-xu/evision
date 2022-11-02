@@ -71,7 +71,7 @@ class BeamWrapperGenerator(object):
         self.evision_elixir.write('  def __to_struct__(any), do: Evision.Internal.Structurise.to_struct(any)\n\n')
         self.evision_elixir.write(ET.gen_cv_types_elixir)
 
-        self.evision_erlang.write('-module(evision).\n-compile(nowarn_export_all).\n-compile([export_all]).\n\n')
+        self.evision_erlang.write('-module(evision).\n-compile(nowarn_export_all).\n-compile([export_all]).\n-include("evision.hrl").\n\n')
         self.evision_erlang.write('\'__to_struct__\'(Any) ->\n  evision_internal_structurise:from_struct(Any).\n\n')
 
         self.evision_erlang_hrl.write(
