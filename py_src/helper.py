@@ -655,11 +655,19 @@ def is_struct(argtype: str, also_get: Optional[str] = None):
     else:
         return arg_is_struct, second_ret
 
-def map_argtype_in_docs(argtype: str):
+def map_argtype_in_docs(kind: str, argtype: str) -> str:
+    if kind == 'elixir':
+        return map_argtype_in_docs_elixir(kind, argtype)
+    elif kind == 'erlang':
+        return map_argtype_in_docs_erlang(kind, argtype)
+    else:
+        return ''
+
+def map_argtype_in_docs_elixir(kind: str, argtype: str) -> str:
     is_array = argtype.startswith('vector_')
     if is_array:
         argtype_inner = argtype[len('vector_'):]
-        mapped_type = '[' + map_argtype_in_docs(argtype_inner) + ']'
+        mapped_type = '[' + map_argtype_in_docs_elixir(kind, argtype_inner) + ']'
         return mapped_type
     mapping = {
         'UMat': 'Evision.Mat',
@@ -674,6 +682,32 @@ def map_argtype_in_docs(argtype: str):
             _, mapped_type = is_struct(argtype, 'struct_name')
         else:
             mapped_type = argtype
+    return mapped_type
+
+def map_argtype_in_docs_erlang(kind: str, argtype: str) -> str:
+    is_array = argtype.startswith('vector_')
+    if is_array:
+        argtype_inner = argtype[len('vector_'):]
+        mapped_type = '[' + map_argtype_in_docs_erlang(kind, argtype_inner) + ']'
+        return mapped_type
+    mapping = {
+        'UMat': '#evision_mat{}',
+        'Mat': '#evision_mat{}',
+        'std::string': 'binary()',
+        'cv::String': 'binary()',
+        'RotatedRect': '{centre={x, y}, size={s1, s2}, angle}'
+    }
+    mapped_type = mapping.get(argtype, None)
+    if mapped_type is None:
+        if is_struct(argtype):
+            _, mapped_type = is_struct(argtype, 'struct_name')
+            mapped_type = mapped_type.replace(".", "_").lower()
+            if not mapped_type.startswith("evision_"):
+                mapped_type = f"#evision_{mapped_type}" + "{}"
+        else:
+            mapped_type = argtype
+            if mapped_type.startswith("evision_"):
+                mapped_type = f"#{mapped_type}" + "{}"
     return mapped_type
 
 vec_out_types = {}
@@ -944,7 +978,9 @@ def map_argtype_to_guard_erlang(argname, argtype):
         return f'is_tuple({argname})'
     elif is_struct(argtype):
         _, struct_name = is_struct(argtype, also_get='struct_name')
-        struct_name = struct_name.replace("Evision.", "evision_").replace(".", "_").lower()
+        struct_name = struct_name.replace(".", "_").lower()
+        if not struct_name.startswith("evision_"):
+            struct_name = f"evision_{struct_name}"
         return f'(is_tuple({argname}) and tuple_size({argname}) > 0 and (element(1, {argname}) == {struct_name}))'
     elif is_ref_or_struct(argtype):
         return f'is_reference({argname})'

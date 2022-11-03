@@ -282,7 +282,7 @@ class ModuleGenerator(object):
         # ======== step 3. register this NIF function ========
         for kind, template in function_templates.items():
             self.register_nif(kind, nif_name, template)
-        
+
         # ======== step 4. generate binding code ========
         # function signatures
         erl_signatures = []
@@ -403,7 +403,7 @@ class ModuleGenerator(object):
                     pass
                 else:
                     unique_signatures[usign] = True
-                    inline_doc = func_variant.inline_docs(kind)
+                    inline_doc = func_variant.inline_docs(kind, is_instance_method, self.module_name)
                     func_when_guard = when_guard(kind, func_guard)
 
                     # module_func_args and module_func_args_with_opts are used in function declaration

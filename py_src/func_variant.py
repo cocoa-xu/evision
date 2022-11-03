@@ -140,11 +140,13 @@ class FuncVariant(object):
     def function_signature(self):
         return ''.join(filter(lambda x: x != '', [map_argtype_to_type(argtype) for _, _, argtype in self.py_arglist[:self.pos_end]]))
     
-    def inline_docs(self, kind):
+    def inline_docs(self, kind: str, is_instance_method: bool, module_name: str) -> str:
         if kind == 'elixir':
-            return self.inline_docs_elixir()
+            return self.inline_docs_elixir(is_instance_method, module_name)
+        elif kind == 'erlang':
+            return self.inline_docs_erlang(is_instance_method, module_name)
         else:
-            return self.inline_docs_erlang()
+            return ''
 
     def __escape_inline_docs__(self, line: str):
         line = line.replace("\\", r"\\")
@@ -204,10 +206,10 @@ class FuncVariant(object):
             line_index = peak_line_index - 1
         return is_multiline, line_index
 
-    def inline_docs_erlang(self) -> str:
-        return ""
+    def inline_docs_erlang(self, is_instance_method: bool, module_name: str) -> str:
+        return ''
 
-    def inline_docs_elixir(self) -> str:
+    def inline_docs_elixir(self, is_instance_method: bool, module_name: str) -> str:
         global inline_docs_code_type_re
         parameter_info = {}
         doc_string = "\n".join('  {}'.format(line.strip()) for line in self.docstring.split("\n")).strip()
@@ -324,7 +326,7 @@ class FuncVariant(object):
                 else:
                     inline_doc1 += "  @doc \"\"\"\n"
             elif strip_line.startswith("Python prototype (for reference): "):
-                inline_doc1 += "\n  Python prototype (for reference): \n  ```python3\n  {}\n  ```\n".format(strip_line[len("Python prototype (for reference): "):])
+                inline_doc1 += "\n  Python prototype (for reference only):\n  ```python3\n  {}\n  ```\n".format(strip_line[len("Python prototype (for reference): "):])
                 last_in_list = False
             elif strip_line.startswith("-"):
                 list_content = StringIO()
@@ -359,20 +361,32 @@ class FuncVariant(object):
                     last_in_list = False
             line_index += 1
 
+        if len(function_brief) == 0:
+            function_brief = self.name
         inline_doc = inline_doc1.replace('@doc """', function_brief)
         inline_doc = handle_inline_math_escaping(inline_doc)
         parameter_info_doc = StringIO()
 
         out_args = [o[0] for o in self.py_outlist]
-        if self.min_args > 0:
+
+        min_args = self.min_args
+        if is_instance_method:
+            min_args += 1
+
+        if min_args > 0:
             positional_args = []
+            if is_instance_method:
+                if module_name.startswith("Evision"):
+                    positional_args.append(('self', -1, f"{module_name}.t()"))
+                else:
+                    positional_args.append(('self', -1, f"Evision.{module_name}.t()"))
             for (arg_name, argno, argtype) in self.py_arglist[:self.pos_end]:
                 if arg_name not in out_args:
                     positional_args.append((arg_name, argno, argtype))
             if len(positional_args) > 0:
                 parameter_info_doc.write("\n  ##### Positional Arguments\n")
                 for (arg_name, _, argtype) in positional_args:
-                    argtype1 = map_argtype_in_docs(argtype)
+                    argtype1 = map_argtype_in_docs('elixir', argtype)
                     normalized_arg_name = map_argname('elixir', arg_name)
                     normalized_arg_name = normalized_arg_name.replace(":", "")
                     if parameter_info.get(normalized_arg_name, None) is None:
@@ -390,7 +404,7 @@ class FuncVariant(object):
             if len(optional_args) > 0:
                 parameter_info_doc.write("  ##### Keyword Arguments\n")
                 for (arg_name, _, argtype) in optional_args:
-                    argtype1 = map_argtype_in_docs(argtype)
+                    argtype1 = map_argtype_in_docs('elixir', argtype)
                     normalized_arg_name = map_argname('elixir', arg_name)
                     normalized_arg_name = normalized_arg_name.replace(":", "")
                     if parameter_info.get(normalized_arg_name, None) is None:
@@ -411,16 +425,16 @@ class FuncVariant(object):
             out_args_name = [o[0] for o in self.py_outlist]
             if len(out_args_name) > 0 and (out_args_name[0] in ['retval', 'self']) and self.py_outlist[0][1] == -1:
                 if out_args_name[0] == 'retval':
-                    return_values.insert(0, ('retval', map_argtype_in_docs(self.rettype)))
+                    return_values.insert(0, ('retval', map_argtype_in_docs('elixir', self.rettype)))
                 elif out_args_name[0] == 'self':
-                    return_values.insert(0, ('self', map_argtype_in_docs(self.name)))
+                    return_values.insert(0, ('self', map_argtype_in_docs('elixir', self.name)))
             elif self.isconstructor:
-                return_values.insert(0, ('self', map_argtype_in_docs(self.classname)))
+                return_values.insert(0, ('self', map_argtype_in_docs('elixir', self.classname)))
 
             if len(return_values) > 0:
                 parameter_info_doc.write("  ##### Return\n")
                 for (arg_name, argtype) in return_values:
-                    argtype1 = map_argtype_in_docs(argtype)
+                    argtype1 = map_argtype_in_docs('elixir', argtype)
                     normalized_arg_name = map_argname('elixir', arg_name)
                     normalized_arg_name = normalized_arg_name.replace(":", "")
                     if parameter_info.get(normalized_arg_name, None) is None:
@@ -436,7 +450,21 @@ class FuncVariant(object):
             inline_doc = inline_doc.replace('<evision_param_info>', parameter_info_doc.getvalue())
         else:
             inline_doc = inline_doc.replace('<evision_param_info>', '\n' + parameter_info_doc.getvalue())
-        return inline_doc
+
+        inline_docs = StringIO()
+        last_empty = False
+        for line in inline_doc.split("\n"):
+            line_1 = line.strip()
+            empty = len(line_1) == 0
+            if last_empty and empty:
+                pass
+            else:
+                inline_docs.write(line)
+                inline_docs.write("\n")
+            last_empty = empty
+
+        inline_doc = inline_docs.getvalue()[:-1]
+        return inline_doc.rstrip()
 
     def generate_spec(self, kind: str, module_func_name: str, is_instance_method: bool, include_opts: bool, in_args: list=None, out_args: list=None) -> str:
         if kind == 'elixir':

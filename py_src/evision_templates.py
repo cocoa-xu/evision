@@ -288,7 +288,10 @@ get_${property_name}(Self) ->
 
 elixir_property_setter = Template("""  @spec set_${property_name}(${self_spec_in}, ${prop_spec}) :: ${self_spec_out}
   def set_${property_name}(self, prop) do
-    :evision_nif.${nif_name}(Evision.Internal.Structurise.from_struct(self), [${property_name}: Evision.Internal.Structurise.from_struct(prop)])
+    :evision_nif.${nif_name}(
+        Evision.Internal.Structurise.from_struct(self),
+        [${property_name}: Evision.Internal.Structurise.from_struct(prop)]
+    )
     |> __to_struct__()
   end
 """)
