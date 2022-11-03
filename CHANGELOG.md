@@ -3,8 +3,15 @@
 ## v0.1.17-dev (main)
 [Browse the Repository](https://github.com/cocoa-xu/evision)
 
+## Changed
+- [example] `Req.get!` should only raise on 4xx and 5xx. Thanks @wojtekmach
+
 ## Added
-- [example] Added an example: find and draw contours in an image.
+- [example] Added two examples: 
+
+  - find and draw contours in an image.
+  - extracting sudoku puzzle from an image.
+
 - [erlang] Structurised/recordized all `#reference`s that have their own Erlang module.
 - [erlang] Download precompiled binaries using `evision_precompiled.erl`.
 - [erlang] Generate typespecs.

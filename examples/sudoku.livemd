@@ -1,0 +1,850 @@
+<!-- livebook:{"persist_outputs":true} -->
+
+# Sudoku Puzzle Extractor
+
+```elixir
+Mix.install([
+  {:evision, "~> 0.1.16"},
+  {:kino, "~> 0.7"},
+  {:req, "~> 0.3"},
+  {:torchx, "~> 0.4"},
+  {:nx, "~> 0.4"},
+  {:scidata, "~> 0.1"},
+  {:axon, "~> 0.3.0"}
+])
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+:ok
+```
+
+## References
+
+Some code in this example was basically literal translation from the code in [OpenCV Sudoku Solver and OCR - PyImageSearch](https://pyimagesearch.com/2020/08/10/opencv-sudoku-solver-and-ocr/). The sample input image is also taken from that post.
+
+The code of the neural network was taken from https://github.com/elixir-nx/axon/blob/main/examples/vision/mnist.exs with some minor changes.
+
+## Define Some Helper Functions
+
+```elixir
+defmodule Helper do
+  def download!(url, save_as, overwrite? \\ false) do
+    unless File.exists?(save_as) do
+      Req.get!(url, http_errors: :raise, output: save_as, cache: not overwrite?)
+    end
+
+    :ok
+  end
+end
+```
+
+Download the test image.
+
+```elixir
+Helper.download!(
+  "https://raw.githubusercontent.com/cocoa-xu/evision/main/test/sudoku_puzzle.webp",
+  "sudoku_puzzle.webp"
+)
+```
+
+## Load Original Image and Convert It to Gray Scale
+
+```elixir
+# read the original image
+original = Evision.imread("sudoku_puzzle.webp")
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+%Evision.Mat{
+  channels: 3,
+  dims: 2,
+  type: {:u, 8},
+  raw_type: 16,
+  shape: {1024, 962, 3},
+  ref: #Reference<0.736436033.3583639578.183370>
+}
+```
+
+```elixir
+# convert it to grayscale
+gray = Evision.cvtColor(original, Evision.cv_COLOR_BGR2GRAY())
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+%Evision.Mat{
+  channels: 1,
+  dims: 2,
+  type: {:u, 8},
+  raw_type: 0,
+  shape: {1024, 962},
+  ref: #Reference<0.736436033.3588096019.145887>
+}
+```
+
+```elixir
+# apply some Gaussian Blue to the image
+# we are doing so to reduce the noise and prepare it for the next step
+blurred = Evision.gaussianBlur(gray, {7, 7}, 3)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+%Evision.Mat{
+  channels: 1,
+  dims: 2,
+  type: {:u, 8},
+  raw_type: 0,
+  shape: {1024, 962},
+  ref: #Reference<0.736436033.3588096019.145890>
+}
+```
+
+```elixir
+# binarization with Evision.adaptiveThreshold
+bw =
+  Evision.adaptiveThreshold(
+    blurred,
+    255,
+    Evision.cv_ADAPTIVE_THRESH_GAUSSIAN_C(),
+    Evision.cv_THRESH_BINARY(),
+    11,
+    2
+  )
+
+# bitwise not
+threshold = Evision.Mat.bitwise_not(bw)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+%Evision.Mat{
+  channels: 1,
+  dims: 2,
+  type: {:u, 8},
+  raw_type: 0,
+  shape: {1024, 962},
+  ref: #Reference<0.736436033.3588096019.145894>
+}
+```
+
+## Find the Sudoku Puzzle
+
+```elixir
+# First thing first, we need to find all the contours in the thresholded image
+{contours, _} =
+  Evision.findContours(
+    threshold,
+    Evision.cv_RETR_EXTERNAL(),
+    Evision.cv_CHAIN_APPROX_SIMPLE()
+  )
+
+IO.puts("Find #{Enum.count(contours)} contour(s)")
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+Find 377 contour(s)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+:ok
+```
+
+```elixir
+# and our assumptions are that
+#   1. the contour that contains the puzzle should be fairly large: 
+#      hence we are sorting them by their area in descending order
+contours =
+  Enum.sort_by(contours, fn c ->
+    -Evision.contourArea(c)
+  end)
+
+IO.puts("area of the largest contour: #{Evision.contourArea(Enum.at(contours, 0))}")
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+area of the largest contour: 430559.5
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+:ok
+```
+
+```elixir
+# 2.the puzzle should be a rectangular
+#   which means its contour should be approximately an rectangular
+#   which means the approximated polygonal of the contour should have 4 corners (keypoints)
+#   hence we will need to find the contour which its approximated polygonal's shape is {4, 1, 2}
+puzzle_keypoints =
+  Enum.reduce_while(contours, nil, fn c, _acc ->
+    peri = Evision.arcLength(c, true)
+    approx = Evision.approxPolyDP(c, 0.02 * peri, true)
+
+    case approx.shape do
+      {4, 1, 2} ->
+        {:halt, approx}
+
+      _ ->
+        {:cont, nil}
+    end
+  end)
+
+if puzzle_keypoints do
+  IO.puts("Found puzzle")
+  Evision.drawContours(original, [puzzle_keypoints], -1, {0, 255, 0}, thickness: 2)
+else
+  IO.puts("""
+  Could not find Sudoku puzzle outline.
+  Try debugging your thresholding and contour steps.
+  """)
+end
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+Found puzzle
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+%Evision.Mat{
+  channels: 3,
+  dims: 2,
+  type: {:u, 8},
+  raw_type: 16,
+  shape: {1024, 962, 3},
+  ref: #Reference<0.736436033.3588096019.146280>
+}
+```
+
+## Extract the Puzzle
+
+To extract the puzzle, we need to apply some affine transformations.
+
+To apply any affine transformations, we will first need to know the four corners/points, namely,
+
+1. Top left
+2. Top right
+3. Bottom right
+4. Bottom left
+
+And these four points have to be arranged in the order above -- so that when you connect them 1 => 2 => 3=> 4 => 1, they can form a closed rectangular.
+
+```elixir
+# this function will arrange the keypoints in the order discussed above
+order_points = fn pts ->
+  # the top-left point will have the smallest sum, whereas
+  # the bottom-right point will have the largest sum
+  sum = Nx.sum(pts, axes: [1])
+  tl = pts[Nx.argmin(sum)]
+  br = pts[Nx.argmax(sum)]
+
+  # now, compute the difference between the points, the
+  # top-right point will have the smallest difference,
+  # whereas the bottom-left will have the largest difference
+  diff = Nx.subtract(pts[[0..3, 1]], pts[[0..3, 0]])
+  tr = pts[Nx.argmin(diff)]
+  bl = pts[Nx.argmax(diff)]
+  {tl, tr, br, bl}
+end
+
+input =
+  Evision.Mat.as_shape(puzzle_keypoints, {4, 2})
+  |> Evision.Mat.to_nx(Nx.BinaryBackend)
+  |> Nx.as_type(:f32)
+
+{tl, tr, br, bl} = order_points.(input)
+rect = Nx.stack([tl, tr, br, bl])
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+#Nx.Tensor<
+  f32[4][2]
+  [
+    [163.0, 206.0],
+    [809.0, 180.0],
+    [877.0, 785.0],
+    [106.0, 809.0]
+  ]
+>
+```
+
+After that, we can calculate the expected output height and width.
+
+```elixir
+point_distance = fn p1, p2 ->
+  round(
+    Nx.to_number(
+      Nx.sqrt(
+        Nx.add(
+          Nx.power(Nx.subtract(p1[[0]], p2[[0]]), 2),
+          Nx.power(Nx.subtract(p1[[1]], p2[[1]]), 2)
+        )
+      )
+    )
+  )
+end
+
+# compute the width of the new image, which will be the
+# maximum distance between bottom-right and bottom-left
+# x-coordiates or the top-right and top-left x-coordinates
+output_width =
+  Nx.to_number(
+    Nx.max(
+      point_distance.(br, bl),
+      point_distance.(tr, tl)
+    )
+  )
+
+# compute the height of the new image, which will be the
+# maximum distance between the top-right and bottom-right
+# y-coordinates or the top-left and bottom-left y-coordinates
+output_height =
+  Nx.to_number(
+    Nx.max(
+      point_distance.(tr, br),
+      point_distance.(tl, bl)
+    )
+  )
+
+{output_height, output_width}
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+{609, 771}
+```
+
+Then we specify output coordinates for corners of the puzzle, [`top-left`, `top-right`, `bottom-right`, `bottom-left`] as `output`.
+
+```elixir
+output =
+  Nx.tensor(
+    [
+      [0, 0],
+      [output_width - 1, 0],
+      [output_width - 1, output_height - 1],
+      [0, output_height - 1]
+    ],
+    type: :f32
+  )
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+#Nx.Tensor<
+  f32[4][2]
+  Torchx.Backend(cpu)
+  [
+    [0.0, 0.0],
+    [770.0, 0.0],
+    [770.0, 608.0],
+    [0.0, 608.0]
+  ]
+>
+```
+
+Get the perspective transformation matrix and warp perspective for both the original image and the grayscale one
+
+```elixir
+matrix = Evision.getPerspectiveTransform(rect, output)
+
+puzzle =
+  Evision.warpPerspective(
+    original,
+    matrix,
+    {output_width, output_height},
+    flags: Evision.cv_INTER_LINEAR(),
+    borderMode: Evision.cv_BORDER_CONSTANT(),
+    borderValue: {0, 0, 0}
+  )
+
+puzzle_gray =
+  Evision.warpPerspective(
+    gray,
+    matrix,
+    {output_width, output_height},
+    flags: Evision.cv_INTER_LINEAR(),
+    borderMode: Evision.cv_BORDER_CONSTANT(),
+    borderValue: {0, 0, 0}
+  )
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+%Evision.Mat{
+  channels: 1,
+  dims: 2,
+  type: {:u, 8},
+  raw_type: 0,
+  shape: {609, 771},
+  ref: #Reference<0.736436033.3588096019.146349>
+}
+```
+
+Since the Sudoku puzzel is 9x9, we can resize it to a square
+
+```elixir
+{h, w} = puzzle_gray.shape
+len = max(h, w)
+puzzle_gray = Evision.resize(puzzle_gray, {len, len})
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+%Evision.Mat{
+  channels: 1,
+  dims: 2,
+  type: {:u, 8},
+  raw_type: 0,
+  shape: {771, 771},
+  ref: #Reference<0.736436033.3588096019.146352>
+}
+```
+
+## Extract Digits in Each Cell of the Puzzle
+
+Let's start with the basic case, the top-left one.
+
+```elixir
+step = len / 9
+current_cell = puzzle_gray[[0..round(step), 0..round(step)]]
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+%Evision.Mat{
+  channels: 1,
+  dims: 2,
+  type: {:u, 8},
+  raw_type: 0,
+  shape: {87, 87},
+  ref: #Reference<0.736436033.3588096019.146355>
+}
+```
+
+```elixir
+# import Bitwise so that we can use `|||` (bitwise or)
+import Bitwise
+
+extract_digit = fn cell ->
+  # get a binary image of the cell
+  {_, threshold} =
+    Evision.threshold(cell, 10, 255, Evision.cv_THRESH_BINARY_INV() ||| Evision.cv_THRESH_OTSU())
+
+  # cut off border
+  {h, w} = threshold.shape
+  threshold = threshold[[8..(h - 8), 8..(w - 8)]]
+
+  # find contours in the thresholded cell
+  {contours, _} =
+    Evision.findContours(
+      threshold,
+      Evision.cv_RETR_EXTERNAL(),
+      Evision.cv_CHAIN_APPROX_SIMPLE()
+    )
+
+  # if no contours were found than this is an empty cell
+  unless Enum.count(contours) == 0 do
+    # otherwise, find the largest contour in the cell and create a
+    # mask for the contour
+    c = Enum.max_by(contours, &Evision.contourArea/1)
+    mask = Evision.Mat.zeros(threshold.shape, :u8)
+    mask = Evision.drawContours(mask, [c], -1, {255}, thickness: 2)
+
+    # compute the percentage of masked pixels relative to the total
+    # area of the image
+    {h, w} = threshold.shape
+    percent_filled = Evision.countNonZero(mask) / (w * h)
+
+    # if less than 5% of the mask is filled then we are looking at
+    # noise and can safely ignore the contour
+    unless percent_filled < 0.05 do
+      threshold
+    end
+  end
+end
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+#Function<42.3316493/1 in :erl_eval.expr/6>
+```
+
+Let's try this for the top-left cell
+
+```elixir
+current_cell = extract_digit.(current_cell)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+%Evision.Mat{
+  channels: 1,
+  dims: 2,
+  type: {:u, 8},
+  raw_type: 0,
+  shape: {72, 72},
+  ref: #Reference<0.736436033.3588096019.146359>
+}
+```
+
+And it looks great!
+
+## Train A Neural Network that Recognizes Digits
+
+```elixir
+# Here I'm using :torchx as the backend
+# you can use :exla or other nx backend
+Nx.default_backend(Torchx.Backend)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+{Torchx.Backend, []}
+```
+
+Define the neural network module, `MNIST`.
+
+Code from https://github.com/elixir-nx/axon/blob/main/examples/vision/mnist.exs with minor changes.
+
+```elixir
+defmodule MNIST do
+  require Axon
+
+  def transform_images({bin, type, shape}) do
+    bin
+    |> Nx.from_binary(type, backend: Torchx.Backend)
+    # 28, 28})
+    |> Nx.reshape({elem(shape, 0), 784})
+    |> Nx.as_type(:f32)
+    |> Nx.divide(255.0)
+    |> Nx.to_batched(500, leftover: :discard)
+    |> Enum.to_list()
+    # Test split
+    |> Enum.split(-3)
+  end
+
+  def transform_labels({bin, type, _}) do
+    bin
+    |> Nx.from_binary(type, backend: Torchx.Backend)
+    |> Nx.new_axis(-1)
+    |> Nx.equal(Nx.tensor(Enum.to_list(0..9)))
+    |> Nx.to_batched(500, leftover: :discard)
+    |> Enum.to_list()
+    # Test split
+    |> Enum.split(-3)
+  end
+
+  def build_model(input_shape) do
+    Axon.input("input", shape: input_shape)
+    |> Axon.dense(128, activation: :relu)
+    |> Axon.dropout()
+    |> Axon.dense(10, activation: :softmax)
+  end
+
+  def train_model(model, train_images, train_labels, epochs) do
+    model
+    |> Axon.Loop.trainer(:categorical_cross_entropy, Axon.Optimizers.adamw(0.005))
+    |> Axon.Loop.metric(:accuracy, "Accuracy")
+    |> Axon.Loop.run(Stream.zip(train_images, train_labels), %{}, epochs: epochs)
+  end
+
+  def test_model(model, model_state, test_images, test_labels) do
+    model
+    |> Axon.Loop.evaluator()
+    |> Axon.Loop.metric(:accuracy, "Accuracy")
+    |> Axon.Loop.run(Stream.zip(test_images, test_labels), model_state)
+  end
+end
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+{:module, MNIST, <<70, 79, 82, 49, 0, 0, 16, ...>>, {:test_model, 4}}
+```
+
+Get the MNIST dataset and prepare the model.
+
+```elixir
+{images, labels} = Scidata.MNIST.download()
+
+{train_images, test_images} = MNIST.transform_images(images)
+{train_labels, test_labels} = MNIST.transform_labels(labels)
+
+model = MNIST.build_model({nil, 784})
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+#Axon<
+  inputs: %{"input" => {nil, 784}}
+  outputs: "softmax_0"
+  nodes: 6
+>
+```
+
+## Train and Test the MNIST Model
+
+```elixir
+IO.puts("Training Model...")
+num_epoch = 5
+model_state = Mnist.train_model(model, train_images, train_labels, num_epoch)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+Training Model...
+Epoch: 0, Batch: 100, Accuracy: 0.8545348 loss: 0.4818023
+Epoch: 1, Batch: 100, Accuracy: 0.9332873 loss: 0.3481621
+Epoch: 2, Batch: 100, Accuracy: 0.9500000 loss: 0.2871155
+Epoch: 3, Batch: 100, Accuracy: 0.9596242 loss: 0.2489783
+Epoch: 4, Batch: 100, Accuracy: 0.9664556 loss: 0.2216917
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+%{
+  "dense_0" => %{
+    "bias" => #Nx.Tensor<
+      f32[128]
+      Torchx.Backend(cpu)
+      [-0.17988327145576477, 0.1716635376214981, 0.0018325354903936386, 0.1798122078180313, 0.09567301720380783, 0.10200180858373642, 0.008338148705661297, 0.10609600692987442, -0.0847468227148056, 0.08587154000997543, -7.477949257008731e-4, -0.03447800129652023, 0.03325527906417847, 0.029068496078252792, -0.1250336617231369, -0.030752241611480713, 0.08610563725233078, -0.03146626055240631, -0.09594535827636719, -0.02172447182238102, 0.058523084968328476, -0.03135503828525543, -0.002279756823554635, -0.027246493846178055, 0.05487725883722305, -0.28020963072776794, 0.1807883381843567, 0.039404697716236115, 0.17562659084796906, 0.10994528979063034, 0.11735761165618896, 0.19422295689582825, -0.027378687635064125, 0.0191771499812603, -0.031338877975940704, 0.06676501035690308, 0.10198114812374115, -0.0012608487159013748, 0.09346475452184677, 0.05980100482702255, -0.029884351417422295, 0.12892872095108032, 0.23887237906455994, 0.020879346877336502, -0.142303928732872, 0.1269598752260208, 0.11833193153142929, -0.04432889074087143, ...]
+    >,
+    "kernel" => #Nx.Tensor<
+      f32[784][128]
+      Torchx.Backend(cpu)
+      [
+        [-0.004997961223125458, -0.056927893310785294, 0.012524336576461792, -0.04678211361169815, -0.07006479054689407, 0.03179212659597397, 0.05232561379671097, -0.060292698442935944, 0.07966595143079758, -0.05596722662448883, 0.007738783955574036, 0.024696074426174164, -0.0667371079325676, -0.02877001464366913, -0.03603668883442879, -0.05976931005716324, 0.03925761580467224, -0.056572359055280685, -0.056350238621234894, 0.03452708572149277, 0.07506700605154037, 0.01048319786787033, 0.027114614844322205, -0.05841222405433655, 0.01039694994688034, -0.058553546667099, -0.02925030142068863, 0.03921818733215332, -0.009020909667015076, 0.0156695693731308, -0.021413378417491913, -0.03247242793440819, 0.04008222371339798, -0.05680907890200615, 0.06702771037817001, -0.03168267011642456, 0.04423173516988754, 0.06032135337591171, 0.0627024844288826, -0.018609225749969482, -0.07648104429244995, -0.015578106045722961, 0.06719689816236496, 1.7232447862625122e-4, -0.022565998136997223, 0.04633399099111557, 0.05553805083036423, ...],
+        ...
+      ]
+    >
+  },
+  "dense_1" => %{
+    "bias" => #Nx.Tensor<
+      f32[10]
+      Torchx.Backend(cpu)
+      [-0.052650559693574905, 0.04494607821106911, -0.2200334221124649, -0.08993491530418396, -0.02432980388402939, -0.005615420173853636, -0.038794878870248795, 0.0233138520270586, 0.19364574551582336, 0.10583429038524628]
+    >,
+    "kernel" => #Nx.Tensor<
+      f32[128][10]
+      Torchx.Backend(cpu)
+      [
+        [-0.033295780420303345, 0.04774130508303642, 0.20219796895980835, -0.1599399298429489, -0.4607354402542114, 0.04164411500096321, 0.31128883361816406, -0.18477322161197662, 0.195823535323143, -0.2146347016096115],
+        [-0.47767552733421326, 0.2479187399148941, 0.3272024393081665, -0.3602463901042938, -0.021782109513878822, 0.37739643454551697, -0.08139888197183609, 0.11731932312250137, -0.21786180138587952, -0.2060997635126114],
+        [-0.29257020354270935, -0.27153488993644714, 0.3574492633342743, 0.25863510370254517, -0.7012501955032349, 0.09472404420375824, -0.376261442899704, 0.3126865029335022, 0.030163684859871864, 0.11671186238527298],
+        [-0.1575060784816742, 0.35154038667678833, -0.5979138016700745, -0.21251395344734192, 0.08020816743373871, 0.47368210554122925, -0.09995336085557938, 0.17019565403461456, -0.10945288836956024, 0.027018314227461815],
+        [0.2525313198566437, -0.153570294380188, 0.20948101580142975, 0.1662921905517578, -0.054898977279663086, 0.22147339582443237, ...],
+        ...
+      ]
+    >
+  }
+}
+```
+
+```elixir
+IO.puts("Testing Model...")
+MNIST.test_model(model, model_state, test_images, test_labels)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+Testing Model...
+Batch: 2, Accuracy: 0.9813333
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+%{
+  0 => %{
+    "Accuracy" => #Nx.Tensor<
+      f32
+      Torchx.Backend(cpu)
+      0.981333315372467
+    >
+  }
+}
+```
+
+## Apply the Trained Neural Network to the Digits Extracted from the Puzzle
+
+```elixir
+# Get the predict function
+{_init_fn, predict_fn} = Axon.build(model)
+
+# make a helper function for our use -- predict the digit in the cell
+predict_cell = fn predict_fn, model_state, input_cell ->
+  input_cell =
+    Nx.as_type(Evision.Mat.to_nx(Evision.resize(input_cell, {28, 28}), Torchx.Backend), :f32)
+    |> Nx.reshape({1, 784})
+    |> Nx.divide(255.0)
+
+  pred = predict_fn.(model_state, input_cell)
+  Nx.to_number(Nx.argmax(pred))
+end
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+#Function<40.3316493/3 in :erl_eval.expr/6>
+```
+
+Let's use the top-left one as input
+
+```elixir
+pred = predict_cell.(predict_fn, model_state, current_cell)
+
+IO.puts("Prediction: #{pred}")
+current_cell
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+Prediction: 8
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+%Evision.Mat{
+  channels: 1,
+  dims: 2,
+  type: {:u, 8},
+  raw_type: 0,
+  shape: {72, 72},
+  ref: #Reference<0.736436033.3588096019.146359>
+}
+```
+
+Looks good! Now if we do this for each cell in the puzzle, we can get what we want
+
+```elixir
+step = trunc(step)
+
+digits =
+  for x <- 0..8, y <- 0..8 do
+    x1 = step * x
+    y1 = step * y
+
+    # remember that we return nil if extract_digit thinks there is no
+    # digits present in the cell 
+    current_cell = extract_digit.(puzzle_gray[[x1..(x1 + step), y1..(y1 + step)]])
+
+    if current_cell do
+      # if there is a digit, we use the neural network to predict its value
+      predict_cell.(predict_fn, model_state, current_cell)
+    else
+      # otherwise we use `0` for empty ones
+      # this should be okay since in normal sudoku puzzle we only use 1-9
+      0
+    end
+  end
+
+extracted_puzzle = Nx.reshape(Nx.tensor(digits), {9, 9})
+IO.inspect(extracted_puzzle, limit: :infinity)
+:ok
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+#Nx.Tensor<
+  s64[9][9]
+  Torchx.Backend(cpu)
+  [
+    [8, 0, 0, 0, 1, 0, 0, 0, 8],
+    [0, 5, 0, 8, 0, 7, 0, 7, 0],
+    [0, 0, 4, 0, 9, 0, 7, 0, 0],
+    [0, 8, 0, 2, 0, 7, 0, 2, 0],
+    [5, 0, 8, 0, 8, 0, 7, 0, 3],
+    [0, 7, 0, 5, 0, 2, 0, 8, 0],
+    [0, 0, 2, 0, 4, 0, 8, 0, 0],
+    [0, 8, 0, 3, 0, 8, 0, 4, 0],
+    [3, 0, 0, 0, 5, 0, 0, 0, 8]
+  ]
+>
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+:ok
+```
+
+## Visualise the Results
+
+```elixir
+{h, w, _} = puzzle.shape
+len = max(h, w)
+puzzle = Evision.resize(puzzle, {len, len})
+
+for x <- 0..8, y <- 0..8, reduce: puzzle do
+  vis ->
+    # compute the coordinates of where the digit will be drawn
+    # on the output puzzle image
+    {x1, y1} = {step * x, step * y}
+    {x2, y2} = {step + x1, step + y1}
+    textX = trunc((x2 - x1) * 0.33) + x1
+    textY = trunc((y2 - y1) * -0.2) + y2
+
+    text = to_string(Nx.to_number(extracted_puzzle[[y, x]]))
+
+    Evision.putText(
+      vis,
+      text,
+      {textX, textY},
+      Evision.cv_FONT_HERSHEY_SIMPLEX(),
+      0.9,
+      {0, 255, 255},
+      thickness: 2
+    )
+end
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+%Evision.Mat{
+  channels: 3,
+  dims: 2,
+  type: {:u, 8},
+  raw_type: 16,
+  shape: {771, 771, 3},
+  ref: #Reference<0.736436033.3588620308.228888>
+}
+```
