@@ -167,8 +167,14 @@ class ModuleGenerator(object):
         cname = ns[-1]
         if cname == 'Params':
             cname = '_'.join(ns[-2:])
-        self_spec_in_elixir = map_argtype_in_spec('elixir', class_name, cname, is_in=True)
-        prop_spec_out_elixir = map_argtype_in_spec('elixir', class_name, property.tp, is_in=False)
+        self_spec_in = {
+            "elixir": map_argtype_in_spec('elixir', class_name, cname, is_in=True),
+            "erlang": map_argtype_in_spec('erlang', class_name, cname, is_in=True)
+        }
+        prop_spec_out = {
+            "elixir": map_argtype_in_spec('elixir', class_name, property.tp, is_in=False),
+            "erlang": map_argtype_in_spec('erlang', class_name, property.tp, is_in=False),
+        }
         generating_type = 'get'
         property_templates = {
             "elixir": {
@@ -176,13 +182,15 @@ class ModuleGenerator(object):
                 "nif_args": '_self',
                 "nif_template": Template('  def ${nif_name}(${nif_args}), do: :erlang.nif_error("${nif_error_msg}")\n'),
                 "nif_error_msg": f"{class_name}::{property_name} {generating_type}ter not loaded",
-                "self_spec": self_spec_in_elixir,
-                'prop_spec': prop_spec_out_elixir
+                "self_spec": self_spec_in["elixir"],
+                'prop_spec': prop_spec_out["elixir"]
             },
             "erlang": {
                 "getter_template": ET.erlang_property_getter,
                 "nif_args": '_self',
                 "nif_template": Template('${nif_name}(${nif_args}) ->\n    not_loaded(?LINE).\n'),
+                "self_spec": self_spec_in["erlang"],
+                'prop_spec': prop_spec_out["erlang"]
             }
         }
         self._gen_property_impl(class_name, property_name, func_arity, generating_type, property_templates)
@@ -190,8 +198,14 @@ class ModuleGenerator(object):
         # ======== step 2. generate property setter if the property if not readonly ========
         if not property.readonly:
             func_arity = 2
-            self_spec_out_elixir = map_argtype_in_spec('elixir', class_name, cname, is_in=False)
-            prop_spec_in_elixir = map_argtype_in_spec('elixir', class_name, property.tp, is_in=True)
+            self_spec_out = {
+                "elixir": map_argtype_in_spec('elixir', class_name, cname, is_in=False),
+                "erlang": map_argtype_in_spec('erlang', class_name, cname, is_in=False)
+            }
+            prop_spec_in = {
+                "elixir": map_argtype_in_spec('elixir', class_name, property.tp, is_in=True),
+                "erlang": map_argtype_in_spec('erlang', class_name, property.tp, is_in=True)
+            }
             generating_type = 'set'
             property_templates = {
                 "elixir": {
@@ -199,14 +213,17 @@ class ModuleGenerator(object):
                     "nif_args": '_self, _prop',
                     "nif_template": Template('  def ${nif_name}(${nif_args}), do: :erlang.nif_error("${nif_error_msg}")\n'),
                     "nif_error_msg": f"{class_name}::{property_name} {generating_type}ter not loaded",
-                    "self_spec_in": self_spec_in_elixir,
-                    "self_spec_out": self_spec_out_elixir,
-                    'prop_spec': prop_spec_in_elixir
+                    "self_spec_in": self_spec_in["elixir"],
+                    "self_spec_out": self_spec_out["elixir"],
+                    'prop_spec': prop_spec_in["elixir"]
                 },
                 "erlang": {
                     "setter_template": ET.erlang_property_setter,
                     "nif_args": '_self, _prop',
                     "nif_template": Template('${nif_name}(${nif_args}) ->\n    not_loaded(?LINE).\n'),
+                    "self_spec_in": self_spec_in["erlang"],
+                    "self_spec_out": self_spec_out["erlang"],
+                    'prop_spec': prop_spec_in["erlang"]
                 }
             }
             self._gen_property_impl(class_name, property_name, func_arity, generating_type, property_templates)
@@ -446,10 +463,16 @@ class ModuleGenerator(object):
                         func_arity = 2
                         if kind == 'elixir':
                             specs = {
-                                'getLayerShapes': '@spec getLayerShapes(Evision.Net.t(), [{{atom(), term()}},...] | nil) :: {list(list(integer())), list(list(integer()))} | {:error, String.t()}',
-                                'getLayersShapes': '@spec getLayerShapes(Evision.Net.t(), [{{atom(), term()}},...] | nil) :: {list(integer()), list(list(list(integer()))), list(list(list(integer())))} | {:error, String.t()}'
+                                'getLayerShapes': {
+                                    'elixir': '@spec getLayerShapes(Evision.Net.t(), [{{atom(), term()}},...] | nil) :: {list(list(integer())), list(list(integer()))} | {:error, String.t()}',
+                                    'erlang': '-spec getLayerShapes(#evision_mat{}, [{{atom(), term()}},...] | nil) -> {list(list(integer())), list(list(integer()))} | {error, binary()}.'
+                                },
+                                'getLayersShapes': {
+                                    'elixir': '@spec getLayerShapes(Evision.Net.t(), [{{atom(), term()}},...] | nil) :: {list(integer()), list(list(list(integer()))), list(list(list(integer())))} | {:error, String.t()}',
+                                    'erlang': '-spec getLayerShapes(#evision_mat{}, [{{atom(), term()}},...] | nil) ->  {list(integer()), list(list(list(integer()))), list(list(list(integer())))} | {error, binary()}.'
+                                }
                             }
-                            spec = specs[module_func_name]
+                            spec = specs[module_func_name][kind]
                             function_code.write(f'  {spec}\n'
                                 f'  def {module_func_name}(self, opts \\\\ nil) when opts == nil or (is_list(opts) and is_tuple(hd(opts))) do\n'
                                 '    self = Evision.Internal.Structurise.from_struct(self)\n'
@@ -464,6 +487,7 @@ class ModuleGenerator(object):
                             self.add_function_docs(kind, module_func_name, 
                                 function_arity=2,
                                 inline_docs=inline_doc,
+                                typespec=spec
                             )
                         elif kind == 'erlang':
                             function_code.write(f'{module_func_name}(Self) ->\n'
@@ -528,7 +552,7 @@ class ModuleGenerator(object):
                             )
                         elif kind == 'erlang':
                             function_code.write(
-                                f'{module_func_name}({module_func_args_with_opts}){when_guard_with_opts} ->\n'
+                                f'{module_func_name}({module_func_args_with_opts}){when_guard_with_opts}->\n'
                                 f'  {positional_args},\n'
                                 f'  Ret = evision_nif:{nif_name}({func_args_with_opts}),\n'
                                 "  '__to_struct__'(Ret).\n\n"
@@ -565,7 +589,7 @@ class ModuleGenerator(object):
                         self.add_function_docs(kind, module_func_name, func_arity, inline_doc)
                     elif kind == 'erlang':
                         function_code.write(
-                            f'{module_func_name}({module_func_args}){func_when_guard} ->\n'
+                            f'{module_func_name}({module_func_args}){func_when_guard}->\n'
                             f'  {positional_args},\n'
                             f'  Ret = evision_nif:{nif_name}({func_args}),\n'
                             "  '__to_struct__'(Ret).\n\n"

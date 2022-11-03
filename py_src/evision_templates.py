@@ -279,11 +279,11 @@ elixir_property_getter = Template("""  @spec get_${property_name}(${self_spec}) 
   end
 """)
 
-erlang_property_getter = Template("""get_${property_name}(Self) ->
+erlang_property_getter = Template("""-spec get_${property_name}(${self_spec}) -> ${prop_spec}.
+get_${property_name}(Self) ->
     SelfRef = evision_internal_structurise:from_struct(Self),
     Ret = evision_nif:${nif_name}(SelfRef),
     '__to_struct__'(Ret).
-
 """)
 
 elixir_property_setter = Template("""  @spec set_${property_name}(${self_spec_in}, ${prop_spec}) :: ${self_spec_out}
@@ -293,7 +293,8 @@ elixir_property_setter = Template("""  @spec set_${property_name}(${self_spec_in
   end
 """)
 
-erlang_property_setter = Template("""set_${property_name}(Self, Prop) ->
+erlang_property_setter = Template("""-spec set_${property_name}(${self_spec_in}, ${prop_spec}) -> ${self_spec_out}.
+set_${property_name}(Self, Prop) ->
     SelfRef = evision_internal_structurise:from_struct(Self),
     PropRef = evision_internal_structurise:from_struct(Prop),
     Ret = evision_nif:${nif_name}(SelfRef, [{${property_name}, PropRef}]),
