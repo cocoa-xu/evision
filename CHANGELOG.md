@@ -7,6 +7,7 @@
 - [example] Added an example: find and draw contours in an image.
 - [erlang] Structurised/recordized all `#reference`s that have their own Erlang module.
 - [erlang] Download precompiled binaries using `evision_precompiled.erl`.
+- [erlang] Generate typespecs.
  
 ## v0.1.16 (2022-10-30)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.16) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.16)
