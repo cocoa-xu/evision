@@ -140,9 +140,11 @@ class FuncVariant(object):
     def function_signature(self):
         return ''.join(filter(lambda x: x != '', [map_argtype_to_type(argtype) for _, _, argtype in self.py_arglist[:self.pos_end]]))
     
-    def inline_docs(self, kind):
+    def inline_docs(self, kind: str, is_instance_method: bool, module_name: str) -> str:
         if kind == 'elixir':
-            return self.inline_docs_elixir()
+            return self.inline_docs_elixir(is_instance_method, module_name)
+        elif kind == 'erlang':
+            return self.inline_docs_erlang(is_instance_method, module_name)
         else:
             return ''
 
@@ -204,7 +206,10 @@ class FuncVariant(object):
             line_index = peak_line_index - 1
         return is_multiline, line_index
 
-    def inline_docs_elixir(self) -> str:
+    def inline_docs_erlang(self, is_instance_method: bool, module_name: str) -> str:
+        return ''
+
+    def inline_docs_elixir(self, is_instance_method: bool, module_name: str) -> str:
         global inline_docs_code_type_re
         parameter_info = {}
         doc_string = "\n".join('  {}'.format(line.strip()) for line in self.docstring.split("\n")).strip()
@@ -321,7 +326,7 @@ class FuncVariant(object):
                 else:
                     inline_doc1 += "  @doc \"\"\"\n"
             elif strip_line.startswith("Python prototype (for reference): "):
-                inline_doc1 += "\n  Python prototype (for reference): \n  ```python3\n  {}\n  ```\n".format(strip_line[len("Python prototype (for reference): "):])
+                inline_doc1 += "\n  Python prototype (for reference only):\n  ```python3\n  {}\n  ```\n".format(strip_line[len("Python prototype (for reference): "):])
                 last_in_list = False
             elif strip_line.startswith("-"):
                 list_content = StringIO()
@@ -356,20 +361,32 @@ class FuncVariant(object):
                     last_in_list = False
             line_index += 1
 
+        if len(function_brief) == 0:
+            function_brief = self.name
         inline_doc = inline_doc1.replace('@doc """', function_brief)
         inline_doc = handle_inline_math_escaping(inline_doc)
         parameter_info_doc = StringIO()
 
         out_args = [o[0] for o in self.py_outlist]
-        if self.min_args > 0:
+
+        min_args = self.min_args
+        if is_instance_method:
+            min_args += 1
+
+        if min_args > 0:
             positional_args = []
+            if is_instance_method:
+                if module_name.startswith("Evision"):
+                    positional_args.append(('self', -1, f"{module_name}.t()"))
+                else:
+                    positional_args.append(('self', -1, f"Evision.{module_name}.t()"))
             for (arg_name, argno, argtype) in self.py_arglist[:self.pos_end]:
                 if arg_name not in out_args:
                     positional_args.append((arg_name, argno, argtype))
             if len(positional_args) > 0:
                 parameter_info_doc.write("\n  ##### Positional Arguments\n")
                 for (arg_name, _, argtype) in positional_args:
-                    argtype1 = map_argtype_in_docs(argtype)
+                    argtype1 = map_argtype_in_docs('elixir', argtype)
                     normalized_arg_name = map_argname('elixir', arg_name)
                     normalized_arg_name = normalized_arg_name.replace(":", "")
                     if parameter_info.get(normalized_arg_name, None) is None:
@@ -387,7 +404,7 @@ class FuncVariant(object):
             if len(optional_args) > 0:
                 parameter_info_doc.write("  ##### Keyword Arguments\n")
                 for (arg_name, _, argtype) in optional_args:
-                    argtype1 = map_argtype_in_docs(argtype)
+                    argtype1 = map_argtype_in_docs('elixir', argtype)
                     normalized_arg_name = map_argname('elixir', arg_name)
                     normalized_arg_name = normalized_arg_name.replace(":", "")
                     if parameter_info.get(normalized_arg_name, None) is None:
@@ -408,16 +425,16 @@ class FuncVariant(object):
             out_args_name = [o[0] for o in self.py_outlist]
             if len(out_args_name) > 0 and (out_args_name[0] in ['retval', 'self']) and self.py_outlist[0][1] == -1:
                 if out_args_name[0] == 'retval':
-                    return_values.insert(0, ('retval', map_argtype_in_docs(self.rettype)))
+                    return_values.insert(0, ('retval', map_argtype_in_docs('elixir', self.rettype)))
                 elif out_args_name[0] == 'self':
-                    return_values.insert(0, ('self', map_argtype_in_docs(self.name)))
+                    return_values.insert(0, ('self', map_argtype_in_docs('elixir', self.name)))
             elif self.isconstructor:
-                return_values.insert(0, ('self', map_argtype_in_docs(self.classname)))
+                return_values.insert(0, ('self', map_argtype_in_docs('elixir', self.classname)))
 
             if len(return_values) > 0:
                 parameter_info_doc.write("  ##### Return\n")
                 for (arg_name, argtype) in return_values:
-                    argtype1 = map_argtype_in_docs(argtype)
+                    argtype1 = map_argtype_in_docs('elixir', argtype)
                     normalized_arg_name = map_argname('elixir', arg_name)
                     normalized_arg_name = normalized_arg_name.replace(":", "")
                     if parameter_info.get(normalized_arg_name, None) is None:
@@ -433,9 +450,31 @@ class FuncVariant(object):
             inline_doc = inline_doc.replace('<evision_param_info>', parameter_info_doc.getvalue())
         else:
             inline_doc = inline_doc.replace('<evision_param_info>', '\n' + parameter_info_doc.getvalue())
-        return inline_doc
+
+        inline_docs = StringIO()
+        last_empty = False
+        for line in inline_doc.split("\n"):
+            line_1 = line.strip()
+            empty = len(line_1) == 0
+            if last_empty and empty:
+                pass
+            else:
+                inline_docs.write(line)
+                inline_docs.write("\n")
+            last_empty = empty
+
+        inline_doc = inline_docs.getvalue()[:-1]
+        return inline_doc.rstrip()
 
     def generate_spec(self, kind: str, module_func_name: str, is_instance_method: bool, include_opts: bool, in_args: list=None, out_args: list=None) -> str:
+        if kind == 'elixir':
+            return self.generate_spec_elixir(module_func_name, is_instance_method, include_opts, in_args, out_args)
+        elif kind == 'erlang':
+            return self.generate_spec_erlang(module_func_name, is_instance_method, include_opts, in_args, out_args)
+        else:
+            return ''
+
+    def generate_spec_elixir(self, module_func_name: str, is_instance_method: bool, include_opts: bool, in_args: list=None, out_args: list=None) -> str:
         spec = StringIO()
 
         self.classname
@@ -469,7 +508,7 @@ class FuncVariant(object):
         in_args_spec = []
         if in_args is not None:
             for argtype in in_args:
-                in_args_spec.append(map_argtype_in_spec(self.classname, argtype, is_in=True))
+                in_args_spec.append(map_argtype_in_spec('elixir', self.classname, argtype, is_in=True))
         if self.has_opts and include_opts:
             in_args_spec.append('[{atom(), term()},...] | nil')
         if is_instance_method:
@@ -506,7 +545,7 @@ class FuncVariant(object):
         out_args_spec = []
         if out_args is not None and len(out_args) > 0:
             for argtype in out_args:
-                out_args_spec.append(map_argtype_in_spec(self.classname, argtype, is_in=False))
+                out_args_spec.append(map_argtype_in_spec('elixir', self.classname, argtype, is_in=False))
             out_spec = ", ".join(out_args_spec)
         else:
             out_args_spec = [':ok']
@@ -534,6 +573,112 @@ class FuncVariant(object):
             else:
                 out_spec = f'{{{out_spec}}} | {{:error, String.t()}}'
         spec.write(out_spec)
+
+        spec = spec.getvalue()
+        return spec
+
+    def generate_spec_erlang(self, module_func_name: str, is_instance_method: bool, include_opts: bool, in_args: list=None, out_args: list=None) -> str:
+        spec = StringIO()
+
+        self.classname
+        if out_args is None:
+            out_args = self.py_outlist
+            out_args_name = [o[0] for o in out_args]
+
+            if len(out_args_name) > 0 and (out_args_name[0] in ['retval', 'self']) and self.py_outlist[0][1] == -1:
+                if out_args_name[0] == 'retval':
+                    out_args = [self.rettype]
+                elif out_args_name[0] == 'self':
+                    out_args = [self.name]
+                out_args_name = out_args_name[1:]
+            elif self.isconstructor:
+                out_args = [self.classname]
+            else:
+                out_args = []
+
+            for arg in self.args:
+                if arg.name in out_args_name:
+                    out_args.append(arg.tp)
+
+        if in_args is None:
+            if self.min_args > 0:
+                in_args = []
+                for (arg_name, _, argtype) in self.py_arglist[:self.pos_end]:
+                    if arg_name not in out_args:
+                        in_args.append(argtype)
+
+        spec.write(f'-spec {module_func_name}(')
+        in_args_spec = []
+        if in_args is not None:
+            for argtype in in_args:
+                in_args_spec.append(map_argtype_in_spec('erlang', self.classname, argtype, is_in=True))
+        if self.has_opts and include_opts:
+            in_args_spec.append('[{atom(), term()},...] | nil')
+        if is_instance_method:
+            self.spec_self = ''
+            if len(self.classname) > 0:
+                tmp_name = self.classname
+                is_param = False
+                if tmp_name.endswith('_Param'):
+                    tmp_name = tmp_name[:len('_Param')]
+                    is_param = True
+                parts = tmp_name.split('_')
+                self.spec_self = parts[-1]
+                if is_param:
+                    self.spec_self += '_Param'
+                if tmp_name == 'ml_ANN_MLP':
+                    self.spec_self = 'ANN_MLP'
+                elif tmp_name == 'dnn_TextDetectionModel_DB':
+                    self.spec_self = 'TextDetectionModel_DB'
+                elif tmp_name == 'dnn_TextDetectionModel_EAST':
+                    self.spec_self = 'TextDetectionModel_EAST'
+
+            if is_struct(self.spec_self):
+                _, struct_name = is_struct(self.spec_self, also_get='struct_name')
+                ty = struct_name.replace('.', '_').lower()
+                self.spec_self = f'#{ty}'+'{}'
+            else:
+                print(f'warning: {self.spec_self} should be a struct. classname={self.classname}')
+                ty = self.spec_self.replace('.', '_').lower()
+                self.spec_self = f'#evision_{ty}' + '{}'
+            in_args_spec.insert(0, self.spec_self)
+
+        spec.write(", ".join(in_args_spec))
+        spec.write(") -> ")
+
+        out_spec = ''
+        out_args_spec = []
+        if out_args is not None and len(out_args) > 0:
+            for argtype in out_args:
+                out_args_spec.append(map_argtype_in_spec('erlang', self.classname, argtype, is_in=False))
+            out_spec = ", ".join(out_args_spec)
+        else:
+            out_args_spec = ['ok']
+
+        ok_error = True
+        if len(out_args_spec) == 1:
+            if out_args_spec[0] == 'boolean()':
+                out_spec = 'boolean() | {error, binary()}'
+                ok_error = False
+            elif out_args_spec[0] == 'ok':
+                out_spec = 'ok | {error, binary()}'
+                ok_error = False
+        else:
+            if out_args_spec[0] == 'boolean()':
+                out_spec = ", ".join(out_args_spec[1:])
+                if len(out_args_spec) == 2:
+                    out_spec = f'{out_spec} | false | {{error, binary()}}'
+                else:
+                    out_spec = f'{{{out_spec}}} | false | {{error, binary()}}'
+                ok_error = False
+
+        if ok_error:
+            if len(out_args_spec) == 1:
+                out_spec = f'{out_spec} | {{error, binary()}}'
+            else:
+                out_spec = f'{{{out_spec}}} | {{error, binary()}}'
+        spec.write(out_spec)
+        spec.write('.')
 
         spec = spec.getvalue()
         return spec
