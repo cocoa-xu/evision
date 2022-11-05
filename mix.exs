@@ -221,12 +221,14 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
                            # Configured cacertfile
                            System.get_env("ELIXIR_MAKE_CACERT"),
 
-                           # A little hack to use cacerts.pem in CAStore
+                           # A little hack to use cacerts.pem in CAStore/certfi
                            ## when `:evision` is a dependency in other application
                            ## => Mix.ProjectStack.project_file()
                            ## when `:evision` is the top application
                            ## => __ENV__.file
                            Path.join([Path.dirname(Mix.ProjectStack.project_file() || __ENV__.file), "deps/castore/priv/cacerts.pem"]),
+
+                           Path.join([Path.dirname(Mix.ProjectStack.project_file() || __ENV__.file), "deps/certfi/priv/cacerts.pem"]),
 
                            # Debian/Ubuntu/Gentoo etc.
                            "/etc/ssl/certs/ca-certificates.crt",
@@ -270,13 +272,14 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
     following actions may be taken:
     1. Install the hex package `castore`. It will
       be automatically detected after recompilation.
+
     2. Install the hex package `certifi`. It will
       be automatically detected after recomilation.
+
     3. Specify the location of a certificate trust store
-      by configuring it in `config.exs`:
-        config :elixir_make,
-        cacertfile: "/path/to/cacertfile",
-        ...
+       by configuring it in environment variable:
+
+        export ELIXIR_MAKE_CACERT="/path/to/cacerts.pem"
     """
     ""
   end
