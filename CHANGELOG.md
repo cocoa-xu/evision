@@ -3,6 +3,9 @@
 ## v0.1.17-dev (main)
 [Browse the Repository](https://github.com/cocoa-xu/evision)
 
+## Fixes
+- [py_src] Fixed a code generation bug when all the input arguments of a function are optional.
+
 ## Changed
 - [example] `Req.get!` should only raise on 4xx and 5xx. Thanks @wojtekmach
 
