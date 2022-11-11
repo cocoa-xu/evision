@@ -733,10 +733,14 @@ class FuncVariant(object):
         return positional, positional_var
 
     def func_args(self, kind: str, instance_method: bool = False, in_func_body: bool = False):
-        func_args = '{}'.format(", ".join(['{}'.format(map_argname(kind, arg_name)) for (arg_name, _, _argtype) in self.py_arglist[:self.pos_end]]))
+        positional_args = self.py_arglist[:self.pos_end]
+        func_args = '{}'.format(", ".join(['{}'.format(map_argname(kind, arg_name)) for (arg_name, _, _argtype) in positional_args]))
         func_args_with_opts = ''
         if self.has_opts:
-            func_args_with_opts = '{}{}'.format(", ".join(['{}'.format(map_argname(kind, arg_name)) for (arg_name, _, _argtype) in self.py_arglist[:self.pos_end]]), self.opts_args(kind))
+            if len(positional_args) > 0:
+                func_args_with_opts = '{}{}'.format(", ".join(['{}'.format(map_argname(kind, arg_name)) for (arg_name, _, _argtype) in positional_args]), self.opts_args(kind))
+            else:
+                func_args_with_opts = self.opts_args(kind)
 
         if instance_method:
             self_arg = ''
@@ -753,10 +757,10 @@ class FuncVariant(object):
 
             if len(func_args) > 0:
                 func_args = f'{self_arg}, {func_args}'
-                if len(func_args_with_opts) > 0:
-                    func_args_with_opts = f'{self_arg}, {func_args_with_opts}'
             else:
                 func_args = self_arg
-                func_args_with_opts = ''
+        
+            if len(func_args_with_opts) > 0:
+                func_args_with_opts = f'{self_arg}, {func_args_with_opts}'
 
         return func_args, func_args_with_opts
