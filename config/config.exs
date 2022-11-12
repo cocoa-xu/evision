@@ -65,6 +65,9 @@ config :evision, kino_render_image_max_size: {8192, 8192}
 ##   -- simply put, `:image` in this case (only specifying one type) means:
 ##      display the Evision.Mat as an image whenever possible, and fallback to `:raw`
 ##      if it's not a 2D image
-config :evision, kino_render_tab_order: [
-  :image, :raw, :numerical
-]
+config :evision,
+  kino_render_tab_order: [
+    :image,
+    :raw,
+    :numerical
+  ]

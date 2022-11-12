@@ -16,8 +16,51 @@ defmodule Evision.Test do
       weights
     )
 
-    DetectionModel.detectionModel(weights, config: config)
-    |> DetectionModel.setInputParams(scale: 1.0, size: {416, 416}, mean: {0, 0, 0}, swapRB: true, crop: false)
-    |> DetectionModel.detect(mat)
+    {classes, _, _} =
+      DetectionModel.detectionModel(weights, config: config)
+      |> DetectionModel.setInputParams(
+        scale: 1.0,
+        size: {416, 416},
+        mean: {0, 0, 0},
+        swapRB: true,
+        crop: false
+      )
+      |> DetectionModel.detect(mat)
+
+    assert classes == [
+             0,
+             24,
+             24,
+             24,
+             0,
+             24,
+             24,
+             0,
+             47,
+             9,
+             9,
+             9,
+             9,
+             9,
+             9,
+             26,
+             24,
+             12,
+             12,
+             47,
+             24,
+             24,
+             24,
+             26,
+             26,
+             26,
+             26,
+             26,
+             26,
+             26,
+             47,
+             26,
+             26
+           ]
   end
 end

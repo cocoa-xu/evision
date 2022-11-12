@@ -409,7 +409,11 @@ defmodule Evision.Mat do
     any
   end
 
-  @default_kino_render_image_encoding Application.compile_env(:evision, :kino_render_image_encoding, :png)
+  @default_kino_render_image_encoding Application.compile_env(
+                                        :evision,
+                                        :kino_render_image_encoding,
+                                        :png
+                                      )
   @doc """
   Get preferred image encoding when rendering in Kino.
 
@@ -449,7 +453,11 @@ defmodule Evision.Mat do
     """
   end
 
-  @default_kino_render_image_max_size Application.compile_env(:evision, :kino_render_image_max_size, {8192, 8192})
+  @default_kino_render_image_max_size Application.compile_env(
+                                        :evision,
+                                        :kino_render_image_max_size,
+                                        {8192, 8192}
+                                      )
   @doc """
   Get the maximum allowed image size to render in Kino.
 
@@ -469,7 +477,8 @@ defmodule Evision.Mat do
   - **size**. `{height, width}`.
   """
   @spec set_kino_render_image_max_size({pos_integer(), pos_integer()}) :: term()
-  def set_kino_render_image_max_size({height, width}) when is_integer(height) and height > 0 and is_integer(width) and width > 0 do
+  def set_kino_render_image_max_size({height, width})
+      when is_integer(height) and height > 0 and is_integer(width) and width > 0 do
     Process.put(:evision_kino_render_image_max_size, {height, width})
   end
 
@@ -479,7 +488,13 @@ defmodule Evision.Mat do
     """
   end
 
-  @kino_render_tab_order Enum.uniq(Application.compile_env(:evision, :kino_render_tab_order, [:image, :raw, :numerical]))
+  @kino_render_tab_order Enum.uniq(
+                           Application.compile_env(:evision, :kino_render_tab_order, [
+                             :image,
+                             :raw,
+                             :numerical
+                           ])
+                         )
   @doc """
   Get preferred order of Kino.Layout tabs for `Evision.Mat` in Livebook.
 
@@ -530,17 +545,20 @@ defmodule Evision.Mat do
     render_types =
       Enum.map(order, fn t ->
         supported? = Enum.member?(@supported_kino_render_tab_order, t)
+
         if !supported? do
-          Logger.warning """
+          Logger.warning("""
           Unknown type `#{inspect(t)}` found in `config :evision, kino_render_tab_order`.
           Supported types are `#{inspect(@supported_kino_render_tab_order)}` and their combinations.
-          """
+          """)
+
           nil
         else
           t
         end
       end)
       |> Enum.reject(fn a -> a == nil end)
+
     Process.put(:evision_kino_render_tab_order, render_types)
   end
 
@@ -564,11 +582,14 @@ defmodule Evision.Mat do
 
       defp within_maximum_size(mat) do
         {max_height, max_width} = Evision.Mat.kino_render_image_max_size()
+
         case Evision.Mat.shape(mat) do
           {h, w} ->
             h <= max_height and w <= max_width
+
           {h, w, _c} ->
             h <= max_height and w <= max_width
+
           _ ->
             false
         end
@@ -581,24 +602,30 @@ defmodule Evision.Mat do
         Enum.map(render_types, fn
           :raw ->
             {"Raw", Kino.Inspect.new(mat)}
+
           :numerical ->
             {"Numerical", Kino.Inspect.new(Evision.Mat.to_nx(mat))}
+
           :image ->
             {ext, format} =
               case Evision.Mat.kino_render_image_encoding() do
                 :jpg ->
                   {".jpg", :jpeg}
+
                 :jpeg ->
                   {".jpeg", :jpeg}
+
                 :png ->
                   {".png", :png}
+
                 unknown ->
                   raise RuntimeError, "Cannot render image with encoding `#{inspect(unknown)}`"
               end
+
             with true <- is_2d_image(mat),
                  true <- within_maximum_size(mat),
-                  encoded <- Evision.imencode(ext, mat),
-                  true <- is_binary(encoded) do
+                 encoded <- Evision.imencode(ext, mat),
+                 true <- is_binary(encoded) do
               {"Image", Kino.Image.new(encoded, format)}
             else
               _ ->
@@ -1715,7 +1742,9 @@ defmodule Evision.Mat do
         t: t,
         l: l
       )
+
     mat = Evision.Internal.Structurise.to_struct(arange)
+
     with %Evision.Mat{} <- mat,
          ret = {length, _} <- Evision.Mat.shape(mat),
          {:mat_shape_error, false, _} <- {:mat_shape_error, length == :error, ret} do
