@@ -83,7 +83,15 @@ class ClassInfo(object):
         base_class = self.base
         current_class = self
         while base_class is not None:
-            if base_class and (current_class.cname.startswith("cv::ml") or "Calibrate" in current_class.cname or (current_class.base is not None and "Feature2D" in current_class.base) or (current_class.base is not None and "Matcher" in current_class.base)):
+            if base_class \
+                and (
+                        current_class.cname.startswith("cv::ml") 
+                        or "Calibrate" in current_class.cname 
+                        or (current_class.base is not None and "Feature2D" in current_class.base) 
+                        or (current_class.base is not None and "Matcher" in current_class.base)
+                        or (current_class.base is not None and "Algorithm" in current_class.base)
+                        or (current_class.base is not None and current_class.cname.startswith("cv::dnn"))
+                    ):
                 if base_class in codegen.classes:
                     base_class = codegen.classes[current_class.base]
                     for base_method_name in base_class.methods:
@@ -201,7 +209,15 @@ class ClassInfo(object):
         base_class = self.base
         current_class = self
         while base_class is not None:
-            if base_class and (current_class.cname.startswith("cv::ml") or "Calibrate" in current_class.cname or (current_class.base is not None and "Feature2D" in current_class.base) or (current_class.base is not None and "Matcher" in current_class.base) or (current_class.base is not None and "Algorithm" in current_class.base)):
+            if base_class \
+                and (
+                        current_class.cname.startswith("cv::ml") 
+                        or "Calibrate" in current_class.cname 
+                        or (current_class.base is not None and "Feature2D" in current_class.base) 
+                        or (current_class.base is not None and "Matcher" in current_class.base)
+                        or (current_class.base is not None and "Algorithm" in current_class.base)
+                        or (current_class.base is not None and current_class.cname.startswith("cv::dnn"))
+                    ):
                 if base_class in codegen.classes:
                     base_class = codegen.classes[current_class.base]
                     for base_method_name in base_class.methods:

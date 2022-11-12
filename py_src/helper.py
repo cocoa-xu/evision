@@ -504,6 +504,7 @@ def is_struct(argtype: str, also_get: Optional[str] = None):
         'BOWKMeansTrainer': 'Evision.BOWKMeansTrainer',
         'BOWTrainer': 'Evision.BOWTrainer',
         'BRISK': 'Evision.BRISK',
+        'BaseCascadeClassifier': 'Evision.BaseCascadeClassifier',
         'BackgroundSubtractor': 'Evision.BackgroundSubtractor',
         'BackgroundSubtractorKNN': 'Evision.BackgroundSubtractorKNN',
         'BackgroundSubtractorMOG2': 'Evision.BackgroundSubtractorMOG2',
