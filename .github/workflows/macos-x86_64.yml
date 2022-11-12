@@ -103,6 +103,14 @@ jobs:
           rm -f _build/dev/lib/evision/priv/evision.so
           mix compile
 
+      - name: Cache test files
+        id: cache-mix-test-files
+        uses: actions/cache@v3
+        with:
+          key: test-files-${{ hashFiles('test/*.exs') }}
+          path: |
+            ./test
+
       - name: Mix Test
         run: |
           mix test --include require_downloading --include require_ffmpeg

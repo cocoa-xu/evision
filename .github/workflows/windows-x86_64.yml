@@ -111,6 +111,14 @@ jobs:
           rm -f Makefile
           rm -f "_build/${MIX_ENV}/lib/evision/priv/evision.dll"
           mix compile
+      
+      - name: Cache test files
+        id: cache-mix-test-files
+        uses: actions/cache@v3
+        with:
+          key: test-files-${{ hashFiles('test/*.exs') }}
+          path: |
+            ./test
 
       - name: Mix Test
         shell: bash
