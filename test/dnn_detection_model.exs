@@ -1,7 +1,7 @@
 defmodule Evision.Test do
   use ExUnit.Case
 
-  alias Evision.{Mat, DNN.DetectionModel}
+  alias Evision.DNN.DetectionModel
 
   @tag :dnn
   @tag :require_downloading
