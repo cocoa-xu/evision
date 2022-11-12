@@ -76,7 +76,7 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
   end
 
   defp read_checksum_map(app \\ Mix.Project.config()[:app]) when is_atom(app) do
-    file = checksum_file(app)
+    {file, _} = checksum_file(app)
 
     with {:ok, contents} <- File.read(file),
          {%{} = contents, _} <- Code.eval_string(contents) do
