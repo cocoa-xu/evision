@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.1.18 (2022-11-12)
+[Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.18) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.18)
+
+## Fixes
+- [precompile] Fixed `Mix.Tasks.Compile.EvisionPrecompiled.read_checksum_map/1`
+
 ## v0.1.17 (2022-11-11)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.17) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.17)
 
