@@ -592,7 +592,8 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
     end
 
     if File.exists?(generated_elixir_dir) do
-      File.rm_rf!(generated_elixir_dir)
+      # todo: async rm_rf?
+      # File.rm_rf!(generated_elixir_dir)
     end
 
     Logger.info("Copying priv directory: #{cached_priv_dir} => #{app_priv}")
@@ -618,6 +619,8 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
         Logger.error(msg)
         raise RuntimeError, msg
     end
+
+    Process.sleep(1000)
   end
 
   def unarchive!(filepath, to_directory) do
