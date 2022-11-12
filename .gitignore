@@ -30,6 +30,7 @@ erl_crash.dump
 /src/generated
 test/models/
 test/photo_hdr_test/
+test/yolov4.weights
 
 # examples
 /examples/Lenna_test_image.png
