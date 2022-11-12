@@ -71,8 +71,8 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
   def checksum_file(app \\ Mix.Project.config()[:app]) when is_atom(app) do
     # Saves the file in the project root.
     {
-      Path.join(File.cwd!(), "checksum-#{to_string(app)}.exs"),
-      Path.join([File.cwd!(), "checksum_#{to_string(app)}.erl"])
+      Path.join(File.cwd!(), "checksum.exs"),
+      Path.join([File.cwd!(), "checksum.erl"])
     }
   end
 
@@ -134,8 +134,10 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
         case String.downcase(System.get_env("PROCESSOR_ARCHITECTURE")) do
           "arm64" ->
             "aarch64"
+
           arch when arch in ["x64", "x86_64", "amd64"] ->
             "x86_64"
+
           arch ->
             arch
         end
@@ -228,9 +230,14 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
                            ## => Mix.ProjectStack.project_file()
                            ## when `:evision` is the top application
                            ## => __ENV__.file
-                           Path.join([Path.dirname(Mix.ProjectStack.project_file() || __ENV__.file), "deps/castore/priv/cacerts.pem"]),
-
-                           Path.join([Path.dirname(Mix.ProjectStack.project_file() || __ENV__.file), "deps/certfi/priv/cacerts.pem"]),
+                           Path.join([
+                             Path.dirname(Mix.ProjectStack.project_file() || __ENV__.file),
+                             "deps/castore/priv/cacerts.pem"
+                           ]),
+                           Path.join([
+                             Path.dirname(Mix.ProjectStack.project_file() || __ENV__.file),
+                             "deps/certfi/priv/cacerts.pem"
+                           ]),
 
                            # Debian/Ubuntu/Gentoo etc.
                            "/etc/ssl/certs/ca-certificates.crt",
@@ -264,7 +271,7 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
   end
 
   defp warning_if_no_cacertfile!(nil) do
-    Logger.warn """
+    Logger.warn("""
     No certificate trust store was found.
     Tried looking for: #{inspect(@certificate_locations)}
     A certificate trust store is required in
@@ -282,7 +289,8 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
        by configuring it in environment variable:
 
         export ELIXIR_MAKE_CACERT="/path/to/cacerts.pem"
-    """
+    """)
+
     ""
   end
 
@@ -292,6 +300,7 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
 
   defp https_opts(hostname) do
     cert_file = certificate_store()
+
     if secure_ssl?() and cert_file != [] do
       [
         ssl: [
@@ -640,12 +649,14 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
   @impl true
   def run(_args) do
     {target, [_arch, os, _abi]} = get_target()
+
     evision_so_file =
       if os == "windows" do
         "evision.dll"
       else
         "evision.so"
       end
+
     evision_so_file = Path.join([app_priv(), evision_so_file])
 
     if !File.exists?(evision_so_file) do
@@ -1032,8 +1043,8 @@ defmodule Evision.MixProject do
           lib/mix
           .formatter.exs
           mix.exs
-          checksum-evision.exs
-          checksum_evision.erl
+          checksum.exs
+          checksum.erl
           evision_precompiled.erl
           src/evision_mat.erl
           src/evision_highgui.erl

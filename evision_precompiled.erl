@@ -1,6 +1,6 @@
 -module(evision_precompiled).
 -export([is_precompiled_binary_available/0, install_precompiled_binary_if_available/0]).
--import(checksum_evision, [checksum/0]).
+-import(checksum, [checksum/0]).
 
 -define(PRECOMPILED_TARBALL_NAME, "evision-nif_~s-~s-~s").
 -define(PRECOMPILED_DOWNLOAD_URL, "https://github.com/cocoa-xu/evision/releases/download/v~s/~s").
@@ -99,7 +99,7 @@ get_nif_version() ->
     erlang:system_info(nif_version).
 
 get_expected_checksum(TarballFilename) ->
-    Map = checksum_evision:checksum(),
+    Map = checksum:checksum(),
     case maps:is_key(TarballFilename, Map) of
         true ->
             AlgoAndChecksum = maps:get(TarballFilename, Map),

@@ -105,7 +105,7 @@ defmodule Mix.Tasks.Evision.Fetch do
 
     File.write!(erlang_file, [
       """
-      -module(checksum_evision).
+      -module(checksum).
       -export([checksum/0]).
 
       checksum() ->

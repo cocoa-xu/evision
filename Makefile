@@ -142,7 +142,7 @@ $(EVISION_SO): $(HEADERS_TXT)
 	@ mkdir -p "$(GENERATED_ERLANG_SRC_DIR)"
 	@ if [ "$(EVISION_PREFER_PRECOMPILED)" = "true" ] && [ "$(EVISION_COMPILE_WITH_REBAR)" = "true" ]; then \
 		{ \
-			erlc checksum_evision.erl && \
+			erlc checksum.erl && \
 			erlc evision_precompiled.erl && \
 			erl -noshell -s evision_precompiled install_precompiled_binary_if_available -s init stop ; } || \
 		{ \
