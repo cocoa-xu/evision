@@ -44,7 +44,7 @@ Download the test image.
 
 ```elixir
 Helper.download!(
-  "https://raw.githubusercontent.com/cocoa-xu/evision/main/test/sudoku_puzzle.webp",
+  "https://raw.githubusercontent.com/cocoa-xu/evision/main/test/testdata/sudoku_puzzle.webp",
   "sudoku_puzzle.webp"
 )
 ```

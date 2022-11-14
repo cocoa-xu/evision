@@ -30,7 +30,9 @@ defmodule Evision.PCA.Test do
   @tag :nx
   test "Use the OpenCV class Evision.PCA to calculate the orientation of an object." do
     gray =
-      Evision.imread(Path.join([__DIR__, "pca_test.jpg"]), flags: Evision.cv_IMREAD_GRAYSCALE())
+      Evision.imread(Path.join([__DIR__, "testdata", "pca_test.jpg"]),
+        flags: Evision.cv_IMREAD_GRAYSCALE()
+      )
 
     {_, bw} =
       Evision.threshold(gray, 50, 255, Evision.cv_THRESH_BINARY() ||| Evision.cv_THRESH_OTSU())
@@ -92,7 +94,7 @@ defmodule Evision.PCA.Test do
     pca_analysis = Enum.reverse(pca_analysis)
     assert 6 == Enum.count(pca_analysis)
 
-    src = Evision.imread(Path.join([__DIR__, "pca_test.jpg"]))
+    src = Evision.imread(Path.join([__DIR__, "testdata", "pca_test.jpg"]))
 
     src =
       for index <- 0..(Enum.count(contours) - 1), reduce: src do
@@ -108,7 +110,7 @@ defmodule Evision.PCA.Test do
           drawAxis(src, cntr, p2, {255, 255, 0}, 5)
       end
 
-    output_path = Path.join([__DIR__, "pca_test_out.png"])
+    output_path = Path.join([__DIR__, "testdata", "pca_test_out.png"])
     Evision.imwrite(output_path, src)
     File.rm!(output_path)
   end

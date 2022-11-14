@@ -28,9 +28,11 @@ erl_crash.dump
 3rd_party/opencv
 /lib/generated
 /src/generated
-test/models/
-test/photo_hdr_test/
-test/yolov4.weights
+
+# testdata
+/test/testdata/models/
+/test/testdata/photo_hdr_test/
+/test/testdata/yolov4.weights
 
 # examples
 /examples/Lenna_test_image.png

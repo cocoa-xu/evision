@@ -6,9 +6,9 @@ defmodule Evision.Test do
   @tag :dnn
   @tag :require_downloading
   test "yolov4" do
-    dog = Path.join(__DIR__, "dog.jpg")
-    weights = Path.join(__DIR__, "yolov4.weights")
-    config = Path.join(__DIR__, "yolov4.cfg")
+    dog = Path.join([__DIR__, "testdata", "dog.jpg"])
+    weights = Path.join([__DIR__, "testdata", "yolov4.weights"])
+    config = Path.join([__DIR__, "testdata", "yolov4.cfg"])
     mat = Evision.imread(dog)
 
     Evision.TestHelper.download!(

@@ -134,39 +134,35 @@ defmodule Evision.DNN.Test do
   defmodule SSDMobileNetV2 do
     def predict_and_show(filename, confidence_threshold \\ 0.5) do
       model_config =
-        __DIR__
-        |> Path.join("models")
-        |> Path.join("ssd_mobilenet_v2_coco_2018_03_29.pbtxt")
+        Path.join([__DIR__, "testdata", "models", "ssd_mobilenet_v2_coco_2018_03_29.pbtxt"])
 
       Cv.TestHelper.download!(
         "https://raw.githubusercontent.com/opencv/opencv_extra/master/testdata/dnn/ssd_mobilenet_v2_coco_2018_03_29.pbtxt",
         model_config
       )
 
-      model_class_list =
-        __DIR__
-        |> Path.join("models")
-        |> Path.join("coco_names.txt")
+      model_class_list = Path.join([__DIR__, "testdata", "models", "coco_names.txt"])
 
       Cv.TestHelper.download!(
-        "https://raw.githubusercontent.com/cocoa-xu/evision/main/test/models/coco_names.txt",
+        "https://raw.githubusercontent.com/cocoa-xu/evision/main/test/testdata/models/coco_names.txt",
         model_class_list
       )
 
-      File.mkdir_p!(Path.join([__DIR__, "models", "ssd_mobilenet_v2_coco_2018_03_29"]))
+      File.mkdir_p!(
+        Path.join([__DIR__, "testdata", "models", "ssd_mobilenet_v2_coco_2018_03_29"])
+      )
 
       model_graph_pb =
         Path.join([
           __DIR__,
+          "testdata",
           "models",
           "ssd_mobilenet_v2_coco_2018_03_29",
           "frozen_inference_graph.pb"
         ])
 
       model_tar =
-        __DIR__
-        |> Path.join("models")
-        |> Path.join("ssd_mobilenet_v2_coco_2018_03_29.tar.gz")
+        Path.join([__DIR__, "testdata", "models", "ssd_mobilenet_v2_coco_2018_03_29.tar.gz"])
 
       test_setup =
         if not File.exists?(model_graph_pb) do
@@ -225,7 +221,9 @@ defmodule Evision.DNN.Test do
   test "load ssd_mobilenet_v2 and do inference" do
     io =
       capture_io(fn ->
-        SSDMobileNetV2.predict_and_show(Path.join(__DIR__, "dnn_detection_test.jpg"))
+        SSDMobileNetV2.predict_and_show(
+          Path.join([__DIR__, "test_data", "dnn_detection_test.jpg"])
+        )
       end)
 
     assert "Inference time=>" <> _time = io

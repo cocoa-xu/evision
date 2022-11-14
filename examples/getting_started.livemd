@@ -149,7 +149,7 @@ decoded_mat = Cv.imdecode(encoded_in_memory, Cv.cv_IMREAD_ANYCOLOR())
 ```elixir
 # download the test image (has alpha channel)
 download_path = Path.join(__DIR__, "test.png")
-Helper.download!("https://github.com/cocoa-xu/evision/raw/main/test/test.png", download_path)
+Helper.download!("https://github.com/cocoa-xu/evision/raw/main/test/testdata/test.png", download_path)
 ```
 
 <!-- livebook:{"output":true} -->

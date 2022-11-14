@@ -48,8 +48,8 @@ defmodule Evision.VideoWriter.Test do
   @tag :video
   @tag :require_ffmpeg
   test "open a video file, read one frame and write a video@30FPS, duration 2 seconds" do
-    input_video_file = Path.join([__DIR__, "videocapture_test.mp4"])
-    output_video_file = Path.join(__DIR__, "videowriter_test.mp4")
+    input_video_file = Path.join([__DIR__, "testdata", "videocapture_test.mp4"])
+    output_video_file = Path.join([__DIR__, "testdata", "videowriter_test.mp4"])
     WriteVideo.given(input_video_file, output_video_file, 30, 2)
     File.rm!(output_video_file)
   end

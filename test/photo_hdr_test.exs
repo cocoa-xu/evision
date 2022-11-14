@@ -23,7 +23,7 @@ defmodule Evision.Photo.HDR.Test do
 
     exposure_file_save_paths =
       exposure_filenames
-      |> Enum.map(&Path.join([__DIR__, "photo_hdr_test", &1]))
+      |> Enum.map(&Path.join([__DIR__, "testdata", "photo_hdr_test", &1]))
 
     assert true =
              exposure_file_urls
@@ -31,7 +31,7 @@ defmodule Evision.Photo.HDR.Test do
              |> Enum.map(fn {url, save_as} -> Evision.TestHelper.download!(url, save_as) end)
              |> Enum.all?(&(:ok = &1))
 
-    list_txt_file = Path.join([__DIR__, "photo_hdr_test", "list.txt"])
+    list_txt_file = Path.join([__DIR__, "testdata", "photo_hdr_test", "list.txt"])
 
     assert :ok =
              Evision.TestHelper.download!(
@@ -50,7 +50,7 @@ defmodule Evision.Photo.HDR.Test do
       |> Enum.map(&String.split(&1, " "))
       |> Enum.map(&List.to_tuple(&1))
       |> Enum.map(fn {image_filename, times} ->
-        mat = Evision.imread(Path.join([__DIR__, "photo_hdr_test", image_filename]))
+        mat = Evision.imread(Path.join([__DIR__, "testdata", "photo_hdr_test", image_filename]))
         {val, ""} = Float.parse(times)
         {mat, 1 / val}
       end)
@@ -77,7 +77,7 @@ defmodule Evision.Photo.HDR.Test do
     merge_mertens = Evision.createMergeMertens()
     fusion = Evision.MergeMertens.process(merge_mertens, images)
 
-    output_fusion_file = Path.join([__DIR__, "photo_hdr_test", "fusion.png"])
+    output_fusion_file = Path.join([__DIR__, "testdata", "photo_hdr_test", "fusion.png"])
 
     fusion
     |> Evision.Mat.to_nx(Nx.BinaryBackend)
@@ -87,7 +87,7 @@ defmodule Evision.Photo.HDR.Test do
     |> Evision.Mat.from_nx_2d()
     |> then(&Evision.imwrite(output_fusion_file, &1))
 
-    output_ldr_file = Path.join([__DIR__, "photo_hdr_test", "ldr.png"])
+    output_ldr_file = Path.join([__DIR__, "testdata", "photo_hdr_test", "ldr.png"])
     f32_shape = Evision.Mat.shape(ldr)
     nan = <<0, 0, 192, 255>>
     positive_inf = <<0, 0, 128, 127>>
@@ -121,7 +121,7 @@ defmodule Evision.Photo.HDR.Test do
     |> Evision.Mat.from_nx_2d()
     |> then(&Evision.imwrite(output_ldr_file, &1))
 
-    output_hdr_file = Path.join([__DIR__, "photo_hdr_test", "hdr.hdr"])
+    output_hdr_file = Path.join([__DIR__, "testdata", "photo_hdr_test", "hdr.hdr"])
     Evision.imwrite(output_hdr_file, hdr)
   end
 end

@@ -6,7 +6,8 @@ defmodule Evision.VideoCapture.Test do
   @tag :video
   @tag :require_ffmpeg
   test "open a video file and read one frame" do
-    video = Evision.VideoCapture.videoCapture(Path.join([__DIR__, "videocapture_test.mp4"]))
+    video =
+      Evision.VideoCapture.videoCapture(Path.join([__DIR__, "testdata", "videocapture_test.mp4"]))
 
     %Evision.VideoCapture{
       isOpened: true,

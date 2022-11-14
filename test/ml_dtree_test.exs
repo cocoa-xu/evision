@@ -28,7 +28,7 @@ defmodule Evision.ML.DTrees.Test do
     {test_error, _results} = Evision.ML.DTrees.calcError(dtree, dataset, true)
 
     # save to file
-    dtree_binary = Path.join([__DIR__, "dtree.bin"])
+    dtree_binary = Path.join([__DIR__, "testdata", "dtree.bin"])
     File.rm(dtree_binary)
     Evision.ML.DTrees.save(dtree, dtree_binary)
 

@@ -47,7 +47,7 @@ end
 test_image_path = Path.join(__DIR__, "warp_polar.png")
 
 Helper.download!(
-  "https://raw.githubusercontent.com/cocoa-xu/evision/main/test/warp_polar.png",
+  "https://raw.githubusercontent.com/cocoa-xu/evision/main/test/testdata/warp_polar.png",
   test_image_path
 )
 

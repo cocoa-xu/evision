@@ -32,7 +32,8 @@ defmodule Evision.Test do
   end
 
   test "decode png from file w/o alpha channel" do
-    %Mat{type: {:u, 8}, shape: {2, 3, 3}} = mat = Evision.imread(Path.join([__DIR__, "test.png"]))
+    %Mat{type: {:u, 8}, shape: {2, 3, 3}} =
+      mat = Evision.imread(Path.join([__DIR__, "testdata", "test.png"]))
 
     img_data = Evision.Mat.to_binary(mat)
 
@@ -42,7 +43,10 @@ defmodule Evision.Test do
 
   test "decode png from file w/ alpha channel" do
     %Mat{type: {:u, 8}, shape: {2, 3, 4}} =
-      mat = Evision.imread(Path.join([__DIR__, "test.png"]), flags: Evision.cv_IMREAD_UNCHANGED())
+      mat =
+      Evision.imread(Path.join([__DIR__, "testdata", "test.png"]),
+        flags: Evision.cv_IMREAD_UNCHANGED()
+      )
 
     img_data = Evision.Mat.to_binary(mat)
 
@@ -52,14 +56,18 @@ defmodule Evision.Test do
 
   test "decode image from file grayscale" do
     %Mat{type: {:u, 8}, shape: {2, 3}} =
-      mat = Evision.imread(Path.join([__DIR__, "test.png"]), flags: Evision.cv_IMREAD_GRAYSCALE())
+      mat =
+      Evision.imread(Path.join([__DIR__, "testdata", "test.png"]),
+        flags: Evision.cv_IMREAD_GRAYSCALE()
+      )
 
     img_data = Evision.Mat.to_binary(mat)
     assert <<171, 161, 112, 209, 193, 173>> == img_data
   end
 
   test "decode jpg from file" do
-    %Mat{type: {:u, 8}, shape: {2, 3, 3}} = mat = Evision.imread(Path.join([__DIR__, "test.jpg"]))
+    %Mat{type: {:u, 8}, shape: {2, 3, 3}} =
+      mat = Evision.imread(Path.join([__DIR__, "testdata", "test.jpg"]))
 
     img_data = Evision.Mat.to_binary(mat)
 
@@ -68,12 +76,13 @@ defmodule Evision.Test do
   end
 
   test "Evision.imreadmulti" do
-    [%Mat{}, %Mat{}] = Evision.imreadmulti(Path.join([__DIR__, "imreadmulti_test.tiff"]))
+    [%Mat{}, %Mat{}] =
+      Evision.imreadmulti(Path.join([__DIR__, "testdata", "imreadmulti_test.tiff"]))
   end
 
   test "Evision.imwritemulti" do
-    input_path = Path.join([__DIR__, "imreadmulti_test.tiff"])
-    output_path = Path.join([__DIR__, "imwritemulti_test.tiff"])
+    input_path = Path.join([__DIR__, "testdata", "imreadmulti_test.tiff"])
+    output_path = Path.join([__DIR__, "testdata", "imwritemulti_test.tiff"])
     images = Evision.imreadmulti(input_path)
     assert true = Evision.imwritemulti(output_path, images)
 
@@ -84,7 +93,8 @@ defmodule Evision.Test do
   end
 
   test "Evision.imencode and Evision.imdecode" do
-    %Mat{shape: shape, type: type} = mat = Evision.imread(Path.join([__DIR__, "test.png"]))
+    %Mat{shape: shape, type: type} =
+      mat = Evision.imread(Path.join([__DIR__, "testdata", "test.png"]))
 
     encoded = Evision.imencode(".png", mat)
     assert is_binary(encoded)
@@ -93,7 +103,7 @@ defmodule Evision.Test do
   end
 
   test "Evision.resize" do
-    mat = Evision.imread(Path.join([__DIR__, "test.png"]))
+    mat = Evision.imread(Path.join([__DIR__, "testdata", "test.png"]))
 
     resize_height = 4
     resize_width = 6
@@ -103,8 +113,8 @@ defmodule Evision.Test do
   end
 
   test "Evision.imwrite" do
-    input_path = Path.join([__DIR__, "test.png"])
-    output_path = Path.join([__DIR__, "imwrite_test.png"])
+    input_path = Path.join([__DIR__, "testdata", "test.png"])
+    output_path = Path.join([__DIR__, "testdata", "imwrite_test.png"])
     mat = Evision.imread(input_path)
     assert Evision.imwrite(output_path, mat)
 
@@ -119,7 +129,11 @@ defmodule Evision.Test do
   end
 
   test "Evision.mean" do
-    mat = Evision.imread(Path.join([__DIR__, "test.png"]), flags: Evision.cv_IMREAD_GRAYSCALE())
+    mat =
+      Evision.imread(Path.join([__DIR__, "testdata", "test.png"]),
+        flags: Evision.cv_IMREAD_GRAYSCALE()
+      )
+
     bin = Evision.Mat.to_binary(mat)
 
     avg = Enum.sum(:binary.bin_to_list(bin)) / byte_size(bin)
@@ -128,59 +142,63 @@ defmodule Evision.Test do
   end
 
   test "Evision.minMaxLoc" do
-    mat = Evision.imread(Path.join([__DIR__, "test.png"]), flags: Evision.cv_IMREAD_GRAYSCALE())
+    mat =
+      Evision.imread(Path.join([__DIR__, "testdata", "test.png"]),
+        flags: Evision.cv_IMREAD_GRAYSCALE()
+      )
+
     {112.0, 209.0, {2, 0}, {0, 1}} = Evision.minMaxLoc(mat)
   end
 
   test "Evision.Mat.size" do
-    img = Evision.imread(Path.join([__DIR__, "test.jpg"]))
+    img = Evision.imread(Path.join([__DIR__, "testdata", "test.jpg"]))
     assert {2, [2, 3]} == Evision.Mat.size(img)
   end
 
   test "Evision.Mat.channels" do
-    img = Evision.imread(Path.join([__DIR__, "test.jpg"]))
+    img = Evision.imread(Path.join([__DIR__, "testdata", "test.jpg"]))
     assert 3 == Evision.Mat.channels(img)
   end
 
   test "Evision.Mat.depth" do
-    img = Evision.imread(Path.join([__DIR__, "test.jpg"]))
+    img = Evision.imread(Path.join([__DIR__, "testdata", "test.jpg"]))
     assert Evision.cv_8U() == Evision.Mat.depth(img)
   end
 
   test "Evision.Mat.raw_type" do
-    img = Evision.imread(Path.join([__DIR__, "test.jpg"]))
+    img = Evision.imread(Path.join([__DIR__, "testdata", "test.jpg"]))
     assert Evision.cv_8UC3() == Evision.Mat.raw_type(img)
   end
 
   test "Evision.Mat.isSubmatrix" do
-    img = Evision.imread(Path.join([__DIR__, "test.jpg"]))
+    img = Evision.imread(Path.join([__DIR__, "testdata", "test.jpg"]))
     assert false == Evision.Mat.isSubmatrix(img)
   end
 
   test "Evision.Mat.isContinuous" do
-    img = Evision.imread(Path.join([__DIR__, "test.jpg"]))
+    img = Evision.imread(Path.join([__DIR__, "testdata", "test.jpg"]))
     assert true == Evision.Mat.isContinuous(img)
   end
 
   test "Evision.Mat.elemSize" do
-    img = Evision.imread(Path.join([__DIR__, "test.jpg"]))
+    img = Evision.imread(Path.join([__DIR__, "testdata", "test.jpg"]))
     assert 3 == Evision.Mat.elemSize(img)
   end
 
   test "Evision.Mat.elemSize1" do
-    img = Evision.imread(Path.join([__DIR__, "test.jpg"]))
+    img = Evision.imread(Path.join([__DIR__, "testdata", "test.jpg"]))
     assert 1 == Evision.Mat.elemSize1(img)
   end
 
   test "Evision.Mat.total/{1,2,3}" do
-    img = Evision.imread(Path.join([__DIR__, "test.jpg"]))
+    img = Evision.imread(Path.join([__DIR__, "testdata", "test.jpg"]))
     assert 6 == Evision.Mat.total(img)
     assert 2 == Evision.Mat.total(img, 0, 1)
     assert 3 == Evision.Mat.total(img, 1, 2)
   end
 
   test "Evision.Mat.as_shape" do
-    img = Evision.imread(Path.join([__DIR__, "test.jpg"]))
+    img = Evision.imread(Path.join([__DIR__, "testdata", "test.jpg"]))
     %Mat{shape: {3, 2, 3}} = new_img = Evision.Mat.as_shape(img, {3, 2, 3})
     assert Evision.Mat.to_binary(img) == Evision.Mat.to_binary(new_img)
   end
@@ -252,7 +270,8 @@ defmodule Evision.Test do
   end
 
   test "Evision.Mat.roi/2" do
-    %Evision.Mat{} = img = Evision.imread("test/qr_detector_test.png")
+    %Evision.Mat{} =
+      img = Evision.imread(Path.join([__DIR__, "testdata", "qr_detector_test.png"]))
 
     # Mat operator()( const Rect& roi ) const;
     %Evision.Mat{
@@ -282,7 +301,8 @@ defmodule Evision.Test do
   end
 
   test "Evision.Mat.roi/3" do
-    %Evision.Mat{} = img = Evision.imread("test/qr_detector_test.png")
+    %Evision.Mat{} =
+      img = Evision.imread(Path.join([__DIR__, "testdata", "qr_detector_test.png"]))
 
     # Mat operator()( Range rowRange, Range colRange ) const;
     %Evision.Mat{
@@ -306,7 +326,7 @@ defmodule Evision.Test do
     # Code translated from https://stackoverflow.com/a/64837860
     # read input
     %Evision.Mat{shape: {h, w, _}} =
-      img = Evision.imread(Path.join(["test", "warp_perspective.png"]))
+      img = Evision.imread(Path.join([__DIR__, "testdata", "warp_perspective.png"]))
 
     # hypot.(list(number())) function returns the Euclidean norm
     hypot = fn l -> :math.sqrt(Enum.sum(Enum.map(l, fn i -> i * i end))) end

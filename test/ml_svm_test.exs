@@ -92,7 +92,7 @@ defmodule Evision.ML.SVM.Test do
 
     response_data = response_data |> List.flatten() |> IO.iodata_to_binary()
 
-    mat = Evision.imread(Path.join([__DIR__, "svm_test.png"]))
+    mat = Evision.imread(Path.join([__DIR__, "testdata", "svm_test.png"]))
     expected = Evision.Mat.to_binary(mat)
     assert expected == response_data
   end

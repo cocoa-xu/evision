@@ -5,7 +5,7 @@ defmodule Evision.Mat.Test do
 
   @tag :nx
   test "load an image from file and convert to Nx.tensor" do
-    %Mat{} = mat = Evision.imread(Path.join([__DIR__, "test.png"]))
+    %Mat{} = mat = Evision.imread(Path.join([__DIR__, "testdata", "test.png"]))
 
     t = Evision.Mat.to_nx(mat)
 
@@ -24,7 +24,7 @@ defmodule Evision.Mat.Test do
 
   @tag :nx
   test "load an image, convert to tensor and convert back from tensor" do
-    %Mat{} = mat = Evision.imread(Path.join([__DIR__, "test.png"]))
+    %Mat{} = mat = Evision.imread(Path.join([__DIR__, "testdata", "test.png"]))
 
     t = Evision.Mat.to_nx(mat)
 
@@ -70,7 +70,10 @@ defmodule Evision.Mat.Test do
 
   @tag :nx
   test "transpose" do
-    tensor = File.read!(Path.join(__DIR__, ["color_checker.etf"])) |> :erlang.binary_to_term()
+    tensor =
+      File.read!(Path.join([__DIR__, "testdata", "color_checker.etf"]))
+      |> :erlang.binary_to_term()
+
     mat = Evision.Mat.from_nx(tensor, {297, 441, 3})
     assert {297, 441, 3} = Evision.Mat.shape(mat)
 

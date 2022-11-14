@@ -208,7 +208,7 @@ defmodule SSDMobileNetV2 do
     )
 
     Helper.download!(
-      "https://raw.githubusercontent.com/cocoa-xu/evision/main/test/models/coco_names.txt",
+      "https://raw.githubusercontent.com/cocoa-xu/evision/main/test/testdata/models/coco_names.txt",
       "coco_names.txt"
     )
 
