@@ -9,18 +9,6 @@ import evision_templates as ET
 from helper import *
 
 
-simple_argtype_mapping = {
-    "bool": ArgTypeInfo("bool", FormatStrings.unsigned_char, "0", True, False),
-    "size_t": ArgTypeInfo("size_t", FormatStrings.unsigned_long_long, "0", True, False),
-    "int": ArgTypeInfo("int", FormatStrings.int, "0", True, False),
-    "float": ArgTypeInfo("float", FormatStrings.float, "0.f", True, False),
-    "double": ArgTypeInfo("double", FormatStrings.double, "0", True, False),
-    "c_string": ArgTypeInfo("char*", FormatStrings.string, '(char*)""', False, False),
-    "string": ArgTypeInfo("std::string", FormatStrings.object, None, True, False),
-    "Stream": ArgTypeInfo("Stream", FormatStrings.object, 'Stream::Null()', True, False),
-}
-
-
 class FuncInfo(object):
     def __init__(self, classname, name, cname, isconstructor, namespace, is_static):
         self.classname = classname
@@ -197,15 +185,14 @@ class FuncInfo(object):
                     code_args += defval
                     all_cargs.append([[None, ""], ""])
                     continue
-                tp1 = tp = a.tp
+                tp = a.tp
                 amp = ""
                 defval0 = ""
                 if tp in pass_by_val_types():
-                    tp = tp1 = tp[:-1]
+                    tp = tp[:-1]
                     amp = "&"
                     if tp.endswith("*"):
                         defval0 = "0"
-                        tp1 = tp.replace("*", "_ptr")
                 tp_candidates = [a.tp, normalize_class_name(self.namespace + "." + a.tp), normalize_class_name(self.classname + "." + a.tp)]
                 if any(tp in codegen.enums.keys() for tp in tp_candidates):
                     defval0 = "static_cast<%s>(%d)" % (a.tp, 0)
@@ -219,25 +206,7 @@ class FuncInfo(object):
                         defval = f"static_cast<std::underlying_type_t<{arg_type_info.atype}>>({a.defval})"
                     arg_type_info = ArgTypeInfo(f"std::underlying_type_t<{arg_type_info.atype}>", arg_type_info.format_str, defval, True, True)
                     a.defval = defval
-
-                parse_name = a.name
-                if a.py_inputarg:
-                    parse_name = "erl_term_" + a.name
-                    erl_term = "evision_get_kw(env, erl_terms, \"%s\")" % (self.map_elixir_argname(a.name),)
-                    self_offset = 0
-                    if self.classname and not self.is_static and not self.isconstructor:
-                        self_offset = 1
-                    if a_index + self_offset < opt_arg_index:
-                        erl_term = "argv[%d]" % (a_index + opt_arg_index,)
-                    if a.tp == 'char':
-                        code_cvt_list.append("convert_to_char(env, %s, &%s, %s)" % (erl_term, a.name, a.crepr()))
-                    elif a.tp == 'c_string':
-                        code_cvt_list.append("convert_to_char(env, %s, &%s, %s)" % (erl_term, a.name, a.crepr()))
-                    else:
-                        code_cvt_list.append("evision_to_safe(env, %s, %s, %s)" % (erl_term, a.name, a.crepr()))
-
-                all_cargs.append([arg_type_info, parse_name])
-
+            
                 defval = a.defval
                 if not defval:
                     defval = arg_type_info.default_value
@@ -253,6 +222,27 @@ class FuncInfo(object):
                     defval = ""
                 if a.outputarg and not a.inputarg:
                     defval = ""
+                if defval is None:
+                    defval = ""
+
+                parse_name = a.name
+                if a.py_inputarg:
+                    parse_name = "erl_term_" + a.name
+                    erl_term = "evision_get_kw(env, erl_terms, \"%s\")" % (self.map_elixir_argname(a.name),)
+                    self_offset = 0
+                    if self.classname and not self.is_static and not self.isconstructor:
+                        self_offset = 1
+                    if a_index + self_offset < opt_arg_index:
+                        erl_term = "argv[%d]" % (a_index + opt_arg_index,)
+                    if a.tp == 'char':
+                        code_cvt_list.append("convert_to_char(env, %s, &%s, %s)" % (erl_term, a.name, a.crepr(defval)))
+                    elif a.tp == 'c_string':
+                        code_cvt_list.append("convert_to_char(env, %s, &%s, %s)" % (erl_term, a.name, a.crepr(defval)))
+                    else:
+                        code_cvt_list.append("evision_to_safe(env, %s, %s, %s)" % (erl_term, a.name, a.crepr(defval)))
+
+                all_cargs.append([arg_type_info, parse_name])
+
                 if defval:
                     if arg_type_info.atype == "QRCodeEncoder_Params":
                         code_decl += "    QRCodeEncoder::Params %s=%s;\n" % (a.name, defval)

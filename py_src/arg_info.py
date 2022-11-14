@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 
-from helper import handle_ptr, reserved_keywords
+from helper import *
 
 
 class ArgInfo(object):
@@ -42,8 +42,8 @@ class ArgInfo(object):
     def isbig(self):
         return self.tp in ["Mat", "vector_Mat", "cuda::GpuMat", "GpuMat", "vector_GpuMat", "UMat", "vector_UMat"] # or self.tp.startswith("vector")
 
-    def crepr(self):
+    def crepr(self, defval):
         has_default = 0
-        if len(self.defval) > 0:
+        if len(defval) > 0:
             has_default = 1
         return "ArgInfo(\"%s\", %d, %d)" % (self.name, self.outputarg, has_default)

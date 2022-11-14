@@ -16,6 +16,16 @@ ArgTypeInfo = namedtuple('ArgTypeInfo',
 # strict_conversion is False by default
 ArgTypeInfo.__new__.__defaults__ = (False,)
 
+simple_argtype_mapping = {
+    "bool": ArgTypeInfo("bool", FormatStrings.unsigned_char, "0", True, False),
+    "size_t": ArgTypeInfo("size_t", FormatStrings.unsigned_long_long, "0", True, False),
+    "int": ArgTypeInfo("int", FormatStrings.int, "0", True, False),
+    "float": ArgTypeInfo("float", FormatStrings.float, "0.f", True, False),
+    "double": ArgTypeInfo("double", FormatStrings.double, "0", True, False),
+    "c_string": ArgTypeInfo("char*", FormatStrings.string, '(char*)""', False, False),
+    "string": ArgTypeInfo("std::string", FormatStrings.object, None, True, False),
+    "Stream": ArgTypeInfo("Stream", FormatStrings.object, 'Stream::Null()', True, False),
+}
 
 def handle_ptr(tp):
     if tp.startswith('Ptr_'):
