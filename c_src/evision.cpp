@@ -1010,7 +1010,7 @@ bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, String &value, const ArgInfo& 
         if (strncmp(info.name, "nodeName", 8) == 0) {
             return true;
         }
-        return false;
+        return info.has_default;
     }
 
     std::string str;
@@ -1110,7 +1110,7 @@ bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, Range& r, const ArgInfo& info)
         }
     }
     
-    return false;
+    return info.has_default;
 }
 
 template<>
@@ -1777,7 +1777,7 @@ template<>
 bool evision_to(ErlNifEnv * env, ERL_NIF_TERM o, std::vector<Range>& p, const ArgInfo& info)
 {
     if (evision::nif::check_nil(env, o)) {
-        return false;
+        return info.has_default;
     }
 
     if (!enif_is_list(env, o)) {

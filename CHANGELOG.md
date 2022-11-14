@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.1.19 (2022-11-14)
+[Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.19) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.19)
+
+## Changed
+- [py_src/c_src] Added `has_default` field to `ArgInfo`.
+
 ## v0.1.18 (2022-11-12)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.18) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.18)
 
