@@ -211,7 +211,7 @@ defmodule Evision.DNN.Test do
     io =
       capture_io(fn ->
         SSDMobileNetV2.predict_and_show(
-          Path.join([__DIR__, "test_data", "dnn_detection_test.jpg"])
+          Path.join([__DIR__, "testdata", "dnn_detection_test.jpg"])
         )
       end)
 
