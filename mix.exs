@@ -17,6 +17,7 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
   alias Evision.MixProject.Metadata
 
   @available_versions [
+    "0.1.19",
     "0.1.18",
     "0.1.17",
     "0.1.16",

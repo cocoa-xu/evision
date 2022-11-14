@@ -4,7 +4,7 @@
 
 ```elixir
 Mix.install([
-  {:evision, "~> 0.1.18"},
+  {:evision, "~> 0.1.19"},
   {:kino, "~> 0.7"},
   {:req, "~> 0.3"},
   {:torchx, "~> 0.4"},
