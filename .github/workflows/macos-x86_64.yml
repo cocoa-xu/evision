@@ -103,13 +103,13 @@ jobs:
           rm -f _build/dev/lib/evision/priv/evision.so
           mix compile
 
-      - name: Cache test files
-        id: cache-mix-test-files
+      - name: Cache testdata
+        id: cache-mix-testdata
         uses: actions/cache@v3
         with:
-          key: test-files-${{ hashFiles('test/*.exs') }}
+          key: testdata-${{ hashFiles('test/*.exs') }}
           path: |
-            ./test
+            ./test/testdata
 
       - name: Mix Test
         run: |

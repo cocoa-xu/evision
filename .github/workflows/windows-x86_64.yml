@@ -112,13 +112,13 @@ jobs:
           rm -f "_build/${MIX_ENV}/lib/evision/priv/evision.dll"
           mix compile
       
-      - name: Cache test files
-        id: cache-mix-test-files
+      - name: Cache testdata
+        id: cache-mix-testdata
         uses: actions/cache@v3
         with:
-          key: test-files-${{ hashFiles('test/*.exs') }}
+          key: testdata-${{ hashFiles('test/*.exs') }}
           path: |
-            ./test
+            ./test/testdata
 
       - name: Mix Test
         shell: bash
