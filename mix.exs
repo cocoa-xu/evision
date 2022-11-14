@@ -2,8 +2,7 @@ defmodule Evision.MixProject.Metadata do
   @moduledoc false
 
   def app, do: :evision
-  def version, do: "0.1.18"
-  def last_released_version, do: "0.1.18"
+  def version, do: "0.1.19"
   def github_url, do: "https://github.com/cocoa-xu/evision"
   def opencv_version, do: "4.6.0"
   # only means compatible. need to write more tests
@@ -636,7 +635,7 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
 
   def deploy_type(log? \\ false) do
     {target, [_arch, _os, abi]} = get_target()
-    version = Metadata.last_released_version()
+    version = Metadata.version()
     nif_version = get_nif_version()
 
     if use_precompiled?(log?) and available_for_version?(version, log?) and
@@ -662,7 +661,7 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
 
     if !File.exists?(evision_so_file) do
       with {:precompiled, _} <- deploy_type(true) do
-        version = Metadata.last_released_version()
+        version = Metadata.version()
         nif_version = get_nif_version()
         prepare(target, os, version, nif_version)
       else
@@ -681,7 +680,7 @@ defmodule Evision.MixProject do
   alias Evision.MixProject.Metadata
   alias Mix.Tasks.Compile.EvisionPrecompiled
 
-  @source_url "#{Metadata.github_url()}/tree/v#{Metadata.last_released_version()}"
+  @source_url "#{Metadata.github_url()}/tree/v#{Metadata.version()}"
 
   def project do
     {compilers, make_env} =
@@ -699,8 +698,6 @@ defmodule Evision.MixProject do
               System.get_env("MAKE_BUILD_FLAGS", "-j#{System.schedulers_online()}"),
             "CMAKE_OPTIONS" => cmake_options,
             "ENABLED_CV_MODULES" => enabled_modules,
-            "EVISION_PREFER_PRECOMPILED" => "false",
-            "EVISION_PRECOMPILED_VERSION" => Metadata.last_released_version(),
             "TARGET_ABI" => System.get_env("TARGET_ABI", target_abi),
             "EVISION_GENERATE_LANG" => System.get_env("EVISION_GENERATE_LANG", "elixir")
           }
