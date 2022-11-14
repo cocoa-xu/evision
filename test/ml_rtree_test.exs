@@ -29,7 +29,7 @@ defmodule Evision.ML.RTrees.Test do
     {test_error, _results} = Evision.ML.RTrees.calcError(rtree, dataset, true)
 
     # save to file
-    rtree_binary = Path.join(__DIR__, "testdata", "rtree.bin")
+    rtree_binary = Path.join([__DIR__, "testdata", "rtree.bin"])
     File.rm(rtree_binary)
     Evision.ML.RTrees.save(rtree, rtree_binary)
 
