@@ -5,6 +5,7 @@ defmodule Evision.Test do
 
   @tag :dnn
   @tag :require_downloading
+  @download_file "https://github.com/AlexeyAB/darknet/releases/download/yolov4/yolov4.weights"
   test "yolov4" do
     dog = Path.join([__DIR__, "testdata", "dog.jpg"])
     weights = Path.join([__DIR__, "testdata", "yolov4.weights"])
@@ -12,7 +13,7 @@ defmodule Evision.Test do
     mat = Evision.imread(dog)
 
     Evision.TestHelper.download!(
-      "https://github.com/AlexeyAB/darknet/releases/download/yolov4/yolov4.weights",
+      @download_file,
       weights
     )
 

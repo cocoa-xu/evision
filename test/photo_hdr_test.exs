@@ -7,6 +7,8 @@ defmodule Evision.Photo.HDR.Test do
 
   @tag :photo
   @tag :require_downloading
+  @download_file_1 "https://raw.githubusercontent.com/opencv/opencv_extra/4.x/testdata/cv/hdr/exposures/list.txt"
+  @download_file_2 "https://raw.githubusercontent.com/opencv/opencv_extra/4.x/testdata/cv/hdr/exposures/"
   test "High Dynamic Range Imaging" do
     exposure_filenames =
       0..15
@@ -14,12 +16,7 @@ defmodule Evision.Photo.HDR.Test do
       |> Enum.map(&String.pad_leading(&1, 2, "0"))
       |> Enum.map(&("memorial" <> &1 <> ".png"))
 
-    exposure_file_urls =
-      exposure_filenames
-      |> Enum.map(
-        &("https://raw.githubusercontent.com/opencv/opencv_extra/4.x/testdata/cv/hdr/exposures/" <>
-            &1)
-      )
+    exposure_file_urls = Enum.map(exposure_filenames, &(@download_file_2 <> &1))
 
     exposure_file_save_paths =
       exposure_filenames
@@ -33,11 +30,7 @@ defmodule Evision.Photo.HDR.Test do
 
     list_txt_file = Path.join([__DIR__, "testdata", "photo_hdr_test", "list.txt"])
 
-    assert :ok =
-             Evision.TestHelper.download!(
-               "https://raw.githubusercontent.com/opencv/opencv_extra/4.x/testdata/cv/hdr/exposures/list.txt",
-               list_txt_file
-             )
+    assert :ok = Evision.TestHelper.download!(@download_file_1, list_txt_file)
 
     # load exposure sequences
     exposure_sequences =

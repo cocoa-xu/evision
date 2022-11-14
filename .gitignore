@@ -33,6 +33,7 @@ erl_crash.dump
 /test/testdata/models/
 /test/testdata/photo_hdr_test/
 /test/testdata/yolov4.weights
+/test/testdata/efficientnet-b7.onnx
 
 # examples
 /examples/Lenna_test_image.png

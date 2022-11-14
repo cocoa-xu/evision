@@ -107,7 +107,7 @@ jobs:
         id: cache-mix-testdata
         uses: actions/cache@v3
         with:
-          key: testdata-${{ hashFiles('test/*.exs') }}
+          key: testdata-${{ hashFiles('test/downloading_list.txt') }}
           path: |
             ./test/testdata
 

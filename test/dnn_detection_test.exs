@@ -132,22 +132,14 @@ defmodule Evision.DNN.Test do
   end
 
   defmodule SSDMobileNetV2 do
+    @download_file_1 "https://raw.githubusercontent.com/opencv/opencv_extra/master/testdata/dnn/ssd_mobilenet_v2_coco_2018_03_29.pbtxt"
+    @download_file_2 "http://download.tensorflow.org/models/object_detection/ssd_mobilenet_v2_coco_2018_03_29.tar.gz"
     def predict_and_show(filename, confidence_threshold \\ 0.5) do
       model_config =
         Path.join([__DIR__, "testdata", "models", "ssd_mobilenet_v2_coco_2018_03_29.pbtxt"])
 
-      Cv.TestHelper.download!(
-        "https://raw.githubusercontent.com/opencv/opencv_extra/master/testdata/dnn/ssd_mobilenet_v2_coco_2018_03_29.pbtxt",
-        model_config
-      )
-
+      Cv.TestHelper.download!(@download_file_1, model_config)
       model_class_list = Path.join([__DIR__, "testdata", "models", "coco_names.txt"])
-
-      Cv.TestHelper.download!(
-        "https://raw.githubusercontent.com/cocoa-xu/evision/main/test/testdata/models/coco_names.txt",
-        model_class_list
-      )
-
       File.mkdir_p!(
         Path.join([__DIR__, "testdata", "models", "ssd_mobilenet_v2_coco_2018_03_29"])
       )
@@ -166,10 +158,7 @@ defmodule Evision.DNN.Test do
 
       test_setup =
         if not File.exists?(model_graph_pb) do
-          Cv.TestHelper.download!(
-            "http://download.tensorflow.org/models/object_detection/ssd_mobilenet_v2_coco_2018_03_29.tar.gz",
-            model_tar
-          )
+          Cv.TestHelper.download!(@download_file_2, model_tar)
 
           model_tar
           |> File.read!()
