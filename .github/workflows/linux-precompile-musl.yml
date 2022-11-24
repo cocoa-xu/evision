@@ -12,7 +12,7 @@ concurrency:
 jobs:
   alpine:
     runs-on: ubuntu-20.04
-    container: alpine:latest
+    container: alpine:edge
     env:
       MIX_ENV: prod
       OPENCV_VER: "4.6.0"
