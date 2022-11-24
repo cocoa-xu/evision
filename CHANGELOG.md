@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.1.20 (2022-11-24)
+[Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.20) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.20)
+
+## Fixed
+- [Precompiled] fixed incorrect checksum for `x86_64-linux-gnu`.
+
 ## v0.1.19 (2022-11-14)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.19) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.19)
 
