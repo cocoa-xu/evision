@@ -25,7 +25,7 @@ jobs:
       - uses: actions/checkout@v3
       - name: Install system dependencies
         run: |
-          apk add cmake make python3 bash curl unzip gcc g++ ncurses-dev openssl-dev linux-headers perl git ffmpeg ffmpeg-dev dpkg patch
+          apk add cmake make python3 bash curl unzip gcc g++ ncurses-dev openssl-dev linux-headers perl git dpkg patch
           curl -fSL "https://repo.uwucocoa.moe/pool/main/erlang_${OTP_VERSION}_musl-linux-amd64.deb" -o "erlang_${OTP_VERSION}_musl-linux-amd64.deb"
           dpkg -i "erlang_${OTP_VERSION}_musl-linux-amd64.deb"
 
