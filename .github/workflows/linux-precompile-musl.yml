@@ -12,13 +12,13 @@ concurrency:
 jobs:
   alpine:
     runs-on: ubuntu-20.04
-    container: alpine:edge
+    container: alpine:latest
     env:
       MIX_ENV: prod
       OPENCV_VER: "4.6.0"
-      OTP_VERSION: "25.0.4"
+      OTP_VERSION: "25.1.2"
       NIF_VERSION: "2.16"
-      ELIXIR_VERSION: "1.14.0"
+      ELIXIR_VERSION: "1.14.2"
       EVISION_PREFER_PRECOMPILED: "false"
       EVISION_GENERATE_LANG: "erlang,elixir"
     steps:
@@ -111,9 +111,9 @@ jobs:
     env:
       OPENCV_VER: "4.6.0"
       MIX_ENV: prod
-      OTP_VERSION: "25.0.4"
+      OTP_VERSION: "25.1.2"
       NIF_VERSION: "2.16"
-      ELIXIR_VERSION: "1.14.0"
+      ELIXIR_VERSION: "1.14.2"
       ZIG_VERSION: "0.8.0"
       EVISION_PREFER_PRECOMPILED: "false"
       EVISION_GENERATE_LANG: "erlang,elixir"
