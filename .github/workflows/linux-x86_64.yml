@@ -115,7 +115,7 @@ jobs:
         id: cache-mix-compile
         uses: actions/cache@v3
         with:
-          key: compile-ffmpeg-x86_64-linux-musl-${{ hashFiles('cc_toolchain/**') }}-${{ hashFiles('c_src/**') }}-${{ hashFiles('CMakeLists.txt') }}-${{ hashFiles('Makefile') }}-${{ env.OPENCV_VER }}-${{ env.OTP_VERSION }}-${{ env.ELIXIR_VERSION }}
+          key: compile-x86_64-linux-musl-${{ hashFiles('cc_toolchain/**') }}-${{ hashFiles('c_src/**') }}-${{ hashFiles('CMakeLists.txt') }}-${{ hashFiles('Makefile') }}-${{ env.OPENCV_VER }}-${{ env.OTP_VERSION }}-${{ env.ELIXIR_VERSION }}
           path: |
             ./_build
             ./c_src/headers.txt
@@ -132,7 +132,7 @@ jobs:
 
       - name: Mix Test
         run: |
-          mix test --include require_downloading --include require_ffmpeg
+          mix test --include require_downloading
 
   gnu:
     runs-on: ubuntu-20.04
