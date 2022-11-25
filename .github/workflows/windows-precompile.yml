@@ -50,6 +50,7 @@ jobs:
       - uses: ilammy/msvc-dev-cmd@v1
         with:
           arch: ${{ matrix.pair.vcvarsall }}
+          toolset: 14.33.31630
 
       - name: Cache mix packages
         id: cache-mix-deps
