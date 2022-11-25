@@ -1,4 +1,4 @@
-defmodule Evision.Test do
+defmodule Evision.DNN.DetectionModel.Test do
   use ExUnit.Case
 
   alias Evision.DNN.DetectionModel
