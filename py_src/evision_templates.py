@@ -358,8 +358,7 @@ gen_template_simple_call_constructor_prelude = Template("""evision_res<$cname> *
 
 gen_template_simple_call_constructor = Template("""new (&(self->val)) ${cname}${py_args}""")
 
-gen_template_parse_args = Template("""// const char* keywords[] = { $kw_list, NULL }; // <- no more in use, left for debugging purpose
-    if( $code_cvt )""")
+gen_template_parse_args = Template("if( $code_cvt )")
 
 gen_template_func_body = Template("""$code_decl
     $code_parse

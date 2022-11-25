@@ -125,6 +125,12 @@ class FuncInfo(object):
     def map_erlang_argname(self, argname):
         name = self.argname_prefix_re.sub('', argname)
         return f"{name[0:1].upper()}{name[1:]}"
+    
+    def should_return_self(self):
+        if self.classname.startswith("dnn_"):
+            if self.name.startswith('set'):
+                return True
+        return False
 
     def gen_code(self, codegen):
         all_classes = codegen.classes
@@ -286,8 +292,11 @@ class FuncInfo(object):
                 code_prelude = ""
                 code_fcall = ""
                 if v.rettype:
-                    code_decl += "    " + v.rettype + " retval;\n"
-                    code_fcall += "retval = "
+                    if self.should_return_self():
+                        code_fcall += f"{v.rettype}& retval = "
+                    else:
+                        code_decl += "    " + v.rettype + " retval;\n"
+                        code_fcall += "retval = "
                 if not v.isphantom and ismethod and not self.is_static:
                     if self.classname and ("Matcher" in v.classname or "Algorithm" in v.classname) and '/PV' not in v.decl[2]:
                         cls = v.classname
@@ -346,7 +355,10 @@ class FuncInfo(object):
                         '                return evision::nif::atom(env, "false");\n'\
                         '            }'
                     else:
-                        code_ret = f"return evision_from(env, {aname})"
+                        if self.should_return_self():
+                            code_ret = f"return self"
+                        else:
+                            code_ret = f"return evision_from(env, {aname})"
             else:
                 # there is more than 1 return parameter; form the tuple out of them
                 n_tuple = len(v.py_outlist)
