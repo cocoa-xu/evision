@@ -2,7 +2,7 @@ defmodule Evision.MixProject.Metadata do
   @moduledoc false
 
   def app, do: :evision
-  def version, do: "0.1.20"
+  def version, do: "0.1.21"
   def github_url, do: "https://github.com/cocoa-xu/evision"
   def opencv_version, do: "4.6.0"
   # only means compatible. need to write more tests
@@ -17,7 +17,7 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
   alias Evision.MixProject.Metadata
 
   @available_versions [
-    "0.1.20",
+    "0.1.21",
     "0.1.19",
     "0.1.18",
     "0.1.17",
@@ -176,20 +176,6 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
     end
 
     use_precompiled?
-  end
-
-  def available_for_version?(version, log? \\ false) do
-    available_for_version? = Enum.member?(@available_versions, version)
-
-    if log? do
-      if available_for_version? do
-        Logger.info("Requested version `#{version}` has precompiled binaries.")
-      else
-        Logger.warning("Requested version `#{version}` does not have precompiled binaries.")
-      end
-    end
-
-    available_for_version?
   end
 
   def available_for_target?(target, log? \\ false) do
@@ -637,10 +623,10 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
 
   def deploy_type(log? \\ false) do
     {target, [_arch, _os, abi]} = get_target()
-    version = Metadata.version()
+    {:ok, %Version{pre: pre}} = Version.parse(Metadata.version())
     nif_version = get_nif_version()
 
-    if use_precompiled?(log?) and available_for_version?(version, log?) and
+    if use_precompiled?(log?) and pre == [] and
          available_for_target?(target, log?) and available_for_nif_version?(nif_version, log?) do
       {:precompiled, abi}
     else
