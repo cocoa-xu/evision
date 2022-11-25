@@ -18,7 +18,6 @@
 | macOS 11 Big Sur | x86_64         | darwin |[![CI](https://github.com/cocoa-xu/evision/actions/workflows/macos-x86_64.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/macos-x86_64.yml) | Yes |
 | macOS 11 Big Sur | arm64          | darwin |[![macos-precompile](https://github.com/cocoa-xu/evision/actions/workflows/macos-precompile.yml/badge.svg?branch=v0.1.1)](https://github.com/cocoa-xu/evision/actions/workflows/macos-precompile.yml) | Yes |
 | Windows 2022     | x86_64         | msvc |[![CI](https://github.com/cocoa-xu/evision/actions/workflows/windows-x86_64.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/windows-x86_64.yml) | Yes |
-| Windows 2022     | arm64         | msvc |[![CI](https://github.com/cocoa-xu/evision/actions/workflows/windows-precompile.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/windows-precompile.yml) | Yes |
 
 ## Docs
 Online docs for the latest released version is available on Hex.pm, [https://hexdocs.pm/evision/](https://hexdocs.pm/evision/).
