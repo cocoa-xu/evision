@@ -1,9 +1,8 @@
-# https://github.com/cocoa-xu/evision-extra/raw/main/testdata/text-detection/DB_IC15_resnet18.onnx
 defmodule Evision.DNN.TextDetectionModelDB.Test do
   use ExUnit.Case
-
   alias Evision.DNN.TextDetectionModelDB
 
+  @moduletag timeout: 600_000
   @tag :dnn
   @tag :require_downloading
   @download_file "https://github.com/cocoa-xu/evision-extra/raw/main/testdata/text-detection/DB_IC15_resnet18.onnx"
@@ -20,7 +19,7 @@ defmodule Evision.DNN.TextDetectionModelDB.Test do
       TextDetectionModelDB.textDetectionModelDB(weights)
       |> TextDetectionModelDB.setInputParams(
         scale: 1.0 / 255.0,
-        size: {736, 1280},
+        size: {736, 736},
         mean: {122.67891434, 116.66876762, 104.00698793},
         swapRB: false,
         crop: false

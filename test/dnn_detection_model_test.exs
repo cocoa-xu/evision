@@ -1,11 +1,12 @@
 defmodule Evision.DNN.DetectionModel.Test do
   use ExUnit.Case
-
   alias Evision.DNN.DetectionModel
 
+  @moduletag timeout: 600_000
   @tag :dnn
   @tag :require_downloading
   @download_file "https://github.com/AlexeyAB/darknet/releases/download/yolov4/yolov4.weights"
+
   test "yolov4" do
     dog = Path.join([__DIR__, "testdata", "dog.jpg"])
     weights = Path.join([__DIR__, "testdata", "yolov4.weights"])
