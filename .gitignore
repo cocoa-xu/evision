@@ -34,6 +34,10 @@ erl_crash.dump
 /test/testdata/photo_hdr_test/
 /test/testdata/yolov4.weights
 /test/testdata/efficientnet-b7.onnx
+/test/testdata/DB_IC15_resnet18.onnx
+/test/testdata/frozen_east_text_detection.pb
+/test/testdata/frozen_east_text_detection.pb.part1
+/test/testdata/frozen_east_text_detection.pb.part2
 
 # examples
 /examples/Lenna_test_image.png

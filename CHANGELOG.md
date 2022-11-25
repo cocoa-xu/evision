@@ -1,5 +1,29 @@
 # Changelog
 
+## v0.1.21 (2022-11-25)
+[Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.21) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.21)
+
+## Fixed
+- [py_src] fixed functions in dnn that `return *this`.
+
+  For this part, this original code (as in `python-opencv`) would case a new object to be allocated in C++ like
+
+  ```cpp
+  TextDetectionModel_DB retval;
+  retval = self.setSomeValue(...)
+  return pyopencv_from(retval);
+  ```
+
+  Noticing the address of the object has changed (because it's a new one) after calling `m.setBinaryThreshold`.
+  ```python3
+  >>> import cv2'
+  >>> m = cv2.dnn_TextDetectionModel_DB("DB_IC15_resnet18.onnx")
+  >>> m
+  < cv2.dnn.TextDetectionModel_DB 0x1064cf210>
+  >>> m.setBinaryThreshold(0.5)
+  < cv2.dnn.TextDetectionModel_DB 0x11ecda7f0>
+  ```
+
 ## v0.1.20 (2022-11-24)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.20) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.20)
 

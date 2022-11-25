@@ -3,20 +3,20 @@ typedef dnn::DictValue LayerId;
 typedef std::vector<dnn::MatShape> vector_MatShape;
 typedef std::vector<std::vector<dnn::MatShape> > vector_vector_MatShape;
 
-//template<>
-//bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, dnn::Net &net, const ArgInfo& info)
-//{
-//    if (evision::nif::check_nil(env, obj)) {
-//        return false;
-//    }
-//
-//    evision_res<cv::dnn::Net> * in_res;
-//    if( enif_get_resource(env, obj, evision_res<cv::dnn::Net>::type, (void **)&in_res) ) {
-//        net = in_res->val;
-//        return true;
-//    }
-//    return false;
-//}
+template<>
+bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, dnn::Net &net, const ArgInfo& info)
+{
+   if (evision::nif::check_nil(env, obj)) {
+       return false;
+   }
+
+   evision_res<cv::dnn::Net> * in_res;
+   if( enif_get_resource(env, obj, evision_res<cv::dnn::Net>::type, (void **)&in_res) ) {
+       net = in_res->val;
+       return true;
+   }
+   return false;
+}
 
 template<>
 ERL_NIF_TERM evision_from(ErlNifEnv *env, const dnn::DetectionModel& model)
