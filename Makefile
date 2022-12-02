@@ -135,7 +135,10 @@ $(HEADERS_TXT): $(CONFIGURATION_PRIVATE_HPP)
 		cp "$(HEADERS_TXT)" "$(C_SRC)/headers.txt" ; \
 	fi
 
-$(EVISION_SO): $(HEADERS_TXT)
+opencv: $(HEADERS_TXT)
+	@echo > /dev/null
+
+$(EVISION_SO): opencv
 	@ mkdir -p "$(EVISION_PRECOMPILED_CACHE_DIR)"
 	@ mkdir -p "$(PRIV_DIR)"
 	@ mkdir -p "$(GENERATED_ELIXIR_SRC_DIR)"
