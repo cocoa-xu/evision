@@ -681,6 +681,7 @@ defmodule Evision.MixProject do
       elixir: "~> 1.11",
       deps: deps(),
       docs: docs(),
+      aliases: aliases(),
       elixirc_paths: elixirc_paths(),
       erlc_paths: erlc_paths(),
       compilers: compilers,
@@ -707,6 +708,39 @@ defmodule Evision.MixProject do
         ]
       ]
     ]
+  end
+
+  defp aliases do
+    [
+      compile_opencv: &compile_opencv/1
+    ]
+  end
+
+  defp compile_opencv(_) do
+    config = Mix.Project.config()
+    Mix.shell().print_app()
+    priv? = File.dir?("priv")
+    Mix.Project.ensure_structure()
+    config = Keyword.put_new(config, :make_targets, ["opencv"])
+    compiler_file = Path.join([
+      Path.dirname(Mix.ProjectStack.project_file() || __ENV__.file),
+      "deps/elixir_make/lib/elixir_make/compiler.ex"
+    ])
+    with [{ElixirMake.Compiler, _}] <- Code.require_file(compiler_file) do
+      ElixirMake.Compiler.make(config, [])
+      # IF there was no priv before and now there is one, we assume
+      # the user wants to copy it. If priv already existed and was
+      # written to it, then it won't be copied if build_embedded is
+      # set to true.
+      if not priv? and File.dir?("priv") do
+        Mix.Project.build_structure()
+      end
+
+      {:ok, []}
+    else
+      _ ->
+        Mix.shell().error("Cannot compile OpenCV only: failed to require file #{compiler_file}")
+    end
   end
 
   def make_executable() do
@@ -872,7 +906,7 @@ defmodule Evision.MixProject do
   defp deps do
     [
       # compilation
-      {:elixir_make, "~> 0.6", runtime: false},
+      {:elixir_make, "~> 0.7", runtime: false},
       {:castore, "~> 0.1"},
       # runtime
       {:dll_loader_helper, "~> 0.1"},
