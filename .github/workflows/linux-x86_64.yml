@@ -115,7 +115,7 @@ jobs:
         id: cache-mix-compile_opencv
         uses: actions/cache@v3
         with:
-          key: compile-opencv-${{ env.OPENCV_VER }}-x86_64-linux-musl-${{ hashFiles('cc_toolchain/x86_64-linux-musl.cmake') }}-${{ hashFiles('Makefile') }}
+          key: compile-opencv-${{ env.OPENCV_VER }}-x86_64-linux-musl-${{ hashFiles('Makefile') }}
           path: |
             ./_build/${{ env.MIX_ENV }}/lib/evision
             ./c_src/headers.txt
@@ -134,6 +134,7 @@ jobs:
           ls -la ./c_src
           cat ./c_src/headers.txt
           mix compile
+          ls -la ./lib/generated
 
       - name: Cache testdata
         id: cache-mix-testdata
