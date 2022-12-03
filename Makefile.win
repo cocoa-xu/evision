@@ -126,7 +126,9 @@ $(HEADERS_TXT): $(CONFIGURATION_PRIVATE_HPP)
 	powershell -command "Get-ChildItem *.dll -Recurse | Copy-Item -Destination \"$(PRIV_DIR)\""
 !ENDIF
 
-$(EVISION_SO): $(HEADERS_TXT)
+opencv: $(HEADERS_TXT)
+
+$(EVISION_SO): opencv
 	@ if not exist "$(PRIV_DIR)" mkdir "$(PRIV_DIR)"
 	@ if not exist "$(CMAKE_EVISION_BUILD_DIR)" mkdir "$(CMAKE_EVISION_BUILD_DIR)"
 	@ if not exist "$(GENERATED_ELIXIR_SRC_DIR)" mkdir "$(GENERATED_ELIXIR_SRC_DIR)"

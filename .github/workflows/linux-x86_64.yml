@@ -112,23 +112,34 @@ jobs:
           bash scripts/download_opencv.sh ${OPENCV_VER} 3rd_party/cache 3rd_party/opencv/
 
       - name: Cache compiled OpenCV
-        id: cache-mix-compile
+        id: cache-mix-compile_opencv
         uses: actions/cache@v3
         with:
-          key: compile-x86_64-linux-musl-${{ hashFiles('cc_toolchain/**') }}-${{ hashFiles('c_src/**') }}-${{ hashFiles('CMakeLists.txt') }}-${{ hashFiles('Makefile') }}-${{ env.OPENCV_VER }}-${{ env.OTP_VERSION }}-${{ env.ELIXIR_VERSION }}
+          key: compile-opencv-${{ env.OPENCV_VER }}-x86_64-linux-musl-${{ hashFiles('cc_toolchain/**') }}-${{ hashFiles('Makefile') }}
           path: |
-            ./_build
+            ./_build/${{ env.MIX_ENV }}/lib/evision
             ./c_src/headers.txt
             ./c_src/configuration.private.hpp
-            ./lib
-            ./src
+
+      - name: Compile OpenCV
+        if: steps.cache-mix-compile_opencv.outputs.cache-hit != 'true'
+        run: |
+          export PATH="${PATH}:${HOME}/.elixir/elixir-${ELIXIR_VERSION}/bin"
+          mix compile_opencv
 
       - name: Mix Compile
-        if: steps.cache-mix-compile.outputs.cache-hit != 'true'
         run: |
           export PATH="${PATH}:${HOME}/.elixir/elixir-${ELIXIR_VERSION}/bin"
           rm -f _build/test/lib/evision/priv/evision.so
           mix compile
+
+      - name: Cache testdata
+        id: cache-mix-testdata
+        uses: actions/cache@v3
+        with:
+          key: testdata-${{ hashFiles('test/downloading_list.txt') }}
+          path: |
+            ./test/testdata
 
       - name: Mix Test
         run: |
@@ -187,7 +198,7 @@ jobs:
         id: cache-mix-compile_opencv
         uses: actions/cache@v3
         with:
-          key: compile-with-ffmpeg-opnecv-${{ env.OPENCV_VER }}-${{ runner.os }}-${{ matrix.pair.arch }}-${{ hashFiles('cc_toolchain/**') }}-${{ hashFiles('Makefile') }}
+          key: compile-with-ffmpeg-opnecv-${{ env.OPENCV_VER }}-${{ matrix.pair.arch }}-${{ hashFiles('cc_toolchain/**') }}-${{ hashFiles('Makefile') }}
           path: |
             ./_build/${{ env.MIX_ENV }}/lib/evision
             ./c_src/headers.txt

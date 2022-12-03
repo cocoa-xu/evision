@@ -92,7 +92,7 @@ jobs:
         run: |
           mix deps.get
 
-      - name: Cache OpenCV
+      - name: Cache OpenCV source code
         id: cache-opencv
         uses: actions/cache@v3
         with:
@@ -100,7 +100,7 @@ jobs:
           path: |
             ./3rd_party
 
-      - name: Download OpenCV
+      - name: Download OpenCV source code
         if: steps.cache-opencv.outputs.cache-hit != 'true'
         run: |
           bash scripts/download_opencv.sh ${OPENCV_VER} 3rd_party/cache 3rd_party/opencv/
@@ -109,7 +109,7 @@ jobs:
         id: cache-mix-compile_opencv
         uses: actions/cache@v3
         with:
-          key: precompile-opnecv-${{ env.OPENCV_VER }}-${{ runner.os }}-${{ matrix.pair.arch }}-${{ hashFiles('cc_toolchain/**') }}-${{ hashFiles('Makefile') }}
+          key: precompile-opencv-${{ env.OPENCV_VER }}-${{ matrix.pair.arch }}-${{ hashFiles('cc_toolchain/**') }}-${{ hashFiles('Makefile') }}
           path: |
             ./_build/${{ env.MIX_ENV }}/lib/evision
             ./c_src/headers.txt
@@ -118,6 +118,10 @@ jobs:
       - name: Compile OpenCV
         if: steps.cache-mix-compile_opencv.outputs.cache-hit != 'true'
         run: |
+          if [ "${{ matrix.pair.cmake_toolchain_file }}" != "" ]; then
+            export CMAKE_TOOLCHAIN_FILE="$(pwd)/${{ matrix.pair.cmake_toolchain_file }}"
+          fi
+          echo "CMAKE_TOOLCHAIN_FILE: ${CMAKE_TOOLCHAIN_FILE}"
           mix compile_opencv
 
       - name: Mix compile
@@ -127,7 +131,6 @@ jobs:
           fi
           echo "CMAKE_TOOLCHAIN_FILE: ${CMAKE_TOOLCHAIN_FILE}"
           rm -f _build/${MIX_ENV}/lib/evision/priv/evision.so
-          mix deps.get
           mix compile
 
       - name: Create precompiled library
