@@ -115,7 +115,7 @@ jobs:
         id: cache-mix-compile_opencv
         uses: actions/cache@v3
         with:
-          key: compile-opencv-${{ env.OPENCV_VER }}-x86_64-linux-musl-${{ hashFiles('cc_toolchain/**') }}-${{ hashFiles('Makefile') }}
+          key: compile-opencv-${{ env.OPENCV_VER }}-x86_64-linux-musl-${{ hashFiles('cc_toolchain/x86_64-linux-musl.cmake') }}-${{ hashFiles('Makefile') }}
           path: |
             ./_build/${{ env.MIX_ENV }}/lib/evision
             ./c_src/headers.txt
@@ -198,7 +198,7 @@ jobs:
         id: cache-mix-compile_opencv
         uses: actions/cache@v3
         with:
-          key: compile-with-ffmpeg-opnecv-${{ env.OPENCV_VER }}-${{ matrix.pair.arch }}-${{ hashFiles('cc_toolchain/**') }}-${{ hashFiles('Makefile') }}
+          key: compile-opnecv-${{ env.OPENCV_VER }}-x86_64-linux-gnu-${{ hashFiles('Makefile') }}
           path: |
             ./_build/${{ env.MIX_ENV }}/lib/evision
             ./c_src/headers.txt
