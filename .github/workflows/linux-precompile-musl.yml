@@ -173,7 +173,7 @@ jobs:
         id: cache-mix-compile_opencv
         uses: actions/cache@v3
         with:
-          key: precompile-opencv-${{ env.OPENCV_VER }}-aarch64-linux-musl-${{ hashFiles('cc_toolchain/*linux-musl.cmake') }}-${{ hashFiles('Makefile') }}
+          key: precompile-opencv-${{ env.OPENCV_VER }}-${{ matrix.arch }}-${{ hashFiles('cc_toolchain/*linux-musl.cmake') }}-${{ hashFiles('cc_toolchain/zig.toolchain.cmake') }}-${{ hashFiles('Makefile') }}
           path: |
             ./_build/${{ env.MIX_ENV }}/lib/evision
             ./c_src/headers.txt
