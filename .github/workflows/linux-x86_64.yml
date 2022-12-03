@@ -198,7 +198,7 @@ jobs:
         id: cache-mix-compile_opencv
         uses: actions/cache@v3
         with:
-          key: compile-opnecv-${{ env.OPENCV_VER }}-x86_64-linux-gnu-${{ hashFiles('Makefile') }}
+          key: compile-opencv-${{ env.OPENCV_VER }}-x86_64-linux-gnu-${{ hashFiles('Makefile') }}
           path: |
             ./_build/${{ env.MIX_ENV }}/lib/evision
             ./c_src/headers.txt
