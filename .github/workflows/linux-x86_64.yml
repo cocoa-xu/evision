@@ -66,7 +66,7 @@ jobs:
       - uses: actions/checkout@v3
       - name: Install system dependencies
         run: |
-          apk add cmake make python3 bash curl unzip gcc g++ ncurses-dev openssl-dev linux-headers perl git dpkg patch
+          apk add cmake make python3 bash curl unzip gcc g++ ncurses-dev openssl-dev linux-headers perl git dpkg
           curl -fSL "https://repo.uwucocoa.moe/pool/main/erlang_${OTP_VERSION}_musl-linux-amd64.deb" -o "erlang_${OTP_VERSION}_musl-linux-amd64.deb"
           dpkg -i "erlang_${OTP_VERSION}_musl-linux-amd64.deb"
 
@@ -130,7 +130,9 @@ jobs:
       - name: Mix Compile
         run: |
           export PATH="${PATH}:${HOME}/.elixir/elixir-${ELIXIR_VERSION}/bin"
-          rm -f _build/test/lib/evision/priv/evision.so
+          rm -f _build/${{ env.MIX_ENV }}/lib/evision/priv/evision.so
+          ls -la ./c_src
+          cat ./c_src/headers.txt
           mix compile
 
       - name: Cache testdata
