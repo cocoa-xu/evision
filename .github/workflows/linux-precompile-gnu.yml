@@ -77,20 +77,7 @@ jobs:
 
       - name: Install system dependencies
         run: |
-          # if [ "${{ matrix.pair.deb_arch }}" != "amd64" ]; then
-          #   sudo cat /etc/apt/sources.list
-          #   sudo cp "/etc/apt/sources.list" "/etc/apt/sources.list.d/${{ matrix.pair.deb_arch }}.list"
-          #   sudo sed -i "s/deb-src/deb-src [arch=${{ matrix.pair.deb_arch }}]/g" "/etc/apt/sources.list.d/${{ matrix.pair.deb_arch }}.list"
-          #   sudo sed -i "s/deb /deb [arch=${{ matrix.pair.deb_arch }}] /g" "/etc/apt/sources.list.d/${{ matrix.pair.deb_arch }}.list"
-          #   sudo sed -i "s#azure.archive.ubuntu.com/ubuntu#ports.ubuntu.com/ubuntu-ports#g" "/etc/apt/sources.list.d/${{ matrix.pair.deb_arch }}.list"
-          #   sudo sed -i "s#azure.ports.ubuntu.com/ubuntu-ports#ports.ubuntu.com/ubuntu-ports#g" "/etc/apt/sources.list.d/${{ matrix.pair.deb_arch }}.list"
-          #   sudo apt-get update -q -y
-          #   sudo dpkg --add-architecture "${{ matrix.pair.deb_arch }}"
-          #   sudo apt-get update
-          #   sudo apt-get install -y build-essential automake autoconf pkg-config bc m4 unzip zip curl git gzip python3 ca-certificates ${{ matrix.pair.c_compiler }} ${{ matrix.pair.cpp_compiler }} "crossbuild-essential-${{ matrix.pair.deb_arch }}" libncurses5-dev "libncurses5-dev:${{ matrix.pair.deb_arch }}" libssl-dev "libssl-dev:${{ matrix.pair.deb_arch }}"
-          # else
           sudo apt-get install -y build-essential automake autoconf pkg-config bc m4 unzip zip curl git gzip python3 ca-certificates ${{ matrix.pair.c_compiler }} ${{ matrix.pair.cpp_compiler }} libncurses5-dev libssl-dev
-          # fi
 
       - name: Cache mix packages
         id: cache-mix-deps
@@ -105,7 +92,7 @@ jobs:
         run: |
           mix deps.get
 
-      - name: Cache OpenCV
+      - name: Cache OpenCV source code
         id: cache-opencv
         uses: actions/cache@v3
         with:
@@ -113,32 +100,37 @@ jobs:
           path: |
             ./3rd_party
 
-      - name: Download OpenCV
+      - name: Download OpenCV source code
         if: steps.cache-opencv.outputs.cache-hit != 'true'
         run: |
           bash scripts/download_opencv.sh ${OPENCV_VER} 3rd_party/cache 3rd_party/opencv/
 
       - name: Cache compiled OpenCV
-        id: cache-mix-compile
+        id: cache-mix-compile_opencv
         uses: actions/cache@v3
         with:
-          key: precompile-${{ env.MIX_ENV }}-${{ runner.os }}-${{ matrix.pair.arch }}-${{ hashFiles('cc_toolchain/**') }}-${{ hashFiles('c_src/**') }}-${{ hashFiles('py_src/**') }}-${{ hashFiles('CMakeLists.txt') }}-${{ hashFiles('Makefile') }}-${{ env.OPENCV_VER }}--${{ env.OTP_VERSION }}-${{ env.ELIXIR_VERSION }}
+          key: precompile-opencv-${{ env.OPENCV_VER }}-${{ matrix.pair.arch }}-${{ hashFiles('cc_toolchain/*linux-gnu.cmake') }}-${{ hashFiles('Makefile') }}
           path: |
-            ./_build
+            ./_build/${{ env.MIX_ENV }}/lib/evision
             ./c_src/headers.txt
             ./c_src/configuration.private.hpp
-            ./lib
-            ./src
+
+      - name: Compile OpenCV
+        if: steps.cache-mix-compile_opencv.outputs.cache-hit != 'true'
+        run: |
+          if [ "${{ matrix.pair.cmake_toolchain_file }}" != "" ]; then
+            export CMAKE_TOOLCHAIN_FILE="$(pwd)/${{ matrix.pair.cmake_toolchain_file }}"
+          fi
+          echo "CMAKE_TOOLCHAIN_FILE: ${CMAKE_TOOLCHAIN_FILE}"
+          mix compile_opencv
 
       - name: Mix compile
-        if: steps.cache-mix-compile.outputs.cache-hit != 'true'
         run: |
           if [ "${{ matrix.pair.cmake_toolchain_file }}" != "" ]; then
             export CMAKE_TOOLCHAIN_FILE="$(pwd)/${{ matrix.pair.cmake_toolchain_file }}"
           fi
           echo "CMAKE_TOOLCHAIN_FILE: ${CMAKE_TOOLCHAIN_FILE}"
           rm -f _build/${MIX_ENV}/lib/evision/priv/evision.so
-          mix deps.get
           mix compile
 
       - name: Create precompiled library

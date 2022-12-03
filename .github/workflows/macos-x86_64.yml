@@ -72,7 +72,7 @@ jobs:
         run: |
           mix deps.get
 
-      - name: Cache OpenCV
+      - name: Cache OpenCV source code
         id: cache-opencv
         uses: actions/cache@v3
         with:
@@ -80,25 +80,27 @@ jobs:
           path: |
             ./3rd_party
 
-      - name: Download OpenCV
+      - name: Download OpenCV source code
         if: steps.cache-opencv.outputs.cache-hit != 'true'
         run: |
           bash scripts/download_opencv.sh ${OPENCV_VER} 3rd_party/cache 3rd_party/opencv/
 
       - name: Cache compiled OpenCV
-        id: cache-mix-compile
+        id: cache-mix-compile_opencv
         uses: actions/cache@v3
         with:
-          key: compile-ffmpeg-${{ runner.os }}-${{ hashFiles('cc_toolchain/**') }}-${{ hashFiles('c_src/**') }}-${{ hashFiles('py_src/**') }}-${{ hashFiles('CMakeLists.txt') }}-${{ hashFiles('Makefile') }}-${{ env.OPENCV_VER }}
+          key: compile-with-ffmpeg-opencv-${{ env.OPENCV_VER }}-x86_64-apple-darwin-${{ hashFiles('Makefile') }}
           path: |
-            ./_build
+            ./_build/${{ env.MIX_ENV }}/lib/evision
             ./c_src/headers.txt
             ./c_src/configuration.private.hpp
-            ./lib
-            ./src
+
+      - name: Compile OpenCV
+        if: steps.cache-mix-compile_opencv.outputs.cache-hit != 'true'
+        run: |
+          mix compile_opencv
 
       - name: Mix Compile
-        if: steps.cache-mix-compile.outputs.cache-hit != 'true'
         run: |
           rm -f _build/dev/lib/evision/priv/evision.so
           mix compile
