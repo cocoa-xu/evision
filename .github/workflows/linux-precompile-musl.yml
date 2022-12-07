@@ -5,6 +5,10 @@ on:
     tags:
       - 'v*'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   alpine:
     runs-on: ubuntu-20.04
@@ -12,69 +16,84 @@ jobs:
     env:
       MIX_ENV: prod
       OPENCV_VER: "4.6.0"
+      OTP_VERSION: "25.1.2"
+      NIF_VERSION: "2.16"
+      ELIXIR_VERSION: "1.14.2"
+      EVISION_PREFER_PRECOMPILED: "false"
+      EVISION_GENERATE_LANG: "erlang,elixir"
     steps:
       - uses: actions/checkout@v3
-      - name: Install system dependecies
+      - name: Install system dependencies
         run: |
-          apk add cmake make python3 bash curl unzip gcc g++ ncurses-dev openssl-dev linux-headers perl git ffmpeg ffmpeg-dev dpkg patch
-          curl -fSL https://repo.uwucocoa.moe/pool/main/erlang_25.0.4_musl-linux-amd64.deb -o erlang_25.0.4_musl-linux-amd64.deb
-          dpkg -i erlang_25.0.4_musl-linux-amd64.deb
+          apk add cmake make python3 bash curl unzip gcc g++ ncurses-dev openssl-dev linux-headers perl git dpkg patch
+          curl -fSL "https://repo.uwucocoa.moe/pool/main/erlang_${OTP_VERSION}_musl-linux-amd64.deb" -o "erlang_${OTP_VERSION}_musl-linux-amd64.deb"
+          dpkg -i "erlang_${OTP_VERSION}_musl-linux-amd64.deb"
 
       - name: Install elixir
         run: |
-          export ELIXIR_VER=1.13.4
           mkdir -p "${HOME}/.elixir"
           cd "${HOME}/.elixir"
-          curl -fSL https://github.com/elixir-lang/elixir/archive/refs/tags/v${ELIXIR_VER}.tar.gz -o v${ELIXIR_VER}.tar.gz
-          tar xf "v${ELIXIR_VER}.tar.gz"
-          rm -f "v${ELIXIR_VER}.tar.gz"
-          cd "elixir-${ELIXIR_VER}"
+          curl -fSL https://github.com/elixir-lang/elixir/archive/refs/tags/v${ELIXIR_VERSION}.tar.gz -o v${ELIXIR_VERSION}.tar.gz
+          tar xf "v${ELIXIR_VERSION}.tar.gz"
+          rm -f "v${ELIXIR_VERSION}.tar.gz"
+          cd "elixir-${ELIXIR_VERSION}"
           make clean
           make install
-          export PATH="${PATH}:${HOME}/.elixir/elixir-${ELIXIR_VER}/bin"
+          export PATH="${PATH}:${HOME}/.elixir/elixir-${ELIXIR_VERSION}/bin"
           mix local.hex --force
           mix local.rebar --force
 
-      - name: Cache mix packages and OpenCV
-        id: cache-mix-and-opencv
+      - name: Cache mix packages
+        id: cache-mix-deps
         uses: actions/cache@v3
         with:
-          key: deps-${{ hashFiles('mix.lock') }}-${{ env.OPENCV_VER }}
+          key: deps-${{ hashFiles('mix.lock') }}-${{ env.OTP_VERSION }}-${{ env.ELIXIR_VERSION }}
           path: |
             ./deps
+
+      - name: Get mix deps
+        if: steps.cache-mix-deps.outputs.cache-hit != 'true'
+        run: |
+          mix deps.get
+
+      - name: Cache OpenCV Source Code
+        id: cache-opencv
+        uses: actions/cache@v3
+        with:
+          key: opencv-${{ env.OPENCV_VER }}
+          path: |
             ./3rd_party
 
-      - name: Get mix deps and download OpenCV
-        if: steps.cache-mix-and-opencv.outputs.cache-hit != 'true'
+      - name: Download OpenCV Source Code
+        if: steps.cache-opencv.outputs.cache-hit != 'true'
         run: |
-          export ELIXIR_VER=1.13.4
-          export PATH="${PATH}:${HOME}/.elixir/elixir-${ELIXIR_VER}/bin"
-          mix deps.get
           bash scripts/download_opencv.sh ${OPENCV_VER} 3rd_party/cache 3rd_party/opencv/
 
       - name: Cache compiled OpenCV
-        id: cache-mix-compile
+        id: cache-mix-compile_opencv
         uses: actions/cache@v3
         with:
-          key: precompile-${{ env.MIX_ENV }}-${{ runner.os }}-x86_64-linux-musl-${{ hashFiles('cc_toolchain/**') }}-${{ hashFiles('c_src/**') }}-${{ hashFiles('CMakeLists.txt') }}-${{ hashFiles('Makefile') }}-${{ env.OPENCV_VER }}
+          key: precompile-opencv-${{ env.OPENCV_VER }}-${{ runner.os }}-x86_64-linux-musl-${{ hashFiles('cc_toolchain/**') }}-${{ hashFiles('Makefile') }}
           path: |
-            ./_build
+            ./_build/${{ env.MIX_ENV }}/lib/evision
             ./c_src/headers.txt
             ./c_src/configuration.private.hpp
-            ./lib
-            ./src
+
+      - name: Compile OpenCV
+        if: steps.cache-mix-compile_opencv.outputs.cache-hit != 'true'
+        run: |
+          export PATH="${PATH}:${HOME}/.elixir/elixir-${ELIXIR_VERSION}/bin"
+          mix compile_opencv
 
       - name: Mix compile
-        if: steps.cache-mix-compile.outputs.cache-hit != 'true'
         run: |
-          rm -f _build
-          export PATH="${PATH}:${HOME}/.elixir/elixir-${ELIXIR_VER}/bin"
+          export PATH="${PATH}:${HOME}/.elixir/elixir-${ELIXIR_VERSION}/bin"
           mix compile
 
       - name: Create precompiled library
         run: |
-          export PKG_NAME=evision-x86_64-linux-musl-${GITHUB_REF##*/v}
-          export PATH="${PATH}:${HOME}/.elixir/elixir-${ELIXIR_VER}/bin"
+          export PKG_NAME=evision-nif_${NIF_VERSION}-x86_64-linux-musl-${GITHUB_REF##*/v}
+          export PATH="${PATH}:${HOME}/.elixir/elixir-${ELIXIR_VERSION}/bin"
           mkdir -p "${PKG_NAME}"
           cp -a _build/${MIX_ENV}/lib/evision/priv "${PKG_NAME}"
           cp -a lib/generated "${PKG_NAME}/elixir_generated"
@@ -94,6 +113,12 @@ jobs:
     env:
       OPENCV_VER: "4.6.0"
       MIX_ENV: prod
+      OTP_VERSION: "25.1.2"
+      NIF_VERSION: "2.16"
+      ELIXIR_VERSION: "1.14.2"
+      ZIG_VERSION: "0.8.0"
+      EVISION_PREFER_PRECOMPILED: "false"
+      EVISION_GENERATE_LANG: "erlang,elixir"
     strategy:
       fail-fast: false
       matrix:
@@ -105,45 +130,62 @@ jobs:
       - name: Install OTP and Elixir
         uses: erlef/setup-beam@v1
         with:
-          otp-version: "25.0.4"
-          elixir-version: "1.13.4"
+          otp-version: ${{ env.OTP_VERSION }}
+          elixir-version: ${{ env.ELIXIR_VERSION }}
 
       - name: Install Zig
         uses: goto-bus-stop/setup-zig@v1
         with:
-          version: "0.8.0"
+          version: ${{ env.ZIG_VERSION }}
 
-      - name: Install system dependecies
+      - name: Install system dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential automake autoconf pkg-config bc m4 unzip zip curl git libssl-dev gzip libncurses5-dev python3 ca-certificates
 
-      - name: Cache mix packages and OpenCV
-        id: cache-mix-and-opencv
+      - name: Cache mix packages
+        id: cache-mix-deps
         uses: actions/cache@v3
         with:
-          key: deps-${{ hashFiles('mix.lock') }}-${{ env.OPENCV_VER }}
+          key: deps-${{ hashFiles('mix.lock') }}-${{ env.OTP_VERSION }}-${{ env.ELIXIR_VERSION }}
           path: |
             ./deps
-            ./3rd_party
 
-      - name: Get mix deps and download OpenCV
-        if: steps.cache-mix-and-opencv.outputs.cache-hit != 'true'
+      - name: Get mix deps
+        if: steps.cache-mix-deps.outputs.cache-hit != 'true'
         run: |
           mix deps.get
+
+      - name: Cache OpenCV source code
+        id: cache-opencv
+        uses: actions/cache@v3
+        with:
+          key: opencv-${{ env.OPENCV_VER }}
+          path: |
+            ./3rd_party
+
+      - name: Download OpenCV source code
+        if: steps.cache-opencv.outputs.cache-hit != 'true'
+        run: |
           bash scripts/download_opencv.sh ${OPENCV_VER} 3rd_party/cache 3rd_party/opencv/
 
       - name: Cache compiled OpenCV
-        id: cache-mix-compile
+        id: cache-mix-compile_opencv
         uses: actions/cache@v3
         with:
-          key: precompile-${{ env.MIX_ENV }}-${{ runner.os }}-${{ matrix.arch }}-${{ hashFiles('cc_toolchain/**') }}-${{ hashFiles('c_src/**') }}-${{ hashFiles('CMakeLists.txt') }}-${{ hashFiles('Makefile') }}-${{ env.OPENCV_VER }}
+          key: precompile-opencv-${{ env.OPENCV_VER }}-${{ matrix.arch }}-${{ hashFiles('cc_toolchain/*linux-musl.cmake') }}-${{ hashFiles('cc_toolchain/zig.toolchain.cmake') }}-${{ hashFiles('Makefile') }}
           path: |
-            ./_build
+            ./_build/${{ env.MIX_ENV }}/lib/evision
             ./c_src/headers.txt
             ./c_src/configuration.private.hpp
-            ./lib
-            ./src
+
+      - name: Compile OpenCV
+        if: steps.cache-mix-compile_opencv.outputs.cache-hit != 'true'
+        run: |
+          export CMAKE_TOOLCHAIN_FILE="$(pwd)/cc_toolchain/${{ matrix.arch }}.cmake"
+          echo "CMAKE_TOOLCHAIN_FILE: ${CMAKE_TOOLCHAIN_FILE}"
+          export ZIG_TOOLCHAIN_PATH="$(which zig)"
+          mix compile_opencv
 
       - name: Mix compile
         if: steps.cache-mix-compile.outputs.cache-hit != 'true'
@@ -156,7 +198,7 @@ jobs:
 
       - name: Create precompiled library
         run: |
-          export PKG_NAME=evision-${{ matrix.arch }}-${GITHUB_REF##*/v}
+          export PKG_NAME=evision-nif_${NIF_VERSION}-${{ matrix.arch }}-${GITHUB_REF##*/v}
           mkdir -p "${PKG_NAME}"
           cp -a _build/${MIX_ENV}/lib/evision/priv "${PKG_NAME}"
           cp -a lib/generated "${PKG_NAME}/elixir_generated"

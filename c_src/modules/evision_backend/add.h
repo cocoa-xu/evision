@@ -22,13 +22,16 @@ static ERL_NIF_TERM evision_cv_mat_add(ErlNifEnv *env, int argc, const ERL_NIF_T
         if (evision_to_safe(env, evision_get_kw(env, erl_terms, "l"), l, ArgInfo("l", 0)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "r"), r, ArgInfo("r", 0))) {
             Mat ret;
-            cv::add(l, r, ret, cv::noArray(), -1);
-            return ok(env, evision_from(env, ret));
+            int error_flag = false;
+            ERRWRAP2(cv::add(l, r, ret, cv::noArray(), -1), env, error_flag, error_term);
+            if (!error_flag) {
+                return evision_from(env, ret);
+            }
         }
     }
 
     if (error_term != 0) return error_term;
-    else return error(env, "overload resolution failed");
+    else return enif_make_badarg(env);
 }
 
 // @evision c: mat_add_typed, evision_cv_mat_add_typed, 1
@@ -52,14 +55,18 @@ static ERL_NIF_TERM evision_cv_mat_add_typed(ErlNifEnv *env, int argc, const ERL
             evision_to_safe(env, evision_get_kw(env, erl_terms, "l"), l, ArgInfo("l", 0))) {
             int type;
             if (!get_binary_type(t, l, 0, type)) return evision::nif::error(env, "not implemented for the given type");
+            
             Mat ret;
-            cv::add(lhs, rhs, ret, cv::noArray(), type);
-            return evision::nif::ok(env, evision_from(env, ret));
+            int error_flag = false;
+            ERRWRAP2(cv::add(lhs, rhs, ret, cv::noArray(), type), env, error_flag, error_term);
+            if (!error_flag) {
+                return evision_from(env, ret);
+            }
         }
     }
 
     if (error_term != 0) return error_term;
-    else return evision::nif::error(env, "overload resolution failed");
+    else return enif_make_badarg(env);
 }
 
 #endif // EVISION_BACKEND_ADD_H

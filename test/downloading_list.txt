@@ -1,0 +1,10 @@
+dnn_detection_model_test.exs:  @download_file "https://github.com/AlexeyAB/darknet/releases/download/yolov4/yolov4.weights"
+dnn_detection_model_test.exs:      @download_file,
+dnn_detection_test.exs:    @download_file_1 "https://raw.githubusercontent.com/opencv/opencv_extra/master/testdata/dnn/ssd_mobilenet_v2_coco_2018_03_29.pbtxt"
+dnn_detection_test.exs:    @download_file_2 "http://download.tensorflow.org/models/object_detection/ssd_mobilenet_v2_coco_2018_03_29.tar.gz"
+dnn_text_detection_model_db_test.exs:  @download_file "https://github.com/cocoa-xu/evision-extra/raw/main/testdata/text-detection/DB_IC15_resnet18.onnx"
+dnn_text_detection_model_db_test.exs:      @download_file,
+dnn_text_detection_model_east_test.exs:  @download_file_1 "https://github.com/cocoa-xu/evision-extra/raw/main/testdata/text-detection/frozen_east_text_detection.pb.part1"
+dnn_text_detection_model_east_test.exs:  @download_file_2 "https://github.com/cocoa-xu/evision-extra/raw/main/testdata/text-detection/frozen_east_text_detection.pb.part2"
+photo_hdr_test.exs:  @download_file_1 "https://raw.githubusercontent.com/opencv/opencv_extra/4.x/testdata/cv/hdr/exposures/list.txt"
+photo_hdr_test.exs:  @download_file_2 "https://raw.githubusercontent.com/opencv/opencv_extra/4.x/testdata/cv/hdr/exposures/"

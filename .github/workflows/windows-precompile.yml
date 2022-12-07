@@ -5,83 +5,130 @@ on:
     tags:
       - 'v*'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  mix_test:
+  mix_compile:
     runs-on: windows-latest
     env:
       MIX_ENV: prod
-      EVISION_VERSION: "0.1.2"
       OPENCV_VER: "4.6.0"
+      OTP_VERSION: "25.1.2"
+      NIF_VERSION: "2.16"
+      ELIXIR_VERSION: "1.14.2"
+      EVISION_PREFER_PRECOMPILED: "false"
+      EVISION_GENERATE_LANG: "erlang,elixir"
+      MAKE: "nmake"
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # - pair:
+          #     arch: arm64
+          #     arch_name: aarch64
+          #     msbuild_platform: ARM64
+          #     vcvarsall: amd64_arm64
+          #     CMAKE_GENERATOR_TYPE: "Visual Studio 17"
+          #     CMAKE_TOOLCHAIN_FILE: "cc_toolchain/aarch64-windows-msvc.cmake"
+          - pair:
+              arch: x64
+              arch_name: x86_64
+              msbuild_platform: x64
+              vcvarsall: x64
+              CMAKE_GENERATOR_TYPE: "Ninja"
 
     steps:
       - uses: actions/checkout@v3
 
       - uses: erlef/setup-beam@v1
         with:
-          otp-version: 25.0.4
-          elixir-version: 1.13.4
+          otp-version: ${{ env.OTP_VERSION }}
+          elixir-version: ${{ env.ELIXIR_VERSION }}
 
       - uses: ilammy/msvc-dev-cmd@v1
         with:
-          arch: x64
-      
-      - name: Cache mix packages and OpenCV
-        id: cache-mix-and-opencv
+          arch: ${{ matrix.pair.vcvarsall }}
+
+      - name: Cache mix packages
+        id: cache-mix-deps
         uses: actions/cache@v3
         with:
-          key: deps-${{ hashFiles('mix.lock') }}-${{ env.OPENCV_VER }}
+          key: deps-${{ hashFiles('mix.lock') }}-${{ env.OTP_VERSION }}-${{ env.ELIXIR_VERSION }}
           path: |
             ./deps
-            ./3rd_party
-      
-      - name: Get mix deps and download OpenCV
-        if: steps.cache-mix-and-opencv.outputs.cache-hit != 'true'
+
+      - name: Get mix deps
+        if: steps.cache-mix-deps.outputs.cache-hit != 'true'
         shell: bash
         run: |
           mix deps.get
-          bash scripts/download_opencv.sh ${OPENCV_VER} 3rd_party/cache 3rd_party/opencv/
-      
-      - name: Cache compiled OpenCV
-        id: cache-mix-compile
+
+      - name: Cache OpenCV source code
+        id: cache-opencv
         uses: actions/cache@v3
         with:
-          key: precompile-${{ runner.os }}-${{ hashFiles('cc_toolchain/**') }}-${{ hashFiles('c_src/**') }}-${{ hashFiles('CMakeLists.txt') }}-${{ hashFiles('Makefile.win') }}-${{ env.OPENCV_VER }}
+          key: opencv-${{ env.OPENCV_VER }}
           path: |
-            ./_build
+            ./3rd_party
+
+      - name: Download OpenCV source code
+        if: steps.cache-opencv.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          bash scripts/download_opencv.sh ${OPENCV_VER} 3rd_party/cache 3rd_party/opencv/
+
+      - name: Cache compiled OpenCV
+        id: cache-mix-compile_opencv
+        uses: actions/cache@v3
+        with:
+          key: precompile-opencv-${{ env.OPENCV_VER }}-${{ matrix.pair.arch_name }}-windows-msvc-${{ hashFiles('Makefile.win') }}-${{ hashFiles('cc_toolchain/*-windows-msvc.cmake') }}
+          path: |
+            ./_build/${{ env.MIX_ENV }}/lib/evision
             ./c_src/headers.txt
             ./c_src/configuration.private.hpp
-            ./lib
-            ./src
+
+      - name: Compile OpenCV
+        if: steps.cache-mix-compile_opencv.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          export CMAKE_OPENCV_OPTIONS="-D WITH_FFMPEG=OFF"
+          if [ "${{ matrix.pair.vcvarsall }}" = "amd64_arm64" ]; then
+            export CMAKE_GENERATOR_TYPE="${{ matrix.pair.CMAKE_GENERATOR_TYPE }}"
+            export MSBUILD_PLATFORM="${{ matrix.pair.MSBUILD_PLATFORM }}"
+            export CMAKE_TOOLCHAIN_FILE="$(pwd)/${{ matrix.pair.CMAKE_TOOLCHAIN_FILE }}"
+            export TOOLCHAIN_FILE="$(pwd)/${{ matrix.pair.CMAKE_TOOLCHAIN_FILE }}"
+          fi
+          rm -f Makefile
+          mix compile_opencv
 
       - name: Mix compile
-        if: steps.cache-mix-compile.outputs.cache-hit != 'true'
+        shell: bash
         run: |
-          $Env:MAKE = "nmake"
-          $Env:CMAKE_OPENCV_OPTIONS = "-D WITH_FFMPEG=OFF"
-          Remove-Item Makefile
+          if [ "${{ matrix.pair.vcvarsall }}" = "amd64_arm64" ]; then
+            export CMAKE_GENERATOR_TYPE="${{ matrix.pair.CMAKE_GENERATOR_TYPE }}"
+            export MSBUILD_PLATFORM="${{ matrix.pair.MSBUILD_PLATFORM }}"
+            export CMAKE_TOOLCHAIN_FILE="$(pwd)/${{ matrix.pair.CMAKE_TOOLCHAIN_FILE }}"
+            export TOOLCHAIN_FILE="$(pwd)/${{ matrix.pair.CMAKE_TOOLCHAIN_FILE }}"
+          fi
+          rm -f Makefile
           mix compile
 
       - name: Create precompiled library
+        shell: bash
         run: |
-          $Env:PKG_NAME = "evision-amd64-windows-msvc-${Env:EVISION_VERSION}"
-          if (Test-Path $Env:PKG_NAME) {
-              Remove-Item "$Env:PKG_NAME" -Recurse -Force
-          }
-          New-Item -Path . -Force -Name "$Env:PKG_NAME" -ItemType "directory"
-          $Env:PRIV_DIR = "_build/${Env:MIX_ENV}/lib/evision/priv"
-          if (Test-Path "$Env:PRIV_DIR/x64") {
-              Remove-Item "$Env:PRIV_DIR/x64" -Recurse -Force
-          }
-          Copy-Item -Path "$Env:PRIV_DIR" -Destination "$Env:PKG_NAME" -Recurse
-          Copy-Item -Path "lib/generated" -Destination "${Env:PKG_NAME}/elixir_generated" -Recurse
-          Copy-Item -Path "src/generated" -Destination "${Env:PKG_NAME}/erlang_generated" -Recurse
-
-          tar -czf "${Env:PKG_NAME}.tar.gz" "${Env:PKG_NAME}"
-          if (Test-Path "artifacts") {
-              Remove-Item "artifacts" -Recurse -Force
-          }
-          New-Item -Path . -Force -Name "artifacts" -ItemType "directory"
-          Move-Item -Path "${Env:PKG_NAME}.tar.gz" -Destination "artifacts"
+          export PKG_NAME=evision-nif_${NIF_VERSION}-${{ matrix.pair.arch_name }}-windows-msvc-${GITHUB_REF##*/v}
+          mkdir -p "${PKG_NAME}"
+          rm -rf "_build/${MIX_ENV}/lib/evision/priv/${{ matrix.pair.msbuild_platform }}"
+          cp -a _build/${MIX_ENV}/lib/evision/priv "${PKG_NAME}"
+          cp -a lib/generated "${PKG_NAME}/elixir_generated"
+          cp -a src/generated "${PKG_NAME}/erlang_generated"
+          tar -czf "${PKG_NAME}.tar.gz" "${PKG_NAME}"
+          rm -rf "${PKG_NAME}"
+          ls -lah "${PKG_NAME}.tar.gz"
+          mkdir -p artifacts
+          mv "${PKG_NAME}.tar.gz" artifacts
 
       - uses: softprops/action-gh-release@v1
         with:

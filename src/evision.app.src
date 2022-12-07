@@ -1,6 +1,6 @@
 {application, evision,
  [{description, "OpenCV-Erlang/Elixir binding."},
-  {vsn, "0.1.2-dev"},
+  {vsn, "0.1.21"},
   {registered, []},
   {applications,
    [kernel,
@@ -11,5 +11,6 @@
 
   {licenses, ["Apache-2.0"]},
   {links, [{"GitHub", "https://github.com/cocoa-xu/evision"}]},
-  {exclude_paths, ["mix.exs", "mix.lock", ".formatter.exs"]}
+  {exclude_paths, ["mix.exs", "mix.lock", ".formatter.exs"]},
+  {doc, "doc"}
  ]}.

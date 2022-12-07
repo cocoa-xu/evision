@@ -2,76 +2,48 @@
 
 <!-- livebook:{"persist_outputs":true} -->
 
-# Evision DNN - GoogleNet
-
-## Setup
+# Evision.DNN Example - Object Detection Task with GoogleNet
 
 ```elixir
-# # a quick fix for the free tier livebook session
-# ## allocate 2GB swap
-# System.cmd("fallocate", ["-l", "2G", "/swap"])
-# System.cmd("chmod", ["400", "/swap"])
-# System.cmd("mkswap", ["/swap"])
-# System.cmd("swapon", ["/swap"])
-# ## need unzip to unzip the source code
-# System.cmd("apt", ["update", "-q", "-y"])
-# System.cmd("apt", ["install", "-y", "unzip", "python3", "cmake"])
+# set `EVISION_PREFER_PRECOMPILED` to `false` 
+# if you prefer `:evision` to be compiled from source
+# note that to compile from source, you may need at least 1GB RAM
+# System.put_env("EVISION_PREFER_PRECOMPILED", "false")
 
-# If you are using the pre-built nerves firmware
-# you can comment out the following installation step
 Mix.install([
-  {:nx, "~> 0.3"},
-  {:evision, "~> 0.1.2", github: "cocoa-xu/evision", tag: "v0.1.2"}
+  {:evision, "~> 0.1.21"},
+  {:kino, "~> 0.7"},
+  {:req, "~> 0.3"}
 ])
 ```
 
-```output
-# unnecessary output removed
-Generated evision app
-```
+<!-- livebook:{"output":true} -->
 
-```output
+```
 :ok
 ```
 
-## Helper Functions
+## Define Some Helper Functions
 
 ```elixir
 defmodule Helper do
-  def download!(url, save_as, overwrite \\ false)
-
-  def download!(url, save_as, false) do
+  def download!(url, save_as, overwrite? \\ false) do
     unless File.exists?(save_as) do
-      download!(url, save_as, true)
+      Req.get!(url, http_errors: :raise, output: save_as, cache: not overwrite?)
     end
 
     :ok
   end
-
-  def download!(url, save_as, true) do
-    http_opts = []
-    opts = [body_format: :binary]
-    arg = {url, []}
-
-    body =
-      case :httpc.request(:get, arg, http_opts, opts) do
-        {:ok, {{_, 200, _}, _, body}} ->
-          body
-
-        {:error, reason} ->
-          raise inspect(reason)
-      end
-
-    File.write!(save_as, body)
-  end
 end
 ```
 
-```output
-{:module, Helper, <<70, 79, 82, 49, 0, 0, 9, ...>>, {:download!, 3}}
+<!-- livebook:{"output":true} -->
+
+```
+{:module, Helper, <<70, 79, 82, 49, 0, 0, 10, ...>>, {:download!, 3}}
 ```
 
-## Download model and a test image
+## Download GoogLeNet Model and A Test Image
 
 * Model parameters. `bvlc_googlenet.caffemodel`
 * Model config. `bvlc_googlenet.prototxt`
@@ -101,19 +73,13 @@ Helper.download!(
 Helper.download!("https://docs.opencv.org/4.5.4/space_shuttle.jpg", "space_shuttle.jpg")
 ```
 
-```output
+<!-- livebook:{"output":true} -->
+
+```
 :ok
 ```
 
-## alias
-```elixir
-# alias Evision as OpenCV
-# please see the Namespace section in the README.md for reasons/motivations
-# (in the root directory of the source code)
-alias Evision, as: OpenCV
-```
-
-## Read class names
+## Read Class Names
 
 ```elixir
 classes =
@@ -122,7 +88,9 @@ classes =
   |> String.split("\n")
 ```
 
-```output
+<!-- livebook:{"output":true} -->
+
+```
 ["tench, Tinca tinca", "goldfish, Carassius auratus",
  "great white shark, white shark, man-eater, man-eating shark, Carcharodon carcharias",
  "tiger shark, Galeocerdo cuvieri", "hammerhead, hammerhead shark",
@@ -147,21 +115,25 @@ classes =
  "African crocodile, Nile crocodile, Crocodylus niloticus", ...]
 ```
 
-## Load DNN model
+## Load the GoogLeNet Model
 
 ```elixir
-{:ok, model} =
-  OpenCV.DNN.readNet("bvlc_googlenet.caffemodel",
+alias Evision, as: Cv
+
+model =
+  Cv.DNN.readNet("bvlc_googlenet.caffemodel",
     config: "bvlc_googlenet.prototxt",
     framework: ""
   )
 ```
 
-```output
-{:ok, #Reference<0.3128475832.1787953155.129610>}
+<!-- livebook:{"output":true} -->
+
+```
+%Evision.DNN.Net{ref: #Reference<0.4003430890.1440088085.55917>}
 ```
 
-## Set backend and target
+### Set Backend and Target
 
 ```elixir
 # "0: automatically (by default), "
@@ -170,7 +142,7 @@ classes =
 # "3: OpenCV implementation, "
 # "4: VKCOM, "
 # "5: CUDA
-{:ok, model} = OpenCV.DNN.Net.setPreferableBackend(model, 0)
+model = Cv.DNN.Net.setPreferableBackend(model, 0)
 
 # "0: CPU target (by default), "
 # "1: OpenCL, "
@@ -179,48 +151,55 @@ classes =
 # "4: Vulkan, "
 # "6: CUDA, "
 # "7: CUDA fp16 (half-float preprocess)
-{:ok, model} = OpenCV.DNN.Net.setPreferableTarget(model, 0)
+model = Cv.DNN.Net.setPreferableTarget(model, 0)
 ```
 
-```output
-{:ok, #Reference<0.3128475832.1787953155.129610>}
+<!-- livebook:{"output":true} -->
+
+```
+%Evision.DNN.Net{ref: #Reference<0.4003430890.1440088085.55917>}
 ```
 
-## Read the test image and set as input
+## Read the Test Image and Set It as the Input
 
 ```elixir
-{:ok, mat} = OpenCV.imread("space_shuttle.jpg")
+mat = Cv.imread("space_shuttle.jpg")
 
-{:ok, blob} =
-  OpenCV.DNN.blobFromImage(mat,
+blob =
+  Cv.DNN.blobFromImage(mat,
     scalefactor: 1,
     swapRB: true,
     mean: [-104, -117, -123],
     size: [224, 224]
   )
 
-{:ok, model} = OpenCV.DNN.Net.setInput(model, blob, name: "", scalefactor: 1.0, mean: [0, 0, 0])
+model = Cv.DNN.Net.setInput(model, blob, name: "", scalefactor: 1.0, mean: [0, 0, 0])
 ```
 
-```output
-{:ok, #Reference<0.3128475832.1787953155.129610>}
+<!-- livebook:{"output":true} -->
+
+```
+%Evision.DNN.Net{ref: #Reference<0.4003430890.1440088085.55917>}
 ```
 
-## Forward
+### Run the Forward Function
 
 ```elixir
 start_time = :os.system_time(:millisecond)
-{:ok, pred} = OpenCV.DNN.Net.forward(model, outputName: "")
+pred = Cv.DNN.Net.forward(model, outputName: "")
 end_time = :os.system_time(:millisecond)
 "Inference time=>#{end_time - start_time} ms"
 ```
 
-```output
-"Inference time=>51 ms"
+<!-- livebook:{"output":true} -->
+
+```
+"Inference time=>49 ms"
 ```
 
+## Get the Classification Result
 ```elixir
-pred = pred |> OpenCV.Nx.to_nx()
+pred = pred |> Cv.Mat.to_nx(Nx.BinaryBackend)
 pred_class_id = pred |> Nx.argmax() |> Nx.to_flat_list() |> Enum.at(0)
 
 confidence =
@@ -236,6 +215,8 @@ class_label =
 "Predict result: #{class_label}=>#{Float.round(confidence * 100, 2)}"
 ```
 
-```output
+<!-- livebook:{"output":true} -->
+
+```
 "Predict result: space shuttle=>99.13"
 ```

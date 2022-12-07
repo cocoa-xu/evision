@@ -1,0 +1,195 @@
+<!-- vim: syntax=markdown -->
+
+<!-- livebook:{"persist_outputs":true} -->
+
+# Evision.ML Example - Decision Tree and Random Forest
+
+```elixir
+# set `EVISION_PREFER_PRECOMPILED` to `false` 
+# if you prefer `:evision` to be compiled from source
+# note that to compile from source, you may need at least 1GB RAM
+# System.put_env("EVISION_PREFER_PRECOMPILED", "false")
+
+Mix.install([
+  {:evision, "~> 0.1.9"},
+  {:kino, "~> 0.7"},
+  {:scidata, "~> 0.1"},
+  {:nx, "~> 0.3", override: true},
+  {:scholar, "~> 0.1", github: "elixir-nx/scholar"}
+])
+```
+
+## Register SmartCells
+
+```elixir
+:ok = Evision.SmartCell.register_smartcells()
+```
+
+## Download the Dataset
+
+### Get the Wine dataset with `Scidata`
+
+```elixir
+{features, labels} = Scidata.Wine.download()
+:ok
+```
+
+## Make a dataset with `Evision.ML.TrainData`
+
+<!-- livebook:{"attrs":{"data_layout":"row","shuffle_dataset":true,"split_ratio":0.8,"to_variable":"dataset","x":"features","x_type":"f32","y":"labels","y_type":"s32"},"kind":"Elixir.Evision.SmartCell.ML.TrainData","livebook_object":"smart_cell"} -->
+
+```elixir
+dataset =
+  Evision.ML.TrainData.create(
+    Evision.Mat.from_nx(Nx.tensor(features, type: :f32, backend: Evision.Backend)),
+    Evision.cv_ROW_SAMPLE(),
+    Evision.Mat.from_nx(Nx.tensor(labels, type: :s32, backend: Evision.Backend))
+  )
+  |> Evision.ML.TrainData.setTrainTestSplitRatio(0.8, shuffle: true)
+
+IO.puts("#Samples: #{Evision.ML.TrainData.getNSamples(dataset)}")
+IO.puts("#Training samples: #{Evision.ML.TrainData.getNTrainSamples(dataset)}")
+IO.puts("#Test samples: #{Evision.ML.TrainData.getNTestSamples(dataset)}")
+```
+
+## Train the Dataset with Decision Tree, `Evision.ML.DTrees`
+
+<!-- livebook:{"attrs":{"cv_folds":0,"data_from":"traindata_var","max_categories":3,"max_depth":8,"min_sample_count":10,"to_variable":"dtree","traindata_var":"dataset"},"kind":"Elixir.Evision.SmartCell.ML.DTrees","livebook_object":"smart_cell"} -->
+
+```elixir
+dtree =
+  Evision.ML.DTrees.create()
+  |> Evision.ML.DTrees.setMaxDepth(8)
+  |> Evision.ML.DTrees.setMaxCategories(3)
+  |> Evision.ML.DTrees.setCVFolds(0)
+  |> Evision.ML.DTrees.setMinSampleCount(10)
+
+(
+  Evision.ML.DTrees.train(dtree, dataset)
+
+  dtree
+  |> Evision.ML.DTrees.calcError(dataset, false)
+  |> then(&IO.puts("Training Error: #{elem(&1, 0)}"))
+
+  dtree
+  |> Evision.ML.DTrees.calcError(dataset, true)
+  |> then(&IO.puts("Test Error: #{elem(&1, 0)}"))
+)
+```
+
+## Calculate Confusion Matrix
+
+```elixir
+{_test_error, results} = Evision.ML.DTrees.calcError(dtree, dataset, true)
+
+y_true =
+  Evision.Mat.to_nx(results, Nx.BinaryBackend)
+  |> Nx.reshape({:auto})
+  |> Nx.as_type(:s32)
+
+y_pred =
+  Evision.Mat.to_nx(Evision.ML.TrainData.getTestResponses(dataset), Nx.BinaryBackend)
+  |> Nx.reshape({:auto})
+  |> Nx.as_type(:s32)
+
+Scholar.Metrics.confusion_matrix(y_true, y_pred, num_classes: 3)
+```
+
+## Save the Trained Model and Load It Back
+
+It's also possible to save the trained model to a file and load it back!
+
+```elixir
+# save to file
+filename = Path.join(__DIR__, "dtree.bin")
+Evision.ML.DTrees.save(dtree, filename)
+
+# load from file
+dtree_from_file = Evision.ML.DTrees.load(filename)
+
+# they should give the same results!
+{test_error, _results} = Evision.ML.DTrees.calcError(dtree, dataset, true)
+{test_error_2, _results} = Evision.ML.DTrees.calcError(dtree_from_file, dataset, true)
+test_error == test_error_2
+```
+
+## Train the Dataset with Random Forest, `Evision.ML.RTrees`
+
+<!-- livebook:{"attrs":{"active_var_count":0,"calculate_var_importance":false,"data_from":"traindata","dtrees":{"cv_folds":0,"data_from":"traindata_var","max_categories":3,"max_depth":10,"min_sample_count":10,"to_variable":"dtree","traindata_var":"dataset"},"term_criteria_count":30,"term_criteria_eps":5.0e-5,"term_criteria_type":"max_count+eps","to_variable":"rtree","traindata":{"data_layout":"row","shuffle_dataset":true,"split_ratio":0.8,"to_variable":"dataset","x":"features","x_type":"f32","y":"labels","y_type":"s32"},"traindata_var":"dataset"},"kind":"Elixir.Evision.SmartCell.ML.RTrees","livebook_object":"smart_cell"} -->
+
+```elixir
+rtree =
+  Evision.ML.RTrees.create()
+  |> Evision.ML.RTrees.setMaxDepth(10)
+  |> Evision.ML.RTrees.setMaxCategories(3)
+  |> Evision.ML.RTrees.setCVFolds(0)
+  |> Evision.ML.RTrees.setMinSampleCount(10)
+  |> Evision.ML.RTrees.setActiveVarCount(0)
+  |> Evision.ML.RTrees.setCalculateVarImportance(false)
+
+rtree =
+  Evision.ML.RTrees.setTermCriteria(
+    rtree,
+    {Evision.cv_MAX_ITER() + Evision.cv_EPS(), 30, 5.0e-5}
+  )
+
+(
+  (
+    dataset =
+      Evision.ML.TrainData.create(
+        Evision.Mat.from_nx(Nx.tensor(features, type: :f32, backend: Evision.Backend)),
+        Evision.cv_ROW_SAMPLE(),
+        Evision.Mat.from_nx(Nx.tensor(labels, type: :s32, backend: Evision.Backend))
+      )
+      |> Evision.ML.TrainData.setTrainTestSplitRatio(0.8, shuffle: true)
+
+    IO.puts("#Samples: #{Evision.ML.TrainData.getNSamples(dataset)}")
+    IO.puts("#Training samples: #{Evision.ML.TrainData.getNTrainSamples(dataset)}")
+    IO.puts("#Test samples: #{Evision.ML.TrainData.getNTestSamples(dataset)}")
+  )
+
+  Evision.ML.RTrees.train(rtree, dataset)
+
+  rtree
+  |> Evision.ML.RTrees.calcError(dataset, false)
+  |> then(&IO.puts("Training Error: #{elem(&1, 0)}"))
+
+  rtree
+  |> Evision.ML.RTrees.calcError(dataset, true)
+  |> then(&IO.puts("Test Error: #{elem(&1, 0)}"))
+)
+```
+
+### Calculate Confusion Matrix
+
+```elixir
+{_test_error, results} = Evision.ML.RTrees.calcError(rtree, dataset, true)
+
+y_true =
+  Evision.Mat.to_nx(results, Nx.BinaryBackend)
+  |> Nx.reshape({:auto})
+  |> Nx.as_type(:s32)
+
+y_pred =
+  Evision.Mat.to_nx(Evision.ML.TrainData.getTestResponses(dataset), Nx.BinaryBackend)
+  |> Nx.reshape({:auto})
+  |> Nx.as_type(:s32)
+
+Scholar.Metrics.confusion_matrix(y_true, y_pred, num_classes: 3)
+```
+
+## Save the Trained Model and Load It Back
+
+```elixir
+# save to file
+filename = Path.join(__DIR__, "rtree.bin")
+Evision.ML.RTrees.save(rtree, filename)
+
+# load from file
+rtree_from_file = Evision.ML.RTrees.load(filename)
+
+# they should give the same results!
+{test_error, _results} = Evision.ML.RTrees.calcError(rtree, dataset, true)
+{test_error_2, _results} = Evision.ML.RTrees.calcError(rtree_from_file, dataset, true)
+test_error == test_error_2
+```

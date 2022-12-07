@@ -4,11 +4,11 @@
 #include <erl_nif.h>
 #include "../../ArgInfo.hpp"
 
-std::vector<size_t> transpose_axes(uint64_t ndims, size_t * axes,
+std::vector<int> transpose_axes(uint64_t ndims, int * axes,
                     int64_t& min_axis, int64_t& max_axis) {
-    std::vector<size_t> axes_to_transpose;
+    std::vector<int> axes_to_transpose;
     min_axis = -1;
-    for (uint64_t i = 0; i < ndims; i++) {
+    for (int64_t i = 0; i < (int64_t)ndims; i++) {
         if (axes[i] == i) {
             min_axis = i;
         } else {
@@ -85,18 +85,18 @@ void weighted_traverse(const std::vector<transpose_shape_info>& traverse_list, s
 }
 
 /// Transpose a matrix
-/// @param original matrix data starting address, data must be continous
+/// @param original matrix data starting address, data must be continuous
 /// @param out transposed matrix, buffer must be preallocated with sufficient space to hold the result matrix
 /// @param ndims number of dimensions
 /// @param shape the shape of the original matrix, a list of positive integers
 /// @param new_axes the new arrangement of the axes, a list of non-negative integers, 0 <= i < ndims.
 /// @param elem_size element size in bytes.
-void transpose(void * original, void * out, uint64_t ndims, int * shape, size_t * new_axes, size_t elem_size) {
+void transpose(void * original, void * out, uint64_t ndims, int * shape, int * new_axes, size_t elem_size) {
     if (original == nullptr || out == nullptr) return;
     if (ndims == 0 || shape == nullptr || new_axes == nullptr) return;
 
     int64_t min_axis, max_axis;
-    std::vector<size_t> axes = transpose_axes(ndims, new_axes, min_axis, max_axis);
+    std::vector<int> axes = transpose_axes(ndims, new_axes, min_axis, max_axis);
     auto weighted_shape_info = weighted_shape(ndims, shape, elem_size);
 
     size_t chunk_size = weighted_shape_info[min_axis].total_size;
@@ -135,29 +135,43 @@ static ERL_NIF_TERM evision_cv_mat_transpose(ErlNifEnv *env, int argc, const ERL
     evision::nif::parse_arg(env, nif_opts_index, argv, erl_terms);
 
     Mat img;
-    std::vector<size_t> axes;
+    std::vector<int> axes;
     std::vector<int> as_shape;
+    bool as_shaped = true;
 
     if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0)) &&
         evision_to_safe(env, evision_get_kw(env, erl_terms, "axes"), axes, ArgInfo("axes", 0)) &&
-        evision_to_safe(env, evision_get_kw(env, erl_terms, "as_shape"), as_shape, ArgInfo("as_shape", 0))) {        
+        evision_to_safe(env, evision_get_kw(env, erl_terms, "as_shape"), as_shape, ArgInfo("as_shape", 0)) &&
+        evision_to_safe(env, evision_get_kw(env, erl_terms, "as_shaped"), as_shaped, ArgInfo("as_shaped", 0))) {
         int ndims = (int)as_shape.size();
         std::vector<int> new_shape(ndims);
         for (size_t i = 0; i < axes.size(); i++) {
             new_shape[i] = as_shape[axes[i]];
         }
-        cv::Mat ret = cv::Mat::zeros(ndims, new_shape.data(), img.type());
-        // the data of img must be countinous
-        if (!img.isContinuous()) {
-            // if not, call clone to force opencv make a continuous matrix for us
-            img = img.clone();
+
+        int error_flag = false;
+        cv::Mat ret;
+        if (as_shaped) {
+            // the data of img must be countinous
+            if (!img.isContinuous()) {
+                // if not, call clone to force opencv make a continuous matrix for us
+                img = img.clone();
+                img = Mat((int)as_shape.size(), as_shape.data(), img.depth(), img.data);
+            }
+            int type = img.type() & CV_MAT_DEPTH_MASK;
+            ret = cv::Mat::zeros(ndims, new_shape.data(), type);
+            ERRWRAP2(transpose(img.data, ret.data, ndims, as_shape.data(), axes.data(), img.elemSize()), env, error_flag, error_term);
+        } else {
+            ERRWRAP2(cv::transposeND(img, axes, ret), env, error_flag, error_term);
         }
-        transpose(img.data, ret.data, ndims, as_shape.data(), axes.data(), img.elemSize());
-        return evision::nif::ok(env, evision_from(env, ret));
+
+        if (!error_flag) {
+            return evision_from(env, ret);
+        }
     }
 
     if (error_term != 0) return error_term;
-    else return evision::nif::error(env, "overload resolution failed");
+    else return enif_make_badarg(env);
 }
 
 #endif // EVISION_BACKEND_TRANSPOSE_H

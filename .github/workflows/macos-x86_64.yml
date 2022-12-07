@@ -10,6 +10,7 @@ on:
       - 'nerves/**'
       - 'Makefile.win'
       - 'cc_toolchain/**'
+      - 'checksum.exs'
       - '.github/FUNDING.yml'
       - '.github/workflows/nerves-*.yml'
       - '.github/workflows/linux-*.yml'
@@ -28,13 +29,17 @@ on:
       - 'nerves/**'
       - 'Makefile.win'
       - 'cc_toolchain/**'
+      - 'checksum.exs'
       - '.github/FUNDING.yml'
       - '.github/workflows/nerves-*.yml'
       - '.github/workflows/linux-*.yml'
       - '.github/workflows/windows-*.yml'
       - '.github/workflows/test-*.yml'
       - '.github/workflows/macos-precompile.yml'
-  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   mix_test:
@@ -42,51 +47,71 @@ jobs:
     env:
       OPENCV_VER: "4.6.0"
       MIX_ENV: "test"
+      EVISION_PREFER_PRECOMPILED: "false"
 
     steps:
       - uses: actions/checkout@v3
 
-      - name: Install Erlang and Elixir
+      - name: Install FFmpeg4, Erlang and Elixir
         run: |
-          brew install erlang
-          brew install elixir
-          brew install ffmpeg@4
+          brew install erlang elixir ffmpeg@4
           brew link ffmpeg@4
           mix local.hex --force
           mix local.rebar --force
 
-      - name: Cache mix packages and OpenCV
-        id: cache-mix-and-opencv
+      - name: Cache mix packages
+        id: cache-mix-deps
         uses: actions/cache@v3
         with:
-          key: deps-${{ hashFiles('mix.lock') }}-${{ env.OPENCV_VER }}
+          key: deps-${{ hashFiles('mix.lock') }}
           path: |
             ./deps
-            ./3rd_party
 
-      - name: Get mix deps and download OpenCV
-        if: steps.cache-mix-and-opencv.outputs.cache-hit != 'true'
+      - name: Get mix deps
+        if: steps.cache-mix-deps.outputs.cache-hit != 'true'
         run: |
           mix deps.get
+
+      - name: Cache OpenCV source code
+        id: cache-opencv
+        uses: actions/cache@v3
+        with:
+          key: opencv-${{ env.OPENCV_VER }}
+          path: |
+            ./3rd_party
+
+      - name: Download OpenCV source code
+        if: steps.cache-opencv.outputs.cache-hit != 'true'
+        run: |
           bash scripts/download_opencv.sh ${OPENCV_VER} 3rd_party/cache 3rd_party/opencv/
 
       - name: Cache compiled OpenCV
-        id: cache-mix-compile
+        id: cache-mix-compile_opencv
         uses: actions/cache@v3
         with:
-          key: compile-ffmpeg-${{ runner.os }}-${{ hashFiles('cc_toolchain/**') }}-${{ hashFiles('c_src/**') }}-${{ hashFiles('CMakeLists.txt') }}-${{ hashFiles('Makefile') }}-${{ env.OPENCV_VER }}
+          key: compile-with-ffmpeg-opencv-${{ env.OPENCV_VER }}-x86_64-apple-darwin-${{ hashFiles('Makefile') }}
           path: |
-            ./_build
+            ./_build/${{ env.MIX_ENV }}/lib/evision
             ./c_src/headers.txt
             ./c_src/configuration.private.hpp
-            ./lib
-            ./src
+
+      - name: Compile OpenCV
+        if: steps.cache-mix-compile_opencv.outputs.cache-hit != 'true'
+        run: |
+          mix compile_opencv
 
       - name: Mix Compile
-        if: steps.cache-mix-compile.outputs.cache-hit != 'true'
         run: |
           rm -f _build/dev/lib/evision/priv/evision.so
           mix compile
+
+      - name: Cache testdata
+        id: cache-mix-testdata
+        uses: actions/cache@v3
+        with:
+          key: testdata-${{ hashFiles('test/downloading_list.txt') }}
+          path: |
+            ./test/testdata
 
       - name: Mix Test
         run: |

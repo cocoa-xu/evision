@@ -12,6 +12,7 @@ static ERL_NIF_TERM evision_cv_mat_divide(ErlNifEnv *env, int argc, const ERL_NI
     std::map<std::string, ERL_NIF_TERM> erl_terms;
     int nif_opts_index = 0;
     evision::nif::parse_arg(env, nif_opts_index, argv, erl_terms);
+    int error_flag = false;
 
     {
         Mat l;
@@ -20,13 +21,16 @@ static ERL_NIF_TERM evision_cv_mat_divide(ErlNifEnv *env, int argc, const ERL_NI
         if (evision_to_safe(env, evision_get_kw(env, erl_terms, "l"), l, ArgInfo("l", 0)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "r"), r, ArgInfo("r", 0))) {
             Mat ret;
-            cv::divide(l, r, ret, 1, -1);
-            return evision::nif::ok(env, evision_from(env, ret));
+
+            ERRWRAP2(cv::divide(l, r, ret, 1, -1), env, error_flag, error_term);
+            if (!error_flag) {
+                return evision_from(env, ret);
+            }
         }
     }
 
-    if (error_term != 0) return error_term;
-    else return evision::nif::error(env, "overload resolution failed");
+    if (error_flag) return error_term;
+    else return enif_make_badarg(env);
 }
 
 // @evision c: mat_divide_typed, evision_cv_mat_divide_typed, 1
@@ -52,12 +56,12 @@ static ERL_NIF_TERM evision_cv_mat_divide_typed(ErlNifEnv *env, int argc, const 
             if (!get_binary_type(t, l, 0, type)) return evision::nif::error(env, "not implemented for the given type");
             Mat ret;
             cv::divide(lhs, rhs, ret, 1, type);
-            return evision::nif::ok(env, evision_from(env, ret));
+            return evision_from(env, ret);
         }
     }
 
     if (error_term != 0) return error_term;
-    else return evision::nif::error(env, "overload resolution failed");
+    else return enif_make_badarg(env);
 }
 
 #endif // EVISION_BACKEND_DIVIDE_H

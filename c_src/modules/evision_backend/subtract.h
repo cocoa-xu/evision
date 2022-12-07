@@ -20,13 +20,17 @@ static ERL_NIF_TERM evision_cv_mat_subtract(ErlNifEnv *env, int argc, const ERL_
         if (evision_to_safe(env, evision_get_kw(env, erl_terms, "l"), l, ArgInfo("l", 0)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "r"), r, ArgInfo("r", 0))) {
             Mat ret;
-            cv::subtract(l, r, ret, cv::noArray(), -1);
-            return evision::nif::ok(env, evision_from(env, ret));
+
+            int error_flag = false;
+            ERRWRAP2(cv::subtract(l, r, ret, cv::noArray(), -1), env, error_flag, error_term);
+            if (!error_flag) {
+                return evision_from(env, ret);
+            }
         }
     }
 
     if (error_term != 0) return error_term;
-    else return evision::nif::error(env, "overload resolution failed");
+    else return enif_make_badarg(env);
 }
 
 // @evision c: mat_subtract_typed,evision_cv_mat_subtract_typed,1
@@ -52,12 +56,12 @@ static ERL_NIF_TERM evision_cv_mat_subtract_typed(ErlNifEnv *env, int argc, cons
             if (!get_binary_type(t, l, 0, type)) return evision::nif::error(env, "not implemented for the given type");
             Mat ret;
             cv::subtract(lhs, rhs, ret, cv::noArray(), type);
-            return evision::nif::ok(env, evision_from(env, ret));
+            return evision_from(env, ret);
         }
     }
 
     if (error_term != 0) return error_term;
-    else return evision::nif::error(env, "overload resolution failed");
+    else return enif_make_badarg(env);
 }
 
 #endif // EVISION_BACKEND_SUBTRACT_H

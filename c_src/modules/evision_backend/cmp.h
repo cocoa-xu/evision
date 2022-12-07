@@ -12,6 +12,7 @@ static ERL_NIF_TERM evision_cv_mat_cmp(ErlNifEnv *env, int argc, const ERL_NIF_T
     std::map<std::string, ERL_NIF_TERM> erl_terms;
     int nif_opts_index = 0;
     evision::nif::parse_arg(env, nif_opts_index, argv, erl_terms);
+    int error_flag = false;
 
     {
         Mat l;
@@ -34,14 +35,19 @@ static ERL_NIF_TERM evision_cv_mat_cmp(ErlNifEnv *env, int argc, const ERL_NIF_T
             }
 
             Mat ret;
-            cv::compare(l, r, ret, cmpop);
-            ret = ret / 255;
-            return evision::nif::ok(env, evision_from(env, ret));
+
+            ERRWRAP2(cv::compare(l, r, ret, cmpop), env, error_flag, error_term);
+            if (!error_flag) {
+                ERRWRAP2(ret = ret / 255, env, error_flag, error_term);
+                if (!error_flag) {
+                    return evision_from(env, ret);
+                }
+            }
         }
     }
 
-    if (error_term != 0) return error_term;
-    else return evision::nif::error(env, "overload resolution failed");
+    if (error_flag) return error_term;
+    else return enif_make_badarg(env);
 }
 
 #endif // EVISION_BACKEND_CMP_H

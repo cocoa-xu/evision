@@ -1,0 +1,151 @@
+<!-- vim: syntax=markdown -->
+
+<!-- livebook:{"persist_outputs":true} -->
+
+# Evision Example - QRCode Encoding and Decoding
+
+```elixir
+# set `EVISION_PREFER_PRECOMPILED` to `false` 
+# if you prefer `:evision` to be compiled from source
+# note that to compile from source, you may need at least 1GB RAM
+# System.put_env("EVISION_PREFER_PRECOMPILED", "false")
+
+Mix.install([
+  {:evision, "~> 0.1.21"},
+  {:kino, "~> 0.7"},
+  {:req, "~> 0.3"}
+])
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+:ok
+```
+
+## Encode A String to QRCode
+
+```elixir
+# let's encode this example string
+string_to_encode = "This is a string!"
+
+# the result image will be in minimal possible size
+# which is what it should be to avoid unnecessary memory allocations
+# because it would be easier to let the user to resize the result image
+# (most of the time we need to resize it to fit our needs anyway, this saves one call to resize)
+%Evision.Mat{} =
+  minimal_qrcode = Evision.QRCodeEncoder.encode(Evision.QRCodeEncoder.create(), string_to_encode)
+
+# for this example, we can resize it to 300x300
+qrcode = Evision.resize(minimal_qrcode, {300, 300}, interpolation: Evision.cv_INTER_AREA())
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+%Evision.Mat{
+  channels: 1,
+  dims: 2,
+  type: {:u, 8},
+  raw_type: 0,
+  shape: {300, 300},
+  ref: #Reference<0.2207498009.3335389204.191169>
+}
+```
+
+## Read the String Back From the Encoded QRCode
+
+```elixir
+{decoded_string, points, straight_qrcode} =
+  Evision.QRCodeDetector.detectAndDecode(Evision.QRCodeDetector.qrCodeDetector(), qrcode)
+
+decoded_string
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+"This is a string!"
+```
+
+## The Second Value In the Returned Tuple
+
+```elixir
+# `points` is the keypoints for the QRCode
+# the shape would be {1, 4, 2}, in which:
+#  - 1: number of QRCode
+#  - 4: always 4, 4 keypoints: top_left, bottom_left, bottom_right, top_right
+#  - 2: always 2, (x, y)
+points = Evision.Mat.to_nx(points, Nx.BinaryBackend)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+#Nx.Tensor<
+  f32[1][4][2]
+  [
+    [
+      [24.0, 24.0],
+      [275.0000305175781, 24.0],
+      [275.0000305175781, 275.0000305175781],
+      [24.0, 275.0000305175781]
+    ]
+  ]
+>
+```
+
+```elixir
+# here we take the first QRCode's keypoints
+keypoints = Nx.as_type(points[0], :s32)
+
+{top_left, bottom_right} = {
+  List.to_tuple(Nx.to_flat_list(keypoints[0])),
+  List.to_tuple(Nx.to_flat_list(keypoints[2]))
+}
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+{{24, 24}, {275, 275}}
+```
+
+```elixir
+{{row_start, col_start}, {row_end, col_end}} = {top_left, bottom_right}
+qrcode[[col_start..col_end, row_start..row_end]]
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+%Evision.Mat{
+  channels: 1,
+  dims: 2,
+  type: {:u, 8},
+  raw_type: 0,
+  shape: {252, 252},
+  ref: #Reference<0.2207498009.3335389204.191179>
+}
+```
+
+## The Third Value In the Returned Tuple
+
+```elixir
+# the third value is `straight_qrcode`, which is the minimal possible image
+# for the QRCode
+Evision.resize(straight_qrcode, {300, 300}, interpolation: Evision.cv_INTER_AREA())
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+%Evision.Mat{
+  channels: 1,
+  dims: 2,
+  type: {:u, 8},
+  raw_type: 0,
+  shape: {300, 300},
+  ref: #Reference<0.2207498009.3335389204.191182>
+}
+```

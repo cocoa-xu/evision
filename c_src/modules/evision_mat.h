@@ -3,9 +3,18 @@
 
 #include <erl_nif.h>
 #include <math.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#if defined(_WIN32) || defined(WINRT) || defined(_WIN32_WCE) || defined(__WIN32__) || defined(_MSC_VER)
+#include <io.h>
+#else
+#include <unistd.h>
+#endif
 #include "../nif_utils.hpp"
 #include "evision_mat_utils.hpp"
 #include "evision_backend/backend.h"
+#include "evision_mat_api.h"
 
 using namespace evision::nif;
 
@@ -16,13 +25,13 @@ static ERL_NIF_TERM evision_cv_mat_empty(ErlNifEnv *env, int argc, const ERL_NIF
     if (alloc_resource(&res)) {
         res->val = new cv::Mat();
     } else {
-        return evision::nif::error(env, "no memory");
+        return evision::nif::error(env, "out of memory");
     }
 
     ERL_NIF_TERM ret = enif_make_resource(env, res);
     enif_release_resource(res);
 
-    return evision::nif::ok(env, ret);
+    return _evision_make_mat_resource_into_map(env, *res->val, ret);
 }
 
 // @evision c: mat_type,evision_cv_mat_type,1
@@ -38,24 +47,12 @@ static ERL_NIF_TERM evision_cv_mat_type(ErlNifEnv *env, int argc, const ERL_NIF_
         Mat img;
 
         if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0))) {
-            int type = img.type();
-            uint8_t depth = type & CV_MAT_DEPTH_MASK;
-
-            switch ( depth ) {
-                case CV_8U:  return evision::nif::ok(env, enif_make_tuple2(env, evision::nif::atom(env, "u"), enif_make_uint64(env, 8)));
-                case CV_8S:  return evision::nif::ok(env, enif_make_tuple2(env, evision::nif::atom(env, "s"), enif_make_uint64(env, 8)));
-                case CV_16U: return evision::nif::ok(env, enif_make_tuple2(env, evision::nif::atom(env, "u"), enif_make_uint64(env, 16)));
-                case CV_16S: return evision::nif::ok(env, enif_make_tuple2(env, evision::nif::atom(env, "s"), enif_make_uint64(env, 16)));
-                case CV_32S: return evision::nif::ok(env, enif_make_tuple2(env, evision::nif::atom(env, "s"), enif_make_uint64(env, 32)));
-                case CV_32F: return evision::nif::ok(env, enif_make_tuple2(env, evision::nif::atom(env, "f"), enif_make_uint64(env, 32)));
-                case CV_64F: return evision::nif::ok(env, enif_make_tuple2(env, evision::nif::atom(env, "f"), enif_make_uint64(env, 64)));
-                default:     return evision::nif::ok(env, enif_make_tuple2(env, evision::nif::atom(env, "user"), enif_make_uint64(env, depth)));
-            }
+            return _evision_get_mat_type(env, img);
         }
     }
 
     if (error_term != 0) return error_term;
-    else return evision::nif::error(env, "overload resolution failed");
+    else return enif_make_badarg(env);
 }
 
 // @evision c: mat_as_type,evision_cv_mat_as_type,1
@@ -79,7 +76,7 @@ static ERL_NIF_TERM evision_cv_mat_as_type(ErlNifEnv *env, int argc, const ERL_N
             if (get_binary_type(t, l, 0, type)) {
                 Mat ret;
                 img.convertTo(ret, type);
-                return evision::nif::ok(env, evision_from(env, ret));
+                return evision_from(env, ret);
             } else {
                 return evision::nif::error(env, "unsupported target type");
             }
@@ -87,7 +84,7 @@ static ERL_NIF_TERM evision_cv_mat_as_type(ErlNifEnv *env, int argc, const ERL_N
     }
 
     if (error_term != 0) return error_term;
-    else return evision::nif::error(env, "overload resolution failed");
+    else return enif_make_badarg(env);
 }
 
 // @evision c: mat_shape,evision_cv_mat_shape,1
@@ -104,24 +101,190 @@ static ERL_NIF_TERM evision_cv_mat_shape(ErlNifEnv *env, int argc, const ERL_NIF
 
         // const char *keywords[] = {"img", NULL};
         if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0))) {
-            cv::MatSize size = img.size;
-            int channels = img.channels();
-            int dims = size.dims() + (channels == 1 ? 0 : 1);
-            ERL_NIF_TERM* shape = (ERL_NIF_TERM *)enif_alloc(sizeof(ERL_NIF_TERM) * dims);
-
-            for (int i = 0; i < size.dims(); i++) {
-                shape[i] = enif_make_int(env, size[i]);
-            }
-            if (channels > 1) {
-                shape[dims - 1] = enif_make_int(env, channels);
-            }
-            ERL_NIF_TERM ret = enif_make_tuple_from_array(env, shape, dims);
-            return evision::nif::ok(env, ret);
+            ERL_NIF_TERM ret = _evision_get_mat_shape(env, img);
+            return ret;
         }
     }
 
     if (error_term != 0) return error_term;
-    else return evision::nif::error(env, "overload resolution failed");
+    else return enif_make_badarg(env);
+}
+
+// @evision c: mat_roi,evision_cv_mat_roi,1
+// @evision nif: def mat_roi(_opts \\ []), do: :erlang.nif_error("Mat::operator() not loaded")
+static ERL_NIF_TERM evision_cv_mat_roi(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
+    using namespace cv;
+    ERL_NIF_TERM error_term = 0;
+    std::map<std::string, ERL_NIF_TERM> erl_terms;
+    int nif_opts_index = 0;
+    evision::nif::parse_arg(env, nif_opts_index, argv, erl_terms);
+
+    int error_flag = false;
+    Mat img;
+    if (evision_to_safe(env, evision_get_kw(env, erl_terms, "mat"), img, ArgInfo("mat", 0)))
+    {
+        {
+            // Mat operator()( const Rect& roi ) const;
+            cv::Rect2i rect;
+            if (erl_terms.find("rect") != erl_terms.end() &&
+                evision_to_safe(env, evision_get_kw(env, erl_terms, "rect"), rect, ArgInfo("rect", 0))) {
+                Mat ret;
+                ERRWRAP2(ret = img(rect), env, error_flag, error_term);
+                if (!error_flag) {
+                    return evision_from(env, ret.clone());
+                }
+            }
+        }
+
+        {
+            // Mat operator()( Range rowRange, Range colRange ) const;
+            cv::Range rowRange, colRange;
+            if (erl_terms.find("rowRange") != erl_terms.end() &&
+                erl_terms.find("colRange") != erl_terms.end() &&
+                evision_to_safe(env, evision_get_kw(env, erl_terms, "rowRange"), rowRange, ArgInfo("rowRange", 0)) &&
+                evision_to_safe(env, evision_get_kw(env, erl_terms, "colRange"), colRange, ArgInfo("colRange", 0))) {
+                Mat ret;
+                ERRWRAP2(ret = img(rowRange, colRange), env, error_flag, error_term);
+                if (!error_flag) {
+                    return evision_from(env, ret.clone());
+                }
+            }
+        }
+
+        {
+            // Mat operator()(const std::vector<Range>& ranges) const;
+            std::vector<cv::Range> ranges;
+            if (erl_terms.find("ranges") != erl_terms.end() &&
+                evision_to_safe(env, evision_get_kw(env, erl_terms, "ranges"), ranges, ArgInfo("ranges", 0))) {
+                Mat ret;
+                int dims = img.size.dims();
+                if ((int)ranges.size() == dims + 1) {
+                    int img_channels = img.channels();
+                    Range last = ranges[dims];
+                    ranges.pop_back();
+
+                    // deal with cv::Range::all()
+                    if (last == cv::Range::all()) {
+                        last.start = 0;
+                        last.end = img_channels;
+                    }
+
+                    // if definitely out of range
+                    if (last.start > img_channels - 1 || last.end < 0 || last.start < 0 || last.end > img_channels) {
+                        char msg[128] = {'\0'};
+                        if (enif_snprintf(msg, 127, "index %d is out of bounds for axis %d with size %d", last.start, ranges.size(), img_channels)) {
+                            return evision::nif::error(env, msg);
+                        } else {
+                            return evision::nif::error(env, "index out of bounds");
+                        }
+                    }
+
+                    if (last.end <= last.start) {
+                        return evision_cv_mat_empty(env, 0, argv);
+                    }
+
+                    if (last.start == 0 && last.end == img_channels) {
+                        ERRWRAP2(ret = img(ranges), env, error_flag, error_term);
+                        ret = ret.clone();
+                    } else {
+                        // because we are taking channel in [start, end)
+                        // if start == end, we would still have 1 channel to extract
+                        // this follows the convention in elixir as 0..0 is effectively [0]
+                        std::vector<cv::Mat> by_channel(last.end - last.start);
+                        size_t by_channel_index = 0;
+                        for (int channel_index = last.start; channel_index < last.end; channel_index++) {
+                            ERRWRAP2(cv::extractChannel(img, by_channel[by_channel_index], channel_index), env, error_flag, error_term);
+                            if (error_flag) break;
+
+                            ERRWRAP2(by_channel[by_channel_index] = by_channel[by_channel_index](ranges), env, error_flag, error_term);
+                            if (error_flag) break;
+
+                            by_channel_index++;
+                        }
+
+                        if (!error_flag) {
+                            ERRWRAP2(cv::merge(by_channel, ret), env, error_flag, error_term);
+                        }
+                    }
+                } else {
+                    ERRWRAP2(ret = img(ranges), env, error_flag, error_term);
+                    ret = ret.clone();
+                }
+
+                if (!error_flag) {
+                    return evision_from(env, ret);
+                }
+            }
+        }
+    }
+
+    if (error_term != 0) return error_term;
+    else return enif_make_badarg(env);
+}
+
+// @evision c: mat_update_roi,evision_cv_mat_update_roi,1
+// @evision nif: def mat_update_roi(_opts \\ []), do: :erlang.nif_error("Mat::update_roi() not loaded")
+static ERL_NIF_TERM evision_cv_mat_update_roi(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
+    using namespace cv;
+    ERL_NIF_TERM error_term = 0;
+    std::map<std::string, ERL_NIF_TERM> erl_terms;
+    int nif_opts_index = 0;
+    evision::nif::parse_arg(env, nif_opts_index, argv, erl_terms);
+
+    int error_flag = false;
+    Mat mat, with_mat;
+    std::vector<cv::Range> ranges;
+
+    if (erl_terms.find("mat") != erl_terms.end() &&
+        erl_terms.find("with_mat") != erl_terms.end() &&
+        erl_terms.find("ranges") != erl_terms.end() &&
+        evision_to_safe(env, evision_get_kw(env, erl_terms, "mat"), mat, ArgInfo("mat", 0)) &&
+        evision_to_safe(env, evision_get_kw(env, erl_terms, "with_mat"), with_mat, ArgInfo("with_mat", 0)) &&
+        evision_to_safe(env, evision_get_kw(env, erl_terms, "ranges"), ranges, ArgInfo("ranges", 0)))
+    {
+        Mat roi = mat(ranges);
+        if (roi.channels() != with_mat.channels()) {
+            // `with_mat` could be an Nx.tensor
+            // hence the last dim should actually be the channel
+            int with_mat_dims = with_mat.size.dims();
+            int roi_dims = roi.size.dims();
+
+            // basically last_dim_as_channel
+            bool last_dim_as_channel = true;
+            if (with_mat_dims == roi_dims + 1 && with_mat.size.p[with_mat_dims - 1] == roi.channels()) {
+                for (int i = 0; i < roi_dims; i++) {
+                    if (with_mat.size.p[i] != roi.size.p[i]) {
+                        last_dim_as_channel = false;
+                        break;
+                    }
+                }
+            }
+
+            if (last_dim_as_channel) {
+                // we can still fix this
+                std::vector<int> new_shape(with_mat_dims - 1);
+                for (size_t i = 0; i < (size_t)(with_mat_dims - 1); i++) {
+                    new_shape[i] = with_mat.size.p[i];
+                }
+                int type = CV_MAKETYPE(with_mat.type(), with_mat.size.p[with_mat_dims - 1]);
+
+                // zero-copy constructor
+                Mat copy_from = Mat(with_mat_dims - 1, new_shape.data(), type, with_mat.data);
+                ERRWRAP2(copy_from.copyTo(roi), env, error_flag, error_term);
+            } else {
+                error_term = evision::nif::error(env, "Cannot update roi: shape mismatch");
+            }
+        } else {
+            ERRWRAP2(with_mat.copyTo(roi), env, error_flag, error_term);
+        }
+
+        if (!error_flag) {
+            return evision_from(env, mat);
+        }
+    }
+
+    if (error_term != 0) return error_term;
+    else return enif_make_badarg(env);
 }
 
 // @evision c: mat_clone,evision_cv_mat_clone,1
@@ -138,13 +301,13 @@ static ERL_NIF_TERM evision_cv_mat_clone(ErlNifEnv *env, int argc, const ERL_NIF
 
         // const char *keywords[] = {"img", NULL};
         if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0))) {
-            // no need to do clone here as evision_from will copy the data
-            return evision::nif::ok(env, evision_from(env, img));
+            // no need to do clone here as `evision_to_safe` will copy the data to img.
+            return evision_from(env, img);
         }
     }
 
     if (error_term != 0) return error_term;
-    else return evision::nif::error(env, "overload resolution failed");
+    else return enif_make_badarg(env);
 }
 
 // @evision c: mat_zeros, evision_cv_mat_zeros, 1
@@ -167,12 +330,12 @@ static ERL_NIF_TERM evision_cv_mat_zeros(ErlNifEnv *env, int argc, const ERL_NIF
             int type;
             if (!get_binary_type(t, l, 0, type)) return evision::nif::error(env, "not implemented for the given type");
             Mat out = Mat(Mat::zeros(shape.size(), shape.data(), type));
-            return evision::nif::ok(env, evision_from(env, out));
+            return evision_from(env, out);
         }
     }
 
     if (error_term != 0) return error_term;
-    else return evision::nif::error(env, "overload resolution failed");
+    else return enif_make_badarg(env);
 }
 
 // @evision c: mat_ones, evision_cv_mat_ones, 1
@@ -195,12 +358,12 @@ static ERL_NIF_TERM evision_cv_mat_ones(ErlNifEnv *env, int argc, const ERL_NIF_
             int type;
             if (!get_binary_type(t, l, 0, type)) return evision::nif::error(env, "not implemented for the given type");
             Mat out = Mat(Mat::ones(shape.size(), shape.data(), type));
-            return evision::nif::ok(env, evision_from(env, out));
+            return evision_from(env, out);
         }
     }
 
     if (error_term != 0) return error_term;
-    else return evision::nif::error(env, "overload resolution failed");
+    else return enif_make_badarg(env);
 }
 
 // @evision c: mat_arange, evision_cv_mat_arange, 1
@@ -213,7 +376,7 @@ static ERL_NIF_TERM evision_cv_mat_arange(ErlNifEnv *env, int argc, const ERL_NI
     evision::nif::parse_arg(env, nif_opts_index, argv, erl_terms);
 
     {
-        int64_t from = 0, to = 0, step = 0;
+        int32_t from = 0, to = 0, step = 0;
         std::string t;
         int l = 0;
 
@@ -225,27 +388,27 @@ static ERL_NIF_TERM evision_cv_mat_arange(ErlNifEnv *env, int argc, const ERL_NI
             int type;
             if (!get_binary_type(t, l, 0, type)) return evision::nif::error(env, "not implemented for the given type");
 
-            int64_t count = (to - from) / step;
+            int32_t count = (to - from) / step;
             int dims[1] = {0};
             dims[0] = (int)count;
             if (count <= 0) return evision::nif::error(env, "invalid values for start/end/step");
 
-            std::vector<double> values(count);
-            int64_t v = from;
-            for (int64_t i = 0; i < count; i++) {
+            std::vector<int32_t> values(count);
+            int32_t v = from;
+            for (int32_t i = 0; i < count; i++) {
                 values[i] = v;
                 v += step;
             }
 
-            Mat out = Mat(1, dims, CV_64F, values.data());
+            Mat out = Mat(1, dims, CV_32S, values.data());
             Mat ret;
             out.convertTo(ret, type);
-            return evision::nif::ok(env, evision_from(env, ret));
+            return evision_from(env, ret);
         }
     }
 
     if (error_term != 0) return error_term;
-    else return evision::nif::error(env, "overload resolution failed");
+    else return enif_make_badarg(env);
 }
 
 // @evision c: mat_full, evision_cv_mat_full, 1
@@ -273,12 +436,12 @@ static ERL_NIF_TERM evision_cv_mat_full(ErlNifEnv *env, int argc, const ERL_NIF_
             Mat out = Mat(Mat::ones(shape.size(), shape.data(), CV_64F) * number);
             Mat ret;
             out.convertTo(ret, type);
-            return evision::nif::ok(env, evision_from(env, ret));
+            return evision_from(env, ret);
         }
     }
 
     if (error_term != 0) return error_term;
-    else return evision::nif::error(env, "overload resolution failed");
+    else return enif_make_badarg(env);
 }
 
 // @evision c: mat_at, evision_cv_mat_at, 1
@@ -338,9 +501,9 @@ static ERL_NIF_TERM evision_cv_mat_at(ErlNifEnv *env, int argc, const ERL_NIF_TE
 
             ERL_NIF_TERM ret;
             if (type == 0) {
-                ret = evision::nif::ok(env, enif_make_int(env, i32));
+                ret = enif_make_int(env, i32);
             } else if (type == 1) {
-                ret = evision::nif::ok(env, enif_make_double(env, f64));
+                ret = enif_make_double(env, f64);
             } else {
                 ret = evision::nif::error(env, "unknown data type");
             }
@@ -350,7 +513,7 @@ static ERL_NIF_TERM evision_cv_mat_at(ErlNifEnv *env, int argc, const ERL_NIF_TE
     }
 
     if (error_term != 0) return error_term;
-    else return evision::nif::error(env, "overload resolution failed");
+    else return enif_make_badarg(env);
 }
 
 // @evision c: mat_set_to, evision_cv_mat_set_to, 1
@@ -371,12 +534,12 @@ static ERL_NIF_TERM evision_cv_mat_set_to(ErlNifEnv *env, int argc, const ERL_NI
             evision_to_safe(env, evision_get_kw(env, erl_terms, "value"), value, ArgInfo("value", 0)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "mask"), mask, ArgInfo("mask", 0))) {
             img.setTo(value, mask);
-            return evision::nif::ok(env, evision_from(env, img));
+            return evision_from(env, img);
         }
     }
 
     if (error_term != 0) return error_term;
-    else return evision::nif::error(env, "overload resolution failed");
+    else return enif_make_badarg(env);
 }
 
 // @evision c: mat_dot, evision_cv_mat_dot, 1
@@ -394,12 +557,310 @@ static ERL_NIF_TERM evision_cv_mat_dot(ErlNifEnv *env, int argc, const ERL_NIF_T
         if (evision_to_safe(env, evision_get_kw(env, erl_terms, "a"), a, ArgInfo("a", 0)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "b"), b, ArgInfo("b", 0))) {
             Mat out = a.cross(b);
-            return evision::nif::ok(env, evision_from(env, out));
+            return evision_from(env, out);
         }
     }
 
     if (error_term != 0) return error_term;
-    else return evision::nif::error(env, "overload resolution failed");
+    else return enif_make_badarg(env);
+}
+
+// @evision c: mat_channels, evision_cv_mat_channels, 1
+// @evision nif: def mat_channels(_opts \\ []), do: :erlang.nif_error("Mat::channels not loaded")
+static ERL_NIF_TERM evision_cv_mat_channels(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
+    using namespace cv;
+    ERL_NIF_TERM error_term = 0;
+    std::map<std::string, ERL_NIF_TERM> erl_terms;
+    int nif_opts_index = 0;
+    evision::nif::parse_arg(env, nif_opts_index, argv, erl_terms);
+
+    {
+        Mat img;
+
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0))) {
+            int channels = img.channels();
+            return enif_make_int64(env, channels);
+        }
+    }
+
+    if (error_term != 0) return error_term;
+    else return enif_make_badarg(env);
+}
+
+// @evision c: mat_depth, evision_cv_mat_depth, 1
+// @evision nif: def mat_depth(_opts \\ []), do: :erlang.nif_error("Mat::depth not loaded")
+static ERL_NIF_TERM evision_cv_mat_depth(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
+    using namespace cv;
+    ERL_NIF_TERM error_term = 0;
+    std::map<std::string, ERL_NIF_TERM> erl_terms;
+    int nif_opts_index = 0;
+    evision::nif::parse_arg(env, nif_opts_index, argv, erl_terms);
+
+    {
+        Mat img;
+
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0))) {
+            int depth = img.depth();
+            return enif_make_int64(env, depth);
+        }
+    }
+
+    if (error_term != 0) return error_term;
+    else return enif_make_badarg(env);
+}
+
+// @evision c: mat_isSubmatrix, evision_cv_mat_isSubmatrix, 1
+// @evision nif: def mat_isSubmatrix(_opts \\ []), do: :erlang.nif_error("Mat::isSubmatrix not loaded")
+static ERL_NIF_TERM evision_cv_mat_isSubmatrix(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
+    using namespace cv;
+    ERL_NIF_TERM error_term = 0;
+    std::map<std::string, ERL_NIF_TERM> erl_terms;
+    int nif_opts_index = 0;
+    evision::nif::parse_arg(env, nif_opts_index, argv, erl_terms);
+
+    {
+        Mat img;
+
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0))) {
+            bool isSubmatrix = img.isSubmatrix();
+            if (isSubmatrix) {
+                return evision::nif::atom(env, "true");
+            } else {
+                return evision::nif::atom(env, "false");
+            }
+        }
+    }
+
+    if (error_term != 0) return error_term;
+    else return enif_make_badarg(env);
+}
+
+// @evision c: mat_isContinuous, evision_cv_mat_isContinuous, 1
+// @evision nif: def mat_isContinuous(_opts \\ []), do: :erlang.nif_error("Mat::isContinuous not loaded")
+static ERL_NIF_TERM evision_cv_mat_isContinuous(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
+    using namespace cv;
+    ERL_NIF_TERM error_term = 0;
+    std::map<std::string, ERL_NIF_TERM> erl_terms;
+    int nif_opts_index = 0;
+    evision::nif::parse_arg(env, nif_opts_index, argv, erl_terms);
+
+    {
+        Mat img;
+
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0))) {
+            bool isContinuous = img.isContinuous();
+            if (isContinuous) {
+                return evision::nif::atom(env, "true");
+            } else {
+                return evision::nif::atom(env, "false");
+            }
+        }
+    }
+
+    if (error_term != 0) return error_term;
+    else return enif_make_badarg(env);
+}
+
+// @evision c: mat_total, evision_cv_mat_total, 1
+// @evision nif: def mat_total(_opts \\ []), do: :erlang.nif_error("Mat::total not loaded")
+static ERL_NIF_TERM evision_cv_mat_total(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
+    using namespace cv;
+    ERL_NIF_TERM error_term = 0;
+    std::map<std::string, ERL_NIF_TERM> erl_terms;
+    int nif_opts_index = 0;
+    evision::nif::parse_arg(env, nif_opts_index, argv, erl_terms);
+
+    {
+        Mat img;
+        int start_dim = -1;
+        int end_dim = INT_MAX;
+
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0))) {
+            evision_to_safe(env, evision_get_kw(env, erl_terms, "start_dim"), start_dim, ArgInfo("start_dim", 0));
+            evision_to_safe(env, evision_get_kw(env, erl_terms, "end_dim"), end_dim, ArgInfo("end_dim", 0));
+            size_t total_elems;
+            if (start_dim == -1) {
+                total_elems = img.total();
+            } else {
+                total_elems = img.total(start_dim, end_dim);
+            }
+            
+            return enif_make_int64(env, total_elems);
+        }
+    }
+
+    if (error_term != 0) return error_term;
+    else return enif_make_badarg(env);
+}
+
+// @evision c: mat_elemSize, evision_cv_mat_elemSize, 1
+// @evision nif: def mat_elemSize(_opts \\ []), do: :erlang.nif_error("Mat::elemSize not loaded")
+static ERL_NIF_TERM evision_cv_mat_elemSize(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
+    using namespace cv;
+    ERL_NIF_TERM error_term = 0;
+    std::map<std::string, ERL_NIF_TERM> erl_terms;
+    int nif_opts_index = 0;
+    evision::nif::parse_arg(env, nif_opts_index, argv, erl_terms);
+
+    {
+        Mat img;
+
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0))) {
+            return enif_make_int64(env, img.elemSize());
+        }
+    }
+
+    if (error_term != 0) return error_term;
+    else return enif_make_badarg(env);
+}
+
+// @evision c: mat_elemSize1, evision_cv_mat_elemSize1, 1
+// @evision nif: def mat_elemSize1(_opts \\ []), do: :erlang.nif_error("Mat::elemSize1 not loaded")
+static ERL_NIF_TERM evision_cv_mat_elemSize1(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
+    using namespace cv;
+    ERL_NIF_TERM error_term = 0;
+    std::map<std::string, ERL_NIF_TERM> erl_terms;
+    int nif_opts_index = 0;
+    evision::nif::parse_arg(env, nif_opts_index, argv, erl_terms);
+
+    {
+        Mat img;
+
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0))) {
+            return enif_make_int64(env, img.elemSize1());
+        }
+    }
+
+    if (error_term != 0) return error_term;
+    else return enif_make_badarg(env);
+}
+
+// @evision c: mat_raw_type, evision_cv_mat_raw_type, 1
+// @evision nif: def mat_raw_type(_opts \\ []), do: :erlang.nif_error("Mat::raw_type not loaded")
+static ERL_NIF_TERM evision_cv_mat_raw_type(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
+    using namespace cv;
+    ERL_NIF_TERM error_term = 0;
+    std::map<std::string, ERL_NIF_TERM> erl_terms;
+    int nif_opts_index = 0;
+    evision::nif::parse_arg(env, nif_opts_index, argv, erl_terms);
+
+    {
+        Mat img;
+
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0))) {
+            return enif_make_int64(env, img.type());
+        }
+    }
+
+    if (error_term != 0) return error_term;
+    else return enif_make_badarg(env);
+}
+
+// @evision c: mat_dims, evision_cv_mat_dims, 1
+// @evision nif: def mat_dims(_opts \\ []), do: :erlang.nif_error("Mat::dims not loaded")
+static ERL_NIF_TERM evision_cv_mat_dims(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
+    using namespace cv;
+    ERL_NIF_TERM error_term = 0;
+    std::map<std::string, ERL_NIF_TERM> erl_terms;
+    int nif_opts_index = 0;
+    evision::nif::parse_arg(env, nif_opts_index, argv, erl_terms);
+
+    {
+        Mat img;
+
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0))) {
+            return enif_make_int64(env, img.dims);
+        }
+    }
+
+    if (error_term != 0) return error_term;
+    else return enif_make_badarg(env);
+}
+
+// @evision c: mat_size, evision_cv_mat_size, 1
+// @evision nif: def mat_size(_opts \\ []), do: :erlang.nif_error("Mat::size not loaded")
+static ERL_NIF_TERM evision_cv_mat_size(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
+    using namespace cv;
+    ERL_NIF_TERM error_term = 0;
+    std::map<std::string, ERL_NIF_TERM> erl_terms;
+    int nif_opts_index = 0;
+    evision::nif::parse_arg(env, nif_opts_index, argv, erl_terms);
+
+    {
+        Mat img;
+
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0))) {
+            ERL_NIF_TERM p = 0;
+            evision::nif::make_i32_list_from_c_array(env, img.size.dims(), img.size.p, p);
+            ERL_NIF_TERM dims = enif_make_int64(env, img.size.dims());
+            return enif_make_tuple2(env, dims, p);
+        }
+    }
+
+    if (error_term != 0) return error_term;
+    else return enif_make_badarg(env);
+}
+
+// @evision c: mat_as_shape, evision_cv_mat_as_shape, 1
+// @evision nif: def mat_as_shape(_opts \\ []), do: :erlang.nif_error("Mat::as_shape not loaded")
+static ERL_NIF_TERM evision_cv_mat_as_shape(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
+    using namespace cv;
+    ERL_NIF_TERM error_term = 0;
+    std::map<std::string, ERL_NIF_TERM> erl_terms;
+    int nif_opts_index = 0;
+    evision::nif::parse_arg(env, nif_opts_index, argv, erl_terms);
+
+    {
+        Mat img;
+        std::vector<int> as_shape;
+
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0)) &&
+            evision_to_safe(env, evision_get_kw(env, erl_terms, "as_shape"), as_shape, ArgInfo("as_shape", 0))) {
+            Mat ret = Mat((int)as_shape.size(), as_shape.data(), img.depth(), img.data);
+            return evision_from(env, ret.clone());
+        }
+    }
+
+    if (error_term != 0) return error_term;
+    else return enif_make_badarg(env);
+}
+
+// @evision c: mat_last_dim_as_channel, evision_cv_mat_last_dim_as_channel, 1
+// @evision nif: def mat_last_dim_as_channel(_opts \\ []), do: :erlang.nif_error("Mat::last_dim_as_channel not loaded")
+static ERL_NIF_TERM evision_cv_mat_last_dim_as_channel(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
+    using namespace cv;
+    ERL_NIF_TERM error_term = 0;
+    std::map<std::string, ERL_NIF_TERM> erl_terms;
+    int nif_opts_index = 0;
+    evision::nif::parse_arg(env, nif_opts_index, argv, erl_terms);
+
+    {
+        Mat src;
+
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "src"), src, ArgInfo("src", 0))) {
+            if ((src.type() == CV_8S || src.type() == CV_8U || src.type() == CV_16F \
+                || src.type() == CV_16S || src.type() == CV_16U || src.type() == CV_32S \
+                || src.type() == CV_32F || src.type() == CV_64F)) {
+                int ndims = src.size.dims();
+                if (ndims <= 1) {
+                    return evision::nif::error(env, "image only has 1 dimension");
+                }
+
+                std::vector<int> new_shape(ndims - 1);
+                for (size_t i = 0; i < (size_t)(ndims - 1); i++) {
+                    new_shape[i] = src.size.p[i];
+                }
+                int type = CV_MAKETYPE(src.type(), src.size.p[ndims - 1]);
+                Mat ret = Mat(ndims - 1, new_shape.data(), type, src.data);
+                return evision_from(env, ret.clone());
+            } else {
+                return evision::nif::error(env, "image already has channel info");
+            }
+        }
+    }
+
+    if (error_term != 0) return error_term;
+    else return enif_make_badarg(env);
 }
 
 #endif // EVISION_OPENCV_MAT_H

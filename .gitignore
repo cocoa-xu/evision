@@ -20,6 +20,7 @@ erl_crash.dump
 /cmake_*/
 /priv/
 *.pyc
+/*.xcodeproj/
 /c_src/evision_custom_headers/*
 /lib/evision.ex
 /src/evision.erl
@@ -27,8 +28,16 @@ erl_crash.dump
 3rd_party/opencv
 /lib/generated
 /src/generated
-test/models/
-test/photo_hdr_test/
+
+# testdata
+/test/testdata/models/
+/test/testdata/photo_hdr_test/
+/test/testdata/yolov4.weights
+/test/testdata/efficientnet-b7.onnx
+/test/testdata/DB_IC15_resnet18.onnx
+/test/testdata/frozen_east_text_detection.pb
+/test/testdata/frozen_east_text_detection.pb.part1
+/test/testdata/frozen_east_text_detection.pb.part2
 
 # examples
 /examples/Lenna_test_image.png
@@ -38,3 +47,10 @@ test/photo_hdr_test/
 /examples/space_shuttle.jpg
 /examples/ssd_mobilenet_v2_coco_2018_03_29**
 /examples/test.png
+
+# we don't need to track checksum.exs in git
+# it should only be tracked by hex.pm (in `Evision.MixProject.package()[:files]`)
+checksum.exs
+
+# manually track this file in git
+checksum.erl

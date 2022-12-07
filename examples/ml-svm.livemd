@@ -2,150 +2,180 @@
 
 <!-- livebook:{"persist_outputs":true} -->
 
-# Evision ML - SVM
-
-## Setup
+# Evision.ML.SVM Example - Support Vector Machine
 
 ```elixir
-# # a quick fix for the free tier livebook session
-# ## allocate 2GB swap
-# System.cmd("fallocate", ["-l", "2G", "/swap"])
-# System.cmd("chmod", ["400", "/swap"])
-# System.cmd("mkswap", ["/swap"])
-# System.cmd("swapon", ["/swap"])
-# ## need unzip to unzip the source code
-# System.cmd("apt", ["update", "-q", "-y"])
-# System.cmd("apt", ["install", "-y", "unzip", "python3", "cmake"])
+# set `EVISION_PREFER_PRECOMPILED` to `false` 
+# if you prefer `:evision` to be compiled from source
+# note that to compile from source, you may need at least 1GB RAM
+# System.put_env("EVISION_PREFER_PRECOMPILED", "false")
 
-# If you are using the pre-built nerves firmware
-# you can comment out the following installation step
 Mix.install([
-  {:evision, "~> 0.1.2", github: "cocoa-xu/evision", tag: "v0.1.2"}
-  {:kino, "~> 0.6"}
+  {:evision, "~> 0.1.21"},
+  {:kino, "~> 0.7"},
+  {:req, "~> 0.3"}
 ])
 ```
 
-```output
-# unnecessary output removed
-Generated evision app
-```
+<!-- livebook:{"output":true} -->
 
-```output
+```
 :ok
 ```
 
-```elixir
-# change to the file's directory
-# or somewhere you have write permission
-File.cd!(__DIR__)
-```
+## Set Up Training Data
 
-```output
-:ok
-```
+This example is based on the [Introduction to Support Vector Machines](https://docs.Cv.org/4.x/d1/d73/tutorial_introduction_to_svm.html) from Cv.
 
-## alias
-```elixir
-# alias Evision as OpenCV
-# please see the Namespace section in the README.md for reasons/motivations
-# (in the root directory of the source code)
-alias Evision, as: OpenCV
-```
-
-### Set up training data
-
-This example is based on the [Introduction to Support Vector Machines](https://docs.opencv.org/4.x/d1/d73/tutorial_introduction_to_svm.html) from OpenCV.
+<!-- livebook:{"break_markdown":true} -->
 
 ```elixir
+alias Evision, as: Cv
+
 labels = [1, -1, -1, -1]
 training_data = [[501, 10], [255, 10], [501, 255], [10, 501]]
 
-{:ok, labels_mat} =
-  OpenCV.Mat.from_binary(Enum.into(labels, <<>>, fn d -> << d::integer()-size(32)-little >> end), {:s, 32}, 4, 1, 1)
-
-{:ok, training_data_mat} =
-  OpenCV.Mat.from_binary(
-    Enum.into(List.flatten(training_data), <<>>, fn d -> << d::float()-size(32)-little >> end),
-    {:f, 32},
-    4,
-    2,
-    1
-  )
+labels_mat = Cv.Mat.literal(labels, :s32)
+training_data_mat = Cv.Mat.literal(training_data, :f32)
 ```
 
-## Train the SVM
+<!-- livebook:{"output":true} -->
 
-```elixir
-{:ok, svm} = OpenCV.ML.SVM.create()
-{:ok, _svm} = OpenCV.ML.SVM.setType(svm, OpenCV.cv_C_SVC())
-{:ok, _svm} = OpenCV.ML.SVM.setKernel(svm, OpenCV.cv_LINEAR())
-{:ok, _svm} = OpenCV.ML.SVM.setTermCriteria(svm, {OpenCV.cv_MAX_ITER(), 100, 0.000001})
-assert :ok = OpenCV.ML.SVM.train(svm, training_data_mat, OpenCV.cv_ROW_SAMPLE(), labels_mat)
-assert :ok = OpenCV.ML.SVM.isTrained(svm)
+```
+%Evision.Mat{
+  channels: 1,
+  dims: 2,
+  type: {:f, 32},
+  raw_type: 5,
+  shape: {4, 2},
+  ref: #Reference<0.1481828880.2785148948.120970>
+}
 ```
 
-## Show support vectors
+## Create an SVM and Train It With the Data
 
 ```elixir
-{:ok, sv} = OpenCV.ML.SVM.getUncompressedSupportVectors(svm)
-{:ok, {rows, cols}} = OpenCV.Mat.shape(sv)
-{:ok, sv_binary} = OpenCV.Mat.to_binary(sv)
+svm = Cv.ML.SVM.create()
+svm = Cv.ML.SVM.setType(svm, Cv.cv_C_SVC())
+svm = Cv.ML.SVM.setKernel(svm, Cv.cv_LINEAR())
+svm = Cv.ML.SVM.setTermCriteria(svm, {Cv.cv_MAX_ITER(), 100, 0.000001})
+true = Cv.ML.SVM.train(svm, training_data_mat, Cv.cv_ROW_SAMPLE(), labels_mat)
+true = Cv.ML.SVM.isTrained(svm)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+true
+```
+
+## Get Support Vectors
+
+```elixir
+%Evision.Mat{shape: {rows, cols}} = sv = Cv.ML.SVM.getUncompressedSupportVectors(svm)
+sv_binary = Cv.Mat.to_binary(sv)
 float_bytes = 4
+
 support_vector =
-  for i <- (rows-1)..0, reduce: [] do
+  for i <- (rows - 1)..0, reduce: [] do
     support_vector ->
-      current_vector = for j <- (cols-1)..0, reduce: [] do
-        vec ->
-          << float_data::float()-size(32)-little >> = :binary.part(sv_binary, (i*cols + j) * float_bytes, 4)
-          [trunc(float_data) | vec]
-      end
+      current_vector =
+        for j <- (cols - 1)..0, reduce: [] do
+          vec ->
+            <<float_data::float-size(32)-little>> =
+              :binary.part(sv_binary, (i * cols + j) * float_bytes, 4)
+
+            [trunc(float_data) | vec]
+        end
+
       [current_vector | support_vector]
   end
-assert [[501, 10], [255, 10], [501, 255]] == support_vector
+
+[[501, 10], [255, 10], [501, 255]] = support_vector
 support_vector
 ```
 
-## Data for visual representation
+<!-- livebook:{"output":true} -->
+
+```
+[[501, 10], [255, 10], [501, 255]]
+```
+
+## Visualise the Training Result in A Response Map
 
 ```elixir
 green = [0, 255, 0]
 blue = [255, 0, 0]
 width = 512
 height = 512
+
 response_data =
-  for x <- (width-1)..0, y <- (height-1)..0, reduce: [] do
+  for x <- (width - 1)..0, y <- (height - 1)..0, reduce: [] do
     acc ->
-      {:ok, sample} = OpenCV.Mat.from_binary(<< y::float()-size(32)-little, x::float()-size(32)-little >>, {:f, 32}, 1, 2, 1)
-      {:ok, {_, response_mat}} = OpenCV.ML.SVM.predict(svm, sample)
-      assert {:ok, {1, 1}} = OpenCV.Mat.shape(response_mat)
-      {:ok, << response::float()-size(32)-little >>} = OpenCV.Mat.to_binary(response_mat)
+      sample =
+        Cv.Mat.from_binary(
+          <<y::float-size(32)-little, x::float-size(32)-little>>,
+          {:f, 32},
+          1,
+          2,
+          1
+        )
+
+      {_, %Cv.Mat{shape: {1, 1}} = response_mat} = Cv.ML.SVM.predict(svm, sample)
+      <<response::float-size(32)-little>> = Cv.Mat.to_binary(response_mat)
       response = trunc(response)
-      assert response == 1 or response == -1
+
       case response do
         1 ->
           [green | acc]
+
         -1 ->
           [blue | acc]
       end
   end
 
-response_data = response_data |> List.flatten |> IO.iodata_to_binary
-{:ok, response_map} = OpenCV.Mat.from_binary(response_data, {:u, 8}, height, width, 3)
+response_data = response_data |> List.flatten() |> IO.iodata_to_binary()
+response_map = Cv.Mat.from_binary(response_data, {:u, 8}, height, width, 3)
 
 # show the training data
 thickness = 1
-{:ok, response_map} = OpenCV.circle(response_map, Enum.at(training_data, 0), 5, [0,   0,   0], thickness: thickness)
-{:ok, response_map} = OpenCV.circle(response_map, Enum.at(training_data, 1), 5, [255, 255, 255], thickness: thickness)
-{:ok, response_map} = OpenCV.circle(response_map, Enum.at(training_data, 2), 5, [255, 255, 255], thickness: thickness)
-{:ok, response_map} = OpenCV.circle(response_map, Enum.at(training_data, 3), 5, [255, 255, 255], thickness: thickness)
+
+response_map =
+  Cv.circle(response_map, List.to_tuple(Enum.at(training_data, 0)), 5, {0, 0, 0},
+    thickness: thickness
+  )
+
+response_map =
+  Cv.circle(response_map, List.to_tuple(Enum.at(training_data, 1)), 5, {255, 255, 255},
+    thickness: thickness
+  )
+
+response_map =
+  Cv.circle(response_map, List.to_tuple(Enum.at(training_data, 2)), 5, {255, 255, 255},
+    thickness: thickness
+  )
+
+response_map =
+  Cv.circle(response_map, List.to_tuple(Enum.at(training_data, 3)), 5, {255, 255, 255},
+    thickness: thickness
+  )
 
 # show support vectors
-{:ok, response_map} = OpenCV.circle(response_map, Enum.at(support_vector, 0), 6, [128, 128, 128], thickness: thickness)
-{:ok, response_map} = OpenCV.circle(response_map, Enum.at(support_vector, 1), 6, [128, 128, 128], thickness: thickness)
-{:ok, response_map} = OpenCV.circle(response_map, Enum.at(support_vector, 2), 6, [128, 128, 128], thickness: thickness)
+response_map =
+  Cv.circle(response_map, List.to_tuple(Enum.at(support_vector, 0)), 6, {128, 128, 128},
+    thickness: thickness
+  )
 
-OpenCV.imencode(".png", response_map)
-|> then(fn {:ok, val} -> val end)
-|> IO.iodata_to_binary()
+response_map =
+  Cv.circle(response_map, List.to_tuple(Enum.at(support_vector, 1)), 6, {128, 128, 128},
+    thickness: thickness
+  )
+
+response_map =
+  Cv.circle(response_map, List.to_tuple(Enum.at(support_vector, 2)), 6, {128, 128, 128},
+    thickness: thickness
+  )
+
+Cv.imencode(".png", response_map)
 |> Kino.Image.new(:png)
 ```

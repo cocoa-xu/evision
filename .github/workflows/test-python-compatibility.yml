@@ -26,6 +26,7 @@ jobs:
     env:
       MIX_ENV: test
       OPENCV_VER: "4.6.0"
+      EVISION_PREFER_PRECOMPILED: "false"
 
     strategy:
       fail-fast: false
@@ -38,8 +39,8 @@ jobs:
       - name: Set up beam
         uses: erlef/setup-beam@v1
         with:
-          otp-version: "24.1.5"
-          elixir-version: "1.13"
+          otp-version: "25.1.1"
+          elixir-version: "1.14"
 
       - name: Set up Python
         uses: actions/setup-python@v2
@@ -49,7 +50,7 @@ jobs:
       - name: Display Python version
         run: python --version
 
-      - name: Install system dependecies
+      - name: Install system dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential automake autoconf pkg-config bc m4 unzip zip curl git libssl-dev libncurses5-dev erlang-inets erlang-os-mon erlang-runtime-tools erlang-ssl erlang-dev ca-certificates

@@ -1,3 +1,5 @@
+#ifdef HAVE_OPENCV_ML
+
 template<>
 bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, CvTermCriteria& dst, const ArgInfo& info)
 {
@@ -61,7 +63,7 @@ bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, CvSlice& r, const ArgInfo& inf
     const ERL_NIF_TERM *terms;
     int length;
     if (!enif_get_tuple(env, obj, &length, &terms)) {
-        failmsg(env, "Can't parse '%s' as TermCriteria."
+        failmsg(env, "Can't parse '%s' as CvSlice."
                 "Input argument is not a tuple",
                 info.name);
         return false;
@@ -97,3 +99,5 @@ bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, CvSlice& r, const ArgInfo& inf
     }
     return true;
 }
+
+#endif  // HAVE_OPENCV_ML

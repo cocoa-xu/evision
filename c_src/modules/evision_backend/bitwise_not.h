@@ -17,13 +17,18 @@ static ERL_NIF_TERM evision_cv_mat_bitwise_not(ErlNifEnv *env, int argc, const E
         Mat img;
 
         if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0))) {
-            Mat out = Mat(~img);
-            return evision::nif::ok(env, evision_from(env, out));
+            Mat ret;
+
+            int error_flag = false;
+            ERRWRAP2(ret = Mat(~img), env, error_flag, error_term);
+            if (!error_flag) {
+                return evision_from(env, ret);
+            }
         }
     }
 
     if (error_term != 0) return error_term;
-    else return evision::nif::error(env, "overload resolution failed");
+    else return enif_make_badarg(env);
 }
 
 #endif // EVISION_BACKEND_BITWISE_NOT_H

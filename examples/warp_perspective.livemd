@@ -1,0 +1,227 @@
+<!-- vim: syntax=markdown -->
+
+<!-- livebook:{"persist_outputs":true} -->
+
+# Evision Example - Warp Perspective
+
+```elixir
+# set `EVISION_PREFER_PRECOMPILED` to `false` 
+# if you prefer `:evision` to be compiled from source
+# note that to compile from source, you may need at least 1GB RAM
+# System.put_env("EVISION_PREFER_PRECOMPILED", "false")
+
+Mix.install([
+  {:evision, "~> 0.1.21"},
+  {:kino, "~> 0.7"},
+  {:req, "~> 0.3"}
+])
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+:ok
+```
+
+## Define Some Helper Functions
+
+```elixir
+defmodule Helper do
+  def download!(url, save_as, overwrite? \\ false) do
+    unless File.exists?(save_as) do
+      Req.get!(url, http_errors: :raise, output: save_as, cache: not overwrite?)
+    end
+
+    :ok
+  end
+end
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+{:module, Helper, <<70, 79, 82, 49, 0, 0, 10, ...>>, {:download!, 3}}
+```
+
+## Read the Test Image From File
+
+```elixir
+# Download the test image
+test_image_path = Path.join(__DIR__, "warp_perspective.png")
+
+Helper.download!(
+  "https://raw.githubusercontent.com/cocoa-xu/evision/main/test/testdata/warp_perspective.png",
+  test_image_path
+)
+
+# Read the test image
+%Evision.Mat{shape: {h, w, _}} = img = Evision.imread(test_image_path)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+%Evision.Mat{
+  channels: 3,
+  dims: 2,
+  type: {:u, 8},
+  raw_type: 16,
+  shape: {288, 277, 3},
+  ref: #Reference<0.391993608.626655254.103441>
+}
+```
+
+## Function hypot: returns the Euclidean norm
+
+```elixir
+# hypot.(list(number())) function returns the Euclidean norm
+hypot = fn l -> :math.sqrt(Enum.sum(Enum.map(l, fn i -> i * i end))) end
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+#Function<42.3316493/1 in :erl_eval.expr/6>
+```
+
+## Calculate the Output Coordinates for Corners
+
+```elixir
+# specify input coordinates for corners of red quadrilateral in order TL, TR, BR, BL as x,
+input =
+  Nx.tensor(
+    [
+      [136, 113],
+      [206, 130],
+      [173, 207],
+      [132, 196]
+    ],
+    type: :f32
+  )
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+#Nx.Tensor<
+  f32[4][2]
+  [
+    [136.0, 113.0],
+    [206.0, 130.0],
+    [173.0, 207.0],
+    [132.0, 196.0]
+  ]
+>
+```
+
+```elixir
+# get top and left dimensions and set to output dimensions of red rectangle
+output_width = [
+  Nx.to_number(Nx.subtract(input[[0, 0]], input[[1, 0]])),
+  Nx.to_number(Nx.subtract(input[[0, 1]], input[[1, 1]]))
+]
+
+output_width = round(hypot.(output_width))
+
+output_height = [
+  Nx.to_number(Nx.subtract(input[[0, 0]], input[[3, 0]])),
+  Nx.to_number(Nx.subtract(input[[0, 1]], input[[3, 1]]))
+]
+
+output_height = round(hypot.(output_height))
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+83
+```
+
+```elixir
+# set upper left coordinates for output rectangle
+x = Nx.to_number(input[[0, 0]])
+y = Nx.to_number(input[[0, 1]])
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+113.0
+```
+
+```elixir
+# specify output coordinates for corners of red quadrilateral in order TL, TR, BR, BL as x,
+output =
+  Nx.tensor(
+    [
+      [x, y],
+      [x + output_width - 1, y],
+      [x + output_width - 1, y + output_height - 1],
+      [x, y + output_height - 1]
+    ],
+    type: :f32
+  )
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+#Nx.Tensor<
+  f32[4][2]
+  [
+    [136.0, 113.0],
+    [207.0, 113.0],
+    [207.0, 195.0],
+    [136.0, 195.0]
+  ]
+>
+```
+
+## Compute Perspective Matrix
+
+```elixir
+# compute perspective matrix
+matrix = Evision.getPerspectiveTransform(input, output)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+%Evision.Mat{
+  channels: 1,
+  dims: 2,
+  type: {:f, 64},
+  raw_type: 6,
+  shape: {3, 3},
+  ref: #Reference<0.391993608.626655249.103165>
+}
+```
+
+## Perspective Transformation
+
+```elixir
+# do perspective transformation setting area outside input to black
+# Note that output size is the same as the input image size
+img_output =
+  Evision.warpPerspective(
+    img,
+    matrix,
+    {w, h},
+    flags: Evision.cv_INTER_LINEAR(),
+    borderMode: Evision.cv_BORDER_CONSTANT(),
+    borderValue: {0, 0, 0}
+  )
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+%Evision.Mat{
+  channels: 3,
+  dims: 2,
+  type: {:u, 8},
+  raw_type: 16,
+  shape: {288, 277, 3},
+  ref: #Reference<0.391993608.626655249.103168>
+}
+```

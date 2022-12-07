@@ -25,22 +25,22 @@ static ERL_NIF_TERM evision_cv_mat_ceil(ErlNifEnv *env, int argc, const ERL_NIF_
                 for (size_t i = 0; i < count; ++i) {
                     ptr[i] = ceilf(ptr[i]);
                 }
-                return evision::nif::ok(env, evision_from(env, img));
+                return evision_from(env, img);
             } else if (depth == CV_64F) {
                 auto ptr = img.ptr<double>();
                 size_t count = img.total();
                 for (size_t i = 0; i < count; ++i) {
                     ptr[i] = ceil(ptr[i]);
                 }
-                return evision::nif::ok(env, evision_from(env, img));
+                return evision_from(env, img);
             } else {
-                return evision::nif::ok(env, evision_from(env, img));
+                return evision_from(env, img);
             }
         }
     }
 
     if (error_term != 0) return error_term;
-    else return evision::nif::error(env, "overload resolution failed");
+    else return enif_make_badarg(env);
 }
 
 #endif // EVISION_BACKEND_CEIL_H

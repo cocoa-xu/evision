@@ -1,106 +1,88 @@
 <!-- vim: syntax=markdown -->
 
-# core - PCA
+<!-- livebook:{"persist_outputs":true} -->
 
-## Setup
+# Evision Example - Principal Components Analysis
 
 ```elixir
-# # a quick fix for the free tier livebook session
-# ## allocate 2GB swap
-# System.cmd("fallocate", ["-l", "2G", "/swap"])
-# System.cmd("chmod", ["400", "/swap"])
-# System.cmd("mkswap", ["/swap"])
-# System.cmd("swapon", ["/swap"])
-# ## need unzip to unzip the source code
-# System.cmd("apt", ["update", "-q", "-y"])
-# System.cmd("apt", ["install", "-y", "unzip", "python3", "cmake"])
+# set `EVISION_PREFER_PRECOMPILED` to `false` 
+# if you prefer `:evision` to be compiled from source
+# note that to compile from source, you may need at least 1GB RAM
+# System.put_env("EVISION_PREFER_PRECOMPILED", "false")
 
-# If you are using the pre-built nerves firmware
-# you can comment out the following installation step
 Mix.install([
-  {:evision, "~> 0.1.2", github: "cocoa-xu/evision", tag: "v0.1.2"}
-  {:kino, "~> 0.6"}
+  {:evision, "~> 0.1.21"},
+  {:kino, "~> 0.7"},
+  {:req, "~> 0.3"}
 ])
+```
 
-# this example is based on https://docs.opencv.org/4.x/d1/dee/tutorial_introduction_to_pca.html
+<!-- livebook:{"output":true} -->
+
+```
+:ok
 ```
 
 ## Helper Function
 
 ```elixir
 defmodule Helper do
-  def download!(url, save_as, overwrite \\ false)
-
-  def download!(url, save_as, false) do
+  def download!(url, save_as, overwrite? \\ false) do
     unless File.exists?(save_as) do
-      download!(url, save_as, true)
+      Req.get!(url, http_errors: :raise, output: save_as, cache: not overwrite?)
     end
 
     :ok
   end
-
-  def download!(url, save_as, true) do
-    http_opts = []
-    opts = [body_format: :binary]
-    arg = {url, []}
-
-    body =
-      case :httpc.request(:get, arg, http_opts, opts) do
-        {:ok, {{_, 200, _}, _, body}} ->
-          body
-
-        {:error, reason} ->
-          raise inspect(reason)
-      end
-
-    File.write!(save_as, body)
-  end
 end
 ```
 
+<!-- livebook:{"output":true} -->
+
+```
+{:module, Helper, <<70, 79, 82, 49, 0, 0, 10, ...>>, {:download!, 3}}
+```
+
 ## alias
-```elixir
-# alias Evision as OpenCV
-# please see the Namespace section in the README.md for reasons/motivations
-# (in the root directory of the source code)
-alias Evision, as: OpenCV
-```
-
-## OpenCV.PCA
 
 ```elixir
-# change to the file's directory
-# or somewhere you have write permission
-File.cd!(__DIR__)
+alias Evision, as: Cv
 ```
 
-```output
+<!-- livebook:{"output":true} -->
+
+```
+Evision
+```
+
+### Download the test image
+
+```elixir
+Helper.download!("https://docs.opencv.org/4.x/pca_test1.jpg", "pca_test.jpg")
+```
+
+<!-- livebook:{"output":true} -->
+
+```
 :ok
 ```
 
-Download the test image
 ```elixir
-Helper.download!("https://docs.opencv.org/4.x/pca_test1.jpg", "opencv_pca_test.jpg")
-```
+import Bitwise
 
-```elixir
 # Load image in grayscale
-{:ok, gray} =
-  Path.join(__DIR__, "opencv_pca_test.jpg")
-  |> OpenCV.imread(flags: OpenCV.cv_IMREAD_GRAYSCALE())
+gray = Cv.imread("pca_test.jpg", flags: Cv.cv_IMREAD_GRAYSCALE())
 
 # Convert image to binary
-{:ok, {_, bw}} =
-  OpenCV.threshold(gray, 50, 255, OpenCV.cv_THRESH_BINARY() ||| OpenCV.cv_THRESH_OTSU())
+{_, bw} = Cv.threshold(gray, 50, 255, Cv.cv_THRESH_BINARY() ||| Cv.cv_THRESH_OTSU())
 
 # Find all the contours in the thresholded image
-{:ok, {contours, _}} =
-  OpenCV.findContours(bw, OpenCV.cv_RETR_LIST(), OpenCV.cv_CHAIN_APPROX_NONE())
+{contours, _} = Cv.findContours(bw, Cv.cv_RETR_LIST(), Cv.cv_CHAIN_APPROX_NONE())
 
 contours =
   contours
   # Calculate the area of each contour
-  |> Enum.map(&{elem(OpenCV.contourArea(&1), 1), &1})
+  |> Enum.map(&{Cv.contourArea(&1), &1})
   # Ignore contours that are too small or too large
   |> Enum.reject(fn {area, _c} -> area < 100 or area > 100_000 end)
 
@@ -108,30 +90,35 @@ contours =
 Enum.map(contours, &elem(&1, 0))
 ```
 
+<!-- livebook:{"output":true} -->
+
+```
+[17192.0, 16830.0, 16150.5, 15367.5, 15571.0, 14842.0]
+```
+
 PCA analysis
 
 ```elixir
 contours = Enum.map(contours, &elem(&1, 1))
+
 pca_analysis =
   for c <- contours, reduce: [] do
     acc ->
       # Construct a buffer used by the pca analysis
-      {:ok, shape} = OpenCV.Mat.shape(c)
+      %Evision.Mat{shape: shape, type: type} = c
       sz = elem(shape, 0)
-      {:ok, pts_binary} = OpenCV.Mat.to_binary(c)
-      {:ok, type} = OpenCV.Mat.type(c)
-      {:ok, data_pts} = OpenCV.Mat.from_binary(pts_binary, type, sz, 2, 1)
-      {:ok, data_pts} = OpenCV.Mat.as_type(data_pts, {:f, 64})
+      pts_binary = Cv.Mat.to_binary(c)
+      data_pts = Cv.Mat.from_binary(pts_binary, type, sz, 2, 1)
+      data_pts = Cv.Mat.as_type(data_pts, {:f, 64})
 
       # Perform PCA analysis
-      {:ok, {mean, eigenvectors, eigenvalues}} = OpenCV.pcaCompute2(data_pts, OpenCV.Mat.empty!())
-      eigenvectors = OpenCV.Nx.to_nx(eigenvectors)
-      eigenvalues = OpenCV.Nx.to_nx(eigenvalues)
+      {mean, eigenvectors, eigenvalues} = Cv.pcaCompute2(data_pts, Cv.Mat.empty())
+      eigenvectors = Cv.Mat.to_nx(eigenvectors, Nx.BinaryBackend)
+      eigenvalues = Cv.Mat.to_nx(eigenvalues, Nx.BinaryBackend)
 
       # Store the center of the object
-      {:ok,
-       <<centre_x::float()-size(64)-little, centre_y::float()-size(64)-little, _::binary>>} =
-        OpenCV.Mat.to_binary(mean)
+      <<centre_x::float-size(64)-little, centre_y::float-size(64)-little, _::binary>> =
+        Cv.Mat.to_binary(mean)
 
       centre_x = trunc(centre_x)
       centre_y = trunc(centre_y)
@@ -147,66 +134,99 @@ pca_analysis =
 
       # Calculate the principal components
       p1 =
-         {trunc(Float.round(centre_x + 0.02 * evec00 * eval00)), trunc(Float.round(centre_y + 0.02 * evec01 * eval00))}
+        {trunc(Float.round(centre_x + 0.02 * evec00 * eval00)),
+         trunc(Float.round(centre_y + 0.02 * evec01 * eval00))}
 
       p2 =
-         {trunc(Float.round(centre_x - 0.02 * evec10 * eval10)), trunc(Float.round(centre_y - 0.02 * evec11 * eval10))}
+        {trunc(Float.round(centre_x - 0.02 * evec10 * eval10)),
+         trunc(Float.round(centre_y - 0.02 * evec11 * eval10))}
 
-      cntr = [centre_x, centre_y]
+      cntr = {centre_x, centre_y}
       [{cntr, p1, p2} | acc]
   end
+
 pca_analysis = Enum.reverse(pca_analysis)
 ```
 
-## visualisation
+<!-- livebook:{"output":true} -->
+
+```
+[
+  {{430, 407}, {691, 338}, {427, 397}},
+  {{439, 326}, {697, 264}, {437, 317}},
+  {{433, 239}, {683, 182}, {431, 230}},
+  {{420, 169}, {666, 127}, {419, 161}},
+  {{191, 291}, {176, 52}, {200, 290}},
+  {{407, 90}, {645, 49}, {406, 82}}
+]
+```
+
+### visualisation
+
 ```elixir
-{:ok, src} =
-  Path.join(__DIR__, "opencv_pca_test.jpg")
-  |> OpenCV.imread()
+src = Cv.imread("pca_test.jpg")
 
 # Draw each contour
-src = for index <- 0..(Enum.count(contours) - 1), reduce: src do
-  src ->
-    {:ok, src} = OpenCV.drawContours(src, contours, index, [0, 0, 255], thickness: 2)
-    src
-end
+src =
+  for index <- 0..(Enum.count(contours) - 1), reduce: src do
+    src ->
+      Cv.drawContours(src, contours, index, {0, 0, 255}, thickness: 2)
+  end
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+%Evision.Mat{
+  channels: 3,
+  dims: 2,
+  type: {:u, 8},
+  raw_type: 16,
+  shape: {600, 800, 3},
+  ref: #Reference<0.1624340523.638451732.91783>
+}
 ```
 
 A helper function
 
 ```elixir
 defmodule PACHelper do
-    def drawAxis(src, {px, py}, {qx, qy}, colour, scale) do
-        angle = :math.atan2(py - qy, px - qx)
-        hypotenuse = :math.sqrt((py - qy) * (py - qy) + (px - qx) * (px - qx))
-        qx = trunc(px - scale * hypotenuse * :math.cos(angle))
-        qy = trunc(py - scale * hypotenuse * :math.sin(angle))
-        {:ok, src} = OpenCV.line(src, [px, py], [qx, qy], colour, thickness: 1, style: OpenCV.cv_LINE_AA)
+  def drawAxis(src, {px, py}, {qx, qy}, colour, scale) do
+    angle = :math.atan2(py - qy, px - qx)
+    hypotenuse = :math.sqrt((py - qy) * (py - qy) + (px - qx) * (px - qx))
+    qx = trunc(px - scale * hypotenuse * :math.cos(angle))
+    qy = trunc(py - scale * hypotenuse * :math.sin(angle))
+    src = Cv.line(src, {px, py}, {qx, qy}, colour, thickness: 1, style: Cv.cv_LINE_AA())
 
-        px = trunc(qx + 9 * :math.cos(angle + :math.pi / 4))
-        py = trunc(qy + 9 * :math.sin(angle + :math.pi / 4))
-        {:ok, src} = OpenCV.line(src, [px, py], [qx, qy], colour, thickness: 1, style: OpenCV.cv_LINE_AA)
+    px = trunc(qx + 9 * :math.cos(angle + :math.pi() / 4))
+    py = trunc(qy + 9 * :math.sin(angle + :math.pi() / 4))
+    src = Cv.line(src, {px, py}, {qx, qy}, colour, thickness: 1, style: Cv.cv_LINE_AA())
 
-        px = trunc(qx + 9 * :math.cos(angle - :math.pi / 4))
-        py = trunc(qy + 9 * :math.sin(angle - :math.pi / 4))
-        OpenCV.line(src, [px, py], [qx, qy], colour, thickness: 1, style: OpenCV.cv_LINE_AA)
-    end
+    px = trunc(qx + 9 * :math.cos(angle - :math.pi() / 4))
+    py = trunc(qy + 9 * :math.sin(angle - :math.pi() / 4))
+    Cv.line(src, {px, py}, {qx, qy}, colour, thickness: 1, style: Cv.cv_LINE_AA())
+  end
 end
 ```
 
-## Draw the principal components
+<!-- livebook:{"output":true} -->
+
+```
+{:module, PACHelper, <<70, 79, 82, 49, 0, 0, 13, ...>>, {:drawAxis, 5}}
+```
+
+### Draw the principal components
+
 ```elixir
-src = for {cntr, p1, p2} <- pca_analysis, reduce: src do
-  src ->
-    {:ok, src} = OpenCV.circle(src, cntr, 3, [255, 0, 255], thickness: 2)
-    {:ok, src} = PACHelper.drawAxis(src, List.to_tuple(cntr), p1, [0, 255, 0], 1)
-    {:ok, src} = PACHelper.drawAxis(src, List.to_tuple(cntr), p2, [255, 255, 0], 5)
-    src
-end
+src =
+  for {cntr, p1, p2} <- pca_analysis, reduce: src do
+    src ->
+      src = Cv.circle(src, cntr, 3, {255, 0, 255}, thickness: 2)
+      src = PACHelper.drawAxis(src, cntr, p1, {0, 255, 0}, 1)
+      PACHelper.drawAxis(src, cntr, p2, {255, 255, 0}, 5)
+  end
 
-{:ok, result} = OpenCV.imencode(".png", src)
+result = Cv.imencode(".png", src)
 
-result
-|> IO.iodata_to_binary()
-|> Kino.Image.new(:png)
+Kino.Image.new(result, :png)
 ```

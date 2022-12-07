@@ -9,18 +9,6 @@ import evision_templates as ET
 from helper import *
 
 
-simple_argtype_mapping = {
-    "bool": ArgTypeInfo("bool", FormatStrings.unsigned_char, "0", True, False),
-    "size_t": ArgTypeInfo("size_t", FormatStrings.unsigned_long_long, "0", True, False),
-    "int": ArgTypeInfo("int", FormatStrings.int, "0", True, False),
-    "float": ArgTypeInfo("float", FormatStrings.float, "0.f", True, False),
-    "double": ArgTypeInfo("double", FormatStrings.double, "0", True, False),
-    "c_string": ArgTypeInfo("char*", FormatStrings.string, '(char*)""', False, False),
-    "string": ArgTypeInfo("std::string", FormatStrings.object, None, True, False),
-    "Stream": ArgTypeInfo("Stream", FormatStrings.object, 'Stream::Null()', True, False),
-}
-
-
 class FuncInfo(object):
     def __init__(self, classname, name, cname, isconstructor, namespace, is_static):
         self.classname = classname
@@ -44,7 +32,7 @@ class FuncInfo(object):
         return copy_info
 
     def add_variant(self, decl, isphantom=False):
-        self.variants.append(FuncVariant(self.classname, self.name, decl, self.isconstructor, isphantom))
+        self.variants.append(FuncVariant(self.classname, self.name, decl, self.isconstructor, isphantom=isphantom))
 
     def get_wrapper_name(self, add_cv):
         name = self.name
@@ -137,6 +125,12 @@ class FuncInfo(object):
     def map_erlang_argname(self, argname):
         name = self.argname_prefix_re.sub('', argname)
         return f"{name[0:1].upper()}{name[1:]}"
+    
+    def should_return_self(self):
+        if self.classname.startswith("dnn_"):
+            if self.name.startswith('set'):
+                return True
+        return False
 
     def gen_code(self, codegen):
         all_classes = codegen.classes
@@ -154,8 +148,6 @@ class FuncInfo(object):
 
         selfinfo = None
         ismethod = self.classname != "" and not self.isconstructor
-        # full name is needed for error diagnostic in PyArg_ParseTupleAndKeywords
-        fullname = self.name
 
         if self.classname:
             selfinfo = all_classes[self.classname]
@@ -170,7 +162,6 @@ class FuncInfo(object):
                         pname=(selfinfo.cname + '*') if selfinfo.issimple else "Ptr<{}>".format(selfinfo.cname),
                         cvt='' if selfinfo.issimple else '*'
                     )
-            fullname = selfinfo.wname + "." + fullname
 
         all_code_variants = []
 
@@ -186,7 +177,7 @@ class FuncInfo(object):
                 code_args += "_self_"
 
             # declare all the C function arguments,
-            # add necessary conversions from Python objects to code_cvt_list,
+            # add necessary conversions from Erlang objects to code_cvt_list,
             # form the function/method call,
             # for the list of type mappings
             for a_index, a in enumerate(v.args):
@@ -200,15 +191,14 @@ class FuncInfo(object):
                     code_args += defval
                     all_cargs.append([[None, ""], ""])
                     continue
-                tp1 = tp = a.tp
+                tp = a.tp
                 amp = ""
                 defval0 = ""
                 if tp in pass_by_val_types():
-                    tp = tp1 = tp[:-1]
+                    tp = tp[:-1]
                     amp = "&"
                     if tp.endswith("*"):
                         defval0 = "0"
-                        tp1 = tp.replace("*", "_ptr")
                 tp_candidates = [a.tp, normalize_class_name(self.namespace + "." + a.tp), normalize_class_name(self.classname + "." + a.tp)]
                 if any(tp in codegen.enums.keys() for tp in tp_candidates):
                     defval0 = "static_cast<%s>(%d)" % (a.tp, 0)
@@ -222,25 +212,7 @@ class FuncInfo(object):
                         defval = f"static_cast<std::underlying_type_t<{arg_type_info.atype}>>({a.defval})"
                     arg_type_info = ArgTypeInfo(f"std::underlying_type_t<{arg_type_info.atype}>", arg_type_info.format_str, defval, True, True)
                     a.defval = defval
-
-                parse_name = a.name
-                if a.py_inputarg:
-                    parse_name = "erl_term_" + a.name
-                    erl_term = "evision_get_kw(env, erl_terms, \"%s\")" % (self.map_elixir_argname(a.name),)
-                    self_offset = 0
-                    if self.classname and not self.is_static and not self.isconstructor:
-                        self_offset = 1
-                    if a_index + self_offset < opt_arg_index:
-                        erl_term = "argv[%d]" % (a_index + opt_arg_index,)
-                    if a.tp == 'char':
-                        code_cvt_list.append("convert_to_char(env, %s, &%s, %s)" % (erl_term, a.name, a.crepr()))
-                    elif a.tp == 'c_string':
-                        code_cvt_list.append("convert_to_char(env, %s, &%s, %s)" % (erl_term, a.name, a.crepr()))
-                    else:
-                        code_cvt_list.append("evision_to_safe(env, %s, %s, %s)" % (erl_term, a.name, a.crepr()))
-
-                all_cargs.append([arg_type_info, parse_name])
-
+            
                 defval = a.defval
                 if not defval:
                     defval = arg_type_info.default_value
@@ -256,14 +228,37 @@ class FuncInfo(object):
                     defval = ""
                 if a.outputarg and not a.inputarg:
                     defval = ""
+                if defval is None:
+                    defval = ""
+
+                parse_name = a.name
+                if a.py_inputarg:
+                    parse_name = "erl_term_" + a.name
+                    erl_term = "evision_get_kw(env, erl_terms, \"%s\")" % (self.map_elixir_argname(a.name),)
+                    self_offset = 0
+                    if self.classname and not self.is_static and not self.isconstructor:
+                        self_offset = 1
+                    if a_index + self_offset < opt_arg_index:
+                        erl_term = "argv[%d]" % (a_index + opt_arg_index,)
+                    if a.tp == 'char':
+                        code_cvt_list.append("convert_to_char(env, %s, &%s, %s)" % (erl_term, a.name, a.crepr(defval)))
+                    elif a.tp == 'c_string':
+                        code_cvt_list.append("convert_to_char(env, %s, &%s, %s)" % (erl_term, a.name, a.crepr(defval)))
+                    else:
+                        code_cvt_list.append("evision_to_safe(env, %s, %s, %s)" % (erl_term, a.name, a.crepr(defval)))
+
+                all_cargs.append([arg_type_info, parse_name])
+
                 if defval:
                     if arg_type_info.atype == "QRCodeEncoder_Params":
-                        # arg_type_info.atype = ""
                         code_decl += "    QRCodeEncoder::Params %s=%s;\n" % (a.name, defval)
                     else:
                         code_decl += "    %s %s=%s;\n" % (arg_type_info.atype, a.name, defval)
                 else:
-                    code_decl += "    %s %s;\n" % (arg_type_info.atype, a.name)
+                    if a.name == "nodeName":
+                        code_decl += "    %s %s = String();\n" % (arg_type_info.atype, a.name)
+                    else:
+                        code_decl += "    %s %s;\n" % (arg_type_info.atype, a.name)
 
                 if not code_args.endswith("("):
                     code_args += ", "
@@ -297,8 +292,11 @@ class FuncInfo(object):
                 code_prelude = ""
                 code_fcall = ""
                 if v.rettype:
-                    code_decl += "    " + v.rettype + " retval;\n"
-                    code_fcall += "retval = "
+                    if self.should_return_self():
+                        code_fcall += f"{v.rettype}& retval = "
+                    else:
+                        code_decl += "    " + v.rettype + " retval;\n"
+                        code_fcall += "retval = "
                 if not v.isphantom and ismethod and not self.is_static:
                     if self.classname and ("Matcher" in v.classname or "Algorithm" in v.classname) and '/PV' not in v.decl[2]:
                         cls = v.classname
@@ -337,43 +335,49 @@ class FuncInfo(object):
                 code_parse = "if((argc - nif_opts_index == 1) && erl_terms.size() == 0)"
 
             if len(v.py_outlist) == 0:
-                code_ret = "return evision::nif::atom(env, \"nil\")"
+                code_ret = "return evision::nif::atom(env, \"ok\")"
                 if not v.isphantom and ismethod and not self.is_static:
-                    code_ret = "return evision::nif::ok(env, self)"
+                    module_name = get_elixir_module_name(selfinfo.cname)
+                    code_ret = "bool success;\n" \
+                        f"            return evision_from_as_map(env, _self_, self, \"{module_name}\", success)"
             elif len(v.py_outlist) == 1:
                 if self.isconstructor:
-                    code_ret = "ERL_NIF_TERM ret = enif_make_resource(env, self);\n        enif_release_resource(self);\n        return evision::nif::ok(env, ret);"
+                    selftype = selfinfo.cname
+                    if not selfinfo.issimple:
+                        selftype = "Ptr<{}>".format(selfinfo.cname)
+                    code_ret = ET.code_ret_constructor % (selftype, get_elixir_module_name(selfinfo.cname))
                 else:
-                    aname, argno = v.py_outlist[0]
+                    aname, _ = v.py_outlist[0]
                     if v.rettype == 'bool':
-                        code_ret = "if (%s) {\n                return evision::nif::atom(env, \"ok\");\n            } else {\n                return evision::nif::atom(env, \"error\");\n            }" % (aname,)
-                    elif v.rettype == 'Mat':
-                        code_ret = f"ERL_NIF_TERM mat_ret = evision_from(env, {aname});\n" \
-                                   "            if (enif_is_ref(env, mat_ret)) return evision::nif::ok(env, mat_ret);\n" \
-                                   "            else return mat_ret;"
+                        code_ret = f"if ({aname}) {{\n" \
+                        '                return evision::nif::atom(env, "true");\n' \
+                        '            } else {\n' \
+                        '                return evision::nif::atom(env, "false");\n'\
+                        '            }'
                     else:
-                        code_ret = "return evision::nif::ok(env, evision_from(env, %s))" % (aname,)
+                        if self.should_return_self():
+                            code_ret = f"return self"
+                        else:
+                            code_ret = f"return evision_from(env, {aname})"
             else:
                 # there is more than 1 return parameter; form the tuple out of them
                 n_tuple = len(v.py_outlist)
                 evision_from_calls = ["evision_from(env, " + aname + ")" for aname, argno in v.py_outlist]
                 if v.rettype == 'bool':
                     if n_tuple >= 10:
-                        code_ret = "ERL_NIF_TERM arr[] = {%s};\n    if (retval) {\n                return evision::nif::ok(env, enif_make_tuple_from_array(env, arr, %d));\n            } else {\n                return evision::nif::atom(env, \"error\");\n            }" % \
-                            (",\n        ".join(evision_from_calls[1:]), n_tuple-1)
+                        code_ret = ET.code_ret_ge_10_tuple_except_bool % (",\n        ".join(evision_from_calls[1:]), n_tuple-1)
                     elif (n_tuple-1) == 1:
-                        code_ret = "if (retval) {\n                return evision::nif::ok(env, %s);\n            } else {\n                return evision::nif::atom(env, \"error\");\n            }" % \
-                            (", ".join(evision_from_calls[1:]),)
+                        if "imencode" in fname:
+                            code_ret = ET.code_ret_as_binary % (", ".join(evision_from_calls[1:]).replace("evision_from", "evision_from_as_binary").replace(")", ", success)"),)
+                        else:
+                            code_ret = ET.code_ret_1_tuple_except_bool % (", ".join(evision_from_calls[1:]),)
                     else:
-                        code_ret = "if (retval) {\n                return evision::nif::ok(env, enif_make_tuple%d(env, %s));\n            } else {\n                return evision::nif::atom(env, \"error\");\n            }" % \
-                            (n_tuple-1, ", ".join(evision_from_calls[1:]))
+                        code_ret = ET.code_ret_2_to_10_tuple_except_bool % (n_tuple-1, ", ".join(evision_from_calls[1:]))
                 else:
                     if n_tuple >= 10:
-                        code_ret = "ERL_NIF_TERM arr[] = {%s};\n    return evision::nif::ok(env, enif_make_tuple_from_array(env, arr, %d))" % \
-                            (",\n        ".join(evision_from_calls), n_tuple)
+                        code_ret = ET.code_ret_ge_10_tuple % (",\n                ".join(evision_from_calls), n_tuple)
                     else:
-                        code_ret = "return evision::nif::ok(env, enif_make_tuple%d(env, %s))" % \
-                            (n_tuple, ", ".join(evision_from_calls))
+                        code_ret = ET.code_ret_lt_10_tuple % (n_tuple, ", ".join(evision_from_calls))
 
             all_code_variants.append(ET.gen_template_func_body.substitute(code_decl=code_decl, code_parse=code_parse,
                                                                        code_prelude=code_prelude, code_fcall=code_fcall,
@@ -388,9 +392,9 @@ class FuncInfo(object):
             code += '    \n'.join(ET.gen_template_overloaded_function_call.substitute(variant=v)
                                   for v in all_code_variants)
 
-        def_ret = "if (error_term != 0) return error_term;\n    else return evision::nif::error(env, \"overload resolution failed\");"
+        def_ret = "if (error_term != 0) return error_term;\n    else return enif_make_badarg(env);"
         if self.isconstructor:
-            def_ret = "return evision::nif::error(env, \"overload resolution failed\");"
+            def_ret = "return enif_make_badarg(env);"
         code += "\n    %s\n}\n\n" % def_ret
 
         cname = self.cname

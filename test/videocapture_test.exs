@@ -1,5 +1,4 @@
 defmodule Evision.VideoCapture.Test do
-  alias Evision, as: OpenCV
   use ExUnit.Case
 
   @moduletag timeout: 120_000
@@ -7,40 +6,23 @@ defmodule Evision.VideoCapture.Test do
   @tag :video
   @tag :require_ffmpeg
   test "open a video file and read one frame" do
-    ret =
-      Path.join(__DIR__, "videocapture_test.mp4")
-      |> OpenCV.VideoCapture.videoCapture()
+    video =
+      Evision.VideoCapture.videoCapture(Path.join([__DIR__, "testdata", "videocapture_test.mp4"]))
 
-    assert :error != ret
-    assert :ok == elem(ret, 0)
-    video = elem(ret, 1)
+    %Evision.VideoCapture{
+      isOpened: true,
+      fps: 43.2,
+      frame_count: 18.0,
+      frame_height: 1080.0,
+      frame_width: 1920.0
+    } = video
 
-    assert :ok == OpenCV.VideoCapture.isOpened(video)
-
-    {:ok, fps} = OpenCV.VideoCapture.get(video, OpenCV.cv_CAP_PROP_FPS())
-    {:ok, frame_count} = OpenCV.VideoCapture.get(video, OpenCV.cv_CAP_PROP_FRAME_COUNT())
-    {:ok, height} = OpenCV.VideoCapture.get(video, OpenCV.cv_CAP_PROP_FRAME_HEIGHT())
-    {:ok, width} = OpenCV.VideoCapture.get(video, OpenCV.cv_CAP_PROP_FRAME_WIDTH())
-    {:ok, fourcc} = OpenCV.VideoCapture.get(video, OpenCV.cv_CAP_PROP_FOURCC())
-    assert 43.2 == fps
-    assert 18.0 == frame_count
-    assert 1080 == height
-    assert 1920 == width
+    fourcc = Evision.VideoCapture.get(video, Evision.cv_CAP_PROP_FOURCC())
     assert 828_601_960.0 == fourcc
 
-    ret = OpenCV.VideoCapture.read(video)
-    assert :error != ret
-    assert :ok == elem(ret, 0)
-    frame = elem(ret, 1)
+    %Evision.Mat{shape: {1080, 1920, 3}} = Evision.VideoCapture.read(video)
 
-    {:ok, shape} = OpenCV.Mat.shape(frame)
-    assert {1080, 1920, 3} = shape
-
-    ret = OpenCV.VideoCapture.release(video)
-    assert :error != ret
-    assert :ok == elem(ret, 0)
-
-    ret = OpenCV.VideoCapture.read(video)
-    assert :error == ret
+    video = Evision.VideoCapture.release(video)
+    false = Evision.VideoCapture.read(video)
   end
 end

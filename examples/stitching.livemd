@@ -1,52 +1,49 @@
 <!-- vim: syntax=markdown -->
 
-# OpenCV Stitcher Demo
+<!-- livebook:{"persist_outputs":true} -->
 
-## Install deps
+# Evision Example - Stitching Multiple Photos into A Panorama Photo
 
 ```elixir
-# a quick fix for the free tier livebook session
-## allocate 2GB swap
-# System.cmd("fallocate", ["-l", "2G", "/swap"])
-# System.cmd("chmod", ["400", "/swap"])
-# System.cmd("mkswap", ["/swap"])
-# System.cmd("swapon", ["/swap"])
-## need unzip to unzip the source code
-# System.cmd("apt", ["update"])
-# System.cmd("apt", ["install", "-y", "unzip", "python3"])
+# set `EVISION_PREFER_PRECOMPILED` to `false` 
+# if you prefer `:evision` to be compiled from source
+# note that to compile from source, you may need at least 1GB RAM
+# System.put_env("EVISION_PREFER_PRECOMPILED", "false")
 
-# If you are using the pre-built nerves firmware
-# you can comment out the following installation step
 Mix.install([
-  {:evision, "~> 0.1.2", github: "cocoa-xu/evision", tag: "v0.1.2"}
-  {:kino, "~> 0.6"}
+  {:evision, "~> 0.1.21"},
+  {:kino, "~> 0.7"},
+  {:req, "~> 0.3"}
 ])
 ```
 
-## Helper Function
+<!-- livebook:{"output":true} -->
+
+```
+:ok
+```
+
+## Define Some Helper Functions
 
 ```elixir
 defmodule Helper do
-  def download!(url, save_as) do
-    http_opts = []
-    opts = [body_format: :binary]
-    arg = {url, []}
+  def download!(url, save_as, overwrite? \\ false) do
+    unless File.exists?(save_as) do
+      Req.get!(url, http_errors: :raise, output: save_as, cache: not overwrite?)
+    end
 
-    body =
-      case :httpc.request(:get, arg, http_opts, opts) do
-        {:ok, {{_, 200, _}, _, body}} ->
-          body
-
-        {:error, reason} ->
-          raise inspect(reason)
-      end
-
-    File.write!(save_as, body)
+    :ok
   end
 end
 ```
 
-## Download test images
+<!-- livebook:{"output":true} -->
+
+```
+{:module, Helper, <<70, 79, 82, 49, 0, 0, 10, ...>>, {:download!, 3}}
+```
+
+## Download Test Images
 
 ```elixir
 # change to the file's directory
@@ -54,33 +51,42 @@ end
 File.cd!(__DIR__)
 
 # https://github.com/opencv/opencv_extra/tree/4.x/testdata/stitching
-Helper.download!("https://raw.githubusercontent.com/opencv/opencv_extra/master/testdata/stitching/a1.png", "a1.png")
-Helper.download!("https://raw.githubusercontent.com/opencv/opencv_extra/master/testdata/stitching/a2.png", "a2.png")
-Helper.download!("https://raw.githubusercontent.com/opencv/opencv_extra/master/testdata/stitching/a3.png", "a3.png")
+Helper.download!(
+  "https://raw.githubusercontent.com/opencv/opencv_extra/master/testdata/stitching/a1.png",
+  "a1.png"
+)
+
+Helper.download!(
+  "https://raw.githubusercontent.com/opencv/opencv_extra/master/testdata/stitching/a2.png",
+  "a2.png"
+)
+
+Helper.download!(
+  "https://raw.githubusercontent.com/opencv/opencv_extra/master/testdata/stitching/a3.png",
+  "a3.png"
+)
 ```
 
-## alias
-```elixir
-# alias Evision as OpenCV
-# please see the Namespace section in the README.md for reasons/motivations
-# (in the root directory of the source code)
-alias Evision, as: OpenCV
+<!-- livebook:{"output":true} -->
+
+```
+:ok
 ```
 
 ## Stitching
 
 ```elixir
-{:ok, a1} = OpenCV.imread("./a1.png")
-{:ok, a2} = OpenCV.imread("./a2.png")
-{:ok, a3} = OpenCV.imread("./a3.png")
-{:ok, sticher} = OpenCV.Stitcher.create
-{:ok, {status_code, result}} = OpenCV.Stitcher.stitch(sticher, [a1, a2, a3])
+alias Evision, as: Cv
+
+a1 = Cv.imread("./a1.png")
+a2 = Cv.imread("./a2.png")
+a3 = Cv.imread("./a3.png")
+sticher = Cv.Stitcher.create()
+{status_code, result} = Cv.Stitcher.stitch(sticher, [a1, a2, a3])
 0 = status_code
 # status_code should be 0 (OK),
 # for other status_code, please refer to https://github.com/opencv/opencv/blob/4.5.4/modules/stitching/include/opencv2/stitching.hpp#L152
 
-OpenCV.imencode(".png", result)
-|> then(fn {:ok, val} -> val end)
-|> IO.iodata_to_binary()
+Cv.imencode(".png", result)
 |> Kino.Image.new(:png)
 ```

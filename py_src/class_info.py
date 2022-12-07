@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from helper import normalize_class_name
+from helper import normalize_class_name, get_elixir_module_name
 from class_prop import ClassProp
 import evision_templates as ET
 import sys
@@ -66,7 +66,7 @@ class ClassInfo(object):
         code = "static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM src, %s& dst, const ArgInfo& info)\n{\n    ERL_NIF_TERM tmp;\n    bool ok;\n" % (self.cname)
         code += "".join([ET.gen_template_set_prop_from_map.substitute(propname=p.name,proptype=p.tp) for p in self.props])
         if self.base:
-            code += "\n    return evision_to_safe(env, src, (%s&)dst, info);\n}\n" % all_classes[self.base].cname
+            code += "\n    return evision_to_safe(env, src, (%s&)dst, info); // gen_template_set_prop_from_map!\n}\n" % all_classes[self.base].cname
         else:
             code += "\n    return true;\n}\n"
         return code
@@ -80,44 +80,57 @@ class ClassInfo(object):
 
         methods = self.methods.copy()
 
-        if self.base and (self.cname.startswith("cv::ml") or "Calibrate" in self.cname or "Feature2D" in self.base or "Matcher" in self.base):
-            if self.base in codegen.classes:
-                base_class = codegen.classes[self.base]
-                for base_method_name in base_class.methods:
-                    if base_method_name not in methods:
-                        base_method = base_class.methods[base_method_name].__deepcopy__()
-                        base_method.classname = self.name
-                        methods[base_method_name] = base_method
-                    else:
-                        # print(self.cname, "overrides base method:", base_method_name)
-                        _ = 0
+        base_class = self.base
+        current_class = self
+        while base_class is not None:
+            if base_class \
+                and (
+                        current_class.cname.startswith("cv::ml") 
+                        or "Calibrate" in current_class.cname 
+                        or (current_class.base is not None and "Feature2D" in current_class.base) 
+                        or (current_class.base is not None and "Matcher" in current_class.base)
+                        or (current_class.base is not None and "Algorithm" in current_class.base)
+                        or (current_class.base is not None and current_class.cname.startswith("cv::dnn"))
+                    ):
+                if base_class in codegen.classes:
+                    base_class = codegen.classes[current_class.base]
+                    for base_method_name in base_class.methods:
+                        if base_method_name not in methods:
+                            base_method = base_class.methods[base_method_name].__deepcopy__()
+                            base_method.classname = self.name
+                            for v in base_method.variants:
+                                v.classname = self.name
+                            methods[base_method_name] = base_method
+                        else:
+                            # print(self.cname, "overrides base method:", base_method_name)
+                            _ = 0
+                    base_class, current_class = current_class.base, base_class
+                else:
+                    break
+            else:
+                break
+
         sorted_methods = list(methods.items())
         sorted_methods.sort()
 
         # generate functions for constructor
         if self.constructor is not None:
-            (module_file_writer, module_file_writer_erlang), separated_ns = codegen.get_module_writer(
+            module_file_generator, separated_ns = codegen.get_module_writer(
                 self.name, wname=self.cname, name=self.name, is_ns=False)
-            codegen.gen_erl_declaration(
-                self.cname, self.name, self.constructor, module_file_writer, module_file_writer_erlang,
-                is_constructor=True, separated_ns=separated_ns)
+            module_file_generator.gen_constructor(self.cname, self.name, self.constructor, separated_ns)
 
         # generate functions for methods
         for mname, m in sorted_methods:
             codegen.code_ns_reg.write(m.get_tab_entry())
-            (module_file_writer, module_file_writer_erlang), separated_ns = codegen.get_module_writer(
+            module_file_generator, separated_ns = codegen.get_module_writer(
                 self.name, wname=self.cname, name=mname, is_ns=False)
-            codegen.gen_erl_declaration(
-                self.cname, mname, m, module_file_writer, module_file_writer_erlang,
-                is_constructor=False, separated_ns=separated_ns)
+            module_file_generator.gen_method(self.cname, mname, m, separated_ns)
 
         # generate functions for properties
         for pname, m in sorted_props:
-            (module_file_writer, module_file_writer_erlang), separated_ns = codegen.get_module_writer(
+            module_file_generator, separated_ns = codegen.get_module_writer(
                 self.name, wname=self.cname, name=pname, is_ns=False)
-            codegen.gen_erl_declaration(
-                self.cname, pname, m, module_file_writer, module_file_writer_erlang,
-                is_constructor=False, is_prop=True, prop_class=self, separated_ns=separated_ns)
+            module_file_generator.gen_property(self.cname, self.name, pname, m)
 
     def gen_code(self, codegen):
         all_classes = codegen.classes
@@ -156,12 +169,35 @@ class ClassInfo(object):
             else:
                 if self.isalgorithm:
                     getset_code.write(ET.gen_template_set_prop_algo.substitute(
-                        name=self.name, cname=self.cname, member=pname,  membertype=p.tp, access=access_op,
-                        storage_name=self.cname if self.issimple else "Ptr<{}>".format(self.cname)))
+                        name=self.name,
+                        cname=self.cname,
+                        member=pname,
+                        membertype=p.tp,
+                        access=access_op,
+                        storage_name=self.cname if self.issimple else "Ptr<{}>".format(self.cname),
+                        elixir_module_name=get_elixir_module_name(self.cname, double_quote_if_has_dot=True).replace('"', '\\"')
+                    ))
                 else:
-                    getset_code.write(ET.gen_template_set_prop.substitute(
-                        name=self.name, member=pname, membertype=p.tp, access=access_op, cname=self.cname,
-                        storage_name=self.cname if self.issimple else "Ptr<{}>".format(self.cname)))
+                    if self.issimple:
+                        getset_code.write(ET.gen_template_set_prop.substitute(
+                            name=self.name,
+                            member=pname,
+                            membertype=p.tp,
+                            access=access_op,
+                            cname=self.cname,
+                            storage_name=self.cname,
+                            elixir_module_name=get_elixir_module_name(self.cname, double_quote_if_has_dot=True).replace('"', '\\"')
+                        ))
+                    else:
+                        getset_code.write(ET.gen_template_set_prop_cv_ptr.substitute(
+                            name=self.name,
+                            member=pname,
+                            membertype=p.tp,
+                            access=access_op,
+                            cname=self.cname,
+                            storage_name="Ptr<{}>".format(self.cname),
+                            elixir_module_name=get_elixir_module_name(self.cname, double_quote_if_has_dot=True).replace('"', '\\"')
+                        ))
                 getset_inits.write(ET.gen_template_rw_prop_init.substitute(
                     name=self.name, member=pname,
                     storage_name=self.cname if self.issimple else "Ptr<{}>".format(self.cname)))
@@ -170,20 +206,37 @@ class ClassInfo(object):
         methods_inits = StringIO()
 
         methods = self.methods.copy()
-        if self.base and (self.cname.startswith("cv::ml") or "Calibrate" in self.cname or "Feature2D" in self.base or "Matcher" in self.base or "Algorithm" in self.base):
-            if self.base in codegen.classes:
-                base_class = codegen.classes[self.base]
-                for base_method_name in base_class.methods:
-                    if base_method_name not in methods:
-                        base_method = base_class.methods[base_method_name].__deepcopy__()
-                        for v in base_method.variants:
-                            v.base_classname = base_method.classname
-                            v.from_base = True
-                        base_method.classname = self.name
-                        methods[base_method_name] = base_method
-                    else:
-                        # print(self.cname, "overrides base method:", base_method_name)
-                        _ = 0
+        base_class = self.base
+        current_class = self
+        while base_class is not None:
+            if base_class \
+                and (
+                        current_class.cname.startswith("cv::ml") 
+                        or "Calibrate" in current_class.cname 
+                        or (current_class.base is not None and "Feature2D" in current_class.base) 
+                        or (current_class.base is not None and "Matcher" in current_class.base)
+                        or (current_class.base is not None and "Algorithm" in current_class.base)
+                        or (current_class.base is not None and current_class.cname.startswith("cv::dnn"))
+                    ):
+                if base_class in codegen.classes:
+                    base_class = codegen.classes[current_class.base]
+                    for base_method_name in base_class.methods:
+                        if base_method_name not in methods:
+                            base_method = base_class.methods[base_method_name].__deepcopy__()
+                            for v in base_method.variants:
+                                v.base_classname = base_method.classname
+                                v.from_base = True
+                            base_method.classname = self.name
+                            methods[base_method_name] = base_method
+                        else:
+                            # print(self.cname, "overrides base method:", base_method_name)
+                            _ = 0
+                    base_class, current_class = current_class.base, base_class
+                else:
+                    break
+            else:
+                break
+
         sorted_methods = list(methods.items())
         sorted_methods.sort()
 
@@ -200,6 +253,7 @@ class ClassInfo(object):
 
         return code
 
+
     def gen_def(self, codegen):
         all_classes = codegen.classes
         baseptr = "NoBase"
@@ -210,11 +264,12 @@ class ClassInfo(object):
         if self.constructor is not None:
             constructor_name = self.constructor.get_wrapper_name(True)
 
-        return "CV_ERL_TYPE({}, {}, {}, {}, {}, {});\n".format(
+        return "CV_ERL_TYPE({}, {}, {}, {}, {}, {}, {});\n".format(
             self.wname,
             self.name,
             self.cname if self.issimple else "Ptr<{}>".format(self.cname),
             self.sname if self.issimple else "Ptr",
             baseptr,
-            constructor_name
+            constructor_name,
+            get_elixir_module_name(self.cname)
         )

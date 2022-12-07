@@ -133,6 +133,101 @@ namespace evision
       return enif_make_string(env, string, ERL_NIF_LATIN1);
     }
 
+    template<typename T>
+    int make_f64_list_from_c_array(ErlNifEnv *env, size_t count, T *data, ERL_NIF_TERM &out) {
+      if (count == 0) {
+        out = enif_make_list_from_array(env, nullptr, 0);
+        return 0;
+      }
+
+      ERL_NIF_TERM *terms = (ERL_NIF_TERM *)enif_alloc(sizeof(ERL_NIF_TERM) * count);
+      if (terms == nullptr) {
+        return 1;
+      }
+      for (size_t i = 0; i < count; ++i) {
+        terms[i] = enif_make_double(env, (double)(data[i]));
+      }
+      out = enif_make_list_from_array(env, terms, (unsigned) count);
+      enif_free(terms);
+      return 0;
+    }
+
+    template<typename T>
+    int make_i64_list_from_c_array(ErlNifEnv *env, size_t count, T *data, ERL_NIF_TERM &out) {
+      if (count == 0) {
+        out = enif_make_list_from_array(env, nullptr, 0);
+        return 0;
+      }
+
+      ERL_NIF_TERM *terms = (ERL_NIF_TERM *)enif_alloc(sizeof(ERL_NIF_TERM) * count);
+      if (terms == nullptr) {
+        return 1;
+      }
+      for (size_t i = 0; i < count; ++i) {
+        terms[i] = enif_make_int64(env, (int64_t)(data[i]));
+      }
+      out = enif_make_list_from_array(env, terms, (unsigned) count);
+      enif_free(terms);
+      return 0;
+    }
+
+    template<typename T>
+    int make_u64_list_from_c_array(ErlNifEnv *env, size_t count, T *data, ERL_NIF_TERM &out) {
+      if (count == 0) {
+        out = enif_make_list_from_array(env, nullptr, 0);
+        return 0;
+      }
+
+      ERL_NIF_TERM *terms = (ERL_NIF_TERM *)enif_alloc(sizeof(ERL_NIF_TERM) * count);
+      if (terms == nullptr) {
+        return 1;
+      }
+      for (size_t i = 0; i < count; ++i) {
+        terms[i] = enif_make_uint64(env, (uint64_t)(data[i]));
+      }
+      out = enif_make_list_from_array(env, terms, (unsigned) count);
+      enif_free(terms);
+      return 0;
+    }
+
+    template<typename T>
+    int make_i32_list_from_c_array(ErlNifEnv *env, size_t count, T *data, ERL_NIF_TERM &out) {
+      if (count == 0) {
+        out = enif_make_list_from_array(env, nullptr, 0);
+        return 0;
+      }
+
+      ERL_NIF_TERM *terms = (ERL_NIF_TERM *)enif_alloc(sizeof(ERL_NIF_TERM) * count);
+      if (terms == nullptr) {
+          return 1;
+      }
+      for (size_t i = 0; i < count; ++i) {
+        terms[i] = enif_make_int(env, (int32_t)(data[i]));
+      }
+      out = enif_make_list_from_array(env, terms, (unsigned) count);
+      enif_free(terms);
+      return 0;
+    }
+
+    template<typename T>
+    int make_u32_list_from_c_array(ErlNifEnv *env, size_t count, T *data, ERL_NIF_TERM &out) {
+      if (count == 0) {
+        out = enif_make_list_from_array(env, nullptr, 0);
+        return 0;
+      }
+
+      ERL_NIF_TERM *terms = (ERL_NIF_TERM *)enif_alloc(sizeof(ERL_NIF_TERM) * count);
+      if (terms == nullptr) {
+        return 1;
+      }
+      for (size_t i = 0; i < count; ++i) {
+        terms[i] = enif_make_uint(env, (uint32_t)(data[i]));
+      }
+      out = enif_make_list_from_array(env, terms, (unsigned) count);
+      enif_free(terms);
+      return 0;
+    }
+
     // Atoms
 
     int get_atom(ErlNifEnv *env, ERL_NIF_TERM term, std::string &var)
@@ -320,13 +415,16 @@ namespace evision
         ERL_NIF_TERM opts = argv[opt_arg_index];
         if (enif_is_list(env, opts)) {
             unsigned length = 0;
-            enif_get_list_length(env, opts, &length);
+            if (!enif_get_list_length(env, opts, &length)) {
+              return false;
+            }
             unsigned list_index = 0;
 
             ERL_NIF_TERM term, rest;
             while (list_index != length) {
-                enif_get_list_cell(env, opts, &term, &rest);
-
+                if (!enif_get_list_cell(env, opts, &term, &rest)) {
+                  return false;
+                }
                 if (enif_is_tuple(env, term)) {
                     int arity;
                     const ERL_NIF_TERM * arr = nullptr;
@@ -338,9 +436,11 @@ namespace evision
                             }
                         }
                     }
+                    list_index++;
+                    opts = rest;
+                } else {
+                  return false;
                 }
-                list_index++;
-                opts = rest;
             }
             return true;
         }

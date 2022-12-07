@@ -10,6 +10,7 @@ on:
       - 'test/**'
       - 'Makefile.win'
       - 'cc_toolchain/**'
+      - 'checksum.exs'
       - '.github/FUNDING.yml'
       - '.github/workflows/linux-*'
       - '.github/workflows/macos-*'
@@ -28,6 +29,7 @@ on:
       - 'examples/**'
       - 'Makefile.win'
       - 'cc_toolchain/**'
+      - 'checksum.exs'
       - '.github/FUNDING.yml'
       - '.github/workflows/linux-*'
       - '.github/workflows/macos-*'
@@ -35,14 +37,21 @@ on:
       - '.github/workflows/test-*.yml'
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  mix_test:
+  mix_compile:
     runs-on: ubuntu-20.04
     env:
       MIX_ENV: prod
       NERVES_PROJ_NAME: nerves_evision
       OPENCV_VER: "4.6.0"
-      NERVES_LIVEBOOK_VER: "v0.6.4"
+      NERVES_LIVEBOOK_VER: "v0.7.0"
+      OTP_VERSION: "25.1.2"
+      ELIXIR_VERSION: "1.14.2"
+      EVISION_PREFER_PRECOMPILED: "false"
 
     strategy:
       matrix:
@@ -52,10 +61,10 @@ jobs:
       - uses: actions/checkout@v3
       - uses: erlef/setup-beam@v1
         with:
-          otp-version: "25.0.4"
-          elixir-version: "1.13.4"
+          otp-version: ${{ env.OTP_VERSION }}
+          elixir-version: ${{ env.ELIXIR_VERSION }}
 
-      - name: Install nerves and system dependecies
+      - name: Install nerves and system dependencies
         run: |
           mkdir -p ~/.ssh
           echo 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCulZpVE/JdpWX53C35n45RSIMtaIIiTMnmRo5oDEMbyh0NnKI5byikkOvGnGLOO2KTlq4We+MF5iKx72B1Ixl8RY7L6Kc/h3R6jG4uOWBhw/WBhIebteJVYDzrlU8fHTewquWYT6tJ7v7g54Qe5vofsDeKBDqTJqJPlwNSxP8AjPZ0vQ4O4IhG0CXaDzU/G50sqzquKckgGWURLN9LcsA+kzciKJRhKw4Q7kpOiTNG/fzYxBpgpNrnyyr7bhj0jdOsg9KoG57aLSqbmEVCOyWa6yh6lOTp37S6ijBfQORxUu3I+6B04zUBSEvN4wgqslHU9pbIio8Szz1vbnlqsgO0tG1yqALfs6RVSjW81AujKefeH/8seE7q0yiHJXkE4tejIcewJT+2e6p/fP2pVSwyRqZ1bObtRUCMG3Pwdi0IpfsyBSa02Qc7eT9VB1WN7XD1vpfMDQ/nIWmoA40VkX3F3v5Mht5PZwVmlRyM8BrLtCYTreUP5xl6ZZCSX2IfOI8= nerves-ci-build' > ~/.ssh/id_rsa.pub
@@ -63,19 +72,30 @@ jobs:
           mix local.hex --force
           mix local.rebar --force
       
-      - name: Cache mix packages and OpenCV
-        id: cache-mix-and-opencv
+      - name: Cache mix packages
+        id: cache-mix-deps
         uses: actions/cache@v3
         with:
-          key: deps-${{ hashFiles('mix.lock') }}-${{ env.OPENCV_VER }}
+          key: deps-${{ hashFiles('mix.lock') }}-${{ env.OTP_VERSION }}-${{ env.ELIXIR_VERSION }}
           path: |
             ./deps
-            ./3rd_party
 
-      - name: Get mix deps and download OpenCV
-        if: steps.cache-mix-and-opencv.outputs.cache-hit != 'true'
+      - name: Get mix deps
+        if: steps.cache-mix-deps.outputs.cache-hit != 'true'
         run: |
           mix deps.get
+
+      - name: Cache OpenCV
+        id: cache-opencv
+        uses: actions/cache@v3
+        with:
+          key: opencv-${{ env.OPENCV_VER }}
+          path: |
+            ./3rd_party
+
+      - name: Download OpenCV
+        if: steps.cache-opencv.outputs.cache-hit != 'true'
+        run: |
           bash scripts/download_opencv.sh ${OPENCV_VER} 3rd_party/cache 3rd_party/opencv/
 
       - name: Make a nerves project
@@ -93,11 +113,12 @@ jobs:
           echo '      {:evision, path: "../evision"},' >> mix.exs.tmp
           tail -n "+${LINE}" mix.exs >> mix.exs.tmp
           mv mix.exs.tmp mix.exs
+          sed -i 's/nx, "~> 0.3.0/nx, "~> 0.4/g' mix.exs
           cat mix.exs
           export MIX_TARGET=${{ matrix.target }}
-          sed -i 's/nx, "~> 0.2.0/nx, "~> 0.3/g' mix.exs
           mix deps.get
           mix deps.update nx
+          mix deps.update kino
           cp -a ../evision/examples ./priv/evision_examples
           sed -i 's/"welcome.livemd"\,/"welcome.livemd"\, "evision_examples",/g' lib/nerves_livebook/application.ex
           export MAKE_BUILD_FLAGS="-j$(nproc)"

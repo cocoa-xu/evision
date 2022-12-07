@@ -10,6 +10,7 @@ on:
       - 'nerves/**'
       - 'Makefile'
       - 'cc_toolchain/**'
+      - 'checksum.exs'
       - '.github/FUNDING.yml'
       - '.github/workflows/nerves-*.yml'
       - '.github/workflows/linux-*.yml'
@@ -28,13 +29,17 @@ on:
       - 'nerves/**'
       - 'Makefile'
       - 'cc_toolchain/**'
+      - 'checksum.exs'
       - '.github/FUNDING.yml'
       - '.github/workflows/nerves-*.yml'
       - '.github/workflows/linux-*.yml'
       - '.github/workflows/macos-*.yml'
       - '.github/workflows/test-*.yml'
       - '.github/workflows/windows-precompile.yml'
-  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   mix_test:
@@ -42,56 +47,85 @@ jobs:
     env:
       MIX_ENV: test
       OPENCV_VER: "4.6.0"
+      OTP_VERSION: "25.1.2"
+      ELIXIR_VERSION: "1.14.2"
+      EVISION_PREFER_PRECOMPILED: "false"
+      MAKE: "nmake"
 
     steps:
-      - uses: actions/checkout@v2
-      
+      - uses: actions/checkout@v3
+
       - uses: erlef/setup-beam@v1
         with:
-          otp-version: 25.0.2
-          elixir-version: 1.13.4
+          otp-version: ${{ env.OTP_VERSION }}
+          elixir-version: ${{ env.ELIXIR_VERSION }}
 
       - uses: ilammy/msvc-dev-cmd@v1
         with:
           arch: x64
 
-      - name: Cache mix packages and OpenCV
-        id: cache-mix-and-opencv
+      - name: Cache mix packages
+        id: cache-mix-deps
         uses: actions/cache@v3
         with:
-          key: deps-${{ hashFiles('mix.lock') }}-${{ env.OPENCV_VER }}
+          key: deps-${{ hashFiles('mix.lock') }}-${{ env.OTP_VERSION }}-${{ env.ELIXIR_VERSION }}
           path: |
             ./deps
-            ./3rd_party
 
-      - name: Get mix deps and download OpenCV
-        if: steps.cache-mix-and-opencv.outputs.cache-hit != 'true'
+      - name: Get mix deps
+        if: steps.cache-mix-deps.outputs.cache-hit != 'true'
         shell: bash
         run: |
           mix deps.get
+
+      - name: Cache OpenCV source code
+        id: cache-opencv
+        uses: actions/cache@v3
+        with:
+          key: opencv-${{ env.OPENCV_VER }}
+          path: |
+            ./3rd_party
+
+      - name: Download OpenCV source code
+        if: steps.cache-opencv.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
           bash scripts/download_opencv.sh ${OPENCV_VER} 3rd_party/cache 3rd_party/opencv/
 
       - name: Cache compiled OpenCV
         id: cache-mix-compile
         uses: actions/cache@v3
         with:
-          key: compile-test-${{ runner.os }}-${{ hashFiles('cc_toolchain/**') }}-${{ hashFiles('c_src/**') }}-${{ hashFiles('CMakeLists.txt') }}-${{ hashFiles('Makefile.win') }}-${{ env.OPENCV_VER }}
+          key: compile-opencv-${{ env.OPENCV_VER }}-x86_64-windows-msvc-${{ hashFiles('Makefile.win') }}
           path: |
-            ./_build
+            ./_build/${{ env.MIX_ENV }}/lib/evision
             ./c_src/headers.txt
             ./c_src/configuration.private.hpp
-            ./lib
-            ./src
+
+      - name: Compile OpenCV
+        if: steps.cache-mix-compile_opencv.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          rm -f Makefile
+          mix compile_opencv
 
       - name: Mix Compile
         if: steps.cache-mix-compile.outputs.cache-hit != 'true'
+        shell: bash
         run: |
-          $Env:MAKE = "nmake"
-          Remove-Item Makefile
-          if (Test-Path "_build/dev/lib/evision/priv/evision.dll") { Remove-Item _build/dev/lib/evision/priv/evision.dll }
+          rm -f Makefile
+          rm -f "_build/${MIX_ENV}/lib/evision/priv/evision.dll"
           mix compile
 
+      - name: Cache testdata
+        id: cache-mix-testdata
+        uses: actions/cache@v3
+        with:
+          key: testdata-${{ hashFiles('test/downloading_list.txt') }}
+          path: |
+            ./test/testdata
+
       - name: Mix Test
+        shell: bash
         run: |
-          $Env:MAKE = "nmake"
           mix test --include require_downloading --include require_ffmpeg
