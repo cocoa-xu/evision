@@ -34,8 +34,7 @@ jobs:
 
       - name: Install FFmpeg4, Erlang and Elixir
         run: |
-          brew install erlang elixir ffmpeg@4
-          brew link ffmpeg@4
+          brew install erlang elixir
           mix local.hex --force
           mix local.rebar --force
 
@@ -79,7 +78,7 @@ jobs:
         if: steps.cache-mix-compile_opencv.outputs.cache-hit != 'true'
         run: |
           if [ "${{ matrix.pair.arch }}" = "arm64" ]; then
-            export CMAKE_OPENCV_OPTIONS="-D WITH_IPP=OFF -D CMAKE_OSX_ARCHITECTURES=arm64"
+            export CMAKE_OPENCV_OPTIONS="-D WITH_FFMPEG=OFF -D WITH_IPP=OFF -D CMAKE_OSX_ARCHITECTURES=arm64"
             export CMAKE_EVISION_OPTIONS="-D CMAKE_OSX_ARCHITECTURES=arm64"
           fi
           mix compile_opencv
@@ -87,7 +86,7 @@ jobs:
       - name: Mix compile
         run: |
           if [ "${{ matrix.pair.arch }}" = "arm64" ]; then
-            export CMAKE_OPENCV_OPTIONS="-D WITH_IPP=OFF -D CMAKE_OSX_ARCHITECTURES=arm64"
+            export CMAKE_OPENCV_OPTIONS="-D WITH_FFMPEG=OFF -D WITH_IPP=OFF -D CMAKE_OSX_ARCHITECTURES=arm64"
             export CMAKE_EVISION_OPTIONS="-D CMAKE_OSX_ARCHITECTURES=arm64"
           fi
           rm -f _build/${{ env.MIX_ENV }}/lib/evision/priv/evision.so
