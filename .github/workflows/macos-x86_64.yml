@@ -76,7 +76,7 @@ jobs:
         id: cache-opencv
         uses: actions/cache@v3
         with:
-          key: opencv-${{ env.OPENCV_VER }}
+          key: opencv-with-contrib-${{ env.OPENCV_VER }}
           path: |
             ./3rd_party
 
@@ -84,6 +84,7 @@ jobs:
         if: steps.cache-opencv.outputs.cache-hit != 'true'
         run: |
           bash scripts/download_opencv.sh ${OPENCV_VER} 3rd_party/cache 3rd_party/opencv/
+          bash scripts/download_opencv_contrib.sh ${OPENCV_VER} 3rd_party/cache 3rd_party/opencv/
 
       - name: Cache compiled OpenCV
         id: cache-mix-compile_opencv
