@@ -7,7 +7,7 @@ OPENCV_ROOT_DIR="$3"
 OPENCV_CONTRIB_ZIP_URL="https://github.com/opencv/opencv_contrib/archive/${OPENCV_VER}.zip"
 OPENCV_CONTRIB_SOURCE_ZIP="${OPENCV_CACHE_DIR}/opencv_contrib-${OPENCV_VER}.zip"
 
-function download_opencv_contrib() {
+download_opencv_contrib() {
     if [ ! -f "${OPENCV_CONTRIB_SOURCE_ZIP}" ]; then
         echo "Downloading OpenCV contrib ${OPENCV_VER}..."
         mkdir -p "${OPENCV_CACHE_DIR}"
@@ -22,7 +22,7 @@ function download_opencv_contrib() {
     fi
 }
 
-function unzip_opencv_contrib() {
+unzip_opencv_contrib() {
     if [ ! -d "${OPENCV_ROOT_DIR}/opencv_contrib-${OPENCV_VER}" ]; then
         echo "Unzipping OpenCV contrib ${OPENCV_VER}..."
         mkdir -p "${OPENCV_ROOT_DIR}"

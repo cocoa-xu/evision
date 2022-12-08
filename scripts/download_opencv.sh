@@ -7,7 +7,7 @@ OPENCV_ROOT_DIR="$3"
 OPENCV_ZIP_URL="https://github.com/opencv/opencv/archive/${OPENCV_VER}.zip"
 OPENCV_SOURCE_ZIP="${OPENCV_CACHE_DIR}/opencv-${OPENCV_VER}.zip"
 
-function download_opencv() {
+download_opencv() {
     if [ ! -f "${OPENCV_SOURCE_ZIP}" ]; then
         echo "Downloading OpenCV ${OPENCV_VER}..."
         mkdir -p "${OPENCV_CACHE_DIR}"
@@ -22,7 +22,7 @@ function download_opencv() {
     fi
 }
 
-function unzip_opencv() {
+unzip_opencv() {
     if [ ! -d "${OPENCV_ROOT_DIR}/opencv-${OPENCV_VER}" ]; then
         echo "Unzipping OpenCV ${OPENCV_VER}..."
         mkdir -p "${OPENCV_ROOT_DIR}"
