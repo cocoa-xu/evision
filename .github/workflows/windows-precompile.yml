@@ -113,6 +113,7 @@ jobs:
             export TOOLCHAIN_FILE="$(pwd)/${{ matrix.pair.CMAKE_TOOLCHAIN_FILE }}"
           fi
           rm -f Makefile
+          rm -f _build/${{ env.MIX_ENV }}/lib/evision/priv/evision.so
           mix compile
 
       - name: Create precompiled library
