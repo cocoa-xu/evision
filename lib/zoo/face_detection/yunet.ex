@@ -1,12 +1,19 @@
 defmodule Evision.Zoo.FaceDetection.YuNet do
-  @spec init(binary | :default_model, {pos_integer(), pos_integer()}, nil | Keyword.t()) :: {:error, String.t()} | Evision.FaceDetectorYN.t()
+  @spec init(binary | :default_model | :quant_model, {pos_integer(), pos_integer()}, nil | Keyword.t()) :: {:error, String.t()} | Evision.FaceDetectorYN.t()
   def init(model_path, input_size, opts \\ [])
 
-  def init(:default_model, input_size, opts) do
-    init("/Users/cocoa/Git/opencv_zoo/models/face_detection_yunet/face_detection_yunet_2022mar.onnx", input_size, opts)
+  def init(model_type, input_size, opts) when model_type in [:default_model, :quant_model] do
+    {model_url, filename} = model_info(model_type)
+    cache_dir = opts[:cache_dir]
+    with {:ok, local_path} <- Evision.Zoo.download(model_url, filename, cache_dir: cache_dir) do
+      init(local_path, input_size, opts)
+    else
+      {:error, msg} ->
+        raise msg
+    end
   end
 
-  def init(model_path, input_size, opts) do
+  def init(model_path, input_size, opts) when is_binary(model_path) do
     config = default_config()
     conf_threshold = opts[:conf_threshold] || config[:conf_threshold]
     nms_threshold = opts[:nms_threshold] || config[:nms_threshold]
@@ -88,12 +95,18 @@ defmodule Evision.Zoo.FaceDetection.YuNet do
     }
   end
 
-  def model_url("yunet") do
-    "https://github.com/opencv/opencv_zoo/blob/cd1ac4e61dc51575cac38d6346494865d0dfa5ba/models/face_detection_yunet/face_detection_yunet_2022mar.onnx?raw=true"
+  def model_info(:default_model) do
+    {
+      "https://github.com/opencv/opencv_zoo/blob/cd1ac4e61dc51575cac38d6346494865d0dfa5ba/models/face_detection_yunet/face_detection_yunet_2022mar.onnx?raw=true",
+      "face_detection_yunet_2022mar.onnx"
+    }
   end
 
-  def model_url("yunet_quant") do
-    "https://github.com/opencv/opencv_zoo/blob/cd1ac4e61dc51575cac38d6346494865d0dfa5ba/models/face_detection_yunet/face_detection_yunet_2022mar-act_int8-wt_int8-quantized.onnx?raw=true"
+  def model_info(:quant_model) do
+    {
+      "https://github.com/opencv/opencv_zoo/blob/cd1ac4e61dc51575cac38d6346494865d0dfa5ba/models/face_detection_yunet/face_detection_yunet_2022mar-act_int8-wt_int8-quantized.onnx?raw=true",
+      "face_detection_yunet_2022mar-act_int8-wt_int8-quantized.onnx"
+    }
   end
 
   def smartcell_tasks do
@@ -123,15 +136,27 @@ defmodule Evision.Zoo.FaceDetection.YuNet do
   end
 
   def to_quoted(attrs) do
+    {backend, target} = Evision.Zoo.to_quoted_backend_and_target(attrs)
+
     opts = [
       top_k: attrs["top_k"],
       nms_threshold: attrs["nms_threshold"],
-      conf_threshold: attrs["conf_threshold"]
+      conf_threshold: attrs["conf_threshold"],
+      backend: backend,
+      target: target
     ]
+
+    model =
+      case attrs["variant_id"] do
+        "yunet_quant" ->
+          :quant_model
+        _ ->
+          :default_model
+      end
 
     [
       quote do
-        model = Evision.Zoo.FaceDetection.YuNet.init(:default_model, {320, 320}, unquote(opts))
+        model = Evision.Zoo.FaceDetection.YuNet.init(unquote(model), {320, 320}, unquote(opts))
       end,
       quote do
         image_input = Kino.Input.image("Image")
