@@ -776,7 +776,7 @@ defmodule Evision.MixProject do
 
   def application do
     [
-      extra_applications: [:logger]
+      extra_applications: [:logger, :inets, :ssl]
     ]
   end
 
@@ -911,6 +911,7 @@ defmodule Evision.MixProject do
       # runtime
       {:dll_loader_helper, "~> 0.1"},
       {:nx, "~> 0.4"},
+      {:progress_bar, "~> 2.0"},
       # optional
       {:kino, "~> 0.7", optional: true},
       # docs
