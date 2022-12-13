@@ -722,10 +722,13 @@ defmodule Evision.MixProject do
     priv? = File.dir?("priv")
     Mix.Project.ensure_structure()
     config = Keyword.put_new(config, :make_targets, ["opencv"])
-    compiler_file = Path.join([
-      Path.dirname(Mix.ProjectStack.project_file() || __ENV__.file),
-      "deps/elixir_make/lib/elixir_make/compiler.ex"
-    ])
+
+    compiler_file =
+      Path.join([
+        Path.dirname(Mix.ProjectStack.project_file() || __ENV__.file),
+        "deps/elixir_make/lib/elixir_make/compiler.ex"
+      ])
+
     with [{ElixirMake.Compiler, _}] <- Code.require_file(compiler_file) do
       ElixirMake.Compiler.make(config, [])
       # IF there was no priv before and now there is one, we assume
