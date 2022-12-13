@@ -14,18 +14,23 @@ else
     @spec id :: String.t()
     def id, do: @smartcell_id
 
+    @type tasks :: %{String.t() => module()}
     @tasks %{
       Evision.Zoo.FaceDetection.id() => Evision.Zoo.FaceDetection
     }
+    @spec tasks :: tasks()
     def tasks, do: @tasks
 
     @tasks_list Enum.map(Map.values(@tasks), fn task -> task.smartcell_tasks() end)
+    @spec tasks_list :: [%{id: String.t(), label: String.t(), variants: [%{}]}, ...]
     def tasks_list, do: @tasks_list
 
+    @spec default_task_id :: String.t()
     def default_task_id do
       get_in(tasks_list(), [Access.at!(0), :id])
     end
 
+    @spec default_variant_id :: String.t()
     def default_variant_id do
       get_in(tasks_list(), [Access.at!(0), :variants, Access.at!(0), :id])
     end

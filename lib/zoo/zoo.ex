@@ -1,7 +1,27 @@
 defmodule Evision.Zoo do
-  def download(model_url, filename, opts \\ []) do
-    # todo
-    {:ok, ""}
+  def download(file_url, filename, opts \\ [])
+  when is_binary(file_url) and is_binary(filename) and is_list(opts) do
+    cache_dir = opts[:cache_dir] || cache_dir()
+    filepath = Path.join([cache_dir, filename])
+    case Evision.Zoo.Utils.HTTP.download(file_url, filepath) do
+      :ok ->
+        {:ok, filepath}
+      err ->
+        err
+    end
+  end
+
+  def cache_dir do
+    cache_opts = if System.get_env("MIX_XDG"), do: %{os: :linux}, else: %{}
+
+    cache_dir =
+      Path.expand(
+        System.get_env("ELIXIR_MAKE_CACHE_DIR") ||
+          :filename.basedir(:user_cache, "", cache_opts)
+      )
+
+    File.mkdir_p!(cache_dir)
+    cache_dir
   end
 
   def to_quoted_backend_and_target(attrs) do
