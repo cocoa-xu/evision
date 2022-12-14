@@ -3,11 +3,16 @@ defmodule Evision.Zoo do
   when is_binary(file_url) and is_binary(filename) and is_list(opts) do
     cache_dir = opts[:cache_dir] || cache_dir()
     filepath = Path.join([cache_dir, filename])
-    case Evision.Zoo.Utils.HTTP.download(file_url, filepath) do
-      :ok ->
-        {:ok, filepath}
-      err ->
-        err
+
+    if File.exists?(filepath) do
+      {:ok, filepath}
+    else
+      case Evision.Zoo.Utils.HTTP.download(file_url, filepath) do
+        :ok ->
+          {:ok, filepath}
+        err ->
+          err
+      end
     end
   end
 
