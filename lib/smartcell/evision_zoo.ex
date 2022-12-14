@@ -17,7 +17,8 @@ else
     @type tasks :: %{String.t() => module()}
     @tasks %{
       Evision.Zoo.FaceDetection.id() => Evision.Zoo.FaceDetection,
-      Evision.Zoo.ImageSegmentation.id() => Evision.Zoo.ImageSegmentation
+      Evision.Zoo.ImageSegmentation.id() => Evision.Zoo.ImageSegmentation,
+      Evision.Zoo.ImageClassification.id() => Evision.Zoo.ImageClassification
     }
     @spec tasks :: tasks()
     def tasks, do: @tasks
