@@ -41,6 +41,19 @@ project.
 
 The default password of the livebook is `nerves` (as the time of writing, if it does not work, please check the nerves_livebook project). 
 
+## Register Builtin Smart Cells
+```elixir
+# List all smart cells
+smartcells = Evision.SmartCell.available_smartcells()
+
+# register all smart cells
+Evision.SmartCell.register_smartcells(smartcells)
+
+# you can also register a subset of these smart cells
+# e.g., only register the Model Zoo smart cell
+Evision.SmartCell.register_smartcells(Evision.SmartCell.Zoo)
+```
+
 ## Integration with Nx
 
 ```elixir
