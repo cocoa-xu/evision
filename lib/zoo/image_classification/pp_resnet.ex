@@ -172,7 +172,7 @@ defmodule Evision.Zoo.ImageClassification.PPResNet do
           {vis_img, top_classes} = Evision.Zoo.ImageClassification.PPResNet.visualize(image, results)
 
           Kino.Frame.render(frame, Kino.Image.new(Evision.imencode(".png", vis_img), :png))
-          Kino.Frame.append(frame, Kino.Markdown.new("Top #{unquote(top_k)}: #{inspect(top_classes)}"))
+          Kino.Frame.append(frame, Evision.SmartCell.SimpleList.new(top_classes))
         end)
 
         Kino.Layout.grid([form, frame], boxed: true, gap: 16)
