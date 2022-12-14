@@ -1567,7 +1567,7 @@ template <typename Tp>
 bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, std::vector<Tp>& value, const ArgInfo& info)
 {
     if (evision::nif::check_nil(env, obj)) {
-        if (info.name != nullptr && strncmp(info.name, "netInputShape", 13) == 0) {
+        if (info.name != nullptr && (strncmp(info.name, "netInputShape", 13) == 0 || strncmp(info.name, "outBlobNames", 11) == 0)) {
             return false;
         }
         return true;
@@ -1585,7 +1585,7 @@ template <typename Tp>
 static bool evision_to_generic_vec(ErlNifEnv *env, ERL_NIF_TERM obj, std::vector<Tp>& value, const ArgInfo& info)
 {
     if (evision::nif::check_nil(env, obj)) {
-        if (info.name != nullptr && strncmp(info.name, "netInputShape", 13) == 0) {
+        if (info.name != nullptr && (strncmp(info.name, "netInputShape", 13) == 0 || strncmp(info.name, "outBlobNames", 11) == 0)) {
             return false;
         }
         return true;
@@ -1629,7 +1629,7 @@ template <>
 inline bool evision_to_generic_vec(ErlNifEnv *env, ERL_NIF_TERM obj, std::vector<std::vector<int>>& value, const ArgInfo& info)
 {
     if (evision::nif::check_nil(env, obj)) {
-        if (info.name != nullptr && strncmp(info.name, "netInputShape", 13) == 0) {
+        if (info.name != nullptr && (strncmp(info.name, "netInputShape", 13) == 0 || strncmp(info.name, "outBlobNames", 11) == 0)) {
             return false;
         }
         return true;
