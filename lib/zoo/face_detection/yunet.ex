@@ -48,7 +48,12 @@ defmodule Evision.Zoo.FaceDetection.YuNet do
     points
   end
 
-  def visualize(image, results, opts \\ []) do
+  def visualize(image, results, opts \\ [])
+  def visualize(image, {:error, "empty matrix"}, _opts) do
+    image
+  end
+
+  def visualize(image, results, opts) do
     box_color = opts[:box_color] || {0, 255, 0}
     text_color = opts[:text_color] || {0, 0, 255}
 
