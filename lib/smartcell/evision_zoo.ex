@@ -120,6 +120,52 @@ else
       {:noreply, ctx}
     end
 
+    def handle_event("update_field", %{"field" => "backend", "value" => backend}, ctx) do
+      task_id = ctx.assigns.fields["task_id"]
+      variant_id = ctx.assigns.fields["variant_id"]
+      param_fields = field_defaults_for(task_id, variant_id)
+
+      fields =
+        Map.merge(
+          %{
+            "backend" => backend,
+            "task_id" => task_id,
+            "variant_id" => variant_id
+          },
+          param_fields
+        )
+
+      ctx = assign(ctx, fields: fields)
+
+      broadcast_event(ctx, "update", %{"fields" => fields})
+
+      {:noreply, ctx}
+    end
+
+    def handle_event("update_field", %{"field" => "target", "value" => target}, ctx) do
+      task_id = ctx.assigns.fields["task_id"]
+      variant_id = ctx.assigns.fields["variant_id"]
+      IO.inspect(ctx.assigns.fields)
+
+      param_fields = field_defaults_for(task_id, variant_id)
+
+      fields =
+        Map.merge(
+          %{
+            "target" => target,
+            "task_id" => task_id,
+            "variant_id" => variant_id
+          },
+          param_fields
+        )
+
+      ctx = assign(ctx, fields: fields)
+
+      broadcast_event(ctx, "update", %{"fields" => fields})
+
+      {:noreply, ctx}
+    end
+
     def handle_event("update_field", %{"field" => field, "value" => value}, ctx) do
       current_task_id = ctx.assigns.fields["task_id"]
       current_variant_id = ctx.assigns.fields["variant_id"]
