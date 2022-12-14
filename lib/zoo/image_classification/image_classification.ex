@@ -2,6 +2,10 @@ defmodule Evision.Zoo.ImageClassification do
   @modules %{
     "pp_resnet" => Evision.Zoo.ImageClassification.PPResNet,
     "pp_resnet_quant" => Evision.Zoo.ImageClassification.PPResNet,
+    "mobilenet_v1" => Evision.Zoo.ImageClassification.MobileNetV1,
+    "mobilenet_v1_quant" => Evision.Zoo.ImageClassification.MobileNetV1,
+    # "mobilenet_v2" => Evision.Zoo.ImageClassification.MobileNetV2,
+    # "mobilenet_v2_quant" => Evision.Zoo.ImageClassification.MobileNetV2,
   }
   @module_list Enum.uniq(Map.values(@modules))
 
