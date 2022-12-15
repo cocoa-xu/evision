@@ -126,7 +126,7 @@ defmodule Evision.Zoo.FaceRecognition.SFace do
     %{
       backend: Evision.cv_DNN_BACKEND_OPENCV(),
       target: Evision.cv_DNN_TARGET_CPU(),
-      distance_type: :cosine_similiarity,
+      distance_type: :cosine_similarity,
       cosine_threshold: 0.363,
       l2_norm_threshold: 1.128,
 
