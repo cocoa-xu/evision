@@ -296,6 +296,13 @@ class ModuleGenerator(object):
         func_guards = {}
         for i in range(len(func.variants)):
             func_variant = func.variants[i]
+            if 'detectTextRectangles' in func.name:
+                # prefer returning both detections and confidences
+                # len(py_outlist) == 2: [('detections', 1), ('confidences', 2)] 
+                # len(py_outlist) == 1: [('detections', 1)]
+                if len(func_variant.py_outlist) == 1:
+                    continue
+
             for kind in function_templates:
                 if func_guards.get(kind, None) is None:
                     func_guards[kind] = []
@@ -392,7 +399,7 @@ class ModuleGenerator(object):
 
                 if "qrcodeencoder_params" == module_func_name:
                     module_func_name = 'params'
-
+                
                 global unique_signatures
                 usign = ''
                 if func.classname and len(func.classname) > 0:

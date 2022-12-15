@@ -477,7 +477,6 @@ class FuncVariant(object):
     def generate_spec_elixir(self, module_func_name: str, is_instance_method: bool, include_opts: bool, in_args: list=None, out_args: list=None) -> str:
         spec = StringIO()
 
-        self.classname
         if out_args is None:
             out_args = self.py_outlist
             out_args_name = [o[0] for o in out_args]
