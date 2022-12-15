@@ -490,7 +490,10 @@ class FuncVariant(object):
             elif self.isconstructor:
                 out_args = [self.classname]
             else:
-                out_args = []
+                if self.name == "setInputParams":
+                    out_args = [self.classname[4:]]
+                else:
+                    out_args = []
 
             for arg in self.args:
                 if arg.name in out_args_name:

@@ -360,7 +360,10 @@ class FuncInfo(object):
                         '            }'
                     else:
                         if self.should_return_self():
-                            code_ret = f"return self"
+                            code_ret = ET.code_ret_dnn_setter.substitute(
+                                storage_name=selfinfo.cname,
+                                elixir_module_name=get_elixir_module_name(selfinfo.cname)
+                            )
                         else:
                             code_ret = f"return evision_from(env, {aname})"
             else:
