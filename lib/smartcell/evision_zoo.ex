@@ -19,7 +19,8 @@ else
       Evision.Zoo.FaceDetection.id() => Evision.Zoo.FaceDetection,
       Evision.Zoo.ImageSegmentation.id() => Evision.Zoo.ImageSegmentation,
       Evision.Zoo.ImageClassification.id() => Evision.Zoo.ImageClassification,
-      Evision.Zoo.FaceRecognition.id() => Evision.Zoo.FaceRecognition
+      Evision.Zoo.FaceRecognition.id() => Evision.Zoo.FaceRecognition,
+      Evision.Zoo.TextDetection.id() => Evision.Zoo.TextDetection
     }
     @spec tasks :: tasks()
     def tasks, do: @tasks

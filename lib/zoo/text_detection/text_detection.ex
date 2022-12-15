@@ -2,8 +2,8 @@ defmodule Evision.Zoo.TextDetection do
   @modules %{
     "db_ic15_resnet18" => Evision.Zoo.TextDetection.DB_IC15,
     "db_ic15_resnet50" => Evision.Zoo.TextDetection.DB_IC15,
-    # "db_td500" => Evision.Zoo.FaceRecognition.DB_TD500,
-    # "db_td500_quant" => Evision.Zoo.FaceRecognition.DB_TD500,
+    "db_td500_resnet18" => Evision.Zoo.FaceRecognition.DB_TD500,
+    "db_td500_resnet50" => Evision.Zoo.FaceRecognition.DB_TD500,
   }
   @module_list Enum.uniq(Map.values(@modules))
 
