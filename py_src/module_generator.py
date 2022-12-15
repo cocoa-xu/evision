@@ -302,6 +302,9 @@ class ModuleGenerator(object):
                 # len(py_outlist) == 1: [('detections', 1)]
                 if len(func_variant.py_outlist) == 1:
                     continue
+            if 'setInputParams' == func.name:
+                func_variant.py_outlist.append(('retval', -1))
+                func_variant.rettype = func.classname[4:]
 
             for kind in function_templates:
                 if func_guards.get(kind, None) is None:
