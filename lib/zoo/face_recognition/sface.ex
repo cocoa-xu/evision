@@ -172,6 +172,13 @@ defmodule Evision.Zoo.FaceRecognition.SFace do
       %{
         name: "Face Recognizer",
         params: [
+          %{field: "detector", label: "Face Detector", type: :string, default: "yunet",
+            is_option: true,
+            options: [
+              %{value: "yunet", label: "YuNet"},
+              %{value: "yunet_quant", label: "YuNet (Quant)"}
+            ]
+          },
           %{field: "distance_type", label: "Distance Type", type: :string, default: "#{config[:distance_type]}",
             is_option: true,
             options: [
@@ -179,13 +186,11 @@ defmodule Evision.Zoo.FaceRecognition.SFace do
               %{value: "l2_norm", label: "L2 Norm"},
             ]
           },
-          %{field: "cosine_threshold", label: "Cosine Threshold", type: :number, default: config[:cosine_threshold]},
-          %{field: "l2_norm_threshold", label: "L2-norm Threshold", type: :number, default: config[:l2_norm_threshold]},
-          %{field: "nms_threshold", label: "NMS Threshold", type: :number, default: config[:nms_threshold]},
-          %{field: "conf_threshold", label: "Confidence", type: :number, default: config[:conf_threshold]},
+          %{field: "cosine_threshold", label: "Cosine Threshold", type: :float, default: config[:cosine_threshold]},
+          %{field: "l2_norm_threshold", label: "L2-norm Threshold", type: :float, default: config[:l2_norm_threshold]}
         ]
       }
-    ]
+    ] ++ Evision.Zoo.FaceDetection.YuNet.smartcell_params()
   end
 
   def to_quoted(attrs) do
@@ -215,10 +220,20 @@ defmodule Evision.Zoo.FaceRecognition.SFace do
           :default_model
       end
 
+    {detector_module, detector_model} =
+      case attrs["detector"] do
+        "yunet" ->
+          {Evision.Zoo.FaceDetection.YuNet, :default_model}
+        "yunet_quant" ->
+          {Evision.Zoo.FaceDetection.YuNet, :quant_model}
+        unknown_detector ->
+          raise "Unknown face detector: #{inspect(unknown_detector)}"
+      end
+
     [
       quote do
         recognizer = Evision.Zoo.FaceRecognition.SFace.init(unquote(model), unquote(recognizer_opts))
-        detector = Evision.Zoo.FaceDetection.YuNet.init(unquote(model), {320, 320}, unquote(detector_opts))
+        detector = unquote(detector_module).init(unquote(detector_model), {320, 320}, unquote(detector_opts))
       end,
       quote do
         original_input = Kino.Input.image("Original")
@@ -238,8 +253,8 @@ defmodule Evision.Zoo.FaceRecognition.SFace do
           comparison_image = Evision.Mat.from_binary(comparison_image.data, {:u, 8},
             comparison_image.height, comparison_image.width, 3)
 
-          original_results = Evision.Zoo.FaceDetection.YuNet.infer(detector, original_image)
-          comparison_results = Evision.Zoo.FaceDetection.YuNet.infer(detector, comparison_image)
+          original_results = unquote(detector_module).infer(detector, original_image)
+          comparison_results = unquote(detector_module).infer(detector, comparison_image)
 
           case {original_results, comparison_results} do
             {%Evision.Mat{}, %Evision.Mat{}} ->
@@ -254,8 +269,8 @@ defmodule Evision.Zoo.FaceRecognition.SFace do
 
               original_image = Evision.cvtColor(original_image, Evision.cv_COLOR_RGB2BGR())
               comparison_image = Evision.cvtColor(comparison_image, Evision.cv_COLOR_RGB2BGR())
-              vis_original = Evision.Zoo.FaceDetection.YuNet.visualize(original_image, original_results[0])
-              vis_comparison = Evision.Zoo.FaceDetection.YuNet.visualize(comparison_image, comparison_results[0])
+              vis_original = unquote(detector_module).visualize(original_image, original_results[0])
+              vis_comparison = unquote(detector_module).visualize(comparison_image, comparison_results[0])
 
               vis = [
                 Kino.Image.new(Evision.imencode(".png", vis_original), :png),
