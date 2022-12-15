@@ -26,7 +26,7 @@ defmodule Evision.Zoo.ImageClassification.PPResNet do
     net
   end
 
-  @spec infer(Evision.DNN.Net.t(), Evision.Mat.maybe_mat_in()) :: any()
+  @spec infer(Evision.DNN.Net.t(), Evision.Mat.maybe_mat_in(), Keyword.t()) :: any()
   def infer(self=%Evision.DNN.Net{}, image, opts \\ []) do
     top_k = opts[:top_k] || 5
     inputBlob = preprocess(image)
