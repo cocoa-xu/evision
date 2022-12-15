@@ -18,7 +18,8 @@ else
     @tasks %{
       Evision.Zoo.FaceDetection.id() => Evision.Zoo.FaceDetection,
       Evision.Zoo.ImageSegmentation.id() => Evision.Zoo.ImageSegmentation,
-      Evision.Zoo.ImageClassification.id() => Evision.Zoo.ImageClassification
+      Evision.Zoo.ImageClassification.id() => Evision.Zoo.ImageClassification,
+      Evision.Zoo.FaceRecognition.id() => Evision.Zoo.FaceRecognition
     }
     @spec tasks :: tasks()
     def tasks, do: @tasks
@@ -145,7 +146,6 @@ else
     def handle_event("update_field", %{"field" => "target", "value" => target}, ctx) do
       task_id = ctx.assigns.fields["task_id"]
       variant_id = ctx.assigns.fields["variant_id"]
-      IO.inspect(ctx.assigns.fields)
 
       param_fields = field_defaults_for(task_id, variant_id)
 
@@ -173,7 +173,7 @@ else
       type =
         Enum.find_value(tasks_list(), fn task ->
           task.id == current_task_id &&
-            Enum.find_value(task[:variant], fn variant ->
+            Enum.find_value(task[:variants], fn variant ->
               variant.id == current_variant_id &&
               Enum.find_value(variant.params, fn param ->
                 param.field == field && param.type
@@ -193,7 +193,13 @@ else
 
     defp parse_value("", _type), do: nil
     defp parse_value(value, :number), do: String.to_integer(value)
-    defp parse_value(value, :string), do: value
+    defp parse_value(value, :string) do
+      if is_atom(value) do
+        Atom.to_string(value)
+      else
+        value
+      end
+    end
     defp parse_value(value, _type), do: value
 
     @impl true
