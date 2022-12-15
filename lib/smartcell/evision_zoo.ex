@@ -21,7 +21,7 @@ else
       Evision.Zoo.ImageClassification.id() => Evision.Zoo.ImageClassification,
       Evision.Zoo.FaceRecognition.id() => Evision.Zoo.FaceRecognition,
       Evision.Zoo.TextDetection.id() => Evision.Zoo.TextDetection,
-      # Evision.Zoo.TextRecognition.id() => Evision.Zoo.TextRecognition
+      Evision.Zoo.TextRecognition.id() => Evision.Zoo.TextRecognition
     }
     @spec tasks :: tasks()
     def tasks, do: @tasks
@@ -114,7 +114,7 @@ else
             "task_id" => task_id,
             "variant_id" => variant_id
           },
-          param_fields
+          Map.merge(param_fields, ctx.assigns.fields)
         )
 
       ctx = assign(ctx, fields: fields)
