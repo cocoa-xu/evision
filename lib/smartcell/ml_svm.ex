@@ -93,7 +93,7 @@ else
       "term_criteria_eps" => %{
         :type => :number,
         :default => 0
-      },
+      }
     }
     @inner_to_module %{
       "traindata" => TrainData
@@ -107,24 +107,30 @@ else
 
     @spec defaults :: map()
     def defaults do
-      Map.new(Enum.map(@properties, fn {field, field_specs} ->
-        {field, field_specs[:default]}
-      end))
+      Map.new(
+        Enum.map(@properties, fn {field, field_specs} ->
+          {field, field_specs[:default]}
+        end)
+      )
     end
 
     @impl true
     def init(attrs, ctx) do
       # load from file or fill empty entries with default values
       fields =
-        Map.new(Enum.map(@properties, fn {field, field_specs} ->
-          {field, attrs[field] || field_specs[:default]}
-        end))
+        Map.new(
+          Enum.map(@properties, fn {field, field_specs} ->
+            {field, attrs[field] || field_specs[:default]}
+          end)
+        )
 
       # traindata
       key = "traindata"
-      fields = ESCH.update_key_with_module(fields, key, @inner_to_module[key], fn fields, key ->
-        fields["data_from"] == key
-      end)
+
+      fields =
+        ESCH.update_key_with_module(fields, key, @inner_to_module[key], fn fields, key ->
+          fields["data_from"] == key
+        end)
 
       info = [id: @smartcell_id, fields: fields]
       {:ok, assign(ctx, info)}
@@ -141,19 +147,22 @@ else
         case String.split(field, ".", parts: 2) do
           [inner, forward] ->
             ESCH.to_inner_updates(inner, @inner_to_module[inner], forward, value, ctx)
+
           [field] ->
             to_updates(ctx.assigns.fields, field, value)
         end
+
       ctx = update(ctx, :fields, &Map.merge(&1, updated_fields))
       broadcast_event(ctx, "update", %{"fields" => updated_fields})
       {:noreply, ctx}
     end
 
-    def to_updates(_fields, name="data_from", value) do
+    def to_updates(_fields, name = "data_from", value) do
       property = @properties[name]
       fields = %{name => ESCH.to_update(value, property[:type], Access.get(property, :opts))}
 
       key = "traindata"
+
       ESCH.update_key_with_module(fields, key, @inner_to_module[key], fn fields, key ->
         fields["data_from"] == key
       end)
@@ -180,7 +189,9 @@ else
         unquote(ESCH.quoted_var(attrs["to_variable"])) =
           Evision.ML.SVM.create()
           |> Evision.ML.SVM.setType(unquote(ESCH.quoted_var("Evision.cv_#{attrs["type"]}()")))
-          |> Evision.ML.SVM.setKernel(unquote(ESCH.quoted_var("Evision.cv_#{attrs["kernel_type"]}()")))
+          |> Evision.ML.SVM.setKernel(
+            unquote(ESCH.quoted_var("Evision.cv_#{attrs["kernel_type"]}()"))
+          )
 
         unquote(set_svm_param(attrs))
         unquote(set_kernel_param(attrs))
@@ -189,25 +200,34 @@ else
       end
     end
 
-    defp set_svm_param(attrs=%{"type" => "C_SVC"}) do
+    defp set_svm_param(attrs = %{"type" => "C_SVC"}) do
       quote do
-        unquote(ESCH.quoted_var(attrs["to_variable"])) = Evision.ML.SVM.setC(unquote(ESCH.quoted_var(attrs["to_variable"])), unquote(attrs["c"]))
+        unquote(ESCH.quoted_var(attrs["to_variable"])) =
+          Evision.ML.SVM.setC(unquote(ESCH.quoted_var(attrs["to_variable"])), unquote(attrs["c"]))
       end
     end
 
-    defp set_svm_param(attrs=%{"type" => "NU_SVC"}) do
+    defp set_svm_param(attrs = %{"type" => "NU_SVC"}) do
       quote do
-        unquote(ESCH.quoted_var(attrs["to_variable"])) = Evision.ML.SVM.setNu(unquote(ESCH.quoted_var(attrs["to_variable"])), unquote(attrs["nu"]))
+        unquote(ESCH.quoted_var(attrs["to_variable"])) =
+          Evision.ML.SVM.setNu(
+            unquote(ESCH.quoted_var(attrs["to_variable"])),
+            unquote(attrs["nu"])
+          )
       end
     end
 
-    defp set_svm_param(attrs=%{"type" => "ONE_CLASS"}) do
+    defp set_svm_param(attrs = %{"type" => "ONE_CLASS"}) do
       quote do
-        unquote(ESCH.quoted_var(attrs["to_variable"])) = Evision.ML.SVM.setNu(unquote(ESCH.quoted_var(attrs["to_variable"])), unquote(attrs["nu"]))
+        unquote(ESCH.quoted_var(attrs["to_variable"])) =
+          Evision.ML.SVM.setNu(
+            unquote(ESCH.quoted_var(attrs["to_variable"])),
+            unquote(attrs["nu"])
+          )
       end
     end
 
-    defp set_svm_param(attrs=%{"type" => "EPS_SVR"}) do
+    defp set_svm_param(attrs = %{"type" => "EPS_SVR"}) do
       quote do
         unquote(ESCH.quoted_var(attrs["to_variable"])) =
           unquote(ESCH.quoted_var(attrs["to_variable"]))
@@ -216,7 +236,7 @@ else
       end
     end
 
-    defp set_svm_param(attrs=%{"type" => "NU_SVR"}) do
+    defp set_svm_param(attrs = %{"type" => "NU_SVR"}) do
       quote do
         unquote(ESCH.quoted_var(attrs["to_variable"])) =
           unquote(ESCH.quoted_var(attrs["to_variable"]))
@@ -228,7 +248,7 @@ else
     defp set_svm_param(_) do
     end
 
-    defp set_kernel_param(attrs=%{"kernel_type" => "POLY"}) do
+    defp set_kernel_param(attrs = %{"kernel_type" => "POLY"}) do
       quote do
         unquote(ESCH.quoted_var(attrs["to_variable"])) =
           unquote(ESCH.quoted_var(attrs["to_variable"]))
@@ -238,13 +258,17 @@ else
       end
     end
 
-    defp set_kernel_param(attrs=%{"kernel_type" => "RBF"}) do
+    defp set_kernel_param(attrs = %{"kernel_type" => "RBF"}) do
       quote do
-        unquote(ESCH.quoted_var(attrs["to_variable"])) = Evision.ML.SVM.setGamma(unquote(ESCH.quoted_var(attrs["to_variable"])), unquote(attrs["gamma"]))
+        unquote(ESCH.quoted_var(attrs["to_variable"])) =
+          Evision.ML.SVM.setGamma(
+            unquote(ESCH.quoted_var(attrs["to_variable"])),
+            unquote(attrs["gamma"])
+          )
       end
     end
 
-    defp set_kernel_param(attrs=%{"kernel_type" => "SIGMOID"}) do
+    defp set_kernel_param(attrs = %{"kernel_type" => "SIGMOID"}) do
       quote do
         unquote(ESCH.quoted_var(attrs["to_variable"])) =
           unquote(ESCH.quoted_var(attrs["to_variable"]))
@@ -253,45 +277,97 @@ else
       end
     end
 
-    defp set_kernel_param(attrs=%{"kernel_type" => "CHI2"}) do
+    defp set_kernel_param(attrs = %{"kernel_type" => "CHI2"}) do
       quote do
-        unquote(ESCH.quoted_var(attrs["to_variable"])) = Evision.ML.SVM.setGamma(unquote(ESCH.quoted_var(attrs["to_variable"])), unquote(attrs["gamma"]))
+        unquote(ESCH.quoted_var(attrs["to_variable"])) =
+          Evision.ML.SVM.setGamma(
+            unquote(ESCH.quoted_var(attrs["to_variable"])),
+            unquote(attrs["gamma"])
+          )
       end
     end
 
     defp set_kernel_param(_) do
     end
 
-    defp set_term_criteria(attrs=%{"term_criteria_type" => "max_count", "term_criteria_count" => count, "term_criteria_eps" => eps}) do
+    defp set_term_criteria(
+           attrs = %{
+             "term_criteria_type" => "max_count",
+             "term_criteria_count" => count,
+             "term_criteria_eps" => eps
+           }
+         ) do
       quote do
-        unquote(ESCH.quoted_var(attrs["to_variable"])) = Evision.ML.SVM.setTermCriteria(unquote(ESCH.quoted_var(attrs["to_variable"])), {Evision.cv_MAX_ITER(), unquote(count), unquote(eps)})
+        unquote(ESCH.quoted_var(attrs["to_variable"])) =
+          Evision.ML.SVM.setTermCriteria(
+            unquote(ESCH.quoted_var(attrs["to_variable"])),
+            {Evision.cv_MAX_ITER(), unquote(count), unquote(eps)}
+          )
       end
     end
 
-    defp set_term_criteria(attrs=%{"term_criteria_type" => "eps", "term_criteria_count" => count, "term_criteria_eps" => eps}) do
+    defp set_term_criteria(
+           attrs = %{
+             "term_criteria_type" => "eps",
+             "term_criteria_count" => count,
+             "term_criteria_eps" => eps
+           }
+         ) do
       quote do
-        unquote(ESCH.quoted_var(attrs["to_variable"])) = Evision.ML.SVM.setTermCriteria(unquote(ESCH.quoted_var(attrs["to_variable"])), {Evision.cv_EPS(), unquote(count), unquote(eps)})
+        unquote(ESCH.quoted_var(attrs["to_variable"])) =
+          Evision.ML.SVM.setTermCriteria(
+            unquote(ESCH.quoted_var(attrs["to_variable"])),
+            {Evision.cv_EPS(), unquote(count), unquote(eps)}
+          )
       end
     end
 
-    defp set_term_criteria(attrs=%{"term_criteria_type" => "max_count+eps", "term_criteria_count" => count, "term_criteria_eps" => eps}) do
+    defp set_term_criteria(
+           attrs = %{
+             "term_criteria_type" => "max_count+eps",
+             "term_criteria_count" => count,
+             "term_criteria_eps" => eps
+           }
+         ) do
       quote do
-        unquote(ESCH.quoted_var(attrs["to_variable"])) = Evision.ML.SVM.setTermCriteria(unquote(ESCH.quoted_var(attrs["to_variable"])), {Evision.cv_MAX_ITER() + Evision.cv_EPS(), unquote(count), unquote(eps)})
+        unquote(ESCH.quoted_var(attrs["to_variable"])) =
+          Evision.ML.SVM.setTermCriteria(
+            unquote(ESCH.quoted_var(attrs["to_variable"])),
+            {Evision.cv_MAX_ITER() + Evision.cv_EPS(), unquote(count), unquote(eps)}
+          )
       end
     end
 
-    defp train_on_dataset(%{"data_from" => "traindata_var", "traindata_var" => traindata_var, "to_variable" => to_variable}) do
+    defp train_on_dataset(%{
+           "data_from" => "traindata_var",
+           "traindata_var" => traindata_var,
+           "to_variable" => to_variable
+         }) do
       quote do
-        Evision.ML.SVM.train(unquote(ESCH.quoted_var(to_variable)), unquote(ESCH.quoted_var(traindata_var)))
+        Evision.ML.SVM.train(
+          unquote(ESCH.quoted_var(to_variable)),
+          unquote(ESCH.quoted_var(traindata_var))
+        )
+
         unquote(TrainData.get_calc_error(Evision.ML.SVM, traindata_var, to_variable))
       end
     end
 
-    defp train_on_dataset(%{"data_from" => "traindata", "traindata" => traindata_attrs, "to_variable" => to_variable}) do
+    defp train_on_dataset(%{
+           "data_from" => "traindata",
+           "traindata" => traindata_attrs,
+           "to_variable" => to_variable
+         }) do
       dataset_variable = traindata_attrs["to_variable"]
+
       quote do
         unquote(TrainData.get_quoted_code(traindata_attrs))
-        Evision.ML.SVM.train(unquote(ESCH.quoted_var(to_variable)), unquote(ESCH.quoted_var(dataset_variable)))
+
+        Evision.ML.SVM.train(
+          unquote(ESCH.quoted_var(to_variable)),
+          unquote(ESCH.quoted_var(dataset_variable))
+        )
+
         unquote(TrainData.get_calc_error(Evision.ML.SVM, dataset_variable, to_variable))
       end
     end
