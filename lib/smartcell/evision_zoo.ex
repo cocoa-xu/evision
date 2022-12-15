@@ -179,10 +179,8 @@ else
             Enum.find_value(task[:variants], fn variant ->
               variant.id == current_variant_id &&
                 Enum.find_value(variant.params, fn param ->
-                  Enum.find_value(param, fn pparams ->
-                    Enum.find_value(pparams, fn pparam ->
-                      pparam.field == field && pparam.type
-                    end)
+                  Enum.find_value(param.params, fn pparam ->
+                    pparam.field == field && pparam.type
                   end)
                 end)
             end)
@@ -200,6 +198,7 @@ else
 
     defp parse_value("", _type), do: nil
     defp parse_value(value, :number), do: String.to_integer(value)
+    defp parse_value(value, :float), do: String.to_float(value)
 
     defp parse_value(value, :string) do
       if is_atom(value) do

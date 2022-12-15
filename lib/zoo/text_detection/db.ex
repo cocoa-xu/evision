@@ -140,10 +140,10 @@ defmodule Evision.Zoo.TextDetection.DB do
         params: [
           %{field: "width", label: "Width", type: :number, default: config[:width], tooltip: "Multiplies of 32."},
           %{field: "height", label: "Height", type: :number, default: config[:height], tooltip: "Multiplies of 32."},
-          %{field: "binary_threshold", label: "Binary Threshold", type: :number, default: config[:binary_threshold]},
-          %{field: "polygon_threshold", label: "Polygon Threshold", type: :number, default: config[:polygon_threshold]},
+          %{field: "binary_threshold", label: "Binary Threshold", type: :float, default: config[:binary_threshold]},
+          %{field: "polygon_threshold", label: "Polygon Threshold", type: :float, default: config[:polygon_threshold]},
           %{field: "max_candidates", label: "Max Candidates", type: :number, default: config[:max_candidates]},
-          %{field: "unclip_ratio", label: "Unclip Ratio", type: :number, default: config[:unclip_ratio]}
+          %{field: "unclip_ratio", label: "Unclip Ratio", type: :float, default: config[:unclip_ratio]}
         ]
       }
     ]
