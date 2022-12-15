@@ -125,7 +125,12 @@ defmodule Evision.Zoo.ImageClassification.PPResNet do
   def smartcell_params() do
     config = default_config()
     [
-      %{field: "top_k", label: "Top-k", type: :number, default: config[:top_k]},
+      %{
+        name: "Image Classifier",
+        params: [
+          %{field: "top_k", label: "Top-k", type: :number, default: config[:top_k]},
+        ]
+      }
     ]
   end
 

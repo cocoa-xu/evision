@@ -20,7 +20,8 @@ else
       Evision.Zoo.ImageSegmentation.id() => Evision.Zoo.ImageSegmentation,
       Evision.Zoo.ImageClassification.id() => Evision.Zoo.ImageClassification,
       Evision.Zoo.FaceRecognition.id() => Evision.Zoo.FaceRecognition,
-      Evision.Zoo.TextDetection.id() => Evision.Zoo.TextDetection
+      Evision.Zoo.TextDetection.id() => Evision.Zoo.TextDetection,
+      # Evision.Zoo.TextRecognition.id() => Evision.Zoo.TextRecognition
     }
     @spec tasks :: tasks()
     def tasks, do: @tasks
@@ -56,28 +57,29 @@ else
             into: fields,
             do: {field, attrs[field] || default}
 
-      {:ok, assign(ctx,
-        id: @smartcell_id,
-        fields: fields
-      )}
+      {:ok,
+       assign(ctx,
+         id: @smartcell_id,
+         fields: fields
+       )}
     end
 
     defp field_defaults_for(task_id, variant_id) do
       variant = variant_by_id(task_id, variant_id)
 
-      for param <- variant.params, into: %{} do
-        {param.field, param.default}
+      for param <- variant.params, pparam <- param.params, into: %{} do
+        {pparam.field, pparam.default}
       end
     end
 
     @impl true
     def handle_connect(ctx) do
       {:ok,
-      %{
-        id: ctx.assigns.id,
-        fields: ctx.assigns.fields,
-        tasks: tasks_list(),
-      }, ctx}
+       %{
+         id: ctx.assigns.id,
+         fields: ctx.assigns.fields,
+         tasks: tasks_list()
+       }, ctx}
     end
 
     @impl true
@@ -176,9 +178,13 @@ else
           task.id == current_task_id &&
             Enum.find_value(task[:variants], fn variant ->
               variant.id == current_variant_id &&
-              Enum.find_value(variant.params, fn param ->
-                param.field == field && param.type
-              end)
+                Enum.find_value(variant.params, fn param ->
+                  Enum.find_value(param, fn pparams ->
+                    Enum.find_value(pparams, fn pparam ->
+                      pparam.field == field && pparam.type
+                    end)
+                  end)
+                end)
             end)
         end)
 
@@ -194,6 +200,7 @@ else
 
     defp parse_value("", _type), do: nil
     defp parse_value(value, :number), do: String.to_integer(value)
+
     defp parse_value(value, :string) do
       if is_atom(value) do
         Atom.to_string(value)
@@ -201,6 +208,7 @@ else
         value
       end
     end
+
     defp parse_value(value, _type), do: value
 
     @impl true
@@ -215,6 +223,7 @@ else
 
     defp to_quoted(%{"task_id" => task_id} = attrs) do
       task = Map.get(tasks(), task_id)
+
       if task do
         task.to_quoted(attrs)
       else

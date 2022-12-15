@@ -33,10 +33,18 @@ button {
 
 .row {
   display: flex;
-  align-items: center;
-  padding: 8px 16px;
+  align-items: end;
+  padding: 8px 20px;
   gap: 8px;
   overflow-x: scroll;
+}
+
+.param-collection {
+  padding: 8px 16px;
+  gap: 8px;
+  color: var(--gray-600);
+  display: block;
+  font-size: 1rem;
 }
 
 .draggable {

@@ -169,17 +169,22 @@ defmodule Evision.Zoo.FaceRecognition.SFace do
   def smartcell_params() do
     config = default_config()
     [
-      %{field: "distance_type", label: "Distance Type", type: :string, default: "#{config[:distance_type]}",
-        is_option: true,
-        options: [
-          %{value: "cosine_similarity", label: "Cosine Similarity"},
-          %{value: "l2_norm", label: "L2 Norm"},
+      %{
+        name: "Face Recognizer",
+        params: [
+          %{field: "distance_type", label: "Distance Type", type: :string, default: "#{config[:distance_type]}",
+            is_option: true,
+            options: [
+              %{value: "cosine_similarity", label: "Cosine Similarity"},
+              %{value: "l2_norm", label: "L2 Norm"},
+            ]
+          },
+          %{field: "cosine_threshold", label: "Cosine Threshold", type: :number, default: config[:cosine_threshold]},
+          %{field: "l2_norm_threshold", label: "L2-norm Threshold", type: :number, default: config[:l2_norm_threshold]},
+          %{field: "nms_threshold", label: "NMS Threshold", type: :number, default: config[:nms_threshold]},
+          %{field: "conf_threshold", label: "Confidence", type: :number, default: config[:conf_threshold]},
         ]
-      },
-      %{field: "cosine_threshold", label: "Cosine Threshold", type: :number, default: config[:cosine_threshold]},
-      %{field: "l2_norm_threshold", label: "L2-norm Threshold", type: :number, default: config[:l2_norm_threshold]},
-      %{field: "nms_threshold", label: "NMS Threshold", type: :number, default: config[:nms_threshold]},
-      %{field: "conf_threshold", label: "Confidence", type: :number, default: config[:conf_threshold]},
+      }
     ]
   end
 

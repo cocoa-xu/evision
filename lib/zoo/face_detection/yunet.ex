@@ -134,9 +134,14 @@ defmodule Evision.Zoo.FaceDetection.YuNet do
   def smartcell_params() do
     config = default_config()
     [
-      %{field: "top_k", label: "Top-k", type: :number, default: config[:top_k]},
-      %{field: "nms_threshold", label: "NMS Threshold", type: :number, default: config[:nms_threshold]},
-      %{field: "conf_threshold", label: "Confidence", type: :number, default: config[:conf_threshold]},
+      %{
+        name: "Face Detector",
+        params: [
+          %{field: "top_k", label: "Top-k", type: :number, default: config[:top_k]},
+          %{field: "nms_threshold", label: "NMS Threshold", type: :number, default: config[:nms_threshold]},
+          %{field: "conf_threshold", label: "Confidence", type: :number, default: config[:conf_threshold]},
+        ]
+      }
     ]
   end
 

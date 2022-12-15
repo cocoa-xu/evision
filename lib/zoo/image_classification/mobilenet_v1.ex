@@ -26,7 +26,7 @@ defmodule Evision.Zoo.ImageClassification.MobileNetV1 do
     net
   end
 
-  @spec infer(Evision.DNN.Net.t(), Evision.Mat.maybe_mat_in()) :: any()
+  @spec infer(Evision.DNN.Net.t(), Evision.Mat.maybe_mat_in(), Keyword.t()) :: any()
   def infer(self=%Evision.DNN.Net{}, image, opts \\ []) do
     top_k = opts[:top_k] || 5
     inputBlob = preprocess(image)
@@ -125,7 +125,12 @@ defmodule Evision.Zoo.ImageClassification.MobileNetV1 do
   def smartcell_params() do
     config = default_config()
     [
-      %{field: "top_k", label: "Top-k", type: :number, default: config[:top_k]},
+      %{
+        name: "Image Classifier",
+        params: [
+          %{field: "top_k", label: "Top-k", type: :number, default: config[:top_k]},
+        ]
+      }
     ]
   end
 
