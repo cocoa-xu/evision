@@ -432,7 +432,7 @@ class ModuleGenerator(object):
                     if func_name.startswith(evision_nif_prefix() + "dnn") and module_func_name == "forward":
                         func_arity = 2
                         if kind == 'elixir':
-                            function_code.write(f'  @spec forward(Evision.Net.t(), [{{atom(), term()}},...] | nil) :: list(Evision.Mat.t()) | {{:error, String.t()}}\n'
+                            function_code.write(f'  @spec forward(Evision.Net.t(), [{{atom(), term()}},...] | nil) :: list(Evision.Mat.t()) | Evision.Mat.t() | {{:error, String.t()}}\n'
                                 f'  def {module_func_name}(self, opts \\\\ nil)\n'
                                 f'  def {module_func_name}(self, opts) when opts == nil or (is_list(opts) and is_tuple(hd(opts))) do\n'
                                 '    self = Evision.Internal.Structurise.from_struct(self)\n'
