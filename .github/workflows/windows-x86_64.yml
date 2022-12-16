@@ -110,7 +110,6 @@ jobs:
           mix compile_opencv
 
       - name: Mix Compile
-        if: steps.cache-mix-compile.outputs.cache-hit != 'true'
         shell: bash
         run: |
           rm -f Makefile
