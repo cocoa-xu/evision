@@ -90,12 +90,6 @@ jobs:
           fi
           rm -f Makefile
           rm -f _build/${{ env.MIX_ENV }}/lib/evision/priv/evision.dll
-
-          mkdir -p lib/generated
-          mkdir -p src/generated
-          cat c_src/headers.txt
-          python3 py_src/gen2.py c_src lib/generated src/generated c_src/headers.txt "${EVISION_GENERATE_LANG}"
-
           mix compile
 
       - name: Create precompiled library
