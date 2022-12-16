@@ -115,7 +115,11 @@ jobs:
         run: |
           rm -f Makefile
           rm -f "_build/${MIX_ENV}/lib/evision/priv/evision.dll"
+
+          mkdir -p lib/generated
+          mkdir -p src/generated
           python3 py_src/gen2.py c_src lib/generated src/generated c_src/headers.txt elixir
+          
           mix compile
 
       - name: Cache testdata

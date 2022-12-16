@@ -131,7 +131,11 @@ jobs:
           fi
           echo "CMAKE_TOOLCHAIN_FILE: ${CMAKE_TOOLCHAIN_FILE}"
           rm -f _build/${MIX_ENV}/lib/evision/priv/evision.so
-          python3 py_src/gen2.py c_src lib/generated src/generated c_src/headers.txt elixir
+
+          mkdir -p lib/generated
+          mkdir -p src/generated
+          python3 py_src/gen2.py c_src lib/generated src/generated c_src/headers.txt "${EVISION_GENERATE_LANG}"
+          
           mix compile
 
       - name: Create precompiled library
