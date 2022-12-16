@@ -74,11 +74,14 @@ else
 
     @impl true
     def handle_connect(ctx) do
+      {backend_options, target_options} = Evision.Zoo.available_backend_and_target()
       {:ok,
        %{
          id: ctx.assigns.id,
          fields: ctx.assigns.fields,
-         tasks: tasks_list()
+         tasks: tasks_list(),
+         backend_options: backend_options,
+         target_options: target_options
        }, ctx}
     end
 
