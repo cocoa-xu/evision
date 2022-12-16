@@ -109,7 +109,7 @@ jobs:
         id: cache-mix-compile_opencv
         uses: actions/cache@v3
         with:
-          key: precompile-opencv-${{ env.OPENCV_VER }}-${{ matrix.pair.arch }}-${{ hashFiles('cc_toolchain/*linux-gnu.cmake') }}-${{ hashFiles('Makefile') }}
+          key: precompile-opencv-${{ env.OPENCV_VER }}-${{ matrix.pair.arch }}-${{ hashFiles('cc_toolchain/*linux-gnu.cmake') }}-${{ hashFiles('Makefile') }}-${{ hashFiles('py_src/*.py') }}
           path: |
             ./_build/${{ env.MIX_ENV }}/lib/evision
             ./c_src/headers.txt
@@ -134,8 +134,9 @@ jobs:
 
           mkdir -p lib/generated
           mkdir -p src/generated
+          cat c_src/headers.txt
           python3 py_src/gen2.py c_src lib/generated src/generated c_src/headers.txt "${EVISION_GENERATE_LANG}"
-          
+
           mix compile
 
       - name: Create precompiled library
