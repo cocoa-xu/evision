@@ -4,9 +4,9 @@ defmodule Evision.Zoo.TextRecognition.CRNN do
 
   'FP16' or 'INT8' stands for 'model quantized into FP16' or 'model quantized into int8'.
 
-  - `CRNN_EN` and it variants can detect digits (0~9) and letters (return lowercase letters a~z).
-  - `CRNN_CH` and it variants can detect digits (0~9), upper/lower-case letters (a~z and A~Z), and some special characters.
-  - `CRNN_CN` and it variants can detect digits (0~9), upper/lower-case letters (a~z and A~Z), some Chinese characters and some special characters.
+  - `CRNN_EN` and it variants can detect digits (0-9) and letters (return lowercase letters a-z).
+  - `CRNN_CH` and it variants can detect digits (0-9), upper/lower-case letters (a-z and A-Z), and some special characters.
+  - `CRNN_CN` and it variants can detect digits (0-9), upper/lower-case letters (a-z and A-Z), some Chinese characters and some special characters.
   """
 
   @doc """
