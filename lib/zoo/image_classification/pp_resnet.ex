@@ -299,14 +299,10 @@ defmodule Evision.Zoo.ImageClassification.PPResNet do
           image_ = Evision.resize(image, {256, 256})[[16..239, 16..239]]
           results = Evision.Zoo.ImageClassification.PPResNet.infer(model, image_, top_k: unquote(top_k))
 
-
-          image = Evision.cvtColor(image, Evision.cv_COLOR_RGB2BGR())
-
-          labels = get_labels()
+          labels = Evision.Zoo.ImageClassification.PPResNet.get_labels()
           top_classes = Enum.map(results, &Enum.at(labels, &1))
 
-          Kino.Frame.render(frame, Kino.Image.new(Evision.imencode(".png", image), :png))
-          Kino.Frame.append(frame, Evision.SmartCell.SimpleList.new(top_classes))
+          Kino.Frame.render(frame, Evision.SmartCell.SimpleList.new(top_classes))
         end)
 
         Kino.Layout.grid([form, frame], boxed: true, gap: 16)

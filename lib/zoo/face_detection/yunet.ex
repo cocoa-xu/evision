@@ -313,7 +313,7 @@ defmodule Evision.Zoo.FaceDetection.YuNet do
 
     [
       quote do
-        model = Evision.Zoo.FaceDetection.YuNet.init(unquote(model), {320, 320}, unquote(opts))
+        model = Evision.Zoo.FaceDetection.YuNet.init(unquote(model), unquote(opts))
       end,
       quote do
         image_input = Kino.Input.image("Image")

@@ -113,11 +113,11 @@ else
 
       fields =
         Map.merge(
+          Map.merge(param_fields, ctx.assigns.fields),
           %{
             "task_id" => task_id,
             "variant_id" => variant_id
-          },
-          Map.merge(param_fields, ctx.assigns.fields)
+          }
         )
 
       ctx = assign(ctx, fields: fields)

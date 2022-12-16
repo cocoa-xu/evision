@@ -204,20 +204,27 @@ defmodule Evision.Zoo.TextRecognition.CRNN do
         end
       end
 
-    for i <- 0..Enum.count(chars)-1, into: <<>> do
-      c = Enum.at(chars, i)
-      case c do
-        "-" ->
-          ""
-        _ ->
-          if not(i > 0 and Enum.at(chars, i + 1, "-") == c) do
-            c
+    case chars do
+      [] ->
+        ""
+       _ ->
+        for i <- 0..Enum.count(chars)-1, into: <<>> do
+          c = Enum.at(chars, i)
+          case c do
+            "-" ->
+              ""
+            _ ->
+              if not(i > 0 and Enum.at(chars, i + 1, "-") == c) do
+                c
+              else
+                ""
+              end
           end
-      end
+        end
     end
   end
 
-  def postprocess(_) do
+  def postprocess(_, _) do
     ""
   end
 
