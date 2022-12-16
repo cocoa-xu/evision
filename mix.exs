@@ -2,7 +2,7 @@ defmodule Evision.MixProject.Metadata do
   @moduledoc false
 
   def app, do: :evision
-  def version, do: "0.1.21"
+  def version, do: "0.1.22-dev"
   def github_url, do: "https://github.com/cocoa-xu/evision"
   def opencv_version, do: "4.6.0"
   # only means compatible. need to write more tests
@@ -722,10 +722,13 @@ defmodule Evision.MixProject do
     priv? = File.dir?("priv")
     Mix.Project.ensure_structure()
     config = Keyword.put_new(config, :make_targets, ["opencv"])
-    compiler_file = Path.join([
-      Path.dirname(Mix.ProjectStack.project_file() || __ENV__.file),
-      "deps/elixir_make/lib/elixir_make/compiler.ex"
-    ])
+
+    compiler_file =
+      Path.join([
+        Path.dirname(Mix.ProjectStack.project_file() || __ENV__.file),
+        "deps/elixir_make/lib/elixir_make/compiler.ex"
+      ])
+
     with [{ElixirMake.Compiler, _}] <- Code.require_file(compiler_file) do
       ElixirMake.Compiler.make(config, [])
       # IF there was no priv before and now there is one, we assume
@@ -776,7 +779,7 @@ defmodule Evision.MixProject do
 
   def application do
     [
-      extra_applications: [:logger]
+      extra_applications: [:logger, :inets, :ssl]
     ]
   end
 
@@ -911,6 +914,7 @@ defmodule Evision.MixProject do
       # runtime
       {:dll_loader_helper, "~> 0.1"},
       {:nx, "~> 0.4"},
+      {:progress_bar, "~> 2.0"},
       # optional
       {:kino, "~> 0.7", optional: true},
       # docs

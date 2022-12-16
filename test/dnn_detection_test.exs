@@ -140,6 +140,7 @@ defmodule Evision.DNN.Test do
 
       Cv.TestHelper.download!(@download_file_1, model_config)
       model_class_list = Path.join([__DIR__, "testdata", "models", "coco_names.txt"])
+
       File.mkdir_p!(
         Path.join([__DIR__, "testdata", "models", "ssd_mobilenet_v2_coco_2018_03_29"])
       )

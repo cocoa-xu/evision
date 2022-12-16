@@ -47,7 +47,7 @@ else
       "to_variable" => %{
         :type => :string,
         :default => "dtree"
-      },
+      }
     }
     @inner_to_module %{
       "traindata" => TrainData
@@ -61,24 +61,30 @@ else
 
     @spec defaults :: map()
     def defaults do
-      Map.new(Enum.map(@properties, fn {field, field_specs} ->
-        {field, field_specs[:default]}
-      end))
+      Map.new(
+        Enum.map(@properties, fn {field, field_specs} ->
+          {field, field_specs[:default]}
+        end)
+      )
     end
 
     @impl true
     def init(attrs, ctx) do
       # load from file or fill empty entries with default values
       fields =
-        Map.new(Enum.map(@properties, fn {field, field_specs} ->
-          {field, attrs[field] || field_specs[:default]}
-        end))
+        Map.new(
+          Enum.map(@properties, fn {field, field_specs} ->
+            {field, attrs[field] || field_specs[:default]}
+          end)
+        )
 
       # traindata
       key = "traindata"
-      fields = ESCH.update_key_with_module(fields, key, @inner_to_module[key], fn fields, key ->
-        fields["data_from"] == key
-      end)
+
+      fields =
+        ESCH.update_key_with_module(fields, key, @inner_to_module[key], fn fields, key ->
+          fields["data_from"] == key
+        end)
 
       info = [id: @smartcell_id, fields: fields]
       {:ok, assign(ctx, info)}
@@ -95,19 +101,22 @@ else
         case String.split(field, ".", parts: 2) do
           [inner, forward] ->
             ESCH.to_inner_updates(inner, @inner_to_module[inner], forward, value, ctx)
+
           [field] ->
             to_updates(ctx.assigns.fields, field, value)
         end
+
       ctx = update(ctx, :fields, &Map.merge(&1, updated_fields))
       broadcast_event(ctx, "update", %{"fields" => updated_fields})
       {:noreply, ctx}
     end
 
-    def to_updates(_fields, name="data_from", value) do
+    def to_updates(_fields, name = "data_from", value) do
       property = @properties[name]
       fields = %{name => ESCH.to_update(value, property[:type], Access.get(property, :opts))}
 
       key = "traindata"
+
       ESCH.update_key_with_module(fields, key, @inner_to_module[key], fn fields, key ->
         fields["data_from"] == key
       end)
@@ -142,19 +151,35 @@ else
       end
     end
 
-    defp train_on_dataset(%{"data_from" => "traindata_var", "traindata_var" => traindata_var, "to_variable" => to_variable}) do
+    defp train_on_dataset(%{
+           "data_from" => "traindata_var",
+           "traindata_var" => traindata_var,
+           "to_variable" => to_variable
+         }) do
       quote do
-        Evision.ML.DTrees.train(unquote(ESCH.quoted_var(to_variable)), unquote(ESCH.quoted_var(traindata_var)))
+        Evision.ML.DTrees.train(
+          unquote(ESCH.quoted_var(to_variable)),
+          unquote(ESCH.quoted_var(traindata_var))
+        )
 
         unquote(TrainData.get_calc_error(Evision.ML.SVM, traindata_var, to_variable))
       end
     end
 
-    defp train_on_dataset(%{"data_from" => "traindata", "traindata" => traindata_attrs, "to_variable" => to_variable}) do
+    defp train_on_dataset(%{
+           "data_from" => "traindata",
+           "traindata" => traindata_attrs,
+           "to_variable" => to_variable
+         }) do
       dataset_variable = traindata_attrs["to_variable"]
+
       quote do
         unquote(TrainData.get_quoted_code(traindata_attrs))
-        Evision.ML.DTrees.train(unquote(ESCH.quoted_var(to_variable)), unquote(ESCH.quoted_var(dataset_variable)))
+
+        Evision.ML.DTrees.train(
+          unquote(ESCH.quoted_var(to_variable)),
+          unquote(ESCH.quoted_var(dataset_variable))
+        )
 
         unquote(TrainData.get_calc_error(Evision.ML.SVM, dataset_variable, to_variable))
       end

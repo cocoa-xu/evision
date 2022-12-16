@@ -83,4 +83,5 @@ ExUnit.configure(
 
 {:ok, _} = Application.ensure_all_started(:inets)
 {:ok, _} = Application.ensure_all_started(:ssl)
+Application.put_env(:evision, :progress_bar_enabled, false)
 ExUnit.start()

@@ -296,6 +296,13 @@ class ModuleGenerator(object):
         func_guards = {}
         for i in range(len(func.variants)):
             func_variant = func.variants[i]
+            if 'detectTextRectangles' in func.name:
+                # prefer returning both detections and confidences
+                # len(py_outlist) == 2: [('detections', 1), ('confidences', 2)] 
+                # len(py_outlist) == 1: [('detections', 1)]
+                if len(func_variant.py_outlist) == 1:
+                    continue
+
             for kind in function_templates:
                 if func_guards.get(kind, None) is None:
                     func_guards[kind] = []
@@ -392,7 +399,7 @@ class ModuleGenerator(object):
 
                 if "qrcodeencoder_params" == module_func_name:
                     module_func_name = 'params'
-
+                
                 global unique_signatures
                 usign = ''
                 if func.classname and len(func.classname) > 0:
@@ -432,7 +439,7 @@ class ModuleGenerator(object):
                     if func_name.startswith(evision_nif_prefix() + "dnn") and module_func_name == "forward":
                         func_arity = 2
                         if kind == 'elixir':
-                            function_code.write(f'  @spec forward(Evision.Net.t(), [{{atom(), term()}},...] | nil) :: list(Evision.Mat.t()) | {{:error, String.t()}}\n'
+                            function_code.write(f'  @spec forward(Evision.Net.t(), [{{atom(), term()}},...] | nil) :: list(Evision.Mat.t()) | Evision.Mat.t() | {{:error, String.t()}}\n'
                                 f'  def {module_func_name}(self, opts \\\\ nil)\n'
                                 f'  def {module_func_name}(self, opts) when opts == nil or (is_list(opts) and is_tuple(hd(opts))) do\n'
                                 '    self = Evision.Internal.Structurise.from_struct(self)\n'

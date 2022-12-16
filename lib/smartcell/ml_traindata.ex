@@ -13,7 +13,7 @@ else
 
     @properties %{
       "x" => %{
-        :type => :string,
+        :type => :string
       },
       "x_type" => %{
         :type => :string,
@@ -21,7 +21,7 @@ else
         :default => "f32"
       },
       "y" => %{
-        :type => :string,
+        :type => :string
       },
       "y_type" => %{
         :type => :string,
@@ -45,7 +45,7 @@ else
       "to_variable" => %{
         :type => :string,
         :default => "dataset"
-      },
+      }
     }
 
     @spec id :: String.t()
@@ -56,9 +56,11 @@ else
 
     @spec defaults :: map()
     def defaults do
-      Map.new(Enum.map(@properties, fn {field, field_specs} ->
-        {field, field_specs[:default]}
-      end))
+      Map.new(
+        Enum.map(@properties, fn {field, field_specs} ->
+          {field, field_specs[:default]}
+        end)
+      )
     end
 
     @impl true
@@ -104,14 +106,35 @@ else
       quote do
         unquote(ESCH.quoted_var(attrs["to_variable"])) =
           Evision.ML.TrainData.create(
-            Evision.Mat.from_nx(Nx.tensor(unquote(ESCH.quoted_var(attrs["x"])), type: unquote(String.to_atom(attrs["x_type"])), backend: Evision.Backend)),
+            Evision.Mat.from_nx(
+              Nx.tensor(unquote(ESCH.quoted_var(attrs["x"])),
+                type: unquote(String.to_atom(attrs["x_type"])),
+                backend: Evision.Backend
+              )
+            ),
             unquote(data_layout(attrs["data_layout"])),
-            Evision.Mat.from_nx(Nx.tensor(unquote(ESCH.quoted_var(attrs["y"])), type: unquote(String.to_atom(attrs["y_type"])), backend: Evision.Backend))
+            Evision.Mat.from_nx(
+              Nx.tensor(unquote(ESCH.quoted_var(attrs["y"])),
+                type: unquote(String.to_atom(attrs["y_type"])),
+                backend: Evision.Backend
+              )
+            )
           )
-          |> Evision.ML.TrainData.setTrainTestSplitRatio(unquote(attrs["split_ratio"]), shuffle: unquote(attrs["shuffle_dataset"]))
-        IO.puts("#Samples: #{Evision.ML.TrainData.getNSamples(unquote(ESCH.quoted_var(attrs["to_variable"])))}")
-        IO.puts("#Training samples: #{Evision.ML.TrainData.getNTrainSamples(unquote(ESCH.quoted_var(attrs["to_variable"])))}")
-        IO.puts("#Test samples: #{Evision.ML.TrainData.getNTestSamples(unquote(ESCH.quoted_var(attrs["to_variable"])))}")
+          |> Evision.ML.TrainData.setTrainTestSplitRatio(unquote(attrs["split_ratio"]),
+            shuffle: unquote(attrs["shuffle_dataset"])
+          )
+
+        IO.puts(
+          "#Samples: #{Evision.ML.TrainData.getNSamples(unquote(ESCH.quoted_var(attrs["to_variable"])))}"
+        )
+
+        IO.puts(
+          "#Training samples: #{Evision.ML.TrainData.getNTrainSamples(unquote(ESCH.quoted_var(attrs["to_variable"])))}"
+        )
+
+        IO.puts(
+          "#Test samples: #{Evision.ML.TrainData.getNTestSamples(unquote(ESCH.quoted_var(attrs["to_variable"])))}"
+        )
       end
     end
 
@@ -135,6 +158,7 @@ else
           case r do
             {:error, error_message} ->
               raise error_message
+
             {error, _} ->
               IO.puts("Training Error: #{error}")
           end
@@ -146,6 +170,7 @@ else
           case r do
             {:error, error_message} ->
               raise error_message
+
             {error, _} ->
               IO.puts("Test Error: #{error}")
           end
