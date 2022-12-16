@@ -1036,6 +1036,7 @@ defmodule Evision.MixProject do
           Makefile.win
           CMakeLists.txt
           lib/*.ex
+          lib/zoo
           lib/evision
           lib/smartcell
           lib/assets

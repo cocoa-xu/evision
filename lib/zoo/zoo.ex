@@ -76,8 +76,8 @@ defmodule Evision.Zoo do
       Evision.cv_DNN_TARGET_HDDL() => %{value: "hddl", label: "HDDL"},
       Evision.cv_DNN_TARGET_MYRIAD() => %{value: "myriad", label: "Myriad"},
       Evision.cv_DNN_TARGET_NPU() => %{value: "npu", label: "NPU"},
-      Evision.cv_DNN_TARGET_OPENCL() => %{value: "opencl", label: "opencl"},
-      Evision.cv_DNN_TARGET_OPENCL_FP16() => %{value: "opencl_fp16", label: "opencl_fp16"},
+      Evision.cv_DNN_TARGET_OPENCL() => %{value: "opencl", label: "OpenCL"},
+      Evision.cv_DNN_TARGET_OPENCL_FP16() => %{value: "opencl_fp16", label: "OpenCL FP16"},
       Evision.cv_DNN_TARGET_VULKAN() => %{value: "vulkan", label: "Vulkan"},
     }
   end
