@@ -1,4 +1,32 @@
 defmodule Evision.Zoo do
+  @moduledoc false
+
+  @type smartcell_option :: %{
+    value: Strung.t(),
+    label: Strung.t()
+  }
+  @type smartcell_param :: %{
+    field: String.t(),
+    label: String.t(),
+    type: atom(),
+    default: term(),
+    is_option: boolean() | nil,
+    options: [smartcell_option()]
+  }
+  @type smartcell_param_map :: %{
+    name: String.t(),
+    params: [smartcell_param()]
+  }
+  @type smartcell_params :: [smartcell_param_map()]
+  @type variant :: %{
+    id: String.t(),
+    name: String.t(),
+    docs_url: String.t(),
+    params: smartcell_params(),
+    docs: String.t()
+  }
+  @type smartcell_tasks :: [variant()]
+
   def download(file_url, filename, opts \\ [])
       when is_binary(file_url) and is_binary(filename) and is_list(opts) do
     cache_dir = opts[:cache_dir] || cache_dir()
@@ -20,11 +48,7 @@ defmodule Evision.Zoo do
   def cache_dir do
     cache_opts = if System.get_env("MIX_XDG"), do: %{os: :linux}, else: %{}
 
-    cache_dir =
-      Path.expand(
-        System.get_env("ELIXIR_MAKE_CACHE_DIR") ||
-          :filename.basedir(:user_cache, "", cache_opts)
-      )
+    cache_dir = Path.expand(:filename.basedir(:user_cache, "", cache_opts))
 
     File.mkdir_p!(cache_dir)
     cache_dir

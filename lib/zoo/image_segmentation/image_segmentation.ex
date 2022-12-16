@@ -1,4 +1,8 @@
 defmodule Evision.Zoo.ImageSegmentation do
+  @moduledoc """
+  Image segmentation model collection.
+  """
+
   import Bitwise
 
   @modules %{
@@ -22,6 +26,10 @@ defmodule Evision.Zoo.ImageSegmentation do
     }
   end
 
+  @doc """
+  Generate quoted code from smart cell attrs.
+  """
+  @spec to_quoted(map()) :: list()
   def to_quoted(%{"task_id" => "image_segmentation", "variant_id" => variant_id} = attrs) do
     module = Map.get(modules(), variant_id)
     if module do

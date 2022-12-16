@@ -1,10 +1,96 @@
 defmodule Evision.Zoo.FaceDetection.YuNet do
-  @spec init(binary | :default_model | :quant_model, {pos_integer(), pos_integer()}, nil | Keyword.t()) :: {:error, String.t()} | Evision.FaceDetectorYN.t()
-  def init(model_path, input_size, opts \\ [])
+  @moduledoc """
+  YuNet is a light-weight, fast and accurate face detection model
+  """
 
-  def init(model_type, input_size, opts) when model_type in [:default_model, :quant_model] do
+  @doc """
+  Default configuration.
+  """
+  @spec default_config :: map()
+  def default_config do
+    %{
+      backend: Evision.cv_DNN_BACKEND_OPENCV(),
+      target: Evision.cv_DNN_TARGET_CPU(),
+      conf_threshold: 0.9,
+      nms_threshold: 0.3,
+      top_k: 5000
+    }
+  end
+
+  @doc """
+  Customizable parameters from smart cell.
+  """
+  @spec smartcell_params() :: Evision.Zoo.smartcell_params()
+  def smartcell_params() do
+    config = default_config()
+    [
+      %{
+        name: "Face Detector",
+        params: [
+          %{field: "top_k", label: "Top-k", type: :number, default: config[:top_k]},
+          %{field: "nms_threshold", label: "NMS Threshold", type: :float, default: config[:nms_threshold]},
+          %{field: "conf_threshold", label: "Confidence", type: :float, default: config[:conf_threshold]},
+        ]
+      }
+    ]
+  end
+
+  @doc """
+  Initialize model.
+
+  ##### Positional arguments
+  - **model**: `String.t() | :default_model | :quant_model`.
+
+    - When `model` is a string, it will be treat as the path to a weight file
+      and `init/2` will load the model from it.
+
+    - When `model` is either `:default_model` or `:quant_model`, `init/2` will
+      download and load the predefined model.
+
+  ##### Keyword arguments
+  - **input_size**: `{width=pos_integer(), height=pos_integer()}`
+
+    Input size of the image. It can be adjusted later with `setInputSize/2`.
+
+    Defaults to `{320, 320}`.
+
+  - **conf_threshold**: `number()`.
+
+    Confidence threshold. Defaults to `0.9`
+
+  - **nms_threshold**: `number()`.
+
+    NMS threshold. Defaults to `0.3`
+
+  - **top_k**: `pos_integer()`.
+
+    Top k results.
+
+  - **cache_dir**: `String.t()`.
+
+    Path to the cache directory.
+
+    Optional. Defaults to `:filename.basedir(:user_cache, "", ...)`
+
+  - **backend**: `integer()`.
+
+    Specify the backend.
+
+    Optional. Defaults to `Evision.cv_DNN_BACKEND_OPENCV()`.
+
+  - **target**: `integer()`.
+
+    Specify the target.
+
+    Optional. Defaults to `Evision.cv_DNN_TARGET_CPU()`.
+  """
+  @spec init(binary | :default_model | :quant_model, nil | Keyword.t()) :: {:error, String.t()} | Evision.FaceDetectorYN.t()
+  def init(model_path, opts \\ [])
+
+  def init(model_type, opts) when model_type in [:default_model, :quant_model] do
     {model_url, filename} = model_info(model_type)
     cache_dir = opts[:cache_dir]
+    input_size = opts[:input_size] || {320, 320}
     with {:ok, local_path} <- Evision.Zoo.download(model_url, filename, cache_dir: cache_dir) do
       init(local_path, input_size, opts)
     else
@@ -31,12 +117,38 @@ defmodule Evision.Zoo.FaceDetection.YuNet do
     )
   end
 
+  @doc """
+  Set the input size.
+
+  `infer/2` will call this function automatically.
+
+  ##### Positional arguments
+  - **self**: `Evision.FaceDetectorYN.t()`.
+
+    An initialized FaceDetectorYN model.
+
+  - **size**: `{width=pos_integer(), height=pos_integer()}`.
+
+    Input size of the image.
+  """
   @spec setInputSize(Evision.FaceDetectorYN.t(), {pos_integer, pos_integer}) :: :ok | {:error, String.t()}
-  def setInputSize(self=%Evision.FaceDetectorYN{}, {w, h}) when is_integer(w) and is_integer(h) and w > 0 and h > 0 do
-    Evision.FaceDetectorYN.setInputSize(self, {w, h})
+  def setInputSize(self=%Evision.FaceDetectorYN{}, size={w, h}) when is_integer(w) and is_integer(h) and w > 0 and h > 0 do
+    Evision.FaceDetectorYN.setInputSize(self, size)
   end
 
-  @spec infer(Evision.FaceDetectorYN.t(), Evision.Mat.maybe_mat_in()) :: any()
+  @doc """
+  Inference.
+
+  ##### Positional arguments
+  - **self**: `Evision.FaceDetectorYN.t()`.
+
+    An initialized FaceDetectorYN model.
+
+  - **image**: `Evision.Mat.maybe_mat_in()`.
+
+    Input image.
+  """
+  @spec infer(Evision.FaceDetectorYN.t(), Evision.Mat.maybe_mat_in()) :: Evision.Mat.t() | nil
   def infer(self=%Evision.FaceDetectorYN{}, image) do
     {w, h} = case image.shape do
       {h, w, _} -> {w, h}
@@ -44,14 +156,49 @@ defmodule Evision.Zoo.FaceDetection.YuNet do
       invalid -> raise "Invalid image shape #{inspect(invalid)}"
     end
     setInputSize(self, {w, h})
+
     {_, points} = Evision.FaceDetectorYN.detect(self, image)
-    points
+
+    case points do
+      {:error, "empty matrix"} ->
+        nil
+      _ ->
+        points
+    end
   end
 
+  @doc """
+  Visualize the result.
+
+  ##### Positional arguments
+  - **image**: `Evision.Mat.maybe_mat_in()`.
+
+    Original image.
+
+  - **results**: `Evision.Mat.maybe_mat_in()`, `nil`.
+
+    Results given by `infer/2`.
+
+  ##### Keyword arguments
+  - **box_color**: `{blue=integer(), green=integer(), red=integer()}`.
+
+    Values should be in `[0, 255]`. Defaults to `{0, 255, 0}`.
+
+    Specify the color of the bounding box.
+
+  - **text_color**: `{blue=integer(), green=integer(), red=integer()}`.
+
+    Values should be in `[0, 255]`. Defaults to `{0, 0, 255}`.
+
+    Specify the color of the text (confidence value).
+
+  ##### Return
+  An image with bounding boxes and corresponding confidence values.
+  """
+  @spec visualize(Evision.Mat.maybe_mat_in(), Evision.Mat.maybe_mat_in(), Keyword.t()) :: Evision.Mat.t()
   def visualize(image, results, opts \\ [])
-  def visualize(image, {:error, "empty matrix"}, _opts) do
-    image
-  end
+  def visualize(image, {:error, "empty matrix"}, _opts), do: image
+  def visualize(image, nil, _opts), do: image
 
   def visualize(image, results, opts) do
     box_color = opts[:box_color] || {0, 255, 0}
@@ -90,16 +237,10 @@ defmodule Evision.Zoo.FaceDetection.YuNet do
     end
   end
 
-  def default_config do
-    %{
-      backend: Evision.cv_DNN_BACKEND_OPENCV(),
-      target: Evision.cv_DNN_TARGET_CPU(),
-      conf_threshold: 0.9,
-      nms_threshold: 0.3,
-      top_k: 5000
-    }
-  end
-
+  @doc """
+  Model URL and filename of predefined model.
+  """
+  @spec model_info(:default_model | :quant_model) :: {String.t(), String.t()}
   def model_info(:default_model) do
     {
       "https://github.com/opencv/opencv_zoo/blob/cd1ac4e61dc51575cac38d6346494865d0dfa5ba/models/face_detection_yunet/face_detection_yunet_2022mar.onnx?raw=true",
@@ -114,37 +255,43 @@ defmodule Evision.Zoo.FaceDetection.YuNet do
     }
   end
 
+  @doc """
+  Docs in smart cell.
+  """
+  @spec docs() :: String.t()
+  def docs do
+    @moduledoc
+  end
+
+  @doc """
+  Smart cell tasks.
+
+  A list of variants of the current model.
+  """
+  @spec smartcell_tasks() :: Evision.Zoo.smartcell_tasks()
   def smartcell_tasks do
     [
       %{
         id: "yunet",
         label: "YuNet",
         docs_url: "https://github.com/ShiqiYu/libfacedetection",
-        params: smartcell_params()
+        params: smartcell_params(),
+        docs: docs(),
       },
       %{
         id: "yunet_quant",
         label: "YuNet (quant)",
         docs_url: "https://github.com/ShiqiYu/libfacedetection",
-        params: smartcell_params()
+        params: smartcell_params(),
+        docs: docs(),
       },
     ]
   end
 
-  def smartcell_params() do
-    config = default_config()
-    [
-      %{
-        name: "Face Detector",
-        params: [
-          %{field: "top_k", label: "Top-k", type: :number, default: config[:top_k]},
-          %{field: "nms_threshold", label: "NMS Threshold", type: :float, default: config[:nms_threshold]},
-          %{field: "conf_threshold", label: "Confidence", type: :float, default: config[:conf_threshold]},
-        ]
-      }
-    ]
-  end
-
+  @doc """
+  Generate quoted code from smart cell attrs.
+  """
+  @spec to_quoted(map()) :: list()
   def to_quoted(attrs) do
     {backend, target} = Evision.Zoo.to_quoted_backend_and_target(attrs)
 

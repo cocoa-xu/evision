@@ -1,4 +1,67 @@
 defmodule Evision.Zoo.ImageClassification.MobileNetV1 do
+  @moduledoc """
+  MobileNets: Efficient Convolutional Neural Networks for Mobile Vision Applications
+  """
+
+  @doc """
+  Default configuration.
+  """
+  @spec default_config :: map()
+  def default_config do
+    %{
+      backend: Evision.cv_DNN_BACKEND_OPENCV(),
+      target: Evision.cv_DNN_TARGET_CPU(),
+      top_k: 5
+    }
+  end
+
+  @doc """
+  Customizable parameters from smart cell.
+  """
+  @spec smartcell_params() :: Evision.Zoo.smartcell_params()
+  def smartcell_params() do
+    config = default_config()
+    [
+      %{
+        name: "Image Classifier",
+        params: [
+          %{field: "top_k", label: "Top-k", type: :number, default: config[:top_k]},
+        ]
+      }
+    ]
+  end
+
+  @doc """
+  Initialize model.
+
+  ##### Positional arguments
+  - **model**: `String.t()` | `:default_model` | `:quant_model`.
+
+    - When `model` is a string, it will be treat as the path to a weight file
+      and `init/2` will load the model from it.
+
+    - When `model` is either `:default_model` or `:quant_model`, `init/2` will
+      download and load the predefined model.
+
+  ##### Keyword arguments
+  - **cache_dir**: `String.t()`.
+
+    Path to the cache directory.
+
+    Optional. Defaults to `:filename.basedir(:user_cache, "", ...)`
+
+  - **backend**: `integer()`.
+
+    Specify the backend.
+
+    Optional. Defaults to `Evision.cv_DNN_BACKEND_OPENCV()`.
+
+  - **target**: `integer()`.
+
+    Specify the target.
+
+    Optional. Defaults to `Evision.cv_DNN_TARGET_CPU()`.
+  """
   @spec init(binary | :default_model | :quant_model, nil | Keyword.t()) :: {:error, String.t()} | Evision.DNN.Net.t()
   def init(model_path, opts \\ [])
 
@@ -26,7 +89,26 @@ defmodule Evision.Zoo.ImageClassification.MobileNetV1 do
     net
   end
 
-  @spec infer(Evision.DNN.Net.t(), Evision.Mat.maybe_mat_in(), Keyword.t()) :: any()
+  @doc """
+  Inference.
+
+  ##### Positional arguments
+  - **self**: `Evision.DNN.Net.t()`.
+
+    An initialized MobileNetV1 model.
+
+  - **image**: `Evision.Mat.maybe_mat_in()`.
+
+    Input image.
+
+  ##### Keyword arguments
+  - **top_k**: `pos_integer()`.
+
+    Get top k results.
+
+    Optional. Defaults to `5`.
+  """
+  @spec infer(Evision.DNN.Net.t(), Evision.Mat.maybe_mat_in(), Keyword.t()) :: list(number())
   def infer(self=%Evision.DNN.Net{}, image, opts \\ []) do
     top_k = opts[:top_k] || 5
     inputBlob = preprocess(image)
@@ -37,19 +119,62 @@ defmodule Evision.Zoo.ImageClassification.MobileNetV1 do
     Nx.to_flat_list(Nx.argsort(result, direction: :desc)[[0..top_k-1]])
   end
 
+  @doc """
+  Get labels.
+
+  ##### Keyword arguments
+  - **labels_path**: `String.t()`.
+
+    Path to the label file. Defaults to `nil`.
+
+    When `labels_path` is `nil`, `get_labels/1` will try to
+    download the default label file.
+
+  - **cache_dir**: `String.t()`.
+
+    Path to the cache directory.
+
+    Optional. Defaults to `:filename.basedir(:user_cache, "", ...)`
+
+  ##### Returns
+  A list of labels.
+  """
+  @spec get_labels(Keyword.t()) :: [binary]
   def get_labels(opts \\ []) do
-    {labels_url, labels_filename} = labels()
-    cache_dir = opts[:cache_dir]
-    with {:ok, labels_path} <- Evision.Zoo.download(labels_url, labels_filename, cache_dir: cache_dir),
-         {:ok, content} <- File.read(labels_path) do
+    labels_path = opts[:labels_path]
+    labels_path =
+      if labels_path == nil do
+        cache_dir = opts[:cache_dir]
+        {labels_url, labels_filename} = labels()
+        with {:ok, labels_path} <- Evision.Zoo.download(labels_url, labels_filename, cache_dir: cache_dir) do
+          labels_path
+        else
+          {:error, msg} ->
+            raise "Cannot download label file: #{inspect(msg)}"
+        end
+      else
+        labels_path
+      end
+
+    with {:ok, content} <- File.read(labels_path) do
       String.split(content, "\n")
     else
       {:error, msg} ->
-        IO.puts("Cannot load label file: #{inspect(msg)}")
-        []
+        raise "Cannot load label file: #{inspect(msg)}"
     end
   end
 
+  @doc """
+  Preprocessing the input image.
+
+  `infer/3` will call this function automatically.
+
+  ##### Positional arguments
+  - **image**: `Evision.Mat.maybe_mat_in()`.
+
+    Input image.
+  """
+  @spec preprocess(Evision.Mat.maybe_mat_in()) :: Evision.Mat.t()
   def preprocess(image) do
     image
     |> Evision.Mat.as_type(:f32)
@@ -70,20 +195,10 @@ defmodule Evision.Zoo.ImageClassification.MobileNetV1 do
     Evision.Mat.to_nx(Evision.Mat.literal([[[0.229, 0.224, 0.225]]], :f32))
   end
 
-  def visualize(image, results, opts \\ []) do
-    labels = get_labels(opts)
-    top_classes = Enum.map(results, &Enum.at(labels, &1))
-    {image, top_classes}
-  end
-
-  def default_config do
-    %{
-      backend: Evision.cv_DNN_BACKEND_OPENCV(),
-      target: Evision.cv_DNN_TARGET_CPU(),
-      top_k: 5
-    }
-  end
-
+  @doc """
+  Model URL and filename of predefined model.
+  """
+  @spec model_info(:default_model | :quant_model) :: {String.t(), String.t()}
   def model_info(:default_model) do
     {
       "https://github.com/opencv/opencv_zoo/blob/master/models/image_classification_mobilenet/image_classification_mobilenetv1_2022apr.onnx?raw=true",
@@ -98,6 +213,10 @@ defmodule Evision.Zoo.ImageClassification.MobileNetV1 do
     }
   end
 
+  @doc """
+  Default label file URL and filename.
+  """
+  @spec labels :: {String.t(), String.t()}
   def labels do
     {
       "https://raw.githubusercontent.com/opencv/opencv_zoo/master/models/image_classification_mobilenet/imagenet_labels.txt",
@@ -105,35 +224,43 @@ defmodule Evision.Zoo.ImageClassification.MobileNetV1 do
     }
   end
 
+  @doc """
+  Docs in smart cell.
+  """
+  @spec docs() :: String.t()
+  def docs do
+    @moduledoc
+  end
+
+  @doc """
+  Smart cell tasks.
+
+  A list of variants of the current model.
+  """
+  @spec smartcell_tasks() :: Evision.Zoo.smartcell_tasks()
   def smartcell_tasks do
     [
       %{
         id: "mobilenet_v1",
         label: "MobileNet V1",
         docs_url: "https://github.com/opencv/opencv_zoo/tree/master/models/image_classification_mobilenet",
-        params: smartcell_params()
+        params: smartcell_params(),
+        docs: docs(),
       },
       %{
         id: "mobilenet_v1_quant",
         label: "MobileNet V1 (quant)",
         docs_url: "https://github.com/opencv/opencv_zoo/tree/master/models/image_classification_mobilenet",
-        params: smartcell_params()
+        params: smartcell_params(),
+        docs: docs(),
       },
     ]
   end
 
-  def smartcell_params() do
-    config = default_config()
-    [
-      %{
-        name: "Image Classifier",
-        params: [
-          %{field: "top_k", label: "Top-k", type: :number, default: config[:top_k]},
-        ]
-      }
-    ]
-  end
-
+  @doc """
+  Generate quoted code from smart cell attrs.
+  """
+  @spec to_quoted(map()) :: list()
   def to_quoted(attrs) do
     {backend, target} = Evision.Zoo.to_quoted_backend_and_target(attrs)
 
@@ -174,9 +301,11 @@ defmodule Evision.Zoo.ImageClassification.MobileNetV1 do
 
 
           image = Evision.cvtColor(image, Evision.cv_COLOR_RGB2BGR())
-          {vis_img, top_classes} = Evision.Zoo.ImageClassification.MobileNetV1.visualize(image, results)
 
-          Kino.Frame.render(frame, Kino.Image.new(Evision.imencode(".png", vis_img), :png))
+          labels = Evision.Zoo.ImageClassification.MobileNetV1.get_labels()
+          top_classes = Enum.map(results, &Enum.at(labels, &1))
+
+          Kino.Frame.render(frame, Kino.Image.new(Evision.imencode(".png", image), :png))
           Kino.Frame.append(frame, Evision.SmartCell.SimpleList.new(top_classes))
         end)
 

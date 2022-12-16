@@ -1,4 +1,8 @@
 defmodule Evision.Zoo.TextDetection do
+  @moduledoc """
+  Text detection model collection.
+  """
+
   @modules %{
     "db_ic15_resnet18" => Evision.Zoo.TextDetection.DB,
     "db_ic15_resnet50" => Evision.Zoo.TextDetection.DB,
@@ -22,6 +26,10 @@ defmodule Evision.Zoo.TextDetection do
     }
   end
 
+  @doc """
+  Generate quoted code from smart cell attrs.
+  """
+  @spec to_quoted(map()) :: list()
   def to_quoted(%{"task_id" => "text_detection", "variant_id" => variant_id} = attrs) do
     module = Map.get(modules(), variant_id)
     if module do

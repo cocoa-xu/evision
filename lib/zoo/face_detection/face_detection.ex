@@ -1,4 +1,8 @@
 defmodule Evision.Zoo.FaceDetection do
+  @moduledoc """
+  Face detection model collection.
+  """
+
   @modules %{
     "yunet" => Evision.Zoo.FaceDetection.YuNet,
     "yunet_quant" => Evision.Zoo.FaceDetection.YuNet,
@@ -20,6 +24,10 @@ defmodule Evision.Zoo.FaceDetection do
     }
   end
 
+  @doc """
+  Generate quoted code from smart cell attrs.
+  """
+  @spec to_quoted(map()) :: list()
   def to_quoted(%{"task_id" => "face_detection", "variant_id" => variant_id} = attrs) do
     module = Map.get(modules(), variant_id)
     if module do

@@ -1,4 +1,8 @@
 defmodule Evision.Zoo.ImageClassification do
+  @moduledoc """
+  Image classfication model collection.
+  """
+
   @modules %{
     "pp_resnet" => Evision.Zoo.ImageClassification.PPResNet,
     "pp_resnet_quant" => Evision.Zoo.ImageClassification.PPResNet,
@@ -24,6 +28,10 @@ defmodule Evision.Zoo.ImageClassification do
     }
   end
 
+  @doc """
+  Generate quoted code from smart cell attrs.
+  """
+  @spec to_quoted(map()) :: list()
   def to_quoted(%{"task_id" => "image_classification", "variant_id" => variant_id} = attrs) do
     module = Map.get(modules(), variant_id)
     if module do

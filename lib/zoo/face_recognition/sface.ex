@@ -1,5 +1,88 @@
 defmodule Evision.Zoo.FaceRecognition.SFace do
-  @spec init(binary | :default_model | :quant_model, nil | Keyword.t()) :: {:error, String.t()} | Evision.DNN.Net.t()
+  @moduledoc """
+  SFace: Sigmoid-Constrained Hypersphere Loss for Robust Face Recognition
+  """
+
+  @doc """
+  Default configuration.
+  """
+  @spec default_config :: map()
+  def default_config do
+    %{
+      backend: Evision.cv_DNN_BACKEND_OPENCV(),
+      target: Evision.cv_DNN_TARGET_CPU(),
+      distance_type: :cosine_similarity,
+      cosine_threshold: 0.363,
+      l2_norm_threshold: 1.128,
+
+      conf_threshold: 0.9,
+      nms_threshold: 0.3
+    }
+  end
+
+  @doc """
+  Customizable parameters from smart cell.
+  """
+  @spec smartcell_params() :: Evision.Zoo.smartcell_params()
+  def smartcell_params() do
+    config = default_config()
+    [
+      %{
+        name: "Face Recognizer",
+        params: [
+          %{field: "detector", label: "Face Detector", type: :string, default: "yunet",
+            is_option: true,
+            options: [
+              %{value: "yunet", label: "YuNet"},
+              %{value: "yunet_quant", label: "YuNet (Quant)"}
+            ]
+          },
+          %{field: "distance_type", label: "Distance Type", type: :string, default: "#{config[:distance_type]}",
+            is_option: true,
+            options: [
+              %{value: "cosine_similarity", label: "Cosine Similarity"},
+              %{value: "l2_norm", label: "L2 Norm"},
+            ]
+          },
+          %{field: "cosine_threshold", label: "Cosine Threshold", type: :float, default: config[:cosine_threshold]},
+          %{field: "l2_norm_threshold", label: "L2-norm Threshold", type: :float, default: config[:l2_norm_threshold]}
+        ]
+      }
+    ] ++ Evision.Zoo.FaceDetection.YuNet.smartcell_params()
+  end
+
+  @doc """
+  Initialize model.
+
+  ##### Positional arguments
+  - **model**: `String.t()` | `:default_model` | `:quant_model`.
+
+    - When `model` is a string, it will be treat as the path to a weight file
+      and `init/2` will load the model from it.
+
+    - When `model` is either `:default_model` or `:quant_model`, `init/2` will
+      download and load the predefined model.
+
+  ##### Keyword arguments
+  - **cache_dir**: `String.t()`.
+
+    Path to the cache directory.
+
+    Optional. Defaults to `:filename.basedir(:user_cache, "", ...)`
+
+  - **backend**: `integer()`.
+
+    Specify the backend.
+
+    Optional. Defaults to `Evision.cv_DNN_BACKEND_OPENCV()`.
+
+  - **target**: `integer()`.
+
+    Specify the target.
+
+    Optional. Defaults to `Evision.cv_DNN_TARGET_CPU()`.
+  """
+  @spec init(binary | :default_model | :quant_model, nil | Keyword.t()) :: {:error, String.t()} | Evision.FaceRecognizerSF.t()
   def init(model_path, opts \\ [])
 
   def init(model_type, opts) when model_type in [:default_model, :quant_model] do
@@ -26,18 +109,107 @@ defmodule Evision.Zoo.FaceRecognition.SFace do
   end
 
   @doc """
-  Get feature for the input face
+  Get feature for the input face image.
+
+  ##### Positional arguments
+  - **self**: `Evision.FaceRecognizerSF.t()`.
+
+    An initialized FaceRecognizerSF model.
+
+  - **face_image**: `Evision.Mat.maybe_mat_in()`.
+
+    Input face image.
+
+  - **bbox**: `Evision.Mat.maybe_mat_in()`.
+
+    Optional bounding box that specifies the face location in the given image.
+
+    Defaults to `nil`.
+
+    When `bbox` is not `nil`, `preprocess/3` will crop the face from given image
+    and use the cropped image as the input.
+
+    Otherwise, `face_image` will be set as the input.
   """
   def infer(self, face_image, bbox \\ nil) do
     inputBlob = preprocess(self, face_image, bbox)
     Evision.FaceRecognizerSF.feature(self, inputBlob)
   end
 
+  @doc """
+  Preprocessing the input face image.
+
+  `infer/3` will call this function automatically.
+
+  ##### Positional arguments
+  - **self**: `Evision.FaceRecognizerSF.t()`.
+
+    An initialized FaceRecognizerSF model.
+
+  - **face_image**: `Evision.Mat.maybe_mat_in()`.
+
+    Input face image.
+
+  - **bbox**: `Evision.Mat.maybe_mat_in()`.
+
+    Optional bounding box that specifies the face location in the given image.
+
+    Defaults to `nil`.
+
+    When `bbox` is not `nil`, `preprocess/3` will crop the face from given image
+    and return the cropped image.
+
+    Otherwise, `face_image` will be returned.
+  """
   def preprocess(_self, face_image, nil), do: face_image
   def preprocess(self, face_image, bbox) do
     Evision.FaceRecognizerSF.alignCrop(self, face_image, bbox)
   end
 
+  @doc """
+  Compare two face features.
+
+  ##### Positional Arguments
+  - **self**: `Evision.FaceRecognizerSF.t()`
+
+  - **face1_feat**: `Evision.Mat.maybe_mat_in()`.
+
+    Feature value of face 1.
+
+  - **face2_feat**: `Evision.Mat.maybe_mat_in()`.
+
+    Feature value of face 2.
+
+  ##### Keyword Arguments
+  - **distance_type**: `atom`.
+
+    Either `:cosine_similiarity` or `:l2_norm`. Defaults to `:cosine_similiarity`.
+
+  - **cosine_threshold**: `number()`.
+
+    Defaults to `0.363`.
+
+  - **l2_norm_threshold**: `number()`.
+
+    Defaults to `1.128`.
+
+  ##### Return
+  A map with three keys.
+
+  - **matched**: `boolean()`
+
+    `true` if two faces match, `false` otherwise.
+
+  - **measure**: `"cosine_score"` | "`l2_norm_distance`"
+
+    Distance type.
+
+  - **retval**: `number()`
+
+    - When `measure == "cosine_score"`, `retval` is the cosine similarity score.
+    - When `measure == "l2_norm_distance"`, `retval` is the L2 norm distance.
+
+  """
   @spec match_feature(Evision.FaceRecognizerSF.t(), Evision.Mat.maybe_mat_in(), Evision.Mat.maybe_mat_in()) :: any()
   def match_feature(self=%Evision.FaceRecognizerSF{}, face1_feat, face2_feat, opts \\ []) do
     config = default_config()
@@ -92,29 +264,51 @@ defmodule Evision.Zoo.FaceRecognition.SFace do
 
     Either `:cosine_similiarity` or `:l2_norm`. Defaults to `:cosine_similiarity`.
 
-  - **cosine_threshold**: `number`.
+  - **cosine_threshold**: `number()`.
 
     Defaults to `0.363`.
 
-  - **l2_norm_threshold**: `number`.
+  - **l2_norm_threshold**: `number()`.
 
     Defaults to `1.128`.
 
-  - **conf_threshold**: `number`.
+  - **detector_module**: `module()`.
 
-    Defaults to `0.9`.
+    Face detector module. Defaults to `Evision.Zoo.FaceDetection.YuNet`.
 
-  - **nms_threshold**: `number`.
+  - **detector_model**: `String.t()` | `atom()`.
 
-    Defaults to `0.3`.
+    Face detector model name or path to model weights. Defaults to `:default_model`.
+
+  - **detector_opts**: `Keyword.t()`.
+
+    Face detector initilization options. Defaults to `[]`.
+
+  ##### Return
+  A map with three keys.
+
+  - **matched**: `boolean()`
+
+    `true` if two faces match, `false` otherwise.
+
+  - **measure**: `"cosine_score"` | "`l2_norm_distance`"
+
+    Distance type.
+
+  - **retval**: `number()`
+
+    - When `measure == "cosine_score"`, `retval` is the cosine similarity score.
+    - When `measure == "l2_norm_distance"`, `retval` is the L2 norm distance.
   """
   @spec match(Evision.FaceRecognizerSF.t(), Evision.Mat.maybe_mat_in(), Evision.Mat.maybe_mat_in()) :: any()
   def match(self=%Evision.FaceRecognizerSF{}, original, comparison, opts \\ []) do
+    detector_module = opts[:detector_module] || Evision.Zoo.FaceDetection.YuNet
     detector_model = opts[:detector_model] || :default_model
-    detector = Evision.Zoo.FaceDetection.YuNet.init(detector_model, {320, 320}, opts)
+    detector_opts = opts[:detector_opts] || []
+    detector = detector_module.init(detector_model, detector_opts)
 
-    original_face_bbox = Evision.Zoo.FaceDetection.YuNet.infer(detector, original)
-    comparison_face_bbox = Evision.Zoo.FaceDetection.YuNet.infer(detector, comparison)
+    original_face_bbox = detector_module.infer(detector, original)
+    comparison_face_bbox = detector_module.infer(detector, comparison)
 
     original_face_feature = Evision.Zoo.FaceRecognition.SFace.infer(self, original, original_face_bbox)
     comparison_face_feature = Evision.Zoo.FaceRecognition.SFace.infer(self, comparison, comparison_face_bbox)
@@ -122,19 +316,10 @@ defmodule Evision.Zoo.FaceRecognition.SFace do
     match_feature(self, original_face_feature, comparison_face_feature, opts)
   end
 
-  def default_config do
-    %{
-      backend: Evision.cv_DNN_BACKEND_OPENCV(),
-      target: Evision.cv_DNN_TARGET_CPU(),
-      distance_type: :cosine_similarity,
-      cosine_threshold: 0.363,
-      l2_norm_threshold: 1.128,
-
-      conf_threshold: 0.9,
-      nms_threshold: 0.3
-    }
-  end
-
+  @doc """
+  Model URL and filename of predefined model.
+  """
+  @spec model_info(:default_model | :quant_model) :: {String.t(), String.t()}
   def model_info(:default_model) do
     {
       "https://github.com/opencv/opencv_zoo/blob/master/models/face_recognition_sface/face_recognition_sface_2021dec.onnx?raw=true",
@@ -149,50 +334,43 @@ defmodule Evision.Zoo.FaceRecognition.SFace do
     }
   end
 
+  @doc """
+  Docs in smart cell.
+  """
+  @spec docs() :: String.t()
+  def docs do
+    @moduledoc
+  end
+
+  @doc """
+  Smart cell tasks.
+
+  A list of variants of the current model.
+  """
+  @spec smartcell_tasks() :: Evision.Zoo.smartcell_tasks()
   def smartcell_tasks do
     [
       %{
         id: "sface",
         label: "SFace",
         docs_url: "https://github.com/opencv/opencv_zoo/tree/master/models/face_recognition_sface",
-        params: smartcell_params()
+        params: smartcell_params(),
+        docs: docs(),
       },
       %{
         id: "sface_quant",
         label: "SFace (quant)",
         docs_url: "https://github.com/opencv/opencv_zoo/tree/master/models/face_recognition_sface",
-        params: smartcell_params()
+        params: smartcell_params(),
+        docs: docs(),
       },
     ]
   end
 
-  def smartcell_params() do
-    config = default_config()
-    [
-      %{
-        name: "Face Recognizer",
-        params: [
-          %{field: "detector", label: "Face Detector", type: :string, default: "yunet",
-            is_option: true,
-            options: [
-              %{value: "yunet", label: "YuNet"},
-              %{value: "yunet_quant", label: "YuNet (Quant)"}
-            ]
-          },
-          %{field: "distance_type", label: "Distance Type", type: :string, default: "#{config[:distance_type]}",
-            is_option: true,
-            options: [
-              %{value: "cosine_similarity", label: "Cosine Similarity"},
-              %{value: "l2_norm", label: "L2 Norm"},
-            ]
-          },
-          %{field: "cosine_threshold", label: "Cosine Threshold", type: :float, default: config[:cosine_threshold]},
-          %{field: "l2_norm_threshold", label: "L2-norm Threshold", type: :float, default: config[:l2_norm_threshold]}
-        ]
-      }
-    ] ++ Evision.Zoo.FaceDetection.YuNet.smartcell_params()
-  end
-
+  @doc """
+  Generate quoted code from smart cell attrs.
+  """
+  @spec to_quoted(map()) :: list()
   def to_quoted(attrs) do
     {backend, target} = Evision.Zoo.to_quoted_backend_and_target(attrs)
 
@@ -233,7 +411,7 @@ defmodule Evision.Zoo.FaceRecognition.SFace do
     [
       quote do
         recognizer = Evision.Zoo.FaceRecognition.SFace.init(unquote(model), unquote(recognizer_opts))
-        detector = unquote(detector_module).init(unquote(detector_model), {320, 320}, unquote(detector_opts))
+        detector = unquote(detector_module).init(unquote(detector_model), unquote(detector_opts))
       end,
       quote do
         original_input = Kino.Input.image("Original")

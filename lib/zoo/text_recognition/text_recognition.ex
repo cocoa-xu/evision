@@ -1,4 +1,8 @@
 defmodule Evision.Zoo.TextRecognition do
+  @moduledoc """
+  Text recognition model collection.
+  """
+
   @modules %{
     "crnn_en" => Evision.Zoo.TextRecognition.CRNN,
     "crnn_en_fp16" => Evision.Zoo.TextRecognition.CRNN,
@@ -25,6 +29,10 @@ defmodule Evision.Zoo.TextRecognition do
     }
   end
 
+  @doc """
+  Generate quoted code from smart cell attrs.
+  """
+  @spec to_quoted(map()) :: list()
   def to_quoted(%{"task_id" => "text_recognition", "variant_id" => variant_id} = attrs) do
     module = Map.get(modules(), variant_id)
     if module do

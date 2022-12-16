@@ -1,5 +1,81 @@
 defmodule Evision.Zoo.TextDetection.DB do
-  @spec init(binary | :ic15_resnet18 | :ic15_resnet50 | :td500_resnet18 | :td500_resnet50, nil | Keyword.t()) :: {:error, String.t()} | Evision.DNN.Net.t()
+  @moduledoc """
+  Real-time Scene Text Detection with Differentiable Binarization
+
+  - `IC15` model is trained on IC15 dataset, which can detect English text instances only.
+  - `TD500` model is trained on TD500 dataset, which can detect both English & Chinese instances.
+  """
+
+  @doc """
+  Default configuration.
+  """
+  @spec default_config :: map()
+  def default_config do
+    %{
+      backend: Evision.cv_DNN_BACKEND_OPENCV(),
+      target: Evision.cv_DNN_TARGET_CPU(),
+      width: 736,
+      height: 736,
+      binary_threshold: 0.3,
+      polygon_threshold: 0.5,
+      max_candidates: 200,
+      unclip_ratio: 2.0
+    }
+  end
+
+  @doc """
+  Customizable parameters from smart cell.
+  """
+  @spec smartcell_params() :: Evision.Zoo.smartcell_params()
+  def smartcell_params() do
+    config = default_config()
+    [
+      %{
+        name: "Text Detector",
+        params: [
+          %{field: "width", label: "Width", type: :number, default: config[:width], tooltip: "Multiplies of 32."},
+          %{field: "height", label: "Height", type: :number, default: config[:height], tooltip: "Multiplies of 32."},
+          %{field: "binary_threshold", label: "Binary Threshold", type: :float, default: config[:binary_threshold]},
+          %{field: "polygon_threshold", label: "Polygon Threshold", type: :float, default: config[:polygon_threshold]},
+          %{field: "max_candidates", label: "Max Candidates", type: :number, default: config[:max_candidates]},
+          %{field: "unclip_ratio", label: "Unclip Ratio", type: :float, default: config[:unclip_ratio]}
+        ]
+      }
+    ]
+  end
+
+  @doc """
+  Initialize model.
+
+  ##### Positional arguments
+  - **model**: `String.t()` | `:ic15_resnet18` | `:ic15_resnet50` | `:td500_resnet18` | `:td500_resnet50`
+
+    - When `model` is a string, it will be treat as the path to a weight file
+      and `init/2` will load the model from it.
+
+    - When `model` is one of `:ic15_resnet18`, `:ic15_resnet50`, `:td500_resnet18` or `:td500_resnet50`,
+      `init/2` will download and load the predefined model.
+
+  ##### Keyword arguments
+  - **cache_dir**: `String.t()`.
+
+    Path to the cache directory.
+
+    Optional. Defaults to `:filename.basedir(:user_cache, "", ...)`
+
+  - **backend**: `integer()`.
+
+    Specify the backend.
+
+    Optional. Defaults to `Evision.cv_DNN_BACKEND_OPENCV()`.
+
+  - **target**: `integer()`.
+
+    Specify the target.
+
+    Optional. Defaults to `Evision.cv_DNN_TARGET_CPU()`.
+  """
+  @spec init(binary | :ic15_resnet18 | :ic15_resnet50 | :td500_resnet18 | :td500_resnet50, nil | Keyword.t()) :: {:error, String.t()} | Evision.DNN.TextDetectionModelDB.t()
   def init(model_path, opts \\ [])
 
   def init(model_type, opts) when model_type in [:ic15_resnet18, :ic15_resnet50, :td500_resnet18, :td500_resnet50] do
@@ -45,21 +121,70 @@ defmodule Evision.Zoo.TextDetection.DB do
 
   defp mean, do: {122.67891434, 116.66876762, 104.00698793}
 
-  @spec infer(Evision.DNN.TextDetectionModelDB.t(), Evision.Mat.maybe_mat_in()) :: any()
+  @doc """
+  Inference.
+
+  ##### Positional arguments
+  - **self**: `Evision.DNN.TextDetectionModelDB.t()`.
+
+    An initialized `Evision.DNN.TextDetectionModelDB` model.
+
+  - **image**: `Evision.Mat.maybe_mat_in()`.
+
+    Input image.
+
+  ##### Return
+  `{detections, confidence}`
+  """
+  @spec infer(Evision.DNN.TextDetectionModelDB.t(), Evision.Mat.maybe_mat_in()) :: {list({{number(), number()}, {number(), number()}, number()}), list(number())} | {:error, String.t()}
   def infer(self=%Evision.DNN.TextDetectionModelDB{}, image) do
     Evision.DNN.TextDetectionModelDB.detectTextRectangles(self, image)
   end
 
-  def visualize(image, detections, confidences) do
-    text_color = {0, 0, 255}
+  @doc """
+  Visualize the result.
+
+  ##### Positional arguments
+  - **image**: `Evision.Mat.maybe_mat_in()`.
+
+    Original image.
+
+  - **detections**: `list({{number(), number()}, {number(), number()}, number()})`.
+
+    Rotation retangulars.
+
+  - **confidences**: `list(number())`.
+
+    Confidence values.
+
+  ##### Keyword arguments
+  - **box_color**: `{blue=integer(), green=integer(), red=integer()}`.
+
+    Values should be in `[0, 255]`. Defaults to `{0, 255, 0}`.
+
+    Specify the color of the bounding box.
+
+  - **text_color**: `{blue=integer(), green=integer(), red=integer()}`.
+
+    Values should be in `[0, 255]`. Defaults to `{0, 0, 255}`.
+
+    Specify the color of the text (confidence value).
+  """
+  def visualize(image, detections, confidences, opts \\ []) do
+    box_color = opts[:box_color] || {0, 255, 0}
+    text_color = opts[:text_color] || {0, 0, 255}
     Enum.reduce(Enum.zip(detections, confidences), image, fn {rotation_box, conf}, img ->
       points = Evision.Mat.as_type(Evision.boxPoints(rotation_box), :s32)
       [b0, b1 | _] = Nx.to_flat_list(Evision.Mat.to_nx(points, Nx.BinaryBackend))
-      Evision.polylines(img, [points], true, {0, 255, 0}, thickness: 2)
+      Evision.polylines(img, [points], true, box_color, thickness: 2)
       |> Evision.putText("#{conf}", {b0, b1 + 12}, Evision.cv_FONT_HERSHEY_DUPLEX(), 0.3, text_color)
     end)
   end
 
+  @doc """
+  Model URL and filename of predefined model.
+  """
+  @spec model_info(:default_model | :quant_model) :: {String.t(), String.t()}
   def model_info(:ic15_resnet18) do
     {
       "https://github.com/opencv/opencv_zoo/blob/master/models/text_detection_db/text_detection_DB_IC15_resnet18_2021sep.onnx?raw=true",
@@ -90,65 +215,57 @@ defmodule Evision.Zoo.TextDetection.DB do
     }
   end
 
+  @doc """
+  Docs in smart cell.
+  """
+  @spec docs() :: String.t()
+  def docs do
+    @moduledoc
+  end
+
+  @doc """
+  Smart cell tasks.
+
+  A list of variants of the current model.
+  """
+  @spec smartcell_tasks() :: Evision.Zoo.smartcell_tasks()
   def smartcell_tasks do
     [
       %{
         id: "db_ic15_resnet18",
         label: "DB IC15 (ResNet18)",
         docs_url: "https://github.com/opencv/opencv_zoo/tree/master/models/text_detection_db",
-        params: smartcell_params()
+        params: smartcell_params(),
+        docs: docs()
       },
       %{
         id: "db_ic15_resnet50",
         label: "DB IC15 (ResNet50)",
         docs_url: "https://github.com/opencv/opencv_zoo/tree/master/models/text_detection_db",
-        params: smartcell_params()
+        params: smartcell_params(),
+        docs: docs()
       },
       %{
         id: "db_td500_resnet18",
         label: "DB TD500 (ResNet18)",
         docs_url: "https://github.com/opencv/opencv_zoo/tree/master/models/text_detection_db",
-        params: smartcell_params()
+        params: smartcell_params(),
+        docs: docs()
       },
       %{
         id: "db_td500_resnet50",
         label: "DB TD500 (ResNet50)",
         docs_url: "https://github.com/opencv/opencv_zoo/tree/master/models/text_detection_db",
-        params: smartcell_params()
+        params: smartcell_params(),
+        docs: docs()
       },
     ]
   end
 
-  def default_config do
-    %{
-      backend: Evision.cv_DNN_BACKEND_OPENCV(),
-      target: Evision.cv_DNN_TARGET_CPU(),
-      width: 736,
-      height: 736,
-      binary_threshold: 0.3,
-      polygon_threshold: 0.5,
-      max_candidates: 200,
-      unclip_ratio: 2.0
-    }
-  end
-
-  def smartcell_params() do
-    config = default_config()
-    [
-      %{
-        name: "Text Detector",
-        params: [
-          %{field: "width", label: "Width", type: :number, default: config[:width], tooltip: "Multiplies of 32."},
-          %{field: "height", label: "Height", type: :number, default: config[:height], tooltip: "Multiplies of 32."},
-          %{field: "binary_threshold", label: "Binary Threshold", type: :float, default: config[:binary_threshold]},
-          %{field: "polygon_threshold", label: "Polygon Threshold", type: :float, default: config[:polygon_threshold]},
-          %{field: "max_candidates", label: "Max Candidates", type: :number, default: config[:max_candidates]},
-          %{field: "unclip_ratio", label: "Unclip Ratio", type: :float, default: config[:unclip_ratio]}
-        ]
-      }
-    ]
-  end
-
+  @doc """
+  Generate quoted code from smart cell attrs.
+  """
+  @spec to_quoted(map()) :: list()
   def to_quoted(attrs) do
     {backend, target} = Evision.Zoo.to_quoted_backend_and_target(attrs)
 
