@@ -113,7 +113,8 @@ jobs:
             export TOOLCHAIN_FILE="$(pwd)/${{ matrix.pair.CMAKE_TOOLCHAIN_FILE }}"
           fi
           rm -f Makefile
-          rm -f _build/${{ env.MIX_ENV }}/lib/evision/priv/evision.so
+          rm -f _build/${{ env.MIX_ENV }}/lib/evision/priv/evision.dll
+          python3 py_src/gen2.py c_src lib/generated src/generated c_src/headers.txt elixir
           mix compile
 
       - name: Create precompiled library

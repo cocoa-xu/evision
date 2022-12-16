@@ -103,6 +103,7 @@ jobs:
       - name: Mix Compile
         run: |
           rm -f _build/dev/lib/evision/priv/evision.so
+          python3 py_src/gen2.py c_src lib/generated src/generated c_src/headers.txt elixir
           mix compile
 
       - name: Cache testdata
