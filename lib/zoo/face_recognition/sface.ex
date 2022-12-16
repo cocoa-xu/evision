@@ -282,7 +282,7 @@ defmodule Evision.Zoo.FaceRecognition.SFace do
 
   - **detector_opts**: `Keyword.t()`.
 
-    Face detector initilization options. Defaults to `[]`.
+    Face detector initialization options. Defaults to `[]`.
 
   ##### Return
   A map with three keys.

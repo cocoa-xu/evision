@@ -125,7 +125,7 @@ defmodule Evision.Zoo.TextRecognition.CRNN do
 
   - **to_gray**: `boolean`.
 
-    Required. The input image need to be coverted to grayscale if the model is `:en*`.
+    Required. The input image need to be converted to grayscale if the model is `:en*`.
 
     Please set to `true` if the model is `:en*`.
   """
