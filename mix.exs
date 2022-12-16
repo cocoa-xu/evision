@@ -915,8 +915,7 @@ defmodule Evision.MixProject do
       {:dll_loader_helper, "~> 0.1"},
       {:nx, "~> 0.4"},
       {:progress_bar, "~> 2.0"},
-      # optional
-      {:kino, "~> 0.7", optional: true},
+      {:kino, "~> 0.7"},
       # docs
       {:ex_doc, "~> 0.29", only: :docs, runtime: false},
       # test

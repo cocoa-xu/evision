@@ -1,5 +1,7 @@
 defmodule Evision.Zoo do
-  @moduledoc false
+  @moduledoc """
+  Evision Model Zoo
+  """
 
   @type smartcell_option :: %{
     value: Strung.t(),
