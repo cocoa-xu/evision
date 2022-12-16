@@ -79,30 +79,6 @@ jobs:
         run: |
           bash scripts/download_opencv.sh ${OPENCV_VER} 3rd_party/cache 3rd_party/opencv/
 
-      - name: Cache compiled OpenCV
-        id: cache-mix-compile_opencv
-        uses: actions/cache@v3
-        with:
-          key: precompile-opencv-${{ env.OPENCV_VER }}-${{ matrix.pair.arch_name }}-windows-msvc-${{ hashFiles('Makefile.win') }}-${{ hashFiles('cc_toolchain/*-windows-msvc.cmake') }}-${{ hashFiles('py_src/*.py') }}
-          path: |
-            ./_build/${{ env.MIX_ENV }}/lib/evision
-            ./c_src/headers.txt
-            ./c_src/configuration.private.hpp
-
-      - name: Compile OpenCV
-        if: steps.cache-mix-compile_opencv.outputs.cache-hit != 'true'
-        shell: bash
-        run: |
-          export CMAKE_OPENCV_OPTIONS="-D WITH_FFMPEG=OFF"
-          if [ "${{ matrix.pair.vcvarsall }}" = "amd64_arm64" ]; then
-            export CMAKE_GENERATOR_TYPE="${{ matrix.pair.CMAKE_GENERATOR_TYPE }}"
-            export MSBUILD_PLATFORM="${{ matrix.pair.MSBUILD_PLATFORM }}"
-            export CMAKE_TOOLCHAIN_FILE="$(pwd)/${{ matrix.pair.CMAKE_TOOLCHAIN_FILE }}"
-            export TOOLCHAIN_FILE="$(pwd)/${{ matrix.pair.CMAKE_TOOLCHAIN_FILE }}"
-          fi
-          rm -f Makefile
-          mix compile_opencv
-
       - name: Mix compile
         shell: bash
         run: |
