@@ -1,6 +1,6 @@
 # Changelog
 
-## v0.1.23 (2022-12-17)
+## v0.1.23/v0.1.24 (2022-12-17)
 
 ### Fixed
 - [smartcell] fixed charset loading when initialising FP16/INT8 CRNN models. [#144](https://github.com/cocoa-xu/evision/issues/144)
