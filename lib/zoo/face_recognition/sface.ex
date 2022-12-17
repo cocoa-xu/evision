@@ -183,7 +183,7 @@ defmodule Evision.Zoo.FaceRecognition.SFace do
   ##### Keyword Arguments
   - **distance_type**: `atom`.
 
-    Either `:cosine_similiarity` or `:l2_norm`. Defaults to `:cosine_similiarity`.
+    Either `:cosine_similarity` or `:l2_norm`. Defaults to `:cosine_similarity`.
 
   - **cosine_threshold**: `number()`.
 
@@ -216,7 +216,7 @@ defmodule Evision.Zoo.FaceRecognition.SFace do
     distance_type = opts[:distance_type] || config[:distance_type]
     distance_type =
       case distance_type do
-        :cosine_similiarity ->
+        :cosine_similarity ->
           0
         :l2_norm ->
           1
@@ -225,11 +225,11 @@ defmodule Evision.Zoo.FaceRecognition.SFace do
     end
 
     result = Evision.FaceRecognizerSF.match(self, face1_feat, face2_feat, dis_type: distance_type)
-    distance_type = opts[:distance_type] || :cosine_similiarity
+    distance_type = opts[:distance_type] || :cosine_similarity
     get_result(distance_type, result, opts)
   end
 
-  defp get_result(:cosine_similiarity, cosine_score, opts) do
+  defp get_result(:cosine_similarity, cosine_score, opts) do
     default_config = default_config()
     cosine_threshold = opts[:cosine_threshold] || default_config[:cosine_threshold]
     %{matched: cosine_score >= cosine_threshold, retval: cosine_score, measure: "cosine_score"}
@@ -262,7 +262,7 @@ defmodule Evision.Zoo.FaceRecognition.SFace do
   ##### Keyword Arguments
   - **distance_type**: `atom`.
 
-    Either `:cosine_similiarity` or `:l2_norm`. Defaults to `:cosine_similiarity`.
+    Either `:cosine_similarity` or `:l2_norm`. Defaults to `:cosine_similarity`.
 
   - **cosine_threshold**: `number()`.
 

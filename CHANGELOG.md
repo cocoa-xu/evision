@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.1.25 (2022-12-18)
+
+### Fixed
+- [smartcell] fixed a typo in SFace.
+
 ## v0.1.23/v0.1.24 (2022-12-17)
 
 ### Fixed
