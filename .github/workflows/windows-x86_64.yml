@@ -121,6 +121,9 @@ jobs:
           python3 py_src/gen2.py c_src lib/generated src/generated c_src/headers.txt elixir
 
           mix compile
+      
+      - name: Compile once again but without optional deps
+        run: mix compile --force --warnings-as-errors --no-optional-deps
 
       - name: Cache testdata
         id: cache-mix-testdata
