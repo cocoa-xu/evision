@@ -1,6 +1,8 @@
 defmodule Evision.Zoo.Utils.HTTP do
   @moduledoc false
 
+  @compile {:no_warn_undefined, ProgressBar}
+
   @type response :: %{status: status(), headers: headers(), body: binary()}
   @type status :: non_neg_integer()
   @type headers :: list(header())
@@ -94,7 +96,7 @@ defmodule Evision.Zoo.Utils.HTTP do
         part_size = byte_size(body_part)
         state = update_in(state.size, &(&1 + part_size))
 
-        if progress_bar_enabled?() &&
+        if Code.ensure_loaded?(ProgressBar) and progress_bar_enabled?() &&
              state.total_size && part_size != state.total_size do
           ProgressBar.render(state.size, state.total_size, suffix: :bytes)
         end

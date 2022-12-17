@@ -288,25 +288,40 @@ defmodule Evision.Zoo.TextRecognition.CRNN do
     }
   end
 
-  def charset_info(:en) do
+  def charset_info(en) when en in [:en, :en_fp16, :en_int8] do
     {
       "https://raw.githubusercontent.com/opencv/opencv_zoo/master/models/text_recognition_crnn/charset_36_EN.txt",
       "text_recognition_CRNN_EN_2021sep_charset_36_EN.txt"
     }
   end
 
-  def charset_info(:ch) do
+  def charset_info(ch) when ch in [:ch, :ch_fp16, :ch_int8] do
     {
       "https://raw.githubusercontent.com/opencv/opencv_zoo/master/models/text_recognition_crnn/charset_94_CH.txt",
       "text_recognition_CRNN_CH_2021sep_charset_94_CH.txt"
     }
   end
 
-  def charset_info(:cn) do
+  def charset_info(cn) when cn in [:cn, :cn_int8] do
     {
       "https://raw.githubusercontent.com/opencv/opencv_zoo/master/models/text_recognition_crnn/charset_3944_CN.txt",
       "text_recognition_CRNN_CN_2021nov_charset_3944_CN.txt"
     }
+  end
+
+  def chartset_info(other) do
+    raise """
+    Cannot find predefined charset `#{inspect(other)}`.
+
+    However, you can load the charset that corresponds to your model and pass it when
+    calling `infer/`. The custom charset should be a list of characters. For example:
+
+      charset = String.split(File.read!("my-charset.txt"), "\n")
+      Evision.Zoo.TextRecognition.CRNN.infer(recognizer,
+        image, Enum.at(detections, 0),
+        charset: charset,
+        to_gray: lang == "en")
+    """
   end
 
   @doc """

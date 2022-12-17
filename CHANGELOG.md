@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.1.23-dev (2022-12-17)
+
+### Fixed
+- [smartcell] fixed charset loading when initialising FP16/INT8 CRNN models. [#144](https://github.com/cocoa-xu/evision/issues/144)
+
+### Changed
+- [smartcell] register the model zoo smart cell (`Evision.SmartCell.Zoo`) on starting. Thanks to @josevalim.
+- [smartcell] make `:kino` and `:progress_bar` optional dependencies.
+
 ## v0.1.22 (2022-12-16)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.22) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.22)
 

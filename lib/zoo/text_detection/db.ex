@@ -33,8 +33,8 @@ defmodule Evision.Zoo.TextDetection.DB do
       %{
         name: "Text Detector",
         params: [
-          %{field: "width", label: "Width", type: :number, default: config[:width], tooltip: "Multiplies of 32."},
-          %{field: "height", label: "Height", type: :number, default: config[:height], tooltip: "Multiplies of 32."},
+          %{field: "width", label: "Width", type: :number, default: config[:width], tooltip: "Multiples of 32."},
+          %{field: "height", label: "Height", type: :number, default: config[:height], tooltip: "Multiples of 32."},
           %{field: "binary_threshold", label: "Binary Threshold", type: :float, default: config[:binary_threshold]},
           %{field: "polygon_threshold", label: "Polygon Threshold", type: :float, default: config[:polygon_threshold]},
           %{field: "max_candidates", label: "Max Candidates", type: :number, default: config[:max_candidates]},
