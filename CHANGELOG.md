@@ -10,6 +10,11 @@
 - [smartcell] register the model zoo smart cell (`Evision.SmartCell.Zoo`) on starting. Thanks to @josevalim.
 - [smartcell] make `:kino` and `:progress_bar` optional dependencies.
 - [ci] added one more step to make sure it compiles without optional deps. Thanks to @josevalim.
+- [smartcell] hide all FP16 models of CRNN because they were not supported until [opencv/opencv #22337](https://github.com/opencv/opencv/pull/22337), which was after the release date of OpenCV 4.6.0.
+  
+  See more on [https://github.com/opencv/opencv/issues/18735#issuecomment-1273125970](https://github.com/opencv/opencv/issues/18735#issuecomment-1273125970).
+
+- [smartcell] hide `CRNN CH (INT8)` and `CRNN EN (INT8)` because OpenCV 4.6.0 seemed to have problems loading/parsing them even with the `demo.py` script in the official opencv_zoo repo.
 
 ## v0.1.22 (2022-12-16)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.22) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.22)

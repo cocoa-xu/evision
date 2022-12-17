@@ -66,9 +66,12 @@ else
 
     defp field_defaults_for(task_id, variant_id) do
       variant = variant_by_id(task_id, variant_id)
-
-      for param <- variant.params, pparam <- param.params, into: %{} do
-        {pparam.field, pparam.default}
+      if variant == nil do
+        %{}
+      else
+        for param <- variant.params, pparam <- param.params, into: %{} do
+          {pparam.field, pparam.default}
+        end
       end
     end
 

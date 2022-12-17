@@ -5,10 +5,11 @@ defmodule Evision.Zoo.TextRecognition do
 
   @modules %{
     "crnn_en" => Evision.Zoo.TextRecognition.CRNN,
-    "crnn_en_fp16" => Evision.Zoo.TextRecognition.CRNN,
-    "crnn_en_int8" => Evision.Zoo.TextRecognition.CRNN,
+    # "crnn_en_fp16" => Evision.Zoo.TextRecognition.CRNN,
+    # "crnn_en_int8" => Evision.Zoo.TextRecognition.CRNN,
     "crnn_ch" => Evision.Zoo.TextRecognition.CRNN,
-    "crnn_ch_fp16" => Evision.Zoo.TextRecognition.CRNN,
+    # "crnn_ch_fp16" => Evision.Zoo.TextRecognition.CRNN,
+    # "crnn_ch_int8" => Evision.Zoo.TextRecognition.CRNN,
     "crnn_cn" => Evision.Zoo.TextRecognition.CRNN,
     "crnn_cn_int8" => Evision.Zoo.TextRecognition.CRNN,
   }

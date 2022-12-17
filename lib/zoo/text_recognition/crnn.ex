@@ -424,20 +424,20 @@ defmodule Evision.Zoo.TextRecognition.CRNN do
         params: smartcell_params(),
         docs: docs()
       },
-      %{
-        id: "crnn_en_fp16",
-        label: "CRNN EN (FP16)",
-        docs_url: "https://github.com/opencv/opencv_zoo/tree/master/models/text_recognition_crnn",
-        params: smartcell_params(),
-        docs: docs()
-      },
-      %{
-        id: "crnn_en_int8",
-        label: "CRNN EN (INT8)",
-        docs_url: "https://github.com/opencv/opencv_zoo/tree/master/models/text_recognition_crnn",
-        params: smartcell_params(),
-        docs: docs()
-      },
+      # %{
+      #   id: "crnn_en_fp16",
+      #   label: "CRNN EN (FP16)",
+      #   docs_url: "https://github.com/opencv/opencv_zoo/tree/master/models/text_recognition_crnn",
+      #   params: smartcell_params(),
+      #   docs: docs()
+      # },
+      # %{
+      #   id: "crnn_en_int8",
+      #   label: "CRNN EN (INT8)",
+      #   docs_url: "https://github.com/opencv/opencv_zoo/tree/master/models/text_recognition_crnn",
+      #   params: smartcell_params(),
+      #   docs: docs()
+      # },
       %{
         id: "crnn_ch",
         label: "CRNN CH",
@@ -445,20 +445,20 @@ defmodule Evision.Zoo.TextRecognition.CRNN do
         params: smartcell_params(),
         docs: docs()
       },
-      %{
-        id: "crnn_ch_fp16",
-        label: "CRNN CH (FP16)",
-        docs_url: "https://github.com/opencv/opencv_zoo/tree/master/models/text_recognition_crnn",
-        params: smartcell_params(),
-        docs: docs()
-      },
-      %{
-        id: "crnn_ch_int8",
-        label: "CRNN CH (INT8)",
-        docs_url: "https://github.com/opencv/opencv_zoo/tree/master/models/text_recognition_crnn",
-        params: smartcell_params(),
-        docs: docs()
-      },
+      # %{
+      #   id: "crnn_ch_fp16",
+      #   label: "CRNN CH (FP16)",
+      #   docs_url: "https://github.com/opencv/opencv_zoo/tree/master/models/text_recognition_crnn",
+      #   params: smartcell_params(),
+      #   docs: docs()
+      # },
+      # %{
+      #   id: "crnn_ch_int8",
+      #   label: "CRNN CH (INT8)",
+      #   docs_url: "https://github.com/opencv/opencv_zoo/tree/master/models/text_recognition_crnn",
+      #   params: smartcell_params(),
+      #   docs: docs()
+      # },
       %{
         id: "crnn_cn",
         label: "CRNN CN",
@@ -481,6 +481,7 @@ defmodule Evision.Zoo.TextRecognition.CRNN do
   """
   @spec to_quoted(map()) :: list()
   def to_quoted(attrs) do
+    IO.inspect(attrs, label: "attrs")
     {backend, target} = Evision.Zoo.to_quoted_backend_and_target(attrs)
 
     opts = [
@@ -505,6 +506,7 @@ defmodule Evision.Zoo.TextRecognition.CRNN do
         unknown_id ->
           raise "Unknown variant: #{inspect(unknown_id)}"
       end
+
 
     {detector_module, detector_model} =
       case attrs["detector"] do
