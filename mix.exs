@@ -912,13 +912,20 @@ defmodule Evision.MixProject do
       # compilation
       {:elixir_make, "~> 0.7", runtime: false},
       {:castore, "~> 0.1"},
+
       # runtime
       {:dll_loader_helper, "~> 0.1"},
       {:nx, "~> 0.4"},
-      {:progress_bar, "~> 2.0"},
-      {:kino, "~> 0.7"},
+
+      # optional
+      ## kino: for smart cells and better output in livebook
+      {:kino, "~> 0.7", optional: true},
+      ## progress_bar: for the model zoo smart cell
+      {:progress_bar, "~> 2.0", optional: true},
+
       # docs
       {:ex_doc, "~> 0.29", only: :docs, runtime: false},
+
       # test
       {:scidata, "~> 0.1", only: :test}
     ]

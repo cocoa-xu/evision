@@ -56,6 +56,10 @@ defmodule Evision.SmartCell do
       raise RuntimeError, """
       `:kino >= 0.7` is required to use smartcells in Livebook.
       Please add `{:kino, "~> 0.7"}` to the dependency list.
+
+      Note that `Evision.SmartCell.Zoo` has a another optional dependency,
+      `{:progress_bar,  "~> 2.0}`, which is used for displaying the
+      model download progress.
       """
     end
   end
