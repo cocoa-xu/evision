@@ -1,9 +1,10 @@
 # Changelog
 
-## v0.1.23-dev (2022-12-17)
+## v0.1.23 (2022-12-17)
 
 ### Fixed
 - [smartcell] fixed charset loading when initialising FP16/INT8 CRNN models. [#144](https://github.com/cocoa-xu/evision/issues/144)
+- [smartcell] fixed OpenCL target label.
 
 ### Changed
 - [smartcell] register the model zoo smart cell (`Evision.SmartCell.Zoo`) on starting. Thanks to @josevalim.
