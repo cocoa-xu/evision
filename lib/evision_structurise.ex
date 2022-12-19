@@ -29,12 +29,8 @@ defmodule Evision.Internal.Structurise do
   @spec to_struct_ok(term()) :: {:ok, term()}
   def to_struct_ok(any)
 
-  def to_struct_ok(mat = %{:class => :Mat}) do
-    {:ok, to_struct(mat)}
-  end
-
-  def to_struct_ok(cap = %{:class => :VideoCapture}) do
-    {:ok, to_struct(cap)}
+  def to_struct_ok(ret = %{:class => _module_name}) do
+    {:ok, to_struct(ret)}
   end
 
   def to_struct_ok(tuple) when is_tuple(tuple) do

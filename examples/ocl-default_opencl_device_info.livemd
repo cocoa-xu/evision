@@ -1,0 +1,57 @@
+<!-- vim: syntax=markdown -->
+
+# Print Default OpenCL Device Information
+
+```elixir
+Mix.install([
+  {:evision, "~> 0.1.25"}
+])
+```
+
+## OpenCL
+
+```elixir
+if Evision.OCL.haveOpenCL() do
+  IO.puts("OpenCL is available")
+
+  case Evision.OCL.Device.getDefault() do
+    device = %Evision.OCL.Device{} ->
+      IO.puts("Device name: #{Evision.OCL.Device.name(device)}")
+      IO.puts("Vendor name: #{Evision.OCL.Device.vendorName(device)}")
+      IO.puts("Vendor ID: #{Evision.OCL.Device.vendorID(device)}")
+      IO.puts("Type: #{Evision.OCL.Device.type(device)}")
+      IO.puts("Available: #{Evision.OCL.Device.available(device)}")
+      IO.puts("Image Support: #{Evision.OCL.Device.imageSupport(device)}")
+      IO.puts("Image 2D Max Height: #{Evision.OCL.Device.image2DMaxHeight(device)}")
+      IO.puts("Image 2D Max Width: #{Evision.OCL.Device.image2DMaxWidth(device)}")
+      IO.puts("Image 3D Max Height: #{Evision.OCL.Device.image3DMaxHeight(device)}")
+      IO.puts("Image 3D Max Width: #{Evision.OCL.Device.image3DMaxWidth(device)}")
+      IO.puts("Image 3D Max Depth: #{Evision.OCL.Device.image3DMaxDepth(device)}")
+      IO.puts("Image Max Array Size: #{Evision.OCL.Device.imageMaxArraySize(device)} bytes")
+      IO.puts("Image Max Buffer Size: #{Evision.OCL.Device.imageMaxBufferSize(device)} bytes")
+      IO.puts("Device version major: #{Evision.OCL.Device.deviceVersionMajor(device)}")
+      IO.puts("Device version minor: #{Evision.OCL.Device.deviceVersionMinor(device)}")
+      IO.puts("Driver version: #{Evision.OCL.Device.driverVersion(device)}")
+      IO.puts("OpenCL compiler available: #{Evision.OCL.Device.compilerAvailable(device)}")
+      IO.puts("OpenCL linker available: #{Evision.OCL.Device.linkerAvailable(device)}")
+      IO.puts("Execution Capabilities: #{Evision.OCL.Device.executionCapabilities(device)}")
+      IO.puts("Global MemSize: #{Evision.OCL.Device.globalMemSize(device)} bytes")
+      IO.puts("Local MemSize: #{Evision.OCL.Device.localMemSize(device)} bytes")
+      IO.puts("Half FP Config: #{Evision.OCL.Device.halfFPConfig(device)}")
+      IO.puts("Single FP Config: #{Evision.OCL.Device.singleFPConfig(device)}")
+      IO.puts("Double FP Config: #{Evision.OCL.Device.doubleFPConfig(device)}")
+
+      IO.puts(
+        "Extensions: #{Enum.join(String.split(Evision.OCL.Device.extensions(device), " "), "\n  ")}"
+      )
+
+      IO.puts("OpenCL Version: #{Evision.OCL.Device.openCLVersion(device)}")
+      IO.puts("OpenCL C Version: #{Evision.OCL.Device.openCL_C_Version(device)}")
+      IO.puts("OpenCL addressBits: #{Evision.OCL.Device.addressBits(device)}")
+      IO.puts("Max Clock Frequency: #{Evision.OCL.Device.maxClockFrequency(device)} MHz")
+      IO.puts("Max Compute Units: #{Evision.OCL.Device.maxComputeUnits(device)}")
+  end
+else
+  IO.puts("OpenCL not available")
+end
+```

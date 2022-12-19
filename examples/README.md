@@ -84,6 +84,12 @@ Related functions:
 
 [![Run in Livebook](https://livebook.dev/badge/v1/gray.svg)](https://livebook.dev/run?url=https%3A%2F%2Fgithub.com%2Fcocoa-xu%2Fevision%2Fblob%2Fmain%2Fexamples%2Fcifar10.livemd)
 
+### Print Default OpenCL Device Information
+
+[ocl-default_opencl_device_info.livemd](dnn-googlenet.livemd)
+
+[![Run in Livebook](https://livebook.dev/badge/v1/gray.svg)](https://livebook.dev/run?url=https%3A%2F%2Fgithub.com%2Fcocoa-xu%2Fevision%2Fblob%2Fmain%2Fexamples%2Focl-default_opencl_device_info.livemd)
+
 ## Evision.DNN
 ### Object Detection Task with GoogleNet
 

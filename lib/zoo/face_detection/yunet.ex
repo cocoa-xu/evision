@@ -39,7 +39,7 @@ defmodule Evision.Zoo.FaceDetection.YuNet do
   Initialize model.
 
   ##### Positional arguments
-  - **model**: `String.t() | :default_model | :quant_model`.
+  - **model**: `String.t()` | `:default_model | `:quant_model`.
 
     - When `model` is a string, it will be treat as the path to a weight file
       and `init/2` will load the model from it.
