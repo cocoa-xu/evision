@@ -103,7 +103,7 @@ download_opencv_contrib:
 			if [ ! -e "$(OPENCV_CONTRIB_DIR)/modules" ]; then \
 				if [ "$(OPENCV_CONTRIB_USE_GIT_HEAD)" = "false" ]; then \
 					echo "using opencv_contrib $(OPENCV_CONTRIB_VER)" ; \
-					bash scripts/download_opencv_contrib.sh $(OPENCV_CONTRIB_VER) src/cache src/opencv/ ; \
+					bash scripts/download_opencv_contrib.sh $(OPENCV_CONTRIB_VER) "$(OPENCV_CACHE_DIR)" "$(OPENCV_ROOT_DIR)" ; \
 				else \
 					rm -rf "$(OPENCV_CONTRIB_DIR)" ; \
 					git clone --branch=$(OPENCV_CONTRIB_USE_GIT_BRANCH) --depth=1 $(OPENCV_CONTRIB_GIT_REPO) "$(OPENCV_CONTRIB_DIR)" ; \
