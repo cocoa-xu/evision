@@ -234,7 +234,8 @@ class FuncInfo(object):
                 parse_name = a.name
                 if a.py_inputarg:
                     parse_name = "erl_term_" + a.name
-                    erl_term = "evision_get_kw(env, erl_terms, \"%s\")" % (self.map_elixir_argname(a.name),)
+                    elixir_argname = self.map_elixir_argname(a.name)
+                    erl_term = "evision_get_kw(env, erl_terms, \"%s\")" % (elixir_argname,)
                     self_offset = 0
                     if self.classname and not self.is_static and not self.isconstructor:
                         self_offset = 1
@@ -246,6 +247,9 @@ class FuncInfo(object):
                         code_cvt_list.append("convert_to_char(env, %s, &%s, %s)" % (erl_term, a.name, a.crepr(defval)))
                     else:
                         code_cvt_list.append("evision_to_safe(env, %s, %s, %s)" % (erl_term, a.name, a.crepr(defval)))
+                        if elixir_argname == 'outBlobNames':
+                            # outBlobNames cannot be `[]`
+                            code_cvt_list.append("%s.size() > 0" % (a.name,))
 
                 all_cargs.append([arg_type_info, parse_name])
 
@@ -356,7 +360,10 @@ class FuncInfo(object):
                         '            }'
                     else:
                         if self.should_return_self():
-                            code_ret = f"return self"
+                            code_ret = ET.code_ret_dnn_setter.substitute(
+                                storage_name=selfinfo.cname,
+                                elixir_module_name=get_elixir_module_name(selfinfo.cname)
+                            )
                         else:
                             code_ret = f"return evision_from(env, {aname})"
             else:

@@ -11,10 +11,10 @@
 # System.put_env("EVISION_PREFER_PRECOMPILED", "false")
 
 Mix.install([
-  {:evision, "~> 0.1.9"},
+  {:evision, "~> 0.1.25"},
   {:kino, "~> 0.7"},
   {:scidata, "~> 0.1"},
-  {:nx, "~> 0.3", override: true},
+  {:nx, "~> 0.4", override: true},
   {:scholar, "~> 0.1", github: "elixir-nx/scholar"}
 ])
 ```

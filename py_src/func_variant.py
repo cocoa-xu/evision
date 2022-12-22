@@ -477,7 +477,6 @@ class FuncVariant(object):
     def generate_spec_elixir(self, module_func_name: str, is_instance_method: bool, include_opts: bool, in_args: list=None, out_args: list=None) -> str:
         spec = StringIO()
 
-        self.classname
         if out_args is None:
             out_args = self.py_outlist
             out_args_name = [o[0] for o in out_args]
@@ -491,7 +490,10 @@ class FuncVariant(object):
             elif self.isconstructor:
                 out_args = [self.classname]
             else:
-                out_args = []
+                if self.name == "setInputParams":
+                    out_args = [self.classname[4:]]
+                else:
+                    out_args = []
 
             for arg in self.args:
                 if arg.name in out_args_name:

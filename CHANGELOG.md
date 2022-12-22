@@ -1,9 +1,36 @@
 # Changelog
 
+## v0.1.25 (2022-12-18)
+
+### Fixed
+- [smartcell] fixed a typo in SFace.
+
+## v0.1.23/v0.1.24 (2022-12-17)
+
+### Fixed
+- [smartcell] fixed charset loading when initialising FP16/INT8 CRNN models. [#144](https://github.com/cocoa-xu/evision/issues/144)
+- [smartcell] fixed OpenCL target label.
+
+### Changed
+- [smartcell] register the model zoo smart cell (`Evision.SmartCell.Zoo`) on starting. Thanks to @josevalim.
+- [smartcell] make `:kino` and `:progress_bar` optional dependencies.
+- [ci] added one more step to make sure it compiles without optional deps. Thanks to @josevalim.
+- [smartcell] hide all FP16 models of CRNN because they were not supported until [opencv/opencv #22337](https://github.com/opencv/opencv/pull/22337), which was after the release date of OpenCV 4.6.0.
+  
+  See more on [https://github.com/opencv/opencv/issues/18735#issuecomment-1273125970](https://github.com/opencv/opencv/issues/18735#issuecomment-1273125970).
+
+- [smartcell] hide `CRNN CH (INT8)` and `CRNN EN (INT8)` because OpenCV 4.6.0 seemed to have problems loading/parsing them even with the `demo.py` script in the official opencv_zoo repo.
+
+## v0.1.22 (2022-12-16)
+[Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.22) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.22)
+
+### Added
+- [smartcell] OpenCV Model Zoo. `Evision.SmartCell.Zoo`
+
 ## v0.1.21 (2022-11-25)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.21) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.21)
 
-## Fixed
+### Fixed
 - [py_src] fixed functions in dnn that `return *this`.
 
   For this part, this original code (as in `python-opencv`) would case a new object to be allocated in C++ like
@@ -27,19 +54,19 @@
 ## v0.1.20 (2022-11-24)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.20) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.20)
 
-## Fixed
+### Fixed
 - [Precompiled] fixed incorrect checksum for `x86_64-linux-gnu`.
 
 ## v0.1.19 (2022-11-14)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.19) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.19)
 
-## Changed
+### Changed
 - [py_src/c_src] Added `has_default` field to `ArgInfo`.
 
 ## v0.1.18 (2022-11-12)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.18) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.18)
 
-## Fixes
+### Fixes
 - [precompile] Fixed `Mix.Tasks.Compile.EvisionPrecompiled.read_checksum_map/1`
 - [py_src] Fixed code generation for derived classes in namespace `cv::dnn`
 - [test] added test for `Evision.DNN.DetectionModel`.
@@ -47,13 +74,13 @@
 ## v0.1.17 (2022-11-11)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.17) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.17)
 
-## Fixes
+### Fixes
 - [py_src] Fixed a code generation bug when all the input arguments of a function are optional.
 
-## Changed
+### Changed
 - [example] `Req.get!` should only raise on 4xx and 5xx. Thanks @wojtekmach
 
-## Added
+### Added
 - [example] Added two examples: 
 
   - find and draw contours in an image.
@@ -66,19 +93,19 @@
 ## v0.1.16 (2022-10-30)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.16) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.16)
 
-## Fixes
+### Fixes
 - [deps] `:kino` will be an optional dependency, if we use `if` before `defmodule`. This reverts the changes in in v0.1.15. 
   
   Thanks @josevalim for helping me figuring out why using `if` before `defmodule` would solve the problem. More details can be found [here](https://cocoa-research.works/2022/10/conditional-compliation-with-if-and-use-in-elixir/).
 
-## Changes
+### Changes
 - [config.exs] Added configurable parameters related to rendering `Evision.Mat` in Kino. (They are optional and can also be adjusted in runtime)
 
   - `config :evision, kino_render_image_encoding: :png`
   - `config :evision, kino_render_image_max_size: {8192, 8192}`
   - `config :evision, kino_render_tab_order: [:image, :raw, :numerical]`
 
-## Added
+### Added
 - [Evision.Mat] Added a few functions related to Kino.Render
 
   | Function | Description |
@@ -92,11 +119,11 @@
 
 ## v0.1.15 (2022-10-26)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.15) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.15)
-## Changes
+### Changes
 - [mix compile] Suppress logs if `evision.so` is already presented when compiling from source.
 - [Precompile] Added precompile target `aarch64-windows-msvc`.
 
-## Fixes
+### Fixes
 - [deps] `:kino` should be a required dependency
 
 ## v0.1.14 (2022-10-22)

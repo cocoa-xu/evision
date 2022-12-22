@@ -26,7 +26,8 @@ defmodule Evision.SmartCell do
       Evision.SmartCell.ML.TrainData,
       Evision.SmartCell.ML.SVM,
       Evision.SmartCell.ML.DTrees,
-      Evision.SmartCell.ML.RTrees
+      Evision.SmartCell.ML.RTrees,
+      Evision.SmartCell.Zoo
     ]
   end
 
@@ -39,8 +40,10 @@ defmodule Evision.SmartCell do
 
   To see all available smartcells, please use `Evision.SmartCell.available_smartcells/0`.
   """
-  @spec register_smartcells([module()]) :: :ok
-  def register_smartcells(smartcells \\ available_smartcells()) when is_list(smartcells) do
+  @spec register_smartcells([module()] | module()) :: :ok
+  def register_smartcells(smartcells \\ available_smartcells())
+
+  def register_smartcells(smartcells) when is_list(smartcells) do
     if Code.ensure_loaded?(Kino.SmartCell) do
       Enum.each(smartcells, fn sc ->
         if Code.ensure_loaded?(sc) do
@@ -53,7 +56,15 @@ defmodule Evision.SmartCell do
       raise RuntimeError, """
       `:kino >= 0.7` is required to use smartcells in Livebook.
       Please add `{:kino, "~> 0.7"}` to the dependency list.
+
+      Note that `Evision.SmartCell.Zoo` has a another optional dependency,
+      `{:progress_bar,  "~> 2.0}`, which is used for displaying the
+      model download progress.
       """
     end
+  end
+
+  def register_smartcells(smartcell) when is_atom(smartcell) do
+    register_smartcells([smartcell])
   end
 end

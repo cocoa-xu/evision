@@ -2,7 +2,9 @@
 
 **Also, for Linux users only, the precompiled binary is not compiled with GTK support, therefore functions like `Evision.HighGui.imshow/2` will not work. However, you can either use `Evision.Wx.imshow/2` (if Erlang on your system is compiled with `wxWidgets`), or set the environment variable `EVISION_PREFER_PRECOMPILED` to `false` so that OpenCV can detect available HighGui backend when compiling from source.**
 
-# evision [WIP]
+# evision 
+
+[![Hex.pm](https://img.shields.io/hexpm/v/evision.svg?style=flat&color=blue)](https://hex.pm/packages/evision)
 
 | OS               | Arch           | ABI  | Build Status | Has Precompiled Library |
 |------------------|----------------|------|--------------|-------------------------|
@@ -38,6 +40,19 @@ project. This means that you can use livebook (as well as other pre-pulled libra
 project. 
 
 The default password of the livebook is `nerves` (as the time of writing, if it does not work, please check the nerves_livebook project). 
+
+## Register Builtin Smart Cells
+```elixir
+# List all smart cells
+smartcells = Evision.SmartCell.available_smartcells()
+
+# register all smart cells
+Evision.SmartCell.register_smartcells(smartcells)
+
+# you can also register a subset of these smart cells
+# e.g., only register the Model Zoo smart cell
+Evision.SmartCell.register_smartcells(Evision.SmartCell.Zoo)
+```
 
 ## Integration with Nx
 
@@ -185,7 +200,7 @@ Then you can add `evision` as dependency in your `mix.exs`.
 ```elixir
 def deps do
   [
-    {:evision, "~> 0.1.21"}
+    {:evision, "~> 0.1.25"}
   ]
 end
 ```
@@ -200,11 +215,11 @@ The following environment variables can be set based on your needs.
 (Note that precompiled binaries do not use FFmpeg. If you'd like to use FFmpeg, please compile from source (please see instructions in the next section) and set corresponding environment variables. We're considering this option at the moment.)
 
 #### Important notes
-It is recommended to use `:evision` from hex.pm. Currently "0.1.7" to "0.1.9", and "0.1.11" to "0.1.21" are available on hex.pm,
+It is recommended to use `:evision` from hex.pm. Currently "0.1.7" to "0.1.9", and "0.1.11" to "0.1.25" are available on hex.pm,
 ```elixir
 def deps do
   [
-    {:evision, "~> 0.1.21"}
+    {:evision, "~> 0.1.25"}
   ]
 end
 ```
@@ -256,7 +271,7 @@ export EVISION_PREFER_PRECOMPILED=false
 For livebook users, 
 ```elixir
 Mix.install([
-  {:evision, "~> 0.1.21"}
+  {:evision, "~> 0.1.25"}
 ], system_env: [
   {"EVISION_PREFER_PRECOMPILED", "false"}
 ])
