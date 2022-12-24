@@ -817,7 +817,7 @@ defmodule Evision.MixProject do
       bioinspired: true,
       dnn_superres: true,
       face: true,
-      hfs: false,
+      hfs: true,
       img_hash: true,
       line_descriptor: false,
       mcc: false,
@@ -838,7 +838,7 @@ defmodule Evision.MixProject do
       ximgproc: true,
       xphoto: true,
 
-      # does not have bindings yet
+      # no bindings yet
       datasets: false,
       dnn_objdetect: false,
       dpm: false,
