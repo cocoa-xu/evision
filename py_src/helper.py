@@ -686,6 +686,11 @@ def is_struct(argtype: str, also_get: Optional[str] = None, classname: Optional[
         "MarrHildrethHash": "Evision.ImgHash.MarrHildrethHash",
         "PHash": "Evision.ImgHash.PHash",
         "RadialVarianceHash": "Evision.ImgHash.RadialVarianceHash",
+
+        "GrayCodePattern": "Evision.StructuredLight.GrayCodePattern",
+        "SinusoidalPattern": "Evision.StructuredLight.SinusoidalPattern",
+        "SinusoidalPattern_Params": "Evision.StructuredLight.SinusoidalPattern.Params",
+        "StructuredLightPattern": "Evision.StructuredLight.StructuredLightPattern",
     }
 
     # argtype => classname => module name

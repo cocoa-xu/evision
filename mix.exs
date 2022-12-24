@@ -833,7 +833,7 @@ defmodule Evision.MixProject do
       sfm: true,
       shape: true,
       stereo: false,
-      structured_light: false,
+      structured_light: true,
       superres: false,
       surface_matching: false,
       text: false,
