@@ -86,18 +86,29 @@ class BeamWrapperGenerator(object):
         self.evision_nif_names = dict()
         self.not_struct_types = dict()
 
+    def get_export_scope_name(self, original_scope_name):
+        # Outer classes should be registered before their content - inner classes in this case
+        class_scope = self.classes.get(normalize_class_name(original_scope_name), None)
+
+        if class_scope:
+            return class_scope.full_export_name
+
+        # Otherwise it is a namespace.
+        # If something is messed up at this point - it will be revelead during
+        # library import
+        return original_scope_name
+
     def add_class(self, stype, name, decl):
-        classinfo = ClassInfo(name, decl)
+        classinfo = ClassInfo(name, decl, self)
+        classinfo.decl_idx = self.class_idx
+        self.class_idx += 1
 
         if classinfo.name in self.classes:
             print("Generator error: class %s (cname=%s) already exists" \
                 % (classinfo.name, classinfo.cname))
             # sys.exit(-1)
             return
-
-        classinfo.decl_idx = self.class_idx
-        self.class_idx += 1
-
+        
         self.classes[classinfo.name] = classinfo
 
         # Add Class to json file.
