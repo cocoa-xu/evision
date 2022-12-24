@@ -734,6 +734,11 @@ def is_struct(argtype: str, also_get: Optional[str] = None, classname: Optional[
         "SuperpixelLSC": "Evision.XImgProc.SuperpixelLSC",
         "SuperpixelSEEDS": "Evision.XImgProc.SuperpixelSEEDS",
         "SuperpixelSLIC": "Evision.XImgProc.SuperpixelSLIC",
+
+        "GrayworldWB": "Evision.XPhoto.GrayworldWB",
+        "LearningBasedWB": "Evision.XPhoto.LearningBasedWB",
+        "SimpleWB": "Evision.XPhoto.SimpleWB",
+        "TonemapDurand": "Evision.XPhoto.TonemapDurand",
     }
 
     # argtype => classname => module name

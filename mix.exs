@@ -837,12 +837,12 @@ defmodule Evision.MixProject do
       surface_matching: false,
       text: true,
       tracking: true,
-      videostab: false,
+      videostab: false,  # does not have bindings yet
       wechat_qrcode: false,
       xfeatures2d: true,
       ximgproc: true,
-      xobjdetect: false,
-      xphoto: false
+      xobjdetect: false, # does not have bindings yet
+      xphoto: true
     ]
   }
   defp module_configuration, do: @module_configuration
