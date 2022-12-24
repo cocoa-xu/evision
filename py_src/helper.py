@@ -678,11 +678,6 @@ def is_struct(argtype: str, also_get: Optional[str] = None, classname: Optional[
         "TrackerKCF": "Evision.TrackerKCF",
         "TrackerKCF_Params": "Evision.TrackerKCF.Params",
         "CharucoBoard": "Evision.ArUco.CharucoBoard",
-        "BackgroundSubtractorCNT": "Evision.BgSegm.BackgroundSubtractorCNT",
-        "BackgroundSubtractorGMG": "Evision.BgSegm.BackgroundSubtractorGMG",
-        "BackgroundSubtractorGSOC": "Evision.BgSegm.BackgroundSubtractorGSOC",
-        "BackgroundSubtractorLSBP": "Evision.BgSegm.BackgroundSubtractorLSBP",
-        "BackgroundSubtractorMOG": "Evision.BgSegm.BackgroundSubtractorMOG",
         "HistogramPhaseUnwrapping": "Evision.HistogramPhaseUnwrapping",
         "HistogramPhaseUnwrapping_Params": "Evision.HistogramPhaseUnwrapping.Params",
         "Facemark": "Evision.Face.Facemark",
@@ -739,6 +734,13 @@ def is_struct(argtype: str, also_get: Optional[str] = None, classname: Optional[
         "LearningBasedWB": "Evision.XPhoto.LearningBasedWB",
         "SimpleWB": "Evision.XPhoto.SimpleWB",
         "TonemapDurand": "Evision.XPhoto.TonemapDurand",
+
+        "BackgroundSubtractorCNT": "Evision.BgSegm.BackgroundSubtractorCNT",
+        "BackgroundSubtractorGMG": "Evision.BgSegm.BackgroundSubtractorGMG",
+        "BackgroundSubtractorGSOC": "Evision.BgSegm.BackgroundSubtractorGSOC",
+        "BackgroundSubtractorLSBP": "Evision.BgSegm.BackgroundSubtractorLSBP",
+        "BackgroundSubtractorMOG": "Evision.BgSegm.BackgroundSubtractorMOG",
+        "SyntheticSequenceGenerator": "Evision.BgSegm.SyntheticSequenceGenerator"
     }
 
     # argtype => classname => module name

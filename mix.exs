@@ -813,7 +813,7 @@ defmodule Evision.MixProject do
     opencv_contrib: [
       aruco: true,
       barcode: true,
-      bgsegm: false,
+      bgsegm: true,
       bioinspired: false,
       dnn_superres: true,
       dpm: false,
