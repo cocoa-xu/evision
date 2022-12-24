@@ -824,7 +824,7 @@ defmodule Evision.MixProject do
       img_hash: true,
       line_descriptor: false,
       mcc: false,
-      plot: false,
+      plot: true,
       quality: true,
       rapid: true,
       reg: false,
