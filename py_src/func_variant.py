@@ -135,10 +135,10 @@ class FuncVariant(object):
         return len(self.py_arglist) - self.py_noptargs
 
     def function_guard(self, kind: str):
-        return list(filter(lambda x: x != '', [map_argtype_to_guard(kind, map_argname(kind, argname), argtype) for argname, _, argtype in self.py_arglist[:self.pos_end]]))
+        return list(filter(lambda x: x != '', [map_argtype_to_guard(kind, map_argname(kind, argname), argtype, classname=self.classname) for argname, _, argtype in self.py_arglist[:self.pos_end]]))
 
     def function_signature(self):
-        return ''.join(filter(lambda x: x != '', [map_argtype_to_type(argtype) for _, _, argtype in self.py_arglist[:self.pos_end]]))
+        return ''.join(filter(lambda x: x != '', [map_argtype_to_type(argtype, classname=self.classname) for _, _, argtype in self.py_arglist[:self.pos_end]]))
     
     def inline_docs(self, kind: str, is_instance_method: bool, module_name: str) -> str:
         if kind == 'elixir':
@@ -532,8 +532,8 @@ class FuncVariant(object):
                 elif tmp_name == 'dnn_TextDetectionModel_EAST':
                     self.spec_self = 'TextDetectionModel_EAST'
 
-            if is_struct(self.spec_self):
-                _, struct_name = is_struct(self.spec_self, also_get='struct_name')
+            if is_struct(self.spec_self, classname=self.classname):
+                _, struct_name = is_struct(self.spec_self, also_get='struct_name', classname=self.classname)
                 self.spec_self = f'{struct_name}.t()'
             else:
                 print(f'warning: {self.spec_self} should be a struct. classname={self.classname}')
@@ -635,8 +635,8 @@ class FuncVariant(object):
                 elif tmp_name == 'dnn_TextDetectionModel_EAST':
                     self.spec_self = 'TextDetectionModel_EAST'
 
-            if is_struct(self.spec_self):
-                _, struct_name = is_struct(self.spec_self, also_get='struct_name')
+            if is_struct(self.spec_self, classname=self.classname):
+                _, struct_name = is_struct(self.spec_self, also_get='struct_name', classname=self.classname)
                 ty = struct_name.replace('.', '_').lower()
                 self.spec_self = f'#{ty}'+'{}'
             else:

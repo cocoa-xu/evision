@@ -258,7 +258,7 @@ def when_guard_erlang(func_guard_data: list):
         when_guard += ', '.join(func_guard_data)
     return when_guard
 
-def map_argtype_to_type(argtype: str):
+def map_argtype_to_type(argtype: str, classname: Optional[str] = None):
     if len(argtype) > 0 and argtype.startswith('Ptr<') and argtype.endswith('>'):
         argtype = argtype[4:-1]
     if len(argtype) > 0 and argtype[-1] == '*':
@@ -283,7 +283,7 @@ def map_argtype_to_type(argtype: str):
     elif is_tuple_type(argtype):
         return 'T'
     else:
-        if is_struct(argtype):
+        if is_struct(argtype, classname=classname):
             if argtype == 'UMat':
                 return 'Mat'
             return argtype
@@ -328,11 +328,11 @@ def map_argname_erlang(argname, argtype=None, from_struct=False):
     return name
 
 
-def map_argtype_to_guard(kind, argname, argtype):
+def map_argtype_to_guard(kind, argname, argtype, classname: Optional[str] = None):
     if kind == 'elixir':
-        return map_argtype_to_guard_elixir(argname, argtype)
+        return map_argtype_to_guard_elixir(argname, argtype, classname=classname)
     elif kind == 'erlang':
-        return map_argtype_to_guard_erlang(argname, argtype)
+        return map_argtype_to_guard_erlang(argname, argtype, classname=classname)
     else:
         print(f'warning: map_argtype_to_guard: unknown kind `{kind}`')
 
@@ -459,6 +459,7 @@ def is_ref_or_struct(argtype: str):
         'TrackerGOTURN_Params',
         'TrackerMIL_Params',
         'OriginalClassName_Params',
+        'HistogramPhaseUnwrapping_Params',
 
         'ClassificationModel',
         'TextRecognitionModel',
@@ -494,8 +495,9 @@ def get_elixir_module_name(cname, double_quote_if_has_dot=False):
         elixir_module_name = f'"{elixir_module_name}"'
     return elixir_module_name
 
-def is_struct(argtype: str, also_get: Optional[str] = None):
+def is_struct(argtype: str, also_get: Optional[str] = None, classname: Optional[str] = None):
     special_structs = {
+        # todo: UMat should be in its own module
         'UMat': 'Evision.Mat'
     }
     struct_types = {
@@ -652,15 +654,113 @@ def is_struct(argtype: str, also_get: Optional[str] = None):
         "IntelligentScissorsMB": "Evision.Segmentation.IntelligentScissorsMB",
         "OriginalClassName": "Evision.Utils.Nested.OriginalClassName",
         "OriginalClassName_Params": "Evision.Utils.Nested.OriginalClassName.Params",
+
+        # opencv_contrib
+        "AffineTransformer": "Evision.AffineTransformer",
+        "EMDHistogramCostExtractor": "Evision.EMDHistogramCostExtractor",
+        "HausdorffDistanceExtractor": "Evision.HausdorffDistanceExtractor",
+        "HistogramCostExtractor": "Evision.HistogramCostExtractor",
+        "NormHistogramCostExtractor": "Evision.NormHistogramCostExtractor",
+        "ShapeContextDistanceExtractor": "Evision.ShapeContextDistanceExtractor",
+        "ShapeDistanceExtractor": "Evision.ShapeDistanceExtractor",
+        "ShapeTransformer": "Evision.ShapeTransformer",
+        "ThinPlateSplineShapeTransformer": "Evision.ThinPlateSplineShapeTransformer",
+        "TrackerCSRT": "Evision.TrackerCSRT",
+        "TrackerCSRT_Params": "Evision.TrackerCSRT.Params",
+        "TrackerKCF": "Evision.TrackerKCF",
+        "TrackerKCF_Params": "Evision.TrackerKCF.Params",
+        "CharucoBoard": "Evision.ArUco.CharucoBoard",
+        "AdaptiveManifoldFilter": "Evision.XImgProc.AdaptiveManifoldFilter",
+        "BackgroundSubtractorCNT": "Evision.BgSegm.BackgroundSubtractorCNT",
+        "BackgroundSubtractorGMG": "Evision.BgSegm.BackgroundSubtractorGMG",
+        "BackgroundSubtractorGSOC": "Evision.BgSegm.BackgroundSubtractorGSOC",
+        "BackgroundSubtractorLSBP": "Evision.BgSegm.BackgroundSubtractorLSBP",
+        "BackgroundSubtractorMOG": "Evision.BgSegm.BackgroundSubtractorMOG",
+        "HistogramPhaseUnwrapping": "Evision.HistogramPhaseUnwrapping",
+        "HistogramPhaseUnwrapping_Params": "Evision.HistogramPhaseUnwrapping.Params"
+    }
+
+    # argtype => classname => module name
+    strict_match = {
+        "Board": {"aruco_Board": "Evision.ArUco.Board"},
+        "DetectorParameters": {"aruco_DetectorParameters": "Evision.ArUco.DetectorParameters"},
+        "AverageHash": {"img_hash_AverageHash": "Evision.ImgHash.AverageHash"},
+        "BlockMeanHash": {"img_hash_BlockMeanHash": "Evision.ImgHash.BlockMeanHash"},
+        "PhaseUnwrapping": {"phase_unwrapping_PhaseUnwrapping": "Evision.PhaseUnwrapping.PhaseUnwrapping"}
+    }
+    second_ret = None
+    module_name_map = {
+        "aruco": "ArUco",
+        "barcode": "Barcode",
+        "bgsegm": "BgSegm",
+        "bioinspired": "Bioinspired",
+        "ccm": "CCM",
+        "cuda": "CUDA",
+        "dnn": "DNN",
+        "dynafu": "DynaFu",
+        "face": "Face",
+        "flann": "Flann",
+        "hfs": "HFS",
+        "kinfu": "KinFu",
+        "legacy": "Legacy",
+        "linemod": "LineMod",
+        "mcc": "MCC",
+        "ml": "ML",
+        "optflow": "OptFlow",
+        "plot": "Plot",
+        "quality": "Quality",
+        "rapid": "Rapid",
+        "reg": "Reg",
+        "rgbd": "RGBD",
+        "saliency": "Saliency",
+        "segmentation": "Segmentation",
+        "stereo": "Stereo",
+        "text": "Text",
+        "xfeatures2d": "XFeatures2D",
+        "ximgproc": "XImgProc",
+        "xphoto": "XPhoto",
+        "detail": "Detail"
     }
 
     if argtype.startswith('Ptr<'):
         argtype = argtype[len('Ptr<'):-1]
     arg_is_struct = argtype in struct_types or argtype in special_structs
 
-    second_ret = None
+    is_strict_match = False
+    if not arg_is_struct and argtype in strict_match and classname is not None:
+        arg_is_struct = classname in strict_match[argtype]
+        is_strict_match = arg_is_struct
+
+    if not arg_is_struct:
+        if classname:
+            module_class = classname.split("_", maxsplit=2)
+            if len(module_class) == 2:
+                module_name, class_name = module_class[0], module_class[1]
+
+                lowercase_start = 'a' <= argtype[0] <= 'z'
+                if lowercase_start and not argtype.startswith("vector_"):
+                    print(f"warning: found class in {module_name} starts with lower case: {argtype}")
+
+                module_name = module_name_map.get(module_name, module_name)
+                if 'a' <= module_name[0] <= 'z':
+                    print(f"warning: opencv_contrib module name starts with lower case: {module_name}")
+
+                arg_is_struct = not lowercase_start
+                if '*' in argtype:
+                    arg_is_struct = False
+                argtype = argtype.replace("::", ".")
+
+                if also_get == 'struct_name':
+                    return arg_is_struct, f"Evision.{module_name}.{argtype}"
+                else:
+                    return arg_is_struct
+
     if also_get == 'struct_name':
-        second_ret = struct_types.get(argtype, special_structs.get(argtype, argtype))
+        if not is_strict_match:
+            second_ret = struct_types.get(argtype, special_structs.get(argtype, argtype))
+        else:
+            second_ret = strict_match.get(argtype).get(classname)
+
     if second_ret is None:
         return arg_is_struct
     else:
@@ -689,8 +789,9 @@ def map_argtype_in_docs_elixir(kind: str, argtype: str) -> str:
     }
     mapped_type = mapping.get(argtype, None)
     if mapped_type is None:
+        # todo: pass classname
         if is_struct(argtype):
-            _, mapped_type = is_struct(argtype, 'struct_name')
+            _, mapped_type = is_struct(argtype, also_get='struct_name')
         else:
             mapped_type = argtype
     return mapped_type
@@ -710,6 +811,7 @@ def map_argtype_in_docs_erlang(kind: str, argtype: str) -> str:
     }
     mapped_type = mapping.get(argtype, None)
     if mapped_type is None:
+        # todo: pass classname
         if is_struct(argtype):
             _, mapped_type = is_struct(argtype, 'struct_name')
             mapped_type = mapped_type.replace(".", "_").lower()
@@ -817,8 +919,8 @@ def map_argtype_in_spec_erlang(classname: str, argtype: str, is_in: bool) -> str
         argtype_inner = argtype[len('std::vector<'):-1]
         spec_type = 'list(' + map_argtype_in_spec_erlang(classname, argtype_inner, is_in) + ')'
         return spec_type
-    elif is_struct(argtype):
-        _, struct_name = is_struct(argtype, also_get='struct_name')
+    elif is_struct(argtype, classname=classname):
+        _, struct_name = is_struct(argtype, also_get='struct_name', classname=classname)
         ty = struct_name.replace('.', '_').lower()
         return f'#{ty}' + '{}'
     elif argtype in manual_type_spec_map:
@@ -896,8 +998,8 @@ def map_argtype_in_spec_elixir(classname: str, argtype: str, is_in: bool) -> str
         argtype_inner = argtype[len('std::vector<'):-1]
         spec_type = 'list(' + map_argtype_in_spec_elixir(classname, argtype_inner, is_in) + ')'
         return spec_type
-    elif is_struct(argtype):
-        _, struct_name = is_struct(argtype, also_get='struct_name')
+    elif is_struct(argtype, classname=classname):
+        _, struct_name = is_struct(argtype, also_get='struct_name', classname=classname)
         return f'{struct_name}.t()'
     elif argtype in manual_type_spec_map:
         return manual_type_spec_map[argtype]
@@ -926,7 +1028,7 @@ def map_argtype_in_spec_elixir(classname: str, argtype: str, is_in: bool) -> str
             print(f'warning: generate_spec: unknown argtype `{argtype}`, input_arg? {is_in}, class={classname}')
             return 'term()'
 
-def map_argtype_to_guard_elixir(argname, argtype):
+def map_argtype_to_guard_elixir(argname, argtype, classname: Optional[str] = None):
     if argtype == 'vector_char' or argtype == 'vector_uchar' or argtype == 'std::vector<char>' or argtype == 'std::vector<uchar>':
         return f'is_binary({argname})'
 
@@ -946,8 +1048,8 @@ def map_argtype_to_guard_elixir(argname, argtype):
         return f'(is_tuple({argname}) or {argname} == :all)'
     elif is_tuple_type(argtype):
         return f'is_tuple({argname})'
-    elif is_struct(argtype):
-        _, struct_name = is_struct(argtype, also_get='struct_name')
+    elif is_struct(argtype, classname=classname):
+        _, struct_name = is_struct(argtype, also_get='struct_name', classname=classname)
         if struct_name == 'Evision.Mat':
             return f'(is_struct({argname}, Evision.Mat) or is_struct({argname}, Nx.Tensor))'
         else:
@@ -967,7 +1069,7 @@ def map_argtype_to_guard_elixir(argname, argtype):
             return ''
 
 
-def map_argtype_to_guard_erlang(argname, argtype):
+def map_argtype_to_guard_erlang(argname, argtype, classname: Optional[str] = None):
     if argtype == 'vector_char' or argtype == 'vector_uchar' or argtype == 'std::vector<char>' or argtype == 'std::vector<uchar>':
         return f'is_binary({argname})'
 
@@ -987,8 +1089,8 @@ def map_argtype_to_guard_erlang(argname, argtype):
         return f'(is_tuple({argname}) or {argname} == all)'
     elif is_tuple_type(argtype):
         return f'is_tuple({argname})'
-    elif is_struct(argtype):
-        _, struct_name = is_struct(argtype, also_get='struct_name')
+    elif is_struct(argtype, classname=classname):
+        _, struct_name = is_struct(argtype, also_get='struct_name', classname=classname)
         struct_name = struct_name.replace(".", "_").lower()
         if not struct_name.startswith("evision_"):
             struct_name = f"evision_{struct_name}"
@@ -1050,7 +1152,9 @@ def map_uppercase_to_erlang_name(name):
         "GMatDesc": "gMatDesc",
         "GOpaqueT": "gOpaqueT",
         "GScalar": "gScalar",
-        "GStreamingCompiled": "gStreamingCompiled"
+        "GStreamingCompiled": "gStreamingCompiled",
+
+        "EMDHistogramCostExtractor": "emdHistogramCostExtractor"
     }
     if name[0:3] == 'cv_':
         name = name[3:]

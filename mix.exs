@@ -332,7 +332,7 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
   def preferred_eccs do
     # TLS curves: X25519, prime256v1, secp384r1
     preferred_eccs = [:secp256r1, :secp384r1]
-    :ssl.eccs() -- :ssl.eccs() -- preferred_eccs
+    :ssl.eccs() -- (:ssl.eccs() -- preferred_eccs)
   end
 
   def secure_ssl? do
@@ -784,56 +784,68 @@ defmodule Evision.MixProject do
     ]
   end
 
-  @all_modules [
-    :calib3d,
-    :core,
-    :features2d,
-    :flann,
-    :highgui,
-    :imgcodecs,
-    :imgproc,
-    :ml,
-    :photo,
-    :stitching,
-    :ts,
-    :video,
-    :videoio,
-    :dnn,
-    :gapi,
-    :world,
-    :python2,
-    :python3
-  ]
+  @module_configuration %{
+    # opencv/opencv_contrib
+    opencv: [
+      # module name: enabled by default?
+      calib3d: true,
+      core: true,
+      dnn: true,
+      features2d: true,
+      flann: true,
+      highgui: true,
+      imgcodecs: true,
+      imgproc: true,
+      ml: true,
+      photo: true,
+      stitching: true,
+      ts: true,
+      video: true,
+      videoio: true,
 
-  @enabled_modules [
-    :calib3d,
-    :core,
-    :features2d,
-    :flann,
-    :highgui,
-    :imgcodecs,
-    :imgproc,
-    :ml,
-    :photo,
-    :stitching,
-    :ts,
-    :video,
-    :videoio,
-    :dnn
-  ]
+      gapi: false,
+      world: false,
+      python2: false,
+      python3: false,
+      java: false
+    ],
 
-  @disabled_modules [
-    # not supported yet
-    :gapi,
-    # no need for this
-    :world,
-    # no need for this
-    :python2,
-    # no need for this
-    :python3,
-    # no need for this
-    :java
-  ]
+    opencv_contrib: [
+      aruco: false,
+      barcode: true,
+      bgsegm: false,
+      bioinspired: false,
+      datasets: false,
+      dnn_objdetect: false,
+      dnn_superres: false,
+      dpm: false,
+      face: false,
+      hfs: false,
+      img_hash: false,
+      line_descriptor: false,
+      mcc: false,
+      plot: false,
+      quality: false,
+      rapid: false,
+      reg: false,
+      rgbd: false,
+      saliency: false,
+      shape: false,
+      stereo: false,
+      structured_light: false,
+      superres: false,
+      surface_matching: false,
+      text: false,
+      tracking: false,
+      videostab: false,
+      wechat_qrcode: false,
+      xfeatures2d: false,
+      ximgproc: false,
+      xobjdetect: false,
+      xphoto: false
+    ]
+  }
+  defp module_configuration, do: @module_configuration
 
   @enabled_img_codecs [
     :png,
@@ -853,8 +865,15 @@ defmodule Evision.MixProject do
   @compile_mode :auto
 
   defp generate_cmake_options() do
-    enabled_modules = Application.get_env(:evision, :enabled_modules, @enabled_modules)
-    disabled_modules = Application.get_env(:evision, :disabled_modules, @disabled_modules)
+    mc = module_configuration()
+    enable_opencv_contrib = true
+    all_modules = Enum.map(mc.opencv, fn {m, _} -> m end) ++ Enum.map(mc.opencv_contrib, fn {m, _} -> m end)
+    enabled_modules = Enum.filter(mc.opencv, fn {_, e} -> e end)
+      ++ (if enable_opencv_contrib do Enum.filter(mc.opencv_contrib, fn {_, e} -> e end) else [] end)
+    disabled_modules = Enum.filter(mc.opencv, fn {_, e} -> !e end)
+      ++ (if enable_opencv_contrib do Enum.filter(mc.opencv_contrib, fn {_, e} -> !e end) else [] end)
+    enabled_modules = Keyword.keys(enabled_modules)
+    disabled_modules = Keyword.keys(disabled_modules)
     enabled_img_codecs = Application.get_env(:evision, :enabled_img_codecs, @enabled_img_codecs)
     compile_mode = Application.get_env(:evision, :compile_mode, @compile_mode)
 
@@ -882,7 +901,7 @@ defmodule Evision.MixProject do
           {cmake_options, enabled_modules}
 
         :except_disabled_modules ->
-          enabled_modules = @all_modules -- disabled_modules
+          enabled_modules = all_modules -- disabled_modules
 
           cmake_options =
             "-D BUILD_LIST=" <>

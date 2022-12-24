@@ -9,3 +9,7 @@
 #include "evision_custom_headers/evision_videoio.hpp"
 #include "evision_custom_headers/evision_stitching.hpp"
 #include "evision_custom_headers/evision_video.hpp"
+
+// opencv contrib
+#include "evision_custom_headers/evision_barcode.hpp"
+#include "evision_custom_headers/evision_phase_unwrapping.hpp"
