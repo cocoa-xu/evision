@@ -500,7 +500,7 @@ class BeamWrapperGenerator(object):
         for decl_idx, name, classinfo in classlist1:
             if classinfo.ismap:
                 continue
-            self.code_type_publish.write(classinfo.gen_def(self))
+            self.code_type_publish.write(classinfo.gen_def(self, self.evision_modules, self.evision_erlang_hrl))
 
         # step 3: generate the code for all the global functions
         for ns_name, ns in sorted(self.namespaces.items()):

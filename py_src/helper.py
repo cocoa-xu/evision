@@ -701,7 +701,12 @@ def is_struct(argtype: str, also_get: Optional[str] = None, classname: Optional[
 
         "DnnSuperResImpl": "Evision.DNNSuperRes.DNNSuperResImpl",
 
-        "legacy::Tracker": "Evision.Legacy.MultiTracker"
+        "legacy::Tracker": "Evision.Legacy.MultiTracker",
+
+        "ERFilter": "Evision.Text.ERFilter",
+        "ERFilter::Callback": "Evision.Text.ERFilter.Callback",
+        "OCRBeamSearchDecoder::ClassifierCallback": "Evision.Text.OCRBeamSearchDecoder.ClassifierCallback",
+        "OCRHMMDecoder::ClassifierCallback": "Evision.Text.OCRHMMDecoder.ClassifierCallback",
     }
 
     # argtype => classname => module name

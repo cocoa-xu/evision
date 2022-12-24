@@ -835,7 +835,7 @@ defmodule Evision.MixProject do
       stereo: false,
       structured_light: true,
       surface_matching: false,
-      text: false,
+      text: true,
       tracking: true,
       videostab: false,
       wechat_qrcode: false,
