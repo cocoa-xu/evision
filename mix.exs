@@ -840,7 +840,7 @@ defmodule Evision.MixProject do
       videostab: false,
       wechat_qrcode: false,
       xfeatures2d: true,
-      ximgproc: false,
+      ximgproc: true,
       xobjdetect: false,
       xphoto: false
     ]
