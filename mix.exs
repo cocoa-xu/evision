@@ -819,7 +819,7 @@ defmodule Evision.MixProject do
       dnn_objdetect: false,
       dnn_superres: false,
       dpm: false,
-      face: false,
+      face: true,
       hfs: false,
       img_hash: false,
       line_descriptor: false,
