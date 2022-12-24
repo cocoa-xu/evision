@@ -815,7 +815,7 @@ defmodule Evision.MixProject do
       barcode: true,
       bgsegm: false,
       bioinspired: false,
-      datasets: false,
+      datasets: false,  # does not have bindings yet
       dnn_objdetect: false,
       dnn_superres: true,
       dpm: false,
@@ -824,6 +824,7 @@ defmodule Evision.MixProject do
       img_hash: true,
       line_descriptor: false,
       mcc: false,
+      optflow: true, # does not have bindings yet
       plot: true,
       quality: true,
       rapid: true,
