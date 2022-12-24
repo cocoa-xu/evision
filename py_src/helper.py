@@ -691,6 +691,8 @@ def is_struct(argtype: str, also_get: Optional[str] = None, classname: Optional[
         "SinusoidalPattern": "Evision.StructuredLight.SinusoidalPattern",
         "SinusoidalPattern_Params": "Evision.StructuredLight.SinusoidalPattern.Params",
         "StructuredLightPattern": "Evision.StructuredLight.StructuredLightPattern",
+
+        "DnnSuperResImpl": "Evision.DNN.SuperRes.DNNSuperResImpl",
     }
 
     # argtype => classname => module name
