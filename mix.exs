@@ -831,7 +831,7 @@ defmodule Evision.MixProject do
       rgbd: false,
       saliency: false,
       sfm: true,
-      shape: false,
+      shape: true,
       stereo: false,
       structured_light: false,
       superres: false,
