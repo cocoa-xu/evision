@@ -677,7 +677,8 @@ def is_struct(argtype: str, also_get: Optional[str] = None, classname: Optional[
         "BackgroundSubtractorLSBP": "Evision.BgSegm.BackgroundSubtractorLSBP",
         "BackgroundSubtractorMOG": "Evision.BgSegm.BackgroundSubtractorMOG",
         "HistogramPhaseUnwrapping": "Evision.HistogramPhaseUnwrapping",
-        "HistogramPhaseUnwrapping_Params": "Evision.HistogramPhaseUnwrapping.Params"
+        "HistogramPhaseUnwrapping_Params": "Evision.HistogramPhaseUnwrapping.Params",
+        "Facemark": "Evision.Face.Facemark"
     }
 
     # argtype => classname => module name
@@ -686,7 +687,8 @@ def is_struct(argtype: str, also_get: Optional[str] = None, classname: Optional[
         "DetectorParameters": {"aruco_DetectorParameters": "Evision.ArUco.DetectorParameters"},
         "AverageHash": {"img_hash_AverageHash": "Evision.ImgHash.AverageHash"},
         "BlockMeanHash": {"img_hash_BlockMeanHash": "Evision.ImgHash.BlockMeanHash"},
-        "PhaseUnwrapping": {"phase_unwrapping_PhaseUnwrapping": "Evision.PhaseUnwrapping.PhaseUnwrapping"}
+        "PhaseUnwrapping": {"phase_unwrapping_PhaseUnwrapping": "Evision.PhaseUnwrapping.PhaseUnwrapping"},
+        "MACE": {"face_MACE": "Evision.Face.MACE"}
     }
     second_ret = None
     module_name_map = {
@@ -722,9 +724,15 @@ def is_struct(argtype: str, also_get: Optional[str] = None, classname: Optional[
         "detail": "Detail"
     }
 
+    argtype = argtype.strip()
     if argtype.startswith('Ptr<'):
-        argtype = argtype[len('Ptr<'):-1]
+        argtype = argtype[len('Ptr<'):-1].strip()
+    if argtype.startswith('cv::Ptr<'):
+        argtype = argtype[len('cv::Ptr<'):-1].strip()
     arg_is_struct = argtype in struct_types or argtype in special_structs
+
+    if argtype == "std::pair<int, double>":
+        return False
 
     is_strict_match = False
     if not arg_is_struct and argtype in strict_match and classname is not None:
@@ -739,7 +747,10 @@ def is_struct(argtype: str, also_get: Optional[str] = None, classname: Optional[
 
                 lowercase_start = 'a' <= argtype[0] <= 'z'
                 if lowercase_start and not argtype.startswith("vector_"):
-                    print(f"warning: found class in {module_name} starts with lower case: {argtype}")
+                    if module_name == 'ml' and (argtype == 'float*' or argtype == 'cv::TermCriteria'):
+                        pass
+                    else:
+                        print(f"warning: found class in {module_name} starts with lower case: {argtype}")
 
                 module_name = module_name_map.get(module_name, module_name)
                 if 'a' <= module_name[0] <= 'z':
@@ -884,6 +895,8 @@ def map_argtype_in_spec_erlang(classname: str, argtype: str, is_in: bool) -> str
             return 'binary()'
         argtype = argtype[len('Ptr<'):-1]
 
+    argtype = argtype.strip()
+
     if is_int_type(argtype):
         return 'integer()'
     elif argtype == 'bool':
@@ -918,6 +931,10 @@ def map_argtype_in_spec_erlang(classname: str, argtype: str, is_in: bool) -> str
             return 'binary()'
         argtype_inner = argtype[len('std::vector<'):-1]
         spec_type = 'list(' + map_argtype_in_spec_erlang(classname, argtype_inner, is_in) + ')'
+        return spec_type
+    elif argtype.startswith('std::pair<'):
+        argtype_inner = ", ".join([map_argtype_in_spec_erlang(classname, a.strip(), is_in) for a in argtype[len('std::pair<'):-1].split(",")])
+        spec_type = '{' + argtype_inner + '}'
         return spec_type
     elif is_struct(argtype, classname=classname):
         _, struct_name = is_struct(argtype, also_get='struct_name', classname=classname)
@@ -961,6 +978,8 @@ def map_argtype_in_spec_elixir(classname: str, argtype: str, is_in: bool) -> str
             return 'binary()'
         argtype = argtype[len('Ptr<'):-1]
 
+    argtype = argtype.strip()
+
     if is_int_type(argtype):
         return 'integer()'
     elif argtype == 'bool':
@@ -997,6 +1016,10 @@ def map_argtype_in_spec_elixir(classname: str, argtype: str, is_in: bool) -> str
             return 'binary()'
         argtype_inner = argtype[len('std::vector<'):-1]
         spec_type = 'list(' + map_argtype_in_spec_elixir(classname, argtype_inner, is_in) + ')'
+        return spec_type
+    elif argtype.startswith('std::pair<'):
+        argtype_inner = ", ".join([map_argtype_in_spec_elixir(classname, a.strip(), is_in) for a in argtype[len('std::pair<'):-1].split(",")])
+        spec_type = '{' + argtype_inner + '}'
         return spec_type
     elif is_struct(argtype, classname=classname):
         _, struct_name = is_struct(argtype, also_get='struct_name', classname=classname)
