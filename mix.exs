@@ -814,7 +814,7 @@ defmodule Evision.MixProject do
       aruco: true,
       barcode: true,
       bgsegm: true,
-      bioinspired: false,
+      bioinspired: true,
       dnn_superres: true,
       dpm: false,
       face: true,
