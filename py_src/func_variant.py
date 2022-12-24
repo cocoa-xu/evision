@@ -510,7 +510,7 @@ class FuncVariant(object):
         in_args_spec = []
         if in_args is not None:
             for argtype in in_args:
-                in_args_spec.append(map_argtype_in_spec('elixir', self.classname, argtype, is_in=True))
+                in_args_spec.append(map_argtype_in_spec('elixir', self.classname, argtype, is_in=True, decl=self.decl))
         if self.has_opts and include_opts:
             in_args_spec.append('[{atom(), term()},...] | nil')
         if is_instance_method:
@@ -547,7 +547,7 @@ class FuncVariant(object):
         out_args_spec = []
         if out_args is not None and len(out_args) > 0:
             for argtype in out_args:
-                out_args_spec.append(map_argtype_in_spec('elixir', self.classname, argtype, is_in=False))
+                out_args_spec.append(map_argtype_in_spec('elixir', self.classname, argtype, is_in=False, decl=self.decl))
             out_spec = ", ".join(out_args_spec)
         else:
             out_args_spec = [':ok']
@@ -613,7 +613,7 @@ class FuncVariant(object):
         in_args_spec = []
         if in_args is not None:
             for argtype in in_args:
-                in_args_spec.append(map_argtype_in_spec('erlang', self.classname, argtype, is_in=True))
+                in_args_spec.append(map_argtype_in_spec('erlang', self.classname, argtype, is_in=True, decl=self.decl))
         if self.has_opts and include_opts:
             in_args_spec.append('[{atom(), term()},...] | nil')
         if is_instance_method:
@@ -652,7 +652,7 @@ class FuncVariant(object):
         out_args_spec = []
         if out_args is not None and len(out_args) > 0:
             for argtype in out_args:
-                out_args_spec.append(map_argtype_in_spec('erlang', self.classname, argtype, is_in=False))
+                out_args_spec.append(map_argtype_in_spec('erlang', self.classname, argtype, is_in=False, decl=self.decl))
             out_spec = ", ".join(out_args_spec)
         else:
             out_args_spec = ['ok']

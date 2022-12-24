@@ -948,15 +948,15 @@ manual_type_spec_map = {
     'Layer': 'Evision.DNN.Layer.t()'
 }
 
-def map_argtype_in_spec(kind: str, classname: str, argtype: str, is_in: bool) -> str:
+def map_argtype_in_spec(kind: str, classname: str, argtype: str, is_in: bool, decl: list) -> str:
     if kind == 'elixir':
-        return map_argtype_in_spec_elixir(classname, argtype, is_in)
+        return map_argtype_in_spec_elixir(classname, argtype, is_in, decl)
     elif kind == 'erlang':
-        return map_argtype_in_spec_erlang(classname, argtype, is_in)
+        return map_argtype_in_spec_erlang(classname, argtype, is_in, decl)
     else:
         return ''
 
-def map_argtype_in_spec_erlang(classname: str, argtype: str, is_in: bool) -> str:
+def map_argtype_in_spec_erlang(classname: str, argtype: str, is_in: bool, decl: list) -> str:
     global vec_out_types
     if len(argtype) > 0 and argtype[-1] == '*':
         if argtype == 'char*' or argtype == 'uchar*':
@@ -998,16 +998,16 @@ def map_argtype_in_spec_erlang(classname: str, argtype: str, is_in: bool) -> str
         argtype_inner = argtype[len('vector_'):]
         if argtype == 'vector_char' or argtype == 'vector_uchar':
             return 'binary()'
-        spec_type = 'list(' + map_argtype_in_spec_erlang(classname, argtype_inner, is_in) + ')'
+        spec_type = 'list(' + map_argtype_in_spec_erlang(classname, argtype_inner, is_in, decl) + ')'
         return spec_type
     elif argtype.startswith('std::vector<'):
         if argtype == 'std::vector<char>' or argtype == 'std::vector<uchar>':
             return 'binary()'
         argtype_inner = argtype[len('std::vector<'):-1]
-        spec_type = 'list(' + map_argtype_in_spec_erlang(classname, argtype_inner, is_in) + ')'
+        spec_type = 'list(' + map_argtype_in_spec_erlang(classname, argtype_inner, is_in, decl) + ')'
         return spec_type
     elif argtype.startswith('std::pair<'):
-        argtype_inner = ", ".join([map_argtype_in_spec_erlang(classname, a.strip(), is_in) for a in argtype[len('std::pair<'):-1].split(",")])
+        argtype_inner = ", ".join([map_argtype_in_spec_erlang(classname, a.strip(), is_in, decl) for a in argtype[len('std::pair<'):-1].split(",")])
         spec_type = '{' + argtype_inner + '}'
         return spec_type
     elif is_struct(argtype, classname=classname):
@@ -1037,11 +1037,13 @@ def map_argtype_in_spec_erlang(classname: str, argtype: str, is_in: bool) -> str
             return '#evision_cuda_gpumat{}'
         if argtype == 'IndexParams' or argtype == 'SearchParams' or argtype == 'Moments':
             return f'map()'
+        if argtype in ['Board', 'Dictionary'] and len(decl) > 0 and decl[0].startswith("cv.aruco."):
+            return '#evision_aruco_board{}'
         else:
             print(f'warning: generate_spec: unknown argtype `{argtype}`, input_arg? {is_in}, class={classname}')
             return 'term()'
 
-def map_argtype_in_spec_elixir(classname: str, argtype: str, is_in: bool) -> str:
+def map_argtype_in_spec_elixir(classname: str, argtype: str, is_in: bool, decl: list) -> str:
     global vec_out_types
     if len(argtype) > 0 and argtype[-1] == '*':
         if argtype == 'char*' or argtype == 'uchar*':
@@ -1085,16 +1087,16 @@ def map_argtype_in_spec_elixir(classname: str, argtype: str, is_in: bool) -> str
         argtype_inner = argtype[len('vector_'):]
         if argtype == 'vector_char' or argtype == 'vector_uchar':
             return 'binary()'
-        spec_type = 'list(' + map_argtype_in_spec_elixir(classname, argtype_inner, is_in) + ')'
+        spec_type = 'list(' + map_argtype_in_spec_elixir(classname, argtype_inner, is_in, decl) + ')'
         return spec_type
     elif argtype.startswith('std::vector<'):
         if argtype == 'std::vector<char>' or argtype == 'std::vector<uchar>':
             return 'binary()'
         argtype_inner = argtype[len('std::vector<'):-1]
-        spec_type = 'list(' + map_argtype_in_spec_elixir(classname, argtype_inner, is_in) + ')'
+        spec_type = 'list(' + map_argtype_in_spec_elixir(classname, argtype_inner, is_in, decl) + ')'
         return spec_type
     elif argtype.startswith('std::pair<'):
-        argtype_inner = ", ".join([map_argtype_in_spec_elixir(classname, a.strip(), is_in) for a in argtype[len('std::pair<'):-1].split(",")])
+        argtype_inner = ", ".join([map_argtype_in_spec_elixir(classname, a.strip(), is_in, decl) for a in argtype[len('std::pair<'):-1].split(",")])
         spec_type = '{' + argtype_inner + '}'
         return spec_type
     elif is_struct(argtype, classname=classname):
@@ -1123,6 +1125,8 @@ def map_argtype_in_spec_elixir(classname: str, argtype: str, is_in: bool) -> str
             return f'Evision.CUDA.GpuMat.t()'
         if argtype == 'IndexParams' or argtype == 'SearchParams' or argtype == 'Moments':
             return f'map()'
+        if argtype in ['Board', 'Dictionary'] and len(decl) > 0 and decl[0].startswith("cv.aruco."):
+            return f'Evision.ArUco.Board.t()'
         else:
             print(f'warning: generate_spec: unknown argtype `{argtype}`, input_arg? {is_in}, class={classname}')
             return 'term()'

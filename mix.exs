@@ -811,12 +811,10 @@ defmodule Evision.MixProject do
     ],
 
     opencv_contrib: [
-      aruco: false,
+      aruco: true,
       barcode: true,
       bgsegm: false,
       bioinspired: false,
-      datasets: false,  # does not have bindings yet
-      dnn_objdetect: false,
       dnn_superres: true,
       dpm: false,
       face: true,
@@ -824,7 +822,6 @@ defmodule Evision.MixProject do
       img_hash: true,
       line_descriptor: false,
       mcc: false,
-      optflow: true, # does not have bindings yet
       plot: true,
       quality: true,
       rapid: true,
@@ -838,12 +835,17 @@ defmodule Evision.MixProject do
       surface_matching: false,
       text: true,
       tracking: true,
-      videostab: false,  # does not have bindings yet
       wechat_qrcode: false,
       xfeatures2d: true,
       ximgproc: true,
-      xobjdetect: false, # does not have bindings yet
-      xphoto: true
+      xphoto: true,
+
+      # does not have bindings yet
+      datasets: false,
+      dnn_objdetect: false,
+      optflow: false,
+      videostab: false,
+      xobjdetect: false,
     ]
   }
   defp module_configuration, do: @module_configuration
