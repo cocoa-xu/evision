@@ -407,6 +407,7 @@ def is_tuple_type(argtype):
         'Point3d',
         'Size',
         'Scalar',
+        'cv::Scalar',
     ]
     return argtype in tuple_types
 
@@ -694,7 +695,8 @@ def is_struct(argtype: str, also_get: Optional[str] = None, classname: Optional[
         "AverageHash": {"img_hash_AverageHash": "Evision.ImgHash.AverageHash"},
         "BlockMeanHash": {"img_hash_BlockMeanHash": "Evision.ImgHash.BlockMeanHash"},
         "PhaseUnwrapping": {"phase_unwrapping_PhaseUnwrapping": "Evision.PhaseUnwrapping.PhaseUnwrapping"},
-        "MACE": {"face_MACE": "Evision.Face.MACE"}
+        "MACE": {"face_MACE": "Evision.Face.MACE"},
+        "ml::SVM": {"quality_QualityBRISQUE": "Evision.ML.SVM"}
     }
     second_ret = None
     module_name_map = {
@@ -737,7 +739,7 @@ def is_struct(argtype: str, also_get: Optional[str] = None, classname: Optional[
         argtype = argtype[len('cv::Ptr<'):-1].strip()
     arg_is_struct = argtype in struct_types or argtype in special_structs
 
-    if argtype == "std::pair<int, double>":
+    if argtype in ["std::pair<int, double>", "cv::Scalar"]:
         return False
 
     is_strict_match = False
@@ -902,6 +904,8 @@ def map_argtype_in_spec_erlang(classname: str, argtype: str, is_in: bool) -> str
         argtype = argtype[len('Ptr<'):-1]
 
     argtype = argtype.strip()
+    if argtype.startswith("cv::"):
+        argtype = argtype[4:]
 
     if is_int_type(argtype):
         return 'integer()'
@@ -985,6 +989,8 @@ def map_argtype_in_spec_elixir(classname: str, argtype: str, is_in: bool) -> str
         argtype = argtype[len('Ptr<'):-1]
 
     argtype = argtype.strip()
+    if argtype.startswith("cv::"):
+        argtype = argtype[4:]
 
     if is_int_type(argtype):
         return 'integer()'

@@ -825,7 +825,7 @@ defmodule Evision.MixProject do
       line_descriptor: false,
       mcc: false,
       plot: false,
-      quality: false,
+      quality: true,
       rapid: false,
       reg: false,
       rgbd: false,
