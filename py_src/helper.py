@@ -700,6 +700,8 @@ def is_struct(argtype: str, also_get: Optional[str] = None, classname: Optional[
         "StructuredLightPattern": "Evision.StructuredLight.StructuredLightPattern",
 
         "DnnSuperResImpl": "Evision.DNNSuperRes.DNNSuperResImpl",
+
+        "legacy::Tracker": "Evision.Legacy.MultiTracker"
     }
 
     # argtype => classname => module name
@@ -710,7 +712,14 @@ def is_struct(argtype: str, also_get: Optional[str] = None, classname: Optional[
         "BlockMeanHash": {"img_hash_BlockMeanHash": "Evision.ImgHash.BlockMeanHash"},
         "PhaseUnwrapping": {"phase_unwrapping_PhaseUnwrapping": "Evision.PhaseUnwrapping.PhaseUnwrapping"},
         "MACE": {"face_MACE": "Evision.Face.MACE"},
-        "ml::SVM": {"quality_QualityBRISQUE": "Evision.ML.SVM"}
+        "ml::SVM": {"quality_QualityBRISQUE": "Evision.ML.SVM"},
+        "legacy::TrackerBoosting": {"legacy_TrackerBoosting": "Evision.Legacy.TrackerBoosting"},
+        "legacy::TrackerCSRT": {"legacy_TrackerCSRT": "Evision.Legacy.TrackerCSRT"},
+        "legacy::TrackerKCF": {"legacy_TrackerKCF": "Evision.Legacy.TrackerKCF"},
+        "legacy::TrackerMIL": {"legacy_TrackerMIL": "Evision.Legacy.TrackerMIL"},
+        "legacy::TrackerMOSSE": {"legacy_TrackerMOSSE": "Evision.Legacy.TrackerMOSSE"},
+        "legacy::TrackerMedianFlow": {"legacy_TrackerMedianFlow": "Evision.Legacy.TrackerMedianFlow"},
+        "legacy::TrackerTLD": {"legacy_TrackerTLD": "Evision.Legacy.TrackerTLD"},
     }
     second_ret = None
     module_name_map = {
@@ -771,6 +780,8 @@ def is_struct(argtype: str, also_get: Optional[str] = None, classname: Optional[
                 if lowercase_start and not argtype.startswith("vector_"):
                     if module_name == 'ml' and (argtype == 'float*' or argtype == 'cv::TermCriteria'):
                         pass
+                    elif module_name == 'legacy' and argtype.startswith('legacy::'):
+                        argtype = argtype[len('legacy::'):]
                     else:
                         print(f"warning: found class in {module_name} starts with lower case: {argtype}")
 
