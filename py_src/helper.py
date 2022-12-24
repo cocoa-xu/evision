@@ -370,6 +370,9 @@ def is_int_type(argtype):
         'SamplingMethod',
         'ScoreMethod',
         'HOGDescriptor_HistogramNormType',
+        "VolumeType",
+        "Volume",
+        "kinfu_VolumeType",
     ]
     return argtype in int_types
 
@@ -740,7 +743,17 @@ def is_struct(argtype: str, also_get: Optional[str] = None, classname: Optional[
         "BackgroundSubtractorGSOC": "Evision.BgSegm.BackgroundSubtractorGSOC",
         "BackgroundSubtractorLSBP": "Evision.BgSegm.BackgroundSubtractorLSBP",
         "BackgroundSubtractorMOG": "Evision.BgSegm.BackgroundSubtractorMOG",
-        "SyntheticSequenceGenerator": "Evision.BgSegm.SyntheticSequenceGenerator"
+        "SyntheticSequenceGenerator": "Evision.BgSegm.SyntheticSequenceGenerator",
+
+        "ColoredKinFu": "Evision.ColoredKinFu",
+        "LargeKinfu": "Evision.LargeKinfu",
+        "linemod::Detector": "Evision.LineMod.Detector",
+        "Template": "Evision.LineMod.Template",
+
+        "Matx33f": "Evision.Mat",
+        "Matx33d": "Evision.Mat",
+        "Matx44f": "Evision.Mat",
+        "Matx44d": "Evision.Mat"
     }
 
     # argtype => classname => module name
@@ -760,7 +773,19 @@ def is_struct(argtype: str, also_get: Optional[str] = None, classname: Optional[
         "legacy::TrackerMedianFlow": {"legacy_TrackerMedianFlow": "Evision.Legacy.TrackerMedianFlow"},
         "legacy::TrackerTLD": {"legacy_TrackerTLD": "Evision.Legacy.TrackerTLD"},
         "CUDA": {"cuda_SURF_CUDA": "Evision.CUDA.SURFCUDA"},
-        "SURF_CUDA": {"cuda_SURF_CUDA": "Evision.CUDA.SURFCUDA"}
+        "SURF_CUDA": {"cuda_SURF_CUDA": "Evision.CUDA.SURFCUDA"},
+        "Params": {
+            "large_kinfu_LargeKinfu": "Evision.LargeKinfu.Params",
+            "large_kinfu_Params": "Evision.LargeKinfu.Params",
+            "colored_kinfu_Params": "Evision.ColoredKinFu.Params",
+            "colored_kinfu_ColoredKinFu": "Evision.ColoredKinFu.Params",
+        },
+        "large_kinfu_Params": {"large_kinfu_Params": "Evision.LargeKinfu.Params"},
+        "colored_kinfu_Params": {
+            "colored_kinfu_Params": "Evision.ColoredKinFu.Params",
+        },
+        "kinfu_Params": {"kinfu_Params": "Evision.KinFu.Params"},
+        "kinfu::Params": {"dynafu_DynaFu": "Evision.DynaFu.Params"}
     }
     second_ret = None
     module_name_map = {
@@ -803,7 +828,7 @@ def is_struct(argtype: str, also_get: Optional[str] = None, classname: Optional[
         argtype = argtype[len('cv::Ptr<'):-1].strip()
     arg_is_struct = argtype in struct_types or argtype in special_structs
 
-    if argtype in ["std::pair<int, double>", "cv::Scalar"]:
+    if argtype in ["std::pair<int, double>", "cv::Scalar", "kinfu_VolumeType", "VolumeType", "Volume"]:
         return False
 
     is_strict_match = False
