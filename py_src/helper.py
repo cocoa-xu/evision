@@ -484,6 +484,12 @@ def is_ref_or_struct(argtype: str):
     return argtype in ref_or_struct_types
 
 def get_elixir_module_name(cname, double_quote_if_has_dot=False):
+    if cname == 'cv::dnn_superres::DnnSuperResImpl':
+        return "DNNSuperRes.DNNSuperResImpl"
+    if cname.startswith('cv::img_hash'):
+        cname = "cv::ImgHash" + cname[len('cv::img_hash'):]
+    elif cname.startswith('cv::structured_light'):
+        cname = "cv::StructuredLight" + cname[len('cv::structured_light'):]
     wname = cname
     elixir_module_name = make_elixir_module_names(module_name=wname)
     inner_ns = []
@@ -491,6 +497,7 @@ def get_elixir_module_name(cname, double_quote_if_has_dot=False):
         wname = wname[4:]
         inner_ns = wname.split('::')
         elixir_module_name = make_elixir_module_names(separated_ns=inner_ns)
+
     elixir_module_name = elixir_module_name.replace('_', '').strip()
     if double_quote_if_has_dot and '.' in elixir_module_name:
         elixir_module_name = f'"{elixir_module_name}"'
@@ -692,7 +699,7 @@ def is_struct(argtype: str, also_get: Optional[str] = None, classname: Optional[
         "SinusoidalPattern_Params": "Evision.StructuredLight.SinusoidalPattern.Params",
         "StructuredLightPattern": "Evision.StructuredLight.StructuredLightPattern",
 
-        "DnnSuperResImpl": "Evision.DNN.SuperRes.DNNSuperResImpl",
+        "DnnSuperResImpl": "Evision.DNNSuperRes.DNNSuperResImpl",
     }
 
     # argtype => classname => module name
