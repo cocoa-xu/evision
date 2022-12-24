@@ -826,8 +826,7 @@ defmodule Evision.MixProject do
       rapid: true,
       reg: true,
       rgbd: true,
-      saliency: false,
-      sfm: true,
+      saliency: true,
       shape: true,
       stereo: true,
       structured_light: true,
@@ -844,6 +843,7 @@ defmodule Evision.MixProject do
       dnn_objdetect: false,
       dpm: false,
       optflow: false,
+      sfm: false,
       videostab: false,
       xobjdetect: false,
     ]
