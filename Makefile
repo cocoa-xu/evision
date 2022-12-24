@@ -166,7 +166,6 @@ opencv: $(HEADERS_TXT)
 	@echo > /dev/null
 
 $(EVISION_SO): opencv
-	@ echo "$(CMAKE_OPTIONS)"
 	@ mkdir -p "$(EVISION_PRECOMPILED_CACHE_DIR)"
 	@ mkdir -p "$(PRIV_DIR)"
 	@ mkdir -p "$(GENERATED_ELIXIR_SRC_DIR)"

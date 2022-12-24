@@ -725,6 +725,8 @@ def is_struct(argtype: str, also_get: Optional[str] = None, classname: Optional[
         "legacy::TrackerMOSSE": {"legacy_TrackerMOSSE": "Evision.Legacy.TrackerMOSSE"},
         "legacy::TrackerMedianFlow": {"legacy_TrackerMedianFlow": "Evision.Legacy.TrackerMedianFlow"},
         "legacy::TrackerTLD": {"legacy_TrackerTLD": "Evision.Legacy.TrackerTLD"},
+        "CUDA": {"cuda_SURF_CUDA": "Evision.CUDA.SURFCUDA"},
+        "SURF_CUDA": {"cuda_SURF_CUDA": "Evision.CUDA.SURFCUDA"}
     }
     second_ret = None
     module_name_map = {
