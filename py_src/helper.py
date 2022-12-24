@@ -678,7 +678,13 @@ def is_struct(argtype: str, also_get: Optional[str] = None, classname: Optional[
         "BackgroundSubtractorMOG": "Evision.BgSegm.BackgroundSubtractorMOG",
         "HistogramPhaseUnwrapping": "Evision.HistogramPhaseUnwrapping",
         "HistogramPhaseUnwrapping_Params": "Evision.HistogramPhaseUnwrapping.Params",
-        "Facemark": "Evision.Face.Facemark"
+        "Facemark": "Evision.Face.Facemark",
+
+        "ImgHashBase": "Evision.ImgHash.ImgHashBase",
+        "ColorMomentHash": "Evision.ImgHash.ColorMomentHash",
+        "MarrHildrethHash": "Evision.ImgHash.MarrHildrethHash",
+        "PHash": "Evision.ImgHash.PHash",
+        "RadialVarianceHash": "Evision.ImgHash.RadialVarianceHash",
     }
 
     # argtype => classname => module name

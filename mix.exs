@@ -821,7 +821,7 @@ defmodule Evision.MixProject do
       dpm: false,
       face: true,
       hfs: false,
-      img_hash: false,
+      img_hash: true,
       line_descriptor: false,
       mcc: false,
       plot: false,
