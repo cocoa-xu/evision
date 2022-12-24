@@ -824,7 +824,7 @@ defmodule Evision.MixProject do
       plot: true,
       quality: true,
       rapid: true,
-      reg: false,
+      reg: true,
       rgbd: false,
       saliency: false,
       sfm: true,
