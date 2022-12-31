@@ -144,7 +144,10 @@ iex> mat = Evision.Mat.from_nx(t)
 ```
 
 #### Unsupported Type Map
-As OpenCV does not support the following types (yet, as of OpenCV 4.6.0)
+
+<details>
+
+As OpenCV does not support the following types (yet, as of OpenCV 4.7.0)
 
 - `{:s, 64}`
 - `{:u, 32}`
@@ -166,6 +169,8 @@ The `key` of this `unsupported_type_map` is the unsupported type, and the value 
 
 See [this reply](https://github.com/cocoa-xu/evision/issues/48#issuecomment-1266282345) for more details on this.
 
+</details>
+
 ## Examples
 
 Some [examples](https://github.com/cocoa-xu/evision/tree/main/examples) are available in the `examples` directory.
@@ -183,6 +188,7 @@ Compatible OpenCV versions:
 - 4.5.4
 - 4.5.5
 - 4.6.0
+- 4.7.0
 
 by compatible, it means these versions can compile successfully, and I tested a small range of functions. Tons of tests
 should be written, and then we can have a list for tested OpenCV versions.
@@ -285,6 +291,9 @@ export EVISION_PRECOMPILED_CACHE_DIR="$(pwd)/.cache"
 ```
 
 ### Compile evision from source
+
+<details>
+
 #### Dependencies
 
 - Python3 (Only during the compilation, to generate binding files)
@@ -309,7 +318,7 @@ To obtain and compile OpenCV's source code from official releases, the following
 # optional
 ## set OpenCV version
 ##   the corresponding license file should be available at https://github.com/opencv/opencv/blob/${OPENCV_VER}/LICENSE
-export OPENCV_VER="4.6.0"
+export OPENCV_VER="4.7.0"
 
 # optional
 ## Use Debug build
@@ -489,7 +498,7 @@ Say you have the following MIX environment variables:
 # set by MIX
 MIX_ENV=dev
 # set by evision or you
-OPENCV_VER=4.6.0
+OPENCV_VER=4.7.0
 # set by yourself if you're compiling evision to a nerves firmware
 MIX_TARGET=rpi4
 ```
@@ -554,6 +563,8 @@ MIX_TARGET=rpi4
     ```shell
     export OPENCV_EVISION_DEBUG=1
     ```
+
+</details>
 
 ### Acknowledgements
 - `gen2.py`, `hdr_parser.py` and `c_src/erlcompat.hpp` were directly copied from the `python` module in the [OpenCV repo](https://github.com/opencv/opencv). Changes applied.

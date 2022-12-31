@@ -168,12 +168,12 @@ class ModuleGenerator(object):
         if cname == 'Params':
             cname = '_'.join(ns[-2:])
         self_spec_in = {
-            "elixir": map_argtype_in_spec('elixir', class_name, cname, is_in=True),
-            "erlang": map_argtype_in_spec('erlang', class_name, cname, is_in=True)
+            "elixir": map_argtype_in_spec('elixir', class_name, cname, is_in=True, decl=[]),
+            "erlang": map_argtype_in_spec('erlang', class_name, cname, is_in=True, decl=[])
         }
         prop_spec_out = {
-            "elixir": map_argtype_in_spec('elixir', class_name, property.tp, is_in=False),
-            "erlang": map_argtype_in_spec('erlang', class_name, property.tp, is_in=False),
+            "elixir": map_argtype_in_spec('elixir', class_name, property.tp, is_in=False, decl=[]),
+            "erlang": map_argtype_in_spec('erlang', class_name, property.tp, is_in=False, decl=[]),
         }
         generating_type = 'get'
         property_templates = {
@@ -199,12 +199,12 @@ class ModuleGenerator(object):
         if not property.readonly:
             func_arity = 2
             self_spec_out = {
-                "elixir": map_argtype_in_spec('elixir', class_name, cname, is_in=False),
-                "erlang": map_argtype_in_spec('erlang', class_name, cname, is_in=False)
+                "elixir": map_argtype_in_spec('elixir', class_name, cname, is_in=False, decl=[]),
+                "erlang": map_argtype_in_spec('erlang', class_name, cname, is_in=False, decl=[])
             }
             prop_spec_in = {
-                "elixir": map_argtype_in_spec('elixir', class_name, property.tp, is_in=True),
-                "erlang": map_argtype_in_spec('erlang', class_name, property.tp, is_in=True)
+                "elixir": map_argtype_in_spec('elixir', class_name, property.tp, is_in=True, decl=[]),
+                "erlang": map_argtype_in_spec('erlang', class_name, property.tp, is_in=True, decl=[])
             }
             generating_type = 'set'
             property_templates = {

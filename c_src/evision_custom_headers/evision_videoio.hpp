@@ -1,5 +1,6 @@
 #ifdef HAVE_OPENCV_VIDEOIO
 typedef std::vector<VideoCaptureAPIs> vector_VideoCaptureAPIs;
+typedef std::vector<VideoCapture> vector_VideoCapture;
 
 template<> struct evisionVecConverter<cv::VideoCaptureAPIs>
 {

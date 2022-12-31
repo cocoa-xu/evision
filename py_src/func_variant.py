@@ -135,10 +135,10 @@ class FuncVariant(object):
         return len(self.py_arglist) - self.py_noptargs
 
     def function_guard(self, kind: str):
-        return list(filter(lambda x: x != '', [map_argtype_to_guard(kind, map_argname(kind, argname), argtype) for argname, _, argtype in self.py_arglist[:self.pos_end]]))
+        return list(filter(lambda x: x != '', [map_argtype_to_guard(kind, map_argname(kind, argname), argtype, classname=self.classname) for argname, _, argtype in self.py_arglist[:self.pos_end]]))
 
     def function_signature(self):
-        return ''.join(filter(lambda x: x != '', [map_argtype_to_type(argtype) for _, _, argtype in self.py_arglist[:self.pos_end]]))
+        return ''.join(filter(lambda x: x != '', [map_argtype_to_type(argtype, classname=self.classname) for _, _, argtype in self.py_arglist[:self.pos_end]]))
     
     def inline_docs(self, kind: str, is_instance_method: bool, module_name: str) -> str:
         if kind == 'elixir':
@@ -386,7 +386,7 @@ class FuncVariant(object):
             if len(positional_args) > 0:
                 parameter_info_doc.write("\n  ##### Positional Arguments\n")
                 for (arg_name, _, argtype) in positional_args:
-                    argtype1 = map_argtype_in_docs('elixir', argtype)
+                    argtype1 = map_argtype_in_docs('elixir', argtype, classname=self.classname)
                     normalized_arg_name = map_argname('elixir', arg_name)
                     normalized_arg_name = normalized_arg_name.replace(":", "")
                     if parameter_info.get(normalized_arg_name, None) is None:
@@ -404,7 +404,7 @@ class FuncVariant(object):
             if len(optional_args) > 0:
                 parameter_info_doc.write("  ##### Keyword Arguments\n")
                 for (arg_name, _, argtype) in optional_args:
-                    argtype1 = map_argtype_in_docs('elixir', argtype)
+                    argtype1 = map_argtype_in_docs('elixir', argtype, classname=self.classname)
                     normalized_arg_name = map_argname('elixir', arg_name)
                     normalized_arg_name = normalized_arg_name.replace(":", "")
                     if parameter_info.get(normalized_arg_name, None) is None:
@@ -425,16 +425,16 @@ class FuncVariant(object):
             out_args_name = [o[0] for o in self.py_outlist]
             if len(out_args_name) > 0 and (out_args_name[0] in ['retval', 'self']) and self.py_outlist[0][1] == -1:
                 if out_args_name[0] == 'retval':
-                    return_values.insert(0, ('retval', map_argtype_in_docs('elixir', self.rettype)))
+                    return_values.insert(0, ('retval', map_argtype_in_docs('elixir', self.rettype, classname=self.classname)))
                 elif out_args_name[0] == 'self':
-                    return_values.insert(0, ('self', map_argtype_in_docs('elixir', self.name)))
+                    return_values.insert(0, ('self', map_argtype_in_docs('elixir', self.name, classname=self.classname)))
             elif self.isconstructor:
-                return_values.insert(0, ('self', map_argtype_in_docs('elixir', self.classname)))
+                return_values.insert(0, ('self', map_argtype_in_docs('elixir', self.classname, classname=self.classname)))
 
             if len(return_values) > 0:
                 parameter_info_doc.write("  ##### Return\n")
                 for (arg_name, argtype) in return_values:
-                    argtype1 = map_argtype_in_docs('elixir', argtype)
+                    argtype1 = map_argtype_in_docs('elixir', argtype, classname=self.classname)
                     normalized_arg_name = map_argname('elixir', arg_name)
                     normalized_arg_name = normalized_arg_name.replace(":", "")
                     if parameter_info.get(normalized_arg_name, None) is None:
@@ -510,7 +510,7 @@ class FuncVariant(object):
         in_args_spec = []
         if in_args is not None:
             for argtype in in_args:
-                in_args_spec.append(map_argtype_in_spec('elixir', self.classname, argtype, is_in=True))
+                in_args_spec.append(map_argtype_in_spec('elixir', self.classname, argtype, is_in=True, decl=self.decl))
         if self.has_opts and include_opts:
             in_args_spec.append('[{atom(), term()},...] | nil')
         if is_instance_method:
@@ -532,8 +532,8 @@ class FuncVariant(object):
                 elif tmp_name == 'dnn_TextDetectionModel_EAST':
                     self.spec_self = 'TextDetectionModel_EAST'
 
-            if is_struct(self.spec_self):
-                _, struct_name = is_struct(self.spec_self, also_get='struct_name')
+            if is_struct(self.spec_self, classname=self.classname):
+                _, struct_name = is_struct(self.spec_self, also_get='struct_name', classname=self.classname)
                 self.spec_self = f'{struct_name}.t()'
             else:
                 print(f'warning: {self.spec_self} should be a struct. classname={self.classname}')
@@ -547,7 +547,7 @@ class FuncVariant(object):
         out_args_spec = []
         if out_args is not None and len(out_args) > 0:
             for argtype in out_args:
-                out_args_spec.append(map_argtype_in_spec('elixir', self.classname, argtype, is_in=False))
+                out_args_spec.append(map_argtype_in_spec('elixir', self.classname, argtype, is_in=False, decl=self.decl))
             out_spec = ", ".join(out_args_spec)
         else:
             out_args_spec = [':ok']
@@ -613,7 +613,7 @@ class FuncVariant(object):
         in_args_spec = []
         if in_args is not None:
             for argtype in in_args:
-                in_args_spec.append(map_argtype_in_spec('erlang', self.classname, argtype, is_in=True))
+                in_args_spec.append(map_argtype_in_spec('erlang', self.classname, argtype, is_in=True, decl=self.decl))
         if self.has_opts and include_opts:
             in_args_spec.append('[{atom(), term()},...] | nil')
         if is_instance_method:
@@ -635,8 +635,8 @@ class FuncVariant(object):
                 elif tmp_name == 'dnn_TextDetectionModel_EAST':
                     self.spec_self = 'TextDetectionModel_EAST'
 
-            if is_struct(self.spec_self):
-                _, struct_name = is_struct(self.spec_self, also_get='struct_name')
+            if is_struct(self.spec_self, classname=self.classname):
+                _, struct_name = is_struct(self.spec_self, also_get='struct_name', classname=self.classname)
                 ty = struct_name.replace('.', '_').lower()
                 self.spec_self = f'#{ty}'+'{}'
             else:
@@ -652,7 +652,7 @@ class FuncVariant(object):
         out_args_spec = []
         if out_args is not None and len(out_args) > 0:
             for argtype in out_args:
-                out_args_spec.append(map_argtype_in_spec('erlang', self.classname, argtype, is_in=False))
+                out_args_spec.append(map_argtype_in_spec('erlang', self.classname, argtype, is_in=False, decl=self.decl))
             out_spec = ", ".join(out_args_spec)
         else:
             out_args_spec = ['ok']
