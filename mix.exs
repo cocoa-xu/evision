@@ -830,7 +830,7 @@ defmodule Evision.MixProject do
       shape: true,
       stereo: true,
       structured_light: true,
-      surface_matching: false,
+      surface_matching: true,
       text: true,
       tracking: true,
       wechat_qrcode: false,

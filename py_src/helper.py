@@ -575,6 +575,8 @@ def get_elixir_module_name(cname, double_quote_if_has_dot=False):
         cname = "cv::Utils::" + cname[len('cv::utils::'):]
     elif cname.startswith('cv::line_descriptor::'):
         cname = "cv::LineDescriptor::" + cname[len('cv::line_descriptor::'):]
+    elif cname.startswith("cv::ppf_match_3d::"):
+        cname = "cv::PPFMatch3D::" + cname[len('cv::ppf_match_3d::'):]
     elif cname.startswith("cv::") and 'a' <= cname[4] <= 'z':
         print("warning cname=", cname)
 
@@ -854,6 +856,10 @@ def is_struct(argtype: str, also_get: Optional[str] = None, classname: Optional[
         "LSDParam": "Evision.LineDescriptor.LSDParam",
         "LSDDetectorWithParams": "Evision.LineDescriptor.LSDDetector",
         "LSDDetector": "Evision.LineDescriptor.LSDDetector",
+
+        "Pose3DPtr": "Evision.PPFMatch3D.Pose3D",
+        "Pose3D": "Evision.PPFMatch3D.Pose3D",
+        "PPF3DDetector": "Evision.PPFMatch3D.PPF3DDetector",
     }
 
     # argtype => classname => module name
@@ -888,6 +894,9 @@ def is_struct(argtype: str, also_get: Optional[str] = None, classname: Optional[
             "kinfu_Params": "Evision.KinFu.Params",
             "dynafu_DynaFu": "Evision.DynaFu.Params"
         },
+        "ICP": {
+            "ppf_match_3d_ICP": "Evision.PPFMatch3D.ICP"
+        }
     }
     second_ret = None
     module_name_map = {

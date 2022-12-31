@@ -14,4 +14,5 @@ template<> struct evisionVecConverter<ppf_match_3d::Pose3DPtr >
 };
 
 typedef std::vector<ppf_match_3d::Pose3DPtr> vector_Pose3DPtr;
-#endif
+
+#endif  // HAVE_OPENCV_SURFACE_MATCHING
