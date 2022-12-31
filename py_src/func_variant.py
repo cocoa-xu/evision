@@ -386,7 +386,7 @@ class FuncVariant(object):
             if len(positional_args) > 0:
                 parameter_info_doc.write("\n  ##### Positional Arguments\n")
                 for (arg_name, _, argtype) in positional_args:
-                    argtype1 = map_argtype_in_docs('elixir', argtype)
+                    argtype1 = map_argtype_in_docs('elixir', argtype, classname=self.classname)
                     normalized_arg_name = map_argname('elixir', arg_name)
                     normalized_arg_name = normalized_arg_name.replace(":", "")
                     if parameter_info.get(normalized_arg_name, None) is None:
@@ -404,7 +404,7 @@ class FuncVariant(object):
             if len(optional_args) > 0:
                 parameter_info_doc.write("  ##### Keyword Arguments\n")
                 for (arg_name, _, argtype) in optional_args:
-                    argtype1 = map_argtype_in_docs('elixir', argtype)
+                    argtype1 = map_argtype_in_docs('elixir', argtype, classname=self.classname)
                     normalized_arg_name = map_argname('elixir', arg_name)
                     normalized_arg_name = normalized_arg_name.replace(":", "")
                     if parameter_info.get(normalized_arg_name, None) is None:

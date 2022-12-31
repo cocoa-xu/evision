@@ -336,6 +336,13 @@ def map_argtype_to_guard(kind, argname, argtype, classname: Optional[str] = None
     else:
         print(f'warning: map_argtype_to_guard: unknown kind `{kind}`')
 
+def is_basic_types(argtype: str):
+    argtype = argtype.strip()
+    if argtype.startswith("vector<"):
+        argtype = argtype[len("vector<"):-1]
+        return is_basic_types(argtype)
+    return argtype in ['bool', 'float', 'double', 'uchar', 'string', 'void*', 'String'] or is_int_type(argtype) or is_tuple_type(argtype)
+
 def is_int_type(argtype):
     int_types = [
         'int',
@@ -493,6 +500,8 @@ def get_elixir_module_name(cname, double_quote_if_has_dot=False):
         cname = "cv::ImgHash" + cname[len('cv::img_hash'):]
     elif cname.startswith('cv::structured_light'):
         cname = "cv::StructuredLight" + cname[len('cv::structured_light'):]
+    elif cname.startswith('cv::aruco'):
+        cname = "cv::ArUco" + cname[len('cv::aruco'):]
     wname = cname
     elixir_module_name = make_elixir_module_names(module_name=wname)
     inner_ns = []
@@ -507,6 +516,7 @@ def get_elixir_module_name(cname, double_quote_if_has_dot=False):
     return elixir_module_name
 
 def is_struct(argtype: str, also_get: Optional[str] = None, classname: Optional[str] = None):
+    argtype = argtype.replace("std::", "").replace("cv::", "").replace("::", "_")
     special_structs = {
         # todo: UMat should be in its own module
         'UMat': 'Evision.Mat'
@@ -667,6 +677,7 @@ def is_struct(argtype: str, also_get: Optional[str] = None, classname: Optional[
         "OriginalClassName_Params": "Evision.Utils.Nested.OriginalClassName.Params",
 
         # opencv_contrib
+        "CharucoBoard": "Evision.ArUco.CharucoBoard",
         "AffineTransformer": "Evision.AffineTransformer",
         "EMDHistogramCostExtractor": "Evision.EMDHistogramCostExtractor",
         "HausdorffDistanceExtractor": "Evision.HausdorffDistanceExtractor",
@@ -680,7 +691,6 @@ def is_struct(argtype: str, also_get: Optional[str] = None, classname: Optional[
         "TrackerCSRT_Params": "Evision.TrackerCSRT.Params",
         "TrackerKCF": "Evision.TrackerKCF",
         "TrackerKCF_Params": "Evision.TrackerKCF.Params",
-        "CharucoBoard": "Evision.ArUco.CharucoBoard",
         "HistogramPhaseUnwrapping": "Evision.HistogramPhaseUnwrapping",
         "HistogramPhaseUnwrapping_Params": "Evision.HistogramPhaseUnwrapping.Params",
         "Facemark": "Evision.Face.Facemark",
@@ -698,12 +708,12 @@ def is_struct(argtype: str, also_get: Optional[str] = None, classname: Optional[
 
         "DnnSuperResImpl": "Evision.DNNSuperRes.DNNSuperResImpl",
 
-        "legacy::Tracker": "Evision.Legacy.MultiTracker",
+        "legacy_Tracker": "Evision.Legacy.MultiTracker",
 
         "ERFilter": "Evision.Text.ERFilter",
-        "ERFilter::Callback": "Evision.Text.ERFilter.Callback",
-        "OCRBeamSearchDecoder::ClassifierCallback": "Evision.Text.OCRBeamSearchDecoder.ClassifierCallback",
-        "OCRHMMDecoder::ClassifierCallback": "Evision.Text.OCRHMMDecoder.ClassifierCallback",
+        "ERFilter_Callback": "Evision.Text.ERFilter.Callback",
+        "OCRBeamSearchDecoder_ClassifierCallback": "Evision.Text.OCRBeamSearchDecoder.ClassifierCallback",
+        "OCRHMMDecoder_ClassifierCallback": "Evision.Text.OCRHMMDecoder.ClassifierCallback",
 
         "AdaptiveManifoldFilter": "Evision.XImgProc.AdaptiveManifoldFilter",
         "ContourFitting": "Evision.XImgProc.ContourFitting",
@@ -765,13 +775,13 @@ def is_struct(argtype: str, also_get: Optional[str] = None, classname: Optional[
         "PhaseUnwrapping": {"phase_unwrapping_PhaseUnwrapping": "Evision.PhaseUnwrapping.PhaseUnwrapping"},
         "MACE": {"face_MACE": "Evision.Face.MACE"},
         "ml::SVM": {"quality_QualityBRISQUE": "Evision.ML.SVM"},
-        "legacy::TrackerBoosting": {"legacy_TrackerBoosting": "Evision.Legacy.TrackerBoosting"},
-        "legacy::TrackerCSRT": {"legacy_TrackerCSRT": "Evision.Legacy.TrackerCSRT"},
-        "legacy::TrackerKCF": {"legacy_TrackerKCF": "Evision.Legacy.TrackerKCF"},
-        "legacy::TrackerMIL": {"legacy_TrackerMIL": "Evision.Legacy.TrackerMIL"},
-        "legacy::TrackerMOSSE": {"legacy_TrackerMOSSE": "Evision.Legacy.TrackerMOSSE"},
-        "legacy::TrackerMedianFlow": {"legacy_TrackerMedianFlow": "Evision.Legacy.TrackerMedianFlow"},
-        "legacy::TrackerTLD": {"legacy_TrackerTLD": "Evision.Legacy.TrackerTLD"},
+        "legacy_TrackerBoosting": {"legacy_TrackerBoosting": "Evision.Legacy.TrackerBoosting"},
+        "legacy_TrackerCSRT": {"legacy_TrackerCSRT": "Evision.Legacy.TrackerCSRT"},
+        "legacy_TrackerKCF": {"legacy_TrackerKCF": "Evision.Legacy.TrackerKCF"},
+        "legacy_TrackerMIL": {"legacy_TrackerMIL": "Evision.Legacy.TrackerMIL"},
+        "legacy_TrackerMOSSE": {"legacy_TrackerMOSSE": "Evision.Legacy.TrackerMOSSE"},
+        "legacy_TrackerMedianFlow": {"legacy_TrackerMedianFlow": "Evision.Legacy.TrackerMedianFlow"},
+        "legacy_TrackerTLD": {"legacy_TrackerTLD": "Evision.Legacy.TrackerTLD"},
         "CUDA": {"cuda_SURF_CUDA": "Evision.CUDA.SURFCUDA"},
         "SURF_CUDA": {"cuda_SURF_CUDA": "Evision.CUDA.SURFCUDA"},
         "Params": {
@@ -784,8 +794,10 @@ def is_struct(argtype: str, also_get: Optional[str] = None, classname: Optional[
         "colored_kinfu_Params": {
             "colored_kinfu_Params": "Evision.ColoredKinFu.Params",
         },
-        "kinfu_Params": {"kinfu_Params": "Evision.KinFu.Params"},
-        "kinfu::Params": {"dynafu_DynaFu": "Evision.DynaFu.Params"}
+        "kinfu_Params": {
+            "kinfu_Params": "Evision.KinFu.Params",
+            "dynafu_DynaFu": "Evision.DynaFu.Params"
+        },
     }
     second_ret = None
     module_name_map = {
@@ -806,6 +818,7 @@ def is_struct(argtype: str, also_get: Optional[str] = None, classname: Optional[
         "mcc": "MCC",
         "ml": "ML",
         "optflow": "OptFlow",
+        "ocl": "OCL",
         "plot": "Plot",
         "quality": "Quality",
         "rapid": "Rapid",
@@ -818,17 +831,16 @@ def is_struct(argtype: str, also_get: Optional[str] = None, classname: Optional[
         "xfeatures2d": "XFeatures2D",
         "ximgproc": "XImgProc",
         "xphoto": "XPhoto",
-        "detail": "Detail"
+        "detail": "Detail",
+        "utils": "Utils"
     }
 
     argtype = argtype.strip()
     if argtype.startswith('Ptr<'):
         argtype = argtype[len('Ptr<'):-1].strip()
-    if argtype.startswith('cv::Ptr<'):
-        argtype = argtype[len('cv::Ptr<'):-1].strip()
     arg_is_struct = argtype in struct_types or argtype in special_structs
 
-    if argtype in ["std::pair<int, double>", "cv::Scalar", "kinfu_VolumeType", "VolumeType", "Volume"]:
+    if argtype in ["pair<int, double>", "Scalar", "kinfu_VolumeType", "VolumeType", "Volume"]:
         return False
 
     is_strict_match = False
@@ -837,6 +849,8 @@ def is_struct(argtype: str, also_get: Optional[str] = None, classname: Optional[
         is_strict_match = arg_is_struct
 
     if not arg_is_struct:
+        if is_basic_types(argtype):
+            return False
         if classname:
             module_class = classname.split("_", maxsplit=2)
             if len(module_class) == 2:
@@ -844,21 +858,30 @@ def is_struct(argtype: str, also_get: Optional[str] = None, classname: Optional[
 
                 lowercase_start = 'a' <= argtype[0] <= 'z'
                 if lowercase_start and not argtype.startswith("vector_"):
-                    if module_name == 'ml' and (argtype == 'float*' or argtype == 'cv::TermCriteria'):
+                    if module_name == 'ml' and (argtype == 'float*' or argtype == 'TermCriteria'):
                         pass
-                    elif module_name == 'legacy' and argtype.startswith('legacy::'):
-                        argtype = argtype[len('legacy::'):]
+                    elif module_name == 'legacy' and argtype.startswith('legacy_'):
+                        argtype = argtype[len('legacy_'):]
+                    elif module_name == 'cuda' and argtype == "cuda_GpuMat":
+                        arg_is_struct = True
+                        argtype = "Evision.CUDA.GpuMat"
+                    elif module_name == 'detail' and argtype in ['vector<KeyPoint>', 'vector<DMatch>']:
+                        arg_is_struct = True
+                        if argtype == 'vector<KeyPoint>':
+                            struct_name = "[Evision.KeyPoint.t()]"
+                        elif argtype == 'vector<DMatch>':
+                            struct_name = "[Evision.DMatch.t()]"
                     else:
                         print(f"warning: found class in {module_name} starts with lower case: {argtype}")
 
                 module_name = module_name_map.get(module_name, module_name)
                 if 'a' <= module_name[0] <= 'z':
-                    print(f"warning: opencv_contrib module name starts with lower case: {module_name}")
+                    print(f"warning: module name starts with lower case: {module_name}")
 
                 arg_is_struct = not lowercase_start
                 if '*' in argtype:
                     arg_is_struct = False
-                argtype = argtype.replace("::", ".")
+                argtype = argtype.replace("std::", "").replace("::", ".")
 
                 if also_get == 'struct_name':
                     return arg_is_struct, f"Evision.{module_name}.{argtype}"
@@ -876,19 +899,19 @@ def is_struct(argtype: str, also_get: Optional[str] = None, classname: Optional[
     else:
         return arg_is_struct, second_ret
 
-def map_argtype_in_docs(kind: str, argtype: str) -> str:
+def map_argtype_in_docs(kind: str, argtype: str, classname: str) -> str:
     if kind == 'elixir':
-        return map_argtype_in_docs_elixir(kind, argtype)
+        return map_argtype_in_docs_elixir(kind, argtype, classname)
     elif kind == 'erlang':
-        return map_argtype_in_docs_erlang(kind, argtype)
+        return map_argtype_in_docs_erlang(kind, argtype, classname)
     else:
         return ''
 
-def map_argtype_in_docs_elixir(kind: str, argtype: str) -> str:
+def map_argtype_in_docs_elixir(kind: str, argtype: str, classname: str) -> str:
     is_array = argtype.startswith('vector_')
     if is_array:
         argtype_inner = argtype[len('vector_'):]
-        mapped_type = '[' + map_argtype_in_docs_elixir(kind, argtype_inner) + ']'
+        mapped_type = '[' + map_argtype_in_docs_elixir(kind, argtype_inner, classname) + ']'
         return mapped_type
     mapping = {
         'UMat': 'Evision.Mat',
@@ -899,18 +922,19 @@ def map_argtype_in_docs_elixir(kind: str, argtype: str) -> str:
     }
     mapped_type = mapping.get(argtype, None)
     if mapped_type is None:
-        # todo: pass classname
-        if is_struct(argtype):
-            _, mapped_type = is_struct(argtype, also_get='struct_name')
+        if is_basic_types(argtype):
+            mapped_type = argtype
+        elif is_struct(argtype, classname=classname):
+            _, mapped_type = is_struct(argtype, also_get='struct_name', classname=classname)
         else:
             mapped_type = argtype
     return mapped_type
 
-def map_argtype_in_docs_erlang(kind: str, argtype: str) -> str:
+def map_argtype_in_docs_erlang(kind: str, argtype: str, classname: str) -> str:
     is_array = argtype.startswith('vector_')
     if is_array:
         argtype_inner = argtype[len('vector_'):]
-        mapped_type = '[' + map_argtype_in_docs_erlang(kind, argtype_inner) + ']'
+        mapped_type = '[' + map_argtype_in_docs_erlang(kind, argtype_inner, classname) + ']'
         return mapped_type
     mapping = {
         'UMat': '#evision_mat{}',
@@ -921,9 +945,12 @@ def map_argtype_in_docs_erlang(kind: str, argtype: str) -> str:
     }
     mapped_type = mapping.get(argtype, None)
     if mapped_type is None:
-        # todo: pass classname
-        if is_struct(argtype):
-            _, mapped_type = is_struct(argtype, 'struct_name')
+        if is_basic_types(argtype):
+            mapped_type = argtype
+            if mapped_type.startswith("evision_"):
+                mapped_type = f"#{mapped_type}" + "{}"
+        elif is_struct(argtype, classname=classname):
+            _, mapped_type = is_struct(argtype, 'struct_name', classname=classname)
             mapped_type = mapped_type.replace(".", "_").lower()
             if not mapped_type.startswith("evision_"):
                 mapped_type = f"#evision_{mapped_type}" + "{}"
@@ -960,6 +987,7 @@ manual_type_spec_map = {
     'Point2i': '{integer(), integer()}',
     'Point2f': '{number(), number()}',
     'Point2d': '{number(), number()}',
+    'Point3f': '{number(), number(), number()}',
     'RotatedRect': '{{number(), number()}, {number(), number()}, number()}',
     'TermCriteria': '{integer(), integer(), number()}',
     'cv::TermCriteria': '{integer(), integer(), number()}',
@@ -985,6 +1013,7 @@ def map_argtype_in_spec(kind: str, classname: str, argtype: str, is_in: bool, de
 
 def map_argtype_in_spec_erlang(classname: str, argtype: str, is_in: bool, decl: list) -> str:
     global vec_out_types
+    argtype = argtype.strip()
     if len(argtype) > 0 and argtype[-1] == '*':
         if argtype == 'char*' or argtype == 'uchar*':
             return 'binary()'
