@@ -17,7 +17,7 @@ CMAKE_BUILD_TYPE ?= Release
 # OpenCV
 OPENCV_USE_GIT_HEAD ?= false
 OPENCV_GIT_REPO ?= "https://github.com/opencv/opencv.git"
-OPENCV_VER ?= 4.6.0
+OPENCV_VER ?= 4.7.0
 ifneq ($(OPENCV_USE_GIT_HEAD), false)
 	OPENCV_VER=$(OPENCV_USE_GIT_BRANCH)
 endif
