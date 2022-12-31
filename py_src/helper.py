@@ -342,10 +342,12 @@ def is_basic_types(argtype: str):
     if argtype.startswith("vector<"):
         argtype = argtype[len("vector<"):-1]
         return is_basic_types(argtype)
-    return argtype in ['bool', 'float', 'double', 'uchar', 'string', 'void*', 'String', 'c_string'] or is_int_type(argtype) or is_tuple_type(argtype)
+    return argtype in ['bool', 'float', 'double', 'uchar', 'string', 'void*', 'String', 'c_string', 'unsigned'] or \
+        is_int_type(argtype) or is_tuple_type(argtype)
 
 def is_int_type(argtype):
     int_types = [
+        'unsigned',
         'int',
         'size_t',
         'int64',
@@ -505,6 +507,75 @@ def get_elixir_module_name(cname, double_quote_if_has_dot=False):
         cname = "cv::StructuredLight" + cname[len('cv::structured_light'):]
     elif cname.startswith('cv::aruco'):
         cname = "cv::ArUco" + cname[len('cv::aruco'):]
+    elif cname.startswith('cv::mcc'):
+        cname = "cv::MCC" + cname[len('cv::mcc'):]
+    elif cname.startswith('cv::bgsegm'):
+        cname = "cv::BgSegm" + cname[len('cv::bgsegm'):]
+    elif cname.startswith('cv::ccm'):
+        cname = "cv::CCM" + cname[len('cv::CCM'):]
+    elif cname.startswith('cv::colored_kinfu'):
+        cname = "cv::ColoredKinfu" + cname[len('cv::colored_kinfu'):]
+    elif cname.startswith('cv::cuda::'):
+        cname = "cv::CUDA::" + cname[len('cv::cuda::'):]
+    elif cname.startswith('cv::detail::'):
+        cname = "cv::Detail::" + cname[len('cv::detail::'):]
+    elif cname.startswith('cv::barcode::'):
+        cname = "cv::Barcode::" + cname[len('cv::Barcode::'):]
+    elif cname.startswith('cv::bioinspired::'):
+        cname = "cv::Bioinspired::" + cname[len('cv::bioinspired::'):]
+    elif cname.startswith('cv::dnn::'):
+        cname = "cv::DNN::" + cname[len('cv::dnn::'):]
+    elif cname.startswith('cv::dynafu::'):
+        cname = "cv::DynaFu::" + cname[len('cv::dynafu::'):]
+    elif cname.startswith('cv::face::'):
+        cname = "cv::Face::" + cname[len('cv::face::'):]
+    elif cname.startswith('cv::flann::'):
+        cname = "cv::Flann::" + cname[len('cv::Flann::'):]
+    elif cname.startswith('cv::hfs::'):
+        cname = "cv::HFS::" + cname[len('cv::hfs::'):]
+    elif cname.startswith('cv::kinfu::'):
+        cname = "cv::KinFu::" + cname[len('cv::KinFu::'):]
+    elif cname.startswith('cv::large_kinfu::'):
+        cname = "cv::LargeKinfu::" + cname[len('cv::large_kinfu::'):]
+    elif cname.startswith('cv::legacy::'):
+        cname = "cv::Legacy::" + cname[len('cv::legacy::'):]
+    elif cname.startswith('cv::linemod::'):
+        cname = "cv::LineMod::" + cname[len('cv::linemod::'):]
+    elif cname.startswith('cv::ml::'):
+        cname = "cv::ML::" + cname[len('cv::ml::'):]
+    elif cname.startswith('cv::ocl::'):
+        cname = "cv::OCL::" + cname[len('cv::ocl::'):]
+    elif cname.startswith('cv::phase_unwrapping::'):
+        cname = "cv::PhaseUnwrapping::" + cname[len('cv::phase_unwrapping::'):]
+    elif cname.startswith('cv::plot::'):
+        cname = "cv::Plot::" + cname[len('cv::plot::'):]
+    elif cname.startswith('cv::quality::'):
+        cname = "cv::Quality::" + cname[len('cv::quality::'):]
+    elif cname.startswith('cv::reg::'):
+        cname = "cv::Reg::" + cname[len('cv::reg::'):]
+    elif cname.startswith('cv::rgbd::'):
+        cname = "cv::RGBD::" + cname[len('cv::rgbd::'):]
+    elif cname.startswith('cv::saliency::'):
+        cname = "cv::Saliency::" + cname[len('cv::saliency::'):]
+    elif cname.startswith('cv::segmentation::'):
+        cname = "cv::Segmentation::" + cname[len('cv::segmentation::'):]
+    elif cname.startswith('cv::stereo::'):
+        cname = "cv::Stereo::" + cname[len('cv::stereo::'):]
+    elif cname.startswith('cv::text::'):
+        cname = "cv::Text::" + cname[len('cv::text::'):]
+    elif cname.startswith('cv::xfeatures2d::'):
+        cname = "cv::XFeatures2D::" + cname[len('cv::xfeatures2d::'):]
+    elif cname.startswith('cv::ximgproc::'):
+        cname = "cv::XImgProc::" + cname[len('cv::ximgproc::'):]
+    elif cname.startswith('cv::xphoto::'):
+        cname = "cv::XPhoto::" + cname[len('cv::xphoto::'):]
+    elif cname.startswith('cv::rapid::'):
+        cname = "cv::Rapid::" + cname[len('cv::rapid::'):]
+    elif cname.startswith('cv::utils::'):
+        cname = "cv::Utils::" + cname[len('cv::utils::'):]
+    elif cname.startswith("cv::") and 'a' <= cname[4] <= 'z':
+        print("warning cname=", cname)
+
     wname = cname
     elixir_module_name = make_elixir_module_names(module_name=wname)
     inner_ns = []
@@ -770,7 +841,10 @@ def is_struct(argtype: str, also_get: Optional[str] = None, classname: Optional[
         "TrackerNano": "Evision.TrackerNano",
         "TrackerNano_Params": "Evision.TrackerNano.Params",
 
-        "ArucoDetector": "Evision.ArUco.ArucoDetector"
+        "ArucoDetector": "Evision.ArUco.ArucoDetector",
+
+        "mcc_CChecker": "Evision.MCC.CCheckerDetector",
+        "dnn_Net": "Evision.DNN.Net"
     }
 
     # argtype => classname => module name
@@ -889,8 +963,8 @@ def is_struct(argtype: str, also_get: Optional[str] = None, classname: Optional[
                         arg_is_struct = True
                         struct_name = "[Evision.LineMode.Template.t()]"
                     else:
-                        print(f"warning: found class in {module_name} starts with lower case: {argtype}")
-                        raise RuntimeError("innnn")
+                        print(f"warning: found class in {module_name} starts with lower case: {argtype}, class_name={class_name}")
+
                 elif argtype.startswith("vector"):
                     if also_get == 'struct_name':
                         if argtype.startswith("vector_"):

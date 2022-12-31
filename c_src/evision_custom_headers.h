@@ -12,6 +12,7 @@
 
 // opencv contrib
 #include "evision_custom_headers/evision_barcode.hpp"
+#include "evision_custom_headers/evision_cchecker.hpp"
 #include "evision_custom_headers/evision_linemod.hpp"
 #include "evision_custom_headers/evision_LSDDetector.hpp"
 #include "evision_custom_headers/evision_phase_unwrapping.hpp"
