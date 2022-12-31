@@ -136,4 +136,4 @@ jobs:
       - name: Mix Test
         shell: bash
         run: |
-          mix test --include require_downloading --include require_ffmpeg
+          mix test --include require_downloading --include require_ffmpeg --exclude may_crash
