@@ -161,14 +161,21 @@ def handle_inline_math_escaping(text, start_pos=0):
 
 def make_elixir_module_names(module_name: Optional[str] = None, separated_ns: Optional[list] = None):
     mapping = {
+        'aruco': 'ArUco',
         'dnn': 'DNN',
         'ml': 'ML',
         'ocl': 'OCL',
+        'mcc': 'MCC',
         'ipp': 'IPP',
+        'rgbd': 'RGBD',
         'videoio_registry': 'VideoIORegistry',
+        'structured_light': 'StructuredLight',
         'fisheye': 'FishEye',
         'utils_fs': 'UtilsFS',
         'cuda': 'CUDA',
+        'hfs': 'HFS',
+        'dnn_superres': "DNNSuperRes",
+        'DnnSuperResImpl': 'DNNSuperResImpl'
     }
     if module_name is not None:
         return mapping.get(module_name, f"{module_name[0].upper()}{module_name[1:]}")
@@ -499,16 +506,8 @@ def is_ref_or_struct(argtype: str):
     return argtype in ref_or_struct_types
 
 def get_elixir_module_name(cname, double_quote_if_has_dot=False):
-    if cname == 'cv::dnn_superres::DnnSuperResImpl':
-        return "DNNSuperRes.DNNSuperResImpl"
     if cname.startswith('cv::img_hash'):
         cname = "cv::ImgHash" + cname[len('cv::img_hash'):]
-    elif cname.startswith('cv::structured_light'):
-        cname = "cv::StructuredLight" + cname[len('cv::structured_light'):]
-    elif cname.startswith('cv::aruco'):
-        cname = "cv::ArUco" + cname[len('cv::aruco'):]
-    elif cname.startswith('cv::mcc'):
-        cname = "cv::MCC" + cname[len('cv::mcc'):]
     elif cname.startswith('cv::bgsegm'):
         cname = "cv::BgSegm" + cname[len('cv::bgsegm'):]
     elif cname.startswith('cv::ccm'):
@@ -517,22 +516,12 @@ def get_elixir_module_name(cname, double_quote_if_has_dot=False):
         cname = "cv::ColoredKinfu" + cname[len('cv::colored_kinfu'):]
     elif cname.startswith('cv::cuda::'):
         cname = "cv::CUDA::" + cname[len('cv::cuda::'):]
-    elif cname.startswith('cv::detail::'):
-        cname = "cv::Detail::" + cname[len('cv::detail::'):]
     elif cname.startswith('cv::barcode::'):
         cname = "cv::Barcode::" + cname[len('cv::Barcode::'):]
     elif cname.startswith('cv::bioinspired::'):
         cname = "cv::Bioinspired::" + cname[len('cv::bioinspired::'):]
-    elif cname.startswith('cv::dnn::'):
-        cname = "cv::DNN::" + cname[len('cv::dnn::'):]
     elif cname.startswith('cv::dynafu::'):
         cname = "cv::DynaFu::" + cname[len('cv::dynafu::'):]
-    elif cname.startswith('cv::face::'):
-        cname = "cv::Face::" + cname[len('cv::face::'):]
-    elif cname.startswith('cv::flann::'):
-        cname = "cv::Flann::" + cname[len('cv::Flann::'):]
-    elif cname.startswith('cv::hfs::'):
-        cname = "cv::HFS::" + cname[len('cv::hfs::'):]
     elif cname.startswith('cv::kinfu::'):
         cname = "cv::KinFu::" + cname[len('cv::KinFu::'):]
     elif cname.startswith('cv::large_kinfu::'):
@@ -541,28 +530,8 @@ def get_elixir_module_name(cname, double_quote_if_has_dot=False):
         cname = "cv::Legacy::" + cname[len('cv::legacy::'):]
     elif cname.startswith('cv::linemod::'):
         cname = "cv::LineMod::" + cname[len('cv::linemod::'):]
-    elif cname.startswith('cv::ml::'):
-        cname = "cv::ML::" + cname[len('cv::ml::'):]
-    elif cname.startswith('cv::ocl::'):
-        cname = "cv::OCL::" + cname[len('cv::ocl::'):]
     elif cname.startswith('cv::phase_unwrapping::'):
         cname = "cv::PhaseUnwrapping::" + cname[len('cv::phase_unwrapping::'):]
-    elif cname.startswith('cv::plot::'):
-        cname = "cv::Plot::" + cname[len('cv::plot::'):]
-    elif cname.startswith('cv::quality::'):
-        cname = "cv::Quality::" + cname[len('cv::quality::'):]
-    elif cname.startswith('cv::reg::'):
-        cname = "cv::Reg::" + cname[len('cv::reg::'):]
-    elif cname.startswith('cv::rgbd::'):
-        cname = "cv::RGBD::" + cname[len('cv::rgbd::'):]
-    elif cname.startswith('cv::saliency::'):
-        cname = "cv::Saliency::" + cname[len('cv::saliency::'):]
-    elif cname.startswith('cv::segmentation::'):
-        cname = "cv::Segmentation::" + cname[len('cv::segmentation::'):]
-    elif cname.startswith('cv::stereo::'):
-        cname = "cv::Stereo::" + cname[len('cv::stereo::'):]
-    elif cname.startswith('cv::text::'):
-        cname = "cv::Text::" + cname[len('cv::text::'):]
     elif cname.startswith('cv::xfeatures2d::'):
         cname = "cv::XFeatures2D::" + cname[len('cv::xfeatures2d::'):]
     elif cname.startswith('cv::ximgproc::'):
@@ -579,8 +548,8 @@ def get_elixir_module_name(cname, double_quote_if_has_dot=False):
         cname = "cv::PPFMatch3D::" + cname[len('cv::ppf_match_3d::'):]
     elif cname.startswith("cv::wechat_qrcode::"):
         cname = "cv::WeChatQRCode::" + cname[len('cv::wechat_qrcode::'):]
-    elif cname.startswith("cv::") and 'a' <= cname[4] <= 'z':
-        print("warning cname=", cname)
+    # elif cname.startswith("cv::") and 'a' <= cname[4] <= 'z':
+    #     print("warning cname=", cname)
 
     wname = cname
     elixir_module_name = make_elixir_module_names(module_name=wname)

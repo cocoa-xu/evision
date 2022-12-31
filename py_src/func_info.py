@@ -382,9 +382,9 @@ class FuncInfo(object):
                         else:
                             if '::create' in self.cname and self.is_static:
                                 elixir_module_name = get_elixir_module_name(selfinfo.cname)
-                                code_ret = f"""ERL_NIF_TERM retval_term = evision_from(env, {aname});
-            bool success;
-            return evision_from_as_map<decltype({aname})>(env, {aname}, retval_term, "{elixir_module_name}", success)"""
+                                code_ret = f"""return evision_from(env, {aname});"""
+            # bool success;
+            # return evision_from_as_map<decltype({aname})>(env, {aname}, retval_term, "{elixir_module_name}", success)"""
             #                     elixir_module_name = get_elixir_module_name(selfinfo.cname)
             #                     selftype = selfinfo.cname
             #                     # if not selfinfo.issimple:
