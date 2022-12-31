@@ -144,6 +144,9 @@ iex> mat = Evision.Mat.from_nx(t)
 ```
 
 #### Unsupported Type Map
+
+<details>
+
 As OpenCV does not support the following types (yet, as of OpenCV 4.6.0)
 
 - `{:s, 64}`
@@ -165,6 +168,8 @@ config :evision, unsupported_type_map: %{
 The `key` of this `unsupported_type_map` is the unsupported type, and the value is the replacement type for it.
 
 See [this reply](https://github.com/cocoa-xu/evision/issues/48#issuecomment-1266282345) for more details on this.
+
+</details>
 
 ## Examples
 
@@ -285,6 +290,9 @@ export EVISION_PRECOMPILED_CACHE_DIR="$(pwd)/.cache"
 ```
 
 ### Compile evision from source
+
+<details>
+
 #### Dependencies
 
 - Python3 (Only during the compilation, to generate binding files)
@@ -554,6 +562,8 @@ MIX_TARGET=rpi4
     ```shell
     export OPENCV_EVISION_DEBUG=1
     ```
+
+</details>
 
 ### Acknowledgements
 - `gen2.py`, `hdr_parser.py` and `c_src/erlcompat.hpp` were directly copied from the `python` module in the [OpenCV repo](https://github.com/opencv/opencv). Changes applied.

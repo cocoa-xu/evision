@@ -97,7 +97,9 @@ class FuncInfo(object):
             if not self.is_static and not self.isconstructor:
                 func_arity = 2
         erl_name, fname = self.get_wrapper_name(True)
-        if fname in special_handling_funcs():
+        if erl_name == 'videoCapture_waitAny_static':
+            return ""
+        if erl_name in special_handling_funcs():
             return ""
         if fname.endswith('_read') or fname.endswith('_load_static') or \
                 fname.endswith('_write') or fname.endswith('_save') or \
@@ -134,11 +136,13 @@ class FuncInfo(object):
 
     def gen_code(self, codegen):
         all_classes = codegen.classes
-        proto, _erl_name, fname = self.get_wrapper_prototype(True)
+        proto, erl_name, fname = self.get_wrapper_prototype(True)
         opt_arg_index = 0
         if self.classname and not self.is_static and not self.isconstructor:
             opt_arg_index = 1
         # special handling for these highgui functions
+        if fname == 'evision_cv_videoCapture_waitAny_static':
+            return ""
         if fname in special_handling_funcs():
             return ""
         code = "%s\n{\n" % (proto,)
@@ -180,6 +184,7 @@ class FuncInfo(object):
             # add necessary conversions from Erlang objects to code_cvt_list,
             # form the function/method call,
             # for the list of type mappings
+            code_from_ptr = ""
             for a_index, a in enumerate(v.args):
                 if a.tp in ignored_arg_types():
                     defval = a.defval
@@ -245,6 +250,8 @@ class FuncInfo(object):
                         code_cvt_list.append("convert_to_char(env, %s, &%s, %s)" % (erl_term, a.name, a.crepr(defval)))
                     elif a.tp == 'c_string':
                         code_cvt_list.append("convert_to_char(env, %s, &%s, %s)" % (erl_term, a.name, a.crepr(defval)))
+                    elif a.tp == 'FileStorage':
+                        code_cvt_list.append("evision_to_safe(env, %s, ptr_%s, %s)" % (erl_term, a.name, a.crepr(defval)))
                     else:
                         code_cvt_list.append("evision_to_safe(env, %s, %s, %s)" % (erl_term, a.name, a.crepr(defval)))
                         if elixir_argname == 'outBlobNames':
@@ -257,12 +264,20 @@ class FuncInfo(object):
                     if arg_type_info.atype == "QRCodeEncoder_Params":
                         code_decl += "    QRCodeEncoder::Params %s=%s;\n" % (a.name, defval)
                     else:
-                        code_decl += "    %s %s=%s;\n" % (arg_type_info.atype, a.name, defval)
+                        if arg_type_info.atype == "FileStorage":
+                            code_decl += "    Ptr<%s> %s=ptr_%s;\n" % (arg_type_info.atype, a.name, defval)
+                            code_from_ptr += "%s& %s = *ptr_%s.get();\n" % (arg_type_info.atype, a.name, a.name)
+                        else:
+                            code_decl += "    %s %s=%s;\n" % (arg_type_info.atype, a.name, defval)
                 else:
                     if a.name == "nodeName":
                         code_decl += "    %s %s = String();\n" % (arg_type_info.atype, a.name)
                     else:
-                        code_decl += "    %s %s;\n" % (arg_type_info.atype, a.name)
+                        if arg_type_info.atype == "FileStorage":
+                            code_decl += "    Ptr<%s> ptr_%s;\n" % (arg_type_info.atype, a.name)
+                            code_from_ptr += "%s& %s = *ptr_%s.get();\n" % (arg_type_info.atype, a.name, a.name)
+                        else:
+                            code_decl += "    %s %s;\n" % (arg_type_info.atype, a.name)
 
                 if not code_args.endswith("("):
                     code_args += ", "
@@ -386,9 +401,13 @@ class FuncInfo(object):
                     else:
                         code_ret = ET.code_ret_lt_10_tuple % (n_tuple, ", ".join(evision_from_calls))
 
-            all_code_variants.append(ET.gen_template_func_body.substitute(code_decl=code_decl, code_parse=code_parse,
-                                                                       code_prelude=code_prelude, code_fcall=code_fcall,
-                                                                       code_ret=code_ret))
+            all_code_variants.append(ET.gen_template_func_body.substitute(
+                code_decl=code_decl,
+                code_parse=code_parse,
+                code_prelude=code_prelude,
+                code_fcall=code_fcall,
+                code_ret=code_ret,
+                code_from_ptr=code_from_ptr))
 
         if len(all_code_variants) == 1:
             # if the function/method has only 1 signature, then just put it
