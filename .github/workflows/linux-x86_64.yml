@@ -58,7 +58,7 @@ jobs:
     container: alpine:latest
     env:
       MIX_ENV: test
-      OPENCV_VER: "4.6.0"
+      OPENCV_VER: "4.7.0"
       OTP_VERSION: "25.1.2"
       ELIXIR_VERSION: "1.14.2"
       EVISION_PREFER_PRECOMPILED: "false"
@@ -153,7 +153,7 @@ jobs:
     runs-on: ubuntu-20.04
     env:
       MIX_ENV: test
-      OPENCV_VER: "4.6.0"
+      OPENCV_VER: "4.7.0"
       OTP_VERSION: "25.1.2"
       ELIXIR_VERSION: "1.14.2"
       EVISION_PREFER_PRECOMPILED: "false"
@@ -238,4 +238,4 @@ jobs:
 
       - name: Mix Test
         run: |
-          mix test --include require_downloading --include require_ffmpeg
+          mix test --include require_downloading --include require_ffmpeg --exclude may_crash

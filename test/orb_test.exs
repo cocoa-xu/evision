@@ -3,6 +3,7 @@ defmodule Evision.ORB.Test do
 
   @moduletag timeout: 120_000
 
+  @tag :may_crash
   test "detect keypoints in an image" do
     img =
       %Evision.Mat{} = Evision.imread(Path.join([__DIR__, "testdata", "pca_test.jpg"]), flags: 0)

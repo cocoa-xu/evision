@@ -2230,6 +2230,7 @@ static int convert_to_char(ErlNifEnv *env, ERL_NIF_TERM o, char *dst, const ArgI
 #include "modules/evision_highgui.h"
 #include "modules/evision_imdecode.h"
 #include "modules/evision_backend/backend.h"
+#include "modules/evision_videocapture.h"
 
 /************************************************************************/
 

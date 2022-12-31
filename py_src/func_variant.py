@@ -425,16 +425,16 @@ class FuncVariant(object):
             out_args_name = [o[0] for o in self.py_outlist]
             if len(out_args_name) > 0 and (out_args_name[0] in ['retval', 'self']) and self.py_outlist[0][1] == -1:
                 if out_args_name[0] == 'retval':
-                    return_values.insert(0, ('retval', map_argtype_in_docs('elixir', self.rettype)))
+                    return_values.insert(0, ('retval', map_argtype_in_docs('elixir', self.rettype, classname=self.classname)))
                 elif out_args_name[0] == 'self':
-                    return_values.insert(0, ('self', map_argtype_in_docs('elixir', self.name)))
+                    return_values.insert(0, ('self', map_argtype_in_docs('elixir', self.name, classname=self.classname)))
             elif self.isconstructor:
-                return_values.insert(0, ('self', map_argtype_in_docs('elixir', self.classname)))
+                return_values.insert(0, ('self', map_argtype_in_docs('elixir', self.classname, classname=self.classname)))
 
             if len(return_values) > 0:
                 parameter_info_doc.write("  ##### Return\n")
                 for (arg_name, argtype) in return_values:
-                    argtype1 = map_argtype_in_docs('elixir', argtype)
+                    argtype1 = map_argtype_in_docs('elixir', argtype, classname=self.classname)
                     normalized_arg_name = map_argname('elixir', arg_name)
                     normalized_arg_name = normalized_arg_name.replace(":", "")
                     if parameter_info.get(normalized_arg_name, None) is None:

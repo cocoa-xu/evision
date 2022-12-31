@@ -110,7 +110,8 @@ def special_handling_funcs():
             'waitKey',
             'destroyWindow',
             'destroyAllWindows',
-            'imdecode']
+            'imdecode',
+            'videoCapture_waitAny']
         ]
 
 
@@ -341,7 +342,7 @@ def is_basic_types(argtype: str):
     if argtype.startswith("vector<"):
         argtype = argtype[len("vector<"):-1]
         return is_basic_types(argtype)
-    return argtype in ['bool', 'float', 'double', 'uchar', 'string', 'void*', 'String'] or is_int_type(argtype) or is_tuple_type(argtype)
+    return argtype in ['bool', 'float', 'double', 'uchar', 'string', 'void*', 'String', 'c_string'] or is_int_type(argtype) or is_tuple_type(argtype)
 
 def is_int_type(argtype):
     int_types = [
@@ -380,6 +381,7 @@ def is_int_type(argtype):
         "VolumeType",
         "Volume",
         "kinfu_VolumeType",
+        "text_decoder_mode"
     ]
     return argtype in int_types
 
@@ -408,6 +410,7 @@ def is_tuple_type(argtype):
         'cv::TermCriteria',
         'CvTermCriteria',
         'CvSlice',
+        'cv::Point',
         'Point',
         'Point2i',
         'Point2f',
@@ -524,7 +527,7 @@ def is_struct(argtype: str, also_get: Optional[str] = None, classname: Optional[
     struct_types = {
         'Mat': 'Evision.Mat',
         'GpuMat': 'Evision.CUDA.GpuMat',
-        'cuda::GpuMat': 'Evision.CUDA.GpuMat',
+        'cuda_GpuMat': 'Evision.CUDA.GpuMat',
         'AKAZE': 'Evision.AKAZE',
         'AffineFeature': 'Evision.AffineFeature',
         'AgastFeatureDetector': 'Evision.AgastFeatureDetector',
@@ -757,13 +760,17 @@ def is_struct(argtype: str, also_get: Optional[str] = None, classname: Optional[
 
         "ColoredKinFu": "Evision.ColoredKinFu",
         "LargeKinfu": "Evision.LargeKinfu",
-        "linemod::Detector": "Evision.LineMod.Detector",
+        "linemod_Detector": "Evision.LineMod.Detector",
         "Template": "Evision.LineMod.Template",
 
         "Matx33f": "Evision.Mat",
         "Matx33d": "Evision.Mat",
         "Matx44f": "Evision.Mat",
-        "Matx44d": "Evision.Mat"
+        "Matx44d": "Evision.Mat",
+        "TrackerNano": "Evision.TrackerNano",
+        "TrackerNano_Params": "Evision.TrackerNano.Params",
+
+        "ArucoDetector": "Evision.ArUco.ArucoDetector"
     }
 
     # argtype => classname => module name
@@ -774,7 +781,7 @@ def is_struct(argtype: str, also_get: Optional[str] = None, classname: Optional[
         "BlockMeanHash": {"img_hash_BlockMeanHash": "Evision.ImgHash.BlockMeanHash"},
         "PhaseUnwrapping": {"phase_unwrapping_PhaseUnwrapping": "Evision.PhaseUnwrapping.PhaseUnwrapping"},
         "MACE": {"face_MACE": "Evision.Face.MACE"},
-        "ml::SVM": {"quality_QualityBRISQUE": "Evision.ML.SVM"},
+        "ml_SVM": {"quality_QualityBRISQUE": "Evision.ML.SVM"},
         "legacy_TrackerBoosting": {"legacy_TrackerBoosting": "Evision.Legacy.TrackerBoosting"},
         "legacy_TrackerCSRT": {"legacy_TrackerCSRT": "Evision.Legacy.TrackerCSRT"},
         "legacy_TrackerKCF": {"legacy_TrackerKCF": "Evision.Legacy.TrackerKCF"},
@@ -836,6 +843,7 @@ def is_struct(argtype: str, also_get: Optional[str] = None, classname: Optional[
     }
 
     argtype = argtype.strip()
+    second_ret = None
     if argtype.startswith('Ptr<'):
         argtype = argtype[len('Ptr<'):-1].strip()
     arg_is_struct = argtype in struct_types or argtype in special_structs
@@ -855,6 +863,7 @@ def is_struct(argtype: str, also_get: Optional[str] = None, classname: Optional[
             module_class = classname.split("_", maxsplit=2)
             if len(module_class) == 2:
                 module_name, class_name = module_class[0], module_class[1]
+                struct_name = None
 
                 lowercase_start = 'a' <= argtype[0] <= 'z'
                 if lowercase_start and not argtype.startswith("vector_"):
@@ -871,19 +880,36 @@ def is_struct(argtype: str, also_get: Optional[str] = None, classname: Optional[
                             struct_name = "[Evision.KeyPoint.t()]"
                         elif argtype == 'vector<DMatch>':
                             struct_name = "[Evision.DMatch.t()]"
+                    elif argtype == 'vector<Mat>':
+                        arg_is_struct = True
+                        struct_name = "[Evision.Mat.t()]"
+                    elif argtype == 'vector< pair<int, double> >':
+                        arg_is_struct = False
+                    elif argtype == 'vector<Template>':
+                        arg_is_struct = True
+                        struct_name = "[Evision.LineMode.Template.t()]"
                     else:
                         print(f"warning: found class in {module_name} starts with lower case: {argtype}")
-
+                        raise RuntimeError("innnn")
+                elif argtype.startswith("vector"):
+                    if also_get == 'struct_name':
+                        if argtype.startswith("vector_"):
+                            argtype = argtype.strip()[len("vector_"):]
+                        elif argtype.startswith("vector<"):
+                            argtype = argtype.strip()[len("vector<"):-1].strip()
+                        arg_is_struct, struct_name = is_struct(argtype, classname=classname)
                 module_name = module_name_map.get(module_name, module_name)
                 if 'a' <= module_name[0] <= 'z':
                     print(f"warning: module name starts with lower case: {module_name}")
 
-                arg_is_struct = not lowercase_start
+                arg_is_struct = arg_is_struct if arg_is_struct else not lowercase_start
                 if '*' in argtype:
                     arg_is_struct = False
                 argtype = argtype.replace("std::", "").replace("::", ".")
 
                 if also_get == 'struct_name':
+                    if struct_name is not None:
+                        return arg_is_struct, struct_name
                     return arg_is_struct, f"Evision.{module_name}.{argtype}"
                 else:
                     return arg_is_struct
@@ -908,11 +934,20 @@ def map_argtype_in_docs(kind: str, argtype: str, classname: str) -> str:
         return ''
 
 def map_argtype_in_docs_elixir(kind: str, argtype: str, classname: str) -> str:
-    is_array = argtype.startswith('vector_')
+    argtype = argtype.replace("std::", "").strip()
+    is_array = argtype.startswith('vector_') or argtype.startswith('vector<')
     if is_array:
-        argtype_inner = argtype[len('vector_'):]
+        argtype_inner = argtype
+        if argtype.startswith('vector<'):
+            argtype_inner = argtype[len('vector<'):-1].strip()
+        else:    
+            argtype_inner = argtype[len('vector_'):].strip()
         mapped_type = '[' + map_argtype_in_docs_elixir(kind, argtype_inner, classname) + ']'
         return mapped_type
+    if argtype.startswith('Ptr<'):
+        if argtype == 'Ptr<char>' or argtype == 'Ptr<uchar>':
+            return 'binary()'
+        argtype = argtype[len('Ptr<'):-1].strip()
     mapping = {
         'UMat': 'Evision.Mat',
         'Mat': 'Evision.Mat',
@@ -931,11 +966,20 @@ def map_argtype_in_docs_elixir(kind: str, argtype: str, classname: str) -> str:
     return mapped_type
 
 def map_argtype_in_docs_erlang(kind: str, argtype: str, classname: str) -> str:
-    is_array = argtype.startswith('vector_')
+    argtype = argtype.replace("std::", "").strip()
+    is_array = argtype.startswith('vector_') or argtype.startswith('vector<')
     if is_array:
-        argtype_inner = argtype[len('vector_'):]
+        argtype_inner = argtype
+        if argtype.startswith('vector<'):
+            argtype_inner = argtype[len('vector<'):-1].strip()
+        else:    
+            argtype_inner = argtype[len('vector_'):].strip()
         mapped_type = '[' + map_argtype_in_docs_erlang(kind, argtype_inner, classname) + ']'
         return mapped_type
+    if argtype.startswith('Ptr<'):
+        if argtype == 'Ptr<char>' or argtype == 'Ptr<uchar>':
+            return 'binary()'
+        argtype = argtype[len('Ptr<'):-1].strip()
     mapping = {
         'UMat': '#evision_mat{}',
         'Mat': '#evision_mat{}',
@@ -983,10 +1027,12 @@ manual_type_spec_map = {
     'Size2f': '{number(), number()}',
     'Size2d': '{number(), number()}',
     'Scalar': '{number()} | {number(), number()} | {number() | number() | number()} | {number(), number(), number(), number()}',
+    'cv::Point': '{number(), number()}',
     'Point': '{number(), number()}',
     'Point2i': '{integer(), integer()}',
     'Point2f': '{number(), number()}',
     'Point2d': '{number(), number()}',
+    'Point3f': '{number(), number(), number()}',
     'Point3f': '{number(), number(), number()}',
     'RotatedRect': '{{number(), number()}, {number(), number()}, number()}',
     'TermCriteria': '{integer(), integer(), number()}',
@@ -1095,6 +1141,8 @@ def map_argtype_in_spec_erlang(classname: str, argtype: str, is_in: bool, decl: 
             return f'map()'
         if argtype in ['Board', 'Dictionary'] and len(decl) > 0 and decl[0].startswith("cv.aruco."):
             return '#evision_aruco_board{}'
+        if argtype in ['Board', 'Dictionary'] and len(decl) > 0 and decl[0].startswith("cv.aruco."):
+            return '#evision_aruco_board{}'
         else:
             print(f'warning: generate_spec: unknown argtype `{argtype}`, input_arg? {is_in}, class={classname}')
             return 'term()'
@@ -1109,6 +1157,10 @@ def map_argtype_in_spec_elixir(classname: str, argtype: str, is_in: bool, decl: 
         if argtype == 'Ptr<char>' or argtype == 'Ptr<uchar>':
             return 'binary()'
         argtype = argtype[len('Ptr<'):-1]
+
+    argtype = argtype.strip()
+    if argtype.startswith("cv::"):
+        argtype = argtype[4:]
 
     argtype = argtype.strip()
     if argtype.startswith("cv::"):
@@ -1181,6 +1233,8 @@ def map_argtype_in_spec_elixir(classname: str, argtype: str, is_in: bool, decl: 
             return f'Evision.CUDA.GpuMat.t()'
         if argtype == 'IndexParams' or argtype == 'SearchParams' or argtype == 'Moments':
             return f'map()'
+        if argtype in ['Board', 'Dictionary'] and len(decl) > 0 and decl[0].startswith("cv.aruco."):
+            return f'Evision.ArUco.Board.t()'
         if argtype in ['Board', 'Dictionary'] and len(decl) > 0 and decl[0].startswith("cv.aruco."):
             return f'Evision.ArUco.Board.t()'
         else:
