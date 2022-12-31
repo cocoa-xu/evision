@@ -846,6 +846,21 @@ defmodule Evision.MixProject do
       sfm: false,
       videostab: false,
       xobjdetect: false,
+    ],
+
+    cuda: [
+      cudaarithm: false,
+      cudabgsegm: false,
+      cudacodec: false,
+      cudafeatures2d: false,
+      cudafilters: false,
+      cudaimgproc: false,
+      cudalegacy: false,
+      cudaobjdetect: false,
+      cudaoptflow: false,
+      cudastereo: false,
+      cudawarping: false,
+      cudev: false,
     ]
   }
   defp module_configuration, do: @module_configuration
