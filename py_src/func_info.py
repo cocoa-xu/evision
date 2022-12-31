@@ -99,7 +99,7 @@ class FuncInfo(object):
         erl_name, fname = self.get_wrapper_name(True)
         if erl_name == 'videoCapture_waitAny_static':
             return ""
-        if erl_name in special_handling_funcs():
+        if fname in special_handling_funcs():
             return ""
         if fname.endswith('_read') or fname.endswith('_load_static') or \
                 fname.endswith('_write') or fname.endswith('_save') or \
