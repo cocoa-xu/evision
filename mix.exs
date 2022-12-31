@@ -833,7 +833,7 @@ defmodule Evision.MixProject do
       surface_matching: true,
       text: true,
       tracking: true,
-      wechat_qrcode: false,
+      wechat_qrcode: true,
       xfeatures2d: true,
       ximgproc: true,
       xphoto: true,

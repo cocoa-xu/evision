@@ -577,6 +577,8 @@ def get_elixir_module_name(cname, double_quote_if_has_dot=False):
         cname = "cv::LineDescriptor::" + cname[len('cv::line_descriptor::'):]
     elif cname.startswith("cv::ppf_match_3d::"):
         cname = "cv::PPFMatch3D::" + cname[len('cv::ppf_match_3d::'):]
+    elif cname.startswith("cv::wechat_qrcode::"):
+        cname = "cv::WeChatQRCode::" + cname[len('cv::wechat_qrcode::'):]
     elif cname.startswith("cv::") and 'a' <= cname[4] <= 'z':
         print("warning cname=", cname)
 
@@ -860,6 +862,8 @@ def is_struct(argtype: str, also_get: Optional[str] = None, classname: Optional[
         "Pose3DPtr": "Evision.PPFMatch3D.Pose3D",
         "Pose3D": "Evision.PPFMatch3D.Pose3D",
         "PPF3DDetector": "Evision.PPFMatch3D.PPF3DDetector",
+
+        "WeChatQRCode": "Evision.WeChatQRCode.WeChatQRCode"
     }
 
     # argtype => classname => module name
