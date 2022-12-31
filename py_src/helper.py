@@ -573,6 +573,8 @@ def get_elixir_module_name(cname, double_quote_if_has_dot=False):
         cname = "cv::Rapid::" + cname[len('cv::rapid::'):]
     elif cname.startswith('cv::utils::'):
         cname = "cv::Utils::" + cname[len('cv::utils::'):]
+    elif cname.startswith('cv::line_descriptor::'):
+        cname = "cv::LineDescriptor::" + cname[len('cv::line_descriptor::'):]
     elif cname.startswith("cv::") and 'a' <= cname[4] <= 'z':
         print("warning cname=", cname)
 
@@ -844,7 +846,14 @@ def is_struct(argtype: str, also_get: Optional[str] = None, classname: Optional[
         "ArucoDetector": "Evision.ArUco.ArucoDetector",
 
         "mcc_CChecker": "Evision.MCC.CCheckerDetector",
-        "dnn_Net": "Evision.DNN.Net"
+        "dnn_Net": "Evision.DNN.Net",
+
+        "BinaryDescriptor": "Evision.LineDescriptor.BinaryDescriptor",
+        "KeyLine": "Evision.LineDescriptor.BinaryDescriptor.KeyLine",
+        "BinaryDescriptorMatcher": "Evision.LineDescriptor.BinaryDescriptorMatcher",
+        "LSDParam": "Evision.LineDescriptor.LSDParam",
+        "LSDDetectorWithParams": "Evision.LineDescriptor.LSDDetector",
+        "LSDDetector": "Evision.LineDescriptor.LSDDetector",
     }
 
     # argtype => classname => module name

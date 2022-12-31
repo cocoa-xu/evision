@@ -97,7 +97,7 @@ class FuncInfo(object):
             if not self.is_static and not self.isconstructor:
                 func_arity = 2
         erl_name, fname = self.get_wrapper_name(True)
-        if erl_name == 'videoCapture_waitAny_static':
+        if erl_name == 'videoCapture_waitAny_static' or fname == 'evision_cv_line_descriptor_line_descriptor_LSDDetector_LSDDetector':
             return ""
         if fname in special_handling_funcs():
             return ""

@@ -819,7 +819,7 @@ defmodule Evision.MixProject do
       face: true,
       hfs: true,
       img_hash: true,
-      line_descriptor: false,
+      line_descriptor: true,
       mcc: true,
       plot: true,
       quality: true,
