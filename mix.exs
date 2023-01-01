@@ -860,7 +860,7 @@ defmodule Evision.MixProject do
       cudaoptflow: false,
       cudastereo: false,
       cudawarping: false,
-      cudev: false,
+      cudev: true,
     ]
   }
   defp module_configuration, do: @module_configuration
@@ -885,9 +885,11 @@ defmodule Evision.MixProject do
   defp generate_cmake_options() do
     mc = module_configuration()
     enable_opencv_contrib = true
+    enable_opencv_cuda = true
     all_modules = Enum.map(mc.opencv, fn {m, _} -> m end) ++ Enum.map(mc.opencv_contrib, fn {m, _} -> m end)
     enabled_modules = Enum.filter(mc.opencv, fn {_, e} -> e end)
       ++ (if enable_opencv_contrib do Enum.filter(mc.opencv_contrib, fn {_, e} -> e end) else [] end)
+      ++ (if enable_opencv_cuda do Enum.filter(mc.cuda, fn {_, e} -> e end) else [] end)
     disabled_modules = Enum.filter(mc.opencv, fn {_, e} -> !e end)
       ++ (if enable_opencv_contrib do Enum.filter(mc.opencv_contrib, fn {_, e} -> !e end) else [] end)
     enabled_modules = Keyword.keys(enabled_modules)
