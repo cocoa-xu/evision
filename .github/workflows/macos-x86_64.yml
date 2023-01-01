@@ -102,7 +102,7 @@ jobs:
 
       - name: Mix Compile
         run: |
-          rm -f _build/dev/lib/evision/priv/evision.so
+          rm -f _build/test/lib/evision/priv/evision.so
 
           mkdir -p lib/generated
           mkdir -p src/generated
@@ -125,3 +125,8 @@ jobs:
       - name: Mix Test
         run: |
           mix test --include require_downloading --include require_ffmpeg --exclude may_crash
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: macos-dev-artifact
+          path: _build/test/lib/evision/priv/evision.so
