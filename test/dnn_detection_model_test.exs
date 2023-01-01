@@ -12,22 +12,23 @@ defmodule Evision.DNN.DetectionModel.Test do
     weights = Path.join([__DIR__, "testdata", "yolov4.weights"])
     config = Path.join([__DIR__, "testdata", "yolov4.cfg"])
     mat = Evision.imread(dog)
+    IO.puts("Read test image")
 
-    Evision.TestHelper.download!(
-      @download_file,
-      weights
+    Evision.TestHelper.download!(@download_file, weights)
+
+    model = DetectionModel.detectionModel(weights, config: config)
+    IO.puts("Loaded detection model from #{weights}")
+
+    model = DetectionModel.setInputParams(model,
+      scale: 1.0,
+      size: {416, 416},
+      mean: {0, 0, 0},
+      swapRB: true,
+      crop: false
     )
+    IO.puts("Set model input params")
 
-    {classes, _, _} =
-      DetectionModel.detectionModel(weights, config: config)
-      |> DetectionModel.setInputParams(
-        scale: 1.0,
-        size: {416, 416},
-        mean: {0, 0, 0},
-        swapRB: true,
-        crop: false
-      )
-      |> DetectionModel.detect(mat)
+    {classes, _, _} = DetectionModel.detect(model, mat)
 
     assert classes == [
              0,
