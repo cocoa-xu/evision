@@ -14,8 +14,12 @@ class ErlEnumExpressionGenerator(ast.NodeVisitor):
         if type(node) is ast.Expression:
             self.visit(node.body)
         elif type(node) is ast.Constant:
-            self.expression = f'{node.value}'
-            self.expression_erlang = f'{node.value}'
+            if node.value in ['I', 'Y', 'U', 'V']:
+                self.expression = f'{ord(node.value)}'
+                self.expression_erlang = f'{ord(node.value)}'
+            else:
+                self.expression = f'{node.value}'
+                self.expression_erlang = f'{node.value}'
         elif type(node) is ast.UnaryOp:
             op = ErlEnumExpressionGenerator()
             op.visit(node.op)
