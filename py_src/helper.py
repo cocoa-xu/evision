@@ -161,14 +161,21 @@ def handle_inline_math_escaping(text, start_pos=0):
 
 def make_elixir_module_names(module_name: Optional[str] = None, separated_ns: Optional[list] = None):
     mapping = {
+        'aruco': 'ArUco',
         'dnn': 'DNN',
         'ml': 'ML',
         'ocl': 'OCL',
+        'mcc': 'MCC',
         'ipp': 'IPP',
+        'rgbd': 'RGBD',
         'videoio_registry': 'VideoIORegistry',
+        'structured_light': 'StructuredLight',
         'fisheye': 'FishEye',
         'utils_fs': 'UtilsFS',
         'cuda': 'CUDA',
+        'hfs': 'HFS',
+        'dnn_superres': "DNNSuperRes",
+        'DnnSuperResImpl': 'DNNSuperResImpl'
     }
     if module_name is not None:
         return mapping.get(module_name, f"{module_name[0].upper()}{module_name[1:]}")
@@ -342,10 +349,12 @@ def is_basic_types(argtype: str):
     if argtype.startswith("vector<"):
         argtype = argtype[len("vector<"):-1]
         return is_basic_types(argtype)
-    return argtype in ['bool', 'float', 'double', 'uchar', 'string', 'void*', 'String'] or is_int_type(argtype) or is_tuple_type(argtype)
+    return argtype in ['bool', 'float', 'double', 'uchar', 'string', 'void*', 'String', 'c_string', 'unsigned'] or \
+        is_int_type(argtype) or is_tuple_type(argtype)
 
 def is_int_type(argtype):
     int_types = [
+        'unsigned',
         'int',
         'size_t',
         'int64',
@@ -378,6 +387,10 @@ def is_int_type(argtype):
         'SamplingMethod',
         'ScoreMethod',
         'HOGDescriptor_HistogramNormType',
+        "VolumeType",
+        "Volume",
+        "kinfu_VolumeType",
+        "text_decoder_mode"
     ]
     return argtype in int_types
 
@@ -416,6 +429,7 @@ def is_tuple_type(argtype):
         'Point3d',
         'Size',
         'Scalar',
+        'cv::Scalar',
     ]
     return argtype in tuple_types
 
@@ -468,6 +482,7 @@ def is_ref_or_struct(argtype: str):
         'TrackerGOTURN_Params',
         'TrackerMIL_Params',
         'OriginalClassName_Params',
+        'HistogramPhaseUnwrapping_Params',
 
         'ClassificationModel',
         'TextRecognitionModel',
@@ -491,14 +506,51 @@ def is_ref_or_struct(argtype: str):
     return argtype in ref_or_struct_types
 
 def get_elixir_module_name(cname, double_quote_if_has_dot=False):
-    if cname == 'cv::dnn_superres::DnnSuperResImpl':
-        return "DNNSuperRes.DNNSuperResImpl"
     if cname.startswith('cv::img_hash'):
         cname = "cv::ImgHash" + cname[len('cv::img_hash'):]
-    elif cname.startswith('cv::structured_light'):
-        cname = "cv::StructuredLight" + cname[len('cv::structured_light'):]
-    elif cname.startswith('cv::aruco'):
-        cname = "cv::ArUco" + cname[len('cv::aruco'):]
+    elif cname.startswith('cv::bgsegm'):
+        cname = "cv::BgSegm" + cname[len('cv::bgsegm'):]
+    elif cname.startswith('cv::ccm'):
+        cname = "cv::CCM" + cname[len('cv::CCM'):]
+    elif cname.startswith('cv::colored_kinfu'):
+        cname = "cv::ColoredKinfu" + cname[len('cv::colored_kinfu'):]
+    elif cname.startswith('cv::cuda::'):
+        cname = "cv::CUDA::" + cname[len('cv::cuda::'):]
+    elif cname.startswith('cv::barcode::'):
+        cname = "cv::Barcode::" + cname[len('cv::Barcode::'):]
+    elif cname.startswith('cv::bioinspired::'):
+        cname = "cv::Bioinspired::" + cname[len('cv::bioinspired::'):]
+    elif cname.startswith('cv::dynafu::'):
+        cname = "cv::DynaFu::" + cname[len('cv::dynafu::'):]
+    elif cname.startswith('cv::kinfu::'):
+        cname = "cv::KinFu::" + cname[len('cv::KinFu::'):]
+    elif cname.startswith('cv::large_kinfu::'):
+        cname = "cv::LargeKinfu::" + cname[len('cv::large_kinfu::'):]
+    elif cname.startswith('cv::legacy::'):
+        cname = "cv::Legacy::" + cname[len('cv::legacy::'):]
+    elif cname.startswith('cv::linemod::'):
+        cname = "cv::LineMod::" + cname[len('cv::linemod::'):]
+    elif cname.startswith('cv::phase_unwrapping::'):
+        cname = "cv::PhaseUnwrapping::" + cname[len('cv::phase_unwrapping::'):]
+    elif cname.startswith('cv::xfeatures2d::'):
+        cname = "cv::XFeatures2D::" + cname[len('cv::xfeatures2d::'):]
+    elif cname.startswith('cv::ximgproc::'):
+        cname = "cv::XImgProc::" + cname[len('cv::ximgproc::'):]
+    elif cname.startswith('cv::xphoto::'):
+        cname = "cv::XPhoto::" + cname[len('cv::xphoto::'):]
+    elif cname.startswith('cv::rapid::'):
+        cname = "cv::Rapid::" + cname[len('cv::rapid::'):]
+    elif cname.startswith('cv::utils::'):
+        cname = "cv::Utils::" + cname[len('cv::utils::'):]
+    elif cname.startswith('cv::line_descriptor::'):
+        cname = "cv::LineDescriptor::" + cname[len('cv::line_descriptor::'):]
+    elif cname.startswith("cv::ppf_match_3d::"):
+        cname = "cv::PPFMatch3D::" + cname[len('cv::ppf_match_3d::'):]
+    elif cname.startswith("cv::wechat_qrcode::"):
+        cname = "cv::WeChatQRCode::" + cname[len('cv::wechat_qrcode::'):]
+    # elif cname.startswith("cv::") and 'a' <= cname[4] <= 'z':
+    #     print("warning cname=", cname)
+
     wname = cname
     elixir_module_name = make_elixir_module_names(module_name=wname)
     inner_ns = []
@@ -506,6 +558,7 @@ def get_elixir_module_name(cname, double_quote_if_has_dot=False):
         wname = wname[4:]
         inner_ns = wname.split('::')
         elixir_module_name = make_elixir_module_names(separated_ns=inner_ns)
+
     elixir_module_name = elixir_module_name.replace('_', '').strip()
     if double_quote_if_has_dot and '.' in elixir_module_name:
         elixir_module_name = f'"{elixir_module_name}"'
@@ -514,12 +567,13 @@ def get_elixir_module_name(cname, double_quote_if_has_dot=False):
 def is_struct(argtype: str, also_get: Optional[str] = None, classname: Optional[str] = None):
     argtype = argtype.replace("std::", "").replace("cv::", "").replace("::", "_")
     special_structs = {
+        # todo: UMat should be in its own module
         'UMat': 'Evision.Mat'
     }
     struct_types = {
         'Mat': 'Evision.Mat',
         'GpuMat': 'Evision.CUDA.GpuMat',
-        'cuda::GpuMat': 'Evision.CUDA.GpuMat',
+        'cuda_GpuMat': 'Evision.CUDA.GpuMat',
         'AKAZE': 'Evision.AKAZE',
         'AffineFeature': 'Evision.AffineFeature',
         'AgastFeatureDetector': 'Evision.AgastFeatureDetector',
@@ -670,16 +724,152 @@ def is_struct(argtype: str, also_get: Optional[str] = None, classname: Optional[
         "IntelligentScissorsMB": "Evision.Segmentation.IntelligentScissorsMB",
         "OriginalClassName": "Evision.Utils.Nested.OriginalClassName",
         "OriginalClassName_Params": "Evision.Utils.Nested.OriginalClassName.Params",
+
+        # opencv_contrib
+        "CharucoBoard": "Evision.ArUco.CharucoBoard",
+        "AffineTransformer": "Evision.AffineTransformer",
+        "EMDHistogramCostExtractor": "Evision.EMDHistogramCostExtractor",
+        "HausdorffDistanceExtractor": "Evision.HausdorffDistanceExtractor",
+        "HistogramCostExtractor": "Evision.HistogramCostExtractor",
+        "NormHistogramCostExtractor": "Evision.NormHistogramCostExtractor",
+        "ShapeContextDistanceExtractor": "Evision.ShapeContextDistanceExtractor",
+        "ShapeDistanceExtractor": "Evision.ShapeDistanceExtractor",
+        "ShapeTransformer": "Evision.ShapeTransformer",
+        "ThinPlateSplineShapeTransformer": "Evision.ThinPlateSplineShapeTransformer",
+        "TrackerCSRT": "Evision.TrackerCSRT",
+        "TrackerCSRT_Params": "Evision.TrackerCSRT.Params",
+        "TrackerKCF": "Evision.TrackerKCF",
+        "TrackerKCF_Params": "Evision.TrackerKCF.Params",
+        "HistogramPhaseUnwrapping": "Evision.HistogramPhaseUnwrapping",
+        "HistogramPhaseUnwrapping_Params": "Evision.HistogramPhaseUnwrapping.Params",
+        "Facemark": "Evision.Face.Facemark",
+
+        "ImgHashBase": "Evision.ImgHash.ImgHashBase",
+        "ColorMomentHash": "Evision.ImgHash.ColorMomentHash",
+        "MarrHildrethHash": "Evision.ImgHash.MarrHildrethHash",
+        "PHash": "Evision.ImgHash.PHash",
+        "RadialVarianceHash": "Evision.ImgHash.RadialVarianceHash",
+
+        "GrayCodePattern": "Evision.StructuredLight.GrayCodePattern",
+        "SinusoidalPattern": "Evision.StructuredLight.SinusoidalPattern",
+        "SinusoidalPattern_Params": "Evision.StructuredLight.SinusoidalPattern.Params",
+        "StructuredLightPattern": "Evision.StructuredLight.StructuredLightPattern",
+
+        "DnnSuperResImpl": "Evision.DNNSuperRes.DNNSuperResImpl",
+
+        "legacy_Tracker": "Evision.Legacy.MultiTracker",
+
+        "ERFilter": "Evision.Text.ERFilter",
+        "ERFilter_Callback": "Evision.Text.ERFilter.Callback",
+        "OCRBeamSearchDecoder_ClassifierCallback": "Evision.Text.OCRBeamSearchDecoder.ClassifierCallback",
+        "OCRHMMDecoder_ClassifierCallback": "Evision.Text.OCRHMMDecoder.ClassifierCallback",
+
+        "AdaptiveManifoldFilter": "Evision.XImgProc.AdaptiveManifoldFilter",
+        "ContourFitting": "Evision.XImgProc.ContourFitting",
+        "DisparityWLSFilter": "Evision.XImgProc.DisparityWLSFilter",
+        "DTFilter": "Evision.XImgProc.DTFilter",
+        "EdgeAwareInterpolator": "Evision.XImgProc.EdgeAwareInterpolator",
+        "EdgeBoxes": "Evision.XImgProc.EdgeBoxes",
+        "EdgeDrawing": "Evision.XImgProc.EdgeDrawing",
+        "EdgeDrawing_Params": "Evision.XImgProc.EdgeDrawing.Params",
+        "FastBilateralSolverFilter": "Evision.XImgProc.FastBilateralSolverFilter",
+        "FastGlobalSmootherFilter": "Evision.XImgProc.FastGlobalSmootherFilter",
+        "FastLineDetector": "Evision.XImgProc.FastLineDetector",
+        "GraphSegmentation": "Evision.XImgProc.GraphSegmentation",
+        "GuidedFilter": "Evision.XImgProc.GuidedFilter",
+        "RFFeatureGetter": "Evision.XImgProc.RFFeatureGetter",
+        "RICInterpolator": "Evision.XImgProc.RICInterpolator",
+        "ScanSegment": "Evision.XImgProc.ScanSegment",
+        "SelectiveSearchSegmentation": "Evision.XImgProc.SelectiveSearchSegmentation",
+        "SelectiveSearchSegmentationStrategyColor": "Evision.XImgProc.SelectiveSearchSegmentationStrategyColor",
+        "SelectiveSearchSegmentationStrategyFill": "Evision.XImgProc.SelectiveSearchSegmentationStrategyFill",
+        "SelectiveSearchSegmentationStrategy": "Evision.XImgProc.SelectiveSearchSegmentationStrategy",
+        "SelectiveSearchSegmentationStrategyMultiple": "Evision.XImgProc.SelectiveSearchSegmentationStrategyMultiple",
+        "SelectiveSearchSegmentationStrategySize": "Evision.XImgProc.SelectiveSearchSegmentationStrategySize",
+        "SelectiveSearchSegmentationStrategyTexture": "Evision.XImgProc.SelectiveSearchSegmentationStrategyTexture",
+        "StructuredEdgeDetection": "Evision.XImgProc.StructuredEdgeDetection",
+        "SuperpixelLSC": "Evision.XImgProc.SuperpixelLSC",
+        "SuperpixelSEEDS": "Evision.XImgProc.SuperpixelSEEDS",
+        "SuperpixelSLIC": "Evision.XImgProc.SuperpixelSLIC",
+
+        "GrayworldWB": "Evision.XPhoto.GrayworldWB",
+        "LearningBasedWB": "Evision.XPhoto.LearningBasedWB",
+        "SimpleWB": "Evision.XPhoto.SimpleWB",
+        "TonemapDurand": "Evision.XPhoto.TonemapDurand",
+
+        "BackgroundSubtractorCNT": "Evision.BgSegm.BackgroundSubtractorCNT",
+        "BackgroundSubtractorGMG": "Evision.BgSegm.BackgroundSubtractorGMG",
+        "BackgroundSubtractorGSOC": "Evision.BgSegm.BackgroundSubtractorGSOC",
+        "BackgroundSubtractorLSBP": "Evision.BgSegm.BackgroundSubtractorLSBP",
+        "BackgroundSubtractorMOG": "Evision.BgSegm.BackgroundSubtractorMOG",
+        "SyntheticSequenceGenerator": "Evision.BgSegm.SyntheticSequenceGenerator",
+
+        "ColoredKinFu": "Evision.ColoredKinFu",
+        "LargeKinfu": "Evision.LargeKinfu",
+        "linemod_Detector": "Evision.LineMod.Detector",
+        "Template": "Evision.LineMod.Template",
+
+        "Matx33f": "Evision.Mat",
+        "Matx33d": "Evision.Mat",
+        "Matx44f": "Evision.Mat",
+        "Matx44d": "Evision.Mat",
         "TrackerNano": "Evision.TrackerNano",
         "TrackerNano_Params": "Evision.TrackerNano.Params",
 
-        "ArucoDetector": "Evision.ArUco.ArucoDetector"
+        "ArucoDetector": "Evision.ArUco.ArucoDetector",
+
+        "mcc_CChecker": "Evision.MCC.CCheckerDetector",
+        "dnn_Net": "Evision.DNN.Net",
+
+        "BinaryDescriptor": "Evision.LineDescriptor.BinaryDescriptor",
+        "KeyLine": "Evision.LineDescriptor.BinaryDescriptor.KeyLine",
+        "BinaryDescriptorMatcher": "Evision.LineDescriptor.BinaryDescriptorMatcher",
+        "LSDParam": "Evision.LineDescriptor.LSDParam",
+        "LSDDetectorWithParams": "Evision.LineDescriptor.LSDDetector",
+        "LSDDetector": "Evision.LineDescriptor.LSDDetector",
+
+        "Pose3DPtr": "Evision.PPFMatch3D.Pose3D",
+        "Pose3D": "Evision.PPFMatch3D.Pose3D",
+        "PPF3DDetector": "Evision.PPFMatch3D.PPF3DDetector",
+
+        "WeChatQRCode": "Evision.WeChatQRCode.WeChatQRCode"
     }
 
     # argtype => classname => module name
     strict_match = {
         "Board": {"aruco_Board": "Evision.ArUco.Board"},
         "DetectorParameters": {"aruco_DetectorParameters": "Evision.ArUco.DetectorParameters"},
+        "AverageHash": {"img_hash_AverageHash": "Evision.ImgHash.AverageHash"},
+        "BlockMeanHash": {"img_hash_BlockMeanHash": "Evision.ImgHash.BlockMeanHash"},
+        "PhaseUnwrapping": {"phase_unwrapping_PhaseUnwrapping": "Evision.PhaseUnwrapping.PhaseUnwrapping"},
+        "MACE": {"face_MACE": "Evision.Face.MACE"},
+        "ml_SVM": {"quality_QualityBRISQUE": "Evision.ML.SVM"},
+        "legacy_TrackerBoosting": {"legacy_TrackerBoosting": "Evision.Legacy.TrackerBoosting"},
+        "legacy_TrackerCSRT": {"legacy_TrackerCSRT": "Evision.Legacy.TrackerCSRT"},
+        "legacy_TrackerKCF": {"legacy_TrackerKCF": "Evision.Legacy.TrackerKCF"},
+        "legacy_TrackerMIL": {"legacy_TrackerMIL": "Evision.Legacy.TrackerMIL"},
+        "legacy_TrackerMOSSE": {"legacy_TrackerMOSSE": "Evision.Legacy.TrackerMOSSE"},
+        "legacy_TrackerMedianFlow": {"legacy_TrackerMedianFlow": "Evision.Legacy.TrackerMedianFlow"},
+        "legacy_TrackerTLD": {"legacy_TrackerTLD": "Evision.Legacy.TrackerTLD"},
+        "CUDA": {"cuda_SURF_CUDA": "Evision.CUDA.SURFCUDA"},
+        "SURF_CUDA": {"cuda_SURF_CUDA": "Evision.CUDA.SURFCUDA"},
+        "Params": {
+            "large_kinfu_LargeKinfu": "Evision.LargeKinfu.Params",
+            "large_kinfu_Params": "Evision.LargeKinfu.Params",
+            "colored_kinfu_Params": "Evision.ColoredKinFu.Params",
+            "colored_kinfu_ColoredKinFu": "Evision.ColoredKinFu.Params",
+        },
+        "large_kinfu_Params": {"large_kinfu_Params": "Evision.LargeKinfu.Params"},
+        "colored_kinfu_Params": {
+            "colored_kinfu_Params": "Evision.ColoredKinFu.Params",
+        },
+        "kinfu_Params": {
+            "kinfu_Params": "Evision.KinFu.Params",
+            "dynafu_DynaFu": "Evision.DynaFu.Params"
+        },
+        "ICP": {
+            "ppf_match_3d_ICP": "Evision.PPFMatch3D.ICP"
+        }
     }
     second_ret = None
     module_name_map = {
@@ -716,16 +906,25 @@ def is_struct(argtype: str, also_get: Optional[str] = None, classname: Optional[
         "detail": "Detail",
         "utils": "Utils"
     }
+
     argtype = argtype.strip()
+    second_ret = None
     if argtype.startswith('Ptr<'):
-        argtype = argtype[len('Ptr<'):-1]
+        argtype = argtype[len('Ptr<'):-1].strip()
     arg_is_struct = argtype in struct_types or argtype in special_structs
+
+    if argtype in ["pair<int, double>", "Scalar", "kinfu_VolumeType", "VolumeType", "Volume"]:
+        return False
+
+    is_strict_match = False
+    if not arg_is_struct and argtype in strict_match and classname is not None:
+        arg_is_struct = classname in strict_match[argtype]
+        is_strict_match = arg_is_struct
 
     if not arg_is_struct:
         if is_basic_types(argtype):
             return False
         if classname:
-            
             module_class = classname.split("_", maxsplit=2)
             if len(module_class) == 2:
                 module_name, class_name = module_class[0], module_class[1]
@@ -746,14 +945,29 @@ def is_struct(argtype: str, also_get: Optional[str] = None, classname: Optional[
                             struct_name = "[Evision.KeyPoint.t()]"
                         elif argtype == 'vector<DMatch>':
                             struct_name = "[Evision.DMatch.t()]"
+                    elif argtype == 'vector<Mat>':
+                        arg_is_struct = True
+                        struct_name = "[Evision.Mat.t()]"
+                    elif argtype == 'vector< pair<int, double> >':
+                        arg_is_struct = False
+                    elif argtype == 'vector<Template>':
+                        arg_is_struct = True
+                        struct_name = "[Evision.LineMode.Template.t()]"
                     else:
-                        print(f"warning: found class in {module_name} starts with lower case: {argtype}")
+                        print(f"warning: found class in {module_name} starts with lower case: {argtype}, class_name={class_name}")
 
+                elif argtype.startswith("vector"):
+                    if also_get == 'struct_name':
+                        if argtype.startswith("vector_"):
+                            argtype = argtype.strip()[len("vector_"):]
+                        elif argtype.startswith("vector<"):
+                            argtype = argtype.strip()[len("vector<"):-1].strip()
+                        arg_is_struct, struct_name = is_struct(argtype, classname=classname)
                 module_name = module_name_map.get(module_name, module_name)
                 if 'a' <= module_name[0] <= 'z':
                     print(f"warning: module name starts with lower case: {module_name}")
 
-                arg_is_struct = not lowercase_start
+                arg_is_struct = arg_is_struct if arg_is_struct else not lowercase_start
                 if '*' in argtype:
                     arg_is_struct = False
                 argtype = argtype.replace("std::", "").replace("::", ".")
@@ -766,7 +980,11 @@ def is_struct(argtype: str, also_get: Optional[str] = None, classname: Optional[
                     return arg_is_struct
 
     if also_get == 'struct_name':
-        second_ret = struct_types.get(argtype, special_structs.get(argtype, argtype))
+        if not is_strict_match:
+            second_ret = struct_types.get(argtype, special_structs.get(argtype, argtype))
+        else:
+            second_ret = strict_match.get(argtype).get(classname)
+
     if second_ret is None:
         return arg_is_struct
     else:
@@ -781,11 +999,20 @@ def map_argtype_in_docs(kind: str, argtype: str, classname: str) -> str:
         return ''
 
 def map_argtype_in_docs_elixir(kind: str, argtype: str, classname: str) -> str:
-    is_array = argtype.startswith('vector_')
+    argtype = argtype.replace("std::", "").strip()
+    is_array = argtype.startswith('vector_') or argtype.startswith('vector<')
     if is_array:
-        argtype_inner = argtype[len('vector_'):]
+        argtype_inner = argtype
+        if argtype.startswith('vector<'):
+            argtype_inner = argtype[len('vector<'):-1].strip()
+        else:    
+            argtype_inner = argtype[len('vector_'):].strip()
         mapped_type = '[' + map_argtype_in_docs_elixir(kind, argtype_inner, classname) + ']'
         return mapped_type
+    if argtype.startswith('Ptr<'):
+        if argtype == 'Ptr<char>' or argtype == 'Ptr<uchar>':
+            return 'binary()'
+        argtype = argtype[len('Ptr<'):-1].strip()
     mapping = {
         'UMat': 'Evision.Mat',
         'Mat': 'Evision.Mat',
@@ -798,17 +1025,26 @@ def map_argtype_in_docs_elixir(kind: str, argtype: str, classname: str) -> str:
         if is_basic_types(argtype):
             mapped_type = argtype
         elif is_struct(argtype, classname=classname):
-            _, mapped_type = is_struct(argtype, 'struct_name', classname=classname)
+            _, mapped_type = is_struct(argtype, also_get='struct_name', classname=classname)
         else:
             mapped_type = argtype
     return mapped_type
 
 def map_argtype_in_docs_erlang(kind: str, argtype: str, classname: str) -> str:
-    is_array = argtype.startswith('vector_')
+    argtype = argtype.replace("std::", "").strip()
+    is_array = argtype.startswith('vector_') or argtype.startswith('vector<')
     if is_array:
-        argtype_inner = argtype[len('vector_'):]
+        argtype_inner = argtype
+        if argtype.startswith('vector<'):
+            argtype_inner = argtype[len('vector<'):-1].strip()
+        else:    
+            argtype_inner = argtype[len('vector_'):].strip()
         mapped_type = '[' + map_argtype_in_docs_erlang(kind, argtype_inner, classname) + ']'
         return mapped_type
+    if argtype.startswith('Ptr<'):
+        if argtype == 'Ptr<char>' or argtype == 'Ptr<uchar>':
+            return 'binary()'
+        argtype = argtype[len('Ptr<'):-1].strip()
     mapping = {
         'UMat': '#evision_mat{}',
         'Mat': '#evision_mat{}',
@@ -861,6 +1097,7 @@ manual_type_spec_map = {
     'Point2i': '{integer(), integer()}',
     'Point2f': '{number(), number()}',
     'Point2d': '{number(), number()}',
+    'Point3f': '{number(), number(), number()}',
     'Point3f': '{number(), number(), number()}',
     'RotatedRect': '{{number(), number()}, {number(), number()}, number()}',
     'TermCriteria': '{integer(), integer(), number()}',
@@ -969,6 +1206,8 @@ def map_argtype_in_spec_erlang(classname: str, argtype: str, is_in: bool, decl: 
             return f'map()'
         if argtype in ['Board', 'Dictionary'] and len(decl) > 0 and decl[0].startswith("cv.aruco."):
             return '#evision_aruco_board{}'
+        if argtype in ['Board', 'Dictionary'] and len(decl) > 0 and decl[0].startswith("cv.aruco."):
+            return '#evision_aruco_board{}'
         else:
             print(f'warning: generate_spec: unknown argtype `{argtype}`, input_arg? {is_in}, class={classname}')
             return 'term()'
@@ -983,6 +1222,10 @@ def map_argtype_in_spec_elixir(classname: str, argtype: str, is_in: bool, decl: 
         if argtype == 'Ptr<char>' or argtype == 'Ptr<uchar>':
             return 'binary()'
         argtype = argtype[len('Ptr<'):-1]
+
+    argtype = argtype.strip()
+    if argtype.startswith("cv::"):
+        argtype = argtype[4:]
 
     argtype = argtype.strip()
     if argtype.startswith("cv::"):
@@ -1055,6 +1298,8 @@ def map_argtype_in_spec_elixir(classname: str, argtype: str, is_in: bool, decl: 
             return f'Evision.CUDA.GpuMat.t()'
         if argtype == 'IndexParams' or argtype == 'SearchParams' or argtype == 'Moments':
             return f'map()'
+        if argtype in ['Board', 'Dictionary'] and len(decl) > 0 and decl[0].startswith("cv.aruco."):
+            return f'Evision.ArUco.Board.t()'
         if argtype in ['Board', 'Dictionary'] and len(decl) > 0 and decl[0].startswith("cv.aruco."):
             return f'Evision.ArUco.Board.t()'
         else:
@@ -1185,7 +1430,9 @@ def map_uppercase_to_erlang_name(name):
         "GMatDesc": "gMatDesc",
         "GOpaqueT": "gOpaqueT",
         "GScalar": "gScalar",
-        "GStreamingCompiled": "gStreamingCompiled"
+        "GStreamingCompiled": "gStreamingCompiled",
+
+        "EMDHistogramCostExtractor": "emdHistogramCostExtractor"
     }
     if name[0:3] == 'cv_':
         name = name[3:]

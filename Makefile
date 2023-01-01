@@ -21,10 +21,16 @@ OPENCV_VER ?= 4.7.0
 ifneq ($(OPENCV_USE_GIT_HEAD), false)
 	OPENCV_VER=$(OPENCV_USE_GIT_BRANCH)
 endif
+OPENCV_CONTRIB_USE_GIT_HEAD ?= false
+OPENCV_GIT_REPO ?= "https://github.com/opencv/opencv_contrib.git"
+OPENCV_CONTRIB_VER ?= 4.7.0
+ifneq ($(OPENCV_CONTRIB_USE_GIT_HEAD), false)
+	OPENCV_CONTRIB_VER=$(OPENCV_CONTRIB_USE_GIT_BRANCH)
+endif
 OPENCV_CACHE_DIR = $(shell pwd)/3rd_party/cache
-OPENCV_SOURCE_ZIP = $(OPENCV_CACHE_DIR)/opencv-$(OPENCV_VER).zip
 OPENCV_ROOT_DIR = $(shell pwd)/3rd_party/opencv
 OPENCV_DIR = $(OPENCV_ROOT_DIR)/opencv-$(OPENCV_VER)
+OPENCV_CONTRIB_DIR = $(OPENCV_ROOT_DIR)/opencv_contrib-$(OPENCV_CONTRIB_VER)
 OPENCV_CONFIGURATION_PRIVATE_HPP = $(OPENCV_DIR)/modules/core/include/opencv2/core/utils/configuration.private.hpp
 PYTHON3_EXECUTABLE = $(shell which python3)
 CMAKE_OPENCV_BUILD_DIR = $(MIX_APP_PATH)/cmake_opencv_$(OPENCV_VER)
@@ -58,6 +64,12 @@ CMAKE_OPTIONS += $(CMAKE_CONFIGURE_FLAGS) $(CMAKE_OPENCV_OPTIONS)
 ifdef TARGET_GCC_FLAGS
     CMAKE_OPTIONS += -DCMAKE_CXX_FLAGS="$(TARGET_GCC_FLAGS)" -DCMAKE_C_FLAGS="$(TARGET_GCC_FLAGS)"
 endif
+
+ENABLE_CV_CONTRIB ?= true
+ifeq ($(ENABLE_CV_CONTRIB),true)
+	CMAKE_OPTIONS += -DOPENCV_EXTRA_MODULES_PATH="$(OPENCV_CONTRIB_DIR)/modules" -D BUILD_opencv_hdf=OFF -D BUILD_opencv_freetype=OFF
+endif
+
 ENABLED_CV_MODULES ?= ""
 
 # evision
@@ -85,11 +97,26 @@ EVISION_MAKE ?= make
 build: $(EVISION_SO)
 	@echo > /dev/null
 
-$(OPENCV_CONFIGURATION_PRIVATE_HPP):
+download_opencv_contrib:
+	@ if [ "$(EVISION_PREFER_PRECOMPILED)" != "true" ]; then \
+		if [ "$(ENABLE_CV_CONTRIB)" = "true" ]; then \
+			if [ ! -e "$(OPENCV_CONTRIB_DIR)/modules" ]; then \
+				if [ "$(OPENCV_CONTRIB_USE_GIT_HEAD)" = "false" ]; then \
+					echo "using opencv_contrib $(OPENCV_CONTRIB_VER)" ; \
+					bash scripts/download_opencv_contrib.sh $(OPENCV_CONTRIB_VER) "$(OPENCV_CACHE_DIR)" "$(OPENCV_ROOT_DIR)" ; \
+				else \
+					rm -rf "$(OPENCV_CONTRIB_DIR)" ; \
+					git clone --branch=$(OPENCV_CONTRIB_USE_GIT_BRANCH) --depth=1 $(OPENCV_CONTRIB_GIT_REPO) "$(OPENCV_CONTRIB_DIR)" ; \
+				fi \
+			fi \
+		fi \
+	fi
+
+$(OPENCV_CONFIGURATION_PRIVATE_HPP): download_opencv_contrib
 	@ if [ "$(EVISION_PREFER_PRECOMPILED)" != "true" ]; then \
    		if [ ! -e "$(OPENCV_CONFIGURATION_PRIVATE_HPP)" ]; then \
 			if [ "$(OPENCV_USE_GIT_HEAD)" = "false" ]; then \
-				echo "using $(OPENCV_VER)" ; \
+				echo "using opencv $(OPENCV_VER)" ; \
 				bash $(SCRIPTS)/download_opencv.sh $(OPENCV_VER) "$(OPENCV_CACHE_DIR)" "$(OPENCV_ROOT_DIR)"; \
 			else \
 		  		rm -rf "$(OPENCV_DIR)" ; \

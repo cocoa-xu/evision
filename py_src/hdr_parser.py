@@ -5,20 +5,20 @@ import os, sys, re, string, io
 
 # the list only for debugging. The real list, used in the real OpenCV build, is specified in CMakeLists.txt
 opencv_hdr_list = [
-"include/opencv4/opencv2/core/core.hpp",
-"include/opencv4/opencv2/core/mat.hpp",
-"include/opencv4/opencv2/core/ocl.hpp",
-"include/opencv4/opencv2/flann/miniflann.hpp",
-"include/opencv4/opencv2/ml/ml.hpp",
-"include/opencv4/opencv2/imgproc/imgproc.hpp",
-"include/opencv4/opencv2/calib3d/calib3d.hpp",
-"include/opencv4/opencv2/features2d/features2d.hpp",
-"include/opencv4/opencv2/video/tracking.hpp",
-"include/opencv4/opencv2/video/background_segm.hpp",
-"include/opencv4/opencv2/objdetect/objdetect.hpp",
-"include/opencv4/opencv2/imgcodecs/imgcodecs.hpp",
-"include/opencv4/opencv2/videoio/videoio.hpp",
-"include/opencv4/opencv2/highgui/highgui.hpp",
+"../../core/include/opencv2/core.hpp",
+"../../core/include/opencv2/core/mat.hpp",
+"../../core/include/opencv2/core/ocl.hpp",
+"../../flann/include/opencv2/flann/miniflann.hpp",
+"../../ml/include/opencv2/ml.hpp",
+"../../imgproc/include/opencv2/imgproc.hpp",
+"../../calib3d/include/opencv2/calib3d.hpp",
+"../../features2d/include/opencv2/features2d.hpp",
+"../../video/include/opencv2/video/tracking.hpp",
+"../../video/include/opencv2/video/background_segm.hpp",
+"../../objdetect/include/opencv2/objdetect.hpp",
+"../../imgcodecs/include/opencv2/imgcodecs.hpp",
+"../../videoio/include/opencv2/videoio.hpp",
+"../../highgui/include/opencv2/highgui.hpp",
 ]
 
 """
@@ -393,7 +393,6 @@ class CppHeaderParser(object):
             [~]<function_name>
             (<arg_type1> <arg_name1>[=<default_value1>] [, <arg_type2> <arg_name2>[=<default_value2>] ...])
             [const] {; | <function_body>}
-
         Returns the function declaration entry:
         [<func name>, <return value C-type>, <list of modifiers>, <list of arguments>, <original return type>, <docstring>] (see above)
         """
@@ -629,14 +628,12 @@ class CppHeaderParser(object):
     def get_dotted_name(self, name):
         """
         adds the dot-separated container class/namespace names to the bare function/class name, e.g. when we have
-
         namespace cv {
         class A {
         public:
             f(int);
         };
         }
-
         the function will convert "A" to "cv.A" and "f" to "cv.A.f".
         """
         if not self.block_stack:
@@ -664,7 +661,6 @@ class CppHeaderParser(object):
     def parse_stmt(self, stmt, end_token, mat="Mat", docstring=""):
         """
         parses the statement (ending with ';' or '}') or a block head (ending with '{')
-
         The function calls parse_class_decl or parse_func_decl when necessary. It returns
         <block_type>, <block_name>, <parse_flag>, <declaration>
         where the first 3 values only make sense for blocks (i.e. code blocks, namespaces, classes, enums and such)
@@ -1002,7 +998,7 @@ class CppHeaderParser(object):
                         docstring = ""
                     if stmt_type == "namespace":
                         chunks = [block[1] for block in self.block_stack if block[0] == 'namespace'] + [name]
-                        self.namespaces.add('.'.join(chunks))
+                        self.namespaces.add('.'.join(filter(lambda c: len(c)> 0, chunks)))
                 else:
                     stmt_type, name, parse_flag = "block", "", False
 

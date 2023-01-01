@@ -399,7 +399,7 @@ class ModuleGenerator(object):
 
                 if "qrcodeencoder_params" == module_func_name:
                     module_func_name = 'params'
-                
+
                 global unique_signatures
                 usign = ''
                 if func.classname and len(func.classname) > 0:

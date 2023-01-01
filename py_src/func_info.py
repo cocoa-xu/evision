@@ -97,7 +97,7 @@ class FuncInfo(object):
             if not self.is_static and not self.isconstructor:
                 func_arity = 2
         erl_name, fname = self.get_wrapper_name(True)
-        if erl_name == 'videoCapture_waitAny_static':
+        if erl_name == 'videoCapture_waitAny_static' or fname == 'evision_cv_line_descriptor_line_descriptor_LSDDetector_LSDDetector':
             return ""
         if fname in special_handling_funcs():
             return ""
@@ -380,7 +380,20 @@ class FuncInfo(object):
                                 elixir_module_name=get_elixir_module_name(selfinfo.cname)
                             )
                         else:
-                            code_ret = f"return evision_from(env, {aname})"
+                            if '::create' in self.cname and self.is_static:
+                                elixir_module_name = get_elixir_module_name(selfinfo.cname)
+                                code_ret = f"""return evision_from(env, {aname});"""
+            # bool success;
+            # return evision_from_as_map<decltype({aname})>(env, {aname}, retval_term, "{elixir_module_name}", success)"""
+            #                     elixir_module_name = get_elixir_module_name(selfinfo.cname)
+            #                     selftype = selfinfo.cname
+            #                     # if not selfinfo.issimple:
+            #                     #    selftype = "Ptr<{}>".format(selfinfo.cname)
+            #                     code_ret = f"""bool success;
+            # ERL_NIF_TERM retval_term = evision_from(env, {aname});
+            # return evision_from_as_map<{selftype}>(env, {aname}, retval_term, "{elixir_module_name}", success)"""
+                            else:
+                                code_ret = f"return evision_from(env, {aname})"
             else:
                 # there is more than 1 return parameter; form the tuple out of them
                 n_tuple = len(v.py_outlist)

@@ -3,8 +3,11 @@
 
 from helper import normalize_class_name, get_elixir_module_name
 from class_prop import ClassProp
+from module_generator import ModuleGenerator
 import evision_templates as ET
+import evision_structures as ES
 import sys
+import re
 
 if sys.version_info[0] >= 3:
     from io import StringIO
@@ -13,7 +16,17 @@ else:
 
 
 class ClassInfo(object):
-    def __init__(self, name, decl=None):
+    def __init__(self, name, decl=None, codegen=None):
+        # Scope name can be a module or other class e.g. cv::SimpleBlobDetector::Params
+        scope_name, self.original_name = name.rsplit(".", 1)
+
+        # In case scope refer the outer class exported with different name
+        if codegen:
+            scope_name = codegen.get_export_scope_name(scope_name)
+        self.scope_name = re.sub(r"^cv\.?", "", scope_name)
+
+        self.export_name = self.original_name
+
         self.cname = name.replace(".", "::")
         self.name = self.wname = normalize_class_name(name)
         self.sname = name[name.rfind('.') + 1:]
@@ -60,6 +73,22 @@ class ClassInfo(object):
 
         if not customname and self.wname.startswith("Cv"):
             self.wname = self.wname[2:]
+
+    @property
+    def full_scope_name(self):
+        return "cv." + self.scope_name if len(self.scope_name) else "cv"
+
+    @property
+    def full_export_name(self):
+        return self.full_scope_name + "." + self.export_name
+
+    @property
+    def full_original_name(self):
+        return self.full_scope_name + "." + self.original_name
+
+    @property
+    def has_export_alias(self):
+        return self.export_name != self.original_name
 
     def gen_map_code(self, codegen):
         all_classes = codegen.classes
@@ -254,7 +283,7 @@ class ClassInfo(object):
         return code
 
 
-    def gen_def(self, codegen):
+    def gen_def(self, codegen, evision_modules, evision_erlang_hrl):
         all_classes = codegen.classes
         baseptr = "NoBase"
         if self.base and self.base in all_classes:
@@ -264,6 +293,38 @@ class ClassInfo(object):
         if self.constructor is not None:
             constructor_name = self.constructor.get_wrapper_name(True)
 
+        elixir_module_name = get_elixir_module_name(self.cname)
+        elixir_module_name_underscore = elixir_module_name.replace(".", "_")
+        if elixir_module_name in ["Text.ERFilter.Callback"] and elixir_module_name_underscore not in evision_modules:
+            module_file_generator = ModuleGenerator(elixir_module_name)
+            module_file_generator.write_elixir(f'defmodule Evision.{elixir_module_name} do\n')
+
+            atom_elixir_module_name = elixir_module_name
+            atom_erlang_module_name = elixir_module_name
+            if '.' in atom_elixir_module_name:
+                atom_elixir_module_name = f'"{atom_elixir_module_name}"'
+            module_file_generator.write_elixir(
+                ES.generic_struct_template_elixir.substitute(
+                    atom_elixir_module_name=atom_elixir_module_name,
+                    elixir_module_name=elixir_module_name
+                )
+            )
+            atom_erlang_module_name = atom_erlang_module_name.replace("Evision.", "evision_").replace(".", "_").lower()
+            if not atom_erlang_module_name.startswith("evision_"):
+                atom_erlang_module_name = f"evision_{atom_erlang_module_name}"
+            module_file_generator.write_erlang(
+                ES.generic_struct_template_erlang.substitute(
+                    atom_elixir_module_name=elixir_module_name,
+                    atom_erlang_module_name=atom_erlang_module_name
+                )
+            )
+            evision_erlang_hrl.write(
+                f"-record({atom_erlang_module_name}, "
+                "{ref}).\n"
+            )
+
+            evision_modules[elixir_module_name_underscore] = module_file_generator
+
         return "CV_ERL_TYPE({}, {}, {}, {}, {}, {}, {});\n".format(
             self.wname,
             self.name,
@@ -271,5 +332,5 @@ class ClassInfo(object):
             self.sname if self.issimple else "Ptr",
             baseptr,
             constructor_name,
-            get_elixir_module_name(self.cname)
+            elixir_module_name
         )

@@ -32,7 +32,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Install FFmpeg4, Erlang and Elixir
+      - name: Install Erlang and Elixir
         run: |
           brew install erlang elixir
           mix local.hex --force
@@ -55,7 +55,7 @@ jobs:
         id: cache-opencv
         uses: actions/cache@v3
         with:
-          key: opencv-${{ env.OPENCV_VER }}
+          key: opencv-with-contrib-${{ env.OPENCV_VER }}
           path: |
             ./3rd_party
 
@@ -63,6 +63,7 @@ jobs:
         if: steps.cache-opencv.outputs.cache-hit != 'true'
         run: |
           bash scripts/download_opencv.sh ${OPENCV_VER} 3rd_party/cache 3rd_party/opencv/
+          bash scripts/download_opencv_contrib.sh ${OPENCV_VER} 3rd_party/cache 3rd_party/opencv/
 
       - name: Cache compiled OpenCV
         id: cache-mix-compile_opencv
@@ -77,16 +78,18 @@ jobs:
       - name: Compile OpenCV
         if: steps.cache-mix-compile_opencv.outputs.cache-hit != 'true'
         run: |
+          export CMAKE_OPENCV_OPTIONS="-D WITH_FFMPEG=OFF"
           if [ "${{ matrix.pair.arch }}" = "arm64" ]; then
-            export CMAKE_OPENCV_OPTIONS="-D WITH_FFMPEG=OFF -D WITH_IPP=OFF -D CMAKE_OSX_ARCHITECTURES=arm64"
+            export CMAKE_OPENCV_OPTIONS="${CMAKE_OPENCV_OPTIONS} -D WITH_IPP=OFF -D CMAKE_OSX_ARCHITECTURES=arm64"
             export CMAKE_EVISION_OPTIONS="-D CMAKE_OSX_ARCHITECTURES=arm64"
           fi
           mix compile_opencv
 
       - name: Mix compile
         run: |
+          export CMAKE_OPENCV_OPTIONS="-D WITH_FFMPEG=OFF"
           if [ "${{ matrix.pair.arch }}" = "arm64" ]; then
-            export CMAKE_OPENCV_OPTIONS="-D WITH_FFMPEG=OFF -D WITH_IPP=OFF -D CMAKE_OSX_ARCHITECTURES=arm64"
+            export CMAKE_OPENCV_OPTIONS="${CMAKE_OPENCV_OPTIONS} -D WITH_IPP=OFF -D CMAKE_OSX_ARCHITECTURES=arm64"
             export CMAKE_EVISION_OPTIONS="-D CMAKE_OSX_ARCHITECTURES=arm64"
           fi
           rm -f _build/${{ env.MIX_ENV }}/lib/evision/priv/evision.so
