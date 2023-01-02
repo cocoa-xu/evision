@@ -1278,7 +1278,7 @@ def map_argtype_in_spec_elixir(classname: str, argtype: str, is_in: bool, decl: 
         return ':ok'
     elif argtype == 'Range':
         return '{integer(), integer()} | :all'
-    elif is_in and argtype in ['Mat', 'UMat', 'cv::Mat', 'cv::UMat', 'cuda::GpuMat']:
+    elif is_in and argtype in ['Mat', 'UMat', 'cv::Mat', 'cv::UMat']:
         return 'Evision.Mat.maybe_mat_in()'
     elif argtype in evision_structrised_classes:
         return f'Evision.{argtype}.t()'
@@ -1325,8 +1325,6 @@ def map_argtype_in_spec_elixir(classname: str, argtype: str, is_in: bool, decl: 
     else:
         if argtype == 'LayerId':
             return 'term()'
-        if argtype == 'GpuMat' or argtype == 'cuda::GpuMat':
-            return f'Evision.CUDA.GpuMat.t()'
         if argtype == 'IndexParams' or argtype == 'SearchParams' or argtype == 'Moments':
             return f'map()'
         if len(decl) > 0 and decl[0].startswith("cv.aruco.") and argtype in ['Board', 'Dictionary']:
@@ -1361,7 +1359,7 @@ def map_argtype_to_guard_elixir(argname, argtype, classname: Optional[str] = Non
     elif is_struct(argtype, classname=classname):
         _, struct_name = is_struct(argtype, also_get='struct_name', classname=classname)
         if struct_name == 'Evision.Mat':
-            return f'(is_struct({argname}, Evision.Mat) or is_struct({argname}, Evision.CUDA.GpuMat) or is_struct({argname}, Nx.Tensor))'
+            return f'(is_struct({argname}, Evision.Mat) or is_struct({argname}, Nx.Tensor))'
         else:
             return f'is_struct({argname}, {struct_name})'
     elif is_ref_or_struct(argtype):
@@ -1371,8 +1369,6 @@ def map_argtype_to_guard_elixir(argname, argtype, classname: Optional[str] = Non
     else:
         if argtype == 'LayerId':
             return ''
-        if argtype == 'GpuMat' or argtype == 'cuda::GpuMat':
-            return f'is_list({argname})'
         if argtype == 'IndexParams' or argtype == 'SearchParams' or argtype == 'Moments':
             return f'is_map({argname})'
         else:
@@ -1412,8 +1408,6 @@ def map_argtype_to_guard_erlang(argname, argtype, classname: Optional[str] = Non
     else:
         if argtype == 'LayerId':
             return ''
-        if argtype == 'GpuMat' or argtype == 'cuda::GpuMat':
-            return f'is_list({argname})'
         if argtype == 'IndexParams' or argtype == 'SearchParams' or argtype == 'Moments':
             return f'is_map({argname})'
         else:

@@ -68,15 +68,24 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const TYPE& src)                      
     return evision_from(env, ptr);                                                                    \
 }
 
-#define CV_ERL_TO_CLASS_PTR(TYPE)                                                                      \
-template<>                                                                                            \
-bool evision_to(ErlNifEnv *env, ERL_NIF_TERM dst, TYPE*& src, const ArgInfo& info)                    \
-{                                                                                                     \
-    Ptr<TYPE> ptr;                                                                                    \
-                                                                                                      \
-    if (!evision_to(env, dst, ptr, info)) return false;                                               \
-    src = ptr;                                                                                        \
-    return true;                                                                                      \
+#define CV_ERL_TO_CLASS_PTR(TYPE)                                                                    \
+template<>                                                                                           \
+bool evision_to(ErlNifEnv *env, ERL_NIF_TERM dst, TYPE*& src, const ArgInfo& info)                   \
+{                                                                                                    \
+    Ptr<TYPE> ptr;                                                                                   \
+                                                                                                     \
+    if (!evision_to(env, dst, ptr, info)) {                                                          \
+        if (info.outputarg) return true;                                                             \
+        return info.has_default;                                                                     \
+    }                                                                                                \
+    if (ptr.get() == nullptr && info.has_default) {                                                  \
+        return true;                                                                                 \
+    } else {                                                                                         \
+        if (ptr.get() == nullptr && info.outputarg) return true;                                     \
+        src = ptr;                                                                                   \
+    }                                                                                                \
+                                                                                                     \
+    return ptr.get() == nullptr;                                                                     \
 }
 
 #define CV_ERL_FROM_CLASS_PTR(TYPE)                                                                    \

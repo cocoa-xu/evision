@@ -205,6 +205,12 @@ class FuncInfo(object):
                     if tp.endswith("*"):
                         defval0 = "0"
                 tp_candidates = [a.tp, normalize_class_name(self.namespace + "." + a.tp), normalize_class_name(self.classname + "." + a.tp)]
+                
+                if "::" in tp:
+                    underscore_type = tp.replace("::", "_")
+                else:
+                    underscore_type = tp_candidates[1].replace(".", "_")
+
                 if any(tp in codegen.enums.keys() for tp in tp_candidates):
                     defval0 = "static_cast<%s>(%d)" % (a.tp, 0)
 
@@ -217,7 +223,7 @@ class FuncInfo(object):
                         defval = f"static_cast<std::underlying_type_t<{arg_type_info.atype}>>({a.defval})"
                     arg_type_info = ArgTypeInfo(f"std::underlying_type_t<{arg_type_info.atype}>", arg_type_info.format_str, defval, True, True)
                     a.defval = defval
-            
+
                 defval = a.defval
                 if not defval:
                     defval = arg_type_info.default_value
@@ -252,6 +258,8 @@ class FuncInfo(object):
                         code_cvt_list.append("convert_to_char(env, %s, &%s, %s)" % (erl_term, a.name, a.crepr(defval)))
                     elif a.tp == 'FileStorage':
                         code_cvt_list.append("evision_to_safe(env, %s, ptr_%s, %s)" % (erl_term, a.name, a.crepr(defval)))
+                    elif underscore_type in all_classes and all_classes[underscore_type].issimple is False:
+                        code_cvt_list.append("evision_to_safe(env, %s, ptr_%s, %s)" % (erl_term, a.name, a.crepr(defval)))
                     else:
                         code_cvt_list.append("evision_to_safe(env, %s, %s, %s)" % (erl_term, a.name, a.crepr(defval)))
                         if elixir_argname == 'outBlobNames':
@@ -264,18 +272,18 @@ class FuncInfo(object):
                     if arg_type_info.atype == "QRCodeEncoder_Params":
                         code_decl += "    QRCodeEncoder::Params %s=%s;\n" % (a.name, defval)
                     else:
-                        if arg_type_info.atype == "FileStorage":
-                            code_decl += "    Ptr<%s> %s=ptr_%s;\n" % (arg_type_info.atype, a.name, defval)
-                            code_from_ptr += "%s& %s = *ptr_%s.get();\n" % (arg_type_info.atype, a.name, a.name)
+                        if arg_type_info.atype == "FileStorage" or (underscore_type in all_classes and all_classes[underscore_type].issimple is False):
+                            code_decl += "    Ptr<%s> ptr_%s;\n" % (arg_type_info.atype, a.name,)
+                            code_from_ptr += "    %s %s; if (ptr_%s.get()) { %s = *ptr_%s.get(); } else { %s = %s; }\n    " % (arg_type_info.atype, a.name, a.name, a.name, a.name, a.name, defval)
                         else:
                             code_decl += "    %s %s=%s;\n" % (arg_type_info.atype, a.name, defval)
                 else:
                     if a.name == "nodeName":
                         code_decl += "    %s %s = String();\n" % (arg_type_info.atype, a.name)
                     else:
-                        if arg_type_info.atype == "FileStorage":
+                        if arg_type_info.atype == "FileStorage" or (underscore_type in all_classes and all_classes[underscore_type].issimple is False):
                             code_decl += "    Ptr<%s> ptr_%s;\n" % (arg_type_info.atype, a.name)
-                            code_from_ptr += "%s& %s = *ptr_%s.get();\n" % (arg_type_info.atype, a.name, a.name)
+                            code_from_ptr += "    %s %s; if (ptr_%s.get()) { %s = *ptr_%s.get(); }\n    " % (arg_type_info.atype, a.name, a.name, a.name, a.name)
                         else:
                             code_decl += "    %s %s;\n" % (arg_type_info.atype, a.name)
 
