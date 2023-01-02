@@ -208,6 +208,56 @@ ERL_NIF_TERM evision_from_as_map(ErlNifEnv *env, const T& src, ERL_NIF_TERM res_
     }
 }
 
+template<>
+ERL_NIF_TERM evision_from_as_map(ErlNifEnv *env, const cv::Ptr<cv::cuda::GpuMat>& src, ERL_NIF_TERM res_term, const char * class_name, bool& success) {
+    const size_t num_items = 7;
+    size_t item_index = 0;
+
+    ERL_NIF_TERM keys[num_items];
+    ERL_NIF_TERM values[num_items];
+
+    keys[item_index] = enif_make_atom(env, "ref");
+    values[item_index] = res_term;
+    item_index++;
+
+    keys[item_index] = enif_make_atom(env, "class");
+    values[item_index] = enif_make_atom(env, class_name);
+    item_index++;
+
+    keys[item_index] = enif_make_atom(env, "channels");
+    values[item_index] = enif_make_int(env, src->channels());
+    item_index++;
+
+    keys[item_index] = enif_make_atom(env, "type");
+    values[item_index] = __evision_get_mat_type(env, src->type());
+    item_index++;
+
+    keys[item_index] = enif_make_atom(env, "raw_type");
+    values[item_index] = enif_make_int(env, src->type());
+    item_index++;
+
+    keys[item_index] = enif_make_atom(env, "elemSize");
+    values[item_index] = enif_make_int(env, src->elemSize());
+    item_index++;
+
+    keys[item_index] = enif_make_atom(env, "shape");
+    ERL_NIF_TERM shape[3];
+    shape[0] = enif_make_int(env, src->rows);
+    shape[1] = enif_make_int(env, src->cols);
+    shape[2] = enif_make_int(env, src->channels());
+    values[item_index] = enif_make_tuple_from_array(env, shape, 3);
+    item_index++;
+
+    ERL_NIF_TERM map;
+    if (enif_make_map_from_arrays(env, keys, values, item_index, &map)) {
+        success = true;
+        return map;
+    } else {
+        success = false;
+        return evision::nif::error(env, "enif_make_map_from_arrays failed in evision_from_as_map");
+    }
+}
+
 template <>
 ERL_NIF_TERM evision_from_as_binary(ErlNifEnv *env, const std::vector<uchar>& src, bool& success) {
     size_t n = static_cast<size_t>(src.size());
@@ -518,14 +568,19 @@ struct Evision_Converter< cv::Ptr<T> >
 {
     static ERL_NIF_TERM from(ErlNifEnv *env, const cv::Ptr<T>& p)
     {
-        if (!p)
-            evision::nif::atom(env, "nil");
+        if (!p) {
+            return evision::nif::atom(env, "nil");
+        }
+
         return evision_from(env, *p);
     }
     static bool to(ErlNifEnv * env, ERL_NIF_TERM o, Ptr<T>& p, const ArgInfo& info)
     {
-        if (evision::nif::check_nil(env, o))
-            return true;
+        if (evision::nif::check_nil(env, o)) {
+            if (info.outputarg) return true;
+            return info.has_default;
+        }
+
         p = makePtr<T>();
         return evision_to(env, o, *p, info);
     }
@@ -538,12 +593,16 @@ bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, void*& ptr, const ArgInfo& inf
         return true;
     }
 
-    CV_UNUSED(info);
-
     ErlNifSInt64 i64;
-    if (!enif_get_int64(env, obj, (ErlNifSInt64 *)&i64))
-        return false;
+    if (!enif_get_int64(env, obj, (ErlNifSInt64 *)&i64)) {
+        return info.has_default;
+    }
+        
     ptr = reinterpret_cast<void *>(i64);
+    if (ptr == nullptr && info.has_default) {
+        return true;
+    }
+
     return ptr != nullptr;
 }
 
@@ -2233,12 +2292,6 @@ static int convert_to_char(ErlNifEnv *env, ERL_NIF_TERM o, char *dst, const ArgI
 #include "modules/evision_videocapture.h"
 
 /************************************************************************/
-
-struct ConstDef
-{
-    const char * name;
-    long long val;
-};
 
 #include "evision_generated_modules_content.h"
 

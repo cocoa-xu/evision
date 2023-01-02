@@ -3,8 +3,7 @@
 
 #include <erl_nif.h>
 
-static ERL_NIF_TERM _evision_get_mat_type(ErlNifEnv *env, const cv::Mat& img) {
-    int type = img.type();
+static ERL_NIF_TERM __evision_get_mat_type(ErlNifEnv *env, int type) {
     uint8_t depth = type & CV_MAT_DEPTH_MASK;
 
     switch ( depth ) {
@@ -18,6 +17,11 @@ static ERL_NIF_TERM _evision_get_mat_type(ErlNifEnv *env, const cv::Mat& img) {
         case CV_16F: return enif_make_tuple2(env, evision::nif::atom(env, "f"), enif_make_uint64(env, 16));
         default:     return enif_make_tuple2(env, evision::nif::atom(env, "user"), enif_make_uint64(env, depth));
     }
+}
+
+static ERL_NIF_TERM _evision_get_mat_type(ErlNifEnv *env, const cv::Mat& img) {
+    int type = img.type();
+    return __evision_get_mat_type(env, type);
 }
 
 static ERL_NIF_TERM _evision_get_mat_shape(ErlNifEnv *env, const cv::Mat& img) {
@@ -40,6 +44,7 @@ static ERL_NIF_TERM _evision_get_mat_shape(ErlNifEnv *env, const cv::Mat& img) {
         shape[dims - 1] = enif_make_int(env, channels);
     }
     ERL_NIF_TERM ret = enif_make_tuple_from_array(env, shape, dims);
+    enif_free(shape);
     return ret;
 }
 
