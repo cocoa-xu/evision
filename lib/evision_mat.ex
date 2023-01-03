@@ -326,12 +326,44 @@ defmodule Evision.Mat do
   @spec update_roi(maybe_mat_in(), [{integer(), integer()} | Range.t() | :all], maybe_mat_in()) ::
           maybe_mat_out()
   def update_roi(mat, ranges, with_mat) do
-    mat = __from_struct__(mat)
-    ranges = __standardise_range_list__(ranges, true)
-    with_mat = __from_struct__(with_mat)
+    {mat, bring_back} =
+      if mat.dims != tuple_size(mat.shape) do
+        {Evision.Mat.channel_as_last_dim(mat), true}
+      else
+        {mat, false}
+      end
+    with_mat =
+      if with_mat.dims != tuple_size(with_mat.shape) do
+        Evision.Mat.channel_as_last_dim(with_mat)
+      else
+        with_mat
+      end
 
-    :evision_nif.mat_update_roi(mat: mat, ranges: ranges, with_mat: with_mat)
-    |> Evision.Internal.Structurise.to_struct()
+    ranges = __standardise_range_list__(ranges, true)
+    ranges =
+      if tuple_size(mat.shape) > Enum.count(ranges) do
+        extend =
+          for i <- Enum.count(ranges)..tuple_size(mat.shape)-1, reduce: [] do
+            acc ->
+              [{0, elem(mat.shape, i)} | acc]
+          end
+        ranges ++ Enum.reverse(extend)
+      else
+        ranges
+      end
+
+    with_mat = __from_struct__(with_mat)
+    mat = __from_struct__(mat)
+
+    res = Evision.Internal.Structurise.to_struct(
+      :evision_nif.mat_update_roi(mat: mat, ranges: ranges, with_mat: with_mat)
+    )
+
+    if bring_back do
+      Evision.Mat.last_dim_as_channel(res)
+    else
+      res
+    end
   end
 
   @doc """

@@ -1,11 +1,19 @@
 # Changelog
 
+## v0.1.26 (2023-01-03)
+[Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.26) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.26)
+
+### Fixed
+- [Evision.Mat] fixed `Evision.Mat.update_roi/3`.
+
 ## v0.1.25 (2022-12-18)
+[Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.25) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.25)
 
 ### Fixed
 - [smartcell] fixed a typo in SFace.
 
 ## v0.1.23/v0.1.24 (2022-12-17)
+[Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.24) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.24)
 
 ### Fixed
 - [smartcell] fixed charset loading when initialising FP16/INT8 CRNN models. [#144](https://github.com/cocoa-xu/evision/issues/144)

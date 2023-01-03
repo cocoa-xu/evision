@@ -2,7 +2,7 @@ defmodule Evision.MixProject.Metadata do
   @moduledoc false
 
   def app, do: :evision
-  def version, do: "0.1.25"
+  def version, do: "0.1.26"
   def github_url, do: "https://github.com/cocoa-xu/evision"
   def opencv_version, do: "4.7.0"
   # only means compatible. need to write more tests
@@ -884,7 +884,7 @@ defmodule Evision.MixProject do
 
   defp generate_cmake_options() do
     mc = module_configuration()
-    enable_opencv_contrib = true
+    enable_opencv_contrib = false
     all_modules = Enum.map(mc.opencv, fn {m, _} -> m end) ++ Enum.map(mc.opencv_contrib, fn {m, _} -> m end)
     enabled_modules = Enum.filter(mc.opencv, fn {_, e} -> e end)
       ++ (if enable_opencv_contrib do Enum.filter(mc.opencv_contrib, fn {_, e} -> e end) else [] end)
