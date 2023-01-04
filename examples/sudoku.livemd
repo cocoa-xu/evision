@@ -618,7 +618,7 @@ model = MNIST.build_model({nil, 784})
 ```elixir
 IO.puts("Training Model...")
 num_epoch = 5
-model_state = Mnist.train_model(model, train_images, train_labels, num_epoch)
+model_state = MNIST.train_model(model, train_images, train_labels, num_epoch)
 ```
 
 <!-- livebook:{"output":true} -->
