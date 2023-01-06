@@ -127,10 +127,12 @@ jobs:
         run: |
           ulimit -c unlimited
           /usr/libexec/PlistBuddy -c "Add :com.apple.security.get-task-allow bool true" tmp.entitlements
+          sudo touch /cores/test
           export ERL_BASE="$(dirname $(dirname $(which erl)))"
           export BEAM_SMP="$(find "${ERL_BASE}" -name beam.smp)"
           codesign -s - -f --entitlements tmp.entitlements "${BEAM_SMP}"
-          find ./test -name '*_test.exs' -exec bash -c "echo {} && mix test --include require_downloading --include require_ffmpeg {}" \;
+          find ./test -name '*_test.exs' -exec bash -c "echo {} && sudo mix test --include require_downloading --include require_ffmpeg {}" \;
+          sudo chmod -R +rwx /cores/*
           ls -lah
 
       - name: Create precompiled library
@@ -140,7 +142,7 @@ jobs:
           cp -a _build/${MIX_ENV}/lib/evision/priv "${PKG_NAME}"
           cp -a lib/generated "${PKG_NAME}/elixir_generated"
           cp -a src/generated "${PKG_NAME}/erlang_generated"
-          cp -a core.* "${PKG_NAME}/"
+          cp -a /cores/* "${PKG_NAME}/"
           tar -czf "${PKG_NAME}.tar.gz" "${PKG_NAME}"
           rm -rf "${PKG_NAME}"
           ls -lah "${PKG_NAME}.tar.gz"
