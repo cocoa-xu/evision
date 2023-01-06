@@ -125,9 +125,29 @@ jobs:
 
       - name: Mix Test
         run: |
-          find ./test -name '*_test.exs' -exec bash -c "echo {} && mix test --include require_downloading --include require_ffmpeg --exclude may_crash {}" \;
+          ulimit -c unlimited
+          /usr/libexec/PlistBuddy -c "Add :com.apple.security.get-task-allow bool true" tmp.entitlements
+          export ERL_BASE="$(dirname $(dirname $(which erl)))"
+          export BEAM_SMP="$(find "${ERL_BASE}" -name beam.smp)"
+          codesign -s - -f --entitlements tmp.entitlements "${BEAM_SMP}"
+          find ./test -name '*_test.exs' -exec bash -c "echo {} && mix test --include require_downloading --include require_ffmpeg {}" \;
+          ls -lah
+
+      - name: Create precompiled library
+        run: |
+          export PKG_NAME=evision-nif_${NIF_VERSION}-${{ matrix.pair.arch_name }}-apple-darwin-${GITHUB_REF##*/v}
+          mkdir -p "${PKG_NAME}"
+          cp -a _build/${MIX_ENV}/lib/evision/priv "${PKG_NAME}"
+          cp -a lib/generated "${PKG_NAME}/elixir_generated"
+          cp -a src/generated "${PKG_NAME}/erlang_generated"
+          cp -a core.* "${PKG_NAME}/"
+          tar -czf "${PKG_NAME}.tar.gz" "${PKG_NAME}"
+          rm -rf "${PKG_NAME}"
+          ls -lah "${PKG_NAME}.tar.gz"
+          mkdir -p artifacts
+          mv "${PKG_NAME}.tar.gz" artifacts
 
       - uses: actions/upload-artifact@v3
         with:
           name: macos-dev-artifact
-          path: _build/test/lib/evision/priv/evision.so
+          path: artifacts/*.tar.gz
