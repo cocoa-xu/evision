@@ -28,9 +28,13 @@ defmodule Evision.Wx do
 
     windows = Process.get(@process_env_key, %{})
     window = Map.get(windows, window_name)
+    wx_pid = case window do
+      nil -> nil
+      {_, _, _, pid} -> pid
+    end
 
     window =
-      if window == nil do
+      if window == nil || !Process.alive?(wx_pid) do
         wx_window = :wx.new()
 
         wx_obj =
@@ -55,7 +59,11 @@ defmodule Evision.Wx do
     window = Map.get(windows, window_name)
 
     if window do
-      :wxFrame.close(window)
+      try do
+        :wxFrame.close(window)
+      catch
+        :error, {_, {:wxWindow, :close, _}} -> :ok
+      end
       Process.put(@process_env_key, Map.delete(windows, window_name))
     end
 
@@ -69,7 +77,11 @@ defmodule Evision.Wx do
     windows = Process.get(@process_env_key, %{})
 
     Enum.each(Map.values(windows), fn window ->
-      :wxFrame.close(window)
+      try do
+        :wxFrame.close(window)
+      catch
+        :error, {_, {:wxWindow, :close, _}} -> :ok
+      end
     end)
 
     Process.put(@process_env_key, %{})
