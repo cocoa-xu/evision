@@ -49,6 +49,7 @@ jobs:
       MIX_ENV: "test"
       EVISION_PREFER_PRECOMPILED: "false"
       CMAKE_BUILD_TYPE: Debug
+      CMAKE_OPTIONS: "-D CV_DISABLE_OPTIMIZATION=OFF"
       TARGET_GCC_FLAGS: "-g3"
     steps:
       - uses: actions/checkout@v3
