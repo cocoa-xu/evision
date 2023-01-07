@@ -89,7 +89,7 @@ jobs:
         id: cache-mix-compile_opencv
         uses: actions/cache@v3
         with:
-          key: compile-with-ffmpeg-opencv-${{ env.OPENCV_VER }}-x86_64-apple-darwin-${{ hashFiles('Makefile') }}-${{ hashFiles('py_src/*.py') }}
+          key: compile-with-ffmpeg-opencv-${{ runner.os }}-${{ env.OPENCV_VER }}-x86_64-apple-darwin-${{ hashFiles('Makefile') }}-${{ hashFiles('py_src/*.py') }}
           path: |
             ./_build/${{ env.MIX_ENV }}/lib/evision
             ./c_src/headers.txt
@@ -105,6 +105,7 @@ jobs:
           rm -f _build/test/lib/evision/priv/evision.so
 
           clang -v
+          sudo sysctl -a
 
           mkdir -p lib/generated
           mkdir -p src/generated
