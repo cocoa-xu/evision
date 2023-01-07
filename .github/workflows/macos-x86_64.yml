@@ -104,6 +104,8 @@ jobs:
         run: |
           rm -f _build/test/lib/evision/priv/evision.so
 
+          clang -v
+
           mkdir -p lib/generated
           mkdir -p src/generated
           cat c_src/headers.txt
