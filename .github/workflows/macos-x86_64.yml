@@ -142,3 +142,6 @@ jobs:
           mix test --include require_downloading --include require_ffmpeg test/dnn_detection_test.exs || true
           mix test --include require_downloading --include require_ffmpeg test/dnn_text_detection_model_db_test.exs || true
           mix test --include require_downloading --include require_ffmpeg test/dnn_text_detection_model_east_test.exs || true
+      
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
