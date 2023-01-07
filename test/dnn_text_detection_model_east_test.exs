@@ -19,8 +19,14 @@ defmodule Evision.DNN.TextDetectionModelEAST.Test do
     data_p2 = File.read!(weights_p2)
     File.write!(weights, data_p1 <> data_p2)
 
+    net = Evision.DNN.readNet(weights, config: "", framework: "")
+
+    # disable Winograd, OpenCV 4.7.0
+    # https://github.com/opencv/opencv/issues/23080
+    Evision.DNN.Net.enableWinograd(net, false)
+
     model =
-      TextDetectionModelEAST.textDetectionModelEAST(weights)
+      TextDetectionModelEAST.textDetectionModelEAST(net)
       |> TextDetectionModelEAST.setInputParams(
         scale: 1.0,
         size: {320, 320},

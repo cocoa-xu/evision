@@ -48,9 +48,6 @@ jobs:
       OPENCV_VER: "4.7.0"
       MIX_ENV: "test"
       EVISION_PREFER_PRECOMPILED: "false"
-      CMAKE_BUILD_TYPE: Debug
-      CMAKE_OPTIONS: "-D CV_DISABLE_OPTIMIZATION=OFF"
-      TARGET_GCC_FLAGS: "-g3"
     steps:
       - uses: actions/checkout@v3
 
@@ -92,7 +89,7 @@ jobs:
         id: cache-mix-compile_opencv
         uses: actions/cache@v3
         with:
-          key: compile-with-ffmpeg-opencv-debug-no-opt-${{ env.OPENCV_VER }}-x86_64-apple-darwin-${{ hashFiles('Makefile') }}-${{ hashFiles('py_src/*.py') }}
+          key: compile-with-ffmpeg-opencv-${{ env.OPENCV_VER }}-x86_64-apple-darwin-${{ hashFiles('Makefile') }}-${{ hashFiles('py_src/*.py') }}
           path: |
             ./_build/${{ env.MIX_ENV }}/lib/evision
             ./c_src/headers.txt
@@ -133,27 +130,4 @@ jobs:
           export ERL_BASE="$(dirname $(dirname $(which erl)))"
           export BEAM_SMP="$(find "${ERL_BASE}" -name beam.smp)"
           codesign -s - -f --entitlements tmp.entitlements "${BEAM_SMP}"
-          # find ./test -name '*_test.exs' -exec bash -c "echo {} && ulimit -c unlimited && sudo mix test --include require_downloading --include require_ffmpeg {}" \;
-          sudo mix test --include require_downloading --include require_ffmpeg test/dnn_detection_test.exs || true
-          sudo chmod -R +rwx /cores/*
-          ls -lah
-          ls -lah /cores/*
-
-      - name: Create CI artifact
-        run: |
-          export PKG_NAME=evision-nif_${NIF_VERSION}-${{ matrix.pair.arch_name }}-apple-darwin-${GITHUB_REF##*/v}
-          mkdir -p "${PKG_NAME}"
-          cp -a _build/${MIX_ENV}/lib/evision/priv "${PKG_NAME}"
-          cp -a lib/generated "${PKG_NAME}/elixir_generated"
-          cp -a src/generated "${PKG_NAME}/erlang_generated"
-          cp -a /cores/* "${PKG_NAME}/"
-          tar -czf "${PKG_NAME}.tar.gz" "${PKG_NAME}"
-          rm -rf "${PKG_NAME}"
-          ls -lah "${PKG_NAME}.tar.gz"
-          mkdir -p artifacts
-          mv "${PKG_NAME}.tar.gz" artifacts
-
-      - uses: actions/upload-artifact@v3
-        with:
-          name: macos-dev-artifact
-          path: artifacts/*.tar.gz
+          find ./test -name '*_test.exs' -exec bash -c "echo {} && ulimit -c unlimited && sudo mix test --include require_downloading --include require_ffmpeg {}" \;

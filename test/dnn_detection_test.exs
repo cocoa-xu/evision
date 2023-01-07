@@ -113,6 +113,7 @@ defmodule Evision.DNN.Test do
       model = Cv.DNN.Net.setInput(model, blob, name: "", scalefactor: 1.0, mean: {0, 0, 0})
 
       start_time = :os.system_time(:millisecond)
+      Cv.DNN.Net.enableWinograd(model, false)
       detections = Cv.DNN.Net.forward(model, outBlobNames: out_names)
       end_time = :os.system_time(:millisecond)
       IO.puts("Inference time=>#{end_time - start_time} ms")
