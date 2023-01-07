@@ -43,7 +43,7 @@ concurrency:
 
 jobs:
   mix_test:
-    runs-on: macos-11
+    runs-on: macos-12
     env:
       OPENCV_VER: "4.7.0"
       MIX_ENV: "test"
@@ -126,10 +126,18 @@ jobs:
 
       - name: Mix Test
         run: |
-          ulimit -c unlimited
-          /usr/libexec/PlistBuddy -c "Add :com.apple.security.get-task-allow bool true" tmp.entitlements
-          sudo touch /cores/test
-          export ERL_BASE="$(dirname $(dirname $(which erl)))"
-          export BEAM_SMP="$(find "${ERL_BASE}" -name beam.smp)"
-          codesign -s - -f --entitlements tmp.entitlements "${BEAM_SMP}"
-          find ./test -name '*_test.exs' -exec bash -c "echo {} && ulimit -c unlimited && sudo mix test --include require_downloading --include require_ffmpeg {}" \;
+          # ulimit -c unlimited
+          # /usr/libexec/PlistBuddy -c "Add :com.apple.security.get-task-allow bool true" tmp.entitlements
+          # sudo touch /cores/test
+          # export ERL_BASE="$(dirname $(dirname $(which erl)))"
+          # export BEAM_SMP="$(find "${ERL_BASE}" -name beam.smp)"
+          # codesign -s - -f --entitlements tmp.entitlements "${BEAM_SMP}"
+          find ./test -name '*_test.exs' -exec bash -c "echo {} && mix test --include require_downloading --include require_ffmpeg {}" \;
+      
+      - name: Mix Test with winograd
+        run: |
+          export ENABLE_WINOGRAD=yes
+          mix test --include require_downloading --include require_ffmpeg test/dnn_detection_model_test.exs || true
+          mix test --include require_downloading --include require_ffmpeg test/dnn_detection_test.exs || true
+          mix test --include require_downloading --include require_ffmpeg test/dnn_text_detection_model_db_test.exs || true
+          mix test --include require_downloading --include require_ffmpeg test/dnn_text_detection_model_east_test.exs || true

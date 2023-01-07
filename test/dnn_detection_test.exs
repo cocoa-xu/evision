@@ -1,7 +1,6 @@
 defmodule Evision.DNN.Test do
   use ExUnit.Case
   import ExUnit.CaptureIO
-  alias Evision, as: Cv
 
   @moduletag timeout: 600_000
 
@@ -19,31 +18,31 @@ defmodule Evision.DNN.Test do
       confidence = "#{Float.round(confidence, 2)}"
       label = Enum.at(labels, class_id)
       text = "#{label}: #{confidence}"
-      mat = Cv.rectangle(mat, {l, t}, {r, b}, {255, 0, 0})
+      mat = Evision.rectangle(mat, {l, t}, {r, b}, {255, 0, 0})
 
       {{label_weight, label_height}, baseline} =
-        Cv.getTextSize(text, Cv.cv_FONT_HERSHEY_SIMPLEX(), 0.5, 1)
+        Evision.getTextSize(text, Evision.cv_FONT_HERSHEY_SIMPLEX(), 0.5, 1)
 
       label_weight = trunc(label_weight)
       label_height = trunc(label_height)
       top = max(t, label_height)
 
       mat =
-        Cv.rectangle(mat, {l, top - label_height}, {l + label_weight, top + baseline}, {
+        Evision.rectangle(mat, {l, top - label_height}, {l + label_weight, top + baseline}, {
           255,
           255,
           255
         })
 
-      mat = Cv.putText(mat, text, {l, top}, Cv.cv_FONT_HERSHEY_SIMPLEX(), 0.5, {0, 0, 255})
+      mat = Evision.putText(mat, text, {l, top}, Evision.cv_FONT_HERSHEY_SIMPLEX(), 0.5, {0, 0, 255})
 
       _visualise_pred(mat, labels, outs)
     end
 
     def postprocess(mat, detections, net, confidence_threshold) do
-      out_layers = Cv.DNN.Net.getUnconnectedOutLayers(net)
-      out_layer = Cv.DNN.Net.getLayer(net, Enum.at(out_layers, 0))
-      out_layer_type = Cv.DNN.Layer.get_type(out_layer) |> IO.iodata_to_binary()
+      out_layers = Evision.DNN.Net.getUnconnectedOutLayers(net)
+      out_layer = Evision.DNN.Net.getLayer(net, Enum.at(out_layers, 0))
+      out_layer_type = Evision.DNN.Layer.get_type(out_layer) |> IO.iodata_to_binary()
       _postprocess(mat, detections, net, confidence_threshold, out_layer_type, [])
     end
 
@@ -58,7 +57,7 @@ defmodule Evision.DNN.Test do
            <<"DetectionOutput">>,
            acc
          ) do
-      data = Cv.Mat.to_binary(outs)
+      data = Evision.Mat.to_binary(outs)
       {:ok, translated_outs} = _translate_outs(confidence_threshold, data, h, w, [])
 
       _postprocess(mat, detections, net, confidence_threshold, "DetectionOutput", [
@@ -107,14 +106,18 @@ defmodule Evision.DNN.Test do
     end
 
     def predict(image_file, model, out_names, opts \\ []) do
-      mat = Cv.imread(image_file)
-      blob = Cv.DNN.blobFromImage(mat, opts)
+      mat = Evision.imread(image_file)
+      blob = Evision.DNN.blobFromImage(mat, opts)
 
-      model = Cv.DNN.Net.setInput(model, blob, name: "", scalefactor: 1.0, mean: {0, 0, 0})
+      model = Evision.DNN.Net.setInput(model, blob, name: "", scalefactor: 1.0, mean: {0, 0, 0})
+
+      enable_winograd = System.get_env("ENABLE_WINOGRAD", "no")
+      if enable_winograd == "no" do
+        Evision.DNN.Net.enableWinograd(model, false)
+      end
 
       start_time = :os.system_time(:millisecond)
-      Cv.DNN.Net.enableWinograd(model, false)
-      detections = Cv.DNN.Net.forward(model, outBlobNames: out_names)
+      detections = Evision.DNN.Net.forward(model, outBlobNames: out_names)
       end_time = :os.system_time(:millisecond)
       IO.puts("Inference time=>#{end_time - start_time} ms")
       {:ok, mat, detections}
@@ -122,12 +125,12 @@ defmodule Evision.DNN.Test do
 
     def get_model(params, config, framework \\ "") do
       net =
-        Cv.DNN.readNet(params,
+        Evision.DNN.readNet(params,
           config: config,
           framework: framework
         )
 
-      out_names = Cv.DNN.Net.getUnconnectedOutLayersNames(net)
+      out_names = Evision.DNN.Net.getUnconnectedOutLayersNames(net)
       {:ok, net, out_names}
     end
   end
@@ -139,7 +142,7 @@ defmodule Evision.DNN.Test do
       model_config =
         Path.join([__DIR__, "testdata", "models", "ssd_mobilenet_v2_coco_2018_03_29.pbtxt"])
 
-      Cv.TestHelper.download!(@download_file_1, model_config)
+      Evision.TestHelper.download!(@download_file_1, model_config)
       model_class_list = Path.join([__DIR__, "testdata", "models", "coco_names.txt"])
 
       File.mkdir_p!(
@@ -160,7 +163,7 @@ defmodule Evision.DNN.Test do
 
       test_setup =
         if not File.exists?(model_graph_pb) do
-          Cv.TestHelper.download!(@download_file_2, model_tar)
+          Evision.TestHelper.download!(@download_file_2, model_tar)
 
           model_tar
           |> File.read!()

@@ -23,7 +23,10 @@ defmodule Evision.DNN.TextDetectionModelEAST.Test do
 
     # disable Winograd, OpenCV 4.7.0
     # https://github.com/opencv/opencv/issues/23080
-    Evision.DNN.Net.enableWinograd(net, false)
+    enable_winograd = System.get_env("ENABLE_WINOGRAD", "no")
+    if enable_winograd == "no" do
+      Evision.DNN.Net.enableWinograd(net, false)
+    end
 
     model =
       TextDetectionModelEAST.textDetectionModelEAST(net)
