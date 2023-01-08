@@ -355,6 +355,7 @@ class FuncInfo(object):
 
             if len(v.py_outlist) == 0:
                 code_ret = "return evision::nif::atom(env, \"ok\")"
+
                 if not v.isphantom and ismethod and not self.is_static:
                     module_name = get_elixir_module_name(selfinfo.cname)
                     code_ret = "bool success;\n" \
