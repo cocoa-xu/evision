@@ -1,10 +1,11 @@
 # Changelog
 
-## v0.1.26 (2023-01-03)
+## v0.1.26 (main)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.26) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.26)
 
 ### Fixed
 - [Evision.Mat] fixed `Evision.Mat.update_roi/3`.
+- [py_src] fix incorrect typespecs.
 
 ## v0.1.25 (2022-12-18)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.25) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.25)
