@@ -45,7 +45,7 @@ jobs:
   mix_test:
     runs-on: macos-12
     env:
-      OPENCV_VER: "4.7.0"
+      OPENCV_VER: "4.6.0"
       MIX_ENV: "test"
       EVISION_PREFER_PRECOMPILED: "false"
       CMAKE_BUILD_TYPE: "Debug"
