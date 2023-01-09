@@ -34,7 +34,34 @@ def patch_fix_getLayerShapes(opencv_version: str, opencv_src_root: str):
         dst.write(fixed.getvalue())
 
 
-patches = [patch_fix_getLayerShapes]
+def patch_winograd(opencv_version: str, opencv_src_root: str):
+    if opencv_version not in ['4.7.0']:
+        print(f"warning: skipped applying `patch_winograd` to opencv version `{opencv_version}`")
+        return
+
+    # modules/dnn/src/layers/fast_convolution/fast_convolution.cpp
+    fast_convolution_cpp = Path(opencv_src_root) / 'modules' / 'dnn' / 'src' / 'layers' / 'fast_convolution' / 'fast_convolution.cpp'
+    fixed = StringIO()
+    patched_1 = False
+    with open(fast_convolution_cpp, 'r') as source:
+        for line in source:
+            if not patched_1 and line.strip() == 'Mat weightsMat = _weightsMat.getMat();':
+                fixed.write("""#if CV_TRY_AVX2
+    // Disabel Winograd when CV_TRY_AVX2 is true, but conv->useAVX2 is false.
+    if (conv->conv_type == _FX_CONV_TYPE_WINOGRAD3X3 && !conv->useAVX2)
+        conv->conv_type = _FX_CONV_TYPE_GENERIC;
+#endif
+
+    Mat weightsMat = _weightsMat.getMat();\n""")
+                patched_1 = True
+            else:
+                fixed.write(line)
+
+    with open(fast_convolution_cpp, 'w') as dst:
+        dst.truncate(0)
+        dst.write(fixed.getvalue())
+
+patches = [patch_fix_getLayerShapes, patch_winograd]
 
 
 if __name__ == '__main__':
@@ -44,6 +71,6 @@ if __name__ == '__main__':
         sys.exit(1)
     cv_src_root = sys.argv[1]
     cv_version = sys.argv[2]
-    print(cv_version, cv_src_root)
+    print(f"[+] applying patches to OpenCV {cv_version} at {cv_src_root}")
     for p in patches:
         p(cv_version, cv_src_root)
