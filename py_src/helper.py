@@ -374,6 +374,7 @@ def is_int_type(argtype):
         'InterpolationFlags',
         'AccessFlag',
         'WaveCorrectKind',
+        'VideoCaptureAPIs',
         'flann_distance_t',
         'cvflann_flann_algorithm_t',
         'cvflann::flann_algorithm_t',
@@ -399,7 +400,6 @@ def is_list_type(argtype):
         'ImageFeatures',
         'MatchesInfo',
         'CameraParams',
-        'VideoCaptureAPIs',
         'MatShape'
     ]
     if argtype[:7] == 'vector_' or argtype[len('std::vector<'):] == 'std::vector<':
@@ -1109,7 +1109,7 @@ manual_type_spec_map = {
     'CameraParams': 'Evision.Detail.CameraParams.t()',
     'MatShape': 'list(integer())',
     'KeyPoint': 'Evision.KeyPoint.t()',
-    'VideoCaptureAPIs': 'list(number())',
+    'VideoCaptureAPIs': 'number()',
     'ParamGrid': 'Evision.ML.ParamGrid.t()',
     'Layer': 'Evision.DNN.Layer.t()'
 }
