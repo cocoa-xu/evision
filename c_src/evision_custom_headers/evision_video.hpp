@@ -2,5 +2,9 @@
 typedef TrackerMIL::Params TrackerMIL_Params;
 typedef TrackerGOTURN::Params TrackerGOTURN_Params;
 typedef TrackerDaSiamRPN::Params TrackerDaSiamRPN_Params;
+
+#if (CV_VERSION_MAJOR >= 4 && CV_VERSION_MINOR >= 7)
 typedef TrackerNano::Params TrackerNano_Params;
+#endif
+
 #endif
