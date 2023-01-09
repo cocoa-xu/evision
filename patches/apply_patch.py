@@ -52,7 +52,7 @@ def patch_winograd(opencv_version: str, opencv_src_root: str):
         conv->conv_type = _FX_CONV_TYPE_GENERIC;
 #endif
 
-    Mat weightsMat = _weightsMat.getMat();\n""")
+    Mat weightsMat = _weightsMat.getMat(); // patched\n""")
                 patched_1 = True
             else:
                 fixed.write(line)
