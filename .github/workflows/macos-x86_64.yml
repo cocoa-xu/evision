@@ -48,8 +48,6 @@ jobs:
       OPENCV_VER: "4.7.0"
       MIX_ENV: "test"
       EVISION_PREFER_PRECOMPILED: "false"
-      CMAKE_BUILD_TYPE: "Debug"
-      TARGET_GCC_FLAGS: "-g3 -fno-omit-frame-pointer"
     steps:
       - uses: actions/checkout@v3
 
