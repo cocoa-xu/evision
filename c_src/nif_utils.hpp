@@ -9,28 +9,38 @@ namespace evision
 {
   namespace nif
   {
+    ERL_NIF_TERM atom(ErlNifEnv *env, const char *msg)
+    {
+      ERL_NIF_TERM a;
+      if (enif_make_existing_atom(env, msg, &a, ERL_NIF_LATIN1)) {
+        return a;
+      } else {
+        return enif_make_atom(env, msg);
+      }
+    }
+
     // Status helpers
 
     // Helper for returning `{:error, msg}` from NIF.
     ERL_NIF_TERM error(ErlNifEnv *env, const char *msg)
     {
-      ERL_NIF_TERM atom = enif_make_atom(env, "error");
+      ERL_NIF_TERM atom_error = atom(env, "error");
       ERL_NIF_TERM reason;
       unsigned char * ptr;
       size_t len = strlen(msg);
       if ((ptr = enif_make_new_binary(env, len, &reason)) != nullptr) {
           strcpy((char *)ptr, msg);
-          return enif_make_tuple2(env, atom, reason);
+          return enif_make_tuple2(env, atom_error, reason);
       } else {
           ERL_NIF_TERM msg_term = enif_make_string(env, msg, ERL_NIF_LATIN1);
-          return enif_make_tuple2(env, atom, msg_term);
+          return enif_make_tuple2(env, atom_error, msg_term);
       }
     }
 
     // Helper for returning `{:ok, term}` from NIF.
     ERL_NIF_TERM ok(ErlNifEnv *env)
     {
-      return enif_make_atom(env, "ok");
+      return atom(env, "ok");
     }
 
     // Helper for returning `:ok` from NIF.
@@ -98,9 +108,9 @@ namespace evision
     ERL_NIF_TERM make(ErlNifEnv *env, bool var)
     {
       if (var)
-        return enif_make_atom(env, "true");
+        return atom(env, "true");
 
-      return enif_make_atom(env, "false");
+      return atom(env, "false");
     }
 
     ERL_NIF_TERM make(ErlNifEnv *env, long var)
@@ -246,11 +256,6 @@ namespace evision
       var.resize(atom_length);
 
       return 1;
-    }
-
-    ERL_NIF_TERM atom(ErlNifEnv *env, const char *msg)
-    {
-      return enif_make_atom(env, msg);
     }
 
     // Check if :nil
