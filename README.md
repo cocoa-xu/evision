@@ -1,8 +1,6 @@
-**If you found the precompiled binaries do not suit your needs (e.g., perhaps you need OpenCV to be compiled with FFmpeg to handle more video formats), it's possible to override the behaviour by setting the environment variable `EVISION_PREFER_PRECOMPILED` to `false`, and then please delete `_build/${MIX_ENV}/lib/evision` and recompile evision**
+<h1><img src="https://github.com/cocoa-xu/evision/raw/main/logo.png" alt="Logo" width="128"></h1>
 
-**Also, for Linux users only, the precompiled binary is not compiled with GTK support, therefore functions like `Evision.HighGui.imshow/2` will not work. However, you can either use `Evision.Wx.imshow/2` (if Erlang on your system is compiled with `wxWidgets`), or set the environment variable `EVISION_PREFER_PRECOMPILED` to `false` so that OpenCV can detect available HighGui backend when compiling from source.**
-
-# evision 
+# evision
 
 [![Hex.pm](https://img.shields.io/hexpm/v/evision.svg?style=flat&color=blue)](https://hex.pm/packages/evision)
 
