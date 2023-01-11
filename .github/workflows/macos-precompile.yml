@@ -75,18 +75,29 @@ jobs:
             ./c_src/headers.txt
             ./c_src/configuration.private.hpp
 
-      - name: Compile OpenCV
-        if: steps.cache-mix-compile_opencv.outputs.cache-hit != 'true'
+      - name: Compile OpenCV (without contrib modules)
         run: |
+          export EVISION_ENABLE_CONTRIB=false
           export CMAKE_OPENCV_OPTIONS="-D WITH_FFMPEG=OFF"
           if [ "${{ matrix.pair.arch }}" = "arm64" ]; then
             export CMAKE_OPENCV_OPTIONS="${CMAKE_OPENCV_OPTIONS} -D WITH_IPP=OFF -D CMAKE_OSX_ARCHITECTURES=arm64"
             export CMAKE_EVISION_OPTIONS="-D CMAKE_OSX_ARCHITECTURES=arm64"
           fi
+
+          if [ -e "./_build/${{ env.MIX_ENV }}/lib/evision/cmake_opencv_${OPENCV_VER}_core" ];
+            if [ -e "./_build/${{ env.MIX_ENV }}/lib/evision/cmake_opencv_${OPENCV_VER}" ];
+              mv "./_build/${{ env.MIX_ENV }}/lib/evision/cmake_opencv_${OPENCV_VER}" "./_build/${{ env.MIX_ENV }}/lib/evision/cmake_opencv_${OPENCV_VER}_contrib"
+            fi
+            mv "./_build/${{ env.MIX_ENV }}/lib/evision/cmake_opencv_${OPENCV_VER}_core" "./_build/${{ env.MIX_ENV }}/lib/evision/cmake_opencv_${OPENCV_VER}" 
+          else
+            rm -rf "./_build/${{ env.MIX_ENV }}/lib/evision/cmake_opencv_${OPENCV_VER}"
+          fi
+
           mix compile_opencv
 
-      - name: Mix compile
+      - name: Mix compile (without contrib modules)
         run: |
+          export EVISION_ENABLE_CONTRIB=false
           export CMAKE_OPENCV_OPTIONS="-D WITH_FFMPEG=OFF"
           if [ "${{ matrix.pair.arch }}" = "arm64" ]; then
             export CMAKE_OPENCV_OPTIONS="${CMAKE_OPENCV_OPTIONS} -D WITH_IPP=OFF -D CMAKE_OSX_ARCHITECTURES=arm64"
@@ -101,9 +112,57 @@ jobs:
 
           mix compile
 
-      - name: Create precompiled library
+      - name: Create precompiled library (without contrib modules)
         run: |
           export PKG_NAME=evision-nif_${NIF_VERSION}-${{ matrix.pair.arch_name }}-apple-darwin-${GITHUB_REF##*/v}
+          mkdir -p "${PKG_NAME}"
+          cp -a _build/${MIX_ENV}/lib/evision/priv "${PKG_NAME}"
+          cp -a lib/generated "${PKG_NAME}/elixir_generated"
+          cp -a src/generated "${PKG_NAME}/erlang_generated"
+          tar -czf "${PKG_NAME}.tar.gz" "${PKG_NAME}"
+          rm -rf "${PKG_NAME}"
+          ls -lah "${PKG_NAME}.tar.gz"
+          mkdir -p artifacts
+          mv "${PKG_NAME}.tar.gz" artifacts
+      
+      - name: Compile OpenCV (with contrib modules)
+        run: |
+          export EVISION_ENABLE_CONTRIB=true
+          export CMAKE_OPENCV_OPTIONS="-D WITH_FFMPEG=OFF"
+          if [ "${{ matrix.pair.arch }}" = "arm64" ]; then
+            export CMAKE_OPENCV_OPTIONS="${CMAKE_OPENCV_OPTIONS} -D WITH_IPP=OFF -D CMAKE_OSX_ARCHITECTURES=arm64"
+            export CMAKE_EVISION_OPTIONS="-D CMAKE_OSX_ARCHITECTURES=arm64"
+          fi
+
+          if [ -e "./_build/${{ env.MIX_ENV }}/lib/evision/cmake_opencv_${OPENCV_VER}"" ];
+            mv "./_build/${{ env.MIX_ENV }}/lib/evision/cmake_opencv_${OPENCV_VER}" "./_build/${{ env.MIX_ENV }}/lib/evision/cmake_opencv_${OPENCV_VER}_core"
+          fi
+          if [ -e "./_build/${{ env.MIX_ENV }}/lib/evision/cmake_opencv_${OPENCV_VER}_contrib" ];
+            mv "./_build/${{ env.MIX_ENV }}/lib/evision/cmake_opencv_${OPENCV_VER}_contrib" "./_build/${{ env.MIX_ENV }}/lib/evision/cmake_opencv_${OPENCV_VER}"
+          fi
+
+          mix compile_opencv
+
+      - name: Mix compile (with contrib modules)
+        run: |
+          export EVISION_ENABLE_CONTRIB=true
+          export CMAKE_OPENCV_OPTIONS="-D WITH_FFMPEG=OFF"
+          if [ "${{ matrix.pair.arch }}" = "arm64" ]; then
+            export CMAKE_OPENCV_OPTIONS="${CMAKE_OPENCV_OPTIONS} -D WITH_IPP=OFF -D CMAKE_OSX_ARCHITECTURES=arm64"
+            export CMAKE_EVISION_OPTIONS="-D CMAKE_OSX_ARCHITECTURES=arm64"
+          fi
+          rm -f _build/${{ env.MIX_ENV }}/lib/evision/priv/evision.so
+
+          mkdir -p lib/generated
+          mkdir -p src/generated
+          python3 py_src/gen2.py c_src lib/generated src/generated c_src/headers.txt "${EVISION_GENERATE_LANG}"
+          cat c_src/headers-contrib.txt
+
+          mix compile
+
+      - name: Create precompiled library (without contrib modules)
+        run: |
+          export PKG_NAME=evision-nif_${NIF_VERSION}-${{ matrix.pair.arch_name }}-apple-darwin-contrib-${GITHUB_REF##*/v}
           mkdir -p "${PKG_NAME}"
           cp -a _build/${MIX_ENV}/lib/evision/priv "${PKG_NAME}"
           cp -a lib/generated "${PKG_NAME}/elixir_generated"

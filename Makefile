@@ -65,15 +65,20 @@ ifdef TARGET_GCC_FLAGS
     CMAKE_OPTIONS += -DCMAKE_CXX_FLAGS="$(TARGET_GCC_FLAGS)" -DCMAKE_C_FLAGS="$(TARGET_GCC_FLAGS)"
 endif
 
-ENABLE_CV_CONTRIB ?= true
-ifeq ($(ENABLE_CV_CONTRIB),true)
+EVISION_ENABLE_CONTRIB ?= true
+ifeq ($(EVISION_ENABLE_CONTRIB),true)
 	CMAKE_OPTIONS += -DOPENCV_EXTRA_MODULES_PATH="$(OPENCV_CONTRIB_DIR)/modules" -D BUILD_opencv_hdf=OFF -D BUILD_opencv_freetype=OFF
+	C_SRC_HEADERS_TXT = "$(C_SRC)/headers-contrib.txt"
+	HEADERS_TXT = $(CMAKE_OPENCV_BUILD_DIR)/modules/python_bindings_generator/headers-contrib.txt
+else
+	C_SRC_HEADERS_TXT = "$(C_SRC)/headers.txt"
+	HEADERS_TXT = $(CMAKE_OPENCV_BUILD_DIR)/modules/python_bindings_generator/headers.txt
 endif
 
 ENABLED_CV_MODULES ?= ""
 
 # evision
-HEADERS_TXT = $(CMAKE_OPENCV_BUILD_DIR)/modules/python_bindings_generator/headers.txt
+OPENCV_HEADERS_TXT = $(CMAKE_OPENCV_BUILD_DIR)/modules/python_bindings_generator/headers.txt
 CONFIGURATION_PRIVATE_HPP = $(C_SRC)/configuration.private.hpp
 GENERATED_ELIXIR_SRC_DIR = $(LIB_SRC)/generated
 GENERATED_ERLANG_SRC_DIR = $(SRC)/generated
@@ -99,7 +104,7 @@ build: $(EVISION_SO)
 
 download_opencv_contrib:
 	@ if [ "$(EVISION_PREFER_PRECOMPILED)" != "true" ]; then \
-		if [ "$(ENABLE_CV_CONTRIB)" = "true" ]; then \
+		if [ "$(EVISION_ENABLE_CONTRIB)" = "true" ]; then \
 			if [ ! -e "$(OPENCV_CONTRIB_DIR)/modules" ]; then \
 				if [ "$(OPENCV_CONTRIB_USE_GIT_HEAD)" = "false" ]; then \
 					echo "using opencv_contrib $(OPENCV_CONTRIB_VER)" ; \
@@ -159,13 +164,16 @@ $(HEADERS_TXT): $(CONFIGURATION_PRIVATE_HPP)
 			make "$(MAKE_BUILD_FLAGS)" ; \
 			cd "$(CMAKE_OPENCV_BUILD_DIR)" && make install; \
 		fi && \
-		cp "$(HEADERS_TXT)" "$(C_SRC)/headers.txt" ; \
+		cp "$(OPENCV_HEADERS_TXT)" "$(HEADERS_TXT)" ; \
 	fi
 
-opencv: $(HEADERS_TXT)
+$(C_SRC_HEADERS_TXT): $(HEADERS_TXT)
+	@ cp "$(HEADERS_TXT)" "$(C_SRC_HEADERS_TXT)"
+
+opencv: $(C_SRC_HEADERS_TXT)
 	@echo > /dev/null
 
-$(EVISION_SO): opencv
+$(EVISION_SO): $(C_SRC_HEADERS_TXT)
 	@ mkdir -p "$(EVISION_PRECOMPILED_CACHE_DIR)"
 	@ mkdir -p "$(PRIV_DIR)"
 	@ mkdir -p "$(GENERATED_ELIXIR_SRC_DIR)"
@@ -192,6 +200,7 @@ $(EVISION_SO): opencv
 			-D ERTS_INCLUDE_DIR="$(ERTS_INCLUDE_DIR)" \
 			-D ENABLED_CV_MODULES=$(ENABLED_CV_MODULES) \
 			-D EVISION_GENERATE_LANG="$(EVISION_GENERATE_LANG)" \
+			-D EVISION_ENABLE_CONTRIB="$(EVISION_ENABLE_CONTRIB)" \
 			$(CMAKE_CONFIGURE_FLAGS) $(CMAKE_EVISION_OPTIONS) "$(shell pwd)" && \
 			make "$(MAKE_BUILD_FLAGS)" \
 			|| { echo "\033[0;31mincomplete build of OpenCV found in '$(CMAKE_OPENCV_BUILD_DIR)', please delete that directory and retry\033[0m" && exit 1 ; } ; } \
@@ -203,5 +212,6 @@ $(EVISION_SO): opencv
 clean_dev:
 	@echo "rm -rf src/generated"
 	@echo "rm -rf lib/generated"
-	@echo "rm -f c_src/headers.txt"
+	@echo "rm -f $(C_SRC)/headers.txt"
+	@echo "rm -f $(C_SRC)/headers-contrib.txt"
 	@echo "rm -rf _build/dev/lib/evision"

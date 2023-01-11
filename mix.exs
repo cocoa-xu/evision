@@ -37,12 +37,16 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
   ]
 
   def available_nif_urls(nif_version, version \\ Metadata.version()) do
-    Enum.map(@available_targets, fn target -> get_download_url(target, version, nif_version) end)
+    Enum.reduce(@available_targets, [], fn target, acc ->
+      no_contrib = get_download_url(target, version, nif_version, false)
+      with_contrib = get_download_url(target, version, nif_version, true)
+      [no_contrib, with_contrib] ++ acc
+    end)
   end
 
-  def current_target_nif_url(nif_version, version \\ Metadata.version()) do
+  def current_target_nif_url(nif_version, enable_contrib, version \\ Metadata.version()) do
     {target, _} = get_target()
-    get_download_url(target, version, nif_version)
+    get_download_url(target, version, nif_version, enable_contrib)
   end
 
   def checksum_file(app \\ Mix.Project.config()[:app]) when is_atom(app) do
@@ -374,12 +378,16 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
     end
   end
 
-  def filename(target, version, nif_version, with_ext \\ "") do
+  def filename(target, version, nif_version, enable_contrib, with_ext \\ "")
+  def filename(target, version, nif_version, _enable_contrib=false, with_ext) do
     "evision-nif_#{nif_version}-#{target}-#{version}#{with_ext}"
   end
+  def filename(target, version, nif_version, _enable_contrib=true, with_ext) do
+    "evision-nif_#{nif_version}-#{target}-contrib-#{version}#{with_ext}"
+  end
 
-  def get_download_url(target, version, nif_version) do
-    tar_file = filename(target, version, nif_version, ".tar.gz")
+  def get_download_url(target, version, nif_version, enable_contrib) do
+    tar_file = filename(target, version, nif_version, enable_contrib, ".tar.gz")
     "#{Metadata.github_url()}/releases/download/v#{version}/#{tar_file}"
   end
 
@@ -416,8 +424,8 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
     Path.join([build_path, "lib", "#{app}", "priv"])
   end
 
-  def prepare(target, os, version, nif_version) do
-    name = filename(target, version, nif_version)
+  def prepare(target, os, version, nif_version, enable_contrib) do
+    name = filename(target, version, nif_version, enable_contrib)
     filename = filename(target, version, nif_version, ".tar.gz")
     cache_dir = cache_dir()
     cache_file = Path.join([cache_dir, filename])
@@ -491,7 +499,7 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
           end
 
         if needs_download do
-          download_url = get_download_url(target, version, nif_version)
+          download_url = get_download_url(target, version, nif_version, enable_contrib)
 
           {:ok, _} = Application.ensure_all_started(:inets)
           {:ok, _} = Application.ensure_all_started(:ssl)
@@ -627,7 +635,8 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
       with {:precompiled, _} <- deploy_type(true) do
         version = Metadata.version()
         nif_version = get_nif_version()
-        prepare(target, os, version, nif_version)
+        enable_contrib = System.get_env("EVISION_ENABLE_CONTRIB", "true") == "true"
+        prepare(target, os, version, nif_version, enable_contrib)
       else
         _ ->
           raise RuntimeError, "Cannot use precompiled binaries."
@@ -787,7 +796,7 @@ defmodule Evision.MixProject do
   @module_configuration %{
     # opencv/opencv_contrib
     opencv: [
-      # module name: enabled by default?
+      # module name: is_enabled
       calib3d: true,
       core: true,
       dnn: true,
@@ -884,7 +893,8 @@ defmodule Evision.MixProject do
 
   defp generate_cmake_options() do
     mc = module_configuration()
-    enable_opencv_contrib = false
+    enable_contrib = System.get_env("EVISION_ENABLE_CONTRIB", "true")
+    enable_opencv_contrib = enable_contrib == "true"
     all_modules = Enum.map(mc.opencv, fn {m, _} -> m end) ++ Enum.map(mc.opencv_contrib, fn {m, _} -> m end)
     enabled_modules = Enum.filter(mc.opencv, fn {_, e} -> e end)
       ++ (if enable_opencv_contrib do Enum.filter(mc.opencv_contrib, fn {_, e} -> e end) else [] end)

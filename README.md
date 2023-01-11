@@ -37,7 +37,9 @@ In the nerves build, `evision` is integrated as one of the dependencies of the [
 project. This means that you can use livebook (as well as other pre-pulled libraries) to explore and evaluate the `evision`
 project. 
 
-The default password of the livebook is `nerves` (as the time of writing, if it does not work, please check the nerves_livebook project). 
+The default password of the livebook is `nerves` (as the time of writing, if it does not work, please check the nerves_livebook project).
+
+For Nerves users only, please also check the [EVISION_ENABLE_CONTRIB](https://github.com/cocoa-xu/evision#evision_enable_contrib) section for important messages.
 
 ## Register Builtin Smart Cells
 ```elixir
@@ -280,6 +282,21 @@ Mix.install([
   {"EVISION_PREFER_PRECOMPILED", "false"}
 ])
 ```
+
+#### EVISION_ENABLE_CONTRIB
+Set environment variable `EVISION_ENABLE_CONTRIB` to `true` to enable modules from [opencv_contrib](https://github.com/opencv/opencv_contrib).
+
+```bash
+# enable opencv_contrib modules (default)
+export EVISION_ENABLE_CONTRIB=true
+
+# disable opencv_contrib modules
+export EVISION_ENABLE_CONTRIB=false
+```
+
+Defaults to `true` because for precompiled binaries, including these "extra" modules only increases less than 20 MBs (tested on `aarch64-apple-darwin`) in size.
+
+However, 20 MBs for Nerves users can be a huge deal (still depending on your device, for example, +20 MBs is often much more acceptable for RPIs as they are usually equipped with >= 8 GB microSD cards while being absolutely a luxury thing for some other embedded devices).
 
 #### EVISION_PRECOMPILED_CACHE_DIR
 ```shell

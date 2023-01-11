@@ -51,7 +51,7 @@ ENABLED_CV_MODULES = ""
 !ENDIF
 
 # evision
-HEADERS_TXT = $(CMAKE_OPENCV_BUILD_DIR)\modules\python_bindings_generator\headers.txt
+OPENCV_HEADERS_TXT = $(CMAKE_OPENCV_BUILD_DIR)\modules\python_bindings_generator\headers.txt
 CONFIGURATION_PRIVATE_HPP = $(C_SRC)\configuration.private.hpp
 GENERATED_ELIXIR_SRC_DIR = $(LIB_SRC)\generated
 GENERATED_ERLANG_SRC_DIR = $(SRC)\generated
@@ -82,6 +82,14 @@ CMAKE_GENERATOR_TYPE=NMake Makefiles
 CMAKE_BUILD_TYPE=Release
 !ENDIF
 
+!IF "$(EVISION_ENABLE_CONTRIB)" == "true"
+C_SRC_HEADER_TXT="$(C_SRC)/headers-contrib.txt"
+HEADERS_TXT = $(CMAKE_OPENCV_BUILD_DIR)\modules\python_bindings_generator\headers-contrib.txt
+!ELSE
+C_SRC_HEADER_TXT="$(C_SRC)/headers.txt"
+HEADERS_TXT = $(CMAKE_OPENCV_BUILD_DIR)\modules\python_bindings_generator\headers.txt
+!ENDIF
+
 !IFDEF MSBUILD_PLATFORM
 CMAKE_BUILD_PARAMETER= --config "$(CMAKE_BUILD_TYPE)" -- /p:Platform=$(MSBUILD_PLATFORM)
 !ELSE
@@ -91,7 +99,7 @@ CMAKE_BUILD_PARAMETER= --config "$(CMAKE_BUILD_TYPE)"
 build: $(EVISION_SO)
 
 download_opencv_contrib:
-!IF "$(ENABLE_CV_CONTRIB)" == "true"
+!IF "$(EVISION_ENABLE_CONTRIB)" == "true"
 	@ powershell scripts/download_opencv_contrib.ps1 "$(OPENCV_VER)" "$(OPENCV_CACHE_DIR)" "$(OPENCV_ROOT_DIR)"
 !ENDIF
 
@@ -126,12 +134,17 @@ $(HEADERS_TXT): $(CONFIGURATION_PRIVATE_HPP)
 		$(CMAKE_WIN_FINAL_OPTIONS) "$(OPENCV_DIR)" && \
 		cmake --build . $(CMAKE_BUILD_PARAMETER) && \
 		cd "$(CMAKE_OPENCV_BUILD_DIR)" && cmake --install . --config "$(CMAKE_BUILD_TYPE)" && \
-	copy "$(HEADERS_TXT)" "$(C_SRC)/headers.txt" && \
 	cd "$(CMAKE_OPENCV_BUILD_DIR)\bin" && \
+	@ copy "$(OPENCV_HEADERS_TXT)" "$(HEADERS_TXT)" && \
 	powershell -command "Get-ChildItem *.dll -Recurse | Copy-Item -Destination \"$(PRIV_DIR)\""
 !ENDIF
 
-opencv: $(HEADERS_TXT)
+$(C_SRC_HEADER_TXT): $(HEADERS_TXT)
+	@ echo "Copying $(HEADERS_TXT)..."
+	@ copy "$(HEADERS_TXT)" "$(C_SRC_HEADER_TXT)"
+
+opencv: $(C_SRC_HEADER_TXT)
+	@ echo "Compiling OpenCV..."
 
 $(EVISION_SO): opencv
 	@ if not exist "$(PRIV_DIR)" mkdir "$(PRIV_DIR)"
@@ -152,6 +165,7 @@ $(EVISION_SO): opencv
 		  -D ERTS_INCLUDE_DIR="$(ERTS_INCLUDE_DIR)" \
 		  -D ENABLED_CV_MODULES=$(ENABLED_CV_MODULES) \
 		  -D EVISION_GENERATE_LANG="$(EVISION_GENERATE_LANG)" \
+		  -D EVISION_ENABLE_CONTRIB="$(EVISION_ENABLE_CONTRIB)" \
 		  $(CMAKE_CONFIGURE_FLAGS) "$(MAKEDIR)" && \
 		cmake --build . $(CMAKE_BUILD_PARAMETER)
 !IF "$(EVISION_PREFER_PRECOMPILED)" != "true"
