@@ -84,8 +84,8 @@ jobs:
           export PATH="${PATH}:${HOME}/.elixir/elixir-${ELIXIR_VERSION}/bin"
           export EVISION_ENABLE_CONTRIB=false
 
-          if [ -e "./_build/${{ env.MIX_ENV }}/lib/evision/cmake_opencv_${OPENCV_VER}_core" ];
-            if [ -e "./_build/${{ env.MIX_ENV }}/lib/evision/cmake_opencv_${OPENCV_VER}" ];
+          if [ -e "./_build/${{ env.MIX_ENV }}/lib/evision/cmake_opencv_${OPENCV_VER}_core" ]; then
+            if [ -e "./_build/${{ env.MIX_ENV }}/lib/evision/cmake_opencv_${OPENCV_VER}" ]; then
               mv "./_build/${{ env.MIX_ENV }}/lib/evision/cmake_opencv_${OPENCV_VER}" "./_build/${{ env.MIX_ENV }}/lib/evision/cmake_opencv_${OPENCV_VER}_contrib"
             fi
             mv "./_build/${{ env.MIX_ENV }}/lib/evision/cmake_opencv_${OPENCV_VER}_core" "./_build/${{ env.MIX_ENV }}/lib/evision/cmake_opencv_${OPENCV_VER}" 
@@ -126,10 +126,10 @@ jobs:
           export PATH="${PATH}:${HOME}/.elixir/elixir-${ELIXIR_VERSION}/bin"
           export EVISION_ENABLE_CONTRIB=true
 
-          if [ -e "./_build/${{ env.MIX_ENV }}/lib/evision/cmake_opencv_${OPENCV_VER}"" ];
+          if [ -e "./_build/${{ env.MIX_ENV }}/lib/evision/cmake_opencv_${OPENCV_VER}"" ]; then
             mv "./_build/${{ env.MIX_ENV }}/lib/evision/cmake_opencv_${OPENCV_VER}" "./_build/${{ env.MIX_ENV }}/lib/evision/cmake_opencv_${OPENCV_VER}_core"
           fi
-          if [ -e "./_build/${{ env.MIX_ENV }}/lib/evision/cmake_opencv_${OPENCV_VER}_contrib" ];
+          if [ -e "./_build/${{ env.MIX_ENV }}/lib/evision/cmake_opencv_${OPENCV_VER}_contrib" ]; then
             mv "./_build/${{ env.MIX_ENV }}/lib/evision/cmake_opencv_${OPENCV_VER}_contrib" "./_build/${{ env.MIX_ENV }}/lib/evision/cmake_opencv_${OPENCV_VER}"
           fi
 
@@ -244,8 +244,8 @@ jobs:
           export ZIG_TOOLCHAIN_PATH="$(which zig)"
           export EVISION_ENABLE_CONTRIB=false
 
-          if [ -e "./_build/${{ env.MIX_ENV }}/lib/evision/cmake_opencv_${OPENCV_VER}_core" ];
-            if [ -e "./_build/${{ env.MIX_ENV }}/lib/evision/cmake_opencv_${OPENCV_VER}" ];
+          if [ -e "./_build/${{ env.MIX_ENV }}/lib/evision/cmake_opencv_${OPENCV_VER}_core" ]; then
+            if [ -e "./_build/${{ env.MIX_ENV }}/lib/evision/cmake_opencv_${OPENCV_VER}" ]; then
               mv "./_build/${{ env.MIX_ENV }}/lib/evision/cmake_opencv_${OPENCV_VER}" "./_build/${{ env.MIX_ENV }}/lib/evision/cmake_opencv_${OPENCV_VER}_contrib"
             fi
             mv "./_build/${{ env.MIX_ENV }}/lib/evision/cmake_opencv_${OPENCV_VER}_core" "./_build/${{ env.MIX_ENV }}/lib/evision/cmake_opencv_${OPENCV_VER}" 
@@ -289,10 +289,10 @@ jobs:
           export ZIG_TOOLCHAIN_PATH="$(which zig)"
           export EVISION_ENABLE_CONTRIB=true
 
-          if [ -e "./_build/${{ env.MIX_ENV }}/lib/evision/cmake_opencv_${OPENCV_VER}"" ];
+          if [ -e "./_build/${{ env.MIX_ENV }}/lib/evision/cmake_opencv_${OPENCV_VER}"" ]; then
             mv "./_build/${{ env.MIX_ENV }}/lib/evision/cmake_opencv_${OPENCV_VER}" "./_build/${{ env.MIX_ENV }}/lib/evision/cmake_opencv_${OPENCV_VER}_core"
           fi
-          if [ -e "./_build/${{ env.MIX_ENV }}/lib/evision/cmake_opencv_${OPENCV_VER}_contrib" ];
+          if [ -e "./_build/${{ env.MIX_ENV }}/lib/evision/cmake_opencv_${OPENCV_VER}_contrib" ]; then
             mv "./_build/${{ env.MIX_ENV }}/lib/evision/cmake_opencv_${OPENCV_VER}_contrib" "./_build/${{ env.MIX_ENV }}/lib/evision/cmake_opencv_${OPENCV_VER}"
           fi
 

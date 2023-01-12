@@ -84,8 +84,8 @@ jobs:
             export CMAKE_EVISION_OPTIONS="-D CMAKE_OSX_ARCHITECTURES=arm64"
           fi
 
-          if [ -e "./_build/${{ env.MIX_ENV }}/lib/evision/cmake_opencv_${OPENCV_VER}_core" ];
-            if [ -e "./_build/${{ env.MIX_ENV }}/lib/evision/cmake_opencv_${OPENCV_VER}" ];
+          if [ -e "./_build/${{ env.MIX_ENV }}/lib/evision/cmake_opencv_${OPENCV_VER}_core" ]; then
+            if [ -e "./_build/${{ env.MIX_ENV }}/lib/evision/cmake_opencv_${OPENCV_VER}" ]; then
               mv "./_build/${{ env.MIX_ENV }}/lib/evision/cmake_opencv_${OPENCV_VER}" "./_build/${{ env.MIX_ENV }}/lib/evision/cmake_opencv_${OPENCV_VER}_contrib"
             fi
             mv "./_build/${{ env.MIX_ENV }}/lib/evision/cmake_opencv_${OPENCV_VER}_core" "./_build/${{ env.MIX_ENV }}/lib/evision/cmake_opencv_${OPENCV_VER}" 
@@ -132,10 +132,10 @@ jobs:
             export CMAKE_EVISION_OPTIONS="-D CMAKE_OSX_ARCHITECTURES=arm64"
           fi
 
-          if [ -e "./_build/${{ env.MIX_ENV }}/lib/evision/cmake_opencv_${OPENCV_VER}"" ];
+          if [ -e "./_build/${{ env.MIX_ENV }}/lib/evision/cmake_opencv_${OPENCV_VER}"" ]; then
             mv "./_build/${{ env.MIX_ENV }}/lib/evision/cmake_opencv_${OPENCV_VER}" "./_build/${{ env.MIX_ENV }}/lib/evision/cmake_opencv_${OPENCV_VER}_core"
           fi
-          if [ -e "./_build/${{ env.MIX_ENV }}/lib/evision/cmake_opencv_${OPENCV_VER}_contrib" ];
+          if [ -e "./_build/${{ env.MIX_ENV }}/lib/evision/cmake_opencv_${OPENCV_VER}_contrib" ]; then
             mv "./_build/${{ env.MIX_ENV }}/lib/evision/cmake_opencv_${OPENCV_VER}_contrib" "./_build/${{ env.MIX_ENV }}/lib/evision/cmake_opencv_${OPENCV_VER}"
           fi
 
