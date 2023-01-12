@@ -122,12 +122,12 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const TYPE& src)                      
         evision_res<STORAGE> * VAR;                                                                   \
         VAR = (decltype(VAR))enif_alloc_resource(evision_res<STORAGE>::type,                          \
                                 sizeof(evision_res<STORAGE>));                                        \
-        if (!VAR) return evision::nif::error(env, "no memory");                                       \
+        if (!VAR) return evision::nif::error(env, "out of memory");                                   \
         new (&(VAR->val)) STORAGE(r);                                                                 \
         ERL_NIF_TERM ret = enif_make_resource(env, VAR);                                              \
         enif_release_resource(VAR);                                                                   \
         bool success;                                                                                 \
-        ERL_NIF_TERM map = evision_from_as_map(env, r, ret, #MODULE_NAME, success);                   \
+        ERL_NIF_TERM map = evision_from_as_map(env, r, ret, "Elixir.Evision." #MODULE_NAME, success); \
         return map;                                                                                   \
     }                                                                                                 \
     static void destruct_##NAME(ErlNifEnv *env, void *args)                                           \

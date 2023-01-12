@@ -89,7 +89,7 @@ jobs:
         id: cache-mix-compile_opencv
         uses: actions/cache@v3
         with:
-          key: compile-with-ffmpeg-opencv-macos-12-noopt-${{ runner.os }}-${{ env.OPENCV_VER }}-x86_64-apple-darwin-${{ hashFiles('Makefile') }}-${{ hashFiles('py_src/*.py') }}
+          key: compiled-with-ffmpeg-opencv-${{ env.OPENCV_VER }}-x86_64-apple-darwin-${{ hashFiles('Makefile') }}-${{ hashFiles('py_src/*.py') }}
           path: |
             ./_build/${{ env.MIX_ENV }}/lib/evision
             ./c_src/headers.txt
@@ -129,14 +129,3 @@ jobs:
           # export BEAM_SMP="$(find "${ERL_BASE}" -name beam.smp)"
           # codesign -s - -f --entitlements tmp.entitlements "${BEAM_SMP}"
           find ./test -name '*_test.exs' -exec bash -c "echo {} && mix test --include require_downloading --include require_ffmpeg {}" \;
-      
-      - name: Mix Test with winograd
-        run: |
-          export ENABLE_WINOGRAD=yes
-          mix test --include require_downloading --include require_ffmpeg test/dnn_detection_model_test.exs || true
-          mix test --include require_downloading --include require_ffmpeg test/dnn_detection_test.exs || true
-          mix test --include require_downloading --include require_ffmpeg test/dnn_text_detection_model_db_test.exs || true
-          mix test --include require_downloading --include require_ffmpeg test/dnn_text_detection_model_east_test.exs || true
-      
-      # - name: Setup tmate session
-      #   uses: mxschmitt/action-tmate@v3

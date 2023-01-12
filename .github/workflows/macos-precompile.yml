@@ -69,7 +69,7 @@ jobs:
         id: cache-mix-compile_opencv
         uses: actions/cache@v3
         with:
-          key: precompile-opencv-${{ env.OPENCV_VER }}-${{ matrix.pair.arch }}-apple-darwin-${{ hashFiles('Makefile') }}-${{ hashFiles('py_src/*.py') }}
+          key: precompiled-opencv-${{ env.OPENCV_VER }}-${{ matrix.pair.arch }}-apple-darwin-${{ hashFiles('Makefile') }}-${{ hashFiles('py_src/*.py') }}
           path: |
             ./_build/${{ env.MIX_ENV }}/lib/evision
             ./c_src/headers.txt
