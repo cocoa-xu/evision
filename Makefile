@@ -170,7 +170,9 @@ $(HEADERS_TXT): $(CONFIGURATION_PRIVATE_HPP)
 	fi
 
 $(C_SRC_HEADERS_TXT): $(HEADERS_TXT)
-	cp -f "$(HEADERS_TXT)" "$(C_SRC_HEADERS_TXT)"
+	@ if [ "$(EVISION_PREFER_PRECOMPILED)" != "true" ]; then \
+		cp -f "$(HEADERS_TXT)" "$(C_SRC_HEADERS_TXT)" ; \
+	fi
 
 opencv: $(C_SRC_HEADERS_TXT)
 	@echo > /dev/null
