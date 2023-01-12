@@ -164,7 +164,9 @@ $(HEADERS_TXT): $(CONFIGURATION_PRIVATE_HPP)
 			make "$(MAKE_BUILD_FLAGS)" ; \
 			cd "$(CMAKE_OPENCV_BUILD_DIR)" && make install; \
 		fi && \
-		cp -f "$(OPENCV_HEADERS_TXT)" "$(HEADERS_TXT)" ; \
+		if [ "$(OPENCV_HEADERS_TXT)" != "$(HEADERS_TXT)" ]; then \
+			cp -f "$(OPENCV_HEADERS_TXT)" "$(HEADERS_TXT)" ; \
+		fi \
 	fi
 
 $(C_SRC_HEADERS_TXT): $(HEADERS_TXT)
