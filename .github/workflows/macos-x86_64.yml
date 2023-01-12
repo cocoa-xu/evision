@@ -109,7 +109,6 @@ jobs:
 
           mkdir -p lib/generated
           mkdir -p src/generated
-          cat c_src/headers.txt
           python3 py_src/gen2.py c_src lib/generated src/generated c_src/headers.txt elixir
 
           mix compile
