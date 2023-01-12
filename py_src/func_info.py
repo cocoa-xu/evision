@@ -359,7 +359,7 @@ class FuncInfo(object):
                 if not v.isphantom and ismethod and not self.is_static:
                     module_name = get_elixir_module_name(selfinfo.cname)
                     code_ret = "bool success;\n" \
-                        f"            return evision_from_as_map(env, _self_, self, \"{module_name}\", success)"
+                        f"            return evision_from_as_map(env, _self_, self, \"Elixir.Evision.{module_name}\", success)"
             elif len(v.py_outlist) == 1:
                 if self.isconstructor:
                     selftype = selfinfo.cname
@@ -385,14 +385,14 @@ class FuncInfo(object):
                                 elixir_module_name = get_elixir_module_name(selfinfo.cname)
                                 code_ret = f"""return evision_from(env, {aname});"""
             # bool success;
-            # return evision_from_as_map<decltype({aname})>(env, {aname}, retval_term, "{elixir_module_name}", success)"""
+            # return evision_from_as_map<decltype({aname})>(env, {aname}, retval_term, "Elixir.Evision.{elixir_module_name}", success)"""
             #                     elixir_module_name = get_elixir_module_name(selfinfo.cname)
             #                     selftype = selfinfo.cname
             #                     # if not selfinfo.issimple:
             #                     #    selftype = "Ptr<{}>".format(selfinfo.cname)
             #                     code_ret = f"""bool success;
             # ERL_NIF_TERM retval_term = evision_from(env, {aname});
-            # return evision_from_as_map<{selftype}>(env, {aname}, retval_term, "{elixir_module_name}", success)"""
+            # return evision_from_as_map<{selftype}>(env, {aname}, retval_term, "Elixir.Evision.{elixir_module_name}", success)"""
                             else:
                                 code_ret = f"return evision_from(env, {aname})"
             else:

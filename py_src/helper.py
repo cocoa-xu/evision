@@ -544,7 +544,7 @@ def get_elixir_module_name(cname, double_quote_if_has_dot=False):
             module_name = module_name_classname[0]
             if module_name in module_name_map:
                 mapped_module_name = module_name_map[module_name]
-                cname = "cv::" + mapped_module_name + cname[len(module_name):]
+                cname = "cv::" + mapped_module_name + cname[4+len(module_name):]
     # elif cname.startswith("cv::") and 'a' <= cname[4] <= 'z':
     #     print("warning cname=", cname)
 

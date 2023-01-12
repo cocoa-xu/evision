@@ -270,10 +270,10 @@ code_ret_ge_10_tuple = """ERL_NIF_TERM arr[] = {%s};
 code_ret_constructor = """ERL_NIF_TERM ret = enif_make_resource(env, self);
             enif_release_resource(self);
             bool success;
-            return evision_from_as_map<%s>(env, self->val, ret, "%s", success);"""
+            return evision_from_as_map<%s>(env, self->val, ret, "Elixir.Evision.%s", success);"""
 
 code_ret_dnn_setter = Template("""bool success;
-            return evision_from_as_map<${storage_name} *>(env, _self_, self, "${elixir_module_name}", success)""")
+            return evision_from_as_map<${storage_name} *>(env, _self_, self, "Elixir.Evision.${elixir_module_name}", success)""")
 
 elixir_property_getter = Template("""  @spec get_${property_name}(${self_spec}) :: ${prop_spec}
   def get_${property_name}(self) do
@@ -493,7 +493,7 @@ static ERL_NIF_TERM evision_${name}_set_${member}(ErlNifEnv *env, int argc, cons
 
     if (evision_to_safe(env, argv[1], self_ptr->${member}, ArgInfo("${member}", false))) {
         bool success;
-        return evision_from_as_map<${storage_name}>(env, *self_ptr, self, "${elixir_module_name}", success);
+        return evision_from_as_map<${storage_name}>(env, *self_ptr, self, "Elixir.Evision.${elixir_module_name}", success);
     }
 
     return failmsgp(env, "cannot assign new value, mismatched type?");
@@ -517,7 +517,7 @@ static ERL_NIF_TERM evision_${name}_set_${member}(ErlNifEnv *env, int argc, cons
 
     if (evision_to_safe(env, evision_get_kw(env, erl_terms, "${member}"), _self_${access}${member}, ArgInfo("${member}", false))) {
         bool success;
-        return evision_from_as_map<${storage_name}>(env, _self_, self, "${elixir_module_name}", success);
+        return evision_from_as_map<${storage_name}>(env, _self_, self, "Elixir.Evision.${elixir_module_name}", success);
     }
 
     return failmsgp(env, "cannot assign new value, mismatched type?");
@@ -540,7 +540,7 @@ static ERL_NIF_TERM evision_${name}_set_${member}(ErlNifEnv *env, int argc, cons
 
     if (evision_to_safe(env, argv[1], _self_algo_${access}${member}, ArgInfo("${member}", false))) {
         bool success;
-        return evision_from_as_map<${storage_name}>(env, *self_ptr, self, "${elixir_module_name}", success);
+        return evision_from_as_map<${storage_name}>(env, *self_ptr, self, "Elixir.Evision.${elixir_module_name}", success);
     }
 
     return failmsgp(env, "cannot assign new value, mismatched type?");

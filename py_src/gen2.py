@@ -377,10 +377,8 @@ class BeamWrapperGenerator(object):
 
             if elixir_module_name not in evision_structrised_classes:
                 mapped_elixir_module_name = get_elixir_module_name(elixir_module_name)
-                atom_elixir_module_name = mapped_elixir_module_name
+                atom_elixir_module_name = f"Evision.{mapped_elixir_module_name}"
                 atom_erlang_module_name = elixir_module_name
-                if '.' in atom_elixir_module_name:
-                    atom_elixir_module_name = f'"{atom_elixir_module_name}"'
                 module_file_generator.write_elixir(
                     ES.generic_struct_template_elixir.substitute(
                         atom_elixir_module_name=atom_elixir_module_name,
@@ -392,7 +390,7 @@ class BeamWrapperGenerator(object):
                     atom_erlang_module_name = f"evision_{atom_erlang_module_name}"
                 module_file_generator.write_erlang(
                     ES.generic_struct_template_erlang.substitute(
-                        atom_elixir_module_name=mapped_elixir_module_name,
+                        atom_elixir_module_name=f"Elixir.{mapped_elixir_module_name}",
                         atom_erlang_module_name=atom_erlang_module_name
                     )
                 )

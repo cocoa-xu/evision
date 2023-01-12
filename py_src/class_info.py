@@ -204,7 +204,7 @@ class ClassInfo(object):
                         membertype=p.tp,
                         access=access_op,
                         storage_name=self.cname if self.issimple else "Ptr<{}>".format(self.cname),
-                        elixir_module_name=get_elixir_module_name(self.cname, double_quote_if_has_dot=True).replace('"', '\\"')
+                        elixir_module_name=get_elixir_module_name(self.cname)
                     ))
                 else:
                     if self.issimple:
@@ -215,7 +215,7 @@ class ClassInfo(object):
                             access=access_op,
                             cname=self.cname,
                             storage_name=self.cname,
-                            elixir_module_name=get_elixir_module_name(self.cname, double_quote_if_has_dot=True).replace('"', '\\"')
+                            elixir_module_name=get_elixir_module_name(self.cname)
                         ))
                     else:
                         getset_code.write(ET.gen_template_set_prop_cv_ptr.substitute(
@@ -225,7 +225,7 @@ class ClassInfo(object):
                             access=access_op,
                             cname=self.cname,
                             storage_name="Ptr<{}>".format(self.cname),
-                            elixir_module_name=get_elixir_module_name(self.cname, double_quote_if_has_dot=True).replace('"', '\\"')
+                            elixir_module_name=get_elixir_module_name(self.cname)
                         ))
                 getset_inits.write(ET.gen_template_rw_prop_init.substitute(
                     name=self.name, member=pname,

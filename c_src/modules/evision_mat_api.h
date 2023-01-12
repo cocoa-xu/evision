@@ -75,7 +75,7 @@ static ERL_NIF_TERM _evision_make_mat_resource_into_map(ErlNifEnv *env, const cv
     item_index++;
 
     keys[item_index] = evision::nif::atom(env, "class");
-    values[item_index] = evision::nif::atom(env, "Mat");
+    values[item_index] = evision::nif::atom(env, "Elixir.Evision.Mat");
     item_index++;
 
     ERL_NIF_TERM map;

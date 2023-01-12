@@ -46,7 +46,7 @@ videocapture_struct_elixir = '  @typedoc """\n' + \
   alias __MODULE__, as: T
 
   @doc false
-  def __to_struct__(cap = %{:class => :VideoCapture, :ref => ref}) do
+  def __to_struct__(cap = %{:class => Evision.VideoCapture, :ref => ref}) do
     %T{
       fps: cap.fps,
       frame_count: cap.frame_count,
@@ -57,7 +57,7 @@ videocapture_struct_elixir = '  @typedoc """\n' + \
     }
   end
 
-  def __to_struct__({:ok, cap = %{:class => :VideoCapture}}) do
+  def __to_struct__({:ok, cap = %{:class => Evision.VideoCapture}}) do
     {:ok, __to_struct__(cap)}
   end
 
@@ -77,7 +77,7 @@ videocapture_struct_erlang = """
 
 generic_struct_template_elixir = Template(
   '  @typedoc """\n'
-  '  Type that represents an `Evision.${elixir_module_name}` struct.\n\n'
+  '  Type that represents an `${elixir_module_name}` struct.\n\n'
   '  - **ref**. `reference()`\n\n'
   '    The underlying erlang resource variable.\n\n'
   '  """\n'
@@ -89,11 +89,11 @@ generic_struct_template_elixir = Template(
   alias __MODULE__, as: T
 
   @doc false
-  def __to_struct__({:ok, %{class: :${atom_elixir_module_name}, ref: ref}}) do
+  def __to_struct__({:ok, %{class: ${atom_elixir_module_name}, ref: ref}}) do
     {:ok, %T{ref: ref}}
   end
 
-  def __to_struct__(%{class: :${atom_elixir_module_name}, ref: ref}) do
+  def __to_struct__(%{class: ${atom_elixir_module_name}, ref: ref}) do
     %T{
       ref: ref
     }
