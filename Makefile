@@ -164,11 +164,11 @@ $(HEADERS_TXT): $(CONFIGURATION_PRIVATE_HPP)
 			make "$(MAKE_BUILD_FLAGS)" ; \
 			cd "$(CMAKE_OPENCV_BUILD_DIR)" && make install; \
 		fi && \
-		cp "$(OPENCV_HEADERS_TXT)" "$(HEADERS_TXT)" ; \
+		cp -f "$(OPENCV_HEADERS_TXT)" "$(HEADERS_TXT)" ; \
 	fi
 
 $(C_SRC_HEADERS_TXT): $(HEADERS_TXT)
-	cp "$(HEADERS_TXT)" "$(C_SRC_HEADERS_TXT)"
+	cp -f "$(HEADERS_TXT)" "$(C_SRC_HEADERS_TXT)"
 
 opencv: $(C_SRC_HEADERS_TXT)
 	@echo > /dev/null
