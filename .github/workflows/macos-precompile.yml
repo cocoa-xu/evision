@@ -105,10 +105,8 @@ jobs:
           fi
           rm -f _build/${{ env.MIX_ENV }}/lib/evision/priv/evision.so
 
-          mkdir -p lib/generated
-          mkdir -p src/generated
-          cat c_src/headers.txt
-          python3 py_src/gen2.py c_src lib/generated src/generated c_src/headers.txt "${EVISION_GENERATE_LANG}"
+          rm -rf lib/generated && rm -rf src/generated
+          mkdir -p lib/generated && mkdir -p src/generated
 
           mix compile
 
@@ -153,10 +151,8 @@ jobs:
           fi
           rm -f _build/${{ env.MIX_ENV }}/lib/evision/priv/evision.so
 
-          mkdir -p lib/generated
-          mkdir -p src/generated
-          python3 py_src/gen2.py c_src lib/generated src/generated c_src/headers.txt "${EVISION_GENERATE_LANG}"
-          cat c_src/headers-contrib.txt
+          rm -rf lib/generated && rm -rf src/generated
+          mkdir -p lib/generated && mkdir -p src/generated
 
           mix compile
 
