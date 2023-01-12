@@ -47,6 +47,11 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
   def current_target_nif_url(nif_version, version \\ Metadata.version()) do
     {target, _} = get_target()
     enable_contrib = System.get_env("EVISION_ENABLE_CONTRIB", "true") == "true"
+    if enable_contrib do
+      System.put_env("EVISION_ENABLE_CONTRIB", "true")
+    else
+      System.put_env("EVISION_ENABLE_CONTRIB", "false")
+    end
     get_download_url(target, version, nif_version, enable_contrib)
   end
 
@@ -894,8 +899,15 @@ defmodule Evision.MixProject do
 
   defp generate_cmake_options() do
     mc = module_configuration()
+
     enable_contrib = System.get_env("EVISION_ENABLE_CONTRIB", "true")
     enable_opencv_contrib = enable_contrib == "true"
+    if enable_opencv_contrib do
+      System.put_env("EVISION_ENABLE_CONTRIB", "true")
+    else
+      System.put_env("EVISION_ENABLE_CONTRIB", "false")
+    end
+
     all_modules = Enum.map(mc.opencv, fn {m, _} -> m end) ++ Enum.map(mc.opencv_contrib, fn {m, _} -> m end)
     enabled_modules = Enum.filter(mc.opencv, fn {_, e} -> e end)
       ++ (if enable_opencv_contrib do Enum.filter(mc.opencv_contrib, fn {_, e} -> e end) else [] end)
