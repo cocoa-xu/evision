@@ -132,7 +132,7 @@ jobs:
           rm -f Makefile
           rm -f _build/${{ env.MIX_ENV }}/lib/evision/priv/evision.dll
 
-          if [ -e "./_build/${{ env.MIX_ENV }}/lib/evision/cmake_opencv_${OPENCV_VER}"" ]; then
+          if [ -e "./_build/${{ env.MIX_ENV }}/lib/evision/cmake_opencv_${OPENCV_VER}" ]; then
             mv "./_build/${{ env.MIX_ENV }}/lib/evision/cmake_opencv_${OPENCV_VER}" "./_build/${{ env.MIX_ENV }}/lib/evision/cmake_opencv_${OPENCV_VER}_core"
           fi
           if [ -e "./_build/${{ env.MIX_ENV }}/lib/evision/cmake_opencv_${OPENCV_VER}_contrib" ]; then
