@@ -307,20 +307,20 @@ set_${property_name}(Self, Prop) ->
     '__to_struct__'(Ret).
 """)
 
-# template for `Evision.__enabled_modules__/0`
+# template for `Evision.enabled_modules/0`
 enabled_modules_code = Template("""
   @doc \"\"\"
   return a list of enabled modules in this build
   \"\"\"
-  def __enabled_modules__ do
-    [${enabled_modules}]
+  def enabled_modules do
+    :evision_nif.enabled_modules()
   end
 """)
 
 # template for `evision:enabled_modules/0`
 enabled_modules_code_erlang = Template("""
 enabled_modules() ->
-    [${enabled_modules}].
+    evision_nif:enabled_modules().
 """)
 
 gen_template_check_self = Template("""

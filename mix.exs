@@ -802,6 +802,9 @@ defmodule Evision.MixProject do
     # opencv/opencv_contrib
     opencv: [
       # module name: is_enabled
+      # note that these true values here only mean that we requested
+      # these module to be compiled
+      # some of them can be disabled due to dependency issues
       calib3d: true,
       core: true,
       dnn: true,

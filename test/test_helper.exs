@@ -62,7 +62,7 @@ defmodule Evision.TestHelper do
   end
 end
 
-compiled_modules = Evision.__enabled_modules__()
+compiled_modules = Evision.enabled_modules()
 
 ExUnit.configure(
   exclude: [
