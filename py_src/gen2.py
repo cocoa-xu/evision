@@ -482,7 +482,7 @@ class BeamWrapperGenerator(object):
             ]
         }
 
-        num_total_modules = sum([len(compoents) for s, compoents in all_modules.items()])
+        num_total_modules = sum([len(components) for s, components in all_modules.items()])
         self.code_funcs.write("static ERL_NIF_TERM evision_cv_enabled_modules(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]){\n")
         self.code_funcs.write(f"""    const size_t num_total_modules = {num_total_modules};
     size_t index = 0;
@@ -491,10 +491,10 @@ class BeamWrapperGenerator(object):
     ERL_NIF_TERM values[num_total_modules];
 """)
 
-        for _, compoents in all_modules.items():
-            for compoent in compoents:
-                self.code_funcs.write(f"""    keys[index] = evision::nif::atom(env, "{compoent}");
-#ifdef HAVE_OPENCV_{compoent.upper()}
+        for _, components in all_modules.items():
+            for component in components:
+                self.code_funcs.write(f"""    keys[index] = evision::nif::atom(env, "{component}");
+#ifdef HAVE_OPENCV_{component.upper()}
     values[index] = evision::nif::atom(env, "true");
 #else
     values[index] = evision::nif::atom(env, "false");
