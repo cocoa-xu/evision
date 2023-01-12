@@ -104,12 +104,8 @@ jobs:
         run: |
           rm -f _build/test/lib/evision/priv/evision.so
 
-          clang -v
-          sudo sysctl -a
-
-          mkdir -p lib/generated
-          mkdir -p src/generated
-          python3 py_src/gen2.py c_src lib/generated src/generated c_src/headers.txt elixir
+          rm -rf lib/generated && rm -rf src/generated
+          mkdir -p lib/generated && mkdir -p src/generated
 
           mix compile
 

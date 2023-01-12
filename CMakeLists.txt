@@ -28,6 +28,7 @@ find_package(OpenCV REQUIRED PATHS "${PRIV_DIR}/" NO_DEFAULT_PATH)
 include_directories("${OpenCV_INCLUDE_DIRS}")
 
 option(EVISION_ENABLE_CONTRIB "Enable OpenCV contrib modules" ON)
+message(STATUS "EVISION_ENABLE_CONTRIB=${EVISION_ENABLE_CONTRIB}")
 if(EVISION_ENABLE_CONTRIB)
     set(C_SRC_HEADERS_TXT "headers-contrib.txt")
 else()

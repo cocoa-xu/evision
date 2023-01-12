@@ -168,7 +168,7 @@ $(HEADERS_TXT): $(CONFIGURATION_PRIVATE_HPP)
 	fi
 
 $(C_SRC_HEADERS_TXT): $(HEADERS_TXT)
-	@ cp "$(HEADERS_TXT)" "$(C_SRC_HEADERS_TXT)"
+	cp "$(HEADERS_TXT)" "$(C_SRC_HEADERS_TXT)"
 
 opencv: $(C_SRC_HEADERS_TXT)
 	@echo > /dev/null
