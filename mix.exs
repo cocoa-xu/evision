@@ -2,7 +2,7 @@ defmodule Evision.MixProject.Metadata do
   @moduledoc false
 
   def app, do: :evision
-  def version, do: "0.1.26"
+  def version, do: "0.1.26-rc0"
   def github_url, do: "https://github.com/cocoa-xu/evision"
   def opencv_version, do: "4.7.0"
   # only means compatible. need to write more tests
@@ -432,7 +432,7 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
 
   def prepare(target, os, version, nif_version, enable_contrib) do
     name = filename(target, version, nif_version, enable_contrib)
-    filename = filename(target, version, nif_version, ".tar.gz")
+    filename = filename(target, version, nif_version, enable_contrib, ".tar.gz")
     cache_dir = cache_dir()
     cache_file = Path.join([cache_dir, filename])
     unarchive_dest_dir = Path.join([cache_dir, name])
@@ -569,8 +569,7 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
     end
 
     if File.exists?(generated_elixir_dir) do
-      # todo: is this async?
-      # File.rm_rf!(generated_elixir_dir)
+      File.rm_rf!(generated_elixir_dir)
     end
 
     Logger.info("Copying priv directory: #{cached_priv_dir} => #{app_priv}")
@@ -616,7 +615,7 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
     {:ok, %Version{pre: pre}} = Version.parse(Metadata.version())
     nif_version = get_nif_version()
 
-    if use_precompiled?(log?) and pre == [] and
+    if use_precompiled?(log?) and pre != ["dev"] and
          available_for_target?(target, log?) and available_for_nif_version?(nif_version, log?) do
       {:precompiled, abi}
     else
