@@ -144,7 +144,7 @@ $(HEADERS_TXT): $(CONFIGURATION_PRIVATE_HPP)
 
 $(C_SRC_HEADER_TXT): $(HEADERS_TXT)
 	@ echo "Copying $(HEADERS_TXT)..."
-	@ copy "$(HEADERS_TXT)" "$(C_SRC_HEADER_TXT)"
+	@ powershell -command Copy-Item "$(HEADERS_TXT)" -Destination "$(C_SRC_HEADER_TXT)"
 
 opencv: $(C_SRC_HEADER_TXT)
 	@ echo "Compiling OpenCV..."
