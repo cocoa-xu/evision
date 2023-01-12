@@ -44,8 +44,9 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
     end)
   end
 
-  def current_target_nif_url(nif_version, enable_contrib, version \\ Metadata.version()) do
+  def current_target_nif_url(nif_version, version \\ Metadata.version()) do
     {target, _} = get_target()
+    enable_contrib = System.get_env("EVISION_ENABLE_CONTRIB", "true") == "true"
     get_download_url(target, version, nif_version, enable_contrib)
   end
 
