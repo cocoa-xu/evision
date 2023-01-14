@@ -1,8 +1,6 @@
-**If you found the precompiled binaries do not suit your needs (e.g., perhaps you need OpenCV to be compiled with FFmpeg to handle more video formats), it's possible to override the behaviour by setting the environment variable `EVISION_PREFER_PRECOMPILED` to `false`, and then please delete `_build/${MIX_ENV}/lib/evision` and recompile evision**
+<h1><img src="https://github.com/cocoa-xu/evision/raw/main/logo.png" alt="Logo" width="128"></h1>
 
-**Also, for Linux users only, the precompiled binary is not compiled with GTK support, therefore functions like `Evision.HighGui.imshow/2` will not work. However, you can either use `Evision.Wx.imshow/2` (if Erlang on your system is compiled with `wxWidgets`), or set the environment variable `EVISION_PREFER_PRECOMPILED` to `false` so that OpenCV can detect available HighGui backend when compiling from source.**
-
-# evision 
+# evision
 
 [![Hex.pm](https://img.shields.io/hexpm/v/evision.svg?style=flat&color=blue)](https://hex.pm/packages/evision)
 
@@ -39,7 +37,9 @@ In the nerves build, `evision` is integrated as one of the dependencies of the [
 project. This means that you can use livebook (as well as other pre-pulled libraries) to explore and evaluate the `evision`
 project. 
 
-The default password of the livebook is `nerves` (as the time of writing, if it does not work, please check the nerves_livebook project). 
+The default password of the livebook is `nerves` (as the time of writing, if it does not work, please check the nerves_livebook project).
+
+For Nerves users only, please also check the [EVISION_ENABLE_CONTRIB](https://github.com/cocoa-xu/evision#evision_enable_contrib) section for important messages.
 
 ## Register Builtin Smart Cells
 ```elixir
@@ -206,7 +206,7 @@ Then you can add `evision` as dependency in your `mix.exs`.
 ```elixir
 def deps do
   [
-    {:evision, "~> 0.1.25"}
+    {:evision, "~> 0.1.26"}
   ]
 end
 ```
@@ -221,11 +221,11 @@ The following environment variables can be set based on your needs.
 (Note that precompiled binaries do not use FFmpeg. If you'd like to use FFmpeg, please compile from source (please see instructions in the next section) and set corresponding environment variables. We're considering this option at the moment.)
 
 #### Important notes
-It is recommended to use `:evision` from hex.pm. Currently "0.1.7" to "0.1.9", and "0.1.11" to "0.1.25" are available on hex.pm,
+It is recommended to use `:evision` from hex.pm.
 ```elixir
 def deps do
   [
-    {:evision, "~> 0.1.25"}
+    {:evision, "~> 0.1.26"}
   ]
 end
 ```
@@ -277,11 +277,26 @@ export EVISION_PREFER_PRECOMPILED=false
 For livebook users, 
 ```elixir
 Mix.install([
-  {:evision, "~> 0.1.25"}
+  {:evision, "~> 0.1.26"}
 ], system_env: [
   {"EVISION_PREFER_PRECOMPILED", "false"}
 ])
 ```
+
+#### EVISION_ENABLE_CONTRIB
+Set environment variable `EVISION_ENABLE_CONTRIB` to `true` to enable modules from [opencv_contrib](https://github.com/opencv/opencv_contrib).
+
+```bash
+# enable opencv_contrib modules (default)
+export EVISION_ENABLE_CONTRIB=true
+
+# disable opencv_contrib modules
+export EVISION_ENABLE_CONTRIB=false
+```
+
+Defaults to `true` because for precompiled binaries, including these "extra" modules only increases less than 20 MBs (tested on `aarch64-apple-darwin`) in size.
+
+However, 20 MBs for Nerves users can be a huge deal (still depending on your device, for example, +20 MBs is often much more acceptable for RPIs as they are usually equipped with >= 8 GB microSD cards while being absolutely a luxury thing for some other embedded devices).
 
 #### EVISION_PRECOMPILED_CACHE_DIR
 ```shell

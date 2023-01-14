@@ -55,39 +55,39 @@ static ERL_NIF_TERM _evision_make_mat_resource_into_map(ErlNifEnv *env, const cv
     ERL_NIF_TERM keys[num_items];
     ERL_NIF_TERM values[num_items];
 
-    keys[item_index] = enif_make_atom(env, "channels");
+    keys[item_index] = evision::nif::atom(env, "channels");
     values[item_index] = enif_make_int(env, m.channels());
     item_index++;
 
-    keys[item_index] = enif_make_atom(env, "dims");
+    keys[item_index] = evision::nif::atom(env, "dims");
     values[item_index] = enif_make_int(env, m.dims);
     item_index++;
 
-    keys[item_index] = enif_make_atom(env, "type");
+    keys[item_index] = evision::nif::atom(env, "type");
     values[item_index] = _evision_get_mat_type(env, m);
     item_index++;
 
-    keys[item_index] = enif_make_atom(env, "raw_type");
+    keys[item_index] = evision::nif::atom(env, "raw_type");
     values[item_index] = enif_make_int(env, m.type());
     item_index++;
 
-    keys[item_index] = enif_make_atom(env, "shape");
+    keys[item_index] = evision::nif::atom(env, "shape");
     values[item_index] = _evision_get_mat_shape(env, m);
     item_index++;
 
-    keys[item_index] = enif_make_atom(env, "ref");
+    keys[item_index] = evision::nif::atom(env, "ref");
     values[item_index] = res_term;
     item_index++;
 
-    keys[item_index] = enif_make_atom(env, "class");
-    values[item_index] = enif_make_atom(env, "Mat");
+    keys[item_index] = evision::nif::atom(env, "class");
+    values[item_index] = evision::nif::atom(env, "Elixir.Evision.Mat");
     item_index++;
 
     ERL_NIF_TERM map;
     if (enif_make_map_from_arrays(env, keys, values, item_index, &map)) {
         return map;
     } else {
-        return enif_make_atom(env, "error when making map from arrays");
+        return evision::nif::atom(env, "error when making map from arrays");
     }
 }
 

@@ -12,13 +12,19 @@ defmodule Evision.DNN.DetectionModel.Test do
     weights = Path.join([__DIR__, "testdata", "yolov4.weights"])
     config = Path.join([__DIR__, "testdata", "yolov4.cfg"])
     mat = Evision.imread(dog)
-    IO.puts("Read test image")
 
     Evision.TestHelper.download!(@download_file, weights)
 
-    model = DetectionModel.detectionModel(weights, config: config)
-    IO.puts("Loaded detection model from #{weights}")
+    net = Evision.DNN.readNet(weights, config: config, framework: "")
 
+    # disable Winograd, OpenCV 4.7.0
+    # https://github.com/opencv/opencv/issues/23080
+    enable_winograd = System.get_env("ENABLE_WINOGRAD", "no")
+    if enable_winograd == "no" do
+      Evision.DNN.Net.enableWinograd(net, false)
+    end
+
+    model = DetectionModel.detectionModel(net)
     model = DetectionModel.setInputParams(model,
       scale: 1.0,
       size: {416, 416},
@@ -26,7 +32,6 @@ defmodule Evision.DNN.DetectionModel.Test do
       swapRB: true,
       crop: false
     )
-    IO.puts("Set model input params")
 
     {classes, _, _} = DetectionModel.detect(model, mat)
 

@@ -270,10 +270,10 @@ code_ret_ge_10_tuple = """ERL_NIF_TERM arr[] = {%s};
 code_ret_constructor = """ERL_NIF_TERM ret = enif_make_resource(env, self);
             enif_release_resource(self);
             bool success;
-            return evision_from_as_map<%s>(env, self->val, ret, "%s", success);"""
+            return evision_from_as_map<%s>(env, self->val, ret, "Elixir.Evision.%s", success);"""
 
 code_ret_dnn_setter = Template("""bool success;
-            return evision_from_as_map<${storage_name} *>(env, _self_, self, "${elixir_module_name}", success)""")
+            return evision_from_as_map<${storage_name} *>(env, _self_, self, "Elixir.Evision.${elixir_module_name}", success)""")
 
 elixir_property_getter = Template("""  @spec get_${property_name}(${self_spec}) :: ${prop_spec}
   def get_${property_name}(self) do
@@ -307,20 +307,20 @@ set_${property_name}(Self, Prop) ->
     '__to_struct__'(Ret).
 """)
 
-# template for `Evision.__enabled_modules__/0`
+# template for `Evision.enabled_modules/0`
 enabled_modules_code = Template("""
   @doc \"\"\"
   return a list of enabled modules in this build
   \"\"\"
-  def __enabled_modules__ do
-    [${enabled_modules}]
+  def enabled_modules do
+    :evision_nif.enabled_modules()
   end
 """)
 
 # template for `evision:enabled_modules/0`
 enabled_modules_code_erlang = Template("""
 enabled_modules() ->
-    [${enabled_modules}].
+    evision_nif:enabled_modules().
 """)
 
 gen_template_check_self = Template("""
@@ -366,7 +366,7 @@ gen_template_parse_args = Template("if( $code_cvt )")
 gen_template_func_body = Template("""$code_decl
     $code_parse
     {
-        int error_flag = false;
+        error_flag = false;
         $code_from_ptr
         ${code_prelude}ERRWRAP2($code_fcall, env, error_flag, error_term);
         if (!error_flag) {
@@ -498,7 +498,7 @@ static ERL_NIF_TERM evision_${name}_set_${member}(ErlNifEnv *env, int argc, cons
 
     if (evision_to_safe(env, argv[1], self_ptr->${member}, ArgInfo("${member}", false))) {
         bool success;
-        return evision_from_as_map<${storage_name}>(env, *self_ptr, self, "${elixir_module_name}", success);
+        return evision_from_as_map<${storage_name}>(env, *self_ptr, self, "Elixir.Evision.${elixir_module_name}", success);
     }
 
     return failmsgp(env, "cannot assign new value, mismatched type?");
@@ -522,7 +522,7 @@ static ERL_NIF_TERM evision_${name}_set_${member}(ErlNifEnv *env, int argc, cons
 
     if (evision_to_safe(env, evision_get_kw(env, erl_terms, "${member}"), _self_${access}${member}, ArgInfo("${member}", false))) {
         bool success;
-        return evision_from_as_map<${storage_name}>(env, _self_, self, "${elixir_module_name}", success);
+        return evision_from_as_map<${storage_name}>(env, _self_, self, "Elixir.Evision.${elixir_module_name}", success);
     }
 
     return failmsgp(env, "cannot assign new value, mismatched type?");
@@ -545,7 +545,7 @@ static ERL_NIF_TERM evision_${name}_set_${member}(ErlNifEnv *env, int argc, cons
 
     if (evision_to_safe(env, argv[1], _self_algo_${access}${member}, ArgInfo("${member}", false))) {
         bool success;
-        return evision_from_as_map<${storage_name}>(env, *self_ptr, self, "${elixir_module_name}", success);
+        return evision_from_as_map<${storage_name}>(env, *self_ptr, self, "Elixir.Evision.${elixir_module_name}", success);
     }
 
     return failmsgp(env, "cannot assign new value, mismatched type?");

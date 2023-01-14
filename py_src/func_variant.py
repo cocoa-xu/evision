@@ -487,21 +487,22 @@ class FuncVariant(object):
         inline_doc = inline_docs.getvalue()[:-1]
         return inline_doc.rstrip()
 
-    def generate_spec(self, kind: str, module_func_name: str, is_instance_method: bool, include_opts: bool, in_args: list=None, out_args: list=None) -> str:
+    def generate_spec(self, kind: str, module_func_name: str, is_instance_method: bool, include_opts: bool, in_args: list=None, out_args: list=None, is_static: bool=False) -> str:
         if kind == 'elixir':
-            return self.generate_spec_elixir(module_func_name, is_instance_method, include_opts, in_args, out_args)
+            return self.generate_spec_elixir(module_func_name, is_instance_method, include_opts, in_args, out_args, is_static)
         elif kind == 'erlang':
-            return self.generate_spec_erlang(module_func_name, is_instance_method, include_opts, in_args, out_args)
+            return self.generate_spec_erlang(module_func_name, is_instance_method, include_opts, in_args, out_args, is_static)
         else:
             return ''
 
-    def generate_spec_elixir(self, module_func_name: str, is_instance_method: bool, include_opts: bool, in_args: list=None, out_args: list=None) -> str:
+    def generate_spec_elixir(self, module_func_name: str, is_instance_method: bool, include_opts: bool, in_args: list=None, out_args: list=None, is_static: bool=False) -> str:
         spec = StringIO()
+        ismethod = self.classname != "" and not self.isconstructor
 
         if out_args is None:
             out_args = self.py_outlist
             out_args_name = [o[0] for o in out_args]
-
+            
             if len(out_args_name) > 0 and (out_args_name[0] in ['retval', 'self']) and self.py_outlist[0][1] == -1:
                 if out_args_name[0] == 'retval':
                     out_args = [self.rettype]
@@ -536,14 +537,18 @@ class FuncVariant(object):
             in_args_spec.append('[{atom(), term()},...] | nil')
         if is_instance_method:
             self.spec_self = ''
+            tmp_name = self.classname
+            
             if len(self.classname) > 0:
-                tmp_name = self.classname
                 is_param = False
                 if tmp_name.endswith('_Param'):
                     tmp_name = tmp_name[:len('_Param')]
                     is_param = True
-                parts = tmp_name.split('_')
-                self.spec_self = parts[-1]
+                if tmp_name.startswith('ppf_match_3d'):
+                    self.spec_self = tmp_name[len('ppf_match_3d_'):]
+                else:
+                    parts = tmp_name.split('_', maxsplit=2)
+                    self.spec_self = parts[-1]
                 if is_param:
                     self.spec_self += '_Param'
                 if tmp_name == 'ml_ANN_MLP':
@@ -552,6 +557,8 @@ class FuncVariant(object):
                     self.spec_self = 'TextDetectionModel_DB'
                 elif tmp_name == 'dnn_TextDetectionModel_EAST':
                     self.spec_self = 'TextDetectionModel_EAST'
+                if len(out_args_name) == 0:
+                    out_args = [self.spec_self]
 
             if is_struct(self.spec_self, classname=self.classname):
                 _, struct_name = is_struct(self.spec_self, also_get='struct_name', classname=self.classname)
@@ -600,10 +607,9 @@ class FuncVariant(object):
         spec = spec.getvalue()
         return spec
 
-    def generate_spec_erlang(self, module_func_name: str, is_instance_method: bool, include_opts: bool, in_args: list=None, out_args: list=None) -> str:
+    def generate_spec_erlang(self, module_func_name: str, is_instance_method: bool, include_opts: bool, in_args: list=None, out_args: list=None, is_static: bool=False) -> str:
         spec = StringIO()
 
-        self.classname
         if out_args is None:
             out_args = self.py_outlist
             out_args_name = [o[0] for o in out_args]
@@ -639,14 +645,17 @@ class FuncVariant(object):
             in_args_spec.append('[{atom(), term()},...] | nil')
         if is_instance_method:
             self.spec_self = ''
+            tmp_name = self.classname
             if len(self.classname) > 0:
-                tmp_name = self.classname
                 is_param = False
                 if tmp_name.endswith('_Param'):
                     tmp_name = tmp_name[:len('_Param')]
                     is_param = True
-                parts = tmp_name.split('_')
-                self.spec_self = parts[-1]
+                if tmp_name.startswith('ppf_match_3d'):
+                    self.spec_self = tmp_name[len('ppf_match_3d_'):]
+                else:
+                    parts = tmp_name.split('_', maxsplit=2)
+                    self.spec_self = parts[-1]
                 if is_param:
                     self.spec_self += '_Param'
                 if tmp_name == 'ml_ANN_MLP':
@@ -655,6 +664,8 @@ class FuncVariant(object):
                     self.spec_self = 'TextDetectionModel_DB'
                 elif tmp_name == 'dnn_TextDetectionModel_EAST':
                     self.spec_self = 'TextDetectionModel_EAST'
+                if len(out_args_name) == 0:
+                    out_args = [self.spec_self]
 
             if is_struct(self.spec_self, classname=self.classname):
                 _, struct_name = is_struct(self.spec_self, also_get='struct_name', classname=self.classname)

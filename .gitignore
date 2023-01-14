@@ -13,6 +13,7 @@ erl_crash.dump
 /c_src/evision_custom_headers.h
 /c_src/configuration.private.hpp
 /c_src/headers.txt
+/c_src/headers-contrib.txt
 .DS_Store
 .vscode/
 .idea/

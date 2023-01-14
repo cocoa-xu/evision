@@ -376,14 +376,13 @@ class BeamWrapperGenerator(object):
                 module_file_generator.write_erlang("\n")
 
             if elixir_module_name not in evision_structrised_classes:
-                atom_elixir_module_name = elixir_module_name
+                mapped_elixir_module_name = get_elixir_module_name(elixir_module_name)
+                atom_elixir_module_name = f"Evision.{mapped_elixir_module_name}"
                 atom_erlang_module_name = elixir_module_name
-                if '.' in atom_elixir_module_name:
-                    atom_elixir_module_name = f'"{atom_elixir_module_name}"'
                 module_file_generator.write_elixir(
                     ES.generic_struct_template_elixir.substitute(
                         atom_elixir_module_name=atom_elixir_module_name,
-                        elixir_module_name=elixir_module_name
+                        elixir_module_name=mapped_elixir_module_name
                     )
                 )
                 atom_erlang_module_name = atom_erlang_module_name.replace("Evision.", "evision_").replace(".", "_").lower()
@@ -391,7 +390,7 @@ class BeamWrapperGenerator(object):
                     atom_erlang_module_name = f"evision_{atom_erlang_module_name}"
                 module_file_generator.write_erlang(
                     ES.generic_struct_template_erlang.substitute(
-                        atom_elixir_module_name=elixir_module_name,
+                        atom_elixir_module_name=f"Elixir.{mapped_elixir_module_name}",
                         atom_erlang_module_name=atom_erlang_module_name
                     )
                 )
@@ -403,6 +402,119 @@ class BeamWrapperGenerator(object):
             self.evision_modules[evision_module_filename] = module_file_generator
             return self.evision_modules[evision_module_filename], inner_ns
 
+    def gen_enabled_modules(self):
+        all_modules = {
+            # opencv/opencv_contrib
+            'opencv': [
+                'calib3d',
+                'core',
+                'dnn',
+                'features2d',
+                'flann',
+                'highgui',
+                'imgcodecs',
+                'imgproc',
+                'ml',
+                'photo',
+                'stitching',
+                'ts',
+                'video',
+                'videoio',
+
+                'gapi',
+                'world',
+                'python2',
+                'python3',
+                'java',
+            ],
+
+            'opencv_contrib': [
+                'aruco',
+                'barcode',
+                'bgsegm',
+                'bioinspired',
+                'dnn_superres',
+                'face',
+                'hfs',
+                'img_hash',
+                'line_descriptor',
+                'mcc',
+                'plot',
+                'quality',
+                'rapid',
+                'reg',
+                'rgbd',
+                'saliency',
+                'shape',
+                'stereo',
+                'structured_light',
+                'surface_matching',
+                'text',
+                'tracking',
+                'wechat_qrcode',
+                'xfeatures2d',
+                'ximgproc',
+                'xphoto',
+
+                # no bindings yet
+                'datasets',
+                'dnn_objdetect',
+                'dpm',
+                'optflow',
+                'sfm',
+                'videostab',
+                'xobjdetect',
+            ],
+
+            'cuda': [
+                'cudaarithm',
+                'cudabgsegm',
+                'cudacodec',
+                'cudafeatures2d',
+                'cudafilters',
+                'cudaimgproc',
+                'cudalegacy',
+                'cudaobjdetect',
+                'cudaoptflow',
+                'cudastereo',
+                'cudawarping',
+                'cudev',
+            ]
+        }
+
+        num_total_modules = sum([len(components) for s, components in all_modules.items()])
+        self.code_funcs.write("static ERL_NIF_TERM evision_cv_enabled_modules(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]){\n")
+        self.code_funcs.write(f"""    const size_t num_total_modules = {num_total_modules};
+    size_t index = 0;
+
+    ERL_NIF_TERM keys[num_total_modules];
+    ERL_NIF_TERM values[num_total_modules];
+""")
+
+        for _, components in all_modules.items():
+            for component in components:
+                self.code_funcs.write(f"""    keys[index] = evision::nif::atom(env, "{component}");
+#ifdef HAVE_OPENCV_{component.upper()}
+    values[index] = evision::nif::atom(env, "true");
+#else
+    values[index] = evision::nif::atom(env, "false");
+#endif
+    index++;
+""")
+
+        self.code_funcs.write("""    ERL_NIF_TERM map;
+    if (enif_make_map_from_arrays(env, keys, values, index, &map)) {
+        return map;
+    } else {
+        return evision::nif::error(env, "enif_make_map_from_arrays failed in evision_from_as_map");
+    }
+""")
+
+        self.code_funcs.write("}\n")
+        self.code_ns_reg.write(f'    F(enabled_modules, evision_cv_enabled_modules, 0),\n')
+        self.evision_nif.write(f'  def enabled_modules, do: :erlang.nif_error("enabled_modules not loaded")\n')
+        self.evision_nif_erlang.write(f'enabled_modules() ->\n    not_loaded(?LINE).\n')
+
     def gen(self, srcfiles, output_path, erl_output_path, erlang_output_path):
         self.output_path = output_path
         self.clear()
@@ -412,6 +524,7 @@ class BeamWrapperGenerator(object):
         self.evision_nif_erlang.write('-module(evision_nif).\n-compile(nowarn_export_all).\n-compile([export_all]).\n\n{}\n{}\n'.format(ET.gen_evision_nif_load_nif_erlang, ET.gen_cv_types_erlang))
 
         self.code_ns_reg.write('static ErlNifFunc nif_functions[] = {\n')
+        self.gen_enabled_modules()
 
         # step 1: scan the headers and build more descriptive maps of classes, consts, functions
         for hdr in srcfiles:

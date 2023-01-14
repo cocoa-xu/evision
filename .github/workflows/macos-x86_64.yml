@@ -43,12 +43,11 @@ concurrency:
 
 jobs:
   mix_test:
-    runs-on: macos-11
+    runs-on: macos-12
     env:
       OPENCV_VER: "4.7.0"
       MIX_ENV: "test"
       EVISION_PREFER_PRECOMPILED: "false"
-
     steps:
       - uses: actions/checkout@v3
 
@@ -90,7 +89,7 @@ jobs:
         id: cache-mix-compile_opencv
         uses: actions/cache@v3
         with:
-          key: compile-with-ffmpeg-opencv-${{ env.OPENCV_VER }}-x86_64-apple-darwin-${{ hashFiles('Makefile') }}-${{ hashFiles('py_src/*.py') }}
+          key: compiled-with-ffmpeg-opencv-${{ env.OPENCV_VER }}-x86_64-apple-darwin-${{ hashFiles('Makefile') }}-${{ hashFiles('py_src/*.py') }}
           path: |
             ./_build/${{ env.MIX_ENV }}/lib/evision
             ./c_src/headers.txt
@@ -105,10 +104,8 @@ jobs:
         run: |
           rm -f _build/test/lib/evision/priv/evision.so
 
-          mkdir -p lib/generated
-          mkdir -p src/generated
-          cat c_src/headers.txt
-          python3 py_src/gen2.py c_src lib/generated src/generated c_src/headers.txt elixir
+          rm -rf lib/generated && rm -rf src/generated
+          mkdir -p lib/generated && mkdir -p src/generated
 
           mix compile
 
@@ -125,9 +122,10 @@ jobs:
 
       - name: Mix Test
         run: |
-          find ./test -name '*_test.exs' -exec bash -c "echo {} && mix test --include require_downloading --include require_ffmpeg --exclude may_crash {}" \;
-
-      - uses: actions/upload-artifact@v3
-        with:
-          name: macos-dev-artifact
-          path: _build/test/lib/evision/priv/evision.so
+          # ulimit -c unlimited
+          # /usr/libexec/PlistBuddy -c "Add :com.apple.security.get-task-allow bool true" tmp.entitlements
+          # sudo touch /cores/test
+          # export ERL_BASE="$(dirname $(dirname $(which erl)))"
+          # export BEAM_SMP="$(find "${ERL_BASE}" -name beam.smp)"
+          # codesign -s - -f --entitlements tmp.entitlements "${BEAM_SMP}"
+          find ./test -name '*_test.exs' -exec bash -c "echo {} && mix test --include require_downloading --include require_ffmpeg {}" \;

@@ -133,7 +133,6 @@ jobs:
           export PATH="${PATH}:${HOME}/.elixir/elixir-${ELIXIR_VERSION}/bin"
           rm -f _build/${{ env.MIX_ENV }}/lib/evision/priv/evision.so
           ls -la ./c_src
-          cat ./c_src/headers.txt
           mix compile
           ls -la ./lib/generated
 
@@ -203,7 +202,7 @@ jobs:
         id: cache-mix-compile_opencv
         uses: actions/cache@v3
         with:
-          key: compile-opencv-${{ env.OPENCV_VER }}-x86_64-linux-gnu-${{ hashFiles('Makefile') }}-${{ hashFiles('py_src/*.py') }}
+          key: compiled-opencv-${{ env.OPENCV_VER }}-x86_64-linux-gnu-${{ hashFiles('Makefile') }}-${{ hashFiles('py_src/*.py') }}
           path: |
             ./_build/${{ env.MIX_ENV }}/lib/evision
             ./c_src/headers.txt
@@ -218,10 +217,8 @@ jobs:
         run: |
           rm -f _build/test/lib/evision/priv/evision.so
 
-          mkdir -p lib/generated
-          mkdir -p src/generated
-          cat c_src/headers.txt
-          python3 py_src/gen2.py c_src lib/generated src/generated c_src/headers.txt elixir
+          rm -rf lib/generated && rm -rf src/generated
+          mkdir -p lib/generated && mkdir -p src/generated
 
           mix compile
 

@@ -7,8 +7,11 @@ defmodule Evision.Internal.Structurise do
   def to_struct({:ok, ret}), do: to_struct_ok(ret)
 
   def to_struct(ret = %{:class => module_name}) when is_atom(module_name) do
-    module = Module.concat([Evision, Atom.to_string(module_name)])
-    module.__to_struct__(ret)
+    if Code.ensure_loaded?(module_name) do
+      module_name.__to_struct__(ret)
+    else
+      ret
+    end
   end
 
   def to_struct(tuple) when is_tuple(tuple) do

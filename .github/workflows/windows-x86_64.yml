@@ -96,7 +96,7 @@ jobs:
         id: cache-mix-compile
         uses: actions/cache@v3
         with:
-          key: compile-opencv-${{ env.OPENCV_VER }}-x86_64-windows-msvc-${{ hashFiles('Makefile.win') }}-${{ hashFiles('py_src/*.py') }}
+          key: compiled-opencv-${{ env.OPENCV_VER }}-x86_64-windows-msvc-${{ hashFiles('Makefile.win') }}-${{ hashFiles('py_src/*.py') }}
           path: |
             ./_build/${{ env.MIX_ENV }}/lib/evision
             ./c_src/headers.txt
@@ -115,13 +115,11 @@ jobs:
           rm -f Makefile
           rm -f "_build/${MIX_ENV}/lib/evision/priv/evision.dll"
 
-          mkdir -p lib/generated
-          mkdir -p src/generated
-          cat c_src/headers.txt
-          python3 py_src/gen2.py c_src lib/generated src/generated c_src/headers.txt elixir
+          rm -rf lib/generated && rm -rf src/generated
+          mkdir -p lib/generated && mkdir -p src/generated
 
           mix compile
-      
+
       - name: Compile once again but without optional deps
         run: mix compile --force --warnings-as-errors --no-optional-deps
 

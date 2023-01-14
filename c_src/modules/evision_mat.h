@@ -222,6 +222,34 @@ static ERL_NIF_TERM evision_cv_mat_roi(ErlNifEnv *env, int argc, const ERL_NIF_T
     else return enif_make_badarg(env);
 }
 
+/// `matrix` and `patch` should be contiguous.
+void mat_update_roi(cv::Mat& matrix, cv::Mat& patch, 
+    std::vector<cv::Range>& ranges, size_t elem_size,
+    size_t step_size, size_t from_step_size,
+    int dim_index, size_t base_offset, size_t from_offset)
+{
+    if (dim_index >= matrix.size.dims()) return;
+
+    step_size /= matrix.size.p[dim_index];
+    from_step_size /= patch.size.p[dim_index];
+
+    auto& range = ranges[dim_index];
+
+    if (step_size == elem_size) {
+        uint8_t* data = matrix.data;
+        uint8_t* from = patch.data;
+        memcpy(
+            (uint64_t *)(((uint64_t)(uint64_t *)(data)) + base_offset + range.start * elem_size),
+            (uint64_t *)(((uint64_t)(uint64_t *)(from)) + from_offset),
+            elem_size * (range.end - range.start)
+        );
+    } else {
+        for (int pos = range.start, from_pos = 0; pos < range.end; pos++, from_pos++) {
+            mat_update_roi(matrix, patch, ranges, elem_size, step_size, from_step_size, dim_index + 1, base_offset + step_size * pos, from_offset + from_step_size * from_pos);
+        }
+    }
+}
+
 // @evision c: mat_update_roi,evision_cv_mat_update_roi,1
 // @evision nif: def mat_update_roi(_opts \\ []), do: :erlang.nif_error("Mat::update_roi() not loaded")
 static ERL_NIF_TERM evision_cv_mat_update_roi(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
@@ -242,40 +270,25 @@ static ERL_NIF_TERM evision_cv_mat_update_roi(ErlNifEnv *env, int argc, const ER
         evision_to_safe(env, evision_get_kw(env, erl_terms, "with_mat"), with_mat, ArgInfo("with_mat", 0)) &&
         evision_to_safe(env, evision_get_kw(env, erl_terms, "ranges"), ranges, ArgInfo("ranges", 0)))
     {
-        Mat roi = mat(ranges);
-        if (roi.channels() != with_mat.channels()) {
-            // `with_mat` could be an Nx.tensor
-            // hence the last dim should actually be the channel
-            int with_mat_dims = with_mat.size.dims();
-            int roi_dims = roi.size.dims();
-
-            // basically last_dim_as_channel
-            bool last_dim_as_channel = true;
-            if (with_mat_dims == roi_dims + 1 && with_mat.size.p[with_mat_dims - 1] == roi.channels()) {
-                for (int i = 0; i < roi_dims; i++) {
-                    if (with_mat.size.p[i] != roi.size.p[i]) {
-                        last_dim_as_channel = false;
-                        break;
-                    }
-                }
-            }
-
-            if (last_dim_as_channel) {
-                // we can still fix this
-                std::vector<int> new_shape(with_mat_dims - 1);
-                for (size_t i = 0; i < (size_t)(with_mat_dims - 1); i++) {
-                    new_shape[i] = with_mat.size.p[i];
-                }
-                int type = CV_MAKETYPE(with_mat.type(), with_mat.size.p[with_mat_dims - 1]);
-
-                // zero-copy constructor
-                Mat copy_from = Mat(with_mat_dims - 1, new_shape.data(), type, with_mat.data);
-                ERRWRAP2(copy_from.copyTo(roi), env, error_flag, error_term);
-            } else {
-                error_term = evision::nif::error(env, "Cannot update roi: shape mismatch");
-            }
+        if (mat.type() != with_mat.type()) {
+            error_flag = true;
+            error_term = evision::nif::error(env, "Cannot update roi: type mismatch");
+        } else if (mat.dims != with_mat.dims) {
+            error_flag = true;
+            error_term = evision::nif::error(env, "Cannot update roi: dimension mismatch");
         } else {
-            ERRWRAP2(with_mat.copyTo(roi), env, error_flag, error_term);
+            if (!mat.isContinuous()) mat = mat.clone();
+            if (!with_mat.isContinuous()) with_mat = with_mat.clone();
+            size_t step_size = mat.elemSize();
+            for (int i = 0; i < mat.size.dims(); i++) {
+                step_size *= mat.size.p[i];
+            }
+            size_t from_step_size = mat.elemSize();
+            for (int i = 0; i < with_mat.size.dims(); i++) {
+                from_step_size *= with_mat.size.p[i];
+            }
+            size_t elem_size = mat.elemSize();
+            mat_update_roi(mat, with_mat, ranges, elem_size, step_size, from_step_size, 0, 0, 0);
         }
 
         if (!error_flag) {

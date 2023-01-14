@@ -190,12 +190,12 @@ ERL_NIF_TERM evision_from_as_map(ErlNifEnv *env, const T& src, ERL_NIF_TERM res_
     ERL_NIF_TERM keys[num_items];
     ERL_NIF_TERM values[num_items];
 
-    keys[item_index] = enif_make_atom(env, "ref");
+    keys[item_index] = evision::nif::atom(env, "ref");
     values[item_index] = res_term;
     item_index++;
 
-    keys[item_index] = enif_make_atom(env, "class");
-    values[item_index] = enif_make_atom(env, class_name);
+    keys[item_index] = evision::nif::atom(env, "class");
+    values[item_index] = evision::nif::atom(env, class_name);
     item_index++;
 
     ERL_NIF_TERM map;

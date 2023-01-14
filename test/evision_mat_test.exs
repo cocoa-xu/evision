@@ -86,4 +86,43 @@ defmodule Evision.Mat.Test do
     bgr = Evision.cvtColor(transposed, Evision.cv_COLOR_RGB2BGR())
     assert {441, 297, 3} = Evision.Mat.shape(bgr)
   end
+
+  @tag :nx
+  test "update_roi" do
+    image_tensor = Evision.Mat.literal([[[2,2,2]], [[2,3,4]], [[4,5,6]]], :u8)
+    image_2d = Evision.Mat.last_dim_as_channel(image_tensor)
+    Evision.Mat.to_nx(image_2d)
+
+    patch_tensor = Evision.Mat.literal([[[7,8]], [[9,10]]], :u8)
+    patch_2d = Evision.Mat.last_dim_as_channel(patch_tensor)
+    Evision.Mat.to_nx(patch_2d)
+
+    flatlist = [2, 7, 8, 2, 9, 10, 4, 5, 6]
+    roi = [{0, 2}, {0, 1}, {1, 3}]
+    assert flatlist == Nx.to_flat_list(Evision.Mat.to_nx(Evision.Mat.update_roi(image_2d, roi, patch_2d)))
+    assert flatlist == Nx.to_flat_list(Evision.Mat.to_nx(Evision.Mat.update_roi(image_2d, roi, patch_tensor)))
+    assert flatlist == Nx.to_flat_list(Evision.Mat.to_nx(Evision.Mat.update_roi(image_tensor, roi, patch_2d)))
+    assert flatlist == Nx.to_flat_list(Evision.Mat.to_nx(Evision.Mat.update_roi(image_tensor, roi, patch_tensor)))
+
+    flatlist = [2, 2, 2, 2, 7, 8, 4, 9, 10]
+    roi = [{1, 3}, {0, 1}, {1, 3}]
+    assert flatlist == Nx.to_flat_list(Evision.Mat.to_nx(Evision.Mat.update_roi(image_2d, roi, patch_2d)))
+    assert flatlist == Nx.to_flat_list(Evision.Mat.to_nx(Evision.Mat.update_roi(image_2d, roi, patch_tensor)))
+    assert flatlist == Nx.to_flat_list(Evision.Mat.to_nx(Evision.Mat.update_roi(image_tensor, roi, patch_2d)))
+    assert flatlist == Nx.to_flat_list(Evision.Mat.to_nx(Evision.Mat.update_roi(image_tensor, roi, patch_tensor)))
+
+    flatlist = [2, 2, 2, 7, 8, 4, 9, 10, 6]
+    roi = [{1, 3}, {0, 1}, {0, 2}]
+    assert flatlist == Nx.to_flat_list(Evision.Mat.to_nx(Evision.Mat.update_roi(image_2d, roi, patch_2d)))
+    assert flatlist == Nx.to_flat_list(Evision.Mat.to_nx(Evision.Mat.update_roi(image_2d, roi, patch_tensor)))
+    assert flatlist == Nx.to_flat_list(Evision.Mat.to_nx(Evision.Mat.update_roi(image_tensor, roi, patch_2d)))
+    assert flatlist == Nx.to_flat_list(Evision.Mat.to_nx(Evision.Mat.update_roi(image_tensor, roi, patch_tensor)))
+
+    flatlist = [7, 8, 2, 9, 10, 4, 4, 5, 6]
+    roi = [{0, 2}, {0, 1}, {0, 2}]
+    assert flatlist == Nx.to_flat_list(Evision.Mat.to_nx(Evision.Mat.update_roi(image_2d, roi, patch_2d)))
+    assert flatlist == Nx.to_flat_list(Evision.Mat.to_nx(Evision.Mat.update_roi(image_2d, roi, patch_tensor)))
+    assert flatlist == Nx.to_flat_list(Evision.Mat.to_nx(Evision.Mat.update_roi(image_tensor, roi, patch_2d)))
+    assert flatlist == Nx.to_flat_list(Evision.Mat.to_nx(Evision.Mat.update_roi(image_tensor, roi, patch_tensor)))
+  end
 end

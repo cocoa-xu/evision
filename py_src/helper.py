@@ -158,30 +158,60 @@ def handle_inline_math_escaping(text, start_pos=0):
     else:
         return text
 
+module_name_map = {
+    "aruco": "ArUco",
+    "barcode": "Barcode",
+    "bgsegm": "BgSegm",
+    "bioinspired": "Bioinspired",
+    "ccm": "CCM",
+    "cuda": "CUDA",
+    "colored_kinfu": "ColoredKinFu",
+    "detail": "Detail",
+    "dnn": "DNN",
+    "dnn_superres": "DNNSuperRes",
+    "DnnSuperResImpl": "DNNSuperResImpl",
+    "dynafu": "DynaFu",
+    "face": "Face",
+    "flann": "Flann",
+    "fisheye": "FishEye",
+    "hfs": "HFS",
+    "img_hash": "ImgHash",
+    "kinfu": "KinFu",
+    "large_kinfu": "LargeKinfu",
+    "legacy": "Legacy",
+    "linemod": "LineMod",
+    "line_descriptor": "LineDescriptor",
+    "mcc": "MCC",
+    "ml": "ML",
+    "optflow": "OptFlow",
+    "ocl": "OCL",
+    "plot": "Plot",
+    "phase_unwrapping": "PhaseUnwrapping",
+    "ppf_match_3d": "PPFMatch3D",
+    "quality": "Quality",
+    "rapid": "Rapid",
+    "reg": "Reg",
+    "rgbd": "RGBD",
+    "saliency": "Saliency",
+    "segmentation": "Segmentation",
+    "stereo": "Stereo",
+    "structured_light": "StructuredLight",
+    "text": "Text",
+    "utils": "Utils",
+    "utils_fs": "UtilsFS",
+    "videoio_registry": "VideoIORegistry",
+    "xfeatures2d": "XFeatures2D",
+    "ximgproc": "XImgProc",
+    "xphoto": "XPhoto",
+    "wechat_qrcode": "WeChatQRCode",
+}
 
 def make_elixir_module_names(module_name: Optional[str] = None, separated_ns: Optional[list] = None):
-    mapping = {
-        'aruco': 'ArUco',
-        'dnn': 'DNN',
-        'ml': 'ML',
-        'ocl': 'OCL',
-        'mcc': 'MCC',
-        'ipp': 'IPP',
-        'rgbd': 'RGBD',
-        'videoio_registry': 'VideoIORegistry',
-        'structured_light': 'StructuredLight',
-        'fisheye': 'FishEye',
-        'utils_fs': 'UtilsFS',
-        'cuda': 'CUDA',
-        'hfs': 'HFS',
-        'dnn_superres': "DNNSuperRes",
-        'DnnSuperResImpl': 'DNNSuperResImpl',
-        'cudacodec': 'CUDACodec'
-    }
+    global module_name_map
     if module_name is not None:
-        return mapping.get(module_name, f"{module_name[0].upper()}{module_name[1:]}")
+        return module_name_map.get(module_name, f"{module_name[0].upper()}{module_name[1:]}")
     if separated_ns is not None:
-        return ".".join([mapping.get(n, f"{n[0].upper()}{n[1:]}") for n in separated_ns])
+        return ".".join([module_name_map.get(n, f"{n[0].upper()}{n[1:]}") for n in separated_ns])
 
 
 def get_module_func_name(module_func_name: str, is_ns: bool, full_qualified_name: str):
@@ -384,6 +414,7 @@ def is_int_type(argtype):
         'InterpolationFlags',
         'AccessFlag',
         'WaveCorrectKind',
+        'VideoCaptureAPIs',
         'flann_distance_t',
         'cvflann_flann_algorithm_t',
         'cvflann::flann_algorithm_t',
@@ -410,7 +441,6 @@ def is_list_type(argtype):
         'ImageFeatures',
         'MatchesInfo',
         'CameraParams',
-        'VideoCaptureAPIs',
         'MatShape'
     ]
     if argtype[:7] == 'vector_' or argtype[len('std::vector<'):] == 'std::vector<':
@@ -517,48 +547,14 @@ def is_ref_or_struct(argtype: str):
     return argtype in ref_or_struct_types
 
 def get_elixir_module_name(cname, double_quote_if_has_dot=False):
-    if cname.startswith('cv::img_hash'):
-        cname = "cv::ImgHash" + cname[len('cv::img_hash'):]
-    elif cname.startswith('cv::bgsegm'):
-        cname = "cv::BgSegm" + cname[len('cv::bgsegm'):]
-    elif cname.startswith('cv::ccm'):
-        cname = "cv::CCM" + cname[len('cv::CCM'):]
-    elif cname.startswith('cv::colored_kinfu'):
-        cname = "cv::ColoredKinfu" + cname[len('cv::colored_kinfu'):]
-    elif cname.startswith('cv::cuda::'):
-        cname = "cv::CUDA::" + cname[len('cv::cuda::'):]
-    elif cname.startswith('cv::barcode::'):
-        cname = "cv::Barcode::" + cname[len('cv::Barcode::'):]
-    elif cname.startswith('cv::bioinspired::'):
-        cname = "cv::Bioinspired::" + cname[len('cv::bioinspired::'):]
-    elif cname.startswith('cv::dynafu::'):
-        cname = "cv::DynaFu::" + cname[len('cv::dynafu::'):]
-    elif cname.startswith('cv::kinfu::'):
-        cname = "cv::KinFu::" + cname[len('cv::KinFu::'):]
-    elif cname.startswith('cv::large_kinfu::'):
-        cname = "cv::LargeKinfu::" + cname[len('cv::large_kinfu::'):]
-    elif cname.startswith('cv::legacy::'):
-        cname = "cv::Legacy::" + cname[len('cv::legacy::'):]
-    elif cname.startswith('cv::linemod::'):
-        cname = "cv::LineMod::" + cname[len('cv::linemod::'):]
-    elif cname.startswith('cv::phase_unwrapping::'):
-        cname = "cv::PhaseUnwrapping::" + cname[len('cv::phase_unwrapping::'):]
-    elif cname.startswith('cv::xfeatures2d::'):
-        cname = "cv::XFeatures2D::" + cname[len('cv::xfeatures2d::'):]
-    elif cname.startswith('cv::ximgproc::'):
-        cname = "cv::XImgProc::" + cname[len('cv::ximgproc::'):]
-    elif cname.startswith('cv::xphoto::'):
-        cname = "cv::XPhoto::" + cname[len('cv::xphoto::'):]
-    elif cname.startswith('cv::rapid::'):
-        cname = "cv::Rapid::" + cname[len('cv::rapid::'):]
-    elif cname.startswith('cv::utils::'):
-        cname = "cv::Utils::" + cname[len('cv::utils::'):]
-    elif cname.startswith('cv::line_descriptor::'):
-        cname = "cv::LineDescriptor::" + cname[len('cv::line_descriptor::'):]
-    elif cname.startswith("cv::ppf_match_3d::"):
-        cname = "cv::PPFMatch3D::" + cname[len('cv::ppf_match_3d::'):]
-    elif cname.startswith("cv::wechat_qrcode::"):
-        cname = "cv::WeChatQRCode::" + cname[len('cv::wechat_qrcode::'):]
+    global module_name_map
+    if cname.startswith('cv::'):
+        module_name_classname = cname[4:].split("::", maxsplit=2)
+        if len(module_name_classname) == 2:
+            module_name = module_name_classname[0]
+            if module_name in module_name_map:
+                mapped_module_name = module_name_map[module_name]
+                cname = "cv::" + mapped_module_name + cname[4+len(module_name):]
     # elif cname.startswith("cv::") and 'a' <= cname[4] <= 'z':
     #     print("warning cname=", cname)
 
@@ -898,41 +894,6 @@ def is_struct(argtype: str, also_get: Optional[str] = None, classname: Optional[
         }
     }
     second_ret = None
-    module_name_map = {
-        "aruco": "ArUco",
-        "barcode": "Barcode",
-        "bgsegm": "BgSegm",
-        "bioinspired": "Bioinspired",
-        "ccm": "CCM",
-        "cuda": "CUDA",
-        "dnn": "DNN",
-        "dynafu": "DynaFu",
-        "face": "Face",
-        "flann": "Flann",
-        "hfs": "HFS",
-        "kinfu": "KinFu",
-        "legacy": "Legacy",
-        "linemod": "LineMod",
-        "mcc": "MCC",
-        "ml": "ML",
-        "optflow": "OptFlow",
-        "ocl": "OCL",
-        "plot": "Plot",
-        "quality": "Quality",
-        "rapid": "Rapid",
-        "reg": "Reg",
-        "rgbd": "RGBD",
-        "saliency": "Saliency",
-        "segmentation": "Segmentation",
-        "stereo": "Stereo",
-        "text": "Text",
-        "xfeatures2d": "XFeatures2D",
-        "ximgproc": "XImgProc",
-        "xphoto": "XPhoto",
-        "detail": "Detail",
-        "utils": "Utils",
-        "cudacodec": "CUDACodec"
-    }
 
     argtype = argtype.strip()
     second_ret = None
@@ -1142,7 +1103,7 @@ manual_type_spec_map = {
     'CameraParams': 'Evision.Detail.CameraParams.t()',
     'MatShape': 'list(integer())',
     'KeyPoint': 'Evision.KeyPoint.t()',
-    'VideoCaptureAPIs': 'list(number())',
+    'VideoCaptureAPIs': 'number()',
     'ParamGrid': 'Evision.ML.ParamGrid.t()',
     'Layer': 'Evision.DNN.Layer.t()'
 }
