@@ -366,7 +366,7 @@ gen_template_parse_args = Template("if( $code_cvt )")
 gen_template_func_body = Template("""$code_decl
     $code_parse
     {
-        int error_flag = false;
+        error_flag = false;
         $code_from_ptr
         ${code_prelude}ERRWRAP2($code_fcall, env, error_flag, error_term);
         if (!error_flag) {
