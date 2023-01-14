@@ -207,8 +207,8 @@ img_output =
     img,
     matrix,
     {w, h},
-    flags: Evision.cv_INTER_LINEAR(),
-    borderMode: Evision.cv_BORDER_CONSTANT(),
+    flags: Evision.Constant.cv_INTER_LINEAR(),
+    borderMode: Evision.Constant.cv_BORDER_CONSTANT(),
     borderValue: {0, 0, 0}
   )
 ```

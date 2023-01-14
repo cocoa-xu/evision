@@ -71,7 +71,7 @@ original = Evision.imread("sudoku_puzzle.webp")
 
 ```elixir
 # convert it to grayscale
-gray = Evision.cvtColor(original, Evision.cv_COLOR_BGR2GRAY())
+gray = Evision.cvtColor(original, Evision.Constant.cv_COLOR_BGR2GRAY())
 ```
 
 <!-- livebook:{"output":true} -->
@@ -112,8 +112,8 @@ bw =
   Evision.adaptiveThreshold(
     blurred,
     255,
-    Evision.cv_ADAPTIVE_THRESH_GAUSSIAN_C(),
-    Evision.cv_THRESH_BINARY(),
+    Evision.Constant.cv_ADAPTIVE_THRESH_GAUSSIAN_C(),
+    Evision.Constant.cv_THRESH_BINARY(),
     11,
     2
   )
@@ -142,8 +142,8 @@ threshold = Evision.Mat.bitwise_not(bw)
 {contours, _} =
   Evision.findContours(
     threshold,
-    Evision.cv_RETR_EXTERNAL(),
-    Evision.cv_CHAIN_APPROX_SIMPLE()
+    Evision.Constant.cv_RETR_EXTERNAL(),
+    Evision.Constant.cv_CHAIN_APPROX_SIMPLE()
   )
 
 IO.puts("Find #{Enum.count(contours)} contour(s)")
@@ -375,8 +375,8 @@ puzzle =
     original,
     matrix,
     {output_width, output_height},
-    flags: Evision.cv_INTER_LINEAR(),
-    borderMode: Evision.cv_BORDER_CONSTANT(),
+    flags: Evision.Constant.cv_INTER_LINEAR(),
+    borderMode: Evision.Constant.cv_BORDER_CONSTANT(),
     borderValue: {0, 0, 0}
   )
 
@@ -385,8 +385,8 @@ puzzle_gray =
     gray,
     matrix,
     {output_width, output_height},
-    flags: Evision.cv_INTER_LINEAR(),
-    borderMode: Evision.cv_BORDER_CONSTANT(),
+    flags: Evision.Constant.cv_INTER_LINEAR(),
+    borderMode: Evision.Constant.cv_BORDER_CONSTANT(),
     borderValue: {0, 0, 0}
   )
 ```
@@ -454,7 +454,7 @@ import Bitwise
 extract_digit = fn cell ->
   # get a binary image of the cell
   {_, threshold} =
-    Evision.threshold(cell, 10, 255, Evision.cv_THRESH_BINARY_INV() ||| Evision.cv_THRESH_OTSU())
+    Evision.threshold(cell, 10, 255, Evision.Constant.cv_THRESH_BINARY_INV() ||| Evision.Constant.cv_THRESH_OTSU())
 
   # cut off border
   {h, w} = threshold.shape
@@ -464,8 +464,8 @@ extract_digit = fn cell ->
   {contours, _} =
     Evision.findContours(
       threshold,
-      Evision.cv_RETR_EXTERNAL(),
-      Evision.cv_CHAIN_APPROX_SIMPLE()
+      Evision.Constant.cv_RETR_EXTERNAL(),
+      Evision.Constant.cv_CHAIN_APPROX_SIMPLE()
     )
 
   # if no contours were found than this is an empty cell
@@ -828,7 +828,7 @@ for x <- 0..8, y <- 0..8, reduce: puzzle do
       vis,
       text,
       {textX, textY},
-      Evision.cv_FONT_HERSHEY_SIMPLEX(),
+      Evision.Constant.cv_FONT_HERSHEY_SIMPLEX(),
       0.9,
       {0, 255, 255},
       thickness: 2

@@ -8,8 +8,8 @@ defmodule Evision.VideoWriter.Test do
       reader = Evision.VideoCapture.videoCapture(input_video_file)
       # mp4v
       fourcc = Evision.VideoWriter.fourcc(109, 112, 52, 118)
-      height = Evision.VideoCapture.get(reader, Evision.cv_CAP_PROP_FRAME_HEIGHT()) |> trunc()
-      width = Evision.VideoCapture.get(reader, Evision.cv_CAP_PROP_FRAME_WIDTH()) |> trunc()
+      height = Evision.VideoCapture.get(reader, Evision.Constant.cv_CAP_PROP_FRAME_HEIGHT()) |> trunc()
+      width = Evision.VideoCapture.get(reader, Evision.Constant.cv_CAP_PROP_FRAME_WIDTH()) |> trunc()
 
       writer =
         Evision.VideoWriter.videoWriter(
@@ -26,10 +26,10 @@ defmodule Evision.VideoWriter.Test do
 
       # verify
       reader = Evision.VideoCapture.videoCapture(output_video_file)
-      ^output_fps = Evision.VideoCapture.get(reader, Evision.cv_CAP_PROP_FPS()) |> trunc()
-      ^height = Evision.VideoCapture.get(reader, Evision.cv_CAP_PROP_FRAME_HEIGHT()) |> trunc()
-      ^width = Evision.VideoCapture.get(reader, Evision.cv_CAP_PROP_FRAME_WIDTH()) |> trunc()
-      w_frames_count = Evision.VideoCapture.get(reader, Evision.cv_CAP_PROP_FRAME_COUNT())
+      ^output_fps = Evision.VideoCapture.get(reader, Evision.Constant.cv_CAP_PROP_FPS()) |> trunc()
+      ^height = Evision.VideoCapture.get(reader, Evision.Constant.cv_CAP_PROP_FRAME_HEIGHT()) |> trunc()
+      ^width = Evision.VideoCapture.get(reader, Evision.Constant.cv_CAP_PROP_FRAME_WIDTH()) |> trunc()
+      w_frames_count = Evision.VideoCapture.get(reader, Evision.Constant.cv_CAP_PROP_FRAME_COUNT())
       Evision.VideoCapture.release(reader)
 
       assert w_frames_count == output_fps * output_seconds

@@ -74,7 +74,7 @@ Of course, you might ask *"how do we find the centre of that circle by code"* or
 
 ## Max Radius
 
-`max_radius` decides the bounding circle. If some part of the bounding circle is outside the range of the source image, then we need to ask OpenCV to fill these outliners by adding another flag `Evision.cv_WARP_FILL_OUTLIERS()`.
+`max_radius` decides the bounding circle. If some part of the bounding circle is outside the range of the source image, then we need to ask OpenCV to fill these outliners by adding another flag `Evision.Constant.cv_WARP_FILL_OUTLIERS()`.
 
 We can first plot the bounding circle for some visualisation.
 
@@ -114,7 +114,7 @@ Evision.warpPolar(
   {0, 0},
   centre,
   int_max_radius,
-  Evision.cv_INTER_LINEAR() + Evision.cv_WARP_FILL_OUTLIERS()
+  Evision.Constant.cv_INTER_LINEAR() + Evision.Constant.cv_WARP_FILL_OUTLIERS()
 )
 
 # please click the "Image" tab in the output below to see the visualised result
@@ -164,7 +164,7 @@ Evision.warpPolar(
   {0, 0},
   centre,
   int_max_radius,
-  Evision.cv_INTER_LINEAR() + Evision.cv_WARP_FILL_OUTLIERS()
+  Evision.Constant.cv_INTER_LINEAR() + Evision.Constant.cv_WARP_FILL_OUTLIERS()
 )
 
 # please click the "Image" tab in the output below to see the visualised result
@@ -212,7 +212,7 @@ Evision.warpPolar(
   dsize,
   centre,
   max_radius,
-  Evision.cv_INTER_LINEAR() + Evision.cv_WARP_FILL_OUTLIERS()
+  Evision.Constant.cv_INTER_LINEAR() + Evision.Constant.cv_WARP_FILL_OUTLIERS()
 )
 
 # please click the "Image" tab in the output below to see the visualised result
@@ -248,7 +248,7 @@ Evision.warpPolar(
   dsize,
   centre,
   max_radius,
-  Evision.cv_INTER_LINEAR() + Evision.cv_WARP_FILL_OUTLIERS()
+  Evision.Constant.cv_INTER_LINEAR() + Evision.Constant.cv_WARP_FILL_OUTLIERS()
 )
 
 # please click the "Image" tab in the output below to see the visualised result
@@ -280,7 +280,7 @@ Evision.warpPolar(
   dsize,
   centre,
   max_radius,
-  Evision.cv_INTER_LINEAR() + Evision.cv_WARP_FILL_OUTLIERS()
+  Evision.Constant.cv_INTER_LINEAR() + Evision.Constant.cv_WARP_FILL_OUTLIERS()
 )
 
 # please click the "Image" tab in the output below to see the visualised result
@@ -311,7 +311,7 @@ log_polar_img =
     dsize,
     centre,
     max_radius,
-    Evision.cv_INTER_LINEAR() + Evision.cv_WARP_FILL_OUTLIERS() + Evision.cv_WARP_POLAR_LOG()
+    Evision.Constant.cv_INTER_LINEAR() + Evision.Constant.cv_WARP_FILL_OUTLIERS() + Evision.Constant.cv_WARP_POLAR_LOG()
   )
 
 # please click the "Image" tab in the output below to see the visualised result
@@ -345,8 +345,8 @@ Evision.warpPolar(
   dsize,
   centre,
   max_radius,
-  Evision.cv_INTER_LINEAR() + Evision.cv_WARP_FILL_OUTLIERS() +
-    Evision.cv_WARP_POLAR_LOG() + Evision.cv_WARP_INVERSE_MAP()
+  Evision.Constant.cv_INTER_LINEAR() + Evision.Constant.cv_WARP_FILL_OUTLIERS() +
+    Evision.Constant.cv_WARP_POLAR_LOG() + Evision.Constant.cv_WARP_INVERSE_MAP()
 )
 
 # please click the "Image" tab in the output below to see the visualised result
@@ -377,7 +377,7 @@ linear_polar_img =
     dsize,
     centre,
     max_radius,
-    Evision.cv_INTER_LINEAR() + Evision.cv_WARP_FILL_OUTLIERS()
+    Evision.Constant.cv_INTER_LINEAR() + Evision.Constant.cv_WARP_FILL_OUTLIERS()
   )
 
 # reverse the transformation
@@ -389,8 +389,8 @@ Evision.warpPolar(
   dsize,
   centre,
   max_radius,
-  Evision.cv_INTER_LINEAR() + Evision.cv_WARP_FILL_OUTLIERS() +
-    Evision.cv_WARP_INVERSE_MAP()
+  Evision.Constant.cv_INTER_LINEAR() + Evision.Constant.cv_WARP_FILL_OUTLIERS() +
+    Evision.Constant.cv_WARP_INVERSE_MAP()
 )
 
 # please click the "Image" tab in the output below to see the visualised result

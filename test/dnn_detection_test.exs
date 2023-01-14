@@ -21,7 +21,7 @@ defmodule Evision.DNN.Test do
       mat = Evision.rectangle(mat, {l, t}, {r, b}, {255, 0, 0})
 
       {{label_weight, label_height}, baseline} =
-        Evision.getTextSize(text, Evision.cv_FONT_HERSHEY_SIMPLEX(), 0.5, 1)
+        Evision.getTextSize(text, Evision.Constant.cv_FONT_HERSHEY_SIMPLEX(), 0.5, 1)
 
       label_weight = trunc(label_weight)
       label_height = trunc(label_height)
@@ -34,7 +34,7 @@ defmodule Evision.DNN.Test do
           255
         })
 
-      mat = Evision.putText(mat, text, {l, top}, Evision.cv_FONT_HERSHEY_SIMPLEX(), 0.5, {0, 0, 255})
+      mat = Evision.putText(mat, text, {l, top}, Evision.Constant.cv_FONT_HERSHEY_SIMPLEX(), 0.5, {0, 0, 255})
 
       _visualise_pred(mat, labels, outs)
     end

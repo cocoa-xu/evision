@@ -51,7 +51,7 @@ class Py2EExpressionGenerator(ast.NodeVisitor):
         elif type(node) is ast.Attribute:
             print("attr name:", getattr(node.value, "_fields", []))
             if node.value.id == "cv2":
-                self.expression = f"Evision.cv_{node.attr}()"
+                self.expression = f"Evision.Constant.cv_{node.attr}()"
             print("node.value.id:", node.value.id)
             print("attr:", node.attr, node.value, node._fields)
         elif type(node) is ast.Constant:

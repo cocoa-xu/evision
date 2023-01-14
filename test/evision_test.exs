@@ -45,7 +45,7 @@ defmodule Evision.Test do
     %Mat{type: {:u, 8}, shape: {2, 3, 4}} =
       mat =
       Evision.imread(Path.join([__DIR__, "testdata", "test.png"]),
-        flags: Evision.cv_IMREAD_UNCHANGED()
+        flags: Evision.Constant.cv_IMREAD_UNCHANGED()
       )
 
     img_data = Evision.Mat.to_binary(mat)
@@ -58,7 +58,7 @@ defmodule Evision.Test do
     %Mat{type: {:u, 8}, shape: {2, 3}} =
       mat =
       Evision.imread(Path.join([__DIR__, "testdata", "test.png"]),
-        flags: Evision.cv_IMREAD_GRAYSCALE()
+        flags: Evision.Constant.cv_IMREAD_GRAYSCALE()
       )
 
     img_data = Evision.Mat.to_binary(mat)
@@ -99,7 +99,7 @@ defmodule Evision.Test do
     encoded = Evision.imencode(".png", mat)
     assert is_binary(encoded)
 
-    %Mat{shape: ^shape, type: ^type} = Evision.imdecode(encoded, Evision.cv_IMREAD_ANYCOLOR())
+    %Mat{shape: ^shape, type: ^type} = Evision.imdecode(encoded, Evision.Constant.cv_IMREAD_ANYCOLOR())
   end
 
   test "Evision.resize" do
@@ -131,7 +131,7 @@ defmodule Evision.Test do
   test "Evision.mean" do
     mat =
       Evision.imread(Path.join([__DIR__, "testdata", "test.png"]),
-        flags: Evision.cv_IMREAD_GRAYSCALE()
+        flags: Evision.Constant.cv_IMREAD_GRAYSCALE()
       )
 
     bin = Evision.Mat.to_binary(mat)
@@ -144,7 +144,7 @@ defmodule Evision.Test do
   test "Evision.minMaxLoc" do
     mat =
       Evision.imread(Path.join([__DIR__, "testdata", "test.png"]),
-        flags: Evision.cv_IMREAD_GRAYSCALE()
+        flags: Evision.Constant.cv_IMREAD_GRAYSCALE()
       )
 
     {112.0, 209.0, {2, 0}, {0, 1}} = Evision.minMaxLoc(mat)
@@ -162,12 +162,12 @@ defmodule Evision.Test do
 
   test "Evision.Mat.depth" do
     img = Evision.imread(Path.join([__DIR__, "testdata", "test.jpg"]))
-    assert Evision.cv_8U() == Evision.Mat.depth(img)
+    assert Evision.Constant.cv_8U() == Evision.Mat.depth(img)
   end
 
   test "Evision.Mat.raw_type" do
     img = Evision.imread(Path.join([__DIR__, "testdata", "test.jpg"]))
-    assert Evision.cv_8UC3() == Evision.Mat.raw_type(img)
+    assert Evision.Constant.cv_8UC3() == Evision.Mat.raw_type(img)
   end
 
   test "Evision.Mat.isSubmatrix" do
@@ -375,8 +375,8 @@ defmodule Evision.Test do
         img,
         matrix,
         {w, h},
-        flags: Evision.cv_INTER_LINEAR(),
-        borderMode: Evision.cv_BORDER_CONSTANT(),
+        flags: Evision.Constant.cv_INTER_LINEAR(),
+        borderMode: Evision.Constant.cv_BORDER_CONSTANT(),
         borderValue: {0, 0, 0}
       )
 
@@ -386,8 +386,8 @@ defmodule Evision.Test do
         img,
         img,
         {w, h},
-        flags: Evision.cv_INTER_LINEAR(),
-        borderMode: Evision.cv_BORDER_CONSTANT(),
+        flags: Evision.Constant.cv_INTER_LINEAR(),
+        borderMode: Evision.Constant.cv_BORDER_CONSTANT(),
         borderValue: {0, 0, 0}
       )
   end

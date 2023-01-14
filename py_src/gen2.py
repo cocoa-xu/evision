@@ -57,22 +57,31 @@ class BeamWrapperGenerator(object):
 
         # lib/generated/evision.ex
         self.evision_elixir = StringIO()
+        # lib/generated/evision_constant.ex
+        self.evision_constant_elixir = StringIO()
 
         # src/generated/evision.erl
         self.evision_erlang = StringIO()
+        # src/generated/evision_constant.erl
+        self.evision_constant_erlang = StringIO()
         # src/evision.hrl
         self.evision_erlang_hrl = StringIO()
 
+
         self.evision_ex = ModuleGenerator("Evision")
         self.evision_elixir.write('defmodule Evision do\n')
-        self.evision_elixir.write('  import Bitwise\n')
         self.evision_elixir.write('  import Kernel, except: [apply: 2, apply: 3, min: 2, max: 2]\n\n')
         self.evision_elixir.write('  @doc false\n')
         self.evision_elixir.write('  def __to_struct__(any), do: Evision.Internal.Structurise.to_struct(any)\n\n')
-        self.evision_elixir.write(ET.gen_cv_types_elixir)
+
+        self.evision_constant_elixir.write('defmodule Evision.Constant do\n')
+        self.evision_constant_elixir.write('  import Bitwise\n')
+        self.evision_constant_elixir.write(ET.gen_cv_types_elixir)
 
         self.evision_erlang.write('-module(evision).\n-compile(nowarn_export_all).\n-compile([export_all]).\n-include("evision.hrl").\n\n')
         self.evision_erlang.write('\'__to_struct__\'(Any) ->\n  evision_internal_structurise:from_struct(Any).\n\n')
+
+        self.evision_constant_erlang.write('-module(evision_constant).\n-compile(nowarn_export_all).\n-compile([export_all]).\n\n')
 
         self.evision_erlang_hrl.write(
             "-record(evision_mat, {channels, dims, type, raw_type, shape, ref}).\n"
@@ -150,7 +159,7 @@ class BeamWrapperGenerator(object):
                 val = f'cv_{val}()'
             if self.enum_names.get(erl_const_name, None) is None:
                 self.enum_names[erl_const_name] = val
-                self.enum_names_io.write(f"  @doc type: :constants\n  def cv_{erl_const_name}, do: {val}\n")
+                self.enum_names_io.write(f"  def cv_{erl_const_name}, do: {val}\n")
                 self.enum_names_io_erlang.write(f"cv_{erl_const_name}() ->\n    {val_erlang}.\n")
             else:
                 if self.enum_names[erl_const_name] != val:
@@ -651,7 +660,6 @@ class BeamWrapperGenerator(object):
 
         # end 'evision.ex'
         if 'elixir' in self.langs:
-            self.evision_elixir.write(self.enum_names_io.getvalue())
             for fix in evision_elixir_fixes():
                 self.evision_elixir.write(fix)
                 self.evision_elixir.write("\n")
@@ -663,7 +671,6 @@ class BeamWrapperGenerator(object):
         if 'erlang' in self.langs:
             self.evision_ex.end('erlang')
             self.evision_erlang.write(self.evision_ex.get_generated_code('erlang'))
-            self.evision_erlang.write(self.enum_names_io_erlang.getvalue())
             for fix in evision_erlang_fixes():
                 self.evision_erlang.write(fix)
                 self.evision_erlang.write("\n")
@@ -701,6 +708,11 @@ class BeamWrapperGenerator(object):
             self.evision_nif.write('\nend\n')
             self.save(erl_output_path, "evision_nif.ex", self.evision_nif)
 
+            # 'evision_constant.ex'
+            self.evision_constant_elixir.write(self.enum_names_io.getvalue())
+            self.evision_constant_elixir.write('\nend\n')
+            self.save(erl_output_path, "evision_constant.ex", self.evision_constant_elixir)
+
             # 'evision.ex'
             self.evision_ex.end('elixir')
             self.evision_elixir.write(self.evision_ex.get_generated_code('elixir'))
@@ -715,6 +727,11 @@ class BeamWrapperGenerator(object):
             self.evision_ex.end('erlang')
             self.evision_elixir.write(self.evision_ex.get_generated_code('erlang'))
             self.save(erlang_output_path, "evision.erl", self.evision_erlang)            
+
+            # 'evision_constant.erl'
+            self.evision_constant_erlang.write(self.enum_names_io_erlang.getvalue())
+            self.evision_constant_erlang.write('\n')
+            self.save(erlang_output_path, "evision_constant.erl", self.evision_constant_erlang)
 
             # 'evision.hrl'
             self.save(erlang_output_path, "evision.hrl", self.evision_erlang_hrl)

@@ -17,7 +17,7 @@ defmodule Evision.VideoCapture.Test do
       frame_width: 1920.0
     } = video
 
-    fourcc = Evision.VideoCapture.get(video, Evision.cv_CAP_PROP_FOURCC())
+    fourcc = Evision.VideoCapture.get(video, Evision.Constant.cv_CAP_PROP_FOURCC())
     assert 828_601_960.0 == fourcc
 
     %Evision.Mat{shape: {1080, 1920, 3}} = Evision.VideoCapture.read(video)

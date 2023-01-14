@@ -11,6 +11,7 @@
 ### Changed
 - [c_src] check if we can use existing atom from `enif_make_existing_atom` before calling to `enif_make_atom`.
 - [Evision] `Evision.__enabled_modules__/0` => `Evision.enabled_modules/0`. Result will now be computed using `HAVE_OPENCV_{MODULE_NAME}` macros.
+- [Evision.Constant] Constant values are relocated to the `Evision.Constant` module.
 
 ## v0.1.25 (2022-12-18)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.25) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.25)

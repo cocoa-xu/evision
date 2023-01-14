@@ -31,10 +31,10 @@ defmodule Evision.ML.SVM.Test do
       )
 
     svm = SVM.create()
-    svm = SVM.setType(svm, Evision.cv_C_SVC())
-    svm = SVM.setKernel(svm, Evision.cv_LINEAR())
-    svm = SVM.setTermCriteria(svm, {Evision.cv_MAX_ITER(), 100, 0.000001})
-    assert true = SVM.train(svm, training_data_mat, Evision.cv_ROW_SAMPLE(), labels_mat)
+    svm = SVM.setType(svm, Evision.Constant.cv_C_SVC())
+    svm = SVM.setKernel(svm, Evision.Constant.cv_LINEAR())
+    svm = SVM.setTermCriteria(svm, {Evision.Constant.cv_MAX_ITER(), 100, 0.000001})
+    assert true = SVM.train(svm, training_data_mat, Evision.Constant.cv_ROW_SAMPLE(), labels_mat)
     assert true = SVM.isTrained(svm)
 
     %Mat{shape: {rows, cols}} = sv = SVM.getUncompressedSupportVectors(svm)

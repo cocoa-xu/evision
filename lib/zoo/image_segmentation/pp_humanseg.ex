@@ -9,8 +9,8 @@ defmodule Evision.Zoo.ImageSegmentation.PPHumanSeg do
   @spec default_config :: map()
   def default_config do
     %{
-      backend: Evision.cv_DNN_BACKEND_OPENCV(),
-      target: Evision.cv_DNN_TARGET_CPU(),
+      backend: Evision.Constant.cv_DNN_BACKEND_OPENCV(),
+      target: Evision.Constant.cv_DNN_TARGET_CPU(),
     }
   end
 
@@ -45,13 +45,13 @@ defmodule Evision.Zoo.ImageSegmentation.PPHumanSeg do
 
     Specify the backend.
 
-    Optional. Defaults to `Evision.cv_DNN_BACKEND_OPENCV()`.
+    Optional. Defaults to `Evision.Constant.cv_DNN_BACKEND_OPENCV()`.
 
   - **target**: `integer()`.
 
     Specify the target.
 
-    Optional. Defaults to `Evision.cv_DNN_TARGET_CPU()`.
+    Optional. Defaults to `Evision.Constant.cv_DNN_TARGET_CPU()`.
   """
   @spec init(binary | :default_model | :quant_model, nil | Keyword.t()) :: {:error, String.t()} | Evision.DNN.Net.t()
   def init(model, opts \\ [])
@@ -260,9 +260,9 @@ defmodule Evision.Zoo.ImageSegmentation.PPHumanSeg do
           {height, width} = {image.height, image.width}
           image = Evision.Mat.from_binary(image.data, {:u, 8}, height, width, 3)
           results = Evision.Zoo.ImageSegmentation.PPHumanSeg.infer(model, image)
-          results = Evision.resize(results, {width, height}, interpolation: Evision.cv_INTER_NEAREST())
+          results = Evision.resize(results, {width, height}, interpolation: Evision.Constant.cv_INTER_NEAREST())
 
-          image = Evision.cvtColor(image, Evision.cv_COLOR_RGB2BGR())
+          image = Evision.cvtColor(image, Evision.Constant.cv_COLOR_RGB2BGR())
           vis_imgs = Evision.Zoo.ImageSegmentation.PPHumanSeg.visualize(image, results)
           vis_imgs = Enum.map(vis_imgs, &Kino.Image.new(Evision.imencode(".png", &1), :png))
           Kino.Frame.render(frame, Kino.Layout.grid(vis_imgs, columns: 2))

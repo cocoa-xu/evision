@@ -83,7 +83,7 @@ defmodule Evision.Mat.Test do
     transposed = Evision.Mat.last_dim_as_channel(transposed)
     assert {441, 297, 3} = Evision.Mat.shape(transposed)
 
-    bgr = Evision.cvtColor(transposed, Evision.cv_COLOR_RGB2BGR())
+    bgr = Evision.cvtColor(transposed, Evision.Constant.cv_COLOR_RGB2BGR())
     assert {441, 297, 3} = Evision.Mat.shape(bgr)
   end
 
