@@ -902,16 +902,24 @@ defmodule Evision.MixProject do
   defp generate_cmake_options() do
     mc = module_configuration()
 
-
-    enable_contrib = System.get_env("EVISION_ENABLE_CONTRIB", "true")
-    enable_opencv_contrib = enable_contrib == "true"
-    if enable_opencv_contrib do
+    enable_cuda = System.get_env("EVISION_ENABLE_CUDA", "false")
+    enable_opencv_cuda = enable_cuda == "true"
+    if enable_opencv_cuda do
       System.put_env("EVISION_ENABLE_CONTRIB", "true")
     else
       System.put_env("EVISION_ENABLE_CONTRIB", "false")
     end
 
-    enable_opencv_cuda = true
+    enable_contrib = System.get_env("EVISION_ENABLE_CONTRIB", "true")
+    enable_opencv_contrib = enable_contrib == "true"
+    if enable_opencv_cuda and !enable_opencv_contrib do
+      Logger.warning("EVISION_ENABLE_CUDA is set to true, while EVISION_ENABLE_CONTRIB is set to false. CUDA support will NOT be available.")
+    end
+    if enable_opencv_contrib do
+      System.put_env("EVISION_ENABLE_CONTRIB", "true")
+    else
+      System.put_env("EVISION_ENABLE_CONTRIB", "false")
+    end
 
     all_modules = Enum.map(mc.opencv, fn {m, _} -> m end) ++ Enum.map(mc.opencv_contrib, fn {m, _} -> m end)
     enabled_modules = Enum.filter(mc.opencv, fn {_, e} -> e end)
