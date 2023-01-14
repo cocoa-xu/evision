@@ -231,14 +231,19 @@ end
 ```
 
 #### TARGET_ABI
+**Required if and only if the target is using musl libc.**
+
 ```shell
-# required if and only if the build target is using musl libc.
-#
 # (for nerves project, this environment variable is set by nerves)
 export TARGET_ABI=musl
 ## (for armv7l which uses hard-float ABI (armhf))
 export TARGET_ABI=musleabihf
 ```
+
+This variable will only be checked when identifying the musl libc ABI so that the correct precompiled binaries can be downloaded. Therefore, 
+
+1. You don't need to keep it in the runtime environment.
+2. If you want to change it later, the directory `_build/${MIX_ENV}/lib/evision` needs to be deleted first.
 
 The default value for the `TARGET_ABI` env var is obtained using the following elixir code
 
@@ -265,6 +270,11 @@ target_abi =
 # default value is "true", and :evision will prefer to use precompiled binaries (if available)
 export EVISION_PREFER_PRECOMPILED=false
 ```
+
+This variable will only be checked whenever the `mix compile` task is invoked directly (`mix compile`) or indirectly (`mix test`). And in the Makefile we would skip everything if `_build/${MIX_ENV}/lib/evision/priv/evision.so` is presented. Therefore,
+
+1. You don't need to keep it in the runtime environment.
+2. If you want to change it later, the directory `_build/${MIX_ENV}/lib/evision` needs to be deleted first.
 
 **If you found the precompiled binaries do not suit your needs (e.g., perhaps you need OpenCV to be compiled with FFmpeg to handle more video formats.), it's possible to override the behaviour by setting the environment variable `EVISION_PREFER_PRECOMPILED` to `false`, and then please delete `_build/${MIX_ENV}/lib/evision` and recompile evision**
 
@@ -293,6 +303,11 @@ export EVISION_ENABLE_CONTRIB=true
 # disable opencv_contrib modules
 export EVISION_ENABLE_CONTRIB=false
 ```
+
+This variable will only be checked whenever the `mix compile` task is invoked directly (`mix compile`) or indirectly (`mix test`). And in the Makefile we would skip everything if `_build/${MIX_ENV}/lib/evision/priv/evision.so` is presented. Therefore,
+
+1. You don't need to keep it in the runtime environment.
+2. If you want to change it later from `false` to `true`, you can delete the file `_build/${MIX_ENV}/lib/evision/priv/evision.so`, set `EVISION_ENABLE_CONTRIB` to `true`, and then execute `mix compile`.
 
 Defaults to `true` because for precompiled binaries, including these "extra" modules only increases less than 20 MBs (tested on `aarch64-apple-darwin`) in size.
 

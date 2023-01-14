@@ -42,7 +42,7 @@ Mix.install([
 dataset =
   Evision.ML.TrainData.create(
     Evision.Mat.from_nx(Nx.tensor(features, type: :f32, backend: Evision.Backend)),
-    Evision.cv_ROW_SAMPLE(),
+    Evision.Constant.cv_ROW_SAMPLE(),
     Evision.Mat.from_nx(Nx.tensor(labels, type: :s32, backend: Evision.Backend))
   )
   |> Evision.ML.TrainData.setTrainTestSplitRatio(0.8, shuffle: true)
@@ -130,7 +130,7 @@ rtree =
 rtree =
   Evision.ML.RTrees.setTermCriteria(
     rtree,
-    {Evision.cv_MAX_ITER() + Evision.cv_EPS(), 30, 5.0e-5}
+    {Evision.Constant.cv_MAX_ITER() + Evision.Constant.cv_EPS(), 30, 5.0e-5}
   )
 
 (
@@ -138,7 +138,7 @@ rtree =
     dataset =
       Evision.ML.TrainData.create(
         Evision.Mat.from_nx(Nx.tensor(features, type: :f32, backend: Evision.Backend)),
-        Evision.cv_ROW_SAMPLE(),
+        Evision.Constant.cv_ROW_SAMPLE(),
         Evision.Mat.from_nx(Nx.tensor(labels, type: :s32, backend: Evision.Backend))
       )
       |> Evision.ML.TrainData.setTrainTestSplitRatio(0.8, shuffle: true)

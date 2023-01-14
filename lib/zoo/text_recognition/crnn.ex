@@ -15,8 +15,8 @@ defmodule Evision.Zoo.TextRecognition.CRNN do
   @spec default_config :: map()
   def default_config do
     %{
-      backend: Evision.cv_DNN_BACKEND_OPENCV(),
-      target: Evision.cv_DNN_TARGET_CPU(),
+      backend: Evision.Constant.cv_DNN_BACKEND_OPENCV(),
+      target: Evision.Constant.cv_DNN_TARGET_CPU(),
       detector: "db_ic15_resnet18"
     }
   end
@@ -67,13 +67,13 @@ defmodule Evision.Zoo.TextRecognition.CRNN do
 
     Specify the backend.
 
-    Optional. Defaults to `Evision.cv_DNN_BACKEND_OPENCV()`.
+    Optional. Defaults to `Evision.Constant.cv_DNN_BACKEND_OPENCV()`.
 
   - **target**: `integer()`.
 
     Specify the target.
 
-    Optional. Defaults to `Evision.cv_DNN_TARGET_CPU()`.
+    Optional. Defaults to `Evision.Constant.cv_DNN_TARGET_CPU()`.
   """
   @spec init(binary | :en | :en_fp16 | :en_int8 | :ch | :ch_fp16 | :ch_int8 | :cn | :cn_int8, nil | Keyword.t()) :: {:error, String.t()} | Evision.DNN.Net.t()
   def init(model_path, opts \\ [])
@@ -161,7 +161,7 @@ defmodule Evision.Zoo.TextRecognition.CRNN do
     cropped = Evision.warpPerspective(image, rotationMatrix, input_size())
     input =
       if to_gray do
-        Evision.cvtColor(cropped, Evision.cv_COLOR_RGB2GRAY())
+        Evision.cvtColor(cropped, Evision.Constant.cv_COLOR_RGB2GRAY())
       else
         cropped
       end
@@ -397,7 +397,7 @@ defmodule Evision.Zoo.TextRecognition.CRNN do
       [b0, b1 | _] = Nx.to_flat_list(pts)
       conf = Float.round(conf, 2)
       Evision.polylines(img, [pts], true, box_color, thickness: 2)
-      |> Evision.putText("#{conf}: #{text}", {b0, b1 + 12}, Evision.cv_FONT_HERSHEY_DUPLEX(), 1.0, text_color)
+      |> Evision.putText("#{conf}: #{text}", {b0, b1 + 12}, Evision.Constant.cv_FONT_HERSHEY_DUPLEX(), 1.0, text_color)
     end)
   end
 
@@ -556,7 +556,7 @@ defmodule Evision.Zoo.TextRecognition.CRNN do
             |> Nx.as_type(:s32)
           end)
 
-          image = Evision.cvtColor(image, Evision.cv_COLOR_RGB2BGR())
+          image = Evision.cvtColor(image, Evision.Constant.cv_COLOR_RGB2BGR())
           vis_img = Evision.Zoo.TextRecognition.CRNN.visualize(image, texts, detections, confidences)
 
           Kino.Frame.render(frame, Kino.Image.new(Evision.imencode(".png", vis_img), :png))

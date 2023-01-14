@@ -12,8 +12,8 @@ defmodule Evision.Zoo.TextDetection.DB do
   @spec default_config :: map()
   def default_config do
     %{
-      backend: Evision.cv_DNN_BACKEND_OPENCV(),
-      target: Evision.cv_DNN_TARGET_CPU(),
+      backend: Evision.Constant.cv_DNN_BACKEND_OPENCV(),
+      target: Evision.Constant.cv_DNN_TARGET_CPU(),
       width: 736,
       height: 736,
       binary_threshold: 0.3,
@@ -67,13 +67,13 @@ defmodule Evision.Zoo.TextDetection.DB do
 
     Specify the backend.
 
-    Optional. Defaults to `Evision.cv_DNN_BACKEND_OPENCV()`.
+    Optional. Defaults to `Evision.Constant.cv_DNN_BACKEND_OPENCV()`.
 
   - **target**: `integer()`.
 
     Specify the target.
 
-    Optional. Defaults to `Evision.cv_DNN_TARGET_CPU()`.
+    Optional. Defaults to `Evision.Constant.cv_DNN_TARGET_CPU()`.
   """
   @spec init(binary | :ic15_resnet18 | :ic15_resnet50 | :td500_resnet18 | :td500_resnet50, nil | Keyword.t()) :: {:error, String.t()} | Evision.DNN.TextDetectionModelDB.t()
   def init(model_path, opts \\ [])
@@ -177,7 +177,7 @@ defmodule Evision.Zoo.TextDetection.DB do
       points = Evision.Mat.as_type(Evision.boxPoints(rotation_box), :s32)
       [b0, b1 | _] = Nx.to_flat_list(Evision.Mat.to_nx(points, Nx.BinaryBackend))
       Evision.polylines(img, [points], true, box_color, thickness: 2)
-      |> Evision.putText("#{conf}", {b0, b1 + 12}, Evision.cv_FONT_HERSHEY_DUPLEX(), 0.3, text_color)
+      |> Evision.putText("#{conf}", {b0, b1 + 12}, Evision.Constant.cv_FONT_HERSHEY_DUPLEX(), 0.3, text_color)
     end)
   end
 
@@ -310,7 +310,7 @@ defmodule Evision.Zoo.TextDetection.DB do
           image_ = Evision.resize(image, unquote({width, height}))
           {detections, confidences} = Evision.Zoo.TextDetection.DB.infer(model, image_)
 
-          image_ = Evision.cvtColor(image_, Evision.cv_COLOR_RGB2BGR())
+          image_ = Evision.cvtColor(image_, Evision.Constant.cv_COLOR_RGB2BGR())
           vis_img = Evision.Zoo.TextDetection.DB.visualize(image_, detections, confidences)
           vis_img = Evision.resize(vis_img, {original_width, original_height})
 

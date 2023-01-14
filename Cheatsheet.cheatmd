@@ -30,7 +30,7 @@ iex> c
 ### Read a color image as a grayscale one
 #### Evision.imread with `flags`
 ```elixir
-iex> img = Evision.imread("image.png", flags: Evision.cv_IMREAD_GRAYSCALE())
+iex> img = Evision.imread("image.png", flags: Evision.Constant.cv_IMREAD_GRAYSCALE())
 %Evision.Mat{
   channels: 1,
   dims: 2,
@@ -44,7 +44,7 @@ iex> img = Evision.imread("image.png", flags: Evision.cv_IMREAD_GRAYSCALE())
 ### Read a PNG image that has an alpha channel
 #### Evision.imread with `flags`
 ```elixir
-iex> img = Evision.imread("image.png", flags: Evision.cv_IMREAD_UNCHANGED())
+iex> img = Evision.imread("image.png", flags: Evision.Constant.cv_IMREAD_UNCHANGED())
 %Evision.Mat{
   channels: 4,
   dims: 2,

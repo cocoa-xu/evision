@@ -9,8 +9,8 @@ defmodule Evision.Zoo.ImageClassification.MobileNetV1 do
   @spec default_config :: map()
   def default_config do
     %{
-      backend: Evision.cv_DNN_BACKEND_OPENCV(),
-      target: Evision.cv_DNN_TARGET_CPU(),
+      backend: Evision.Constant.cv_DNN_BACKEND_OPENCV(),
+      target: Evision.Constant.cv_DNN_TARGET_CPU(),
       top_k: 5
     }
   end
@@ -54,13 +54,13 @@ defmodule Evision.Zoo.ImageClassification.MobileNetV1 do
 
     Specify the backend.
 
-    Optional. Defaults to `Evision.cv_DNN_BACKEND_OPENCV()`.
+    Optional. Defaults to `Evision.Constant.cv_DNN_BACKEND_OPENCV()`.
 
   - **target**: `integer()`.
 
     Specify the target.
 
-    Optional. Defaults to `Evision.cv_DNN_TARGET_CPU()`.
+    Optional. Defaults to `Evision.Constant.cv_DNN_TARGET_CPU()`.
   """
   @spec init(binary | :default_model | :quant_model, nil | Keyword.t()) :: {:error, String.t()} | Evision.DNN.Net.t()
   def init(model_path, opts \\ [])

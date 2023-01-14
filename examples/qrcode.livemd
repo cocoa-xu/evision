@@ -37,7 +37,7 @@ string_to_encode = "This is a string!"
   minimal_qrcode = Evision.QRCodeEncoder.encode(Evision.QRCodeEncoder.create(), string_to_encode)
 
 # for this example, we can resize it to 300x300
-qrcode = Evision.resize(minimal_qrcode, {300, 300}, interpolation: Evision.cv_INTER_AREA())
+qrcode = Evision.resize(minimal_qrcode, {300, 300}, interpolation: Evision.Constant.cv_INTER_AREA())
 ```
 
 <!-- livebook:{"output":true} -->
@@ -134,7 +134,7 @@ qrcode[[col_start..col_end, row_start..row_end]]
 ```elixir
 # the third value is `straight_qrcode`, which is the minimal possible image
 # for the QRCode
-Evision.resize(straight_qrcode, {300, 300}, interpolation: Evision.cv_INTER_AREA())
+Evision.resize(straight_qrcode, {300, 300}, interpolation: Evision.Constant.cv_INTER_AREA())
 ```
 
 <!-- livebook:{"output":true} -->

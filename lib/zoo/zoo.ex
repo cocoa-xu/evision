@@ -58,42 +58,42 @@ defmodule Evision.Zoo do
 
   def backends do
     %{
-      "opencv" => {Evision.cv_DNN_BACKEND_OPENCV(), "OpenCV", quote do Evision.cv_DNN_BACKEND_OPENCV() end},
-      "cuda" => {Evision.cv_DNN_BACKEND_CUDA(), "CUDA", quote do Evision.cv_DNN_BACKEND_CUDA() end},
-      "halide" => {Evision.cv_DNN_BACKEND_HALIDE(), "Halide", quote do Evision.cv_DNN_BACKEND_HALIDE() end},
-      "inference_engine" => {Evision.cv_DNN_BACKEND_INFERENCE_ENGINE(), "Inference Engine", quote do Evision.cv_DNN_BACKEND_INFERENCE_ENGINE() end},
-      "timvx" => {Evision.cv_DNN_BACKEND_TIMVX(), "TIMVX", quote do Evision.cv_DNN_BACKEND_TIMVX() end},
-      "vkcom" => {Evision.cv_DNN_BACKEND_VKCOM(), "VKCOM", quote do Evision.cv_DNN_BACKEND_VKCOM() end},
+      "opencv" => {Evision.Constant.cv_DNN_BACKEND_OPENCV(), "OpenCV", quote do Evision.Constant.cv_DNN_BACKEND_OPENCV() end},
+      "cuda" => {Evision.Constant.cv_DNN_BACKEND_CUDA(), "CUDA", quote do Evision.Constant.cv_DNN_BACKEND_CUDA() end},
+      "halide" => {Evision.Constant.cv_DNN_BACKEND_HALIDE(), "Halide", quote do Evision.Constant.cv_DNN_BACKEND_HALIDE() end},
+      "inference_engine" => {Evision.Constant.cv_DNN_BACKEND_INFERENCE_ENGINE(), "Inference Engine", quote do Evision.Constant.cv_DNN_BACKEND_INFERENCE_ENGINE() end},
+      "timvx" => {Evision.Constant.cv_DNN_BACKEND_TIMVX(), "TIMVX", quote do Evision.Constant.cv_DNN_BACKEND_TIMVX() end},
+      "vkcom" => {Evision.Constant.cv_DNN_BACKEND_VKCOM(), "VKCOM", quote do Evision.Constant.cv_DNN_BACKEND_VKCOM() end},
     }
   end
 
   def targets do
     %{
-      Evision.cv_DNN_TARGET_CPU() => %{value: "cpu", label: "CPU"},
-      Evision.cv_DNN_TARGET_CUDA() => %{value: "cuda", label: "CUDA"},
-      Evision.cv_DNN_TARGET_CUDA_FP16() => %{value: "cuda_fp16", label: "CUDA FP16"},
-      Evision.cv_DNN_TARGET_FPGA() => %{value: "fpga", label: "FPGA"},
-      Evision.cv_DNN_TARGET_HDDL() => %{value: "hddl", label: "HDDL"},
-      Evision.cv_DNN_TARGET_MYRIAD() => %{value: "myriad", label: "Myriad"},
-      Evision.cv_DNN_TARGET_NPU() => %{value: "npu", label: "NPU"},
-      Evision.cv_DNN_TARGET_OPENCL() => %{value: "opencl", label: "OpenCL"},
-      Evision.cv_DNN_TARGET_OPENCL_FP16() => %{value: "opencl_fp16", label: "OpenCL FP16"},
-      Evision.cv_DNN_TARGET_VULKAN() => %{value: "vulkan", label: "Vulkan"},
+      Evision.Constant.cv_DNN_TARGET_CPU() => %{value: "cpu", label: "CPU"},
+      Evision.Constant.cv_DNN_TARGET_CUDA() => %{value: "cuda", label: "CUDA"},
+      Evision.Constant.cv_DNN_TARGET_CUDA_FP16() => %{value: "cuda_fp16", label: "CUDA FP16"},
+      Evision.Constant.cv_DNN_TARGET_FPGA() => %{value: "fpga", label: "FPGA"},
+      Evision.Constant.cv_DNN_TARGET_HDDL() => %{value: "hddl", label: "HDDL"},
+      Evision.Constant.cv_DNN_TARGET_MYRIAD() => %{value: "myriad", label: "Myriad"},
+      Evision.Constant.cv_DNN_TARGET_NPU() => %{value: "npu", label: "NPU"},
+      Evision.Constant.cv_DNN_TARGET_OPENCL() => %{value: "opencl", label: "OpenCL"},
+      Evision.Constant.cv_DNN_TARGET_OPENCL_FP16() => %{value: "opencl_fp16", label: "OpenCL FP16"},
+      Evision.Constant.cv_DNN_TARGET_VULKAN() => %{value: "vulkan", label: "Vulkan"},
     }
   end
 
   def targets_reverse_lookup do
     %{
-      "cpu" => quote do Evision.cv_DNN_TARGET_CPU() end,
-      "cuda" => quote do Evision.cv_DNN_TARGET_CUDA() end,
-      "cuda_fp16" => quote do Evision.cv_DNN_TARGET_CUDA_FP16() end,
-      "fpga" => quote do Evision.cv_DNN_TARGET_FPGA() end,
-      "hddl" => quote do Evision.cv_DNN_TARGET_HDDL() end,
-      "myriad" => quote do Evision.cv_DNN_TARGET_MYRIAD() end,
-      "npu" => quote do Evision.cv_DNN_TARGET_NPU() end,
-      "opencl" => quote do Evision.cv_DNN_TARGET_OPENCL() end,
-      "opencl_fp16" => quote do Evision.cv_DNN_TARGET_OPENCL_FP16() end,
-      "vulkan" => quote do Evision.cv_DNN_TARGET_VULKAN() end,
+      "cpu" => quote do Evision.Constant.cv_DNN_TARGET_CPU() end,
+      "cuda" => quote do Evision.Constant.cv_DNN_TARGET_CUDA() end,
+      "cuda_fp16" => quote do Evision.Constant.cv_DNN_TARGET_CUDA_FP16() end,
+      "fpga" => quote do Evision.Constant.cv_DNN_TARGET_FPGA() end,
+      "hddl" => quote do Evision.Constant.cv_DNN_TARGET_HDDL() end,
+      "myriad" => quote do Evision.Constant.cv_DNN_TARGET_MYRIAD() end,
+      "npu" => quote do Evision.Constant.cv_DNN_TARGET_NPU() end,
+      "opencl" => quote do Evision.Constant.cv_DNN_TARGET_OPENCL() end,
+      "opencl_fp16" => quote do Evision.Constant.cv_DNN_TARGET_OPENCL_FP16() end,
+      "vulkan" => quote do Evision.Constant.cv_DNN_TARGET_VULKAN() end,
     }
   end
 
@@ -131,7 +131,7 @@ defmodule Evision.Zoo do
       if selected_backend do
         elem(selected_backend, 2)
       else
-        quote do Evision.cv_DNN_BACKEND_OPENCV() end
+        quote do Evision.Constant.cv_DNN_BACKEND_OPENCV() end
       end
 
     targets_reverse_lookup = targets_reverse_lookup()
@@ -141,7 +141,7 @@ defmodule Evision.Zoo do
       if selected_target do
         selected_target
       else
-        quote do Evision.cv_DNN_TARGET_CPU() end
+        quote do Evision.Constant.cv_DNN_TARGET_CPU() end
       end
 
     {backend, target}

@@ -3,6 +3,21 @@
 ## v0.1.26 (main)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.26) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.26)
 
+### Breaking Changes
+- [Evision.Constant] Constant values are all relocated to the `Evision.Constant` module. To use them, either do
+
+  ```elixir
+  Evision.Constant.cv_IMREAD_ANY()
+  ```
+
+  or
+
+  ```elixir
+  import Evision.Constant
+  cv_IMREAD_ANY()
+  ```
+- [Evision] `Evision.__enabled_modules__/0` => `Evision.enabled_modules/0`. Result will now be computed using `HAVE_OPENCV_{MODULE_NAME}` macros.
+
 ### Fixed
 - [Evision.Mat] fixed `Evision.Mat.update_roi/3`.
 - [py_src] fix incorrect typespecs.
@@ -10,7 +25,6 @@
 
 ### Changed
 - [c_src] check if we can use existing atom from `enif_make_existing_atom` before calling to `enif_make_atom`.
-- [Evision] `Evision.__enabled_modules__/0` => `Evision.enabled_modules/0`. Result will now be computed using `HAVE_OPENCV_{MODULE_NAME}` macros.
 
 ## v0.1.25 (2022-12-18)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.25) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.25)

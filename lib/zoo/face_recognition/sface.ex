@@ -9,8 +9,8 @@ defmodule Evision.Zoo.FaceRecognition.SFace do
   @spec default_config :: map()
   def default_config do
     %{
-      backend: Evision.cv_DNN_BACKEND_OPENCV(),
-      target: Evision.cv_DNN_TARGET_CPU(),
+      backend: Evision.Constant.cv_DNN_BACKEND_OPENCV(),
+      target: Evision.Constant.cv_DNN_TARGET_CPU(),
       distance_type: :cosine_similarity,
       cosine_threshold: 0.363,
       l2_norm_threshold: 1.128,
@@ -74,13 +74,13 @@ defmodule Evision.Zoo.FaceRecognition.SFace do
 
     Specify the backend.
 
-    Optional. Defaults to `Evision.cv_DNN_BACKEND_OPENCV()`.
+    Optional. Defaults to `Evision.Constant.cv_DNN_BACKEND_OPENCV()`.
 
   - **target**: `integer()`.
 
     Specify the target.
 
-    Optional. Defaults to `Evision.cv_DNN_TARGET_CPU()`.
+    Optional. Defaults to `Evision.Constant.cv_DNN_TARGET_CPU()`.
   """
   @spec init(binary | :default_model | :quant_model, nil | Keyword.t()) :: {:error, String.t()} | Evision.FaceRecognizerSF.t()
   def init(model_path, opts \\ [])
@@ -445,8 +445,8 @@ defmodule Evision.Zoo.FaceRecognition.SFace do
               %{matched: matched, retval: val, measure: measure} = Evision.Zoo.FaceRecognition.SFace.match_feature(
                 recognizer, original_feature, comparison_feature)
 
-              original_image = Evision.cvtColor(original_image, Evision.cv_COLOR_RGB2BGR())
-              comparison_image = Evision.cvtColor(comparison_image, Evision.cv_COLOR_RGB2BGR())
+              original_image = Evision.cvtColor(original_image, Evision.Constant.cv_COLOR_RGB2BGR())
+              comparison_image = Evision.cvtColor(comparison_image, Evision.Constant.cv_COLOR_RGB2BGR())
               vis_original = unquote(detector_module).visualize(original_image, original_results[0])
               vis_comparison = unquote(detector_module).visualize(comparison_image, comparison_results[0])
 

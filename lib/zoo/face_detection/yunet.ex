@@ -9,8 +9,8 @@ defmodule Evision.Zoo.FaceDetection.YuNet do
   @spec default_config :: map()
   def default_config do
     %{
-      backend: Evision.cv_DNN_BACKEND_OPENCV(),
-      target: Evision.cv_DNN_TARGET_CPU(),
+      backend: Evision.Constant.cv_DNN_BACKEND_OPENCV(),
+      target: Evision.Constant.cv_DNN_TARGET_CPU(),
       conf_threshold: 0.9,
       nms_threshold: 0.3,
       top_k: 5000
@@ -76,13 +76,13 @@ defmodule Evision.Zoo.FaceDetection.YuNet do
 
     Specify the backend.
 
-    Optional. Defaults to `Evision.cv_DNN_BACKEND_OPENCV()`.
+    Optional. Defaults to `Evision.Constant.cv_DNN_BACKEND_OPENCV()`.
 
   - **target**: `integer()`.
 
     Specify the target.
 
-    Optional. Defaults to `Evision.cv_DNN_TARGET_CPU()`.
+    Optional. Defaults to `Evision.Constant.cv_DNN_TARGET_CPU()`.
   """
   @spec init(binary | :default_model | :quant_model, nil | Keyword.t()) :: {:error, String.t()} | Evision.FaceDetectorYN.t()
   def init(model_path, opts \\ [])
@@ -223,7 +223,7 @@ defmodule Evision.Zoo.FaceDetection.YuNet do
 
             image =
               Evision.rectangle(image, {b0, b1}, {b0+b2, b1+b3}, box_color, thickness: 2)
-              |> Evision.putText("#{conf}", {b0, b1+12}, Evision.cv_FONT_HERSHEY_DUPLEX(), 0.5, text_color)
+              |> Evision.putText("#{conf}", {b0, b1+12}, Evision.Constant.cv_FONT_HERSHEY_DUPLEX(), 0.5, text_color)
 
             landmarks = Nx.reshape(Nx.as_type(det[4..13], :s32), {5, 2})
             for idx <- 0..4, reduce: image do
@@ -330,7 +330,7 @@ defmodule Evision.Zoo.FaceDetection.YuNet do
           image = Evision.Mat.from_binary(image.data, {:u, 8}, image.height, image.width, 3)
           results = Evision.Zoo.FaceDetection.YuNet.infer(model, image)
 
-          image = Evision.cvtColor(image, Evision.cv_COLOR_RGB2BGR())
+          image = Evision.cvtColor(image, Evision.Constant.cv_COLOR_RGB2BGR())
           Evision.Zoo.FaceDetection.YuNet.visualize(image, results)
           |> then(&Kino.Frame.render(frame, Kino.Image.new(Evision.imencode(".png", &1), :png)))
         end)
