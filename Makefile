@@ -67,7 +67,7 @@ endif
 
 EVISION_ENABLE_CONTRIB ?= true
 ifeq ($(EVISION_ENABLE_CONTRIB),true)
-	CMAKE_OPTIONS += -DOPENCV_EXTRA_MODULES_PATH="$(OPENCV_CONTRIB_DIR)/modules" -D BUILD_opencv_hdf=OFF -D BUILD_opencv_freetype=OFF
+	CMAKE_OPTIONS += -DOPENCV_EXTRA_MODULES_PATH="$(OPENCV_CONTRIB_DIR)/modules" -D BUILD_opencv_hdf=OFF -D BUILD_opencv_freetype=OFF -D BUILD_opencv_sfm=OFF
 	C_SRC_HEADERS_TXT = "$(C_SRC)/headers-contrib.txt"
 	HEADERS_TXT = $(CMAKE_OPENCV_BUILD_DIR)/modules/python_bindings_generator/headers-contrib.txt
 else
