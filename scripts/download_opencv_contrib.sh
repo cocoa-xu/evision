@@ -12,7 +12,7 @@ download_opencv_contrib() {
         echo "Downloading OpenCV contrib ${OPENCV_VER}..."
         mkdir -p "${OPENCV_CACHE_DIR}"
         if [ -e "$(which wget)" ]; then
-            wget --quite "${OPENCV_CONTRIB_ZIP_URL}" -O "${OPENCV_CONTRIB_SOURCE_ZIP}"
+            wget --quiet "${OPENCV_CONTRIB_ZIP_URL}" -O "${OPENCV_CONTRIB_SOURCE_ZIP}"
         elif [ -e "$(which curl)" ]; then
             curl -fSsL "${OPENCV_CONTRIB_ZIP_URL}" -o "${OPENCV_CONTRIB_SOURCE_ZIP}"
         else
