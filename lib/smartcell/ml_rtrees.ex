@@ -172,7 +172,7 @@ else
         unquote(ESCH.quoted_var(attrs["to_variable"])) =
           Evision.ML.RTrees.setTermCriteria(
             unquote(ESCH.quoted_var(attrs["to_variable"])),
-            {Evision.cv_MAX_ITER(), unquote(count), unquote(eps)}
+            {Evision.Constant.cv_MAX_ITER(), unquote(count), unquote(eps)}
           )
       end
     end
@@ -188,7 +188,7 @@ else
         unquote(ESCH.quoted_var(attrs["to_variable"])) =
           Evision.ML.RTrees.setTermCriteria(
             unquote(ESCH.quoted_var(attrs["to_variable"])),
-            {Evision.cv_EPS(), unquote(count), unquote(eps)}
+            {Evision.Constant.cv_EPS(), unquote(count), unquote(eps)}
           )
       end
     end
@@ -204,7 +204,7 @@ else
         unquote(ESCH.quoted_var(attrs["to_variable"])) =
           Evision.ML.RTrees.setTermCriteria(
             unquote(ESCH.quoted_var(attrs["to_variable"])),
-            {Evision.cv_MAX_ITER() + Evision.cv_EPS(), unquote(count), unquote(eps)}
+            {Evision.Constant.cv_MAX_ITER() + Evision.Constant.cv_EPS(), unquote(count), unquote(eps)}
           )
       end
     end

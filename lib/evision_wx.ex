@@ -199,7 +199,7 @@ defmodule Evision.Wx do
          {target_w, target_h} = {trunc(image_w * proportional), trunc(image_h * proportional)},
          resized = Evision.resize(image, {target_w, target_h}),
          true <- is_struct(resized, Evision.Mat),
-         rgb = Evision.cvtColor(resized, Evision.cv_COLOR_BGR2RGB()),
+         rgb = Evision.cvtColor(resized, Evision.Constant.cv_COLOR_BGR2RGB()),
          true <- is_struct(rgb, Evision.Mat),
          binary = Evision.Mat.to_binary(rgb),
          true <- is_binary(binary) do

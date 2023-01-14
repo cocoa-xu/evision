@@ -140,13 +140,13 @@ else
 
     def data_layout("row") do
       quote do
-        Evision.cv_ROW_SAMPLE()
+        Evision.Constant.cv_ROW_SAMPLE()
       end
     end
 
     def data_layout("col") do
       quote do
-        Evision.cv_COL_SAMPLE()
+        Evision.Constant.cv_COL_SAMPLE()
       end
     end
 

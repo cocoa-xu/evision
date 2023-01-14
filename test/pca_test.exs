@@ -13,32 +13,32 @@ defmodule Evision.PCA.Test do
 
     %Mat{} =
       src =
-      Evision.line(src, {px, py}, {qx, qy}, colour, thickness: 1, style: Evision.cv_LINE_AA())
+      Evision.line(src, {px, py}, {qx, qy}, colour, thickness: 1, style: Evision.Constant.cv_LINE_AA())
 
     px = trunc(qx + 9 * :math.cos(angle + :math.pi() / 4))
     py = trunc(qy + 9 * :math.sin(angle + :math.pi() / 4))
 
     %Mat{} =
       src =
-      Evision.line(src, {px, py}, {qx, qy}, colour, thickness: 1, style: Evision.cv_LINE_AA())
+      Evision.line(src, {px, py}, {qx, qy}, colour, thickness: 1, style: Evision.Constant.cv_LINE_AA())
 
     px = trunc(qx + 9 * :math.cos(angle - :math.pi() / 4))
     py = trunc(qy + 9 * :math.sin(angle - :math.pi() / 4))
-    Evision.line(src, {px, py}, {qx, qy}, colour, thickness: 1, style: Evision.cv_LINE_AA())
+    Evision.line(src, {px, py}, {qx, qy}, colour, thickness: 1, style: Evision.Constant.cv_LINE_AA())
   end
 
   @tag :nx
   test "Use the OpenCV class Evision.PCA to calculate the orientation of an object." do
     gray =
       Evision.imread(Path.join([__DIR__, "testdata", "pca_test.jpg"]),
-        flags: Evision.cv_IMREAD_GRAYSCALE()
+        flags: Evision.Constant.cv_IMREAD_GRAYSCALE()
       )
 
     {_, bw} =
-      Evision.threshold(gray, 50, 255, Evision.cv_THRESH_BINARY() ||| Evision.cv_THRESH_OTSU())
+      Evision.threshold(gray, 50, 255, Evision.Constant.cv_THRESH_BINARY() ||| Evision.Constant.cv_THRESH_OTSU())
 
     {contours, _} =
-      Evision.findContours(bw, Evision.cv_RETR_LIST(), Evision.cv_CHAIN_APPROX_NONE())
+      Evision.findContours(bw, Evision.Constant.cv_RETR_LIST(), Evision.Constant.cv_CHAIN_APPROX_NONE())
 
     contours =
       contours

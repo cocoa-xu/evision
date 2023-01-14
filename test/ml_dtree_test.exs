@@ -12,7 +12,7 @@ defmodule Evision.ML.DTrees.Test do
     features = Evision.Mat.from_nx(Nx.tensor(features, type: :f32, backend: Evision.Backend))
     labels = Evision.Mat.from_nx(Nx.tensor(labels, type: :s32, backend: Evision.Backend))
 
-    dataset = Evision.ML.TrainData.create(features, Evision.cv_ROW_SAMPLE(), labels)
+    dataset = Evision.ML.TrainData.create(features, Evision.Constant.cv_ROW_SAMPLE(), labels)
     dataset = Evision.ML.TrainData.setTrainTestSplitRatio(dataset, 0.9, shuffle: true)
 
     dtree =

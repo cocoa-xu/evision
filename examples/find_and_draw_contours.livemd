@@ -54,7 +54,7 @@ Helper.download!("https://docs.opencv.org/4.x/pca_test1.jpg", "pca_test.jpg")
 ## Load Image As Gray Scale
 
 ```elixir
-gray = Evision.imread("pca_test.jpg", flags: Evision.cv_IMREAD_GRAYSCALE())
+gray = Evision.imread("pca_test.jpg", flags: Evision.Constant.cv_IMREAD_GRAYSCALE())
 ```
 
 <!-- livebook:{"output":true} -->
@@ -78,7 +78,7 @@ import Bitwise
 
 # binarization
 {_, bw} =
-  Evision.threshold(gray, 50, 255, Evision.cv_THRESH_BINARY() ||| Evision.cv_THRESH_OTSU())
+  Evision.threshold(gray, 50, 255, Evision.Constant.cv_THRESH_BINARY() ||| Evision.Constant.cv_THRESH_OTSU())
 
 bw
 ```
@@ -100,7 +100,7 @@ bw
 
 ```elixir
 # Find all the contours in the thresholded image
-{contours, _} = Evision.findContours(bw, Evision.cv_RETR_LIST(), Evision.cv_CHAIN_APPROX_NONE())
+{contours, _} = Evision.findContours(bw, Evision.Constant.cv_RETR_LIST(), Evision.Constant.cv_CHAIN_APPROX_NONE())
 
 IO.puts("Find #{Enum.count(contours)} contour(s)")
 ```
