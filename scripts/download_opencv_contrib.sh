@@ -12,7 +12,7 @@ download_opencv_contrib() {
         echo "Downloading OpenCV contrib ${OPENCV_VER}..."
         mkdir -p "${OPENCV_CACHE_DIR}"
         if [ -e "$(which wget)" ]; then
-            wget "${OPENCV_CONTRIB_ZIP_URL}" -O "${OPENCV_CONTRIB_SOURCE_ZIP}"
+            wget --quite "${OPENCV_CONTRIB_ZIP_URL}" -O "${OPENCV_CONTRIB_SOURCE_ZIP}"
         elif [ -e "$(which curl)" ]; then
             curl -fSsL "${OPENCV_CONTRIB_ZIP_URL}" -o "${OPENCV_CONTRIB_SOURCE_ZIP}"
         else
@@ -27,7 +27,7 @@ unzip_opencv_contrib() {
         echo "Unzipping OpenCV contrib ${OPENCV_VER}..."
         mkdir -p "${OPENCV_ROOT_DIR}"
         if [ -e "$(which unzip)" ]; then
-            unzip "${OPENCV_CONTRIB_SOURCE_ZIP}" -d "${OPENCV_ROOT_DIR}" ;
+            unzip -qq "${OPENCV_CONTRIB_SOURCE_ZIP}" -d "${OPENCV_ROOT_DIR}" ;
         elif [ -e "$(which 7z)" ]; then
             7z x "${OPENCV_CONTRIB_SOURCE_ZIP}" -o"${OPENCV_ROOT_DIR}" ;
         else
