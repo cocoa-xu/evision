@@ -77,8 +77,8 @@ jobs:
       # evision related env vars
       MIX_ENV: test
       OPENCV_VER: "4.7.0"
-      OTP_VERSION: "25.1.2"
-      ELIXIR_VERSION: "1.14.2"
+      OTP_VERSION: "25.2"
+      ELIXIR_VERSION: "1.14.3"
       EVISION_PREFER_PRECOMPILED: "false"
       EVISION_ENABLE_CUDA: "true"
     steps:
@@ -88,10 +88,10 @@ jobs:
         run: |
           apt-get update
           apt-get install -y build-essential automake autoconf pkg-config bc m4 unzip zip curl git libssl-dev gzip python3 ca-certificates \
-            libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libavresample-dev ffmpeg locales
-          echo "$LANG UTF-8" >> /etc/locale.gen
+            libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libavresample-dev ffmpeg locales curl wget cmake
+          echo "${LANG} UTF-8" >> /etc/locale.gen
           locale-gen
-          update-locale LANG=$LANG
+          update-locale LANG=${LANG}
 
       - uses: erlef/setup-beam@v1
         with:
