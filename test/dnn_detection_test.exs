@@ -111,11 +111,6 @@ defmodule Evision.DNN.Test do
 
       model = Evision.DNN.Net.setInput(model, blob, name: "", scalefactor: 1.0, mean: {0, 0, 0})
 
-      enable_winograd = System.get_env("ENABLE_WINOGRAD", "no")
-      if enable_winograd == "no" do
-        Evision.DNN.Net.enableWinograd(model, false)
-      end
-
       start_time = :os.system_time(:millisecond)
       detections = Evision.DNN.Net.forward(model, outBlobNames: out_names)
       end_time = :os.system_time(:millisecond)
