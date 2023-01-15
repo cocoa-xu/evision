@@ -165,6 +165,7 @@ module_name_map = {
     "bioinspired": "Bioinspired",
     "ccm": "CCM",
     "cuda": "CUDA",
+    "cudacodec": "CUDACodec",
     "colored_kinfu": "ColoredKinFu",
     "detail": "Detail",
     "dnn": "DNN",
