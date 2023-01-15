@@ -517,7 +517,7 @@ class FuncVariant(object):
         if is_instance_method:
             self.spec_self = ''
             tmp_name = self.classname
-            
+
             if len(self.classname) > 0:
                 is_param = False
                 if tmp_name.endswith('_Param'):
@@ -536,7 +536,7 @@ class FuncVariant(object):
                     self.spec_self = 'TextDetectionModel_DB'
                 elif tmp_name == 'dnn_TextDetectionModel_EAST':
                     self.spec_self = 'TextDetectionModel_EAST'
-                if len(out_args_name) == 0:
+                if len(out_args) == 0 and len(out_args_name) == 0:
                     out_args = [self.spec_self]
 
             if is_struct(self.spec_self, classname=self.classname):
