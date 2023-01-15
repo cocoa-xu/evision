@@ -150,7 +150,7 @@ class FuncInfo(object):
     int error_flag = false;
     ERL_NIF_TERM error_term = 0;
     std::map<std::string, ERL_NIF_TERM> erl_terms;
-    int nif_opts_index = {opt_arg_index};
+    const int nif_opts_index = {opt_arg_index};
     if (nif_opts_index < argc) {{
         evision::nif::parse_arg(env, nif_opts_index, argv, erl_terms);
     }}
@@ -178,14 +178,50 @@ class FuncInfo(object):
 
         variants = {}
         sorted_variants = []
+        counts = set()
         for v in self.variants:
             count = 0
             for a_index, a in enumerate(v.args):
                 if a.py_inputarg and len(a.defval) == 0:
                     count += 1
             variants[v] = count
-        for k, _ in reversed(sorted(variants.items(), key=lambda item: item[1])):
-            sorted_variants.append(k)
+            counts.add(count)
+        for k, v in reversed(sorted(variants.items(), key=lambda item: item[1])):
+            sorted_variants.append((k, v))
+
+        none_umat = {}
+        umat_ones = {}
+        for v, count in sorted_variants:
+            is_umat = False
+            output_count = 0
+            for a in v.args:
+                if a.py_inputarg and 'UMat' in a.tp:
+                    is_umat = True
+                if a.py_outputarg:
+                    output_count += 1
+            if not is_umat:
+                if none_umat.get(count, None) is None:
+                    none_umat[count] = []
+                none_umat[count].append((v, output_count))
+            else:
+                if umat_ones.get(count, None) is None:
+                    umat_ones[count] = []
+                umat_ones[count].append((v, output_count))
+
+        # sort by number of output variables desc
+        input_variants = list(reversed(sorted(list(counts))))
+        for c in input_variants:
+            if none_umat.get(c, None) is not None:
+                none_umat[c] = sorted(none_umat[c], key=lambda item: -item[1])
+            if umat_ones.get(c, None) is not None:
+                umat_ones[c] = sorted(umat_ones[c], key=lambda item: -item[1])
+
+        sorted_variants = []
+        for c in input_variants:
+            if none_umat.get(c, None) is not None:
+                sorted_variants.extend([f[0] for f in none_umat[c]])
+            if umat_ones.get(c, None) is not None:
+                sorted_variants.extend([f[0] for f in umat_ones[c]])
 
         for v in sorted_variants:
             code_decl = ""
