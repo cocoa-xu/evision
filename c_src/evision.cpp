@@ -614,7 +614,7 @@ static ERL_NIF_TERM evision_from(ErlNifEnv *env, void*& ptr)
 static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Scalar& s, const ArgInfo& info)
 {
     if (evision::nif::check_nil(env, o)) {
-        return true;
+        return info.has_default || info.outputarg;
     }
 
     double dval;
