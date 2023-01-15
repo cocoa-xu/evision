@@ -169,7 +169,18 @@ class FuncInfo(object):
 
         all_code_variants = []
 
+        variants = {}
+        sorted_variants = []
         for v in self.variants:
+            count = 0
+            for a_index, a in enumerate(v.args):
+                if a.py_inputarg and len(a.defval) == 0:
+                    count += 1
+            variants[v] = count
+        for k, _ in reversed(sorted(variants.items(), key=lambda item: item[1])):
+            sorted_variants.append(k)
+
+        for v in sorted_variants:
             code_decl = ""
             code_ret = ""
             code_cvt_list = []
