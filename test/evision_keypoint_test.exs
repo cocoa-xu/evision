@@ -3,6 +3,6 @@ defmodule Evision.Mat.Test do
 
   test "Keypoints" do
     kp = Evision.KeyPoint.convert([{23.3, 23.3}])
-    IO.inspect(kp)
+    assert Enum.count(kp) == 1
   end
 end
