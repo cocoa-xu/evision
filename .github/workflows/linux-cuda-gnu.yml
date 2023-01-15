@@ -2,7 +2,7 @@ name: linux-cuda
 
 on:
   pull_request:
-    types: [ labeled ]
+    types: [ labeled, synchronize, opened, reopened ]
     paths-ignore:
       - '*.md'
       - '**/*.md'
@@ -53,7 +53,7 @@ concurrency:
 
 jobs:
   x86_64-gnu-cuda:
-    if: ${{ github.event.label.name == 'cuda' }}
+    if: contains(github.event.pull_request.labels.*.name, 'cuda')
     runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
