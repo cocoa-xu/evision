@@ -1,4 +1,4 @@
-name: linux-x86_64
+name: linux-cuda
 
 on:
   pull_request:
