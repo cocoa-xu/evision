@@ -866,17 +866,17 @@ defmodule Evision.MixProject do
     ],
 
     cuda: [
-      cudaarithm: false,
-      cudabgsegm: false,
-      cudacodec: false,
-      cudafeatures2d: false,
-      cudafilters: false,
-      cudaimgproc: false,
-      cudalegacy: false,
-      cudaobjdetect: false,
-      cudaoptflow: false,
-      cudastereo: false,
-      cudawarping: false,
+      cudaarithm: true,
+      cudabgsegm: true,
+      cudacodec: true,
+      cudafeatures2d: true,
+      cudafilters: true,
+      cudaimgproc: true,
+      cudalegacy: true,
+      cudaobjdetect: true,
+      cudaoptflow: true,
+      cudastereo: true,
+      cudawarping: true,
       cudev: true,
     ]
   }
@@ -905,9 +905,9 @@ defmodule Evision.MixProject do
     enable_cuda = System.get_env("EVISION_ENABLE_CUDA", "false")
     enable_opencv_cuda = enable_cuda == "true"
     if enable_opencv_cuda do
-      System.put_env("EVISION_ENABLE_CONTRIB", "true")
+      System.put_env("EVISION_ENABLE_CUDA", "true")
     else
-      System.put_env("EVISION_ENABLE_CONTRIB", "false")
+      System.put_env("EVISION_ENABLE_CUDA", "false")
     end
 
     enable_contrib = System.get_env("EVISION_ENABLE_CONTRIB", "true")
@@ -977,6 +977,12 @@ defmodule Evision.MixProject do
          |> Enum.map(&"-D BUILD_#{Atom.to_string(&1) |> String.upcase()}=ON")
          |> Enum.join(" ")) <>
         " "
+
+    options = if enable_opencv_cuda and enable_opencv_contrib do
+      "#{options} -D WITH_CUDA=ON"
+    else
+      options
+    end
 
     {options, enabled_modules |> Enum.map(&Atom.to_string(&1)) |> Enum.join(",")}
   end
