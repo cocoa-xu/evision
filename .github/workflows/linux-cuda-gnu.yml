@@ -53,6 +53,7 @@ concurrency:
 
 jobs:
   x86_64-gnu-cuda:
+    if: ${{ github.event.label.name == 'cuda' }}
     runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
@@ -85,8 +86,8 @@ jobs:
 
       - name: Install system dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential automake autoconf pkg-config bc m4 unzip zip curl git libssl-dev gzip python3 ca-certificates \
+          apt-get update
+          apt-get install -y build-essential automake autoconf pkg-config bc m4 unzip zip curl git libssl-dev gzip python3 ca-certificates \
             libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libavresample-dev ffmpeg
           echo "$LANG UTF-8" >> /etc/locale.gen
           locale-gen
