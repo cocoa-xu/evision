@@ -48,13 +48,14 @@ jobs:
       OPENCV_VER: "4.7.0"
       MIX_ENV: "test"
       EVISION_PREFER_PRECOMPILED: "false"
+      FFMPEG_VER: "5"
     steps:
       - uses: actions/checkout@v3
 
-      - name: Install FFmpeg4, Erlang and Elixir
+      - name: Install FFmpeg, Erlang and Elixir
         run: |
-          brew install erlang elixir ffmpeg@4
-          brew link ffmpeg@4
+          brew install erlang elixir ffmpeg
+          brew link ffmpeg
           mix local.hex --force
           mix local.rebar --force
 
@@ -89,7 +90,7 @@ jobs:
         id: cache-mix-compile_opencv
         uses: actions/cache@v3
         with:
-          key: compiled-with-ffmpeg-opencv-${{ env.OPENCV_VER }}-x86_64-apple-darwin-${{ hashFiles('Makefile') }}-${{ hashFiles('py_src/*.py') }}
+          key: compiled-with-ffmpeg${{ env.FFMPEG_VER }}-opencv-${{ env.OPENCV_VER }}-x86_64-apple-darwin-${{ hashFiles('Makefile') }}-${{ hashFiles('py_src/*.py') }}
           path: |
             ./_build/${{ env.MIX_ENV }}/lib/evision
             ./c_src/headers.txt

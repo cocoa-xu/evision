@@ -16,6 +16,7 @@
   import Evision.Constant
   cv_IMREAD_ANY()
   ```
+
 - [Evision] `Evision.__enabled_modules__/0` => `Evision.enabled_modules/0`. Result will now be computed using `HAVE_OPENCV_{MODULE_NAME}` macros.
 
 ### Fixed

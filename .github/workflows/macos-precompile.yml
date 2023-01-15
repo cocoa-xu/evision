@@ -156,7 +156,7 @@ jobs:
 
           mix compile
 
-      - name: Create precompiled library (without contrib modules)
+      - name: Create precompiled library (with contrib modules)
         run: |
           export PKG_NAME=evision-nif_${NIF_VERSION}-${{ matrix.pair.arch_name }}-apple-darwin-contrib-${GITHUB_REF##*/v}
           mkdir -p "${PKG_NAME}"

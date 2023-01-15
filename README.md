@@ -383,16 +383,22 @@ Note 1: OpenCV can encode and decode some video formats (varies depending on you
 
 However, you should be aware of the license of the FFmpeg components you selected as they could be licensed by LGPL/GPL or other licenses.
 
-Note 2: FFmpeg 5 is not supported by OpenCV yet (as of OpenCV 4.6.0).
+Note 2: Installing FFmpeg
 
+On DEBIAN/Ubuntu
 ```shell
 sudo apt install -y libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libavresample-dev ffmpeg
 ```
 
 on macOS
 ```shell
+# FFmpeg 4
 brew install ffmpeg@4
 brew link ffmpeg@4
+
+# FFmpeg 5
+brew install ffmpeg
+brew link ffmpeg
 ```
 
 ##### Extra notes for building from source on Windows

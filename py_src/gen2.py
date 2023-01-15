@@ -18,6 +18,8 @@ from func_info import FuncInfo
 from class_info import ClassInfo
 from module_generator import ModuleGenerator
 from fixes import evision_elixir_fixes, evision_erlang_fixes
+from pathlib import Path
+from os import mkdir
 
 
 if sys.version_info[0] >= 3:
@@ -340,7 +342,11 @@ class BeamWrapperGenerator(object):
         self.code_enums.write(code)
 
     def save(self, path, name, buf):
-        with open(path + "/" + name, "wt", encoding='utf-8') as f:
+        outdir_path = path
+        outdir = Path(outdir_path)
+        if not outdir.exists():
+            outdir.mkdir(parents=True, exist_ok=True)
+        with open(f"{outdir_path}/{name}", "wt", encoding='utf-8') as f:
             if name.endswith(".h"):
                 f.write("#include <erl_nif.h>\n")
                 f.write('#include "nif_utils.hpp"\n')
@@ -362,7 +368,15 @@ class BeamWrapperGenerator(object):
             wname = wname[4:]
             inner_ns = wname.split('::')
             elixir_module_name = make_elixir_module_names(separated_ns=inner_ns)
-        elixir_module_name = elixir_module_name.replace('_', '').strip()
+
+        if module_name == 'ximgproc_segmentation':
+            elixir_module_name = "XImgProc"
+            inner_ns = ["Segmentation"]
+        elif module_name == 'utils_nested':
+            elixir_module_name = "Utils.Nested"
+        else:
+            elixir_module_name = elixir_module_name.replace('_', '').strip()
+
         evision_module_filename = elixir_module_name.replace('.', '_')
 
         if evision_module_filename in self.evision_modules:
@@ -372,7 +386,7 @@ class BeamWrapperGenerator(object):
             module_file_generator.write_elixir(f'defmodule Evision.{elixir_module_name} do\n')
             if elixir_module_name not in ['Flann', 'Segmentation', 'ML']:
                 module_file_generator.write_elixir('  import Kernel, except: [apply: 2, apply: 3]\n\n')
-            
+
             if not evision_module_filename.startswith("evision_"):
                 module_file_generator.write_erlang(f'-module(evision_{evision_module_filename.lower()}).\n-compile(nowarn_export_all).\n-compile([export_all]).\n-include("evision.hrl").\n\n')
             else:
