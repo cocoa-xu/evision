@@ -119,7 +119,7 @@ gpumat_struct_elixir = '  @typedoc """\n' + \
 
   @doc false
   def __to_struct__(%{
-        :class => :"CUDA.GpuMat",
+        :class => Evision.CUDA.GpuMat,
         :channels => channels,
         :type => type,
         :raw_type => raw_type,
@@ -137,7 +137,7 @@ gpumat_struct_elixir = '  @typedoc """\n' + \
     }
   end
 
-  def __to_struct__({:ok, mat = %{:class => :"CUDA.GpuMat"}}) do
+  def __to_struct__({:ok, mat = %{:class => Evision.CUDA.GpuMat}}) do
     {:ok, __to_struct__(mat)}
   end
 
@@ -147,7 +147,7 @@ gpumat_struct_elixir = '  @typedoc """\n' + \
 """
 
 gpumat_struct_erlang = """
-'__to_struct__'(#{class := 'CUDA.GpuMat', ref := Ref, channels := Channels, type := Type, raw_type := RawType, shape := Shape, elemSize := ElemSize}) ->
+'__to_struct__'(#{class := 'Elixir.Evision.CUDA.GpuMat', ref := Ref, channels := Channels, type := Type, raw_type := RawType, shape := Shape, elemSize := ElemSize}) ->
   #evision_cuda_gpumat{
       channels = Channels,
       type = Type,
