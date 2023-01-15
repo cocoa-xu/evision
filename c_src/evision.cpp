@@ -1629,7 +1629,7 @@ bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, std::vector<Tp>& value, const 
         if (info.name != nullptr && strncmp(info.name, "netInputShape", 13) == 0) {
             return false;
         }
-        return true;
+        return info.has_default || info.outputarg;
     }
     return evisionVecConverter<Tp>::to(env, obj, value, info);
 }
@@ -1647,7 +1647,7 @@ static bool evision_to_generic_vec(ErlNifEnv *env, ERL_NIF_TERM obj, std::vector
         if (info.name != nullptr && strncmp(info.name, "netInputShape", 13) == 0) {
             return false;
         }
-        return true;
+        return info.has_default || info.outputarg;
     }
 
     if (!enif_is_list(env, obj))
