@@ -18,13 +18,15 @@ defmodule Evision.DNN.DetectionModel.Test do
     net = Evision.DNN.readNet(weights, config: config, framework: "")
 
     model = DetectionModel.detectionModel(net)
-    model = DetectionModel.setInputParams(model,
-      scale: 1.0,
-      size: {416, 416},
-      mean: {0, 0, 0},
-      swapRB: true,
-      crop: false
-    )
+
+    model =
+      DetectionModel.setInputParams(model,
+        scale: 1.0,
+        size: {416, 416},
+        mean: {0, 0, 0},
+        swapRB: true,
+        crop: false
+      )
 
     {classes, _, _} = DetectionModel.detect(model, mat)
 

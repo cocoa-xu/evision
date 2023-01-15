@@ -4,11 +4,11 @@ defmodule Evision.ORB.Test do
   @moduletag timeout: 120_000
 
   test "detect keypoints in an image" do
-    img =
-      %Evision.Mat{} = Evision.imread(Path.join([__DIR__, "testdata", "pca_test.jpg"]), flags: 0)
+    img = %Evision.Mat{} = Evision.imread(Path.join([__DIR__, "testdata", "pca_test.jpg"]))
 
     orb = %Evision.ORB{} = Evision.ORB.create()
     kp = Evision.ORB.detect(orb, img)
+    assert Enum.count(kp) != 0
     {kp, _des} = Evision.ORB.compute(orb, img, kp)
     assert Enum.count(kp) != 0
   end

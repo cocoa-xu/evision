@@ -28,10 +28,12 @@ defmodule Evision.Wx do
 
     windows = Process.get(@process_env_key, %{})
     window = Map.get(windows, window_name)
-    wx_pid = case window do
-      nil -> nil
-      {_, _, _, pid} -> pid
-    end
+
+    wx_pid =
+      case window do
+        nil -> nil
+        {_, _, _, pid} -> pid
+      end
 
     window =
       if window == nil || !Process.alive?(wx_pid) do
@@ -64,6 +66,7 @@ defmodule Evision.Wx do
       catch
         :error, {_, {:wxWindow, :close, _}} -> :ok
       end
+
       Process.put(@process_env_key, Map.delete(windows, window_name))
     end
 

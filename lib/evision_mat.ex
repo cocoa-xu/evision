@@ -332,6 +332,7 @@ defmodule Evision.Mat do
       else
         {mat, false}
       end
+
     with_mat =
       if with_mat.dims != tuple_size(with_mat.shape) do
         Evision.Mat.channel_as_last_dim(with_mat)
@@ -340,13 +341,15 @@ defmodule Evision.Mat do
       end
 
     ranges = __standardise_range_list__(ranges, true)
+
     ranges =
       if tuple_size(mat.shape) > Enum.count(ranges) do
         extend =
-          for i <- Enum.count(ranges)..tuple_size(mat.shape)-1, reduce: [] do
+          for i <- Enum.count(ranges)..(tuple_size(mat.shape) - 1), reduce: [] do
             acc ->
               [{0, elem(mat.shape, i)} | acc]
           end
+
         ranges ++ Enum.reverse(extend)
       else
         ranges
@@ -355,9 +358,10 @@ defmodule Evision.Mat do
     with_mat = __from_struct__(with_mat)
     mat = __from_struct__(mat)
 
-    res = Evision.Internal.Structurise.to_struct(
-      :evision_nif.mat_update_roi(mat: mat, ranges: ranges, with_mat: with_mat)
-    )
+    res =
+      Evision.Internal.Structurise.to_struct(
+        :evision_nif.mat_update_roi(mat: mat, ranges: ranges, with_mat: with_mat)
+      )
 
     if bring_back do
       Evision.Mat.last_dim_as_channel(res)

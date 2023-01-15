@@ -47,11 +47,13 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
   def current_target_nif_url(nif_version, version \\ Metadata.version()) do
     {target, _} = get_target()
     enable_contrib = System.get_env("EVISION_ENABLE_CONTRIB", "true") == "true"
+
     if enable_contrib do
       System.put_env("EVISION_ENABLE_CONTRIB", "true")
     else
       System.put_env("EVISION_ENABLE_CONTRIB", "false")
     end
+
     get_download_url(target, version, nif_version, enable_contrib)
   end
 
@@ -342,7 +344,7 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
   def preferred_eccs do
     # TLS curves: X25519, prime256v1, secp384r1
     preferred_eccs = [:secp256r1, :secp384r1]
-    :ssl.eccs() -- (:ssl.eccs() -- preferred_eccs)
+    :ssl.eccs() -- :ssl.eccs() -- preferred_eccs
   end
 
   def secure_ssl? do
@@ -385,10 +387,12 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
   end
 
   def filename(target, version, nif_version, enable_contrib, with_ext \\ "")
-  def filename(target, version, nif_version, _enable_contrib=false, with_ext) do
+
+  def filename(target, version, nif_version, _enable_contrib = false, with_ext) do
     "evision-nif_#{nif_version}-#{target}-#{version}#{with_ext}"
   end
-  def filename(target, version, nif_version, _enable_contrib=true, with_ext) do
+
+  def filename(target, version, nif_version, _enable_contrib = true, with_ext) do
     "evision-nif_#{nif_version}-#{target}-contrib-#{version}#{with_ext}"
   end
 
@@ -819,14 +823,12 @@ defmodule Evision.MixProject do
       ts: true,
       video: true,
       videoio: true,
-
       gapi: false,
       world: false,
       python2: false,
       python3: false,
       java: false
     ],
-
     opencv_contrib: [
       aruco: true,
       barcode: true,
@@ -862,9 +864,8 @@ defmodule Evision.MixProject do
       optflow: false,
       sfm: false,
       videostab: false,
-      xobjdetect: false,
+      xobjdetect: false
     ],
-
     cuda: [
       cudaarithm: true,
       cudabgsegm: true,
@@ -877,7 +878,7 @@ defmodule Evision.MixProject do
       cudaoptflow: true,
       cudastereo: true,
       cudawarping: true,
-      cudev: true,
+      cudev: true
     ]
   }
   defp module_configuration, do: @module_configuration
@@ -904,6 +905,7 @@ defmodule Evision.MixProject do
 
     enable_cuda = System.get_env("EVISION_ENABLE_CUDA", "false")
     enable_opencv_cuda = enable_cuda == "true"
+
     if enable_opencv_cuda do
       System.put_env("EVISION_ENABLE_CUDA", "true")
     else
@@ -912,21 +914,43 @@ defmodule Evision.MixProject do
 
     enable_contrib = System.get_env("EVISION_ENABLE_CONTRIB", "true")
     enable_opencv_contrib = enable_contrib == "true"
+
     if enable_opencv_cuda and !enable_opencv_contrib do
-      Logger.warning("EVISION_ENABLE_CUDA is set to true, while EVISION_ENABLE_CONTRIB is set to false. CUDA support will NOT be available.")
+      Logger.warning(
+        "EVISION_ENABLE_CUDA is set to true, while EVISION_ENABLE_CONTRIB is set to false. CUDA support will NOT be available."
+      )
     end
+
     if enable_opencv_contrib do
       System.put_env("EVISION_ENABLE_CONTRIB", "true")
     else
       System.put_env("EVISION_ENABLE_CONTRIB", "false")
     end
 
-    all_modules = Enum.map(mc.opencv, fn {m, _} -> m end) ++ Enum.map(mc.opencv_contrib, fn {m, _} -> m end)
-    enabled_modules = Enum.filter(mc.opencv, fn {_, e} -> e end)
-      ++ (if enable_opencv_contrib do Enum.filter(mc.opencv_contrib, fn {_, e} -> e end) else [] end)
-      ++ (if enable_opencv_cuda do Enum.filter(mc.cuda, fn {_, e} -> e end) else [] end)
-    disabled_modules = Enum.filter(mc.opencv, fn {_, e} -> !e end)
-      ++ (if enable_opencv_contrib do Enum.filter(mc.opencv_contrib, fn {_, e} -> !e end) else [] end)
+    all_modules =
+      Enum.map(mc.opencv, fn {m, _} -> m end) ++ Enum.map(mc.opencv_contrib, fn {m, _} -> m end)
+
+    enabled_modules =
+      Enum.filter(mc.opencv, fn {_, e} -> e end) ++
+        if enable_opencv_contrib do
+          Enum.filter(mc.opencv_contrib, fn {_, e} -> e end)
+        else
+          []
+        end ++
+        if enable_opencv_cuda do
+          Enum.filter(mc.cuda, fn {_, e} -> e end)
+        else
+          []
+        end
+
+    disabled_modules =
+      Enum.filter(mc.opencv, fn {_, e} -> !e end) ++
+        if enable_opencv_contrib do
+          Enum.filter(mc.opencv_contrib, fn {_, e} -> !e end)
+        else
+          []
+        end
+
     enabled_modules = Keyword.keys(enabled_modules)
     disabled_modules = Keyword.keys(disabled_modules)
     enabled_img_codecs = Application.get_env(:evision, :enabled_img_codecs, @enabled_img_codecs)
@@ -978,11 +1002,12 @@ defmodule Evision.MixProject do
          |> Enum.join(" ")) <>
         " "
 
-    options = if enable_opencv_cuda and enable_opencv_contrib do
-      "#{options} -D WITH_CUDA=ON"
-    else
-      options
-    end
+    options =
+      if enable_opencv_cuda and enable_opencv_contrib do
+        "#{options} -D WITH_CUDA=ON"
+      else
+        options
+      end
 
     {options, enabled_modules |> Enum.map(&Atom.to_string(&1)) |> Enum.join(",")}
   end

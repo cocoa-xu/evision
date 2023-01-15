@@ -99,7 +99,8 @@ defmodule Evision.Test do
     encoded = Evision.imencode(".png", mat)
     assert is_binary(encoded)
 
-    %Mat{shape: ^shape, type: ^type} = Evision.imdecode(encoded, Evision.Constant.cv_IMREAD_ANYCOLOR())
+    %Mat{shape: ^shape, type: ^type} =
+      Evision.imdecode(encoded, Evision.Constant.cv_IMREAD_ANYCOLOR())
   end
 
   test "Evision.resize" do
