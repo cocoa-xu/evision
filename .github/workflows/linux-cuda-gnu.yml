@@ -52,7 +52,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  linux_cuda:
+  x86_64-gnu-cuda:
     runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
