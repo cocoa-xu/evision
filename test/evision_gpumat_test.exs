@@ -315,6 +315,13 @@ else
         assert ret == expected
       end
 
+      test "exp" do
+        t = Nx.tensor([1, 2, 3, 4], type: :f32)
+        expected = Nx.exp(t)
+        ret = Nx.reshape(Evision.Mat.to_nx(Evision.CUDA.exp(t), Nx.BinaryBackend), {:auto})
+        assert Nx.to_number(Nx.all_close(expected, ret, rtol: 0.0001)) == 1
+      end
+
       test "flip (x-axis)" do
         t = Nx.tensor([
           [0, 1, 0, 2],
@@ -426,6 +433,58 @@ else
         t = Nx.tensor([1, 10, 100, 1000], type: :f32)
         expected = Nx.log(t)
         ret = Nx.reshape(Evision.Mat.to_nx(Evision.CUDA.log(t), Nx.BinaryBackend), {:auto})
+        assert Nx.to_number(Nx.all_close(expected, ret, rtol: 0.0001)) == 1
+      end
+
+      test "magnitude(x, y)" do
+        x = Nx.tensor([1, 0, 3, 4], type: :f32)
+        y = Nx.tensor([1, 2, 0, 4], type: :f32)
+        expected = Nx.sqrt(Nx.add(Nx.power(x, 2), Nx.power(y, 2)))
+        ret = Nx.reshape(Evision.Mat.to_nx(Evision.CUDA.magnitude(x, y), Nx.BinaryBackend), {:auto})
+        assert Nx.to_number(Nx.all_close(expected, ret, rtol: 0.0001)) == 1
+      end
+
+      test "magnitude(xy)" do
+        x = Nx.tensor([1, 0, 3, 4], type: :f32)
+        y = Nx.tensor([1, 2, 0, 4], type: :f32)
+        expected = Nx.sqrt(Nx.add(Nx.power(x, 2), Nx.power(y, 2)))
+        xy = Nx.transpose(Nx.stack([x, y]))
+        xy = Evision.Mat.last_dim_as_channel(Evision.Mat.from_nx_2d(xy))
+        ret = Nx.reshape(Evision.Mat.to_nx(Evision.CUDA.magnitude(xy), Nx.BinaryBackend), {:auto})
+        assert Nx.to_number(Nx.all_close(expected, ret, rtol: 0.0001)) == 1
+      end
+
+      test "magnitudeSqr(x, y)" do
+        x = Nx.tensor([1, 0, 3, 4], type: :f32)
+        y = Nx.tensor([1, 2, 0, 4], type: :f32)
+        expected = Nx.add(Nx.power(x, 2), Nx.power(y, 2))
+        ret = Nx.reshape(Evision.Mat.to_nx(Evision.CUDA.magnitudeSqr(x, y), Nx.BinaryBackend), {:auto})
+        assert Nx.to_number(Nx.all_close(expected, ret, rtol: 0.0001)) == 1
+      end
+
+      test "magnitudeSqr(xy)" do
+        x = Nx.tensor([1, 0, 3, 4], type: :f32)
+        y = Nx.tensor([1, 2, 0, 4], type: :f32)
+        expected = Nx.add(Nx.power(x, 2), Nx.power(y, 2))
+        xy = Nx.transpose(Nx.stack([x, y]))
+        xy = Evision.Mat.last_dim_as_channel(Evision.Mat.from_nx_2d(xy))
+        ret = Nx.reshape(Evision.Mat.to_nx(Evision.CUDA.magnitudeSqr(xy), Nx.BinaryBackend), {:auto})
+        assert Nx.to_number(Nx.all_close(expected, ret, rtol: 0.0001)) == 1
+      end
+
+      test "max" do
+        t1 = Nx.tensor([1, 0, 3, 0], type: :f32)
+        t2 = Nx.tensor([0, 2, 0, 4], type: :f32)
+        expected = Nx.max(t1, t2)
+        ret = Nx.reshape(Evision.Mat.to_nx(Evision.CUDA.max(t1, t2), Nx.BinaryBackend), {:auto})
+        assert Nx.to_number(Nx.all_close(expected, ret, rtol: 0.0001)) == 1
+      end
+
+      test "min" do
+        t1 = Nx.tensor([1, 0, 3, 0], type: :f32)
+        t2 = Nx.tensor([0, 2, 0, 4], type: :f32)
+        expected = Nx.min(t1, t2)
+        ret = Nx.reshape(Evision.Mat.to_nx(Evision.CUDA.min(t1, t2), Nx.BinaryBackend), {:auto})
         assert Nx.to_number(Nx.all_close(expected, ret, rtol: 0.0001)) == 1
       end
 
