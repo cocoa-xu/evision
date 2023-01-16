@@ -2,11 +2,13 @@ defmodule Evision.MixProject.Metadata do
   @moduledoc false
 
   def app, do: :evision
-  def version, do: "0.1.26-rc2"
+  def version, do: "0.1.26-rc3"
   def github_url, do: "https://github.com/cocoa-xu/evision"
   def opencv_version, do: "4.7.0"
   # only means compatible. need to write more tests
   def compatible_opencv_versions, do: ["4.5.3", "4.5.4", "4.5.5", "4.6.0", "4.7.0"]
+  def default_cuda_version, do: "118"
+  def all_cuda_version, do: ["111", "114", "118"]
 end
 
 defmodule Mix.Tasks.Compile.EvisionPrecompiled do
@@ -38,21 +40,44 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
 
   def available_nif_urls(nif_version, version \\ Metadata.version()) do
     Enum.reduce(@available_targets, [], fn target, acc ->
-      no_contrib = get_download_url(target, version, nif_version, false)
-      with_contrib = get_download_url(target, version, nif_version, true)
-      [no_contrib, with_contrib] ++ acc
+      no_contrib = get_download_url(target, version, nif_version, false, false, "")
+      with_contrib = get_download_url(target, version, nif_version, true, false, "")
+
+      with_cuda =
+        if target == "x86_64-linux-gnu" do
+          Enum.map(Metadata.all_cuda_version(), fn cuda_ver ->
+            get_download_url(target, version, nif_version, true, true, cuda_ver)
+          end)
+        else
+          []
+        end
+
+      [no_contrib, with_contrib] ++ with_cuda ++ acc
     end)
   end
 
   def current_target_nif_url(nif_version, version \\ Metadata.version()) do
     {target, _} = get_target()
     enable_contrib = System.get_env("EVISION_ENABLE_CONTRIB", "true") == "true"
+
     if enable_contrib do
       System.put_env("EVISION_ENABLE_CONTRIB", "true")
     else
       System.put_env("EVISION_ENABLE_CONTRIB", "false")
     end
-    get_download_url(target, version, nif_version, enable_contrib)
+
+    enable_cuda = System.get_env("EVISION_ENABLE_CUDA", "false") == "true"
+
+    cuda_version =
+      if enable_cuda do
+        System.put_env("EVISION_ENABLE_CUDA", "true")
+        System.get_env("EVISION_CUDA_VERSION", Metadata.default_cuda_version())
+      else
+        System.put_env("EVISION_ENABLE_CUDA", "false")
+        ""
+      end
+
+    get_download_url(target, version, nif_version, enable_contrib, enable_cuda, cuda_version)
   end
 
   def checksum_file(app \\ Mix.Project.config()[:app]) when is_atom(app) do
@@ -342,7 +367,7 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
   def preferred_eccs do
     # TLS curves: X25519, prime256v1, secp384r1
     preferred_eccs = [:secp256r1, :secp384r1]
-    :ssl.eccs() -- (:ssl.eccs() -- preferred_eccs)
+    :ssl.eccs() -- :ssl.eccs() -- preferred_eccs
   end
 
   def secure_ssl? do
@@ -384,16 +409,56 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
     end
   end
 
-  def filename(target, version, nif_version, enable_contrib, with_ext \\ "")
-  def filename(target, version, nif_version, _enable_contrib=false, with_ext) do
+  def filename(
+        target,
+        version,
+        nif_version,
+        enable_contrib,
+        enable_cuda,
+        cuda_version,
+        with_ext \\ ""
+      )
+
+  def filename(
+        target,
+        version,
+        nif_version,
+        _enable_contrib = false,
+        _enable_cuda,
+        _cuda_version,
+        with_ext
+      ) do
     "evision-nif_#{nif_version}-#{target}-#{version}#{with_ext}"
   end
-  def filename(target, version, nif_version, _enable_contrib=true, with_ext) do
+
+  def filename(
+        target,
+        version,
+        nif_version,
+        _enable_contrib = true,
+        _enable_cuda = false,
+        _cuda_version,
+        with_ext
+      ) do
     "evision-nif_#{nif_version}-#{target}-contrib-#{version}#{with_ext}"
   end
 
-  def get_download_url(target, version, nif_version, enable_contrib) do
-    tar_file = filename(target, version, nif_version, enable_contrib, ".tar.gz")
+  def filename(
+        target,
+        version,
+        nif_version,
+        _enable_contrib = true,
+        _enable_cuda = true,
+        cuda_version,
+        with_ext
+      ) do
+    "evision-nif_#{nif_version}-#{target}-contrib-cuda#{cuda_version}-#{version}#{with_ext}"
+  end
+
+  def get_download_url(target, version, nif_version, enable_contrib, enable_cuda, cuda_version) do
+    tar_file =
+      filename(target, version, nif_version, enable_contrib, enable_cuda, cuda_version, ".tar.gz")
+
     "#{Metadata.github_url()}/releases/download/v#{version}/#{tar_file}"
   end
 
@@ -430,9 +495,12 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
     Path.join([build_path, "lib", "#{app}", "priv"])
   end
 
-  def prepare(target, os, version, nif_version, enable_contrib) do
-    name = filename(target, version, nif_version, enable_contrib)
-    filename = filename(target, version, nif_version, enable_contrib, ".tar.gz")
+  def prepare(target, os, version, nif_version, enable_contrib, enable_cuda, cuda_version) do
+    name = filename(target, version, nif_version, enable_contrib, enable_cuda, cuda_version)
+
+    filename =
+      filename(target, version, nif_version, enable_contrib, enable_cuda, cuda_version, ".tar.gz")
+
     cache_dir = cache_dir()
     cache_file = Path.join([cache_dir, filename])
     unarchive_dest_dir = Path.join([cache_dir, name])
@@ -505,7 +573,15 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
           end
 
         if needs_download do
-          download_url = get_download_url(target, version, nif_version, enable_contrib)
+          download_url =
+            get_download_url(
+              target,
+              version,
+              nif_version,
+              enable_contrib,
+              enable_cuda,
+              cuda_version
+            )
 
           {:ok, _} = Application.ensure_all_started(:inets)
           {:ok, _} = Application.ensure_all_started(:ssl)
@@ -641,7 +717,9 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
         version = Metadata.version()
         nif_version = get_nif_version()
         enable_contrib = System.get_env("EVISION_ENABLE_CONTRIB", "true") == "true"
-        prepare(target, os, version, nif_version, enable_contrib)
+        enable_cuda = System.get_env("EVISION_ENABLE_CUDA", "false") == "true"
+        cuda_version = System.get_env("EVISION_CUDA_VERSION", Metadata.default_cuda_version())
+        prepare(target, os, version, nif_version, enable_contrib, enable_cuda, cuda_version)
       else
         _ ->
           raise RuntimeError, "Cannot use precompiled binaries."
@@ -819,14 +897,12 @@ defmodule Evision.MixProject do
       ts: true,
       video: true,
       videoio: true,
-
       gapi: false,
       world: false,
       python2: false,
       python3: false,
       java: false
     ],
-
     opencv_contrib: [
       aruco: true,
       barcode: true,
@@ -862,22 +938,21 @@ defmodule Evision.MixProject do
       optflow: false,
       sfm: false,
       videostab: false,
-      xobjdetect: false,
+      xobjdetect: false
     ],
-
     cuda: [
-      cudaarithm: false,
-      cudabgsegm: false,
-      cudacodec: false,
-      cudafeatures2d: false,
-      cudafilters: false,
-      cudaimgproc: false,
-      cudalegacy: false,
-      cudaobjdetect: false,
-      cudaoptflow: false,
-      cudastereo: false,
-      cudawarping: false,
-      cudev: false,
+      cudaarithm: true,
+      cudabgsegm: true,
+      cudacodec: true,
+      cudafeatures2d: true,
+      cudafilters: true,
+      cudaimgproc: true,
+      cudalegacy: true,
+      cudaobjdetect: true,
+      cudaoptflow: true,
+      cudastereo: true,
+      cudawarping: true,
+      cudev: true
     ]
   }
   defp module_configuration, do: @module_configuration
@@ -902,19 +977,54 @@ defmodule Evision.MixProject do
   defp generate_cmake_options() do
     mc = module_configuration()
 
+    enable_cuda = System.get_env("EVISION_ENABLE_CUDA", "false")
+    enable_opencv_cuda = enable_cuda == "true"
+
+    if enable_opencv_cuda do
+      System.put_env("EVISION_ENABLE_CUDA", "true")
+    else
+      System.put_env("EVISION_ENABLE_CUDA", "false")
+    end
+
     enable_contrib = System.get_env("EVISION_ENABLE_CONTRIB", "true")
     enable_opencv_contrib = enable_contrib == "true"
+
+    if enable_opencv_cuda and !enable_opencv_contrib do
+      Logger.warning(
+        "EVISION_ENABLE_CUDA is set to true, while EVISION_ENABLE_CONTRIB is set to false. CUDA support will NOT be available."
+      )
+    end
+
     if enable_opencv_contrib do
       System.put_env("EVISION_ENABLE_CONTRIB", "true")
     else
       System.put_env("EVISION_ENABLE_CONTRIB", "false")
     end
 
-    all_modules = Enum.map(mc.opencv, fn {m, _} -> m end) ++ Enum.map(mc.opencv_contrib, fn {m, _} -> m end)
-    enabled_modules = Enum.filter(mc.opencv, fn {_, e} -> e end)
-      ++ (if enable_opencv_contrib do Enum.filter(mc.opencv_contrib, fn {_, e} -> e end) else [] end)
-    disabled_modules = Enum.filter(mc.opencv, fn {_, e} -> !e end)
-      ++ (if enable_opencv_contrib do Enum.filter(mc.opencv_contrib, fn {_, e} -> !e end) else [] end)
+    all_modules =
+      Enum.map(mc.opencv, fn {m, _} -> m end) ++ Enum.map(mc.opencv_contrib, fn {m, _} -> m end)
+
+    enabled_modules =
+      Enum.filter(mc.opencv, fn {_, e} -> e end) ++
+        if enable_opencv_contrib do
+          Enum.filter(mc.opencv_contrib, fn {_, e} -> e end)
+        else
+          []
+        end ++
+        if enable_opencv_cuda do
+          Enum.filter(mc.cuda, fn {_, e} -> e end)
+        else
+          []
+        end
+
+    disabled_modules =
+      Enum.filter(mc.opencv, fn {_, e} -> !e end) ++
+        if enable_opencv_contrib do
+          Enum.filter(mc.opencv_contrib, fn {_, e} -> !e end)
+        else
+          []
+        end
+
     enabled_modules = Keyword.keys(enabled_modules)
     disabled_modules = Keyword.keys(disabled_modules)
     enabled_img_codecs = Application.get_env(:evision, :enabled_img_codecs, @enabled_img_codecs)
@@ -965,6 +1075,13 @@ defmodule Evision.MixProject do
          |> Enum.map(&"-D BUILD_#{Atom.to_string(&1) |> String.upcase()}=ON")
          |> Enum.join(" ")) <>
         " "
+
+    options =
+      if enable_opencv_cuda and enable_opencv_contrib do
+        "#{options} -D WITH_CUDA=ON"
+      else
+        options
+      end
 
     {options, enabled_modules |> Enum.map(&Atom.to_string(&1)) |> Enum.join(",")}
   end

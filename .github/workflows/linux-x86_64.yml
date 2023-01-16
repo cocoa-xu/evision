@@ -20,6 +20,7 @@ on:
       - '.github/workflows/linux-armv7.yml'
       - '.github/workflows/linux-ppc64le.yml'
       - '.github/workflows/linux-s390x.yml'
+      - '.github/workflows/linux-cuda-*.yml'
       - '.github/workflows/linux-precompile-*.yml'
   push:
     branches:
@@ -46,6 +47,7 @@ on:
       - '.github/workflows/linux-armv7.yml'
       - '.github/workflows/linux-ppc64le.yml'
       - '.github/workflows/linux-s390x.yml'
+      - '.github/workflows/linux-cuda-*.yml'
       - '.github/workflows/linux-precompile-*.yml'
 
 concurrency:
@@ -59,8 +61,8 @@ jobs:
     env:
       MIX_ENV: test
       OPENCV_VER: "4.7.0"
-      OTP_VERSION: "25.1.2"
-      ELIXIR_VERSION: "1.14.2"
+      OTP_VERSION: "25.2"
+      ELIXIR_VERSION: "1.14.3"
       EVISION_PREFER_PRECOMPILED: "false"
     steps:
       - uses: actions/checkout@v3
@@ -153,13 +155,13 @@ jobs:
     env:
       MIX_ENV: test
       OPENCV_VER: "4.7.0"
-      OTP_VERSION: "25.1.2"
-      ELIXIR_VERSION: "1.14.2"
+      OTP_VERSION: "25.2"
+      ELIXIR_VERSION: "1.14.3"
       EVISION_PREFER_PRECOMPILED: "false"
-
+      PKG_CONFIG_PATH: "/usr/lib/x86_64-linux-gnu/pkgconfig"
     steps:
       - uses: actions/checkout@v3
-      
+
       - uses: erlef/setup-beam@v1
         with:
           otp-version: ${{ env.OTP_VERSION }}
@@ -168,8 +170,8 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential automake autoconf pkg-config bc m4 unzip zip curl git libssl-dev gzip libncurses5-dev erlang-inets erlang-os-mon erlang-runtime-tools erlang-ssl erlang-dev python3 ca-certificates
-          sudo apt-get install -y libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libavresample-dev ffmpeg
+          sudo apt-get install -y build-essential automake autoconf pkg-config bc m4 unzip zip curl git libssl-dev gzip python3 ca-certificates \
+            libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libavresample-dev ffmpeg
 
       - name: Cache mix packages
         id: cache-mix-deps
@@ -235,4 +237,4 @@ jobs:
 
       - name: Mix Test
         run: |
-          mix test --include require_downloading --include require_ffmpeg --exclude may_crash
+          mix test --include require_downloading --include require_ffmpeg

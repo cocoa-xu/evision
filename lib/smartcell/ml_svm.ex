@@ -188,7 +188,9 @@ else
       quote do
         unquote(ESCH.quoted_var(attrs["to_variable"])) =
           Evision.ML.SVM.create()
-          |> Evision.ML.SVM.setType(unquote(ESCH.quoted_var("Evision.Constant.cv_#{attrs["type"]}()")))
+          |> Evision.ML.SVM.setType(
+            unquote(ESCH.quoted_var("Evision.Constant.cv_#{attrs["type"]}()"))
+          )
           |> Evision.ML.SVM.setKernel(
             unquote(ESCH.quoted_var("Evision.Constant.cv_#{attrs["kernel_type"]}()"))
           )
@@ -333,7 +335,8 @@ else
         unquote(ESCH.quoted_var(attrs["to_variable"])) =
           Evision.ML.SVM.setTermCriteria(
             unquote(ESCH.quoted_var(attrs["to_variable"])),
-            {Evision.Constant.cv_MAX_ITER() + Evision.Constant.cv_EPS(), unquote(count), unquote(eps)}
+            {Evision.Constant.cv_MAX_ITER() + Evision.Constant.cv_EPS(), unquote(count),
+             unquote(eps)}
           )
       end
     end

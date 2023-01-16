@@ -34,7 +34,15 @@ defmodule Evision.DNN.Test do
           255
         })
 
-      mat = Evision.putText(mat, text, {l, top}, Evision.Constant.cv_FONT_HERSHEY_SIMPLEX(), 0.5, {0, 0, 255})
+      mat =
+        Evision.putText(
+          mat,
+          text,
+          {l, top},
+          Evision.Constant.cv_FONT_HERSHEY_SIMPLEX(),
+          0.5,
+          {0, 0, 255}
+        )
 
       _visualise_pred(mat, labels, outs)
     end
@@ -110,11 +118,6 @@ defmodule Evision.DNN.Test do
       blob = Evision.DNN.blobFromImage(mat, opts)
 
       model = Evision.DNN.Net.setInput(model, blob, name: "", scalefactor: 1.0, mean: {0, 0, 0})
-
-      enable_winograd = System.get_env("ENABLE_WINOGRAD", "no")
-      if enable_winograd == "no" do
-        Evision.DNN.Net.enableWinograd(model, false)
-      end
 
       start_time = :os.system_time(:millisecond)
       detections = Evision.DNN.Net.forward(model, outBlobNames: out_names)

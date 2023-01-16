@@ -17,13 +17,6 @@ defmodule Evision.DNN.TextDetectionModelDB.Test do
 
     net = Evision.DNN.readNet(weights, config: "", framework: "")
 
-    # disable Winograd, OpenCV 4.7.0
-    # https://github.com/opencv/opencv/issues/23080
-    enable_winograd = System.get_env("ENABLE_WINOGRAD", "no")
-    if enable_winograd == "no" do
-      Evision.DNN.Net.enableWinograd(net, false)
-    end
-
     model =
       TextDetectionModelDB.textDetectionModelDB(net)
       |> TextDetectionModelDB.setInputParams(

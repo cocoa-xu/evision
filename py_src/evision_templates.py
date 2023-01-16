@@ -397,8 +397,11 @@ struct Evision_Converter< ${cname} >
     }
     static bool to(ErlNifEnv *env, ERL_NIF_TERM src, ${cname}& dst, const ArgInfo& info)
     {
-        if(!src || evision::nif::check_nil(env, src))
-            return true;
+        if (evision::nif::check_nil(env, src)) {
+            if (info.outputarg) return true;
+            return info.has_default;
+        }
+
         ${cname} * dst_ = nullptr;
         if (evision_${name}_getp(env, src, dst_))
         {
@@ -406,6 +409,8 @@ struct Evision_Converter< ${cname} >
             return true;
         }
         ${mappable_code}
+        if (info.has_default) return true;
+
         failmsg(env, "Expected ${cname} for argument '%s'", info.name);
         return false;
     }

@@ -66,6 +66,7 @@ else
 
     defp field_defaults_for(task_id, variant_id) do
       variant = variant_by_id(task_id, variant_id)
+
       if variant == nil do
         %{}
       else
@@ -78,6 +79,7 @@ else
     @impl true
     def handle_connect(ctx) do
       {backend_options, target_options} = Evision.Zoo.available_backend_and_target()
+
       {:ok,
        %{
          id: ctx.assigns.id,

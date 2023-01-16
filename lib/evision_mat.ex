@@ -165,9 +165,15 @@ defmodule Evision.Mat do
     end
   end
 
+  defp __handle_negative_range__(value, bound) when value < 0 do
+    value + bound
+  end
+
+  defp __handle_negative_range__(value, _bound), do: value
+
   @doc false
-  def __standardise_range_list__(ranges, inclusive_range) do
-    Enum.map(ranges, fn r ->
+  def __standardise_range_list__(ranges, shape, inclusive_range) do
+    Enum.map(Enum.zip(ranges, Tuple.to_list(shape)), fn {r, dim} ->
       case r do
         :all ->
           :all
@@ -175,11 +181,22 @@ defmodule Evision.Mat do
         {first, last} ->
           # {_, _} is cv::Range
           # hence we don't need to do anything to it
+          first = __handle_negative_range__(first, dim)
+          last = __handle_negative_range__(last, dim)
           {first, last}
 
         first..last//step ->
           # first..last//step is Elixir.Range
           # 0..0 should give [0] if `inclusive_range` is true
+          step =
+            if step == -1 and (last < 0 or first < 0) do
+              1
+            else
+              step
+            end
+
+          first = __handle_negative_range__(first, dim)
+          last = __handle_negative_range__(last, dim)
           {first, last} = __from_elixir_range__(first..last//step, allowed_step_size: [1])
 
           if inclusive_range do
@@ -191,6 +208,7 @@ defmodule Evision.Mat do
           end
 
         number when is_integer(number) ->
+          number = __handle_negative_range__(number, dim)
           # cv::Range is [start, end)
           # while Elixir.Range is [first, last]
           if inclusive_range do
@@ -316,8 +334,9 @@ defmodule Evision.Mat do
 
   @spec roi(maybe_mat_in(), [{integer(), integer()} | Range.t() | :all]) :: maybe_mat_out()
   def roi(mat, ranges) when is_list(ranges) do
+    shape = mat.shape
     mat = __from_struct__(mat)
-    ranges = __standardise_range_list__(ranges, true)
+    ranges = __standardise_range_list__(ranges, shape, true)
 
     :evision_nif.mat_roi(mat: mat, ranges: ranges)
     |> Evision.Internal.Structurise.to_struct()
@@ -332,6 +351,7 @@ defmodule Evision.Mat do
       else
         {mat, false}
       end
+
     with_mat =
       if with_mat.dims != tuple_size(with_mat.shape) do
         Evision.Mat.channel_as_last_dim(with_mat)
@@ -339,14 +359,16 @@ defmodule Evision.Mat do
         with_mat
       end
 
-    ranges = __standardise_range_list__(ranges, true)
+    ranges = __standardise_range_list__(ranges, mat.shape, true)
+
     ranges =
       if tuple_size(mat.shape) > Enum.count(ranges) do
         extend =
-          for i <- Enum.count(ranges)..tuple_size(mat.shape)-1, reduce: [] do
+          for i <- Enum.count(ranges)..(tuple_size(mat.shape) - 1), reduce: [] do
             acc ->
               [{0, elem(mat.shape, i)} | acc]
           end
+
         ranges ++ Enum.reverse(extend)
       else
         ranges
@@ -355,9 +377,10 @@ defmodule Evision.Mat do
     with_mat = __from_struct__(with_mat)
     mat = __from_struct__(mat)
 
-    res = Evision.Internal.Structurise.to_struct(
-      :evision_nif.mat_update_roi(mat: mat, ranges: ranges, with_mat: with_mat)
-    )
+    res =
+      Evision.Internal.Structurise.to_struct(
+        :evision_nif.mat_update_roi(mat: mat, ranges: ranges, with_mat: with_mat)
+      )
 
     if bring_back do
       Evision.Mat.last_dim_as_channel(res)
@@ -797,7 +820,7 @@ defmodule Evision.Mat do
   @spec fetch(Evision.Mat.t(), list() | integer()) :: {:ok, maybe_mat_out() | nil}
   def fetch(mat, key) when is_list(key) do
     ranges = __generate_complete_range__(mat.dims, key)
-    ranges = __standardise_range_list__(ranges, true)
+    ranges = __standardise_range_list__(ranges, mat.shape, true)
     {:ok, roi(mat, ranges)}
   end
 

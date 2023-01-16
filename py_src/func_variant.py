@@ -386,7 +386,10 @@ class FuncVariant(object):
             if len(positional_args) > 0:
                 parameter_info_doc.write("\n  ##### Positional Arguments\n")
                 for (arg_name, _, argtype) in positional_args:
-                    argtype1 = map_argtype_in_docs('elixir', argtype, classname=self.classname)
+                    argtype1 = map_argtype_in_docs('elixir', argtype) #, classname=self.classname)
+                    if argtype1.startswith("Evision."):
+                        if not argtype1.endswith(".t()"):
+                            argtype1 = f"{argtype1}.t()"
                     normalized_arg_name = map_argname('elixir', arg_name)
                     normalized_arg_name = normalized_arg_name.replace(":", "")
                     if parameter_info.get(normalized_arg_name, None) is None:
@@ -404,7 +407,10 @@ class FuncVariant(object):
             if len(optional_args) > 0:
                 parameter_info_doc.write("  ##### Keyword Arguments\n")
                 for (arg_name, _, argtype) in optional_args:
-                    argtype1 = map_argtype_in_docs('elixir', argtype, classname=self.classname)
+                    argtype1 = map_argtype_in_docs('elixir', argtype)# , classname=self.classname)
+                    if argtype1.startswith("Evision."):
+                        if not argtype1.endswith(".t()"):
+                            argtype1 = f"{argtype1}.t()"
                     normalized_arg_name = map_argname('elixir', arg_name)
                     normalized_arg_name = normalized_arg_name.replace(":", "")
                     if parameter_info.get(normalized_arg_name, None) is None:
@@ -425,16 +431,31 @@ class FuncVariant(object):
             out_args_name = [o[0] for o in self.py_outlist]
             if len(out_args_name) > 0 and (out_args_name[0] in ['retval', 'self']) and self.py_outlist[0][1] == -1:
                 if out_args_name[0] == 'retval':
-                    return_values.insert(0, ('retval', map_argtype_in_docs('elixir', self.rettype, classname=self.classname)))
+                    rettype_docs = map_argtype_in_docs('elixir', self.rettype)
+                    if rettype_docs.startswith("Evision."):
+                        if not rettype_docs.endswith(".t()"):
+                            rettype_docs = f"{rettype_docs}.t()"
+                    return_values.insert(0, ('retval', rettype_docs))
                 elif out_args_name[0] == 'self':
-                    return_values.insert(0, ('self', map_argtype_in_docs('elixir', self.name, classname=self.classname)))
+                    selftype_docs = map_argtype_in_docs('elixir', self.name)
+                    if selftype_docs.startswith("Evision."):
+                        if not selftype_docs.endswith(".t()"):
+                            selftype_docs = f"{selftype_docs}.t()"
+                    return_values.insert(0, ('self', selftype_docs))
             elif self.isconstructor:
-                return_values.insert(0, ('self', map_argtype_in_docs('elixir', self.classname, classname=self.classname)))
+                selftype_docs = map_argtype_in_docs('elixir', self.classname)
+                if selftype_docs.startswith("Evision."):
+                    if not selftype_docs.endswith(".t()"):
+                        selftype_docs = f"{selftype_docs}.t()"
+                return_values.insert(0, ('self', map_argtype_in_docs('elixir', selftype_docs)))
 
             if len(return_values) > 0:
                 parameter_info_doc.write("  ##### Return\n")
                 for (arg_name, argtype) in return_values:
-                    argtype1 = map_argtype_in_docs('elixir', argtype, classname=self.classname)
+                    argtype1 = map_argtype_in_docs('elixir', argtype)# , classname=self.classname)
+                    if argtype1.startswith("Evision."):
+                        if not argtype1.endswith(".t()"):
+                            argtype1 = f"{argtype1}.t()"
                     normalized_arg_name = map_argname('elixir', arg_name)
                     normalized_arg_name = normalized_arg_name.replace(":", "")
                     if parameter_info.get(normalized_arg_name, None) is None:

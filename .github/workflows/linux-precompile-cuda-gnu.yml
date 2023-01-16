@@ -1,0 +1,126 @@
+name: linux-precompile-cuda-gnu
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  mix_compile:
+    runs-on: ubuntu-20.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - container: nvidia/cuda:11.1.1-cudnn8-devel-ubuntu20.04
+            cuda_ver: "11.1.1"
+            cuda_id: "111"
+          - container: nvidia/cuda:11.4.3-cudnn8-devel-ubuntu20.04
+            cuda_ver: "11.4.3"
+            cuda_id: "114"
+          - container: nvidia/cuda:11.8.0-cudnn8-devel-ubuntu20.04
+            cuda_ver: "11.8.0"
+            cuda_id: "118"
+    container: ${{ matrix.container }}
+    env:
+      # container env vars
+      # ref link: https://github.com/elixir-nx/xla/blob/main/.github/workflows/release.yml
+      ImageOS: ubuntu20
+      LANG: en_US.UTF-8
+      LANGUAGE: en_US:en
+      LC_ALL: en_US.UTF-8
+      DEBIAN_FRONTEND: noninteractive
+      # evision related env vars
+      MIX_ENV: test
+      OPENCV_VER: "4.7.0"
+      OTP_VERSION: "25.2"
+      ELIXIR_VERSION: "1.14.3"
+      EVISION_PREFER_PRECOMPILED: "false"
+      EVISION_ENABLE_CUDA: "true"
+      PKG_CONFIG_PATH: "/usr/lib/x86_64-linux-gnu/pkgconfig"
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install system dependencies
+        run: |
+          apt-get update
+          apt-get install -y build-essential automake autoconf pkg-config bc m4 unzip zip curl git libssl-dev gzip python3 ca-certificates \
+            locales curl wget cmake
+          echo "${LANG} UTF-8" >> /etc/locale.gen
+          locale-gen
+          update-locale LANG=${LANG}
+
+      - uses: erlef/setup-beam@v1
+        with:
+          otp-version: ${{ env.OTP_VERSION }}
+          elixir-version: ${{ env.ELIXIR_VERSION }}
+
+      - name: Cache mix packages
+        id: cache-mix-deps
+        uses: actions/cache@v3
+        with:
+          key: deps-${{ hashFiles('mix.lock') }}-${{ env.OTP_VERSION }}-${{ env.ELIXIR_VERSION }}
+          path: |
+            ./deps
+
+      - name: Get mix deps
+        if: steps.cache-mix-deps.outputs.cache-hit != 'true'
+        run: |
+          mix deps.get
+
+      - name: Cache OpenCV
+        id: cache-opencv
+        uses: actions/cache@v3
+        with:
+          key: opencv-with-contrib-${{ env.OPENCV_VER }}
+          path: |
+            ./3rd_party
+
+      - name: Download OpenCV
+        if: steps.cache-opencv.outputs.cache-hit != 'true'
+        run: |
+          bash scripts/download_opencv.sh ${OPENCV_VER} 3rd_party/cache 3rd_party/opencv/
+          bash scripts/download_opencv_contrib.sh ${OPENCV_VER} 3rd_party/cache 3rd_party/opencv/
+
+      - name: Cache compiled OpenCV
+        id: cache-mix-compile_opencv
+        uses: actions/cache@v3
+        with:
+          key: precompiled-opencv-${{ env.OPENCV_VER }}-cuda${{ matrix.cuda_ver }}-x86_64-linux-gnu-${{ hashFiles('Makefile') }}
+          path: |
+            ./_build/${{ env.MIX_ENV }}/lib/evision
+            ./c_src/headers.txt
+            ./c_src/configuration.private.hpp
+
+      - name: Compile OpenCV
+        if: steps.cache-mix-compile_opencv.outputs.cache-hit != 'true'
+        run: |
+          mix compile_opencv
+
+      - name: Mix Compile
+        run: |
+          rm -f _build/${{ env.MIX_ENV }}/lib/evision/priv/evision.so
+          ls -la ./c_src
+          mix compile
+          ls -la ./lib/generated
+
+      - name: Create precompiled library
+        run: |
+          export PKG_NAME=evision-nif_${NIF_VERSION}-x86_64-linux-gnu-contrib-cuda${{ matrix.cuda_ver }}-${GITHUB_REF##*/v}
+          mkdir -p "${PKG_NAME}"
+          cp -a _build/${MIX_ENV}/lib/evision/priv "${PKG_NAME}"
+          cp -a lib/generated "${PKG_NAME}/elixir_generated"
+          cp -a src/generated "${PKG_NAME}/erlang_generated"
+          tar -czf "${PKG_NAME}.tar.gz" "${PKG_NAME}"
+          rm -rf "${PKG_NAME}"
+          ls -lah "${PKG_NAME}.tar.gz"
+          mkdir -p artifacts
+          mv "${PKG_NAME}.tar.gz" artifacts
+
+      - uses: softprops/action-gh-release@v1
+        with:
+          files: artifacts/*.tar.gz

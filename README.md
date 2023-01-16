@@ -313,6 +313,21 @@ Defaults to `true` because for precompiled binaries, including these "extra" mod
 
 However, 20 MBs for Nerves users can be a huge deal (still depending on your device, for example, +20 MBs is often much more acceptable for RPIs as they are usually equipped with >= 8 GB microSD cards while being absolutely a luxury thing for some other embedded devices).
 
+#### EVISION_ENABLE_CUDA
+Set environment variable `EVISION_ENABLE_CONTRIB` to `true` to enable CUDA support from [opencv_contrib](https://github.com/opencv/opencv_contrib). Defaults to `false`.
+
+Note that `EVISION_ENABLE_CONTRIB` will need to be `true` as well.
+
+```bash
+# enable CUDA support
+export EVISION_ENABLE_CUDA=true
+# opencv_contrib modules is enabled by default
+export EVISION_ENABLE_CONTRIB=true
+
+# disable CUDA support (default) 
+export EVISION_ENABLE_CUDA=false
+```
+
 #### EVISION_PRECOMPILED_CACHE_DIR
 ```shell
 # optional.

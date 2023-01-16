@@ -17,11 +17,11 @@ ArgTypeInfo = namedtuple('ArgTypeInfo',
 ArgTypeInfo.__new__.__defaults__ = (False,)
 
 simple_argtype_mapping = {
-    "bool": ArgTypeInfo("bool", FormatStrings.unsigned_char, "0", True, False),
-    "size_t": ArgTypeInfo("size_t", FormatStrings.unsigned_long_long, "0", True, False),
-    "int": ArgTypeInfo("int", FormatStrings.int, "0", True, False),
-    "float": ArgTypeInfo("float", FormatStrings.float, "0.f", True, False),
-    "double": ArgTypeInfo("double", FormatStrings.double, "0", True, False),
+    "bool": ArgTypeInfo("bool", FormatStrings.unsigned_char, "", True, False),
+    "size_t": ArgTypeInfo("size_t", FormatStrings.unsigned_long_long, "", True, False),
+    "int": ArgTypeInfo("int", FormatStrings.int, "", True, False),
+    "float": ArgTypeInfo("float", FormatStrings.float, "", True, False),
+    "double": ArgTypeInfo("double", FormatStrings.double, "", True, False),
     "c_string": ArgTypeInfo("char*", FormatStrings.string, '(char*)""', False, False),
     "string": ArgTypeInfo("std::string", FormatStrings.object, None, True, False),
     "Stream": ArgTypeInfo("Stream", FormatStrings.object, 'Stream::Null()', True, False),
@@ -165,6 +165,7 @@ module_name_map = {
     "bioinspired": "Bioinspired",
     "ccm": "CCM",
     "cuda": "CUDA",
+    "cudacodec": "CUDACodec",
     "colored_kinfu": "ColoredKinFu",
     "detail": "Detail",
     "dnn": "DNN",
@@ -380,11 +381,20 @@ def is_basic_types(argtype: str):
     if argtype.startswith("vector<"):
         argtype = argtype[len("vector<"):-1]
         return is_basic_types(argtype)
-    return argtype in ['bool', 'float', 'double', 'uchar', 'string', 'void*', 'String', 'c_string', 'unsigned'] or \
+    return argtype in ['bool', 'float', 'double', 'string', 'void*', 'String', 'c_string'] or \
         is_int_type(argtype) or is_tuple_type(argtype)
 
 def is_int_type(argtype):
     int_types = [
+        'uchar',
+        'uint8_t',
+        'uint16_t',
+        'uint32_t',
+        'uint64_t',
+        'int8_t',
+        'int16_t',
+        'int32_t',
+        'int64_t',
         'unsigned',
         'int',
         'size_t',
@@ -422,7 +432,8 @@ def is_int_type(argtype):
         "VolumeType",
         "Volume",
         "kinfu_VolumeType",
-        "text_decoder_mode"
+        "text_decoder_mode",
+        "cuda_ConnectedComponentsAlgorithmsTypes"
     ]
     return argtype in int_types
 
@@ -561,7 +572,7 @@ def get_elixir_module_name(cname, double_quote_if_has_dot=False):
         elixir_module_name = f'"{elixir_module_name}"'
     return elixir_module_name
 
-def is_struct(argtype: str, also_get: Optional[str] = None, classname: Optional[str] = None):
+def is_struct(argtype: str, also_get: Optional[str] = None, classname: Optional[str] = None, decl: list=None):
     argtype = argtype.replace("std::", "").replace("cv::", "").replace("::", "_")
     special_structs = {
         # todo: UMat should be in its own module
@@ -829,7 +840,22 @@ def is_struct(argtype: str, also_get: Optional[str] = None, classname: Optional[
         "Pose3D": "Evision.PPFMatch3D.Pose3D",
         "PPF3DDetector": "Evision.PPFMatch3D.PPF3DDetector",
 
-        "WeChatQRCode": "Evision.WeChatQRCode.WeChatQRCode"
+        "WeChatQRCode": "Evision.WeChatQRCode.WeChatQRCode",
+
+        # CUDA
+        "cuda_BackgroundSubtractorMOG": "Evision.CUDA.BackgroundSubtractorMOG",
+        "cuda_BackgroundSubtractorMOG2": "Evision.CUDA.BackgroundSubtractorMOG2",
+        "cuda_CascadeClassifier": "Evision.CUDA.CascadeClassifier",
+        "cuda_CLAHE": "Evision.CUDA.CLAHE",
+        "cudacodec_VideoWriter": "Evision.CUDACodec.VideoWriter",
+        "cuda_DescriptorMatcher": "Evision.CUDA.DescriptorMatcher",
+        "cuda_DisparityBilateralFilter": "Evision.CUDA.DisparityBilateralFilter",
+        "cuda_FastFeatureDetector": "Evision.CUDA.FastFeatureDetector",
+        "cuda_ORB": "Evision.CUDA.ORB",
+        "cuda_StereoBeliefPropagation": "Evision.CUDA.StereoBeliefPropagation",
+        "cuda_StereoBM": "Evision.CUDA.StereoBM",
+        "cuda_StereoConstantSpaceBP": "Evision.CUDA.StereoConstantSpaceBP",
+        "cuda_StereoSGM": "Evision.CUDA.StereoSGM",
     }
 
     # argtype => classname => module name
@@ -869,7 +895,6 @@ def is_struct(argtype: str, also_get: Optional[str] = None, classname: Optional[
         }
     }
     second_ret = None
-    
 
     argtype = argtype.strip()
     second_ret = None
@@ -888,6 +913,9 @@ def is_struct(argtype: str, also_get: Optional[str] = None, classname: Optional[
     if not arg_is_struct:
         if is_basic_types(argtype):
             return False
+        if classname is not None and decl is not None and len(classname) == 0 and len(decl) > 0:
+            if decl[0].startswith('cv.'):
+                classname = decl[0][3:].replace('.', '_')
         if classname:
             module_class = classname.split("_", maxsplit=2)
             if len(module_class) == 2:
@@ -903,6 +931,9 @@ def is_struct(argtype: str, also_get: Optional[str] = None, classname: Optional[
                     elif module_name == 'cuda' and argtype == "cuda_GpuMat":
                         arg_is_struct = True
                         argtype = "Evision.CUDA.GpuMat"
+                    elif module_name == 'cuda' and class_name == "Filter":
+                        arg_is_struct = True
+                        argtype = "Evision.CUDA.Filter"
                     elif module_name == 'detail' and argtype in ['vector<KeyPoint>', 'vector<DMatch>']:
                         arg_is_struct = True
                         if argtype == 'vector<KeyPoint>':
@@ -954,7 +985,7 @@ def is_struct(argtype: str, also_get: Optional[str] = None, classname: Optional[
     else:
         return arg_is_struct, second_ret
 
-def map_argtype_in_docs(kind: str, argtype: str, classname: str) -> str:
+def map_argtype_in_docs(kind: str, argtype: str, classname: str="") -> str:
     if kind == 'elixir':
         return map_argtype_in_docs_elixir(kind, argtype, classname)
     elif kind == 'erlang':
@@ -1141,8 +1172,8 @@ def map_argtype_in_spec_erlang(classname: str, argtype: str, is_in: bool, decl: 
         argtype_inner = ", ".join([map_argtype_in_spec_erlang(classname, a.strip(), is_in, decl) for a in argtype[len('std::pair<'):-1].split(",")])
         spec_type = '{' + argtype_inner + '}'
         return spec_type
-    elif is_struct(argtype, classname=classname):
-        _, struct_name = is_struct(argtype, also_get='struct_name', classname=classname)
+    elif is_struct(argtype, classname=classname, decl=decl):
+        _, struct_name = is_struct(argtype, also_get='struct_name', classname=classname, decl=decl)
         ty = struct_name.replace('.', '_').lower()
         return f'#{ty}' + '{}'
     elif argtype in manual_type_spec_map:
@@ -1174,10 +1205,12 @@ def map_argtype_in_spec_erlang(classname: str, argtype: str, is_in: bool, decl: 
             return '#evision_aruco_board{}'
         else:
             print(f'warning: generate_spec: unknown argtype `{argtype}`, input_arg? {is_in}, class={classname}')
+            raise RuntimeError("erlang spec")
             return 'term()'
 
 def map_argtype_in_spec_elixir(classname: str, argtype: str, is_in: bool, decl: list) -> str:
     global vec_out_types
+    argtype = argtype.strip()
     if len(argtype) > 0 and argtype[-1] == '*':
         if argtype == 'char*' or argtype == 'uchar*':
             return 'binary()'
@@ -1186,10 +1219,6 @@ def map_argtype_in_spec_elixir(classname: str, argtype: str, is_in: bool, decl: 
         if argtype == 'Ptr<char>' or argtype == 'Ptr<uchar>':
             return 'binary()'
         argtype = argtype[len('Ptr<'):-1]
-
-    argtype = argtype.strip()
-    if argtype.startswith("cv::"):
-        argtype = argtype[4:]
 
     argtype = argtype.strip()
     if argtype.startswith("cv::"):
@@ -1236,8 +1265,8 @@ def map_argtype_in_spec_elixir(classname: str, argtype: str, is_in: bool, decl: 
         argtype_inner = ", ".join([map_argtype_in_spec_elixir(classname, a.strip(), is_in, decl) for a in argtype[len('std::pair<'):-1].split(",")])
         spec_type = '{' + argtype_inner + '}'
         return spec_type
-    elif is_struct(argtype, classname=classname):
-        _, struct_name = is_struct(argtype, also_get='struct_name', classname=classname)
+    elif is_struct(argtype, classname=classname, decl=decl):
+        _, struct_name = is_struct(argtype, also_get='struct_name', classname=classname, decl=decl)
         return f'{struct_name}.t()'
     elif argtype in manual_type_spec_map:
         return manual_type_spec_map[argtype]
@@ -1258,14 +1287,13 @@ def map_argtype_in_spec_elixir(classname: str, argtype: str, is_in: bool, decl: 
     else:
         if argtype == 'LayerId':
             return 'term()'
-        if argtype == 'GpuMat' or argtype == 'cuda::GpuMat':
-            return f'Evision.CUDA.GpuMat.t()'
         if argtype == 'IndexParams' or argtype == 'SearchParams' or argtype == 'Moments':
             return f'map()'
-        if argtype in ['Board', 'Dictionary'] and len(decl) > 0 and decl[0].startswith("cv.aruco."):
-            return f'Evision.ArUco.Board.t()'
-        if argtype in ['Board', 'Dictionary'] and len(decl) > 0 and decl[0].startswith("cv.aruco."):
-            return f'Evision.ArUco.Board.t()'
+        if len(decl) > 0 and decl[0].startswith("cv.aruco.") and argtype in ['Board', 'Dictionary']:
+            if argtype == 'Board':
+                return f'Evision.ArUco.Board.t()'
+            elif argtype == 'Dictionary':
+                return f'Evision.ArUco.Dictionary.t()'
         else:
             print(f'warning: generate_spec: unknown argtype `{argtype}`, input_arg? {is_in}, class={classname}')
             return 'term()'
@@ -1303,8 +1331,6 @@ def map_argtype_to_guard_elixir(argname, argtype, classname: Optional[str] = Non
     else:
         if argtype == 'LayerId':
             return ''
-        if argtype == 'GpuMat' or argtype == 'cuda::GpuMat':
-            return f'is_list({argname})'
         if argtype == 'IndexParams' or argtype == 'SearchParams' or argtype == 'Moments':
             return f'is_map({argname})'
         else:
@@ -1344,8 +1370,6 @@ def map_argtype_to_guard_erlang(argname, argtype, classname: Optional[str] = Non
     else:
         if argtype == 'LayerId':
             return ''
-        if argtype == 'GpuMat' or argtype == 'cuda::GpuMat':
-            return f'is_list({argname})'
         if argtype == 'IndexParams' or argtype == 'SearchParams' or argtype == 'Moments':
             return f'is_map({argname})'
         else:
