@@ -315,6 +315,30 @@ else
         assert ret == expected
       end
 
+      test "flip (x-axis)" do
+        t = Nx.tensor([
+          [0, 1, 0, 2],
+          [3, 0, 4, 0]],
+        type: :u8)
+        assert [3, 0, 4, 0, 0, 1, 0, 2] == Nx.to_flat_list(Evision.Mat.to_nx(Evision.CUDA.flip(t, 0)))
+      end
+
+      test "flip (y-axis)" do
+        t = Nx.tensor([
+          [0, 1, 0, 2],
+          [3, 0, 4, 0]],
+        type: :u8)
+        assert [2, 0, 1, 0, 0, 4, 0, 3] == Nx.to_flat_list(Evision.Mat.to_nx(Evision.CUDA.flip(t, 1)))
+      end
+
+      test "flip (both axes)" do
+        t = Nx.tensor([
+          [0, 1, 0, 2],
+          [3, 0, 4, 0]],
+        type: :u8)
+        assert [0, 4, 0, 3, 2, 0, 1, 0] == Nx.to_flat_list(Evision.Mat.to_nx(Evision.CUDA.flip(t, -1)))
+      end
+
       test "multiply" do
         t1 = Nx.tensor([[-1, 2, -3], [4, -5, 6]], type: :f32)
         t2 = Nx.tensor([[0, 1, 2], [3, 4, 5]], type: :f32)
