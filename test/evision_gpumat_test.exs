@@ -176,6 +176,37 @@ else
         assert norm_bin == expected
       end
 
+      test "calcNormDiff L1" do
+        t1 = Nx.tensor([[10, 10], [20, 20]], type: :u8)
+        t2 = Nx.tensor([[9, 9], [19, 19]], type: :u8)
+
+        norm_bin = Evision.Mat.to_binary(Evision.CUDA.calcNormDiff(t1, t2, normType: Evision.Constant.cv_NORM_L1))
+        expected = Nx.to_binary(Nx.as_type(Nx.sum(Nx.abs(Nx.subtract(t1, t2))), :s32))
+
+        assert norm_bin == expected
+      end
+
+      test "calcNormDiff L2" do
+        t1 = Nx.tensor([[10, 10], [20, 20]], type: :u8)
+        t2 = Nx.tensor([[9, 9], [19, 19]], type: :u8)
+
+        norm_bin = Evision.Mat.to_binary(Evision.CUDA.calcNormDiff(t1, t2, normType: Evision.Constant.cv_NORM_L2))
+        expected = Nx.to_binary(Nx.as_type(Nx.sqrt(Nx.sum(Nx.abs(Nx.subtract(t1, t2)))), :f64))
+
+        assert norm_bin == expected
+      end
+
+      test "calcNormDiff INF" do
+        t1 = Nx.tensor([[10, 10], [20, 20]], type: :u8)
+        t2 = Nx.tensor([[9, 9], [19, 15]], type: :u8)
+
+        norm_bin = Evision.Mat.to_binary(Evision.CUDA.calcNormDiff(t1, t2, normType: Evision.Constant.cv_NORM_INF))
+        diff = Nx.flatten(Nx.abs(Nx.subtract(t1, t2)))
+        expected = Nx.to_binary(Nx.as_type(Nx.take(diff, Nx.argmax(diff)), :s32))
+
+        assert norm_bin == expected
+      end
+
       test "transpose" do
         %Mat{} = mat = Evision.imread(Path.join([__DIR__, "testdata", "test.png"]))
 
