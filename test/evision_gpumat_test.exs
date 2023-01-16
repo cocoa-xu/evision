@@ -1,4 +1,4 @@
-if !Code.ensure_loaded?(Evision.CUDA.GpuMat) do
+if !Kernel.function_exported?(Evision.CUDA, :split, 1) do
 else
   defmodule Evision.CUDA.GpuMat.Test do
     use ExUnit.Case
@@ -205,6 +205,21 @@ else
         expected = Nx.to_binary(Nx.as_type(Nx.take(diff, Nx.argmax(diff)), :s32))
 
         assert norm_bin == expected
+      end
+
+      test "multiply" do
+        t1 = Nx.tensor([[-1, 2, -3], [4, -5, 6]], type: :f32)
+        t2 = Nx.tensor([[0, 1, 2], [3, 4, 5]], type: :f32)
+        product = Nx.to_binary(Nx.multiply(t1, t2))
+        assert product == Evision.Mat.to_binary(Evision.CUDA.multiply(t1, t2))
+      end
+
+      test "multiply with scale" do
+        t1 = Nx.tensor([[-1, 2, -3], [4, -5, 6]], type: :f32)
+        t2 = Nx.tensor([[0, 1, 2], [3, 4, 5]], type: :f32)
+        scale = 2.0
+        product = Nx.to_binary(Nx.multiply(Nx.multiply(t1, t2), scale))
+        assert product == Evision.Mat.to_binary(Evision.CUDA.multiply(t1, t2, scale: scale))
       end
 
       test "subtract" do
