@@ -2,7 +2,7 @@ defmodule Evision.MixProject.Metadata do
   @moduledoc false
 
   def app, do: :evision
-  def version, do: "0.1.26-rc2"
+  def version, do: "0.1.26-rc3"
   def github_url, do: "https://github.com/cocoa-xu/evision"
   def opencv_version, do: "4.7.0"
   # only means compatible. need to write more tests
@@ -43,11 +43,14 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
       no_contrib = get_download_url(target, version, nif_version, false, false, "")
       with_contrib = get_download_url(target, version, nif_version, true, false, "")
 
-      with_cuda = if target == "x86_64-linux-gnu" do
-        Enum.map(Metadata.all_cuda_version(), fn cuda_ver -> get_download_url(target, version, nif_version, true, true, cuda_ver) end)
-      else
-        []
-      end
+      with_cuda =
+        if target == "x86_64-linux-gnu" do
+          Enum.map(Metadata.all_cuda_version(), fn cuda_ver ->
+            get_download_url(target, version, nif_version, true, true, cuda_ver)
+          end)
+        else
+          []
+        end
 
       [no_contrib, with_contrib] ++ with_cuda ++ acc
     end)
@@ -406,22 +409,56 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
     end
   end
 
-  def filename(target, version, nif_version, enable_contrib, enable_cuda, cuda_version, with_ext \\ "")
+  def filename(
+        target,
+        version,
+        nif_version,
+        enable_contrib,
+        enable_cuda,
+        cuda_version,
+        with_ext \\ ""
+      )
 
-  def filename(target, version, nif_version, _enable_contrib = false, _enable_cuda, _cuda_version, with_ext) do
+  def filename(
+        target,
+        version,
+        nif_version,
+        _enable_contrib = false,
+        _enable_cuda,
+        _cuda_version,
+        with_ext
+      ) do
     "evision-nif_#{nif_version}-#{target}-#{version}#{with_ext}"
   end
 
-  def filename(target, version, nif_version, _enable_contrib = true, _enable_cuda=false, _cuda_version, with_ext) do
+  def filename(
+        target,
+        version,
+        nif_version,
+        _enable_contrib = true,
+        _enable_cuda = false,
+        _cuda_version,
+        with_ext
+      ) do
     "evision-nif_#{nif_version}-#{target}-contrib-#{version}#{with_ext}"
   end
 
-  def filename(target, version, nif_version, _enable_contrib = true, _enable_cuda=true, cuda_version, with_ext) do
+  def filename(
+        target,
+        version,
+        nif_version,
+        _enable_contrib = true,
+        _enable_cuda = true,
+        cuda_version,
+        with_ext
+      ) do
     "evision-nif_#{nif_version}-#{target}-contrib-cuda#{cuda_version}-#{version}#{with_ext}"
   end
 
   def get_download_url(target, version, nif_version, enable_contrib, enable_cuda, cuda_version) do
-    tar_file = filename(target, version, nif_version, enable_contrib, enable_cuda, cuda_version, ".tar.gz")
+    tar_file =
+      filename(target, version, nif_version, enable_contrib, enable_cuda, cuda_version, ".tar.gz")
+
     "#{Metadata.github_url()}/releases/download/v#{version}/#{tar_file}"
   end
 
@@ -460,7 +497,10 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
 
   def prepare(target, os, version, nif_version, enable_contrib, enable_cuda, cuda_version) do
     name = filename(target, version, nif_version, enable_contrib, enable_cuda, cuda_version)
-    filename = filename(target, version, nif_version, enable_contrib, enable_cuda, cuda_version, ".tar.gz")
+
+    filename =
+      filename(target, version, nif_version, enable_contrib, enable_cuda, cuda_version, ".tar.gz")
+
     cache_dir = cache_dir()
     cache_file = Path.join([cache_dir, filename])
     unarchive_dest_dir = Path.join([cache_dir, name])
@@ -533,7 +573,15 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
           end
 
         if needs_download do
-          download_url = get_download_url(target, version, nif_version, enable_contrib, enable_cuda, cuda_version)
+          download_url =
+            get_download_url(
+              target,
+              version,
+              nif_version,
+              enable_contrib,
+              enable_cuda,
+              cuda_version
+            )
 
           {:ok, _} = Application.ensure_all_started(:inets)
           {:ok, _} = Application.ensure_all_started(:ssl)

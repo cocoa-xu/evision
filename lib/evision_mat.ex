@@ -168,6 +168,7 @@ defmodule Evision.Mat do
   defp __handle_negative_range__(value, bound) when value < 0 do
     value + bound
   end
+
   defp __handle_negative_range__(value, _bound), do: value
 
   @doc false
@@ -193,6 +194,7 @@ defmodule Evision.Mat do
             else
               step
             end
+
           first = __handle_negative_range__(first, dim)
           last = __handle_negative_range__(last, dim)
           {first, last} = __from_elixir_range__(first..last//step, allowed_step_size: [1])

@@ -127,8 +127,11 @@ else
         beta = 0.2
         gamma = 10
 
-        weighted_sum = Nx.to_binary(Nx.add(Nx.add(Nx.multiply(t1, alpha), Nx.multiply(t2, beta)), gamma))
-        assert weighted_sum == Evision.Mat.to_binary(Evision.CUDA.addWeighted(t1, alpha, t2, beta, gamma))
+        weighted_sum =
+          Nx.to_binary(Nx.add(Nx.add(Nx.multiply(t1, alpha), Nx.multiply(t2, beta)), gamma))
+
+        assert weighted_sum ==
+                 Evision.Mat.to_binary(Evision.CUDA.addWeighted(t1, alpha, t2, beta, gamma))
       end
 
       test "calcHist" do
@@ -141,6 +144,7 @@ else
         %Mat{} = downloaded = GpuMat.download(result)
 
         ret = Nx.to_flat_list(Evision.Mat.to_nx(downloaded))
+
         expected =
           Nx.broadcast(Nx.tensor(0, type: :s32), {256})
           |> Nx.put_slice([10], Nx.tensor([2]))
@@ -154,7 +158,7 @@ else
       test "calcNorm L1" do
         t = Nx.tensor([[10, 10, 20], [20, 20, 30]], type: :u8)
 
-        norm_bin = Evision.Mat.to_binary(Evision.CUDA.calcNorm(t, Evision.Constant.cv_NORM_L1))
+        norm_bin = Evision.Mat.to_binary(Evision.CUDA.calcNorm(t, Evision.Constant.cv_NORM_L1()))
         expected = Nx.to_binary(Nx.as_type(Nx.sum(Nx.abs(t)), :f64))
 
         assert norm_bin == expected
@@ -163,7 +167,7 @@ else
       test "calcNorm L2" do
         t = Nx.tensor([[1, 1]], type: :u8)
 
-        norm_bin = Evision.Mat.to_binary(Evision.CUDA.calcNorm(t, Evision.Constant.cv_NORM_L2))
+        norm_bin = Evision.Mat.to_binary(Evision.CUDA.calcNorm(t, Evision.Constant.cv_NORM_L2()))
         expected = Nx.to_binary(Nx.sqrt(Nx.as_type(Nx.sum(Nx.power(t, 2)), :f64)))
 
         assert norm_bin == expected
@@ -172,7 +176,7 @@ else
       test "calcNorm INF" do
         t = Nx.tensor([1, 42], type: :u8)
 
-        norm_bin = Evision.Mat.to_binary(Evision.CUDA.calcNorm(t, Evision.Constant.cv_NORM_INF))
+        norm_bin = Evision.Mat.to_binary(Evision.CUDA.calcNorm(t, Evision.Constant.cv_NORM_INF()))
         expected = Nx.to_binary(Nx.as_type(Nx.take(t, Nx.argmax(t)), :s32))
 
         assert norm_bin == expected
@@ -182,7 +186,11 @@ else
         t1 = Nx.tensor([[10, 10], [20, 20]], type: :u8)
         t2 = Nx.tensor([[9, 9], [19, 19]], type: :u8)
 
-        norm_bin = Evision.Mat.to_binary(Evision.CUDA.calcNormDiff(t1, t2, normType: Evision.Constant.cv_NORM_L1))
+        norm_bin =
+          Evision.Mat.to_binary(
+            Evision.CUDA.calcNormDiff(t1, t2, normType: Evision.Constant.cv_NORM_L1())
+          )
+
         expected = Nx.to_binary(Nx.as_type(Nx.sum(Nx.abs(Nx.subtract(t1, t2))), :s32))
 
         assert norm_bin == expected
@@ -192,7 +200,11 @@ else
         t1 = Nx.tensor([[10, 10], [20, 20]], type: :u8)
         t2 = Nx.tensor([[9, 9], [19, 19]], type: :u8)
 
-        norm_bin = Evision.Mat.to_binary(Evision.CUDA.calcNormDiff(t1, t2, normType: Evision.Constant.cv_NORM_L2))
+        norm_bin =
+          Evision.Mat.to_binary(
+            Evision.CUDA.calcNormDiff(t1, t2, normType: Evision.Constant.cv_NORM_L2())
+          )
+
         expected = Nx.to_binary(Nx.as_type(Nx.sqrt(Nx.sum(Nx.abs(Nx.subtract(t1, t2)))), :f64))
 
         assert norm_bin == expected
@@ -202,7 +214,11 @@ else
         t1 = Nx.tensor([[10, 10], [20, 20]], type: :u8)
         t2 = Nx.tensor([[9, 9], [19, 15]], type: :u8)
 
-        norm_bin = Evision.Mat.to_binary(Evision.CUDA.calcNormDiff(t1, t2, normType: Evision.Constant.cv_NORM_INF))
+        norm_bin =
+          Evision.Mat.to_binary(
+            Evision.CUDA.calcNormDiff(t1, t2, normType: Evision.Constant.cv_NORM_INF())
+          )
+
         diff = Nx.flatten(Nx.abs(Nx.subtract(t1, t2)))
         expected = Nx.to_binary(Nx.as_type(Nx.take(diff, Nx.argmax(diff)), :s32))
 
@@ -259,7 +275,7 @@ else
         t1 = Nx.tensor([[1, 2], [3, 4], [5, 6]], type: :u8)
         t2 = Nx.tensor([[5, 6], [3, 4], [1, 2]], type: :u8)
 
-        ret = Evision.Mat.to_binary(Evision.CUDA.compare(t1, t2, Evision.Constant.cv_CMP_EQ))
+        ret = Evision.Mat.to_binary(Evision.CUDA.compare(t1, t2, Evision.Constant.cv_CMP_EQ()))
         expected = Nx.to_binary(Nx.multiply(Nx.equal(t1, t2), 255))
 
         assert ret == expected
@@ -269,7 +285,7 @@ else
         t1 = Nx.tensor([[1, 2], [3, 4], [5, 6]], type: :u8)
         t2 = Nx.tensor([[5, 6], [3, 4], [1, 2]], type: :u8)
 
-        ret = Evision.Mat.to_binary(Evision.CUDA.compare(t1, t2, Evision.Constant.cv_CMP_GT))
+        ret = Evision.Mat.to_binary(Evision.CUDA.compare(t1, t2, Evision.Constant.cv_CMP_GT()))
         expected = Nx.to_binary(Nx.multiply(Nx.greater(t1, t2), 255))
 
         assert ret == expected
@@ -279,7 +295,7 @@ else
         t1 = Nx.tensor([[1, 2], [3, 4], [5, 6]], type: :u8)
         t2 = Nx.tensor([[5, 6], [3, 4], [1, 2]], type: :u8)
 
-        ret = Evision.Mat.to_binary(Evision.CUDA.compare(t1, t2, Evision.Constant.cv_CMP_GE))
+        ret = Evision.Mat.to_binary(Evision.CUDA.compare(t1, t2, Evision.Constant.cv_CMP_GE()))
         expected = Nx.to_binary(Nx.multiply(Nx.greater_equal(t1, t2), 255))
 
         assert ret == expected
@@ -289,7 +305,7 @@ else
         t1 = Nx.tensor([[1, 2], [3, 4], [5, 6]], type: :u8)
         t2 = Nx.tensor([[5, 6], [3, 4], [1, 2]], type: :u8)
 
-        ret = Evision.Mat.to_binary(Evision.CUDA.compare(t1, t2, Evision.Constant.cv_CMP_LT))
+        ret = Evision.Mat.to_binary(Evision.CUDA.compare(t1, t2, Evision.Constant.cv_CMP_LT()))
         expected = Nx.to_binary(Nx.multiply(Nx.less(t1, t2), 255))
 
         assert ret == expected
@@ -299,7 +315,7 @@ else
         t1 = Nx.tensor([[1, 2], [3, 4], [5, 6]], type: :u8)
         t2 = Nx.tensor([[5, 6], [3, 4], [1, 2]], type: :u8)
 
-        ret = Evision.Mat.to_binary(Evision.CUDA.compare(t1, t2, Evision.Constant.cv_CMP_LE))
+        ret = Evision.Mat.to_binary(Evision.CUDA.compare(t1, t2, Evision.Constant.cv_CMP_LE()))
         expected = Nx.to_binary(Nx.multiply(Nx.less_equal(t1, t2), 255))
 
         assert ret == expected
@@ -309,7 +325,7 @@ else
         t1 = Nx.tensor([[1, 2], [3, 4], [5, 6]], type: :u8)
         t2 = Nx.tensor([[5, 6], [3, 4], [1, 2]], type: :u8)
 
-        ret = Evision.Mat.to_binary(Evision.CUDA.compare(t1, t2, Evision.Constant.cv_CMP_NE))
+        ret = Evision.Mat.to_binary(Evision.CUDA.compare(t1, t2, Evision.Constant.cv_CMP_NE()))
         expected = Nx.to_binary(Nx.multiply(Nx.not_equal(t1, t2), 255))
 
         assert ret == expected
@@ -323,27 +339,45 @@ else
       end
 
       test "flip (x-axis)" do
-        t = Nx.tensor([
-          [0, 1, 0, 2],
-          [3, 0, 4, 0]],
-        type: :u8)
-        assert [3, 0, 4, 0, 0, 1, 0, 2] == Nx.to_flat_list(Evision.Mat.to_nx(Evision.CUDA.flip(t, 0)))
+        t =
+          Nx.tensor(
+            [
+              [0, 1, 0, 2],
+              [3, 0, 4, 0]
+            ],
+            type: :u8
+          )
+
+        assert [3, 0, 4, 0, 0, 1, 0, 2] ==
+                 Nx.to_flat_list(Evision.Mat.to_nx(Evision.CUDA.flip(t, 0)))
       end
 
       test "flip (y-axis)" do
-        t = Nx.tensor([
-          [0, 1, 0, 2],
-          [3, 0, 4, 0]],
-        type: :u8)
-        assert [2, 0, 1, 0, 0, 4, 0, 3] == Nx.to_flat_list(Evision.Mat.to_nx(Evision.CUDA.flip(t, 1)))
+        t =
+          Nx.tensor(
+            [
+              [0, 1, 0, 2],
+              [3, 0, 4, 0]
+            ],
+            type: :u8
+          )
+
+        assert [2, 0, 1, 0, 0, 4, 0, 3] ==
+                 Nx.to_flat_list(Evision.Mat.to_nx(Evision.CUDA.flip(t, 1)))
       end
 
       test "flip (both axes)" do
-        t = Nx.tensor([
-          [0, 1, 0, 2],
-          [3, 0, 4, 0]],
-        type: :u8)
-        assert [0, 4, 0, 3, 2, 0, 1, 0] == Nx.to_flat_list(Evision.Mat.to_nx(Evision.CUDA.flip(t, -1)))
+        t =
+          Nx.tensor(
+            [
+              [0, 1, 0, 2],
+              [3, 0, 4, 0]
+            ],
+            type: :u8
+          )
+
+        assert [0, 4, 0, 3, 2, 0, 1, 0] ==
+                 Nx.to_flat_list(Evision.Mat.to_nx(Evision.CUDA.flip(t, -1)))
       end
 
       test "gemm" do
@@ -354,11 +388,14 @@ else
         alpha = 0.5
         beta = 1.0
 
-        expected = Nx.to_binary(
-          Nx.add(
-            Nx.multiply(Nx.dot(t1, t2), alpha),
-            Nx.multiply(t3, beta))
-        )
+        expected =
+          Nx.to_binary(
+            Nx.add(
+              Nx.multiply(Nx.dot(t1, t2), alpha),
+              Nx.multiply(t3, beta)
+            )
+          )
+
         assert expected == Evision.Mat.to_binary(Evision.CUDA.gemm(t1, t2, alpha, t3, beta))
       end
 
@@ -370,12 +407,20 @@ else
         alpha = 0.5
         beta = 1.0
 
-        expected = Nx.to_binary(
-          Nx.add(
-            Nx.multiply(Nx.dot(Nx.transpose(t1), t2), alpha),
-            Nx.multiply(t3, beta))
-        )
-        assert expected == Evision.Mat.to_binary(Evision.CUDA.gemm(t1, t2, alpha, t3, beta, flags: Evision.Constant.cv_GEMM_1_T()))
+        expected =
+          Nx.to_binary(
+            Nx.add(
+              Nx.multiply(Nx.dot(Nx.transpose(t1), t2), alpha),
+              Nx.multiply(t3, beta)
+            )
+          )
+
+        assert expected ==
+                 Evision.Mat.to_binary(
+                   Evision.CUDA.gemm(t1, t2, alpha, t3, beta,
+                     flags: Evision.Constant.cv_GEMM_1_T()
+                   )
+                 )
       end
 
       test "gemm (GEMM_3_T)" do
@@ -386,12 +431,20 @@ else
         alpha = 0.5
         beta = 1.0
 
-        expected = Nx.to_binary(
-          Nx.add(
-            Nx.multiply(Nx.dot(t1, t2), alpha),
-            Nx.multiply(Nx.transpose(t3), beta))
-        )
-        assert expected == Evision.Mat.to_binary(Evision.CUDA.gemm(t1, t2, alpha, t3, beta, flags: Evision.Constant.cv_GEMM_3_T()))
+        expected =
+          Nx.to_binary(
+            Nx.add(
+              Nx.multiply(Nx.dot(t1, t2), alpha),
+              Nx.multiply(Nx.transpose(t3), beta)
+            )
+          )
+
+        assert expected ==
+                 Evision.Mat.to_binary(
+                   Evision.CUDA.gemm(t1, t2, alpha, t3, beta,
+                     flags: Evision.Constant.cv_GEMM_3_T()
+                   )
+                 )
       end
 
       test "gemm (GEMM_1_T + GEMM_3_T)" do
@@ -402,12 +455,20 @@ else
         alpha = 0.5
         beta = 1.0
 
-        expected = Nx.to_binary(
-          Nx.add(
-            Nx.multiply(Nx.dot(Nx.transpose(t1), t2), alpha),
-            Nx.multiply(Nx.transpose(t3), beta))
-        )
-        assert expected == Evision.Mat.to_binary(Evision.CUDA.gemm(t1, t2, alpha, t3, beta, flags: Evision.Constant.cv_GEMM_1_T() + Evision.Constant.cv_GEMM_3_T()))
+        expected =
+          Nx.to_binary(
+            Nx.add(
+              Nx.multiply(Nx.dot(Nx.transpose(t1), t2), alpha),
+              Nx.multiply(Nx.transpose(t3), beta)
+            )
+          )
+
+        assert expected ==
+                 Evision.Mat.to_binary(
+                   Evision.CUDA.gemm(t1, t2, alpha, t3, beta,
+                     flags: Evision.Constant.cv_GEMM_1_T() + Evision.Constant.cv_GEMM_3_T()
+                   )
+                 )
       end
 
       test "lshift" do
@@ -421,11 +482,17 @@ else
         t = Nx.reshape(Nx.tensor([1, 1, 1, 1, 1, 1, 1, 1, 1], type: :u8), {3, 3})
         expected = Nx.left_shift(t, Nx.tensor([1, 2, 3]))
 
-        ret = Nx.squeeze(
-          Evision.Mat.to_nx(
-            Evision.CUDA.lshift(
-              Evision.Mat.last_dim_as_channel(
-                Nx.reshape(t, {1, 3, 3})), {1, 2, 3}), Nx.BinaryBackend))
+        ret =
+          Nx.squeeze(
+            Evision.Mat.to_nx(
+              Evision.CUDA.lshift(
+                Evision.Mat.last_dim_as_channel(Nx.reshape(t, {1, 3, 3})),
+                {1, 2, 3}
+              ),
+              Nx.BinaryBackend
+            )
+          )
+
         assert Nx.to_number(Nx.all_close(expected, ret, rtol: 0.0001)) == 1
       end
 
@@ -440,7 +507,10 @@ else
         x = Nx.tensor([1, 0, 3, 4], type: :f32)
         y = Nx.tensor([1, 2, 0, 4], type: :f32)
         expected = Nx.sqrt(Nx.add(Nx.power(x, 2), Nx.power(y, 2)))
-        ret = Nx.reshape(Evision.Mat.to_nx(Evision.CUDA.magnitude(x, y), Nx.BinaryBackend), {:auto})
+
+        ret =
+          Nx.reshape(Evision.Mat.to_nx(Evision.CUDA.magnitude(x, y), Nx.BinaryBackend), {:auto})
+
         assert Nx.to_number(Nx.all_close(expected, ret, rtol: 0.0001)) == 1
       end
 
@@ -458,7 +528,13 @@ else
         x = Nx.tensor([1, 0, 3, 4], type: :f32)
         y = Nx.tensor([1, 2, 0, 4], type: :f32)
         expected = Nx.add(Nx.power(x, 2), Nx.power(y, 2))
-        ret = Nx.reshape(Evision.Mat.to_nx(Evision.CUDA.magnitudeSqr(x, y), Nx.BinaryBackend), {:auto})
+
+        ret =
+          Nx.reshape(
+            Evision.Mat.to_nx(Evision.CUDA.magnitudeSqr(x, y), Nx.BinaryBackend),
+            {:auto}
+          )
+
         assert Nx.to_number(Nx.all_close(expected, ret, rtol: 0.0001)) == 1
       end
 
@@ -468,7 +544,10 @@ else
         expected = Nx.add(Nx.power(x, 2), Nx.power(y, 2))
         xy = Nx.transpose(Nx.stack([x, y]))
         xy = Evision.Mat.last_dim_as_channel(Evision.Mat.from_nx_2d(xy))
-        ret = Nx.reshape(Evision.Mat.to_nx(Evision.CUDA.magnitudeSqr(xy), Nx.BinaryBackend), {:auto})
+
+        ret =
+          Nx.reshape(Evision.Mat.to_nx(Evision.CUDA.magnitudeSqr(xy), Nx.BinaryBackend), {:auto})
+
         assert Nx.to_number(Nx.all_close(expected, ret, rtol: 0.0001)) == 1
       end
 
@@ -539,70 +618,158 @@ else
 
         power = 1
         expected = Nx.power(t, power)
-        assert Nx.to_number(Nx.all_close(expected, Evision.Mat.to_nx(Evision.CUDA.pow(t, power), Nx.BinaryBackend), rtol: 0.0001)) == 1
+
+        assert Nx.to_number(
+                 Nx.all_close(
+                   expected,
+                   Evision.Mat.to_nx(Evision.CUDA.pow(t, power), Nx.BinaryBackend),
+                   rtol: 0.0001
+                 )
+               ) == 1
 
         power = 2
         expected = Nx.power(t, power)
-        assert Nx.to_number(Nx.all_close(expected, Evision.Mat.to_nx(Evision.CUDA.pow(t, power), Nx.BinaryBackend), rtol: 0.0001)) == 1
+
+        assert Nx.to_number(
+                 Nx.all_close(
+                   expected,
+                   Evision.Mat.to_nx(Evision.CUDA.pow(t, power), Nx.BinaryBackend),
+                   rtol: 0.0001
+                 )
+               ) == 1
 
         power = 3
         expected = Nx.power(t, power)
-        assert Nx.to_number(Nx.all_close(expected, Evision.Mat.to_nx(Evision.CUDA.pow(t, power), Nx.BinaryBackend), rtol: 0.0001)) == 1
+
+        assert Nx.to_number(
+                 Nx.all_close(
+                   expected,
+                   Evision.Mat.to_nx(Evision.CUDA.pow(t, power), Nx.BinaryBackend),
+                   rtol: 0.0001
+                 )
+               ) == 1
       end
 
       test "reduce SUM by row" do
         t = Nx.tensor([[0, 1, 2], [3, 4, 5]], type: :u8)
-        expected = Nx.reduce(t, Nx.tensor(0), [axes: [0], keep_axes: true], fn x, y -> Nx.add(x, y) end)
-        ret = Evision.Mat.to_nx(Evision.CUDA.reduce(t, 0, Evision.Constant.cv_REDUCE_SUM()), Nx.BinaryBackend)
+
+        expected =
+          Nx.reduce(t, Nx.tensor(0), [axes: [0], keep_axes: true], fn x, y -> Nx.add(x, y) end)
+
+        ret =
+          Evision.Mat.to_nx(
+            Evision.CUDA.reduce(t, 0, Evision.Constant.cv_REDUCE_SUM()),
+            Nx.BinaryBackend
+          )
+
         assert Nx.to_number(Nx.all_close(expected, ret, rtol: 0.0001)) == 1
       end
 
       test "reduce SUM by col" do
         t = Nx.tensor([[0, 1, 2], [3, 4, 5]], type: :u8)
-        expected = Nx.reduce(t, Nx.tensor(0), [axes: [1], keep_axes: true], fn x, y -> Nx.add(x, y) end)
-        ret = Evision.Mat.to_nx(Evision.CUDA.reduce(t, 1, Evision.Constant.cv_REDUCE_SUM()), Nx.BinaryBackend)
+
+        expected =
+          Nx.reduce(t, Nx.tensor(0), [axes: [1], keep_axes: true], fn x, y -> Nx.add(x, y) end)
+
+        ret =
+          Evision.Mat.to_nx(
+            Evision.CUDA.reduce(t, 1, Evision.Constant.cv_REDUCE_SUM()),
+            Nx.BinaryBackend
+          )
+
         assert Nx.to_number(Nx.all_close(expected, ret, rtol: 0.0001)) == 1
       end
 
       test "reduce AVG by row" do
         t = Nx.tensor([[0, 1, 2], [3, 4, 5]], type: :f32)
         expected = Nx.divide(Nx.sum(t, axes: [0]), 2)
-        ret = Evision.Mat.to_nx(Evision.CUDA.reduce(t, 0, Evision.Constant.cv_REDUCE_AVG()), Nx.BinaryBackend)
+
+        ret =
+          Evision.Mat.to_nx(
+            Evision.CUDA.reduce(t, 0, Evision.Constant.cv_REDUCE_AVG()),
+            Nx.BinaryBackend
+          )
+
         assert Nx.to_number(Nx.all_close(expected, ret, rtol: 0.0001)) == 1
       end
 
       test "reduce AVG by col" do
         t = Nx.tensor([[0, 1, 2], [3, 4, 5]], type: :f32)
         expected = Nx.divide(Nx.sum(t, axes: [1]), 3)
-        ret = Nx.reshape(Evision.Mat.to_nx(Evision.CUDA.reduce(t, 1, Evision.Constant.cv_REDUCE_AVG()), Nx.BinaryBackend), {:auto})
+
+        ret =
+          Nx.reshape(
+            Evision.Mat.to_nx(
+              Evision.CUDA.reduce(t, 1, Evision.Constant.cv_REDUCE_AVG()),
+              Nx.BinaryBackend
+            ),
+            {:auto}
+          )
+
         assert Nx.to_number(Nx.all_close(expected, ret, rtol: 0.0001)) == 1
       end
 
       test "reduce MAX by row" do
         t = Nx.tensor([[0, 1, 2], [3, 4, 5]], type: :f32)
         expected = Nx.reduce_max(t, axes: [0])
-        ret = Nx.reshape(Evision.Mat.to_nx(Evision.CUDA.reduce(t, 0, Evision.Constant.cv_REDUCE_MAX()), Nx.BinaryBackend), {:auto})
+
+        ret =
+          Nx.reshape(
+            Evision.Mat.to_nx(
+              Evision.CUDA.reduce(t, 0, Evision.Constant.cv_REDUCE_MAX()),
+              Nx.BinaryBackend
+            ),
+            {:auto}
+          )
+
         assert Nx.to_number(Nx.all_close(expected, ret, rtol: 0.0001)) == 1
       end
 
       test "reduce MAX by col" do
         t = Nx.tensor([[0, 1, 2], [3, 4, 5]], type: :f32)
         expected = Nx.reduce_max(t, axes: [1])
-        ret = Nx.reshape(Evision.Mat.to_nx(Evision.CUDA.reduce(t, 1, Evision.Constant.cv_REDUCE_MAX()), Nx.BinaryBackend), {:auto})
+
+        ret =
+          Nx.reshape(
+            Evision.Mat.to_nx(
+              Evision.CUDA.reduce(t, 1, Evision.Constant.cv_REDUCE_MAX()),
+              Nx.BinaryBackend
+            ),
+            {:auto}
+          )
+
         assert Nx.to_number(Nx.all_close(expected, ret, rtol: 0.0001)) == 1
       end
 
       test "reduce MIN by row" do
         t = Nx.tensor([[0, 1, 2], [3, 4, 5]], type: :f32)
         expected = Nx.reduce_min(t, axes: [0])
-        ret = Nx.reshape(Evision.Mat.to_nx(Evision.CUDA.reduce(t, 0, Evision.Constant.cv_REDUCE_MIN()), Nx.BinaryBackend), {:auto})
+
+        ret =
+          Nx.reshape(
+            Evision.Mat.to_nx(
+              Evision.CUDA.reduce(t, 0, Evision.Constant.cv_REDUCE_MIN()),
+              Nx.BinaryBackend
+            ),
+            {:auto}
+          )
+
         assert Nx.to_number(Nx.all_close(expected, ret, rtol: 0.0001)) == 1
       end
 
       test "reduce MIN by col" do
         t = Nx.tensor([[0, 1, 2], [3, 4, 5]], type: :f32)
         expected = Nx.reduce_min(t, axes: [1])
-        ret = Nx.reshape(Evision.Mat.to_nx(Evision.CUDA.reduce(t, 1, Evision.Constant.cv_REDUCE_MIN()), Nx.BinaryBackend), {:auto})
+
+        ret =
+          Nx.reshape(
+            Evision.Mat.to_nx(
+              Evision.CUDA.reduce(t, 1, Evision.Constant.cv_REDUCE_MIN()),
+              Nx.BinaryBackend
+            ),
+            {:auto}
+          )
+
         assert Nx.to_number(Nx.all_close(expected, ret, rtol: 0.0001)) == 1
       end
 
@@ -617,24 +784,41 @@ else
         t = Nx.reshape(Nx.tensor([128, 128, 128, 64, 64, 64, 32, 32, 32], type: :u8), {3, 3})
         expected = Nx.right_shift(t, Nx.tensor([1, 2, 3]))
 
-        ret = Nx.squeeze(
-          Evision.Mat.to_nx(
-            Evision.CUDA.rshift(
-              Evision.Mat.last_dim_as_channel(
-                Nx.reshape(t, {1, 3, 3})), {1, 2, 3}), Nx.BinaryBackend))
+        ret =
+          Nx.squeeze(
+            Evision.Mat.to_nx(
+              Evision.CUDA.rshift(
+                Evision.Mat.last_dim_as_channel(Nx.reshape(t, {1, 3, 3})),
+                {1, 2, 3}
+              ),
+              Nx.BinaryBackend
+            )
+          )
+
         assert Nx.to_number(Nx.all_close(expected, ret, rtol: 0.0001)) == 1
       end
 
       test "sqr" do
         t = Nx.tensor([[-1, 2, -3], [4, -5, 6]], type: :f32)
         expected = Nx.power(t, 2)
-        assert Nx.to_number(Nx.all_close(expected, Evision.Mat.to_nx(Evision.CUDA.sqr(t), Nx.BinaryBackend), rtol: 0.0001)) == 1
+
+        assert Nx.to_number(
+                 Nx.all_close(expected, Evision.Mat.to_nx(Evision.CUDA.sqr(t), Nx.BinaryBackend),
+                   rtol: 0.0001
+                 )
+               ) == 1
       end
 
       test "sqrIntegral" do
         t = Nx.tensor([1, 2, 3, 4, 5, 6], type: :u8)
         expected = Nx.as_type(Nx.cumulative_sum(Nx.power(t, 2)), :f64)
-        sqr_sum = Nx.reshape(Evision.Mat.to_nx(Evision.CUDA.sqrIntegral(t)[[1..-1, 1]], Nx.BinaryBackend), {:auto})
+
+        sqr_sum =
+          Nx.reshape(
+            Evision.Mat.to_nx(Evision.CUDA.sqrIntegral(t)[[1..-1, 1]], Nx.BinaryBackend),
+            {:auto}
+          )
+
         assert Nx.to_number(Nx.all_close(expected, sqr_sum, rtol: 0.0001)) == 1
       end
 
