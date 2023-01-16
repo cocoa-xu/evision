@@ -1,4 +1,6 @@
 if !Kernel.function_exported?(Evision.CUDA, :split, 1) do
+  defmodule Evision.CUDA.GpuMat.Test do
+  end
 else
   defmodule Evision.CUDA.GpuMat.Test do
     use ExUnit.Case
