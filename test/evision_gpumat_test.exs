@@ -207,6 +207,28 @@ else
         assert norm_bin == expected
       end
 
+      test "subtract" do
+        t1 = Nx.tensor([[-1, 2, -3], [4, -5, 6]], type: :f32)
+        t2 = Nx.tensor([[0, 1, 2], [3, 4, 5]], type: :f32)
+        diff = Nx.to_binary(Nx.subtract(t1, t2))
+        assert diff == Evision.Mat.to_binary(Evision.CUDA.subtract(t1, t2))
+      end
+
+      test "sum" do
+        t = Nx.tensor([[-1, 2, -3], [4, -5, 6]], type: :f32)
+        sum = Nx.to_number(Nx.sum(t))
+        {cuda_sum, 0.0, 0.0, 0.0} = Evision.CUDA.sum(t)
+        assert sum == cuda_sum
+      end
+
+      test "sum with mask" do
+        t = Nx.tensor([[-1, 2, -3], [4, -5, 6]], type: :f32)
+        m = Nx.tensor([[1, 0, 0], [0, 0, 1]], type: :u8)
+        sum = Nx.to_number(Nx.sum(Nx.multiply(t, m)))
+        {cuda_sum, 0.0, 0.0, 0.0} = Evision.CUDA.sum(t, mask: m)
+        assert sum == cuda_sum
+      end
+
       test "transpose" do
         %Mat{} = mat = Evision.imread(Path.join([__DIR__, "testdata", "test.png"]))
 
