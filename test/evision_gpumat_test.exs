@@ -403,6 +403,32 @@ else
         assert expected == Evision.Mat.to_binary(Evision.CUDA.gemm(t1, t2, alpha, t3, beta, flags: Evision.Constant.cv_GEMM_1_T() + Evision.Constant.cv_GEMM_3_T()))
       end
 
+      test "lshift" do
+        t = Nx.tensor([[0, 1, 2], [3, 4, 5]], type: :u8)
+        expected = Nx.left_shift(t, 1)
+        ret = Evision.Mat.to_nx(Evision.CUDA.lshift(t, {1}), Nx.BinaryBackend)
+        assert Nx.to_number(Nx.all_close(expected, ret, rtol: 0.0001)) == 1
+      end
+
+      test "lshift (3-channel)" do
+        t = Nx.reshape(Nx.tensor([1, 1, 1, 1, 1, 1, 1, 1, 1], type: :u8), {3, 3})
+        expected = Nx.left_shift(t, Nx.tensor([1, 2, 3]))
+
+        ret = Nx.squeeze(
+          Evision.Mat.to_nx(
+            Evision.CUDA.lshift(
+              Evision.Mat.last_dim_as_channel(
+                Nx.reshape(t, {1, 3, 3})), {1, 2, 3}), Nx.BinaryBackend))
+        assert Nx.to_number(Nx.all_close(expected, ret, rtol: 0.0001)) == 1
+      end
+
+      test "log" do
+        t = Nx.tensor([1, 10, 100, 1000], type: :f32)
+        expected = Nx.log(t)
+        ret = Nx.reshape(Evision.Mat.to_nx(Evision.CUDA.log(t), Nx.BinaryBackend), {:auto})
+        assert Nx.to_number(Nx.all_close(expected, ret, rtol: 0.0001)) == 1
+      end
+
       test "multiply" do
         t1 = Nx.tensor([[-1, 2, -3], [4, -5, 6]], type: :f32)
         t2 = Nx.tensor([[0, 1, 2], [3, 4, 5]], type: :f32)
