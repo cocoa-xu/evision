@@ -321,6 +321,13 @@ Note that `EVISION_ENABLE_CONTRIB` will need to be `true` as well.
 ```bash
 # enable CUDA support
 export EVISION_ENABLE_CUDA=true
+## set a CUDA version that matches your local CUDA driver
+## (this environment variable is only required for users who'd like to use precompiled binaries)
+## available ones are 
+## 111, for CUDA 11.1.x, built with CUDA 11.1.1
+## 114, for CUDA 11.4.x, built with CUDA 11.4.3
+## 118, for CUDA 11.8.x, built with CUDA 11.8.0
+export EVISION_CUDA_VERSION=118
 # opencv_contrib modules is enabled by default
 export EVISION_ENABLE_CONTRIB=true
 
