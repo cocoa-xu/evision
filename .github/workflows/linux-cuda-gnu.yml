@@ -81,6 +81,7 @@ jobs:
       ELIXIR_VERSION: "1.14.3"
       EVISION_PREFER_PRECOMPILED: "false"
       EVISION_ENABLE_CUDA: "true"
+      PKG_CONFIG_PATH: "/usr/lib/x86_64-linux-gnu/pkgconfig"
     steps:
       - uses: actions/checkout@v3
 
