@@ -465,6 +465,19 @@ else
         assert Nx.to_number(Nx.all_close(expected, Evision.Mat.to_nx(Evision.CUDA.pow(t, power), Nx.BinaryBackend), rtol: 0.0001)) == 1
       end
 
+      test "sqr" do
+        t = Nx.tensor([[-1, 2, -3], [4, -5, 6]], type: :f32)
+        expected = Nx.power(t, 2)
+        assert Nx.to_number(Nx.all_close(expected, Evision.Mat.to_nx(Evision.CUDA.sqr(t), Nx.BinaryBackend), rtol: 0.0001)) == 1
+      end
+
+      test "sqrIntegral" do
+        t = Nx.tensor([1, 2, 3, 4, 5, 6], type: :u8)
+        expected = Nx.as_type(Nx.cumulative_sum(Nx.power(t, 2)), :f64)
+        sqr_sum = Nx.reshape(Evision.Mat.to_nx(Evision.CUDA.sqrIntegral(t)[[1..-1, 1]], Nx.BinaryBackend), {:auto})
+        assert Nx.to_number(Nx.all_close(expected, sqr_sum, rtol: 0.0001)) == 1
+      end
+
       test "subtract" do
         t1 = Nx.tensor([[-1, 2, -3], [4, -5, 6]], type: :f32)
         t2 = Nx.tensor([[0, 1, 2], [3, 4, 5]], type: :f32)
