@@ -478,6 +478,26 @@ else
         assert Nx.to_number(Nx.all_close(expected, sqr_sum, rtol: 0.0001)) == 1
       end
 
+      test "sqrSum" do
+        t = Nx.tensor([1, 2, 3, 4, 5, 6], type: :u8)
+        expected = Nx.to_number(Nx.as_type(Nx.sum(Nx.power(t, 2)), :f64))
+        {^expected, 0.0, 0.0, 0.0} = Evision.CUDA.sqrSum(t)
+      end
+
+      test "sqrt" do
+        t = Nx.tensor([1, 2, 3, 4, 5, 6, 7, 8, 9], type: :f32)
+        expected = Nx.sqrt(t)
+        sqrt = Nx.reshape(Evision.Mat.to_nx(Evision.CUDA.sqrt(t), Nx.BinaryBackend), {:auto})
+        assert Nx.to_number(Nx.all_close(expected, sqrt, rtol: 0.0001)) == 1
+      end
+
+      test "sqrt (integer)" do
+        t = Nx.tensor([1, 2, 3, 4, 5, 6, 7, 8, 9], type: :u8)
+        expected = Nx.as_type(Nx.round(Nx.sqrt(t)), :u8)
+        sqrt = Nx.reshape(Evision.Mat.to_nx(Evision.CUDA.sqrt(t), Nx.BinaryBackend), {:auto})
+        assert Nx.to_number(Nx.all_close(expected, sqrt, rtol: 0.0001)) == 1
+      end
+
       test "subtract" do
         t1 = Nx.tensor([[-1, 2, -3], [4, -5, 6]], type: :f32)
         t2 = Nx.tensor([[0, 1, 2], [3, 4, 5]], type: :f32)
