@@ -1,4 +1,4 @@
-if !Kernel.function_exported?(Evision.CUDA, :split, 1) do
+if !Code.ensure_loaded?(Evision.CUDA.DFT) do
   defmodule Evision.CUDA.GpuMat.Test do
   end
 else
@@ -207,6 +207,112 @@ else
         expected = Nx.to_binary(Nx.as_type(Nx.take(diff, Nx.argmax(diff)), :s32))
 
         assert norm_bin == expected
+      end
+
+      test "calcSqrSum" do
+        t = Nx.tensor([[1, 1], [2, 2]], type: :u8)
+
+        sum = Evision.Mat.to_binary(Evision.CUDA.calcSqrSum(t))
+        expected = Nx.to_binary(Nx.as_type(Nx.sum(Nx.power(t, 2)), :f64))
+
+        assert sum == expected
+      end
+
+      test "calcSum" do
+        t = Nx.tensor([[1, 1], [2, 2]], type: :u8)
+
+        sum = Evision.Mat.to_binary(Evision.CUDA.calcSum(t))
+        expected = Nx.to_binary(Nx.as_type(Nx.sum(t), :f64))
+
+        assert sum == expected
+      end
+
+      test "cartToPolar" do
+        real = Nx.tensor([1, 2, 3, 4], type: :f32)
+        imag = Nx.tensor([1, 2, 3, 4], type: :f32)
+
+        {magnitude, angle} = Evision.CUDA.cartToPolar(real, imag)
+        magnitude = Nx.reshape(Evision.Mat.to_nx(magnitude, Nx.BinaryBackend), {:auto})
+        expected_magnitude = Nx.tensor([1.414213, 2.828427, 4.242640, 5.656854])
+        assert Nx.to_number(Nx.all_close(magnitude, expected_magnitude, rtol: 0.0001)) == 1
+
+        angle = Nx.reshape(Evision.Mat.to_nx(angle, Nx.BinaryBackend), {:auto})
+        expected_angle = Nx.tensor([0.7853981, 0.7853981, 0.7853981, 0.7853981])
+        assert Nx.to_number(Nx.all_close(angle, expected_angle, rtol: 0.0001)) == 1
+      end
+
+      test "cartToPolar (angleInDegrees)" do
+        real = Nx.tensor([1, 2, 3, 4], type: :f32)
+        imag = Nx.tensor([1, 2, 3, 4], type: :f32)
+
+        {magnitude, angle} = Evision.CUDA.cartToPolar(real, imag, angleInDegrees: true)
+        magnitude = Nx.reshape(Evision.Mat.to_nx(magnitude, Nx.BinaryBackend), {:auto})
+        expected_magnitude = Nx.tensor([1.414213, 2.828427, 4.242640, 5.656854])
+        assert Nx.to_number(Nx.all_close(magnitude, expected_magnitude, rtol: 0.0001)) == 1
+
+        angle = Nx.reshape(Evision.Mat.to_nx(angle, Nx.BinaryBackend), {:auto})
+        expected_angle = Nx.tensor([45.0, 45.0, 45.0, 45.0])
+        assert Nx.to_number(Nx.all_close(angle, expected_angle, rtol: 0.0001)) == 1
+      end
+
+      test "compare CMP_EQ" do
+        t1 = Nx.tensor([[1, 2], [3, 4], [5, 6]], type: :u8)
+        t2 = Nx.tensor([[5, 6], [3, 4], [1, 2]], type: :u8)
+
+        ret = Evision.Mat.to_binary(Evision.CUDA.compare(t1, t2, Evision.Constant.cv_CMP_EQ))
+        expected = Nx.to_binary(Nx.multiply(Nx.equal(t1, t2), 255))
+
+        assert ret == expected
+      end
+
+      test "compare CMP_GT" do
+        t1 = Nx.tensor([[1, 2], [3, 4], [5, 6]], type: :u8)
+        t2 = Nx.tensor([[5, 6], [3, 4], [1, 2]], type: :u8)
+
+        ret = Evision.Mat.to_binary(Evision.CUDA.compare(t1, t2, Evision.Constant.cv_CMP_GT))
+        expected = Nx.to_binary(Nx.multiply(Nx.greater(t1, t2), 255))
+
+        assert ret == expected
+      end
+
+      test "compare CMP_GE" do
+        t1 = Nx.tensor([[1, 2], [3, 4], [5, 6]], type: :u8)
+        t2 = Nx.tensor([[5, 6], [3, 4], [1, 2]], type: :u8)
+
+        ret = Evision.Mat.to_binary(Evision.CUDA.compare(t1, t2, Evision.Constant.cv_CMP_GE))
+        expected = Nx.to_binary(Nx.multiply(Nx.greater_equal(t1, t2), 255))
+
+        assert ret == expected
+      end
+
+      test "compare CMP_LT" do
+        t1 = Nx.tensor([[1, 2], [3, 4], [5, 6]], type: :u8)
+        t2 = Nx.tensor([[5, 6], [3, 4], [1, 2]], type: :u8)
+
+        ret = Evision.Mat.to_binary(Evision.CUDA.compare(t1, t2, Evision.Constant.cv_CMP_LT))
+        expected = Nx.to_binary(Nx.multiply(Nx.less(t1, t2), 255))
+
+        assert ret == expected
+      end
+
+      test "compare CMP_LE" do
+        t1 = Nx.tensor([[1, 2], [3, 4], [5, 6]], type: :u8)
+        t2 = Nx.tensor([[5, 6], [3, 4], [1, 2]], type: :u8)
+
+        ret = Evision.Mat.to_binary(Evision.CUDA.compare(t1, t2, Evision.Constant.cv_CMP_LE))
+        expected = Nx.to_binary(Nx.multiply(Nx.less_equal(t1, t2), 255))
+
+        assert ret == expected
+      end
+
+      test "compare CMP_NE" do
+        t1 = Nx.tensor([[1, 2], [3, 4], [5, 6]], type: :u8)
+        t2 = Nx.tensor([[5, 6], [3, 4], [1, 2]], type: :u8)
+
+        ret = Evision.Mat.to_binary(Evision.CUDA.compare(t1, t2, Evision.Constant.cv_CMP_NE))
+        expected = Nx.to_binary(Nx.multiply(Nx.not_equal(t1, t2), 255))
+
+        assert ret == expected
       end
 
       test "multiply" do
