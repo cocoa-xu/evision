@@ -1,59 +1,16 @@
-name: linux-cuda
+name: linux-precompile-cuda-gnu
 
 on:
-  pull_request:
-    types: [ labeled, synchronize, opened, reopened ]
-    paths-ignore:
-      - '*.md'
-      - '**/*.md'
-      - 'LICENSE*'
-      - 'examples/**'
-      - 'nerves/**'
-      - 'Makefile.win'
-      - 'cc_toolchain/**'
-      - 'checksum.exs'
-      - '.github/FUNDING.yml'
-      - '.github/workflows/nerves-*'
-      - '.github/workflows/macos-*'
-      - '.github/workflows/windows-*'
-      - '.github/workflows/test-*.yml'
-      - '.github/workflows/linux-x86_64.yml'
-      - '.github/workflows/linux-arm64.yml'
-      - '.github/workflows/linux-armv7.yml'
-      - '.github/workflows/linux-ppc64le.yml'
-      - '.github/workflows/linux-s390x.yml'
-      - '.github/workflows/linux-precompile-*.yml'
   push:
-    branches:
-      - main
-    paths-ignore:
-      - '*.md'
-      - '**/*.md'
-      - 'LICENSE*'
-      - 'examples/**'
-      - 'nerves/**'
-      - 'Makefile.win'
-      - 'cc_toolchain/**'
-      - 'checksum.exs'
-      - '.github/FUNDING.yml'
-      - '.github/workflows/nerves-*'
-      - '.github/workflows/macos-*'
-      - '.github/workflows/windows-*'
-      - '.github/workflows/test-*.yml'
-      - '.github/workflows/linux-x86_64.yml'
-      - '.github/workflows/linux-arm64.yml'
-      - '.github/workflows/linux-armv7.yml'
-      - '.github/workflows/linux-ppc64le.yml'
-      - '.github/workflows/linux-s390x.yml'
-      - '.github/workflows/linux-precompile-*.yml'
+    tags:
+      - 'v*'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  x86_64-gnu-cuda:
-    if: contains(github.event.pull_request.labels.*.name, 'cuda')
+  mix_compile:
     runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
@@ -92,7 +49,7 @@ jobs:
         run: |
           apt-get update
           apt-get install -y build-essential automake autoconf pkg-config bc m4 unzip zip curl git libssl-dev gzip python3 ca-certificates \
-            libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libavresample-dev ffmpeg locales curl wget cmake
+            locales curl wget cmake
           echo "${LANG} UTF-8" >> /etc/locale.gen
           locale-gen
           update-locale LANG=${LANG}
@@ -133,7 +90,7 @@ jobs:
         id: cache-mix-compile_opencv
         uses: actions/cache@v3
         with:
-          key: compiled-opencv-${{ env.OPENCV_VER }}-cuda${{ matrix.cuda_ver }}-x86_64-linux-gnu-${{ hashFiles('Makefile') }}
+          key: precompiled-opencv-${{ env.OPENCV_VER }}-cuda${{ matrix.cuda_ver }}-x86_64-linux-gnu-${{ hashFiles('Makefile') }}
           path: |
             ./_build/${{ env.MIX_ENV }}/lib/evision
             ./c_src/headers.txt
@@ -151,14 +108,19 @@ jobs:
           mix compile
           ls -la ./lib/generated
 
-      - name: Cache testdata
-        id: cache-mix-testdata
-        uses: actions/cache@v3
-        with:
-          key: testdata-${{ hashFiles('test/downloading_list.txt') }}
-          path: |
-            ./test/testdata
-
-      - name: Mix Test
+      - name: Create precompiled library
         run: |
-          mix test --include require_downloading --include require_ffmpeg
+          export PKG_NAME=evision-nif_${NIF_VERSION}-x86_64-linux-gnu-contrib-cuda${{ matrix.cuda_ver }}-${GITHUB_REF##*/v}
+          mkdir -p "${PKG_NAME}"
+          cp -a _build/${MIX_ENV}/lib/evision/priv "${PKG_NAME}"
+          cp -a lib/generated "${PKG_NAME}/elixir_generated"
+          cp -a src/generated "${PKG_NAME}/erlang_generated"
+          tar -czf "${PKG_NAME}.tar.gz" "${PKG_NAME}"
+          rm -rf "${PKG_NAME}"
+          ls -lah "${PKG_NAME}.tar.gz"
+          mkdir -p artifacts
+          mv "${PKG_NAME}.tar.gz" artifacts
+
+      - uses: softprops/action-gh-release@v1
+        with:
+          files: artifacts/*.tar.gz

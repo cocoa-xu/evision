@@ -7,6 +7,8 @@ defmodule Evision.MixProject.Metadata do
   def opencv_version, do: "4.7.0"
   # only means compatible. need to write more tests
   def compatible_opencv_versions, do: ["4.5.3", "4.5.4", "4.5.5", "4.6.0", "4.7.0"]
+  def default_cuda_version, do: "118"
+  def all_cuda_version, do: ["111", "114", "118"]
 end
 
 defmodule Mix.Tasks.Compile.EvisionPrecompiled do
@@ -38,9 +40,16 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
 
   def available_nif_urls(nif_version, version \\ Metadata.version()) do
     Enum.reduce(@available_targets, [], fn target, acc ->
-      no_contrib = get_download_url(target, version, nif_version, false)
-      with_contrib = get_download_url(target, version, nif_version, true)
-      [no_contrib, with_contrib] ++ acc
+      no_contrib = get_download_url(target, version, nif_version, false, false, "")
+      with_contrib = get_download_url(target, version, nif_version, true, false, "")
+
+      with_cuda = if target == "x86_64-linux-gnu" do
+        Enum.map(Metadata.all_cuda_version(), fn cuda_ver -> get_download_url(target, version, nif_version, true, true, cuda_ver) end)
+      else
+        []
+      end
+
+      [no_contrib, with_contrib] ++ with_cuda ++ acc
     end)
   end
 
@@ -54,7 +63,18 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
       System.put_env("EVISION_ENABLE_CONTRIB", "false")
     end
 
-    get_download_url(target, version, nif_version, enable_contrib)
+    enable_cuda = System.get_env("EVISION_ENABLE_CUDA", "false") == "true"
+
+    cuda_version =
+      if enable_cuda do
+        System.put_env("EVISION_ENABLE_CUDA", "true")
+        System.get_env("EVISION_CUDA_VERSION", Metadata.default_cuda_version())
+      else
+        System.put_env("EVISION_ENABLE_CUDA", "false")
+        ""
+      end
+
+    get_download_url(target, version, nif_version, enable_contrib, enable_cuda, cuda_version)
   end
 
   def checksum_file(app \\ Mix.Project.config()[:app]) when is_atom(app) do
@@ -386,18 +406,22 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
     end
   end
 
-  def filename(target, version, nif_version, enable_contrib, with_ext \\ "")
+  def filename(target, version, nif_version, enable_contrib, enable_cuda, cuda_version, with_ext \\ "")
 
-  def filename(target, version, nif_version, _enable_contrib = false, with_ext) do
+  def filename(target, version, nif_version, _enable_contrib = false, _enable_cuda, _cuda_version, with_ext) do
     "evision-nif_#{nif_version}-#{target}-#{version}#{with_ext}"
   end
 
-  def filename(target, version, nif_version, _enable_contrib = true, with_ext) do
+  def filename(target, version, nif_version, _enable_contrib = true, _enable_cuda=false, _cuda_version, with_ext) do
     "evision-nif_#{nif_version}-#{target}-contrib-#{version}#{with_ext}"
   end
 
-  def get_download_url(target, version, nif_version, enable_contrib) do
-    tar_file = filename(target, version, nif_version, enable_contrib, ".tar.gz")
+  def filename(target, version, nif_version, _enable_contrib = true, _enable_cuda=true, cuda_version, with_ext) do
+    "evision-nif_#{nif_version}-#{target}-contrib-cuda#{cuda_version}-#{version}#{with_ext}"
+  end
+
+  def get_download_url(target, version, nif_version, enable_contrib, enable_cuda, cuda_version) do
+    tar_file = filename(target, version, nif_version, enable_contrib, enable_cuda, cuda_version, ".tar.gz")
     "#{Metadata.github_url()}/releases/download/v#{version}/#{tar_file}"
   end
 
@@ -434,9 +458,9 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
     Path.join([build_path, "lib", "#{app}", "priv"])
   end
 
-  def prepare(target, os, version, nif_version, enable_contrib) do
-    name = filename(target, version, nif_version, enable_contrib)
-    filename = filename(target, version, nif_version, enable_contrib, ".tar.gz")
+  def prepare(target, os, version, nif_version, enable_contrib, enable_cuda, cuda_version) do
+    name = filename(target, version, nif_version, enable_contrib, enable_cuda, cuda_version)
+    filename = filename(target, version, nif_version, enable_contrib, enable_cuda, cuda_version, ".tar.gz")
     cache_dir = cache_dir()
     cache_file = Path.join([cache_dir, filename])
     unarchive_dest_dir = Path.join([cache_dir, name])
@@ -509,7 +533,7 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
           end
 
         if needs_download do
-          download_url = get_download_url(target, version, nif_version, enable_contrib)
+          download_url = get_download_url(target, version, nif_version, enable_contrib, enable_cuda, cuda_version)
 
           {:ok, _} = Application.ensure_all_started(:inets)
           {:ok, _} = Application.ensure_all_started(:ssl)
@@ -645,7 +669,9 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
         version = Metadata.version()
         nif_version = get_nif_version()
         enable_contrib = System.get_env("EVISION_ENABLE_CONTRIB", "true") == "true"
-        prepare(target, os, version, nif_version, enable_contrib)
+        enable_cuda = System.get_env("EVISION_ENABLE_CUDA", "false") == "true"
+        cuda_version = System.get_env("EVISION_CUDA_VERSION", Metadata.default_cuda_version())
+        prepare(target, os, version, nif_version, enable_contrib, enable_cuda, cuda_version)
       else
         _ ->
           raise RuntimeError, "Cannot use precompiled binaries."
