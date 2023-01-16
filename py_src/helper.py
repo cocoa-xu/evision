@@ -17,11 +17,11 @@ ArgTypeInfo = namedtuple('ArgTypeInfo',
 ArgTypeInfo.__new__.__defaults__ = (False,)
 
 simple_argtype_mapping = {
-    "bool": ArgTypeInfo("bool", FormatStrings.unsigned_char, "0", True, False),
-    "size_t": ArgTypeInfo("size_t", FormatStrings.unsigned_long_long, "0", True, False),
-    "int": ArgTypeInfo("int", FormatStrings.int, "0", True, False),
-    "float": ArgTypeInfo("float", FormatStrings.float, "0.f", True, False),
-    "double": ArgTypeInfo("double", FormatStrings.double, "0", True, False),
+    "bool": ArgTypeInfo("bool", FormatStrings.unsigned_char, "", True, False),
+    "size_t": ArgTypeInfo("size_t", FormatStrings.unsigned_long_long, "", True, False),
+    "int": ArgTypeInfo("int", FormatStrings.int, "", True, False),
+    "float": ArgTypeInfo("float", FormatStrings.float, "", True, False),
+    "double": ArgTypeInfo("double", FormatStrings.double, "", True, False),
     "c_string": ArgTypeInfo("char*", FormatStrings.string, '(char*)""', False, False),
     "string": ArgTypeInfo("std::string", FormatStrings.object, None, True, False),
     "Stream": ArgTypeInfo("Stream", FormatStrings.object, 'Stream::Null()', True, False),

@@ -326,7 +326,7 @@ class FuncInfo(object):
 
                 all_cargs.append([arg_type_info, parse_name])
 
-                if defval:
+                if defval and len(defval) > 0:
                     if arg_type_info.atype == "QRCodeEncoder_Params":
                         code_decl += "    QRCodeEncoder::Params %s=%s;\n" % (a.name, defval)
                     else:

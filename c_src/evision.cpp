@@ -702,7 +702,7 @@ template<>
 bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, bool& value, const ArgInfo& info)
 {
     if (evision::nif::check_nil(env, obj)) {
-        return true;
+        return info.has_default || info.outputarg;
     }
 
     if (enif_is_atom(env, obj))
@@ -755,7 +755,7 @@ template<>
 bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, unsigned int& value, const ArgInfo& info)
 {
     if (evision::nif::check_nil(env, obj)) {
-        return true;
+        return info.has_default || info.outputarg;
     }
 
     uint32_t u32;
@@ -776,7 +776,7 @@ template<>
 bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, int& value, const ArgInfo& info)
 {
     if (evision::nif::check_nil(env, obj)) {
-        return true;
+        return info.has_default || info.outputarg;
     }
 
     int32_t i32;
@@ -797,10 +797,8 @@ template<>
 bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, unsigned long &val, const ArgInfo& info)
 {
     if (evision::nif::check_nil(env, obj)) {
-        return true;
+        return info.has_default || info.outputarg;
     }
-
-    CV_UNUSED(info);
 
     ErlNifUInt64 u64;
     if (!enif_get_uint64(env, obj, (ErlNifUInt64 *)&u64))
@@ -813,7 +811,7 @@ template<>
 bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, unsigned long long & value, const ArgInfo& info)
 {
     if (evision::nif::check_nil(env, obj)) {
-        return true;
+        return info.has_default || info.outputarg;
     }
 
     ErlNifUInt64 u64;
@@ -834,7 +832,7 @@ template<>
 bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, int64_t& value, const ArgInfo& info)
 {
     if (evision::nif::check_nil(env, obj)) {
-        return true;
+        return info.has_default || info.outputarg;
     }
 
     ErlNifSInt64 i64;
@@ -896,7 +894,7 @@ bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, uchar& value, const ArgInfo& i
         value = cv::saturate_cast<uchar>(i32);
         return i32 != -1;
     } else {
-        return false;
+        return info.has_default || info.outputarg;
     }
 }
 
@@ -938,7 +936,7 @@ template<>
 bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, char& value, const ArgInfo& info)
 {
     if (evision::nif::check_nil(env, obj)) {
-        return true;
+        return info.has_default || info.outputarg;
     }
 
     int32_t i32;
@@ -963,7 +961,7 @@ template<>
 bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, double& value, const ArgInfo& info)
 {
     if (evision::nif::check_nil(env, obj)) {
-        return true;
+        return info.has_default || info.outputarg;
     }
 
     double f64;
@@ -991,7 +989,7 @@ template<>
 bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, float& value, const ArgInfo& info)
 {
     if (evision::nif::check_nil(env, obj)) {
-        return true;
+        return info.has_default || info.outputarg;
     }
 
     ErlNifSInt64 i64;
@@ -1436,7 +1434,7 @@ template<>
 bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, TermCriteria& dst, const ArgInfo& info)
 {
     if (evision::nif::check_nil(env, obj)) {
-        return true;
+        return info.has_default || info.outputarg;
     }
 
     const ERL_NIF_TERM *terms;
