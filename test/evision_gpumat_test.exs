@@ -418,6 +418,34 @@ else
         assert product == Evision.Mat.to_binary(Evision.CUDA.multiply(t1, t2, scale: scale))
       end
 
+      test "polarToCart" do
+        magnitude = Nx.tensor([1.414213, 2.828427, 4.242640, 5.656854], type: :f32)
+        angle = Nx.tensor([0.7853981, 0.7853981, 0.7853981, 0.7853981], type: :f32)
+
+        {real, imag} = Evision.CUDA.polarToCart(magnitude, angle)
+        real = Nx.reshape(Evision.Mat.to_nx(real, Nx.BinaryBackend), {:auto})
+        expected_real = Nx.tensor([1, 2, 3, 4])
+        assert Nx.to_number(Nx.all_close(real, expected_real, rtol: 0.0001)) == 1
+
+        imag = Nx.reshape(Evision.Mat.to_nx(imag, Nx.BinaryBackend), {:auto})
+        expected_imag = Nx.tensor([1, 2, 3, 4])
+        assert Nx.to_number(Nx.all_close(imag, expected_imag, rtol: 0.0001)) == 1
+      end
+
+      test "polarToCart (angleInDegrees)" do
+        magnitude = Nx.tensor([1.414213, 2.828427, 4.242640, 5.656854], type: :f32)
+        angle = Nx.tensor([45.0, 45.0, 45.0, 45.0], type: :f32)
+
+        {real, imag} = Evision.CUDA.polarToCart(magnitude, angle, angleInDegrees: true)
+        real = Nx.reshape(Evision.Mat.to_nx(real, Nx.BinaryBackend), {:auto})
+        expected_real = Nx.tensor([1, 2, 3, 4])
+        assert Nx.to_number(Nx.all_close(real, expected_real, rtol: 0.0001)) == 1
+
+        imag = Nx.reshape(Evision.Mat.to_nx(imag, Nx.BinaryBackend), {:auto})
+        expected_imag = Nx.tensor([1, 2, 3, 4])
+        assert Nx.to_number(Nx.all_close(imag, expected_imag, rtol: 0.0001)) == 1
+      end
+
       test "subtract" do
         t1 = Nx.tensor([[-1, 2, -3], [4, -5, 6]], type: :f32)
         t2 = Nx.tensor([[0, 1, 2], [3, 4, 5]], type: :f32)
