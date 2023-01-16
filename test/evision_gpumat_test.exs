@@ -465,6 +465,25 @@ else
         assert Nx.to_number(Nx.all_close(expected, Evision.Mat.to_nx(Evision.CUDA.pow(t, power), Nx.BinaryBackend), rtol: 0.0001)) == 1
       end
 
+      test "rshift" do
+        t = Nx.tensor([[0, 1, 2], [3, 4, 5]], type: :u8)
+        expected = Nx.right_shift(t, 1)
+        ret = Evision.Mat.to_nx(Evision.CUDA.rshift(t, {1}), Nx.BinaryBackend)
+        assert Nx.to_number(Nx.all_close(expected, ret, rtol: 0.0001)) == 1
+      end
+
+      test "rshift (3-channel)" do
+        t = Nx.reshape(Nx.tensor([128, 128, 128, 64, 64, 64, 32, 32, 32], type: :u8), {3, 3})
+        expected = Nx.right_shift(t, Nx.tensor([1, 2, 3]))
+
+        ret = Nx.squeeze(
+          Evision.Mat.to_nx(
+            Evision.CUDA.rshift(
+              Evision.Mat.last_dim_as_channel(
+                Nx.reshape(t, {1, 3, 3})), {1, 2, 3}), Nx.BinaryBackend))
+        assert Nx.to_number(Nx.all_close(expected, ret, rtol: 0.0001)) == 1
+      end
+
       test "sqr" do
         t = Nx.tensor([[-1, 2, -3], [4, -5, 6]], type: :f32)
         expected = Nx.power(t, 2)
