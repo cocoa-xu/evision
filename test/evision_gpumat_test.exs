@@ -1,15 +1,13 @@
-defmodule Evision.CUDA.GpuMat.Test do
-  use ExUnit.Case
+if !Code.ensure_loaded?(Evision.CUDA.GpuMat) do
+else
+  defmodule Evision.CUDA.GpuMat.Test do
+    use ExUnit.Case
 
-  @compile {:no_warn_undefined, Evision.CUDA.GpuMat}
+    alias Evision.Mat
+    alias Evision.CUDA.GpuMat
 
-  alias Evision.Mat
-
-  @tag :require_cuda
-  describe "Basic Operations" do
-    if Code.ensure_loaded?(Evision.CUDA.GpuMat) do
-      alias Evision.CUDA.GpuMat
-
+    @tag :require_cuda
+    describe "Basic Operations" do
       test "load an image from file" do
         %Mat{} = mat = Evision.imread(Path.join([__DIR__, "testdata", "test.png"]))
 
@@ -129,6 +127,53 @@ defmodule Evision.CUDA.GpuMat.Test do
 
         weighted_sum = Nx.to_binary(Nx.add(Nx.add(Nx.multiply(t1, alpha), Nx.multiply(t2, beta)), gamma))
         assert weighted_sum == Evision.Mat.to_binary(Evision.CUDA.addWeighted(t1, alpha, t2, beta, gamma))
+      end
+
+      test "calcHist" do
+        t = Nx.tensor([[10, 10, 20], [20, 20, 30]], type: :u8)
+
+        # The input matrix should have been uploaded to GPU
+        {:error, _} = Evision.CUDA.calcHist(t)
+
+        %GpuMat{} = result = Evision.CUDA.calcHist(GpuMat.gpuMat(t))
+        %Mat{} = downloaded = GpuMat.download(result)
+
+        ret = Nx.to_flat_list(Evision.Mat.to_nx(downloaded))
+        expected =
+          Nx.broadcast(Nx.tensor(0, type: :s32), {256})
+          |> Nx.put_slice([10], Nx.tensor([2]))
+          |> Nx.put_slice([20], Nx.tensor([3]))
+          |> Nx.put_slice([30], Nx.tensor([1]))
+          |> Nx.to_flat_list()
+
+        assert ret == expected
+      end
+
+      test "calcNorm L1" do
+        t = Nx.tensor([[10, 10, 20], [20, 20, 30]], type: :u8)
+
+        norm_bin = Evision.Mat.to_binary(Evision.CUDA.calcNorm(t, Evision.Constant.cv_NORM_L1))
+        expected = Nx.to_binary(Nx.as_type(Nx.sum(Nx.abs(t)), :f64))
+
+        assert norm_bin == expected
+      end
+
+      test "calcNorm L2" do
+        t = Nx.tensor([[1, 1]], type: :u8)
+
+        norm_bin = Evision.Mat.to_binary(Evision.CUDA.calcNorm(t, Evision.Constant.cv_NORM_L2))
+        expected = Nx.to_binary(Nx.sqrt(Nx.as_type(Nx.sum(Nx.power(t, 2)), :f64)))
+
+        assert norm_bin == expected
+      end
+
+      test "calcNorm INF" do
+        t = Nx.tensor([1, 42], type: :u8)
+
+        norm_bin = Evision.Mat.to_binary(Evision.CUDA.calcNorm(t, Evision.Constant.cv_NORM_INF))
+        expected = Nx.to_binary(Nx.as_type(Nx.take(t, Nx.argmax(t)), :s32))
+
+        assert norm_bin == expected
       end
 
       test "transpose" do
