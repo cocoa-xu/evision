@@ -339,6 +339,70 @@ else
         assert [0, 4, 0, 3, 2, 0, 1, 0] == Nx.to_flat_list(Evision.Mat.to_nx(Evision.CUDA.flip(t, -1)))
       end
 
+      test "gemm" do
+        # t1.shape == {2, 3}, t2.shape == {3, 2}, t3.shape == {2, 2}
+        t1 = Nx.tensor([[1, 2, 3], [3, 4, 5]], type: :f32)
+        t2 = Nx.tensor([[1, 2], [3, 4], [5, 6]], type: :f32)
+        t3 = Nx.tensor([[1000, 2000], [3000, 4000]], type: :f32)
+        alpha = 0.5
+        beta = 1.0
+
+        expected = Nx.to_binary(
+          Nx.add(
+            Nx.multiply(Nx.dot(t1, t2), alpha),
+            Nx.multiply(t3, beta))
+        )
+        assert expected == Evision.Mat.to_binary(Evision.CUDA.gemm(t1, t2, alpha, t3, beta))
+      end
+
+      test "gemm (GEMM_1_T)" do
+        # t1.shape == {3, 2}, t2.shape == {3, 2}, t3.shape == {2, 2}
+        t1 = Nx.tensor([[1, 2], [3, 4], [5, 6]], type: :f32)
+        t2 = Nx.tensor([[1, 2], [3, 4], [5, 6]], type: :f32)
+        t3 = Nx.tensor([[1000, 2000], [3000, 4000]], type: :f32)
+        alpha = 0.5
+        beta = 1.0
+
+        expected = Nx.to_binary(
+          Nx.add(
+            Nx.multiply(Nx.dot(Nx.transpose(t1), t2), alpha),
+            Nx.multiply(t3, beta))
+        )
+        assert expected == Evision.Mat.to_binary(Evision.CUDA.gemm(t1, t2, alpha, t3, beta, flags: Evision.Constant.cv_GEMM_1_T()))
+      end
+
+      test "gemm (GEMM_3_T)" do
+        # t1.shape == {2, 3}, t2.shape == {3, 2}, t3.shape == {2, 2}
+        t1 = Nx.tensor([[1, 2, 3], [3, 4, 5]], type: :f32)
+        t2 = Nx.tensor([[1, 2], [3, 4], [5, 6]], type: :f32)
+        t3 = Nx.tensor([[1000, 3000], [2000, 4000]], type: :f32)
+        alpha = 0.5
+        beta = 1.0
+
+        expected = Nx.to_binary(
+          Nx.add(
+            Nx.multiply(Nx.dot(t1, t2), alpha),
+            Nx.multiply(Nx.transpose(t3), beta))
+        )
+        assert expected == Evision.Mat.to_binary(Evision.CUDA.gemm(t1, t2, alpha, t3, beta, flags: Evision.Constant.cv_GEMM_3_T()))
+      end
+
+      test "gemm (GEMM_1_T + GEMM_3_T)" do
+        # t1.shape == {2, 3}, t2.shape == {3, 2}, t3.shape == {2, 2}
+        t1 = Nx.tensor([[1, 2], [3, 4], [5, 6]], type: :f32)
+        t2 = Nx.tensor([[1, 2], [3, 4], [5, 6]], type: :f32)
+        t3 = Nx.tensor([[1000, 3000], [2000, 4000]], type: :f32)
+        alpha = 0.5
+        beta = 1.0
+
+        expected = Nx.to_binary(
+          Nx.add(
+            Nx.multiply(Nx.dot(Nx.transpose(t1), t2), alpha),
+            Nx.multiply(Nx.transpose(t3), beta))
+        )
+        assert expected == Evision.Mat.to_binary(Evision.CUDA.gemm(t1, t2, alpha, t3, beta, flags: Evision.Constant.cv_GEMM_1_T() + Evision.Constant.cv_GEMM_3_T()))
+      end
+
       test "multiply" do
         t1 = Nx.tensor([[-1, 2, -3], [4, -5, 6]], type: :f32)
         t2 = Nx.tensor([[0, 1, 2], [3, 4, 5]], type: :f32)
