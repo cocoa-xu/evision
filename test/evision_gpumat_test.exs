@@ -465,6 +465,62 @@ else
         assert Nx.to_number(Nx.all_close(expected, Evision.Mat.to_nx(Evision.CUDA.pow(t, power), Nx.BinaryBackend), rtol: 0.0001)) == 1
       end
 
+      test "reduce SUM by row" do
+        t = Nx.tensor([[0, 1, 2], [3, 4, 5]], type: :u8)
+        expected = Nx.reduce(t, Nx.tensor(0), [axes: [0], keep_axes: true], fn x, y -> Nx.add(x, y) end)
+        ret = Evision.Mat.to_nx(Evision.CUDA.reduce(t, 0, Evision.Constant.cv_REDUCE_SUM()), Nx.BinaryBackend)
+        assert Nx.to_number(Nx.all_close(expected, ret, rtol: 0.0001)) == 1
+      end
+
+      test "reduce SUM by col" do
+        t = Nx.tensor([[0, 1, 2], [3, 4, 5]], type: :u8)
+        expected = Nx.reduce(t, Nx.tensor(0), [axes: [1], keep_axes: true], fn x, y -> Nx.add(x, y) end)
+        ret = Evision.Mat.to_nx(Evision.CUDA.reduce(t, 1, Evision.Constant.cv_REDUCE_SUM()), Nx.BinaryBackend)
+        assert Nx.to_number(Nx.all_close(expected, ret, rtol: 0.0001)) == 1
+      end
+
+      test "reduce AVG by row" do
+        t = Nx.tensor([[0, 1, 2], [3, 4, 5]], type: :f32)
+        expected = Nx.divide(Nx.sum(t, axes: [0]), 2)
+        ret = Evision.Mat.to_nx(Evision.CUDA.reduce(t, 0, Evision.Constant.cv_REDUCE_AVG()), Nx.BinaryBackend)
+        assert Nx.to_number(Nx.all_close(expected, ret, rtol: 0.0001)) == 1
+      end
+
+      test "reduce AVG by col" do
+        t = Nx.tensor([[0, 1, 2], [3, 4, 5]], type: :f32)
+        expected = Nx.divide(Nx.sum(t, axes: [1]), 3)
+        ret = Nx.reshape(Evision.Mat.to_nx(Evision.CUDA.reduce(t, 1, Evision.Constant.cv_REDUCE_AVG()), Nx.BinaryBackend), {:auto})
+        assert Nx.to_number(Nx.all_close(expected, ret, rtol: 0.0001)) == 1
+      end
+
+      test "reduce MAX by row" do
+        t = Nx.tensor([[0, 1, 2], [3, 4, 5]], type: :f32)
+        expected = Nx.reduce_max(t, axes: [0])
+        ret = Nx.reshape(Evision.Mat.to_nx(Evision.CUDA.reduce(t, 0, Evision.Constant.cv_REDUCE_MAX()), Nx.BinaryBackend), {:auto})
+        assert Nx.to_number(Nx.all_close(expected, ret, rtol: 0.0001)) == 1
+      end
+
+      test "reduce MAX by col" do
+        t = Nx.tensor([[0, 1, 2], [3, 4, 5]], type: :f32)
+        expected = Nx.reduce_max(t, axes: [1])
+        ret = Nx.reshape(Evision.Mat.to_nx(Evision.CUDA.reduce(t, 1, Evision.Constant.cv_REDUCE_MAX()), Nx.BinaryBackend), {:auto})
+        assert Nx.to_number(Nx.all_close(expected, ret, rtol: 0.0001)) == 1
+      end
+
+      test "reduce MIN by row" do
+        t = Nx.tensor([[0, 1, 2], [3, 4, 5]], type: :f32)
+        expected = Nx.reduce_min(t, axes: [0])
+        ret = Nx.reshape(Evision.Mat.to_nx(Evision.CUDA.reduce(t, 0, Evision.Constant.cv_REDUCE_MIN()), Nx.BinaryBackend), {:auto})
+        assert Nx.to_number(Nx.all_close(expected, ret, rtol: 0.0001)) == 1
+      end
+
+      test "reduce MIN by col" do
+        t = Nx.tensor([[0, 1, 2], [3, 4, 5]], type: :f32)
+        expected = Nx.reduce_min(t, axes: [1])
+        ret = Nx.reshape(Evision.Mat.to_nx(Evision.CUDA.reduce(t, 1, Evision.Constant.cv_REDUCE_MIN()), Nx.BinaryBackend), {:auto})
+        assert Nx.to_number(Nx.all_close(expected, ret, rtol: 0.0001)) == 1
+      end
+
       test "rshift" do
         t = Nx.tensor([[0, 1, 2], [3, 4, 5]], type: :u8)
         expected = Nx.right_shift(t, 1)
