@@ -74,10 +74,11 @@ ExUnit.configure(
     # and there is perhaps no way to test input from a camera
     # (could set up a virtual camera, but let's leave that for now)
     require_ffmpeg: true,
-    dnn: !Enum.member?(compiled_modules, "dnn"),
-    ml: !Enum.member?(compiled_modules, "ml"),
-    photo: !Enum.member?(compiled_modules, "photo"),
-    video: !Enum.member?(compiled_modules, "video")
+    require_cuda: true,
+    dnn: !compiled_modules.dnn,
+    ml: !compiled_modules.ml,
+    photo: !compiled_modules.photo,
+    video: !compiled_modules.video
   ]
 )
 
