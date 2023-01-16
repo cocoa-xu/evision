@@ -8,8 +8,8 @@ else
     alias Evision.Mat
     alias Evision.CUDA.GpuMat
 
-    @tag :require_cuda
     describe "Basic Operations" do
+      @tag :require_cuda
       test "load an image from file" do
         %Mat{} = mat = Evision.imread(Path.join([__DIR__, "testdata", "test.png"]))
 
@@ -24,6 +24,7 @@ else
         } = gpumat
       end
 
+      @tag :require_cuda
       test "explicitly upload an Evision.Mat" do
         %Mat{} = mat = Evision.imread(Path.join([__DIR__, "testdata", "test.png"]))
 
@@ -41,6 +42,7 @@ else
         } = gpumat
       end
 
+      @tag :require_cuda
       test "manually allocate a GpuMat" do
         gpumat = Evision.CUDA.GpuMat.gpuMat(1000, 1200, Evision.Constant.cv_8UC3())
         assert Evision.CUDA.GpuMat.cudaPtr(gpumat) > 0
@@ -54,6 +56,7 @@ else
         } = gpumat
       end
 
+      @tag :require_cuda
       test "split channels" do
         %Mat{} = mat = Evision.imread(Path.join([__DIR__, "testdata", "test.png"]))
 
@@ -85,6 +88,7 @@ else
         } = r
       end
 
+      @tag :require_cuda
       test "abs" do
         t = Nx.tensor([[-1, 2, -3], [4, -5, 6]], type: :s8)
         mat = Evision.CUDA.GpuMat.gpuMat(t)
@@ -93,12 +97,14 @@ else
         assert bin == Nx.to_binary(Nx.abs(t))
       end
 
+      @tag :require_cuda
       test "absSum" do
         t = Nx.tensor([[-1, 2, -3], [4, -5, 6]], type: :f32)
         abs_sum = Nx.to_number(Nx.sum(Nx.abs(t)))
         {^abs_sum, 0.0, 0.0, 0.0} = Evision.CUDA.absSum(t)
       end
 
+      @tag :require_cuda
       test "absSum with mask" do
         t = Nx.tensor([[-1, 2, -3], [4, -5, 6]], type: :f32)
         m = Nx.tensor([[1, 0, 0], [0, 0, 1]], type: :u8)
@@ -106,6 +112,7 @@ else
         {^abs_sum, 0.0, 0.0, 0.0} = Evision.CUDA.absSum(t, mask: m)
       end
 
+      @tag :require_cuda
       test "absdiff" do
         t1 = Nx.tensor([[-1, 2, -3], [4, -5, 6]], type: :f32)
         t2 = Nx.tensor([[0, 1, 2], [3, 4, 5]], type: :f32)
@@ -113,6 +120,7 @@ else
         assert absdiff == Evision.Mat.to_binary(Evision.CUDA.absdiff(t1, t2))
       end
 
+      @tag :require_cuda
       test "add" do
         t1 = Nx.tensor([[-1, 2, -3], [4, -5, 6]], type: :f32)
         t2 = Nx.tensor([[0, 1, 2], [3, 4, 5]], type: :f32)
@@ -120,6 +128,7 @@ else
         assert sum == Evision.Mat.to_binary(Evision.CUDA.add(t1, t2))
       end
 
+      @tag :require_cuda
       test "addWeighted" do
         t1 = Nx.tensor([[100, 200, 300], [400, 500, 600]], type: :f32)
         alpha = 0.1
@@ -134,6 +143,7 @@ else
                  Evision.Mat.to_binary(Evision.CUDA.addWeighted(t1, alpha, t2, beta, gamma))
       end
 
+      @tag :require_cuda
       test "calcHist" do
         t = Nx.tensor([[10, 10, 20], [20, 20, 30]], type: :u8)
 
@@ -155,6 +165,7 @@ else
         assert ret == expected
       end
 
+      @tag :require_cuda
       test "calcNorm L1" do
         t = Nx.tensor([[10, 10, 20], [20, 20, 30]], type: :u8)
 
@@ -164,6 +175,7 @@ else
         assert norm_bin == expected
       end
 
+      @tag :require_cuda
       test "calcNorm L2" do
         t = Nx.tensor([[1, 1]], type: :u8)
 
@@ -173,6 +185,7 @@ else
         assert norm_bin == expected
       end
 
+      @tag :require_cuda
       test "calcNorm INF" do
         t = Nx.tensor([1, 42], type: :u8)
 
@@ -182,6 +195,7 @@ else
         assert norm_bin == expected
       end
 
+      @tag :require_cuda
       test "calcNormDiff L1" do
         t1 = Nx.tensor([[10, 10], [20, 20]], type: :u8)
         t2 = Nx.tensor([[9, 9], [19, 19]], type: :u8)
@@ -196,6 +210,7 @@ else
         assert norm_bin == expected
       end
 
+      @tag :require_cuda
       test "calcNormDiff L2" do
         t1 = Nx.tensor([[10, 10], [20, 20]], type: :u8)
         t2 = Nx.tensor([[9, 9], [19, 19]], type: :u8)
@@ -210,6 +225,7 @@ else
         assert norm_bin == expected
       end
 
+      @tag :require_cuda
       test "calcNormDiff INF" do
         t1 = Nx.tensor([[10, 10], [20, 20]], type: :u8)
         t2 = Nx.tensor([[9, 9], [19, 15]], type: :u8)
@@ -225,6 +241,7 @@ else
         assert norm_bin == expected
       end
 
+      @tag :require_cuda
       test "calcSqrSum" do
         t = Nx.tensor([[1, 1], [2, 2]], type: :u8)
 
@@ -234,6 +251,7 @@ else
         assert sum == expected
       end
 
+      @tag :require_cuda
       test "calcSum" do
         t = Nx.tensor([[1, 1], [2, 2]], type: :u8)
 
@@ -243,6 +261,7 @@ else
         assert sum == expected
       end
 
+      @tag :require_cuda
       test "cartToPolar" do
         real = Nx.tensor([1, 2, 3, 4], type: :f32)
         imag = Nx.tensor([1, 2, 3, 4], type: :f32)
@@ -257,6 +276,7 @@ else
         assert Nx.to_number(Nx.all_close(angle, expected_angle, rtol: 0.0001)) == 1
       end
 
+      @tag :require_cuda
       test "cartToPolar (angleInDegrees)" do
         real = Nx.tensor([1, 2, 3, 4], type: :f32)
         imag = Nx.tensor([1, 2, 3, 4], type: :f32)
@@ -271,6 +291,7 @@ else
         assert Nx.to_number(Nx.all_close(angle, expected_angle, rtol: 0.0001)) == 1
       end
 
+      @tag :require_cuda
       test "compare CMP_EQ" do
         t1 = Nx.tensor([[1, 2], [3, 4], [5, 6]], type: :u8)
         t2 = Nx.tensor([[5, 6], [3, 4], [1, 2]], type: :u8)
@@ -281,6 +302,7 @@ else
         assert ret == expected
       end
 
+      @tag :require_cuda
       test "compare CMP_GT" do
         t1 = Nx.tensor([[1, 2], [3, 4], [5, 6]], type: :u8)
         t2 = Nx.tensor([[5, 6], [3, 4], [1, 2]], type: :u8)
@@ -291,6 +313,7 @@ else
         assert ret == expected
       end
 
+      @tag :require_cuda
       test "compare CMP_GE" do
         t1 = Nx.tensor([[1, 2], [3, 4], [5, 6]], type: :u8)
         t2 = Nx.tensor([[5, 6], [3, 4], [1, 2]], type: :u8)
@@ -301,6 +324,7 @@ else
         assert ret == expected
       end
 
+      @tag :require_cuda
       test "compare CMP_LT" do
         t1 = Nx.tensor([[1, 2], [3, 4], [5, 6]], type: :u8)
         t2 = Nx.tensor([[5, 6], [3, 4], [1, 2]], type: :u8)
@@ -311,6 +335,7 @@ else
         assert ret == expected
       end
 
+      @tag :require_cuda
       test "compare CMP_LE" do
         t1 = Nx.tensor([[1, 2], [3, 4], [5, 6]], type: :u8)
         t2 = Nx.tensor([[5, 6], [3, 4], [1, 2]], type: :u8)
@@ -321,6 +346,7 @@ else
         assert ret == expected
       end
 
+      @tag :require_cuda
       test "compare CMP_NE" do
         t1 = Nx.tensor([[1, 2], [3, 4], [5, 6]], type: :u8)
         t2 = Nx.tensor([[5, 6], [3, 4], [1, 2]], type: :u8)
@@ -331,6 +357,7 @@ else
         assert ret == expected
       end
 
+      @tag :require_cuda
       test "exp" do
         t = Nx.tensor([1, 2, 3, 4], type: :f32)
         expected = Nx.exp(t)
@@ -338,6 +365,7 @@ else
         assert Nx.to_number(Nx.all_close(expected, ret, rtol: 0.0001)) == 1
       end
 
+      @tag :require_cuda
       test "flip (x-axis)" do
         t =
           Nx.tensor(
@@ -352,6 +380,7 @@ else
                  Nx.to_flat_list(Evision.Mat.to_nx(Evision.CUDA.flip(t, 0)))
       end
 
+      @tag :require_cuda
       test "flip (y-axis)" do
         t =
           Nx.tensor(
@@ -366,6 +395,7 @@ else
                  Nx.to_flat_list(Evision.Mat.to_nx(Evision.CUDA.flip(t, 1)))
       end
 
+      @tag :require_cuda
       test "flip (both axes)" do
         t =
           Nx.tensor(
@@ -380,6 +410,7 @@ else
                  Nx.to_flat_list(Evision.Mat.to_nx(Evision.CUDA.flip(t, -1)))
       end
 
+      @tag :require_cuda
       test "gemm" do
         # t1.shape == {2, 3}, t2.shape == {3, 2}, t3.shape == {2, 2}
         t1 = Nx.tensor([[1, 2, 3], [3, 4, 5]], type: :f32)
@@ -399,6 +430,7 @@ else
         assert expected == Evision.Mat.to_binary(Evision.CUDA.gemm(t1, t2, alpha, t3, beta))
       end
 
+      @tag :require_cuda
       test "gemm (GEMM_1_T)" do
         # t1.shape == {3, 2}, t2.shape == {3, 2}, t3.shape == {2, 2}
         t1 = Nx.tensor([[1, 2], [3, 4], [5, 6]], type: :f32)
@@ -423,6 +455,7 @@ else
                  )
       end
 
+      @tag :require_cuda
       test "gemm (GEMM_3_T)" do
         # t1.shape == {2, 3}, t2.shape == {3, 2}, t3.shape == {2, 2}
         t1 = Nx.tensor([[1, 2, 3], [3, 4, 5]], type: :f32)
@@ -447,6 +480,7 @@ else
                  )
       end
 
+      @tag :require_cuda
       test "gemm (GEMM_1_T + GEMM_3_T)" do
         # t1.shape == {2, 3}, t2.shape == {3, 2}, t3.shape == {2, 2}
         t1 = Nx.tensor([[1, 2], [3, 4], [5, 6]], type: :f32)
@@ -471,6 +505,7 @@ else
                  )
       end
 
+      @tag :require_cuda
       test "lshift" do
         t = Nx.tensor([[0, 1, 2], [3, 4, 5]], type: :u8)
         expected = Nx.left_shift(t, 1)
@@ -478,6 +513,7 @@ else
         assert Nx.to_number(Nx.all_close(expected, ret, rtol: 0.0001)) == 1
       end
 
+      @tag :require_cuda
       test "lshift (3-channel)" do
         t = Nx.reshape(Nx.tensor([1, 1, 1, 1, 1, 1, 1, 1, 1], type: :u8), {3, 3})
         expected = Nx.left_shift(t, Nx.tensor([1, 2, 3]))
@@ -496,6 +532,7 @@ else
         assert Nx.to_number(Nx.all_close(expected, ret, rtol: 0.0001)) == 1
       end
 
+      @tag :require_cuda
       test "log" do
         t = Nx.tensor([1, 10, 100, 1000], type: :f32)
         expected = Nx.log(t)
@@ -503,6 +540,7 @@ else
         assert Nx.to_number(Nx.all_close(expected, ret, rtol: 0.0001)) == 1
       end
 
+      @tag :require_cuda
       test "magnitude(x, y)" do
         x = Nx.tensor([1, 0, 3, 4], type: :f32)
         y = Nx.tensor([1, 2, 0, 4], type: :f32)
@@ -514,6 +552,7 @@ else
         assert Nx.to_number(Nx.all_close(expected, ret, rtol: 0.0001)) == 1
       end
 
+      @tag :require_cuda
       test "magnitude(xy)" do
         x = Nx.tensor([1, 0, 3, 4], type: :f32)
         y = Nx.tensor([1, 2, 0, 4], type: :f32)
@@ -524,6 +563,7 @@ else
         assert Nx.to_number(Nx.all_close(expected, ret, rtol: 0.0001)) == 1
       end
 
+      @tag :require_cuda
       test "magnitudeSqr(x, y)" do
         x = Nx.tensor([1, 0, 3, 4], type: :f32)
         y = Nx.tensor([1, 2, 0, 4], type: :f32)
@@ -538,6 +578,7 @@ else
         assert Nx.to_number(Nx.all_close(expected, ret, rtol: 0.0001)) == 1
       end
 
+      @tag :require_cuda
       test "magnitudeSqr(xy)" do
         x = Nx.tensor([1, 0, 3, 4], type: :f32)
         y = Nx.tensor([1, 2, 0, 4], type: :f32)
@@ -551,6 +592,7 @@ else
         assert Nx.to_number(Nx.all_close(expected, ret, rtol: 0.0001)) == 1
       end
 
+      @tag :require_cuda
       test "max" do
         t1 = Nx.tensor([1, 0, 3, 0], type: :f32)
         t2 = Nx.tensor([0, 2, 0, 4], type: :f32)
@@ -559,6 +601,7 @@ else
         assert Nx.to_number(Nx.all_close(expected, ret, rtol: 0.0001)) == 1
       end
 
+      @tag :require_cuda
       test "min" do
         t1 = Nx.tensor([1, 0, 3, 0], type: :f32)
         t2 = Nx.tensor([0, 2, 0, 4], type: :f32)
@@ -567,6 +610,7 @@ else
         assert Nx.to_number(Nx.all_close(expected, ret, rtol: 0.0001)) == 1
       end
 
+      @tag :require_cuda
       test "multiply" do
         t1 = Nx.tensor([[-1, 2, -3], [4, -5, 6]], type: :f32)
         t2 = Nx.tensor([[0, 1, 2], [3, 4, 5]], type: :f32)
@@ -574,6 +618,7 @@ else
         assert product == Evision.Mat.to_binary(Evision.CUDA.multiply(t1, t2))
       end
 
+      @tag :require_cuda
       test "multiply with scale" do
         t1 = Nx.tensor([[-1, 2, -3], [4, -5, 6]], type: :f32)
         t2 = Nx.tensor([[0, 1, 2], [3, 4, 5]], type: :f32)
@@ -582,6 +627,7 @@ else
         assert product == Evision.Mat.to_binary(Evision.CUDA.multiply(t1, t2, scale: scale))
       end
 
+      @tag :require_cuda
       test "polarToCart" do
         magnitude = Nx.tensor([1.414213, 2.828427, 4.242640, 5.656854], type: :f32)
         angle = Nx.tensor([0.7853981, 0.7853981, 0.7853981, 0.7853981], type: :f32)
@@ -596,6 +642,7 @@ else
         assert Nx.to_number(Nx.all_close(imag, expected_imag, rtol: 0.0001)) == 1
       end
 
+      @tag :require_cuda
       test "polarToCart (angleInDegrees)" do
         magnitude = Nx.tensor([1.414213, 2.828427, 4.242640, 5.656854], type: :f32)
         angle = Nx.tensor([45.0, 45.0, 45.0, 45.0], type: :f32)
@@ -610,6 +657,7 @@ else
         assert Nx.to_number(Nx.all_close(imag, expected_imag, rtol: 0.0001)) == 1
       end
 
+      @tag :require_cuda
       test "pow" do
         t = Nx.tensor([[-1, 2, -3], [4, -5, 6]], type: :f32)
         power = 0
@@ -650,6 +698,7 @@ else
                ) == 1
       end
 
+      @tag :require_cuda
       test "reduce SUM by row" do
         t = Nx.tensor([[0, 1, 2], [3, 4, 5]], type: :u8)
 
@@ -665,6 +714,7 @@ else
         assert Nx.to_number(Nx.all_close(expected, ret, rtol: 0.0001)) == 1
       end
 
+      @tag :require_cuda
       test "reduce SUM by col" do
         t = Nx.tensor([[0, 1, 2], [3, 4, 5]], type: :u8)
 
@@ -680,6 +730,7 @@ else
         assert Nx.to_number(Nx.all_close(expected, ret, rtol: 0.0001)) == 1
       end
 
+      @tag :require_cuda
       test "reduce AVG by row" do
         t = Nx.tensor([[0, 1, 2], [3, 4, 5]], type: :f32)
         expected = Nx.divide(Nx.sum(t, axes: [0]), 2)
@@ -693,6 +744,7 @@ else
         assert Nx.to_number(Nx.all_close(expected, ret, rtol: 0.0001)) == 1
       end
 
+      @tag :require_cuda
       test "reduce AVG by col" do
         t = Nx.tensor([[0, 1, 2], [3, 4, 5]], type: :f32)
         expected = Nx.divide(Nx.sum(t, axes: [1]), 3)
@@ -709,6 +761,7 @@ else
         assert Nx.to_number(Nx.all_close(expected, ret, rtol: 0.0001)) == 1
       end
 
+      @tag :require_cuda
       test "reduce MAX by row" do
         t = Nx.tensor([[0, 1, 2], [3, 4, 5]], type: :f32)
         expected = Nx.reduce_max(t, axes: [0])
@@ -725,6 +778,7 @@ else
         assert Nx.to_number(Nx.all_close(expected, ret, rtol: 0.0001)) == 1
       end
 
+      @tag :require_cuda
       test "reduce MAX by col" do
         t = Nx.tensor([[0, 1, 2], [3, 4, 5]], type: :f32)
         expected = Nx.reduce_max(t, axes: [1])
@@ -741,6 +795,7 @@ else
         assert Nx.to_number(Nx.all_close(expected, ret, rtol: 0.0001)) == 1
       end
 
+      @tag :require_cuda
       test "reduce MIN by row" do
         t = Nx.tensor([[0, 1, 2], [3, 4, 5]], type: :f32)
         expected = Nx.reduce_min(t, axes: [0])
@@ -757,6 +812,7 @@ else
         assert Nx.to_number(Nx.all_close(expected, ret, rtol: 0.0001)) == 1
       end
 
+      @tag :require_cuda
       test "reduce MIN by col" do
         t = Nx.tensor([[0, 1, 2], [3, 4, 5]], type: :f32)
         expected = Nx.reduce_min(t, axes: [1])
@@ -773,6 +829,7 @@ else
         assert Nx.to_number(Nx.all_close(expected, ret, rtol: 0.0001)) == 1
       end
 
+      @tag :require_cuda
       test "rshift" do
         t = Nx.tensor([[0, 1, 2], [3, 4, 5]], type: :u8)
         expected = Nx.right_shift(t, 1)
@@ -780,6 +837,7 @@ else
         assert Nx.to_number(Nx.all_close(expected, ret, rtol: 0.0001)) == 1
       end
 
+      @tag :require_cuda
       test "rshift (3-channel)" do
         t = Nx.reshape(Nx.tensor([128, 128, 128, 64, 64, 64, 32, 32, 32], type: :u8), {3, 3})
         expected = Nx.right_shift(t, Nx.tensor([1, 2, 3]))
@@ -798,6 +856,7 @@ else
         assert Nx.to_number(Nx.all_close(expected, ret, rtol: 0.0001)) == 1
       end
 
+      @tag :require_cuda
       test "sqr" do
         t = Nx.tensor([[-1, 2, -3], [4, -5, 6]], type: :f32)
         expected = Nx.power(t, 2)
@@ -809,6 +868,7 @@ else
                ) == 1
       end
 
+      @tag :require_cuda
       test "sqrIntegral" do
         t = Nx.tensor([1, 2, 3, 4, 5, 6], type: :u8)
         expected = Nx.as_type(Nx.cumulative_sum(Nx.power(t, 2)), :f64)
@@ -822,12 +882,14 @@ else
         assert Nx.to_number(Nx.all_close(expected, sqr_sum, rtol: 0.0001)) == 1
       end
 
+      @tag :require_cuda
       test "sqrSum" do
         t = Nx.tensor([1, 2, 3, 4, 5, 6], type: :u8)
         expected = Nx.to_number(Nx.as_type(Nx.sum(Nx.power(t, 2)), :f64))
         {^expected, 0.0, 0.0, 0.0} = Evision.CUDA.sqrSum(t)
       end
 
+      @tag :require_cuda
       test "sqrt" do
         t = Nx.tensor([1, 2, 3, 4, 5, 6, 7, 8, 9], type: :f32)
         expected = Nx.sqrt(t)
@@ -835,6 +897,7 @@ else
         assert Nx.to_number(Nx.all_close(expected, sqrt, rtol: 0.0001)) == 1
       end
 
+      @tag :require_cuda
       test "sqrt (integer)" do
         t = Nx.tensor([1, 2, 3, 4, 5, 6, 7, 8, 9], type: :u8)
         expected = Nx.as_type(Nx.round(Nx.sqrt(t)), :u8)
@@ -842,6 +905,7 @@ else
         assert Nx.to_number(Nx.all_close(expected, sqrt, rtol: 0.0001)) == 1
       end
 
+      @tag :require_cuda
       test "subtract" do
         t1 = Nx.tensor([[-1, 2, -3], [4, -5, 6]], type: :f32)
         t2 = Nx.tensor([[0, 1, 2], [3, 4, 5]], type: :f32)
@@ -849,6 +913,7 @@ else
         assert diff == Evision.Mat.to_binary(Evision.CUDA.subtract(t1, t2))
       end
 
+      @tag :require_cuda
       test "sum" do
         t = Nx.tensor([[-1, 2, -3], [4, -5, 6]], type: :f32)
         sum = Nx.to_number(Nx.sum(t))
@@ -856,6 +921,7 @@ else
         assert sum == cuda_sum
       end
 
+      @tag :require_cuda
       test "sum with mask" do
         t = Nx.tensor([[-1, 2, -3], [4, -5, 6]], type: :f32)
         m = Nx.tensor([[1, 0, 0], [0, 0, 1]], type: :u8)
@@ -864,6 +930,7 @@ else
         assert sum == cuda_sum
       end
 
+      @tag :require_cuda
       test "transpose" do
         %Mat{} = mat = Evision.imread(Path.join([__DIR__, "testdata", "test.png"]))
 
