@@ -1,4 +1,4 @@
-defmodule Evision.Mat.Test do
+defmodule Evision.KeyPoint.Test do
   use ExUnit.Case
 
   test "Keypoints" do
