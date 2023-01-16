@@ -446,6 +446,25 @@ else
         assert Nx.to_number(Nx.all_close(imag, expected_imag, rtol: 0.0001)) == 1
       end
 
+      test "pow" do
+        t = Nx.tensor([[-1, 2, -3], [4, -5, 6]], type: :f32)
+        power = 0
+        expected = Nx.to_binary(Nx.power(t, power))
+        assert expected == Evision.Mat.to_binary(Evision.CUDA.pow(t, power))
+
+        power = 1
+        expected = Nx.power(t, power)
+        assert Nx.to_number(Nx.all_close(expected, Evision.Mat.to_nx(Evision.CUDA.pow(t, power), Nx.BinaryBackend), rtol: 0.0001)) == 1
+
+        power = 2
+        expected = Nx.power(t, power)
+        assert Nx.to_number(Nx.all_close(expected, Evision.Mat.to_nx(Evision.CUDA.pow(t, power), Nx.BinaryBackend), rtol: 0.0001)) == 1
+
+        power = 3
+        expected = Nx.power(t, power)
+        assert Nx.to_number(Nx.all_close(expected, Evision.Mat.to_nx(Evision.CUDA.pow(t, power), Nx.BinaryBackend), rtol: 0.0001)) == 1
+      end
+
       test "subtract" do
         t1 = Nx.tensor([[-1, 2, -3], [4, -5, 6]], type: :f32)
         t2 = Nx.tensor([[0, 1, 2], [3, 4, 5]], type: :f32)
