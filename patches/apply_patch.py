@@ -29,7 +29,7 @@ def patch_fix_getLayerShapes(opencv_version: str, opencv_src_root: str):
             else:
                 fixed.write(line)
 
-    if patched_1 or patched_2
+    if patched_1 or patched_2:
         with open(dnn_hpp, 'w') as dst:
             dst.truncate(0)
             dst.write(fixed.getvalue())
