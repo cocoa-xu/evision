@@ -93,15 +93,6 @@ jobs:
           rm -f Makefile
           rm -f _build/${{ env.MIX_ENV }}/lib/evision/priv/evision.dll
 
-          if [ -e "./_build/${{ env.MIX_ENV }}/lib/evision/cmake_opencv_${OPENCV_VER}_core" ]; then
-            if [ -e "./_build/${{ env.MIX_ENV }}/lib/evision/cmake_opencv_${OPENCV_VER}" ]; then
-              mv "./_build/${{ env.MIX_ENV }}/lib/evision/cmake_opencv_${OPENCV_VER}" "./_build/${{ env.MIX_ENV }}/lib/evision/cmake_opencv_${OPENCV_VER}_contrib"
-            fi
-            mv "./_build/${{ env.MIX_ENV }}/lib/evision/cmake_opencv_${OPENCV_VER}_core" "./_build/${{ env.MIX_ENV }}/lib/evision/cmake_opencv_${OPENCV_VER}" 
-          else
-            rm -rf "./_build/${{ env.MIX_ENV }}/lib/evision/cmake_opencv_${OPENCV_VER}"
-          fi
-
           mix compile
 
       - name: Create precompiled library (without contrib modules)
@@ -131,13 +122,6 @@ jobs:
           fi
           rm -f Makefile
           rm -f _build/${{ env.MIX_ENV }}/lib/evision/priv/evision.dll
-
-          if [ -e "./_build/${{ env.MIX_ENV }}/lib/evision/cmake_opencv_${OPENCV_VER}" ]; then
-            mv "./_build/${{ env.MIX_ENV }}/lib/evision/cmake_opencv_${OPENCV_VER}" "./_build/${{ env.MIX_ENV }}/lib/evision/cmake_opencv_${OPENCV_VER}_core"
-          fi
-          if [ -e "./_build/${{ env.MIX_ENV }}/lib/evision/cmake_opencv_${OPENCV_VER}_contrib" ]; then
-            mv "./_build/${{ env.MIX_ENV }}/lib/evision/cmake_opencv_${OPENCV_VER}_contrib" "./_build/${{ env.MIX_ENV }}/lib/evision/cmake_opencv_${OPENCV_VER}"
-          fi
 
           mix compile
 
