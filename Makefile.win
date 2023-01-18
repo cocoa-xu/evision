@@ -92,11 +92,11 @@ CMAKE_BUILD_TYPE=Release
 !IF "$(EVISION_ENABLE_CONTRIB)" == "true"
 CMAKE_WIN_FINAL_OPTIONS_DEFINITIVE_EDITION = $(CMAKE_WIN_FINAL_OPTIONS) -DOPENCV_EXTRA_MODULES_PATH="$(OPENCV_CONTRIB_DIR)\modules" -D BUILD_opencv_hdf=OFF -D BUILD_opencv_freetype=OFF
 C_SRC_HEADER_TXT="$(C_SRC)/headers-contrib.txt"
-HEADERS_TXT = $(CMAKE_OPENCV_BUILD_DIR)/modules/python_bindings_generator/headers-contrib.txt
+HEADERS_TXT="$(CMAKE_OPENCV_BUILD_DIR)/modules/python_bindings_generator/headers-contrib.txt"
 !ELSE
 CMAKE_WIN_FINAL_OPTIONS_DEFINITIVE_EDITION = $(CMAKE_WIN_FINAL_OPTIONS)
 C_SRC_HEADER_TXT="$(C_SRC)/headers.txt"
-HEADERS_TXT = $(CMAKE_OPENCV_BUILD_DIR)/modules/python_bindings_generator/headers.txt
+HEADERS_TXT="$(CMAKE_OPENCV_BUILD_DIR)/modules/python_bindings_generator/headers.txt"
 !ENDIF
 
 !IFDEF MSBUILD_PLATFORM
@@ -115,52 +115,54 @@ download_opencv_contrib:
 $(CONFIGURATION_PRIVATE_HPP): download_opencv_contrib
 !IF "$(EVISION_PREFER_PRECOMPILED)" != "true"
 	@ powershell scripts/download_opencv.ps1 "$(OPENCV_VER)" "$(OPENCV_CACHE_DIR)" "$(OPENCV_ROOT_DIR)"
-	@ copy "$(OPENCV_CONFIGURATION_PRIVATE_HPP)" "$(CONFIGURATION_PRIVATE_HPP)"
+	@ if not exist "$(CONFIGURATION_PRIVATE_HPP)" (copy "$(OPENCV_CONFIGURATION_PRIVATE_HPP)" "$(CONFIGURATION_PRIVATE_HPP)")
 !ENDIF
 
 $(HEADERS_TXT): $(CONFIGURATION_PRIVATE_HPP)
 !IF "$(EVISION_PREFER_PRECOMPILED)" != "true"
 	@ if not exist "$(CMAKE_OPENCV_BUILD_DIR)" mkdir "$(CMAKE_OPENCV_BUILD_DIR)"
-	python3 "$(PATCHES_DIR)\apply_patch.py" "$(OPENCV_DIR)" "$(OPENCV_VER)"
-	cd "$(CMAKE_OPENCV_BUILD_DIR)" && \
-	cmake -G "$(CMAKE_GENERATOR_TYPE)" \
-	    -D CMAKE_BUILD_TYPE="$(CMAKE_BUILD_TYPE)" \
-		-D CMAKE_INSTALL_PREFIX="$(PRIV_DIR)" \
-		-D PYTHON3_EXECUTABLE="$(PYTHON3_EXECUTABLE)" \
-		-D INSTALL_PYTHON_EXAMPLES=OFF \
-		-D INSTALL_C_EXAMPLES=OFF \
-		-D BUILD_EXAMPLES=OFF \
-		-D BUILD_TESTS=OFF \
-		-D BUILD_PERF_TESTS=OFF \
-		-D OPENCV_ENABLE_NONFREE=OFF \
-		-D OPENCV_GENERATE_PKGCONFIG=ON \
-		-D OPENCV_PC_FILE_NAME=opencv4.pc \
-		-D BUILD_ZLIB=ON \
-		-D BUILD_opencv_gapi=OFF \
-		-D CMAKE_C_FLAGS="/D PNG_ARM_NEON_OPT=0" \
-		-D CMAKE_CXX_FLAGS="/D PNG_ARM_NEON_OPT=0" \
-		-D CMAKE_TOOLCHAIN_FILE="$(TOOLCHAIN_FILE)" \
-		$(CMAKE_WIN_FINAL_OPTIONS_DEFINITIVE_EDITION) "$(OPENCV_DIR)" && \
+	@ if not exist "$(HEADERS_TXT)" ( \
+		python3 "$(PATCHES_DIR)\apply_patch.py" "$(OPENCV_DIR)" "$(OPENCV_VER)" && \
+		cd "$(CMAKE_OPENCV_BUILD_DIR)" && \
+		cmake -G "$(CMAKE_GENERATOR_TYPE)" \
+			-D CMAKE_BUILD_TYPE="$(CMAKE_BUILD_TYPE)" \
+			-D CMAKE_INSTALL_PREFIX="$(PRIV_DIR)" \
+			-D PYTHON3_EXECUTABLE="$(PYTHON3_EXECUTABLE)" \
+			-D INSTALL_PYTHON_EXAMPLES=OFF \
+			-D INSTALL_C_EXAMPLES=OFF \
+			-D BUILD_EXAMPLES=OFF \
+			-D BUILD_TESTS=OFF \
+			-D BUILD_PERF_TESTS=OFF \
+			-D OPENCV_ENABLE_NONFREE=OFF \
+			-D OPENCV_GENERATE_PKGCONFIG=ON \
+			-D OPENCV_PC_FILE_NAME=opencv4.pc \
+			-D BUILD_ZLIB=ON \
+			-D BUILD_opencv_gapi=OFF \
+			-D CMAKE_C_FLAGS="/D PNG_ARM_NEON_OPT=0" \
+			-D CMAKE_CXX_FLAGS="/D PNG_ARM_NEON_OPT=0" \
+			-D CMAKE_TOOLCHAIN_FILE="$(TOOLCHAIN_FILE)" \
+			$(CMAKE_WIN_FINAL_OPTIONS_DEFINITIVE_EDITION) "$(OPENCV_DIR)" && \
 		cmake --build . $(CMAKE_BUILD_PARAMETER) && \
-		cd "$(CMAKE_OPENCV_BUILD_DIR)" && cmake --install . --config "$(CMAKE_BUILD_TYPE)"
-	@ if "$(OPENCV_HEADERS_TXT)" NEQ "$(HEADERS_TXT)" (powershell -command Copy-Item "$(OPENCV_HEADERS_TXT)" -Destination "$(HEADERS_TXT)")
+		cd "$(CMAKE_OPENCV_BUILD_DIR)" && cmake --install . --config "$(CMAKE_BUILD_TYPE)" && \
+		if "$(OPENCV_HEADERS_TXT)" NEQ "$(HEADERS_TXT)" (powershell -command Copy-Item "$(OPENCV_HEADERS_TXT)" -Destination "$(HEADERS_TXT)") \
+	)
 	@ cd "$(CMAKE_OPENCV_BUILD_DIR)\bin" && \
-	powershell -command "Get-ChildItem *.dll -Recurse | Copy-Item -Destination \"$(PRIV_DIR)\""
+		powershell -command "Get-ChildItem *.dll -Recurse | Copy-Item -Destination \"$(PRIV_DIR)\""
 !ENDIF
 
 $(C_SRC_HEADER_TXT): $(HEADERS_TXT)
-	@ echo "Copying $(HEADERS_TXT)..."
 	@ powershell -command Copy-Item "$(HEADERS_TXT)" -Destination "$(C_SRC_HEADER_TXT)"
 
 opencv: $(C_SRC_HEADER_TXT)
-	@ echo "Compiling OpenCV..."
 
 $(EVISION_SO): opencv
 	@ if not exist "$(PRIV_DIR)" mkdir "$(PRIV_DIR)"
+!IF "$(EVISION_PREFER_PRECOMPILED)" != "true"
 	@ if not exist "$(CMAKE_EVISION_BUILD_DIR)" mkdir "$(CMAKE_EVISION_BUILD_DIR)"
 	@ if not exist "$(GENERATED_ELIXIR_SRC_DIR)" mkdir "$(GENERATED_ELIXIR_SRC_DIR)"
 	@ if not exist "$(GENERATED_ERLANG_SRC_DIR)" mkdir "$(GENERATED_ERLANG_SRC_DIR)"
-	cd "$(CMAKE_EVISION_BUILD_DIR)" && \
+	@ if not exist "$(EVISION_SO)" ( \
+		cd "$(CMAKE_EVISION_BUILD_DIR)" && \
 		cmake -G "$(CMAKE_GENERATOR_TYPE)" \
 		  --no-warn-unused-cli \
 		  -D CMAKE_BUILD_TYPE="$(CMAKE_BUILD_TYPE)" \
@@ -176,7 +178,7 @@ $(EVISION_SO): opencv
 		  -D EVISION_GENERATE_LANG="$(EVISION_GENERATE_LANG)" \
 		  -D EVISION_ENABLE_CONTRIB="$(EVISION_ENABLE_CONTRIB)" \
 		  $(CMAKE_CONFIGURE_FLAGS) "$(MAKEDIR)" && \
-		cmake --build . $(CMAKE_BUILD_PARAMETER)
-!IF "$(EVISION_PREFER_PRECOMPILED)" != "true"
-    @ powershell -command Copy-Item -Path (Get-ChildItem -Path "*evision.so" -Recurse).FullName -Destination "$(EVISION_SO)"
+		cmake --build . $(CMAKE_BUILD_PARAMETER) && \
+		cmake --install . $(CMAKE_BUILD_PARAMETER) && \
+	)
 !ENDIF
