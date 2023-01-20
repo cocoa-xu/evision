@@ -145,14 +145,14 @@ $(HEADERS_TXT): $(CONFIGURATION_PRIVATE_HPP)
 			$(CMAKE_WIN_FINAL_OPTIONS_DEFINITIVE_EDITION) "$(OPENCV_DIR)" && \
 		cmake --build . $(CMAKE_BUILD_PARAMETER) && \
 		cd "$(CMAKE_OPENCV_BUILD_DIR)" && cmake --install . --config "$(CMAKE_BUILD_TYPE)" && \
-		if "$(OPENCV_HEADERS_TXT)" NEQ "$(HEADERS_TXT)" (powershell -command Copy-Item "$(OPENCV_HEADERS_TXT)" -Destination "$(HEADERS_TXT)") \
+		if "$(OPENCV_HEADERS_TXT)" NEQ "$(HEADERS_TXT)" (powershell -command Copy-Item "$(OPENCV_HEADERS_TXT)" -Destination "$(HEADERS_TXT)" -force) \
 	)
 	@ cd "$(CMAKE_OPENCV_BUILD_DIR)\bin" && \
-		powershell -command "Get-ChildItem *.dll -Recurse | Copy-Item -Destination \"$(PRIV_DIR)\""
+		powershell -command "Get-ChildItem *.dll -Recurse | Copy-Item -Destination \"$(PRIV_DIR)\"" -force
 !ENDIF
 
 $(C_SRC_HEADER_TXT): $(HEADERS_TXT)
-	@ powershell -command Copy-Item "$(HEADERS_TXT)" -Destination "$(C_SRC_HEADER_TXT)"
+	@ powershell -command Copy-Item "$(HEADERS_TXT)" -Destination "$(C_SRC_HEADER_TXT)" -force
 
 opencv: $(C_SRC_HEADER_TXT)
 
