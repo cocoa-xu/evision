@@ -37,6 +37,7 @@ OPENCV_DIR = $(OPENCV_ROOT_DIR)\opencv-$(OPENCV_VER)
 OPENCV_CONTRIB_DIR = $(OPENCV_ROOT_DIR)\opencv_contrib-$(OPENCV_CONTRIB_VER)
 OPENCV_CONFIGURATION_PRIVATE_HPP = $(OPENCV_DIR)\modules\core\include\opencv2\core\utils\configuration.private.hpp
 CMAKE_OPENCV_BUILD_DIR = $(MIX_APP_PATH)/cmake_opencv_$(OPENCV_VER)
+CMAKE_OPENCV_INSTALL_DIR = $(PRIV_DIR)/x64
 !IFNDEF CMAKE_OPENCV_MODULE_SELECTION
 CMAKE_OPENCV_MODULE_SELECTION = -D BUILD_opencv_python2=OFF -D BUILD_opencv_python3=OFF -D BUILD_opencv_gapi=OFF
 !ENDIF
@@ -106,6 +107,15 @@ HEADERS_TXT="$(CMAKE_OPENCV_BUILD_DIR)/modules/python_bindings_generator/headers
 # !ENDIF
 CMAKE_BUILD_PARAMETER= --config "$(CMAKE_BUILD_TYPE)"
 
+!IF "$(EVISION_DO_OPENCV_COMPILE)" == "false"
+EVISION_DO_OPENCV_COMPILE=false
+!ELSE
+EVISION_DO_OPENCV_COMPILE=true
+!ENDIF
+!IFNDEF EVISION_KEEP_OCV_BUILD_DIR
+EVISION_KEEP_OCV_BUILD_DIR="true"
+!ENDIF
+
 build: $(EVISION_SO)
 
 download_opencv_contrib:
@@ -122,8 +132,10 @@ $(CONFIGURATION_PRIVATE_HPP): download_opencv_contrib
 $(HEADERS_TXT): $(CONFIGURATION_PRIVATE_HPP)
 !IF "$(EVISION_PREFER_PRECOMPILED)" != "true"
 	@ if not exist "$(CMAKE_OPENCV_BUILD_DIR)" mkdir "$(CMAKE_OPENCV_BUILD_DIR)"
-	@ if not exist "$(HEADERS_TXT)" ( \
-		python3 "$(PATCHES_DIR)\apply_patch.py" "$(OPENCV_DIR)" "$(OPENCV_VER)" && \
+	@ if not exist "$(HEADERS_TXT)" if "$(EVISION_DO_OPENCV_COMPILE)" == "true" ( \
+		python3 "$(PATCHES_DIR)\apply_patch.py" "$(OPENCV_DIR)" "$(OPENCV_VER)" \
+	)
+	@ if not exist "$(HEADERS_TXT)" if "$(EVISION_DO_OPENCV_COMPILE)" == "true" ( \
 		cd "$(CMAKE_OPENCV_BUILD_DIR)" && \
 		cmake -G "$(CMAKE_GENERATOR_TYPE)" \
 			-D CMAKE_BUILD_TYPE="$(CMAKE_BUILD_TYPE)" \
@@ -143,16 +155,22 @@ $(HEADERS_TXT): $(CONFIGURATION_PRIVATE_HPP)
 			-D CMAKE_CXX_FLAGS="/D PNG_ARM_NEON_OPT=0" \
 			-D CMAKE_TOOLCHAIN_FILE="$(TOOLCHAIN_FILE)" \
 			$(CMAKE_WIN_FINAL_OPTIONS_DEFINITIVE_EDITION) "$(OPENCV_DIR)" && \
-		cmake --build . $(CMAKE_BUILD_PARAMETER) && \
-		cd "$(CMAKE_OPENCV_BUILD_DIR)" && cmake --install . --config "$(CMAKE_BUILD_TYPE)" && \
-		if "$(OPENCV_HEADERS_TXT)" NEQ "$(HEADERS_TXT)" powershell -command Copy-Item "$(OPENCV_HEADERS_TXT)" -Destination "$(HEADERS_TXT)" -force \
+		cmake --build . $(CMAKE_BUILD_PARAMETER) \
 	)
-	@ cd "$(CMAKE_OPENCV_BUILD_DIR)\bin" && \
-		powershell -command "Get-ChildItem *.dll -Recurse | Copy-Item -Destination \"$(PRIV_DIR)\"" -force
+	@ if not exist "$(HEADERS_TXT)" if "$(EVISION_DO_OPENCV_COMPILE)" == "true" ( \
+		cd "$(CMAKE_OPENCV_BUILD_DIR)" && cmake --install . --config "$(CMAKE_BUILD_TYPE)" && \
+		if "$(OPENCV_HEADERS_TXT)" NEQ "$(HEADERS_TXT)" ( \
+			powershell -command Copy-Item "$(OPENCV_HEADERS_TXT)" -Destination "$(HEADERS_TXT)" -force && \
+			powershell -command Copy-Item "$(HEADERS_TXT)" -Destination "$(C_SRC_HEADER_TXT)" -force \
+		) \
+	)
+	@ cd "$(CMAKE_OPENCV_INSTALL_DIR)" && powershell -command "Get-ChildItem *.dll -Recurse | Copy-Item -Destination \"$(PRIV_DIR)\"" -force
+	@ if "$(EVISION_KEEP_OCV_BUILD_DIR)" == "false" ( \
+		powershell -command Remove-Item "$(CMAKE_OPENCV_BUILD_DIR)" -Recurse -force \
+	)
 !ENDIF
 
 $(C_SRC_HEADER_TXT): $(HEADERS_TXT)
-	@ powershell -command Copy-Item "$(HEADERS_TXT)" -Destination "$(C_SRC_HEADER_TXT)" -force
 
 opencv: $(C_SRC_HEADER_TXT)
 
@@ -180,6 +198,6 @@ $(EVISION_SO): opencv
 		  -D EVISION_ENABLE_CONTRIB="$(EVISION_ENABLE_CONTRIB)" \
 		  $(CMAKE_CONFIGURE_FLAGS) "$(MAKEDIR)" && \
 		cmake --build . $(CMAKE_BUILD_PARAMETER) && \
-		cmake --install . $(CMAKE_BUILD_PARAMETER) && \
+		cmake --install . $(CMAKE_BUILD_PARAMETER) \
 	)
 !ENDIF
