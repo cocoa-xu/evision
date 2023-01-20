@@ -85,6 +85,7 @@ jobs:
       - name: Create precompiled library
         shell: bash
         run: |
+          export RUNNER_DIR=`pwd`
           cd C:/evision
           export PKG_NAME=evision-nif_${NIF_VERSION}-x86_64-windows-msvc-contrib-cuda${{ matrix.cuda_id }}-${GITHUB_REF##*/v}
           mkdir -p "${PKG_NAME}"
@@ -95,8 +96,8 @@ jobs:
           tar -czf "${PKG_NAME}.tar.gz" "${PKG_NAME}"
           rm -rf "${PKG_NAME}"
           ls -lah "${PKG_NAME}.tar.gz"
-          mkdir -p artifacts
-          mv "${PKG_NAME}.tar.gz" artifacts
+          mkdir -p "${RUNNER_DIR}/artifacts"
+          mv "${PKG_NAME}.tar.gz" "${RUNNER_DIR}/artifacts"
 
       - uses: softprops/action-gh-release@v1
         with:
