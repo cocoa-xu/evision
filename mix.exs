@@ -44,7 +44,7 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
       with_contrib = get_download_url(target, version, nif_version, true, false, "")
 
       with_cuda =
-        if target == "x86_64-linux-gnu" do
+        if target in ["x86_64-linux-gnu", "x86_64-windows-msvc"] do
           Enum.map(Metadata.all_cuda_version(), fn cuda_ver ->
             get_download_url(target, version, nif_version, true, true, cuda_ver)
           end)
