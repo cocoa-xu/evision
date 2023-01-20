@@ -48,6 +48,7 @@ jobs:
       - uses: ilammy/msvc-dev-cmd@v1
         with:
           arch: x64
+          vsversion: "2019"
 
       - uses: cocoa-xu/cuda-toolkit@v0.3.0
         id: cuda-toolkit
