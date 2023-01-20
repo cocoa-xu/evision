@@ -1,6 +1,6 @@
 # Changelog
 
-## v0.1.26 (main)
+## v0.1.26 (2022-01-21)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.26) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.26)
 
 ### Breaking Changes
@@ -26,6 +26,33 @@
 
 ### Changed
 - [c_src] check if we can use existing atom from `enif_make_existing_atom` before calling to `enif_make_atom`.
+
+### Added
+- OpenCV contrib modules.
+
+  - For users who prefer using precompiled binaries, almost all modules in opencv_contrib is included in precompiled archives (except for CUDA related ones, please see the next bullet point), and this will be the new default for precompiled users. 
+   
+    However, we do provide precompiled binaries that only include core modules. Please see the next paragraph.
+
+  - For all users, to use core modules only, please set env var `EVISION_ENABLE_CONTRIB=false`.
+
+- CUDA 11 + cudnn 8 support with precompiled binaries.
+
+  Note that CUDA 11 and cudnn 8 runtime libraries/dll files are not included in the precompiled archive. 
+
+  Please following the installation guide on NVIDIA's website.
+
+  - For precompiled binaries users, please set `EVISION_ENABLE_CUDA` to `true`. Besides that, there are 3 CUDA versions to choose:
+
+    - `EVISION_CUDA_VERSION=111`
+    - `EVISION_CUDA_VERSION=114`
+    - `EVISION_CUDA_VERSION=118`
+
+    Please choose the one that matches your local CUDA versions, and set this `EVISION_CUDA_VERSION` env var correspondingly.
+
+  - For users who prefer compiling from source, you'll only need to set `EVISION_ENABLE_CUDA` to `true`, and OpenCV will detect and use (if possible) your local CUDA/cudnn runtime.
+
+  Lastly, if `EVISION_ENABLE_CUDA` is `true` while `EVISION_ENABLE_CONTRIB` is `false`, CUDA related modules will not be compiled/downloaded.
 
 ## v0.1.25 (2022-12-18)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.25) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.25)
