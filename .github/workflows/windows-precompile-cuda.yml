@@ -39,8 +39,15 @@ jobs:
             cuda_id: "118"
 
     steps:
-      - run: Get-PSDrive
       - uses: actions/checkout@v3
+
+      - name: Git Checkout
+        shell: bash
+        run: |
+          echo "$(pwd)"
+          cd ..
+          ls -lah
+          mv evision C:/
 
       - uses: erlef/setup-beam@v1
         with:
@@ -59,46 +66,23 @@ jobs:
           cudnn: "8.7.0"
           cudnn_url: ${{ secrets.CUDA_V870_WINDOWS_X86_64_CUDA11 }}
 
-      - name: Cache mix packages
-        id: cache-mix-deps
-        uses: actions/cache@v3
-        with:
-          key: deps-${{ hashFiles('mix.lock') }}-${{ env.OTP_VERSION }}-${{ env.ELIXIR_VERSION }}
-          path: |
-            ./deps
-
       - name: Get mix deps
         if: steps.cache-mix-deps.outputs.cache-hit != 'true'
         shell: bash
         run: |
+          cd C:/evision
           mix deps.get
-
-      - name: Cache OpenCV source code
-        id: cache-opencv
-        uses: actions/cache@v3
-        with:
-          key: opencv-with-contrib-${{ env.OPENCV_VER }}
-          path: |
-            ./3rd_party
-
-      - name: Download OpenCV source code
-        if: steps.cache-opencv.outputs.cache-hit != 'true'
-        shell: bash
-        run: |
-          bash scripts/download_opencv.sh ${OPENCV_VER} 3rd_party/cache 3rd_party/opencv/
-          bash scripts/download_opencv_contrib.sh ${OPENCV_VER} 3rd_party/cache 3rd_party/opencv/
       
       - name: Mix compile
         shell: bash
         run: |
-          rm -f Makefile
-          rm -f _build/${{ env.MIX_ENV }}/lib/evision/priv/evision.dll
-
+          cd C:/evision
           mix compile
 
       - name: Create precompiled library
         shell: bash
         run: |
+          cd C:/evision
           export PKG_NAME=evision-nif_${NIF_VERSION}-x86_64-windows-msvc-contrib-cuda${{ matrix.cuda_id }}-${GITHUB_REF##*/v}
           mkdir -p "${PKG_NAME}"
           rm -rf "_build/${MIX_ENV}/lib/evision/priv/${MSBUILD_PLATFORM}"
