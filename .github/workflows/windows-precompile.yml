@@ -37,7 +37,6 @@ jobs:
               arch_name: x86_64
               msbuild_platform: x64
               vcvarsall: x64
-              CMAKE_GENERATOR_TYPE: "Ninja"
 
     steps:
       - uses: actions/checkout@v3
@@ -86,7 +85,6 @@ jobs:
           export EVISION_ENABLE_CONTRIB=false
           if [ "${{ matrix.pair.vcvarsall }}" = "amd64_arm64" ]; then
             export CMAKE_GENERATOR_TYPE="${{ matrix.pair.CMAKE_GENERATOR_TYPE }}"
-            export MSBUILD_PLATFORM="${{ matrix.pair.MSBUILD_PLATFORM }}"
             export CMAKE_TOOLCHAIN_FILE="$(pwd)/${{ matrix.pair.CMAKE_TOOLCHAIN_FILE }}"
             export TOOLCHAIN_FILE="$(pwd)/${{ matrix.pair.CMAKE_TOOLCHAIN_FILE }}"
           fi
@@ -116,7 +114,6 @@ jobs:
           export EVISION_ENABLE_CONTRIB=true
           if [ "${{ matrix.pair.vcvarsall }}" = "amd64_arm64" ]; then
             export CMAKE_GENERATOR_TYPE="${{ matrix.pair.CMAKE_GENERATOR_TYPE }}"
-            export MSBUILD_PLATFORM="${{ matrix.pair.MSBUILD_PLATFORM }}"
             export CMAKE_TOOLCHAIN_FILE="$(pwd)/${{ matrix.pair.CMAKE_TOOLCHAIN_FILE }}"
             export TOOLCHAIN_FILE="$(pwd)/${{ matrix.pair.CMAKE_TOOLCHAIN_FILE }}"
           fi
