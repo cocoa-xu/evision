@@ -47,8 +47,7 @@ jobs:
           echo "$(pwd)"
           cd ..
           ls -lah
-          sudo mv evision /c/
-          sudo chown -R runneradmin:runneradmin /c/evision
+          cp -rf evision /c/evision
 
       - uses: erlef/setup-beam@v1
         with:
