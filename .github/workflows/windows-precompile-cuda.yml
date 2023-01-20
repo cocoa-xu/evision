@@ -49,10 +49,13 @@ jobs:
         with:
           arch: x64
 
-      - uses: cocoa-xu/cuda-toolkit@v0.2.9
+      - uses: cocoa-xu/cuda-toolkit@v0.3.0
         id: cuda-toolkit
         with:
           cuda: ${{ matrix.cuda_ver }}
+          cudnn: "8.7.0"
+          cudnn_url: ${{ secrets.CUDA_V870_WINDOWS_X86_64_CUDA11 }}
+          cudnn_archive_dir: "cudnn-windows-x86_64-8.7.0.84_cuda11-archive"
 
       - name: Cache mix packages
         id: cache-mix-deps
