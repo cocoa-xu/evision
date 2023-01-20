@@ -35,6 +35,7 @@ on:
       - '.github/workflows/linux-*.yml'
       - '.github/workflows/macos-*.yml'
       - '.github/workflows/test-*.yml'
+      - '.github/workflows/windows-precompile-cuda.yml'
       - '.github/workflows/windows-precompile.yml'
 
 concurrency:
