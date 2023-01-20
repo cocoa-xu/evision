@@ -12,7 +12,7 @@ concurrency:
 
 jobs:
   mix_compile:
-    runs-on: windows-2019
+    runs-on: self-hosted
     env:
       ImageOS: "win19"
       MIX_ENV: prod
