@@ -29,9 +29,10 @@ def patch_fix_getLayerShapes(opencv_version: str, opencv_src_root: str):
             else:
                 fixed.write(line)
 
-    with open(dnn_hpp, 'w') as dst:
-        dst.truncate(0)
-        dst.write(fixed.getvalue())
+    if patched_1 or patched_2:
+        with open(dnn_hpp, 'w') as dst:
+            dst.truncate(0)
+            dst.write(fixed.getvalue())
 
 
 def patch_winograd(opencv_version: str, opencv_src_root: str):
@@ -57,9 +58,10 @@ def patch_winograd(opencv_version: str, opencv_src_root: str):
             else:
                 fixed.write(line)
 
-    with open(fast_convolution_cpp, 'w') as dst:
-        dst.truncate(0)
-        dst.write(fixed.getvalue())
+    if patched_1:
+        with open(fast_convolution_cpp, 'w') as dst:
+            dst.truncate(0)
+            dst.write(fixed.getvalue())
 
 patches = [patch_fix_getLayerShapes, patch_winograd]
 

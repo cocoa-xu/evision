@@ -1,0 +1,114 @@
+name: windows-precompile-cuda
+
+on:
+  push:
+    tags:
+      - 'v*'
+      - 'windows-cuda'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  mix_compile:
+    runs-on: windows-latest
+    env:
+      MIX_ENV: prod
+      OPENCV_VER: "4.7.0"
+      OTP_VERSION: "25.2"
+      NIF_VERSION: "2.16"
+      ELIXIR_VERSION: "1.14.3"
+      EVISION_PREFER_PRECOMPILED: "false"
+      EVISION_GENERATE_LANG: "erlang,elixir"
+      EVISION_ENABLE_CONTRIB: "true"
+      EVISION_ENABLE_CUDA: "true"
+      MAKE: "nmake"
+      MSBUILD_PLATFORM: x64
+      CMAKE_GENERATOR_TYPE: Ninja
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - cuda_ver: "11.1.1"
+            cuda_id: "111"
+          - cuda_ver: "11.4.3"
+            cuda_id: "114"
+          - cuda_ver: "11.8.0"
+            cuda_id: "118"
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: erlef/setup-beam@v1
+        with:
+          otp-version: ${{ env.OTP_VERSION }}
+          elixir-version: ${{ env.ELIXIR_VERSION }}
+
+      - uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - uses: cocoa-xu/cuda-toolkit@v0.3.0
+        id: cuda-toolkit
+        with:
+          cuda: ${{ matrix.cuda_ver }}
+          cudnn: "8.7.0"
+          cudnn_url: ${{ secrets.CUDA_V870_WINDOWS_X86_64_CUDA11 }}
+          cudnn_archive_dir: "cudnn-windows-x86_64-8.7.0.84_cuda11-archive"
+
+      - name: Cache mix packages
+        id: cache-mix-deps
+        uses: actions/cache@v3
+        with:
+          key: deps-${{ hashFiles('mix.lock') }}-${{ env.OTP_VERSION }}-${{ env.ELIXIR_VERSION }}
+          path: |
+            ./deps
+
+      - name: Get mix deps
+        if: steps.cache-mix-deps.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          mix deps.get
+
+      - name: Cache OpenCV source code
+        id: cache-opencv
+        uses: actions/cache@v3
+        with:
+          key: opencv-with-contrib-${{ env.OPENCV_VER }}
+          path: |
+            ./3rd_party
+
+      - name: Download OpenCV source code
+        if: steps.cache-opencv.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          bash scripts/download_opencv.sh ${OPENCV_VER} 3rd_party/cache 3rd_party/opencv/
+          bash scripts/download_opencv_contrib.sh ${OPENCV_VER} 3rd_party/cache 3rd_party/opencv/
+      
+      - name: Mix compile
+        shell: bash
+        run: |
+          rm -f Makefile
+          rm -f _build/${{ env.MIX_ENV }}/lib/evision/priv/evision.dll
+
+          mix compile
+
+      - name: Create precompiled library
+        shell: bash
+        run: |
+          export PKG_NAME=evision-nif_${NIF_VERSION}-x86_64-windows-msvc-contrib-cuda${{ matrix.cuda_id }}-${GITHUB_REF##*/v}
+          mkdir -p "${PKG_NAME}"
+          rm -rf "_build/${MIX_ENV}/lib/evision/priv/${MSBUILD_PLATFORM}"
+          cp -a _build/${MIX_ENV}/lib/evision/priv "${PKG_NAME}"
+          cp -a lib/generated "${PKG_NAME}/elixir_generated"
+          cp -a src/generated "${PKG_NAME}/erlang_generated"
+          tar -czf "${PKG_NAME}.tar.gz" "${PKG_NAME}"
+          rm -rf "${PKG_NAME}"
+          ls -lah "${PKG_NAME}.tar.gz"
+          mkdir -p artifacts
+          mv "${PKG_NAME}.tar.gz" artifacts
+
+      - uses: softprops/action-gh-release@v1
+        with:
+          files: artifacts/*.tar.gz

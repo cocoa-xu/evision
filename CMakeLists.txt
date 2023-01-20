@@ -66,10 +66,16 @@ add_library(evision SHARED
     ${evision_modules}
     ${evision_backend}
 )
+install(
+    TARGET evision
+    RUNTIME DESTINATION "${PRIV_DIR}"
+)
 target_link_libraries(evision "${OpenCV_LIBS}")
 set_property(TARGET evision PROPERTY CXX_STANDARD 14)
 set_target_properties(evision PROPERTIES PREFIX "")
-set_target_properties(evision PROPERTIES SUFFIX ".so")
+if(NOT WIN32)
+    set_target_properties(evision PROPERTIES SUFFIX ".so")
+endif()
 
 set_target_properties(evision PROPERTIES
     INSTALL_RPATH_USE_LINK_PATH TRUE
