@@ -349,18 +349,16 @@ export EVISION_PRECOMPILED_CACHE_DIR="$(pwd)/.cache"
 #### Dependencies
 
 - Python3 (Only during the compilation, to generate binding files)
-
-  Tested Python versions (on `ubuntu:20.04`, see [workflow file](https://github.com/cocoa-xu/evision/blob/main/.github/workflows/test-python-compatibility.yml)):
-  - 3.6.15
-  - 3.7.12
   - 3.8.12
   - 3.9.9
   - 3.10.1
+
 - [CMake](https://cmake.org/) >= 3.3 (for this project)
 
   The minimal version required by OpenCV can vary between versions.
 
   OpenCV 4.5.5 requires at least CMake 3.5.1.
+
 - Erlang development library/headers. Tested on OTP/25.
 
 #### Build from source

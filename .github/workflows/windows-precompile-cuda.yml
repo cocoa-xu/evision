@@ -65,14 +65,17 @@ jobs:
           cuda: ${{ matrix.cuda_ver }}
           cudnn: "8.7.0"
           cudnn_url: ${{ secrets.CUDA_V870_WINDOWS_X86_64_CUDA11 }}
+      
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
 
       - name: Get mix deps
-        if: steps.cache-mix-deps.outputs.cache-hit != 'true'
         shell: bash
         run: |
           cd C:/evision
           mix deps.get
-      
+
       - name: Mix compile
         shell: bash
         run: |
