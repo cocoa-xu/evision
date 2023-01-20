@@ -12,9 +12,8 @@ concurrency:
 
 jobs:
   mix_compile:
-    runs-on: self-hosted
+    runs-on: windows-2019
     env:
-      ImageOS: "win19"
       MIX_ENV: prod
       OPENCV_VER: "4.7.0"
       OTP_VERSION: "25.2"
@@ -40,6 +39,7 @@ jobs:
             cuda_id: "118"
 
     steps:
+      - run: Get-PSDrive
       - uses: actions/checkout@v3
 
       - uses: erlef/setup-beam@v1
