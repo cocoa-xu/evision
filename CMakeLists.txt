@@ -67,7 +67,7 @@ add_library(evision SHARED
     ${evision_backend}
 )
 install(
-    TARGET evision
+    TARGETS evision
     RUNTIME DESTINATION "${PRIV_DIR}"
 )
 target_link_libraries(evision "${OpenCV_LIBS}")
