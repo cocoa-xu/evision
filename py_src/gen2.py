@@ -6,6 +6,7 @@ from __future__ import print_function
 import ast
 import sys
 from pathlib import Path
+import argparse
 
 import hdr_parser
 import re
@@ -29,13 +30,16 @@ else:
 
 
 class BeamWrapperGenerator(object):
-    def __init__(self, enabled_modules, langs):
+    def __init__(self, enabled_modules, langs, win_dll):
         self.clear()
         self.argname_prefix_re = re.compile(r'^[_]*')
         self.inline_docs_code_type_re = re.compile(r'@code{.(.*)}')
         self.inline_docs_inline_math_re = re.compile(r'(?:.*?)\\\\f[$\[](.*?)\\\\f[$\]]', re.MULTILINE|re.DOTALL)
         self.enabled_modules = enabled_modules
         self.langs = langs
+        self.win_dll = win_dll
+        if len(self.win_dll) > 4 and self.win_dll[-4:] == 'lib':
+            self.win_dll = f"{self.win_dll[:-4]}/bin"
 
     def clear(self):
         self.classes = {}
@@ -543,8 +547,8 @@ class BeamWrapperGenerator(object):
         self.clear()
         self.parser = hdr_parser.CppHeaderParser(generate_umat_decls=True, generate_gpumat_decls=True)
 
-        self.evision_nif.write('defmodule :evision_nif do\n{}\n'.format(ET.gen_evision_nif_load_nif))
-        self.evision_nif_erlang.write('-module(evision_nif).\n-compile(nowarn_export_all).\n-compile([export_all]).\n\n{}\n{}\n'.format(ET.gen_evision_nif_load_nif_erlang, ET.gen_cv_types_erlang))
+        self.evision_nif.write('defmodule :evision_nif do\n{}\n'.format(ET.gen_evision_nif_load_nif %(self.win_dll, )))
+        self.evision_nif_erlang.write('-module(evision_nif).\n-compile(nowarn_export_all).\n-compile([export_all]).\n\n{}\n{}\n'.format(ET.gen_evision_nif_load_nif_erlang % (self.win_dll,), ET.gen_cv_types_erlang))
 
         self.code_ns_reg.write('static ErlNifFunc nif_functions[] = {\n')
         self.gen_enabled_modules()
@@ -755,22 +759,27 @@ class BeamWrapperGenerator(object):
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--c_src", type=str, default="./c_src", help="Path to the c_src dir")
+    parser.add_argument("--elixir_gen", type=str, default="./lib", help="Path to the output dir of elixir binding files")
+    parser.add_argument("--erlang_gen", type=str, default="./src", help="Path to the output dir of erlang binding files")
+    parser.add_argument("--headers", help="Path to the headers.txt/header-contrib.txt in c_src")
+    parser.add_argument("--lang", type=str, help="Comma-seperated values. erlang,elixir")
+    parser.add_argument("--modules", type=str, default='', help="Comma-seperated values.")
+    parser.add_argument("--win_dll", help="Path to OpenCV libs on Windows")
+    args = parser.parse_args()
+
     srcfiles = hdr_parser.opencv_hdr_list
-    dstdir = "./c_src"
-    erl_dstdir = "./lib"
-    erlang_dstdir = "./src"
-    if len(sys.argv) > 1:
-        dstdir = sys.argv[1]
-    if len(sys.argv) > 2:
-        erl_dstdir = sys.argv[2]
-    if len(sys.argv) > 3:
-        erlang_dstdir = sys.argv[3]
-    if len(sys.argv) > 4:
-        with open(sys.argv[4], 'r') as f:
+    dstdir = args.c_src
+    elixir_dstdir = args.elixir_gen
+    erlang_dstdir = args.erlang_gen
+
+    if len(args.headers) > 4:
+        with open(args.headers, 'r') as f:
             srcfiles = [l.strip() for l in f.readlines()]
     lang = []
-    if len(sys.argv) > 5:
-        lang = [l.lower().strip() for l in sys.argv[5].split(",")]
+    if len(args.lang) > 5:
+        lang = [l.lower().strip() for l in args.lang.split(",")]
     if len(lang) == 0:
         raise RuntimeError("env var EVISION_GENERATE_LANG is empty")
     for l in lang:
@@ -780,9 +789,9 @@ if __name__ == "__main__":
     # default
     enabled_modules = ['calib3d', 'core', 'features2d', 'flann', 'highgui', 'imgcodecs', 'imgproc', 'ml', 'photo',
                        'stitching', 'ts', 'video', 'videoio', 'dnn']
-    if len(sys.argv) > 6:
-        enabled_modules = sys.argv[6].split(",")
-    generator = BeamWrapperGenerator(enabled_modules, lang)
-    generator.gen(srcfiles, dstdir, erl_dstdir, erlang_dstdir)
+    if len(args.modules) > 0:
+        enabled_modules = args.modules.split(",")
+    generator = BeamWrapperGenerator(enabled_modules, lang, args.win_dll)
+    generator.gen(srcfiles, dstdir, elixir_dstdir, erlang_dstdir)
     # for n in generator.namespaces:
     #     print(f'"{n}": &(&1[:namespace] == :"{n}"),')

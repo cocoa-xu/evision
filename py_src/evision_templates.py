@@ -185,7 +185,7 @@ gen_evision_nif_load_nif = """
     nif_file = '#{:code.priv_dir(:evision)}/evision'
     :ok = 
       case :os.type() do
-        {:win32, _} -> DLLLoaderHelper.addDLLDirectory("#{:code.priv_dir(:evision)}")
+        {:win32, _} -> DLLLoaderHelper.addDLLDirectory("#{:code.priv_dir(:evision)}/%s")
         _ -> :ok
       end
 
@@ -218,7 +218,7 @@ init() ->
     end,
     case os:type() of
         {win32, _} ->
-            dll_loader_helper:add_dll_directory(filename:dirname(SoName));
+            dll_loader_helper:add_dll_directory(filename:join[filename:dirname(SoName), %s]);
         _ -> true
     end,
     erlang:load_nif(SoName, 0).
