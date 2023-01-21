@@ -38,6 +38,8 @@ class BeamWrapperGenerator(object):
         self.enabled_modules = enabled_modules
         self.langs = langs
         self.win_dll = win_dll
+        if self.win_dll is None:
+            self.win_dll = ''
         if len(self.win_dll) > 4 and self.win_dll[-4:] == '/lib':
             self.win_dll = f"{self.win_dll[:-4]}/bin"
 
@@ -766,7 +768,7 @@ if __name__ == "__main__":
     parser.add_argument("--headers", help="Path to the headers.txt/header-contrib.txt in c_src")
     parser.add_argument("--lang", type=str, help="Comma-seperated values. erlang,elixir")
     parser.add_argument("--modules", type=str, default='', help="Comma-seperated values.")
-    parser.add_argument("--win_dll", help="Path to OpenCV libs on Windows")
+    parser.add_argument("--win_dll", type=str, default='', help="Path to OpenCV libs on Windows")
     args = parser.parse_args()
 
     srcfiles = hdr_parser.opencv_hdr_list
