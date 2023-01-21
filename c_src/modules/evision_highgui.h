@@ -297,8 +297,6 @@ static ERL_NIF_TERM evision_cv_waitKey(ErlNifEnv *env, int argc, const ERL_NIF_T
     int nif_opts_index = 0;
     evision::nif::parse_arg(env, nif_opts_index, argv, erl_terms);
     int delay=0;
-    int retval;
-
     // const char* keywords[] = { "delay", NULL }; // <- no more in use, left for debugging purpose
     if( evision_to_safe(env, evision_get_kw(env, erl_terms, "delay"), delay, ArgInfo("delay", 0)) )
     {
