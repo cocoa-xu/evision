@@ -1,6 +1,6 @@
 {application, evision,
  [{description, "OpenCV-Erlang/Elixir binding."},
-  {vsn, "0.1.26"},
+  {vsn, "0.1.27"},
   {registered, []},
   {applications,
    [kernel,

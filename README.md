@@ -206,7 +206,7 @@ Then you can add `evision` as dependency in your `mix.exs`.
 ```elixir
 def deps do
   [
-    {:evision, "~> 0.1.26"}
+    {:evision, "~> 0.1.27"}
   ]
 end
 ```
@@ -225,7 +225,7 @@ It is recommended to use `:evision` from hex.pm.
 ```elixir
 def deps do
   [
-    {:evision, "~> 0.1.26"}
+    {:evision, "~> 0.1.27"}
   ]
 end
 ```
@@ -287,7 +287,7 @@ export EVISION_PREFER_PRECOMPILED=false
 For livebook users, 
 ```elixir
 Mix.install([
-  {:evision, "~> 0.1.26"}
+  {:evision, "~> 0.1.27"}
 ], system_env: [
   {"EVISION_PREFER_PRECOMPILED", "false"}
 ])
