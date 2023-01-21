@@ -38,7 +38,7 @@ class BeamWrapperGenerator(object):
         self.enabled_modules = enabled_modules
         self.langs = langs
         self.win_dll = win_dll
-        if len(self.win_dll) > 4 and self.win_dll[-4:] == 'lib':
+        if len(self.win_dll) > 4 and self.win_dll[-4:] == '/lib':
             self.win_dll = f"{self.win_dll[:-4]}/bin"
 
     def clear(self):

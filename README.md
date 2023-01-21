@@ -328,11 +328,31 @@ export EVISION_ENABLE_CUDA=true
 ## 114, for CUDA 11.4.x, built with CUDA 11.4.3
 ## 118, for CUDA 11.8.x, built with CUDA 11.8.0
 export EVISION_CUDA_VERSION=118
-# opencv_contrib modules is enabled by default
+## opencv_contrib modules is enabled by default
 export EVISION_ENABLE_CONTRIB=true
 
 # disable CUDA support (default) 
 export EVISION_ENABLE_CUDA=false
+```
+
+##### IMPORTANT NOTE FOR WINDOWS USERS
+If `EVISION_ENABLE_CUDA` is `true`, please also set CUDA runtime dir otherwise `Evision` will fail to load.
+
+###### cmd
+```cmd
+set EVISION_CUDA_RUNTIME_DIR=C:/PATH/TO/YOUR/CUDA/RUNTIME/BIN
+```
+
+Also, please don't quote even if there are spaces in the path
+
+```cmd
+set EVISION_CUDA_RUNTIME_DIR=C:/PATH WITH SPACE/TO/YOUR/CUDA/RUNTIME/BIN
+```
+
+###### Powershell
+```pwsh
+$Env:EVISION_CUDA_RUNTIME_DIR="C:/PATH/TO/YOUR/CUDA/RUNTIME/BIN"
+$Env:EVISION_CUDA_RUNTIME_DIR="C:/PATH WITH SPACE/TO/YOUR/CUDA/RUNTIME/BIN"
 ```
 
 #### EVISION_PRECOMPILED_CACHE_DIR

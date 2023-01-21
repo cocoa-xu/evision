@@ -185,7 +185,12 @@ gen_evision_nif_load_nif = """
     nif_file = '#{:code.priv_dir(:evision)}/evision'
     :ok = 
       case :os.type() do
-        {:win32, _} -> DLLLoaderHelper.addDLLDirectory("#{:code.priv_dir(:evision)}/%s")
+        {:win32, _} ->
+            cuda_runtime = System.get_env("EVISION_CUDA_RUNTIME_DIR")
+            if cuda_runtime do
+                DLLLoaderHelper.addDLLDirectory(cuda_runtime)
+            end
+            DLLLoaderHelper.addDLLDirectory("#{:code.priv_dir(:evision)}/%s")
         _ -> :ok
       end
 

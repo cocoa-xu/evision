@@ -164,7 +164,6 @@ $(HEADERS_TXT): $(CONFIGURATION_PRIVATE_HPP)
 		) \
 	) && \
 	powershell -command Copy-Item "$(HEADERS_TXT)" -Destination "$(C_SRC_HEADER_TXT)" -force
-	@ cd "$(CMAKE_OPENCV_INSTALL_DIR)" && powershell -command "Get-ChildItem *.dll -Recurse | Copy-Item -Destination \"$(PRIV_DIR)\"" -force
 	@ if "$(EVISION_KEEP_OCV_BUILD_DIR)" == "false" ( \
 		powershell -command Remove-Item "$(CMAKE_OPENCV_BUILD_DIR)" -Recurse -force \
 	)
