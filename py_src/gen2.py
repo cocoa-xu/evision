@@ -20,7 +20,8 @@ from class_info import ClassInfo
 from module_generator import ModuleGenerator
 from fixes import evision_elixir_fixes, evision_erlang_fixes
 from pathlib import Path
-from os import mkdir
+import os
+from os import makedirs
 from shutil import rmtree
 
 
@@ -797,6 +798,8 @@ if __name__ == "__main__":
     generator = BeamWrapperGenerator(enabled_modules, lang, args.win_dll)
     rmtree(elixir_dstdir)
     rmtree(erlang_dstdir)
+    makedirs(elixir_dstdir)
+    makedirs(erlang_dstdir)
     generator.gen(srcfiles, dstdir, elixir_dstdir, erlang_dstdir)
     # for n in generator.namespaces:
     #     print(f'"{n}": &(&1[:namespace] == :"{n}"),')
