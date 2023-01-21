@@ -26,9 +26,8 @@ else
     @spec tasks :: tasks()
     def tasks, do: @tasks
 
-    @tasks_list Enum.map(Map.values(@tasks), fn task -> task.smartcell_tasks() end)
     @spec tasks_list :: [%{id: String.t(), label: String.t(), variants: [%{}]}, ...]
-    def tasks_list, do: @tasks_list
+    def tasks_list, do: Enum.map(Map.values(@tasks), fn task -> task.smartcell_tasks() end)
 
     @spec default_task_id :: String.t()
     def default_task_id do
