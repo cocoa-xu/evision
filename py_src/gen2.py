@@ -21,6 +21,7 @@ from module_generator import ModuleGenerator
 from fixes import evision_elixir_fixes, evision_erlang_fixes
 from pathlib import Path
 from os import mkdir
+from shutil import rmtree
 
 
 if sys.version_info[0] >= 3:
@@ -794,6 +795,8 @@ if __name__ == "__main__":
     if len(args.modules) > 0:
         enabled_modules = args.modules.split(",")
     generator = BeamWrapperGenerator(enabled_modules, lang, args.win_dll)
+    rmtree(elixir_dstdir)
+    rmtree(erlang_dstdir)
     generator.gen(srcfiles, dstdir, elixir_dstdir, erlang_dstdir)
     # for n in generator.namespaces:
     #     print(f'"{n}": &(&1[:namespace] == :"{n}"),')
