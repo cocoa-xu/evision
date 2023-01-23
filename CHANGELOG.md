@@ -1,6 +1,6 @@
 # Changelog
 
-## v0.1.27 (2022-01-21)
+## v0.1.27 (2022-01-23)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.27) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.27)
 
 ### Breaking Changes
@@ -55,7 +55,7 @@
   Lastly, if `EVISION_ENABLE_CUDA` is `true` while `EVISION_ENABLE_CONTRIB` is `false`, CUDA related modules will not be compiled/downloaded.
 
 ## v0.1.26 (2022-01-21)
-Please use `v0.1.27` as windows precompilation binaries were invalid.
+Please use `v0.1.27` as precompilation binaries for targets `x86_64-windows-msvc-contrib-cuda*` and `x86_64-linux-gnu-contrib-cuda*` were incorrect.
 
 ## v0.1.25 (2022-12-18)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.25) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.25)
