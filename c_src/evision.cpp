@@ -915,7 +915,7 @@ bool evision_to_safe(ErlNifEnv *env, ERL_NIF_TERM o, std::vector<uchar>& data, c
         size_t i = 0;
         while (i < n) {
             if (enif_get_list_cell(env, obj, &head, &tail)) {
-                uchar item;
+                uchar item = 0;
                 if (!evision_to(env, head, item, info)) {
                     return false;
                 }
