@@ -98,7 +98,6 @@ jobs:
         run: |
           export PKG_NAME=evision-nif_${NIF_VERSION}-${{ matrix.pair.arch_name }}-windows-msvc-${GITHUB_REF##*/v}
           mkdir -p "${PKG_NAME}"
-          rm -rf "_build/${MIX_ENV}/lib/evision/priv/${{ matrix.pair.msbuild_platform }}"
           cp -a _build/${MIX_ENV}/lib/evision/priv "${PKG_NAME}"
           cp -a lib/generated "${PKG_NAME}/elixir_generated"
           cp -a src/generated "${PKG_NAME}/erlang_generated"
