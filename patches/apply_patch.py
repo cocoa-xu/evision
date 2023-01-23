@@ -63,7 +63,37 @@ def patch_winograd(opencv_version: str, opencv_src_root: str):
             dst.truncate(0)
             dst.write(fixed.getvalue())
 
-patches = [patch_fix_getLayerShapes, patch_winograd]
+
+def patch_rpath_linux(opencv_version: str, opencv_src_root: str):
+    # CMakeLists.txt
+    cmakelists_txt = Path(opencv_src_root) / 'CMakeLists.txt'
+    fixed = StringIO()
+    patched_1 = False
+    with open(cmakelists_txt, 'r') as source:
+        for line in source:
+            if not patched_1 and line.strip() == 'string(REPLACE "opencv_" "" OPENCV_MODULES_BUILD_ST          "${OPENCV_MODULES_BUILD_ST}")':
+                fixed.write("""if(UNIX AND NOT APPLE)
+  foreach(the_module ${OPENCV_MODULES_BUILD_ST})
+    set_target_properties(${the_module} PROPERTIES
+      INSTALL_RPATH_USE_LINK_PATH TRUE
+      BUILD_WITH_INSTALL_RPATH TRUE
+    )
+    set_target_properties(${the_module} PROPERTIES INSTALL_RPATH "\$ORIGIN")
+  endforeach()
+endif()
+string(REPLACE "opencv_" "" OPENCV_MODULES_BUILD_ST          "${OPENCV_MODULES_BUILD_ST}") # patched
+""")
+                patched_1 = True
+            else:
+                fixed.write(line)
+
+    if patched_1:
+        with open(cmakelists_txt, 'w') as dst:
+            dst.truncate(0)
+            dst.write(fixed.getvalue())
+
+
+patches = [patch_fix_getLayerShapes, patch_winograd, patch_rpath_linux]
 
 
 if __name__ == '__main__':
