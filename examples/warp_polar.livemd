@@ -3,15 +3,47 @@
 # Evision Example - Warp Polar and Reverse
 
 ```elixir
-# set `EVISION_PREFER_PRECOMPILED` to `false` 
-# if you prefer `:evision` to be compiled from source
-# note that to compile from source, you may need at least 1GB RAM
-# System.put_env("EVISION_PREFER_PRECOMPILED", "false")
-
 Mix.install([
-  {:evision, "~> 0.1.27"},
+  {:evision, "~> 0.1.28"},
   {:kino, "~> 0.7"},
   {:req, "~> 0.3"}
+], system_env: [
+  # optional, defaults to `true`
+  # set `EVISION_PREFER_PRECOMPILED` to `false`
+  # if you prefer `:evision` to be compiled from source
+  # note that to compile from source, you may need at least 1GB RAM
+  {"EVISION_PREFER_PRECOMPILED", true},
+
+  # optional, defaults to `true`
+  # set `EVISION_ENABLE_CONTRIB` to `false`
+  # if you don't need modules from `opencv_contrib`
+  {"EVISION_ENABLE_CONTRIB", true},
+
+  # optional, defaults to `false`
+  # set `EVISION_ENABLE_CUDA` to `true`
+  # if you wish to use CUDA related functions
+  # note that `EVISION_ENABLE_CONTRIB` also has to be `true`
+  # because cuda related modules come from the `opencv_contrib` repo
+  {"EVISION_ENABLE_CUDA", false},
+
+  # required when 
+  # - `EVISION_ENABLE_CUDA` is `true`
+  # - and `EVISION_PREFER_PRECOMPILED` is `true`
+  #
+  # set `EVISION_CUDA_VERSION` to the version that matches 
+  # your local CUDA runtime version
+  #
+  # current available versions are
+  # - 111
+  # - 114
+  # - 118
+  {"EVISION_CUDA_VERSION", "118"},
+
+  # require for Windows users when 
+  # - `EVISION_ENABLE_CUDA` is `true`
+  # set `EVISION_CUDA_RUNTIME_DIR` to the directory that contains
+  # CUDA runtime libraries
+  {"EVISION_CUDA_RUNTIME_DIR", "C:/PATH/TO/CUDA/RUNTIME"}
 ])
 ```
 

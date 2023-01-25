@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.1.28 (2022-01-25)
+[Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.28) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.28)
+
+### Fixed
+- [py_src] `ArgInfo.has_default` is now set to `true` if `a.defval` is `f"{a.tp}()"`. Fixed [#174](https://github.com/cocoa-xu/evision/issues/174).
+- [ci-win-precompile-core] Removed the line that deletes the `priv/x64` directory. It should be removed in the last version because we will add `priv/x64` to the DLL search path instead of copying all opencv dll files to the `priv` directory.
+
 ## v0.1.27 (2022-01-23)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.27) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.27)
 
