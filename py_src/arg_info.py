@@ -44,6 +44,6 @@ class ArgInfo(object):
 
     def crepr(self, defval):
         has_default = 0
-        if len(defval) > 0:
+        if len(defval) > 0 or self.defval == self.tp + "()":
             has_default = 1
         return "ArgInfo(\"%s\", %d, %d)" % (self.name, self.outputarg, has_default)
