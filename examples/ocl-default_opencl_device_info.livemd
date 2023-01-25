@@ -4,7 +4,7 @@
 
 ```elixir
 Mix.install([
-  {:evision, "~> 0.1.27"}
+  {:evision, "~> 0.1.28"}
 ])
 ```
 
