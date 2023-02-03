@@ -112,6 +112,8 @@ defmodule Evision.Mat do
   @type maybe_mat_in :: reference() | Evision.Mat.t() | Nx.Tensor.t()
 
   @doc false
+  def __to_struct__(ret, opts \\ [])
+
   def __to_struct__(%{
         :channels => channels,
         :dims => dims,
@@ -119,8 +121,8 @@ defmodule Evision.Mat do
         :raw_type => raw_type,
         :shape => shape,
         :ref => ref
-      }) do
-    %T{
+      }, opts) do
+    mat = %T{
       channels: channels,
       dims: dims,
       type: type,
@@ -128,24 +130,34 @@ defmodule Evision.Mat do
       shape: shape,
       ref: ref
     }
+    if opts[:to_nx] do
+      Evision.Mat.to_nx(mat, opts[:to_nx])
+    else
+      mat
+    end
   end
 
-  def __to_struct__(ret) do
-    Evision.Internal.Structurise.to_struct(ret)
+  def __to_struct__(ret, opts) do
+    Evision.Internal.Structurise.to_struct(ret, opts)
   end
 
   @doc false
-  @spec __from_struct__(Evision.Mat.t() | Nx.Tensor.t() | reference()) :: reference()
+  @spec __from_struct__(Evision.Mat.t() | Nx.Tensor.t() | reference()) :: {reference(), module() | nil}
   def __from_struct__(%T{ref: ref}) do
-    ref
+    {ref, nil}
   end
 
   def __from_struct__(%Nx.Tensor{} = tensor) do
-    Evision.Internal.Structurise.from_struct(tensor)
+    ref = Evision.Internal.Structurise.from_struct(tensor)
+    if is_struct(tensor.data) do
+      {ref, tensor.data.__struct__}
+    else
+      {ref, nil}
+    end
   end
 
   def __from_struct__(ref) when is_reference(ref) do
-    ref
+    {ref, nil}
   end
 
   @doc false
@@ -275,10 +287,10 @@ defmodule Evision.Mat do
           maybe_mat_out()
   def roi(mat, rowRange, colRange)
       when (is_tuple(rowRange) or rowRange == :all) and (is_tuple(colRange) or colRange == :all) do
-    mat = __from_struct__(mat)
+    {mat, backend} = __from_struct__(mat)
 
     :evision_nif.mat_roi(mat: mat, rowRange: rowRange, colRange: colRange)
-    |> Evision.Internal.Structurise.to_struct()
+    |> Evision.Internal.Structurise.to_struct(to_nx: backend)
   end
 
   @spec roi(maybe_mat_in(), Range.t(), Range.t()) :: maybe_mat_out()
@@ -326,9 +338,9 @@ defmodule Evision.Mat do
   """
   @spec roi(maybe_mat_in(), {integer(), integer(), integer(), integer()}) :: maybe_mat_out()
   def roi(mat, rect = {_, _, _, _}) when is_tuple(rect) do
-    mat = __from_struct__(mat)
+    mat_ref = __from_struct__(mat)
 
-    :evision_nif.mat_roi(mat: mat, rect: rect)
+    :evision_nif.mat_roi(mat: mat_ref, rect: rect)
     |> Evision.Internal.Structurise.to_struct()
   end
 
