@@ -232,56 +232,56 @@ defmodule Evision.Zoo.TextRecognition.CRNN do
   @spec model_info(:ch | :ch_fp16 | :ch_int8 | :cn | :cn_int8 | :en | :en_fp16 | :en_int8) :: {String.t(), String.t()}
   def model_info(:en) do
     {
-      "https://github.com/opencv/opencv_zoo/blob/master/models/text_recognition_crnn/text_recognition_CRNN_EN_2021sep.onnx?raw=true",
+      "https://github.com/opencv/opencv_zoo/blob/12817b8013bbcf7a08cf89179da4ebae1a1d76d7/models/text_recognition_crnn/text_recognition_CRNN_EN_2021sep.onnx?raw=true",
       "text_recognition_CRNN_EN_2021sep.onnx"
     }
   end
 
   def model_info(:en_fp16) do
     {
-      "https://github.com/opencv/opencv_zoo/blob/master/models/text_recognition_crnn/text_recognition_CRNN_EN_2022oct_fp16.onnx?raw=true",
+      "https://github.com/opencv/opencv_zoo/blob/12817b8013bbcf7a08cf89179da4ebae1a1d76d7/models/text_recognition_crnn/text_recognition_CRNN_EN_2022oct_fp16.onnx?raw=true",
       "text_recognition_CRNN_EN_2022oct_fp16.onnx"
     }
   end
 
   def model_info(:en_int8) do
     {
-      "https://github.com/opencv/opencv_zoo/blob/master/models/text_recognition_crnn/text_recognition_CRNN_EN_2022oct_int8.onnx?raw=true",
+      "https://github.com/opencv/opencv_zoo/blob/12817b8013bbcf7a08cf89179da4ebae1a1d76d7/models/text_recognition_crnn/text_recognition_CRNN_EN_2022oct_int8.onnx?raw=true",
       "text_recognition_CRNN_EN_2022oct_int8.onnx"
     }
   end
 
   def model_info(:ch) do
     {
-      "https://github.com/opencv/opencv_zoo/blob/master/models/text_recognition_crnn/text_recognition_CRNN_CH_2021sep.onnx?raw=true",
+      "https://github.com/opencv/opencv_zoo/blob/12817b8013bbcf7a08cf89179da4ebae1a1d76d7/models/text_recognition_crnn/text_recognition_CRNN_CH_2021sep.onnx?raw=true",
       "text_recognition_CRNN_CH_2021sep.onnx"
     }
   end
 
   def model_info(:ch_fp16) do
     {
-      "https://github.com/opencv/opencv_zoo/blob/master/models/text_recognition_crnn/text_recognition_CRNN_CH_2022oct_fp16.onnx?raw=true",
+      "https://github.com/opencv/opencv_zoo/blob/12817b8013bbcf7a08cf89179da4ebae1a1d76d7/models/text_recognition_crnn/text_recognition_CRNN_CH_2022oct_fp16.onnx?raw=true",
       "text_recognition_CRNN_CH_2022oct_fp16.onnx"
     }
   end
 
   def model_info(:ch_int8) do
     {
-      "https://github.com/opencv/opencv_zoo/blob/master/models/text_recognition_crnn/text_recognition_CRNN_CH_2022oct_int8.onnx?raw=true",
+      "https://github.com/opencv/opencv_zoo/blob/12817b8013bbcf7a08cf89179da4ebae1a1d76d7/models/text_recognition_crnn/text_recognition_CRNN_CH_2022oct_int8.onnx?raw=true",
       "text_recognition_CRNN_CH_2022oct_int8.onnx"
     }
   end
 
   def model_info(:cn) do
     {
-      "https://github.com/opencv/opencv_zoo/blob/master/models/text_recognition_crnn/text_recognition_CRNN_CN_2021nov.onnx?raw=true",
+      "https://github.com/opencv/opencv_zoo/blob/12817b8013bbcf7a08cf89179da4ebae1a1d76d7/models/text_recognition_crnn/text_recognition_CRNN_CN_2021nov.onnx?raw=true",
       "text_recognition_CRNN_CN_2021nov.onnx"
     }
   end
 
   def model_info(:cn_int8) do
     {
-      "https://github.com/opencv/opencv_zoo/blob/master/models/text_recognition_crnn/text_recognition_CRNN_CN_2021nov-act_int8-wt_int8-quantized.onnx?raw=true",
+      "https://github.com/opencv/opencv_zoo/blob/12817b8013bbcf7a08cf89179da4ebae1a1d76d7/models/text_recognition_crnn/text_recognition_CRNN_CN_2021nov-act_int8-wt_int8-quantized.onnx?raw=true",
       "text_recognition_CRNN_CN_2021nov-act_int8-wt_int8-quantized.onnx"
     }
   end
@@ -291,6 +291,316 @@ defmodule Evision.Zoo.TextRecognition.CRNN do
   end
 
   def charset_info(ch) when ch in [:ch, :ch_fp16, :ch_int8] do
+    charset_94_CH()
+  end
+
+  def charset_info(cn) when cn in [:cn, :cn_int8] do
+    charset_3944_CN()
+  end
+
+  def chartset_info(other) do
+    raise """
+    Cannot find predefined charset `#{inspect(other)}`.
+
+    However, you can load the charset that corresponds to your model and pass it when
+    calling `infer/`. The custom charset should be a list of characters. For example:
+
+      charset = String.split(File.read!("my-charset.txt"), "\n")
+      Evision.Zoo.TextRecognition.CRNN.infer(recognizer,
+        image, Enum.at(detections, 0),
+        charset: charset,
+        to_gray: lang == "en")
+    """
+  end
+
+  @doc """
+  Get default input size
+  """
+  @spec input_size :: {100, 32}
+  def input_size do
+    {100, 32}
+  end
+
+  @doc """
+  Get default target vertices
+  """
+  @spec target_vertices :: Nx.Tensor.t()
+  def target_vertices do
+    {input_width, input_height} = input_size()
+    Nx.tensor(
+      [
+        [0, input_height - 1],
+        [0, 0],
+        [input_width - 1, 0],
+        [input_width - 1, input_height - 1]
+      ],
+      type: :f32, backend: Nx.BinaryBackend
+    )
+  end
+
+  @doc """
+  Get charset
+  """
+  @spec get_charset(:ch | :cn | :en) :: [binary]
+  def get_charset(model_type) do
+    String.split(charset_info(model_type), "\n")
+  end
+
+  @doc """
+  Visualize the result.
+
+  ##### Positional arguments
+  - **image**: `Evision.Mat.maybe_mat_in()`.
+
+    Original image.
+
+  - **results**: `Evision.Mat.maybe_mat_in()`.
+
+    Results given by `infer/2`.
+
+  ##### Keyword arguments
+  - **box_color**: `{blue=integer(), green=integer(), red=integer()}`.
+
+    Values should be in `[0, 255]`. Defaults to `{0, 255, 0}`.
+
+    Specify the color of the bounding box.
+
+  - **text_color**: `{blue=integer(), green=integer(), red=integer()}`.
+
+    Values should be in `[0, 255]`. Defaults to `{0, 0, 255}`.
+
+    Specify the color of the text (confidence value).
+  """
+  def visualize(image, texts, detections, confidences, opts \\ []) do
+    box_color = opts[:box_color] || {0, 255, 0}
+    text_color = opts[:text_color] || {0, 0, 255}
+    Enum.reduce(Enum.zip([texts, detections, confidences]), image, fn {text, pts, conf}, img ->
+      [b0, b1 | _] = Nx.to_flat_list(pts)
+      conf = Float.round(conf, 2)
+      Evision.polylines(img, [pts], true, box_color, thickness: 2)
+      |> Evision.putText("#{conf}: #{text}", {b0, b1 + 12}, Evision.Constant.cv_FONT_HERSHEY_DUPLEX(), 1.0, text_color)
+    end)
+  end
+
+  @doc """
+  Docs in smart cell.
+  """
+  @spec docs() :: String.t()
+  def docs do
+    @moduledoc
+  end
+
+  @doc """
+  Smart cell tasks.
+
+  A list of variants of the current model.
+  """
+  @spec smartcell_tasks() :: Evision.Zoo.smartcell_tasks()
+  def smartcell_tasks do
+    [
+      %{
+        id: "crnn_en",
+        label: "CRNN EN",
+        docs_url: "https://github.com/opencv/opencv_zoo/tree/master/models/text_recognition_crnn",
+        params: smartcell_params(),
+        docs: docs()
+      },
+      # %{
+      #   id: "crnn_en_fp16",
+      #   label: "CRNN EN (FP16)",
+      #   docs_url: "https://github.com/opencv/opencv_zoo/tree/master/models/text_recognition_crnn",
+      #   params: smartcell_params(),
+      #   docs: docs()
+      # },
+      %{
+        id: "crnn_en_int8",
+        label: "CRNN EN (INT8)",
+        docs_url: "https://github.com/opencv/opencv_zoo/tree/master/models/text_recognition_crnn",
+        params: smartcell_params(),
+        docs: docs()
+      },
+      %{
+        id: "crnn_ch",
+        label: "CRNN CH",
+        docs_url: "https://github.com/opencv/opencv_zoo/tree/master/models/text_recognition_crnn",
+        params: smartcell_params(),
+        docs: docs()
+      },
+      # %{
+      #   id: "crnn_ch_fp16",
+      #   label: "CRNN CH (FP16)",
+      #   docs_url: "https://github.com/opencv/opencv_zoo/tree/master/models/text_recognition_crnn",
+      #   params: smartcell_params(),
+      #   docs: docs()
+      # },
+      %{
+        id: "crnn_ch_int8",
+        label: "CRNN CH (INT8)",
+        docs_url: "https://github.com/opencv/opencv_zoo/tree/master/models/text_recognition_crnn",
+        params: smartcell_params(),
+        docs: docs()
+      },
+      %{
+        id: "crnn_cn",
+        label: "CRNN CN",
+        docs_url: "https://github.com/opencv/opencv_zoo/tree/master/models/text_recognition_crnn",
+        params: smartcell_params(),
+        docs: docs()
+      },
+      %{
+        id: "crnn_cn_int8",
+        label: "CRNN CN (INT8)",
+        docs_url: "https://github.com/opencv/opencv_zoo/tree/master/models/text_recognition_crnn",
+        params: smartcell_params(),
+        docs: docs()
+      },
+    ]
+  end
+
+  @doc """
+  Generate quoted code from smart cell attrs.
+  """
+  @spec to_quoted(map()) :: list()
+  def to_quoted(attrs) do
+    {backend, target} = Evision.Zoo.to_quoted_backend_and_target(attrs)
+
+    opts = [
+      backend: backend,
+      target: target
+    ]
+    {detector_width, detector_height} = {attrs["width"], attrs["height"]}
+
+    {model, to_gray?, charset} =
+      case attrs["variant_id"] do
+        "crnn_" <> variant_id ->
+          case variant_id do
+            "en" <> _ ->
+              {String.to_atom(variant_id), true, :en}
+            "ch" <> _ ->
+              {String.to_atom(variant_id), false, :ch}
+            "cn" <> _ ->
+              {String.to_atom(variant_id), false, :cn}
+            _ ->
+              raise "Unknown variant: crnn_#{inspect(variant_id)}"
+          end
+        unknown_id ->
+          raise "Unknown variant: #{inspect(unknown_id)}"
+      end
+
+
+    {detector_module, detector_model} =
+      case attrs["detector"] do
+        "db_" <> db_detector ->
+          case db_detector do
+            db_detector when db_detector in ["ic15_resnet18", "ic15_resnet50", "td500_resnet18", "td500_resnet50"] ->
+              {Evision.Zoo.TextDetection.DB, String.to_atom(db_detector)}
+            _ ->
+              raise "Unknown DB variant: #{inspect(db_detector)}"
+          end
+        unknown_id ->
+          raise "Unknown text detector: #{inspect(unknown_id)}"
+      end
+
+    [
+      quote do
+        detector = unquote(detector_module).init(unquote(detector_model), unquote(opts))
+        recognizer = Evision.Zoo.TextRecognition.CRNN.init(unquote(model), unquote(opts))
+      end,
+      quote do
+        image_input = Kino.Input.image("Image")
+        form = Kino.Control.form([image: image_input], submit: "Run")
+
+        frame = Kino.Frame.new()
+
+        form
+        |> Kino.Control.stream()
+        |> Stream.filter(& &1.data.image)
+        |> Kino.listen(fn %{data: %{image: image}} ->
+          Kino.Frame.render(frame, Kino.Markdown.new("Running..."))
+
+          {original_height, original_width} = {image.height, image.width}
+          scale_height = original_height / unquote(detector_height)
+          scale_width = original_width / unquote(detector_width)
+          image = Evision.Mat.from_binary(image.data, {:u, 8}, image.height, image.width, 3)
+          image_ = Evision.resize(image, unquote({detector_width, detector_height}))
+
+          charset = Evision.Zoo.TextRecognition.CRNN.get_charset(unquote(charset))
+          {detections, confidences} = unquote(detector_module).infer(detector, image_)
+          texts = Enum.map(detections, &Evision.Zoo.TextRecognition.CRNN.infer(
+            recognizer, image_, &1, to_gray: unquote(to_gray?), charset: charset))
+
+          detections = Enum.map(detections, fn d ->
+            Nx.multiply(
+              Evision.Mat.to_nx(Evision.boxPoints(d), Nx.BinaryBackend),
+              Nx.tensor([scale_width, scale_height], backend: Nx.BinaryBackend)
+            )
+            |> Nx.as_type(:s32)
+          end)
+
+          image = Evision.cvtColor(image, Evision.Constant.cv_COLOR_RGB2BGR())
+          vis_img = Evision.Zoo.TextRecognition.CRNN.visualize(image, texts, detections, confidences)
+
+          Kino.Frame.render(frame, Kino.Image.new(Evision.imencode(".png", vis_img), :png))
+        end)
+
+        Kino.Layout.grid([form, frame], boxed: true, gap: 16)
+      end
+    ]
+  end
+
+  @doc """
+  Charset that contains digits (0~9) and letters (return lowercase letters a~z).
+
+  Content copied from `charset_36_EN.txt`.
+  """
+  def charset_36_EN do
+    """
+    0
+    1
+    2
+    3
+    4
+    5
+    6
+    7
+    8
+    9
+    a
+    b
+    c
+    d
+    e
+    f
+    g
+    h
+    i
+    j
+    k
+    l
+    m
+    n
+    o
+    p
+    q
+    r
+    s
+    t
+    u
+    v
+    w
+    x
+    y
+    z
+    """
+  end
+
+  @doc """
+  Charset that contains digits (0~9), upper/lower-case letters (a~z and A~Z),
+  and some special characters.
+
+  Content copied from `charset_94_CH.txt`.
+  """
+  def charset_94_CH do
     """
     0
     1
@@ -389,7 +699,13 @@ defmodule Evision.Zoo.TextRecognition.CRNN do
     """
   end
 
-  def charset_info(cn) when cn in [:cn, :cn_int8] do
+  @doc """
+  Charset that contains digits (0~9), upper/lower-case letters (a~z and A~Z),
+  some Chinese characters and some special characters.
+
+  Content copied from `charset_94_CH.txt`.
+  """
+  def charset_3944_CN do
     """
     H
     O
@@ -4336,296 +4652,5 @@ defmodule Evision.Zoo.TextRecognition.CRNN do
     ;
     ^
     """
-  end
-
-  def charset_36_EN do
-    """
-    0
-    1
-    2
-    3
-    4
-    5
-    6
-    7
-    8
-    9
-    a
-    b
-    c
-    d
-    e
-    f
-    g
-    h
-    i
-    j
-    k
-    l
-    m
-    n
-    o
-    p
-    q
-    r
-    s
-    t
-    u
-    v
-    w
-    x
-    y
-    z
-    """
-  end
-
-  def chartset_info(other) do
-    raise """
-    Cannot find predefined charset `#{inspect(other)}`.
-
-    However, you can load the charset that corresponds to your model and pass it when
-    calling `infer/`. The custom charset should be a list of characters. For example:
-
-      charset = String.split(File.read!("my-charset.txt"), "\n")
-      Evision.Zoo.TextRecognition.CRNN.infer(recognizer,
-        image, Enum.at(detections, 0),
-        charset: charset,
-        to_gray: lang == "en")
-    """
-  end
-
-  @doc """
-  Get default input size
-  """
-  @spec input_size :: {100, 32}
-  def input_size do
-    {100, 32}
-  end
-
-  @doc """
-  Get default target vertices
-  """
-  @spec target_vertices :: Nx.Tensor.t()
-  def target_vertices do
-    {input_width, input_height} = input_size()
-    Nx.tensor(
-      [
-        [0, input_height - 1],
-        [0, 0],
-        [input_width - 1, 0],
-        [input_width - 1, input_height - 1]
-      ],
-      type: :f32, backend: Nx.BinaryBackend
-    )
-  end
-
-  @doc """
-  Get charset
-  """
-  @spec get_charset(:ch | :cn | :en) :: [binary]
-  def get_charset(model_type) do
-    String.split(charset_info(model_type), "\n")
-  end
-
-  @doc """
-  Visualize the result.
-
-  ##### Positional arguments
-  - **image**: `Evision.Mat.maybe_mat_in()`.
-
-    Original image.
-
-  - **results**: `Evision.Mat.maybe_mat_in()`.
-
-    Results given by `infer/2`.
-
-  ##### Keyword arguments
-  - **box_color**: `{blue=integer(), green=integer(), red=integer()}`.
-
-    Values should be in `[0, 255]`. Defaults to `{0, 255, 0}`.
-
-    Specify the color of the bounding box.
-
-  - **text_color**: `{blue=integer(), green=integer(), red=integer()}`.
-
-    Values should be in `[0, 255]`. Defaults to `{0, 0, 255}`.
-
-    Specify the color of the text (confidence value).
-  """
-  def visualize(image, texts, detections, confidences, opts \\ []) do
-    box_color = opts[:box_color] || {0, 255, 0}
-    text_color = opts[:text_color] || {0, 0, 255}
-    Enum.reduce(Enum.zip([texts, detections, confidences]), image, fn {text, pts, conf}, img ->
-      [b0, b1 | _] = Nx.to_flat_list(pts)
-      conf = Float.round(conf, 2)
-      Evision.polylines(img, [pts], true, box_color, thickness: 2)
-      |> Evision.putText("#{conf}: #{text}", {b0, b1 + 12}, Evision.Constant.cv_FONT_HERSHEY_DUPLEX(), 1.0, text_color)
-    end)
-  end
-
-  @doc """
-  Docs in smart cell.
-  """
-  @spec docs() :: String.t()
-  def docs do
-    @moduledoc
-  end
-
-  @doc """
-  Smart cell tasks.
-
-  A list of variants of the current model.
-  """
-  @spec smartcell_tasks() :: Evision.Zoo.smartcell_tasks()
-  def smartcell_tasks do
-    [
-      %{
-        id: "crnn_en",
-        label: "CRNN EN",
-        docs_url: "https://github.com/opencv/opencv_zoo/tree/master/models/text_recognition_crnn",
-        params: smartcell_params(),
-        docs: docs()
-      },
-      # %{
-      #   id: "crnn_en_fp16",
-      #   label: "CRNN EN (FP16)",
-      #   docs_url: "https://github.com/opencv/opencv_zoo/tree/master/models/text_recognition_crnn",
-      #   params: smartcell_params(),
-      #   docs: docs()
-      # },
-      %{
-        id: "crnn_en_int8",
-        label: "CRNN EN (INT8)",
-        docs_url: "https://github.com/opencv/opencv_zoo/tree/master/models/text_recognition_crnn",
-        params: smartcell_params(),
-        docs: docs()
-      },
-      %{
-        id: "crnn_ch",
-        label: "CRNN CH",
-        docs_url: "https://github.com/opencv/opencv_zoo/tree/master/models/text_recognition_crnn",
-        params: smartcell_params(),
-        docs: docs()
-      },
-      # %{
-      #   id: "crnn_ch_fp16",
-      #   label: "CRNN CH (FP16)",
-      #   docs_url: "https://github.com/opencv/opencv_zoo/tree/master/models/text_recognition_crnn",
-      #   params: smartcell_params(),
-      #   docs: docs()
-      # },
-      %{
-        id: "crnn_ch_int8",
-        label: "CRNN CH (INT8)",
-        docs_url: "https://github.com/opencv/opencv_zoo/tree/master/models/text_recognition_crnn",
-        params: smartcell_params(),
-        docs: docs()
-      },
-      %{
-        id: "crnn_cn",
-        label: "CRNN CN",
-        docs_url: "https://github.com/opencv/opencv_zoo/tree/master/models/text_recognition_crnn",
-        params: smartcell_params(),
-        docs: docs()
-      },
-      %{
-        id: "crnn_cn_int8",
-        label: "CRNN CN (INT8)",
-        docs_url: "https://github.com/opencv/opencv_zoo/tree/master/models/text_recognition_crnn",
-        params: smartcell_params(),
-        docs: docs()
-      },
-    ]
-  end
-
-  @doc """
-  Generate quoted code from smart cell attrs.
-  """
-  @spec to_quoted(map()) :: list()
-  def to_quoted(attrs) do
-    {backend, target} = Evision.Zoo.to_quoted_backend_and_target(attrs)
-
-    opts = [
-      backend: backend,
-      target: target
-    ]
-    {detector_width, detector_height} = {attrs["width"], attrs["height"]}
-
-    {model, to_gray?, charset} =
-      case attrs["variant_id"] do
-        "crnn_" <> variant_id ->
-          case variant_id do
-            "en" <> _ ->
-              {String.to_atom(variant_id), true, :en}
-            "ch" <> _ ->
-              {String.to_atom(variant_id), false, :ch}
-            "cn" <> _ ->
-              {String.to_atom(variant_id), false, :cn}
-            _ ->
-              raise "Unknown variant: crnn_#{inspect(variant_id)}"
-          end
-        unknown_id ->
-          raise "Unknown variant: #{inspect(unknown_id)}"
-      end
-
-
-    {detector_module, detector_model} =
-      case attrs["detector"] do
-        "db_" <> db_detector ->
-          case db_detector do
-            db_detector when db_detector in ["ic15_resnet18", "ic15_resnet50", "td500_resnet18", "td500_resnet50"] ->
-              {Evision.Zoo.TextDetection.DB, String.to_atom(db_detector)}
-            _ ->
-              raise "Unknown DB variant: #{inspect(db_detector)}"
-          end
-        unknown_id ->
-          raise "Unknown text detector: #{inspect(unknown_id)}"
-      end
-
-    [
-      quote do
-        detector = unquote(detector_module).init(unquote(detector_model), unquote(opts))
-        recognizer = Evision.Zoo.TextRecognition.CRNN.init(unquote(model), unquote(opts))
-      end,
-      quote do
-        image_input = Kino.Input.image("Image")
-        form = Kino.Control.form([image: image_input], submit: "Run")
-
-        frame = Kino.Frame.new()
-
-        form
-        |> Kino.Control.stream()
-        |> Stream.filter(& &1.data.image)
-        |> Kino.listen(fn %{data: %{image: image}} ->
-          Kino.Frame.render(frame, Kino.Markdown.new("Running..."))
-
-          {original_height, original_width} = {image.height, image.width}
-          scale_height = original_height / unquote(detector_height)
-          scale_width = original_width / unquote(detector_width)
-          image = Evision.Mat.from_binary(image.data, {:u, 8}, image.height, image.width, 3)
-          image_ = Evision.resize(image, unquote({detector_width, detector_height}))
-
-          charset = Evision.Zoo.TextRecognition.CRNN.get_charset(unquote(charset))
-          {detections, confidences} = unquote(detector_module).infer(detector, image_)
-          texts = Enum.map(detections, &Evision.Zoo.TextRecognition.CRNN.infer(
-            recognizer, image_, &1, to_gray: unquote(to_gray?), charset: charset))
-
-          detections = Enum.map(detections, fn d ->
-            Nx.multiply(
-              Evision.Mat.to_nx(Evision.boxPoints(d), Nx.BinaryBackend),
-              Nx.tensor([scale_width, scale_height], backend: Nx.BinaryBackend)
-            )
-            |> Nx.as_type(:s32)
-          end)
-
-          image = Evision.cvtColor(image, Evision.Constant.cv_COLOR_RGB2BGR())
-          vis_img = Evision.Zoo.TextRecognition.CRNN.visualize(image, texts, detections, confidences)
-
-          Kino.Frame.render(frame, Kino.Image.new(Evision.imencode(".png", vis_img), :png))
-        end)
-
-        Kino.Layout.grid([form, frame], boxed: true, gap: 16)
-      end
-    ]
   end
 end
