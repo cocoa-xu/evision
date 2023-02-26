@@ -114,8 +114,16 @@ defmodule Evision.Zoo.ImageClassification.PPResNet do
     inputBlob = preprocess(image)
     Evision.DNN.Net.setInput(self, inputBlob)
     outputBlob = Evision.DNN.Net.forward(self, outputName: "save_infer_model/scale_0.tmp_0")
-    # todo: use Evision.Backend when Nx.slice is implemented
+    outputBlob =
+      if is_list(outputBlob) do
+        [outputBlob] = outputBlob
+        outputBlob
+      else
+        outputBlob
+      end
+
     result = Nx.squeeze(Evision.Mat.to_nx(outputBlob, Nx.BinaryBackend))
+    # todo: use Evision.Backend when Nx.slice is implemented
     Nx.to_flat_list(Nx.argsort(result, direction: :desc)[[0..top_k-1]])
   end
 

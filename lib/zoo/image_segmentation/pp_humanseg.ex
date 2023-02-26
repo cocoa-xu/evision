@@ -95,8 +95,15 @@ defmodule Evision.Zoo.ImageSegmentation.PPHumanSeg do
     inputBlob = preprocess(image)
     Evision.DNN.Net.setInput(self, inputBlob)
     outputBlob = Evision.DNN.Net.forward(self, outputName: "save_infer_model/scale_0.tmp_1")
+    outputBlob =
+      if is_list(outputBlob) do
+        [outputBlob] = outputBlob
+        outputBlob
+      else
+        outputBlob
+      end
     # todo: use Evision.Backend when Nx.slice is implemented
-    result = Evision.Mat.to_nx(Evision.Mat.squeeze(outputBlob[0]), Nx.BinaryBackend)
+    result = Evision.Mat.to_nx(Evision.Mat.squeeze(outputBlob), Nx.BinaryBackend)
     Evision.Mat.from_nx(Nx.as_type(Nx.argmax(result, axis: 0), :u8))
   end
 
