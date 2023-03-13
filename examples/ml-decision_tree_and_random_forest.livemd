@@ -6,7 +6,7 @@
 
 ```elixir
 Mix.install([
-  {:evision, "~> 0.1.28"},
+  {:evision, "~> 0.1"},
   {:kino, "~> 0.7"},
   {:scidata, "~> 0.1"},
   {:nx, "~> 0.4", override: true},
