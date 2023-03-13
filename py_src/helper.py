@@ -1086,7 +1086,7 @@ manual_type_spec_map = {
     'Size2i': '{number(), number()}',
     'Size2f': '{number(), number()}',
     'Size2d': '{number(), number()}',
-    'Scalar': '{number()} | {number(), number()} | {number() | number() | number()} | {number(), number(), number(), number()}',
+    'Scalar': '{number()} | {number(), number()} | {number(), number(), number()} | {number(), number(), number(), number()}',
     'cv::Point': '{number(), number()}',
     'Point': '{number(), number()}',
     'Point2i': '{integer(), integer()}',
