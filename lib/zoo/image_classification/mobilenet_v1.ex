@@ -114,6 +114,13 @@ defmodule Evision.Zoo.ImageClassification.MobileNetV1 do
     inputBlob = preprocess(image)
     Evision.DNN.Net.setInput(self, inputBlob)
     outputBlob = Evision.DNN.Net.forward(self, outputName: "")
+    outputBlob =
+      if is_list(outputBlob) do
+        [outputBlob] = outputBlob
+        outputBlob
+      else
+        outputBlob
+      end
     # todo: use Evision.Backend when Nx.slice is implemented
     result = Nx.squeeze(Evision.Mat.to_nx(outputBlob, Nx.BinaryBackend))
     Nx.to_flat_list(Nx.argsort(result, direction: :desc)[[0..top_k-1]])

@@ -136,6 +136,13 @@ defmodule Evision.Zoo.TextRecognition.CRNN do
     # Forward
     Evision.DNN.Net.setInput(self, inputBlob)
     outputBlob = Evision.DNN.Net.forward(self, outputName: "")
+    outputBlob =
+      if is_list(outputBlob) do
+        [outputBlob] = outputBlob
+        outputBlob
+      else
+        outputBlob
+      end
 
     # Postprocess
     charset = opts[:charset]
