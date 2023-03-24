@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.1.30 (2022-03-24)
+[Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.30) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.30)
+
+### Fixed
+- [smartcell] Fixed outputBlob is embedded in a list for CRNN and MobileNetV1 models.
+
 ## v0.1.29 (2022-03-13)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.29) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.29)
 
@@ -7,9 +13,6 @@
 - [py_src] Fixed incorrect typespec for `Saclar`. Thanks @tusqasi and @Nicd.
 - [smartcell] Fixed PPResnet based models.
 - [smartcell] Fixed invalid charset URLs as they were removed in the upstream repo. CRNN models URLs to commit 12817b80.
-
-### Changed
-
 
 ## v0.1.28 (2022-01-25)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.28) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.28)
