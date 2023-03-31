@@ -1090,7 +1090,7 @@ defmodule Evision.MixProject do
     [
       # compilation
       {:elixir_make, "~> 0.7", runtime: false},
-      {:castore, "~> 0.1"},
+      {:castore, "~> 0.1 or ~> 1.0"},
 
       # runtime
       {:dll_loader_helper, "~> 0.1"},
