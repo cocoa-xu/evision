@@ -325,7 +325,7 @@ def map_argtype_to_type(argtype: str, classname: Optional[str] = None):
     else:
         if is_struct(argtype, classname=classname):
             if argtype == 'UMat':
-                return 'Mat'
+                return 'UMat'
             return argtype
         if argtype == 'Moments':
             return '(map)'
@@ -576,7 +576,7 @@ def is_struct(argtype: str, also_get: Optional[str] = None, classname: Optional[
     argtype = argtype.replace("std::", "").replace("cv::", "").replace("::", "_")
     special_structs = {
         # todo: UMat should be in its own module
-        'UMat': 'Evision.Mat'
+        'UMat': 'Evision.UMat'
     }
     struct_types = {
         'Mat': 'Evision.Mat',
@@ -1009,7 +1009,7 @@ def map_argtype_in_docs_elixir(kind: str, argtype: str, classname: str) -> str:
             return 'binary()'
         argtype = argtype[len('Ptr<'):-1].strip()
     mapping = {
-        'UMat': 'Evision.Mat',
+        'UMat': 'Evision.UMat',
         'Mat': 'Evision.Mat',
         'std::string': 'String',
         'cv::String': 'String',
@@ -1041,7 +1041,7 @@ def map_argtype_in_docs_erlang(kind: str, argtype: str, classname: str) -> str:
             return 'binary()'
         argtype = argtype[len('Ptr<'):-1].strip()
     mapping = {
-        'UMat': '#evision_mat{}',
+        'UMat': '#evision_umat{}',
         'Mat': '#evision_mat{}',
         'std::string': 'binary()',
         'cv::String': 'binary()',
@@ -1149,13 +1149,17 @@ def map_argtype_in_spec_erlang(classname: str, argtype: str, is_in: bool, decl: 
         return 'ok'
     elif argtype == 'Range':
         return '{integer(), integer()} | all'
-    elif is_in and argtype in ['Mat', 'UMat', 'cv::Mat', 'cv::UMat']:
+    elif is_in and argtype in ['Mat', 'cv::Mat']:
         return '#evision_mat{}'
+    elif is_in and argtype in ['UMat', 'cv::UMat']:
+        return '#evision_umat{}'
     elif argtype in evision_structrised_classes:
         ty = argtype.replace('.', '_').lower()
         return f'#evision_{ty}'+'{}'
     elif argtype in ['Mat', 'cv::Mat', 'UMat', 'cv::UMat']:
         return '#evision_mat{}'
+    elif argtype in ['UMat', 'cv::UMat']:
+        return '#evision_umat{}'
     elif argtype.startswith('vector_'):
         argtype_inner = argtype[len('vector_'):]
         if argtype == 'vector_char' or argtype == 'vector_uchar':
@@ -1240,11 +1244,11 @@ def map_argtype_in_spec_elixir(classname: str, argtype: str, is_in: bool, decl: 
         return ':ok'
     elif argtype == 'Range':
         return '{integer(), integer()} | :all'
-    elif is_in and argtype in ['Mat', 'UMat', 'cv::Mat', 'cv::UMat']:
+    elif is_in and argtype in ['Mat', 'UMat', 'cv::Mat', 'cv::UMat', 'GpuMat', 'cuda::GpuMat']:
         return 'Evision.Mat.maybe_mat_in()'
     elif argtype in evision_structrised_classes:
         return f'Evision.{argtype}.t()'
-    elif argtype in ['Mat', 'cv::Mat', 'UMat', 'cv::UMat']:
+    elif argtype in ['Mat', 'cv::Mat', 'UMat', 'cv::UMat', 'GpuMat', 'cuda::GpuMat']:
         if is_in:
             return 'Evision.Mat.maybe_mat_in()'
         else:

@@ -92,6 +92,29 @@ int alloc_resource(evision_res<cv::Mat *> **res) {
     return 0;
 }
 
+template<>
+struct evision_res<cv::cuda::GpuMat *> {
+    cv::cuda::GpuMat * val;
+
+    static ErlNifResourceType * type;
+};
+ErlNifResourceType * evision_res<cv::cuda::GpuMat *>::type = nullptr;
+
+template<>
+int alloc_resource(evision_res<cv::cuda::GpuMat *> **res) {
+    evision_res<cv::cuda::GpuMat *> * tmp = (evision_res<cv::cuda::GpuMat *> *)enif_alloc_resource(evision_res<cv::cuda::GpuMat *>::type, sizeof(evision_res<cv::cuda::GpuMat *>));
+
+    if (tmp != nullptr) {
+        *res = tmp;
+
+        // 1: ok
+        return 1;
+    }
+
+    // 0: failed
+    return 0;
+}
+
 static bool isBindingsDebugEnabled()
 {
     static bool param_debug = cv::utils::getConfigurationParameterBool("OPENCV_EVISION_DEBUG", false);
@@ -209,7 +232,56 @@ ERL_NIF_TERM evision_from_as_map(ErlNifEnv *env, const T& src, ERL_NIF_TERM res_
 }
 
 template<>
-ERL_NIF_TERM evision_from_as_map(ErlNifEnv *env, const cv::Ptr<cv::cuda::GpuMat>& src, ERL_NIF_TERM res_term, const char * class_name, bool& success) {
+ERL_NIF_TERM evision_from_as_map(ErlNifEnv *env, const cv::cuda::GpuMat& src, ERL_NIF_TERM res_term, const char * class_name, bool& success) {
+    const size_t num_items = 7;
+    size_t item_index = 0;
+
+    ERL_NIF_TERM keys[num_items];
+    ERL_NIF_TERM values[num_items];
+
+    keys[item_index] = enif_make_atom(env, "ref");
+    values[item_index] = res_term;
+    item_index++;
+
+    keys[item_index] = enif_make_atom(env, "class");
+    values[item_index] = enif_make_atom(env, class_name);
+    item_index++;
+
+    keys[item_index] = enif_make_atom(env, "channels");
+    values[item_index] = enif_make_int(env, src.channels());
+    item_index++;
+
+    keys[item_index] = enif_make_atom(env, "type");
+    values[item_index] = __evision_get_mat_type(env, src.type());
+    item_index++;
+
+    keys[item_index] = enif_make_atom(env, "raw_type");
+    values[item_index] = enif_make_int(env, src.type());
+    item_index++;
+
+    keys[item_index] = enif_make_atom(env, "elemSize");
+    values[item_index] = enif_make_int(env, src.elemSize());
+    item_index++;
+
+    keys[item_index] = enif_make_atom(env, "shape");
+    ERL_NIF_TERM shape[3];
+    shape[0] = enif_make_int(env, src.rows);
+    shape[1] = enif_make_int(env, src.cols);
+    shape[2] = enif_make_int(env, src.channels());
+    values[item_index] = enif_make_tuple_from_array(env, shape, 3);
+    item_index++;
+
+    ERL_NIF_TERM map;
+    if (enif_make_map_from_arrays(env, keys, values, item_index, &map)) {
+        success = true;
+        return map;
+    } else {
+        success = false;
+        return evision::nif::error(env, "enif_make_map_from_arrays failed in evision_from_as_map");
+    }
+}
+
+ERL_NIF_TERM evision_from_as_map_gpumat(ErlNifEnv *env, const cv::cuda::GpuMat* src, ERL_NIF_TERM res_term, const char * class_name, bool& success) {
     const size_t num_items = 7;
     size_t item_index = 0;
 
@@ -557,6 +629,29 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const Mat& m)
     return _evision_make_mat_resource_into_map(env, m, ret);
 }
 
+template<>
+ERL_NIF_TERM evision_from(ErlNifEnv *env, const cv::cuda::GpuMat& m)
+{
+    evision_res<cv::cuda::GpuMat *> * res;
+    if (alloc_resource(&res)) {
+        res->val = new cv::cuda::GpuMat();
+        m.assignTo(*res->val);
+        // should we copy the matrix?
+        // probably no, because all input matrice are copied when calling `evision_to`
+        // and this function returns the output/result matrix, which should already be a new matrix
+        // *res->val = m;
+    } else {
+        return evision::nif::error(env, "out of memory");
+    }
+
+    ERL_NIF_TERM ret = enif_make_resource(env, res);
+    enif_release_resource(res);
+
+    bool ok;
+    ret = evision_from_as_map_gpumat(env, res->val, ret, "Elixir.Evision.CUDA.GpuMat", ok);
+    return ret;
+}
+
 template<typename _Tp, int m, int n>
 ERL_NIF_TERM evision_from(ErlNifEnv *env, const Matx<_Tp, m, n>& matx)
 {
@@ -604,6 +699,46 @@ bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, void*& ptr, const ArgInfo& inf
     }
 
     return ptr != nullptr;
+}
+
+template<>
+bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, cv::cuda::GpuMat& m, const ArgInfo& info)
+{
+    if(evision::nif::check_nil(env, o)) {
+        return true;
+    }
+
+    evision_res<cv::cuda::GpuMat *> * in_res;
+    if( enif_get_resource(env, o, evision_res<cv::cuda::GpuMat *>::type, (void **)&in_res) ) {
+        if (in_res->val) {
+            // should we copy the matrix?
+            // probably no because it's costy
+            in_res->val->assignTo(m);
+            return true;
+        }
+        return false;
+    }
+
+    return false;
+}
+
+template<>
+bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, cv::cuda::GpuMat*& m, const ArgInfo& info)
+{
+    if(evision::nif::check_nil(env, o)) {
+        return true;
+    }
+
+    evision_res<cv::cuda::GpuMat *> * in_res;
+    if( enif_get_resource(env, o, evision_res<cv::cuda::GpuMat *>::type, (void **)&in_res) ) {
+        if (in_res->val) {
+            m = in_res->val;
+            return true;
+        }
+        return false;
+    }
+
+    return false;
 }
 
 static ERL_NIF_TERM evision_from(ErlNifEnv *env, void*& ptr)
@@ -2308,6 +2443,15 @@ static void destruct_Mat(ErlNifEnv *env, void *args) {
     }
 }
 
+static void destruct_GpuMat(ErlNifEnv *env, void *args) {
+    evision_res<cv::cuda::GpuMat *> * res = (evision_res<cv::cuda::GpuMat *> *)args;
+    if (res->val) {
+        res->val->release();
+        delete res->val;
+        res->val = nullptr;
+    }
+}
+
 static int
 on_load(ErlNifEnv* env, void**, ERL_NIF_TERM)
 {
@@ -2319,6 +2463,11 @@ on_load(ErlNifEnv* env, void**, ERL_NIF_TERM)
     rt = enif_open_resource_type(env, "evision", "Evision.Mat.t", destruct_Mat, ERL_NIF_RT_CREATE, NULL);
     if (!rt) return -1;
     evision_res<cv::Mat *>::type = rt;
+
+    rt = enif_open_resource_type(env, "evision", "Evision.CUDA.GpuMat.t", destruct_GpuMat, ERL_NIF_RT_CREATE, NULL);
+    if (!rt) return -1;
+    evision_res<cv::cuda::GpuMat *>::type = rt;
+    
     return 0;
 }
 

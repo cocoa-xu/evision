@@ -73,6 +73,8 @@ class ClassInfo(object):
 
         if not customname and self.wname.startswith("Cv"):
             self.wname = self.wname[2:]
+        if self.wname in ['cuda_GpuMat', 'cv::cuda::GpuMat'] or self.name in ['cuda_GpuMat', 'cv::cuda::GpuMat']:
+            self.issimple = True
 
     @property
     def full_scope_name(self):
@@ -176,6 +178,12 @@ class ClassInfo(object):
             access_op = "."
 
         for pname, p in sorted_props:
+            if self.wname in ['cuda_GpuMat', 'cv::cuda::GpuMat']:
+                getset_code.write(ET.gen_template_gpumat_get_prop.substitute(
+                    name=self.name, cname=self.cname, member=pname, membertype=p.tp, access=access_op,
+                    storage_name=self.cname))
+                continue
+
             if self.isalgorithm:
                 getset_code.write(ET.gen_template_get_prop_algo.substitute(
                     name=self.name, cname=self.cname, member=pname, membertype=p.tp, access=access_op,
@@ -284,6 +292,9 @@ class ClassInfo(object):
 
 
     def gen_def(self, codegen, evision_modules, evision_erlang_hrl):
+        if self.wname == 'cuda_GpuMat':
+            return ''
+
         all_classes = codegen.classes
         baseptr = "NoBase"
         if self.base and self.base in all_classes:

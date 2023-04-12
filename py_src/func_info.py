@@ -165,6 +165,8 @@ class FuncInfo(object):
             if not self.is_static:
                 if not self.isconstructor:
                     check_self_templ = ET.gen_template_check_self
+                    if selfinfo.cname in ['cv::cuda::GpuMat']:
+                        check_self_templ = ET.gen_template_gpumat_check_self
                     if "dnn" in self.namespace and selfinfo.cname in ["cv::dnn::Net"]:
                         check_self_templ = ET.gen_template_safe_check_self
                     code += check_self_templ.substitute(
@@ -326,6 +328,7 @@ class FuncInfo(object):
 
                 all_cargs.append([arg_type_info, parse_name])
 
+                var_name = None
                 if defval and len(defval) > 0:
                     if arg_type_info.atype == "QRCodeEncoder_Params":
                         code_decl += "    QRCodeEncoder::Params %s=%s;\n" % (a.name, defval)
@@ -341,7 +344,8 @@ class FuncInfo(object):
                     else:
                         if arg_type_info.atype == "FileStorage" or (underscore_type in all_classes and all_classes[underscore_type].issimple is False):
                             code_decl += "    Ptr<%s> ptr_%s;\n" % (arg_type_info.atype, a.name)
-                            code_from_ptr += "    %s %s; if (ptr_%s.get()) { %s = *ptr_%s.get(); }\n    " % (arg_type_info.atype, a.name, a.name, a.name, a.name)
+                            code_from_ptr += "    %s %s;\n    " % (arg_type_info.atype, a.name)
+                            var_name = "ptr_%s.get() ? *ptr_%s : %s" % (a.name, a.name, a.name)
                         else:
                             code_decl += "    %s %s;\n" % (arg_type_info.atype, a.name)
 
@@ -354,14 +358,21 @@ class FuncInfo(object):
                 if arg_type_info.is_enum:
                     code_args += f"static_cast<{tp}>({a.name})"
                 else:
-                    code_args += amp + a.name
+                    if var_name is not None:
+                        code_args += amp + var_name
+                    else:    
+                        code_args += amp + a.name
 
             code_args += ")"
 
             if self.isconstructor:
                 if selfinfo.issimple:
-                    templ_prelude = ET.gen_template_simple_call_constructor_prelude
-                    templ = ET.gen_template_simple_call_constructor
+                    if selfinfo.cname in ['cv::cuda::GpuMat']:
+                        templ_prelude = ET.gen_template_call_gpumat_constructor_prelude
+                        templ = ET.gen_template_simple_call_gpumat_constructor
+                    else:
+                        templ_prelude = ET.gen_template_simple_call_constructor_prelude
+                        templ = ET.gen_template_simple_call_constructor
                     if "cv::dnn::" in selfinfo.cname:
                         templ_prelude = ET.gen_template_simple_call_dnn_constructor_prelude
                         templ = ET.gen_template_simple_call_dnn_constructor
@@ -431,7 +442,10 @@ class FuncInfo(object):
                     selftype = selfinfo.cname
                     if not selfinfo.issimple:
                         selftype = "Ptr<{}>".format(selfinfo.cname)
-                    code_ret = ET.code_ret_constructor % (selftype, get_elixir_module_name(selfinfo.cname))
+                    if selftype in ['cv::cuda::GpuMat']:
+                        code_ret = ET.code_ret_gpumat_constructor % (get_elixir_module_name(selfinfo.cname),)
+                    else:
+                        code_ret = ET.code_ret_constructor % (selftype, get_elixir_module_name(selfinfo.cname))
                 else:
                     aname, _ = v.py_outlist[0]
                     if v.rettype == 'bool':
@@ -460,7 +474,17 @@ class FuncInfo(object):
             # ERL_NIF_TERM retval_term = evision_from(env, {aname});
             # return evision_from_as_map<{selftype}>(env, {aname}, retval_term, "Elixir.Evision.{elixir_module_name}", success)"""
                             else:
-                                code_ret = f"return evision_from(env, {aname})"
+                                if v.rettype in ['GpuMat']:
+                                    code_ret = f"auto ret_nif_term = evision_from(env, {aname}); {aname}.release(); return ret_nif_term"
+                                else:
+                                    arg_no = v.py_outlist[0][1]
+                                    if arg_no < len(v.args) and arg_no >= 0:
+                                        if v.args[arg_no].tp in ['cuda::GpuMat']:
+                                            code_ret = f"auto ret_nif_term = evision_from(env, {aname}); {aname}.release(); return ret_nif_term"
+                                        else:
+                                            code_ret = f"return evision_from(env, {aname})"
+                                    else:
+                                        code_ret = f"return evision_from(env, {aname})"
             else:
                 # there is more than 1 return parameter; form the tuple out of them
                 n_tuple = len(v.py_outlist)

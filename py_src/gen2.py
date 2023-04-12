@@ -637,6 +637,8 @@ class BeamWrapperGenerator(object):
             if classinfo.ismap:
                 self.code_types.write(ET.gen_template_map_type_cvt.substitute(name=classinfo.name, cname=classinfo.cname))
             else:
+                if classinfo.cname in ['cv::cuda::GpuMat']:
+                    continue
                 mappable_code = "\n".join([
                                       ET.gen_template_mappable.substitute(cname=classinfo.cname, mappable=mappable)
                                           for mappable in classinfo.mappables])

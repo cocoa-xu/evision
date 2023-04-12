@@ -277,6 +277,11 @@ code_ret_constructor = """ERL_NIF_TERM ret = enif_make_resource(env, self);
             bool success;
             return evision_from_as_map<%s>(env, self->val, ret, "Elixir.Evision.%s", success);"""
 
+code_ret_gpumat_constructor = """ERL_NIF_TERM ret = enif_make_resource(env, self);
+            enif_release_resource(self);
+            bool success;
+            return evision_from_as_map_gpumat(env, self->val, ret, "Elixir.Evision.%s", success);"""
+
 code_ret_dnn_setter = Template("""bool success;
             return evision_from_as_map<${storage_name} *>(env, _self_, self, "Elixir.Evision.${elixir_module_name}", success)""")
 
@@ -328,6 +333,16 @@ enabled_modules() ->
     evision_nif:enabled_modules().
 """)
 
+gen_template_gpumat_check_self = Template("""
+    ERL_NIF_TERM self = argv[0];
+    evision_res<${cname} *> * self_ptr = nullptr;
+    if (!enif_get_resource(env, self, evision_res<${cname} *>::type, (void **)&self_ptr) || self_ptr == nullptr || self_ptr->val == nullptr) {
+        return failmsgp(env, "cannot get `${cname}` from `self`: mismatched type or invalid resource?");
+    }
+
+    ${pname} _self_ = self_ptr->val;
+""")
+
 gen_template_check_self = Template("""
     ERL_NIF_TERM self = argv[0];
     ${cname} * self1 = 0;
@@ -359,12 +374,19 @@ gen_template_call_constructor_prelude = Template("""evision_res<Ptr<$cname>> * s
         }
         if(self) """)
 
+gen_template_call_gpumat_constructor_prelude = Template("""evision_res<$cname *> * self = nullptr;
+        if (alloc_resource(&self)) {
+            self->val = nullptr;
+        }
+        if(self) """)
+
 gen_template_call_constructor = Template("""self->val.reset(new ${cname}${py_args})""")
 
 gen_template_simple_call_constructor_prelude = Template("""evision_res<$cname> * self = nullptr;
         if (alloc_resource(&self)) """)
 
 gen_template_simple_call_constructor = Template("""new (&(self->val)) ${cname}${py_args}""")
+gen_template_simple_call_gpumat_constructor = Template("""self->val = new ${cname}${py_args}""")
 
 gen_template_parse_args = Template("if( $code_cvt )")
 
@@ -457,6 +479,20 @@ static ERL_NIF_TERM evision_${name}_get_${member}(ErlNifEnv *env, int argc, cons
     ${storage_name} &self2 = *self_ptr;
     $cname* _self_ = dynamic_cast<$cname*>(self2.get());
     return evision_from(env, _self_->${member});
+}
+""")
+
+gen_template_gpumat_get_prop = Template("""
+static ERL_NIF_TERM evision_${name}_get_${member}(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
+{
+    ERL_NIF_TERM self = argv[0];
+    evision_res<${storage_name} *> * self_ptr = nullptr;
+    if (!enif_get_resource(env, self, evision_res<${storage_name} *>::type, (void **)&self_ptr) || self_ptr == nullptr || self_ptr->val == nullptr) {
+        return failmsgp(env, "cannot get `${storage_name}` from `self`: mismatched type or invalid resource?");
+    }
+
+    ${storage_name} &self_ref = *self_ptr->val;
+    return evision_from(env, self_ref${access}${member});
 }
 """)
 
