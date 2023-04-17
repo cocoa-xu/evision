@@ -256,7 +256,7 @@ class ModuleGenerator(object):
     def _process_function(self, full_qualified_name: str, name: str, func: FuncInfo, is_ns: bool, is_constructor: bool, namespace_list: list):
         # ======== step 1. get wrapper name and ensure function name starts with a lowercase letter ========
         nif_name, func_name = func.get_wrapper_name(True)
-        if func_name in special_handling_funcs():
+        if func_name in special_handling_funcs() or func_name in special_handling_funcs_only_in_beam():
             return
         if len(func_name) > 0 and not ('a' <= func_name[0] <= 'z'):
             func_name = func_name.lower()
