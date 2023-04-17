@@ -14,8 +14,8 @@ defmodule Evision.DNN.Test do
   end
 
   test "softNMSBoxes/{4,5}" do
-    assert {[1.0], [0]} == Evision.DNN.softNMSBoxes([{0,1,2,3}], [1], [1], 0.4, 0.3)
-    assert {[1.0], [0]} == Evision.DNN.softNMSBoxes(Nx.tensor([[0,1,2,3]]), [1], [1], 0.4, 0.3)
-    assert {[1.0], [0]} == Evision.DNN.softNMSBoxes(Evision.Mat.literal([[0,1,2,3]], :f64), [1], [1], 0.4, 0.3)
+    assert {[1.0], [0]} == Evision.DNN.softNMSBoxes([{0,1,2,3}], [1], 0.4, 0.3)
+    assert {[1.0], [0]} == Evision.DNN.softNMSBoxes(Nx.tensor([[0,1,2,3]]), [1], 0.4, 0.3)
+    assert {[1.0], [0]} == Evision.DNN.softNMSBoxes(Evision.Mat.literal([[0,1,2,3]], :f64), [1], 0.4, 0.3)
   end
 end
