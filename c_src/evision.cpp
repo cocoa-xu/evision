@@ -1683,6 +1683,52 @@ static bool evision_to_generic_vec(ErlNifEnv *env, ERL_NIF_TERM obj, std::vector
 }
 
 template <>
+inline bool evision_to_generic_vec(ErlNifEnv *env, ERL_NIF_TERM obj, std::vector<cv::Rect2d>& value, const ArgInfo& info)
+{
+    if (evision::nif::check_nil(env, obj)) {
+        return true;
+    }
+
+    if (!enif_is_list(env, obj)) {
+        ErlNifBinary data;
+        if (enif_inspect_binary(env, obj, &data)) {
+            const size_t rect2d_size = sizeof(double) * 4;
+            if (data.size > 0 && data.size % rect2d_size == 0) {
+                size_t num_elements = data.size / rect2d_size;
+                value.resize(num_elements);
+                memcpy(value.data(), data.data, data.size);
+                return true;
+            }
+        }
+        return false;
+    }
+    unsigned n = 0;
+    if (!enif_get_list_length(env, obj, &n)) {
+        return false;
+    }
+    // printf("arg: %s, list length: %d\r\n", info.name, n);
+
+    value.resize(n);
+    ERL_NIF_TERM head, tail, arr = obj;
+    for (size_t i = 0; i < n; i++)
+    {
+        cv::Rect2d inner_val;
+        if (!enif_get_list_cell(env, arr, &head, &tail)) {
+            return false;
+        }
+
+        if (!evision_to(env, head, inner_val, info)) {
+            return false;
+        }
+
+        value[i] = inner_val;
+        arr = tail;
+    }
+
+    return true;
+}
+
+template <>
 inline bool evision_to_generic_vec(ErlNifEnv *env, ERL_NIF_TERM obj, std::vector<std::vector<int>>& value, const ArgInfo& info)
 {
     if (evision::nif::check_nil(env, obj)) {
@@ -2288,6 +2334,7 @@ static int convert_to_char(ErlNifEnv *env, ERL_NIF_TERM o, char *dst, const ArgI
 #include "modules/evision_imdecode.h"
 #include "modules/evision_backend/backend.h"
 #include "modules/evision_videocapture.h"
+// #include "modules/evision_dnn.h"
 
 /************************************************************************/
 

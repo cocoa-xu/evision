@@ -114,6 +114,8 @@ def special_handling_funcs():
             'videoCapture_waitAny']
         ]
 
+def special_handling_funcs_only_in_beam():
+    return ["{}{}".format(evision_nif_prefix(), name) for name in ['dnn_NMSBoxes']]
 
 def handle_inline_math_escaping(text, start_pos=0):
     inline_docs_inline_math_re = re.compile(r'(?:.*?)\\\\f[$\[](.*?)\\\\f[$\]]', re.MULTILINE|re.DOTALL)

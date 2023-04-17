@@ -18,7 +18,7 @@ from namespace import Namespace
 from func_info import FuncInfo
 from class_info import ClassInfo
 from module_generator import ModuleGenerator
-from fixes import evision_elixir_fixes, evision_erlang_fixes
+from fixes import evision_elixir_fixes, evision_erlang_fixes, evision_elixir_module_fixes, evision_erlang_module_fixes
 from pathlib import Path
 import os
 from os import makedirs
@@ -712,11 +712,21 @@ class BeamWrapperGenerator(object):
             module_file_generator = self.evision_modules[name]
 
             if 'elixir' in self.langs:
+                if name in evision_elixir_module_fixes():
+                    fixes = evision_elixir_module_fixes()[name]
+                    for f,d in fixes:
+                        module_file_generator.write_elixir(f)
+                        self.evision_nif.write(d)
                 module_file_generator.end('elixir')
                 self.evision_nif.write(module_file_generator.get_nif_declaration('elixir'))
                 self.save(erl_output_path, f"evision_{name.lower()}.ex", module_file_generator.get_generated_code('elixir'))
 
             if 'erlang' in self.langs:
+                if name in evision_erlang_module_fixes():
+                    fixes = evision_erlang_module_fixes()[name]
+                    for f,d in fixes:
+                        module_file_generator.write_erlang(f)
+                        self.evision_nif_erlang.write(d)
                 module_file_generator.end('erlang')
                 self.evision_nif_erlang.write(module_file_generator.get_nif_declaration('erlang'))
                 self.save(erlang_output_path, f"evision_{name.lower()}.erl", module_file_generator.get_generated_code('erlang'))
