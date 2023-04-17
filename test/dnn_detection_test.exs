@@ -1,4 +1,4 @@
-defmodule Evision.DNN.Test do
+defmodule Evision.DNNDetection.Test do
   use ExUnit.Case
   import ExUnit.CaptureIO
 

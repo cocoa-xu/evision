@@ -115,7 +115,11 @@ def special_handling_funcs():
         ]
 
 def special_handling_funcs_only_in_beam():
-    return ["{}{}".format(evision_nif_prefix(), name) for name in ['dnn_NMSBoxes']]
+    return ["{}{}".format(evision_nif_prefix(), name) for name in [
+        'dnn_NMSBoxes',
+        'dnn_NMSBoxesBatched',
+        'dnn_softNMSBoxes'
+    ]]
 
 def handle_inline_math_escaping(text, start_pos=0):
     inline_docs_inline_math_re = re.compile(r'(?:.*?)\\\\f[$\[](.*?)\\\\f[$\]]', re.MULTILINE|re.DOTALL)
@@ -248,6 +252,7 @@ def get_module_func_name(module_func_name: str, is_ns: bool, full_qualified_name
                 'BOWImgDescriptorExtractor': 'bowImgDescriptorExtractor',
                 'UMat': 'uMat',
                 'NMSBoxes': 'nmsBoxes',
+                'NMSBoxesBatched': 'nmsBoxesBatched',
                 'NMSBoxesRotated': 'nmsBoxesRotated',
             }
             if module_func_name in mapping:
