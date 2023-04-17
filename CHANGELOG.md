@@ -1,18 +1,42 @@
 # Changelog
 
 ## v0.1.31 (2022-04-17)
+[Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.31) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.31)
 
 ### Changed
-- [Evision.DNN] Added support for passing `Nx.Tensor` or `Evision.Mat` as the input argument of `bboxes` in `Evision.DNN.nmsBoxes/{4,5}`.
+- [Evision.DNN] Added support for passing `Nx.Tensor` or `Evision.Mat` as the input argument of `bboxes` in 
+  - `Evision.DNN.nmsBoxes/{4,5}`
 
-  ```elixir
-  iex> Evision.DNN.nmsBoxes([{0,1,2,3}], [1], 0.4, 0.3)
-  [0]
-  iex> Evision.DNN.nmsBoxes(Nx.tensor([[0,1,2,3]]), [1], 0.4, 0.3)
-  [0]
-  iex> Evision.DNN.nmsBoxes(Evision.Mat.literal([[0,1,2,3]], :f64), [1], 0.4, 0.3)
-  [0]
-  ```
+    ```elixir
+    iex> Evision.DNN.nmsBoxes([{0,1,2,3}], [1], 0.4, 0.3)
+    [0]
+    iex> Evision.DNN.nmsBoxes(Nx.tensor([[0,1,2,3]]), [1], 0.4, 0.3)
+    [0]
+    iex> Evision.DNN.nmsBoxes(Evision.Mat.literal([[0,1,2,3]], :f64), [1], 0.4, 0.3)
+    [0]
+    ```
+
+  - `Evision.DNN.nmsBoxesBatched/{5,6}`
+
+    ```elixir
+    iex> Evision.DNN.nmsBoxesBatched([{0,1,2,3}], [1], [1], 0.4, 0.3)
+    [0]
+    iex> Evision.DNN.nmsBoxesBatched(Nx.tensor([[0,1,2,3]]), [1], [1], 0.4, 0.3)
+    [0]
+    iex> Evision.DNN.nmsBoxesBatched(Evision.Mat.literal([[0,1,2,3]], :f64), [1], [1], 0.4, 0.3)
+    [0]
+    ```
+
+  - `Evision.DNN.softNMSBoxes/{4,5}`
+
+    ```elixir
+    iex> Evision.DNN.softNMSBoxes([{0,1,2,3}], [1], 0.4, 0.3)
+    {[1.0], [0]}
+    iex> Evision.DNN.softNMSBoxes(Nx.tensor([[0,1,2,3]]), [1], 0.4, 0.3)
+    {[1.0], [0]}
+    iex> Evision.DNN.softNMSBoxes(Evision.Mat.literal([[0,1,2,3]], :s32), [1], 0.4, 0.3)
+    {[1.0], [0]}
+    ```
 
 ## v0.1.30 (2022-03-24)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.30) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.30)
