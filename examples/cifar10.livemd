@@ -31,11 +31,11 @@ Mix.install([
   # because cuda related modules come from the `opencv_contrib` repo
   {"EVISION_ENABLE_CUDA", false},
 
-  # required when 
+  # required when
   # - `EVISION_ENABLE_CUDA` is `true`
   # - and `EVISION_PREFER_PRECOMPILED` is `true`
   #
-  # set `EVISION_CUDA_VERSION` to the version that matches 
+  # set `EVISION_CUDA_VERSION` to the version that matches
   # your local CUDA runtime version
   #
   # current available versions are
@@ -44,7 +44,7 @@ Mix.install([
   # - 118
   {"EVISION_CUDA_VERSION", "118"},
 
-  # require for Windows users when 
+  # require for Windows users when
   # - `EVISION_ENABLE_CUDA` is `true`
   # set `EVISION_CUDA_RUNTIME_DIR` to the directory that contains
   # CUDA runtime libraries
@@ -95,7 +95,7 @@ Helper.download!(
 
 alias Evision, as: Cv
 
-img = Cv.imread("cat.jpg", flags: Cv.cv_IMREAD_ANYCOLOR())
+img = Cv.imread("cat.jpg", flags: Cv.Constant.cv_IMREAD_ANYCOLOR())
 resized_img = Cv.resize(img, {128, 128})
 
 Cv.imencode(".png", resized_img)

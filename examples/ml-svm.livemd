@@ -28,11 +28,11 @@ Mix.install([
   # because cuda related modules come from the `opencv_contrib` repo
   {"EVISION_ENABLE_CUDA", false},
 
-  # required when 
+  # required when
   # - `EVISION_ENABLE_CUDA` is `true`
   # - and `EVISION_PREFER_PRECOMPILED` is `true`
   #
-  # set `EVISION_CUDA_VERSION` to the version that matches 
+  # set `EVISION_CUDA_VERSION` to the version that matches
   # your local CUDA runtime version
   #
   # current available versions are
@@ -41,7 +41,7 @@ Mix.install([
   # - 118
   {"EVISION_CUDA_VERSION", "118"},
 
-  # require for Windows users when 
+  # require for Windows users when
   # - `EVISION_ENABLE_CUDA` is `true`
   # set `EVISION_CUDA_RUNTIME_DIR` to the directory that contains
   # CUDA runtime libraries
@@ -88,10 +88,10 @@ training_data_mat = Cv.Mat.literal(training_data, :f32)
 
 ```elixir
 svm = Cv.ML.SVM.create()
-svm = Cv.ML.SVM.setType(svm, Cv.cv_C_SVC())
-svm = Cv.ML.SVM.setKernel(svm, Cv.cv_LINEAR())
-svm = Cv.ML.SVM.setTermCriteria(svm, {Cv.cv_MAX_ITER(), 100, 0.000001})
-true = Cv.ML.SVM.train(svm, training_data_mat, Cv.cv_ROW_SAMPLE(), labels_mat)
+svm = Cv.ML.SVM.setType(svm, Cv.Constant.cv_C_SVC())
+svm = Cv.ML.SVM.setKernel(svm, Cv.Constant.cv_LINEAR())
+svm = Cv.ML.SVM.setTermCriteria(svm, {Cv.Constant.cv_MAX_ITER(), 100, 0.000001})
+true = Cv.ML.SVM.train(svm, training_data_mat, Cv.Constant.cv_ROW_SAMPLE(), labels_mat)
 true = Cv.ML.SVM.isTrained(svm)
 ```
 
