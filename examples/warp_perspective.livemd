@@ -1,259 +1,170 @@
-<!-- vim: syntax=markdown -->
-
-<!-- livebook:{"persist_outputs":true} -->
-
 # Evision Example - Warp Perspective
 
 ```elixir
-Mix.install([
-  {:evision, "~> 0.1"},
-  {:kino, "~> 0.7"},
-  {:req, "~> 0.3"}
-], system_env: [
-  # optional, defaults to `true`
-  # set `EVISION_PREFER_PRECOMPILED` to `false`
-  # if you prefer `:evision` to be compiled from source
-  # note that to compile from source, you may need at least 1GB RAM
-  {"EVISION_PREFER_PRECOMPILED", true},
+Mix.install(
+  [
+    {:evision, "~> 0.1.31"},
+    {:kino, "~> 0.9.0"},
+    {:req, "~> 0.3.0"}
+  ],
+  system_env: [
+    # optional, defaults to `true`
+    # set `EVISION_PREFER_PRECOMPILED` to `false`
+    # if you prefer `:evision` to be compiled from source
+    # note that to compile from source, you may need at least 1GB RAM
+    {"EVISION_PREFER_PRECOMPILED", true},
 
-  # optional, defaults to `true`
-  # set `EVISION_ENABLE_CONTRIB` to `false`
-  # if you don't need modules from `opencv_contrib`
-  {"EVISION_ENABLE_CONTRIB", true},
+    # optional, defaults to `true`
+    # set `EVISION_ENABLE_CONTRIB` to `false`
+    # if you don't need modules from `opencv_contrib`
+    {"EVISION_ENABLE_CONTRIB", true},
 
-  # optional, defaults to `false`
-  # set `EVISION_ENABLE_CUDA` to `true`
-  # if you wish to use CUDA related functions
-  # note that `EVISION_ENABLE_CONTRIB` also has to be `true`
-  # because cuda related modules come from the `opencv_contrib` repo
-  {"EVISION_ENABLE_CUDA", false},
+    # optional, defaults to `false`
+    # set `EVISION_ENABLE_CUDA` to `true`
+    # if you wish to use CUDA related functions
+    # note that `EVISION_ENABLE_CONTRIB` also has to be `true`
+    # because cuda related modules come from the `opencv_contrib` repo
+    {"EVISION_ENABLE_CUDA", false},
 
-  # required when 
-  # - `EVISION_ENABLE_CUDA` is `true`
-  # - and `EVISION_PREFER_PRECOMPILED` is `true`
-  #
-  # set `EVISION_CUDA_VERSION` to the version that matches 
-  # your local CUDA runtime version
-  #
-  # current available versions are
-  # - 111
-  # - 114
-  # - 118
-  {"EVISION_CUDA_VERSION", "118"},
+    # required when
+    # - `EVISION_ENABLE_CUDA` is `true`
+    # - and `EVISION_PREFER_PRECOMPILED` is `true`
+    #
+    # set `EVISION_CUDA_VERSION` to the version that matches
+    # your local CUDA runtime version
+    #
+    # current available versions are
+    # - 111
+    # - 114
+    # - 118
+    {"EVISION_CUDA_VERSION", "118"},
 
-  # require for Windows users when 
-  # - `EVISION_ENABLE_CUDA` is `true`
-  # set `EVISION_CUDA_RUNTIME_DIR` to the directory that contains
-  # CUDA runtime libraries
-  {"EVISION_CUDA_RUNTIME_DIR", "C:/PATH/TO/CUDA/RUNTIME"}
-])
+    # require for Windows users when
+    # - `EVISION_ENABLE_CUDA` is `true`
+    # set `EVISION_CUDA_RUNTIME_DIR` to the directory that contains
+    # CUDA runtime libraries
+    {"EVISION_CUDA_RUNTIME_DIR", "C:/PATH/TO/CUDA/RUNTIME"}
+  ]
+)
 ```
 
-<!-- livebook:{"output":true} -->
+## Introduction
 
-```
-:ok
+This notebook will demonstrate how to perform [perspective transformation](https://en.wikipedia.org/wiki/3D_projection#Perspective_projection).
+
+It's useful to alias the module as something shorter when we make extensive use of the functions from certain modules.
+
+```elixir
+alias Evision, as: Cv
 ```
 
 ## Define Some Helper Functions
 
+Let's prepare helper functions for preparing resources.
+
 ```elixir
 defmodule Helper do
-  def download!(url, save_as, overwrite? \\ false) do
-    unless File.exists?(save_as) do
-      Req.get!(url, http_errors: :raise, output: save_as, cache: not overwrite?)
-    end
-
-    :ok
+  def download!(url, overwrite \\ false) do
+    save_as = Path.join(System.tmp_dir!(), URI.encode_www_form(url))
+    unless File.exists?(save_as) || overwrite, do: Req.get!(url, output: save_as)
+    save_as
   end
+
 end
 ```
 
-<!-- livebook:{"output":true} -->
-
-```
-{:module, Helper, <<70, 79, 82, 49, 0, 0, 10, ...>>, {:download!, 3}}
-```
-
-## Read the Test Image From File
+## Read the Test Image
 
 ```elixir
-# Download the test image
-test_image_path = Path.join(__DIR__, "warp_perspective.png")
-
-Helper.download!(
-  "https://raw.githubusercontent.com/cocoa-xu/evision/main/test/testdata/warp_perspective.png",
-  test_image_path
-)
-
 # Read the test image
-%Evision.Mat{shape: {h, w, _}} = img = Evision.imread(test_image_path)
-```
-
-<!-- livebook:{"output":true} -->
-
-```
-%Evision.Mat{
-  channels: 3,
-  dims: 2,
-  type: {:u, 8},
-  raw_type: 16,
-  shape: {288, 277, 3},
-  ref: #Reference<0.391993608.626655254.103441>
-}
+test_img_mat =
+  "https://raw.githubusercontent.com/cocoa-xu/evision/main/test/testdata/warp_perspective.png"
+  |> Helper.download!()
+  |> Cv.imread()
 ```
 
 ## Function hypot: returns the Euclidean norm
+
+This function calcululates the Euclidean norm, which is useful when we want to
+know the length of a line segment between two points
+([Euclidean distance](https://en.wikipedia.org/wiki/Euclidean_distance)).
 
 ```elixir
 # hypot.(list(number())) function returns the Euclidean norm
 hypot = fn l -> :math.sqrt(Enum.sum(Enum.map(l, fn i -> i * i end))) end
 ```
 
-<!-- livebook:{"output":true} -->
-
-```
-#Function<42.3316493/1 in :erl_eval.expr/6>
-```
-
 ## Calculate the Output Coordinates for Corners
 
 ```elixir
-# specify input coordinates for corners of red quadrilateral in order TL, TR, BR, BL as x,
-input =
-  Nx.tensor(
-    [
-      [136, 113],
-      [206, 130],
-      [173, 207],
-      [132, 196]
-    ],
-    type: :f32
-  )
-```
+# specify input coordinates for corners of red quadrilateral
+top_left = [136, 113]
+top_right = [206, 130]
+bottom_right = [173, 207]
+bottom_left = [132, 196]
 
-<!-- livebook:{"output":true} -->
+input_points = Nx.tensor([top_left, top_right, bottom_right, bottom_left], type: :f32)
 
-```
-#Nx.Tensor<
-  f32[4][2]
-  [
-    [136.0, 113.0],
-    [206.0, 130.0],
-    [173.0, 207.0],
-    [132.0, 196.0]
-  ]
->
-```
-
-```elixir
 # get top and left dimensions and set to output dimensions of red rectangle
-output_width = [
-  Nx.to_number(Nx.subtract(input[[0, 0]], input[[1, 0]])),
-  Nx.to_number(Nx.subtract(input[[0, 1]], input[[1, 1]]))
-]
+output_width =
+  hypot.([
+    Nx.to_number(Nx.subtract(input_points[[0, 0]], input_points[[1, 0]])),
+    Nx.to_number(Nx.subtract(input_points[[0, 1]], input_points[[1, 1]]))
+  ])
+  |> round()
 
-output_width = round(hypot.(output_width))
+output_height =
+  hypot.([
+    Nx.to_number(Nx.subtract(input_points[[0, 0]], input_points[[3, 0]])),
+    Nx.to_number(Nx.subtract(input_points[[0, 1]], input_points[[3, 1]]))
+  ])
+  |> round()
 
-output_height = [
-  Nx.to_number(Nx.subtract(input[[0, 0]], input[[3, 0]])),
-  Nx.to_number(Nx.subtract(input[[0, 1]], input[[3, 1]]))
-]
+IO.puts("width: #{output_width}, height: #{output_height}")
 
-output_height = round(hypot.(output_height))
-```
-
-<!-- livebook:{"output":true} -->
-
-```
-83
-```
-
-```elixir
 # set upper left coordinates for output rectangle
-x = Nx.to_number(input[[0, 0]])
-y = Nx.to_number(input[[0, 1]])
-```
+x = Nx.to_number(input_points[[0, 0]])
+y = Nx.to_number(input_points[[0, 1]])
 
-<!-- livebook:{"output":true} -->
+# specify output coordinates for corners of red quadrilateral
+top_left = [x, y]
+top_right = [x + output_width - 1, y]
+bottom_right = [x + output_width - 1, y + output_height - 1]
+bottom_left = [x, y + output_height - 1]
 
-```
-113.0
-```
-
-```elixir
-# specify output coordinates for corners of red quadrilateral in order TL, TR, BR, BL as x,
-output =
-  Nx.tensor(
-    [
-      [x, y],
-      [x + output_width - 1, y],
-      [x + output_width - 1, y + output_height - 1],
-      [x, y + output_height - 1]
-    ],
-    type: :f32
-  )
-```
-
-<!-- livebook:{"output":true} -->
-
-```
-#Nx.Tensor<
-  f32[4][2]
-  [
-    [136.0, 113.0],
-    [207.0, 113.0],
-    [207.0, 195.0],
-    [136.0, 195.0]
-  ]
->
+output_points = Nx.tensor([top_left, top_right, bottom_right, bottom_left], type: :f32)
 ```
 
 ## Compute Perspective Matrix
 
 ```elixir
-# compute perspective matrix
-matrix = Evision.getPerspectiveTransform(input, output)
-```
-
-<!-- livebook:{"output":true} -->
-
-```
-%Evision.Mat{
-  channels: 1,
-  dims: 2,
-  type: {:f, 64},
-  raw_type: 6,
-  shape: {3, 3},
-  ref: #Reference<0.391993608.626655249.103165>
-}
+perspective_matrix = Cv.getPerspectiveTransform(input_points, output_points)
+Kino.Tree.new(perspective_matrix)
 ```
 
 ## Perspective Transformation
 
 ```elixir
+{img_height, img_width, _} = Cv.Mat.shape(test_img_mat)
+
 # do perspective transformation setting area outside input to black
 # Note that output size is the same as the input image size
-img_output =
-  Evision.warpPerspective(
-    img,
-    matrix,
-    {w, h},
-    flags: Evision.Constant.cv_INTER_LINEAR(),
-    borderMode: Evision.Constant.cv_BORDER_CONSTANT(),
+output_img_mat =
+  Cv.warpPerspective(
+    test_img_mat,
+    perspective_matrix,
+    {img_width, img_height},
+    flags: Cv.Constant.cv_INTER_LINEAR(),
+    borderMode: Cv.Constant.cv_BORDER_CONSTANT(),
     borderValue: {0, 0, 0}
   )
-```
 
-<!-- livebook:{"output":true} -->
-
-```
-%Evision.Mat{
-  channels: 3,
-  dims: 2,
-  type: {:u, 8},
-  raw_type: 16,
-  shape: {288, 277, 3},
-  ref: #Reference<0.391993608.626655249.103168>
-}
+[
+  ["Input image", test_img_mat],
+  ["Output image", output_img_mat]
+]
+|> Enum.map(fn [label, img] ->
+  Kino.Layout.grid([img, Kino.Markdown.new("**#{label}**")], boxed: true)
+end)
+|> Kino.Layout.grid(columns: 2)
 ```
