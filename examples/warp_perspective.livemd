@@ -60,6 +60,8 @@ alias Evision, as: Cv
 
 ## Define Some Helper Functions
 
+Let's prepare helper functions for preparing resources.
+
 ```elixir
 defmodule Helper do
   def download!(url, overwrite \\ false) do
@@ -68,17 +70,6 @@ defmodule Helper do
     save_as
   end
 
-  @doc """
-  Returns the Euclidean norm.
-
-  ## Examples
-
-    iex> Helper.hypot([3, 4])
-    5.0
-  """
-  def hypot([n | _] = numbers) when is_number(n) do
-    :math.sqrt(Enum.reduce(numbers, 0, &(&2 + &1 ** 2)))
-  end
 end
 ```
 
@@ -90,6 +81,17 @@ test_img_mat =
   "https://raw.githubusercontent.com/cocoa-xu/evision/main/test/testdata/warp_perspective.png"
   |> Helper.download!()
   |> Cv.imread()
+```
+
+## Function hypot: returns the Euclidean norm
+
+This function calcululates the Euclidean norm, which is useful when we want to
+know the length of a line segment between two points
+([Euclidean distance](https://en.wikipedia.org/wiki/Euclidean_distance)).
+
+```elixir
+# hypot.(list(number())) function returns the Euclidean norm
+hypot = fn l -> :math.sqrt(Enum.sum(Enum.map(l, fn i -> i * i end))) end
 ```
 
 ## Calculate the Output Coordinates for Corners
@@ -105,19 +107,17 @@ input_points = Nx.tensor([top_left, top_right, bottom_right, bottom_left], type:
 
 # get top and left dimensions and set to output dimensions of red rectangle
 output_width =
-  [
+  hypot.([
     Nx.to_number(Nx.subtract(input_points[[0, 0]], input_points[[1, 0]])),
     Nx.to_number(Nx.subtract(input_points[[0, 1]], input_points[[1, 1]]))
-  ]
-  |> Helper.hypot()
+  ])
   |> round()
 
 output_height =
-  [
+  hypot.([
     Nx.to_number(Nx.subtract(input_points[[0, 0]], input_points[[3, 0]])),
     Nx.to_number(Nx.subtract(input_points[[0, 1]], input_points[[3, 1]]))
-  ]
-  |> Helper.hypot()
+  ])
   |> round()
 
 IO.puts("width: #{output_width}, height: #{output_height}")
