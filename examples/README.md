@@ -103,7 +103,13 @@ Related functions:
 
 [![Run in Livebook](https://livebook.dev/badge/v1/gray.svg)](https://livebook.dev/run?url=https%3A%2F%2Fgithub.com%2Fcocoa-xu%2Fevision%2Fblob%2Fmain%2Fexamples%2Fdnn-detection-model.livemd)
 
-### High Dynamic Range Imaging
+### U2Net Human Segmentation
+
+[dnn-u2net_human_seg.livemd](dnn-u2net_human_seg.livemd)
+
+[![Run in Livebook](https://livebook.dev/badge/v1/gray.svg)](https://livebook.dev/run?url=https%3A%2F%2Fgithub.com%2Fcocoa-xu%2Fevision%2Fblob%2Fmain%2Fexamples%2Fdnn-u2net_human_seg.livemd)
+
+## High Dynamic Range Imaging
 
 [photo-hdr.livemd](photo-hdr.livemd)
 
