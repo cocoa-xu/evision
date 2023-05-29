@@ -58,7 +58,7 @@ front =
 
 back =
   load_layer.(
-    front_layer_input,
+    back_layer_input,
     "https://raw.githubusercontent.com/cocoa-xu/evision/master/test/testdata/back.jpg",
     "back.jpg"
   )
