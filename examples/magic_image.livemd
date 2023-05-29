@@ -259,7 +259,8 @@ $$
 ```elixir
 compute_alpha = fn front, back ->
   Nx.add(back, 255)
-  |> Nx.subtract(front)
+  |> Nx.subtract(front)  
+  |> Nx.clip(0, 255)
   |> Nx.add(1.0e-12)
   |> Nx.clip(0, 255)
 end
