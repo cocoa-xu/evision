@@ -215,7 +215,9 @@ out_{G} &= I_{G}I_A + B_{G}(1-I_A)
 \end{aligned}\right.
 $$
 
-If the background color is white, then
+where $I_G$ and $I_A$ stands for the grey and alpha channel (of the merged image $I$) respectively.
+
+If the background color is white, i.e., $B_G=255$, then
 
 $$
 \left\{\begin{aligned}
@@ -225,7 +227,7 @@ out_{G} &= I_{G}I_A + 255(1-I_A)\\
 \end{aligned}\right.
 $$
 
-Similarly, when the background color is black,
+Similarly, when the background color is black ($B_G=0$),
 
 $$
 \left\{\begin{aligned}
