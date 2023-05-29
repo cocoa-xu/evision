@@ -197,6 +197,63 @@ out_A &= 0 \implies out_{RGB} = 0
 \end{aligned}\right.
 $$
 
+If the destination background is opaque, i.e., $dst_A = 1$, we have
+
+$$
+\left\{\begin{aligned}
+out_A &= 1\\
+out_{RGB} &= src_{RGB}src_A + dst_{RGB}(1-src_A)
+\end{aligned}\right.
+$$
+
+Therefore, for the merged image $I$, given background $B$, we have
+
+$$
+\left\{\begin{aligned}
+out_A &= 1\\
+out_{G} &= I_{G}I_A + B_{G}(1-I_A)
+\end{aligned}\right.
+$$
+
+If the background color is white, then
+
+$$
+\left\{\begin{aligned}
+out_A &= 1\\
+out_{G} &= I_{G}I_A + 255(1-I_A)\\
+&= \textit{front}_{G}
+\end{aligned}\right.
+$$
+
+Similarly, when the background color is black,
+
+$$
+\left\{\begin{aligned}
+out_A &= 1\\
+out_{G} &= I_{G}I_A + 0(1-I_A)\\
+&= I_{G}I_A\\
+&= \textit{back}_{G}
+\end{aligned}\right.
+$$
+
+Now we have two unknown variables, $I_{G}$ and $I_{A}$, and the simultaneous equations
+
+$$
+\left\{\begin{aligned}
+\textit{front}_{G} &= I_{G}I_{A} + 255(1-I_A)\\
+\textit{back}_{G} &= I_{G}I_{A}
+\end{aligned}\right.
+$$
+
+therefore, we have
+
+$$
+\left\{\begin{aligned}
+I_{A} &= 1 - \frac{(front_{G} - back_{G})}{255}\\
+I_{G} &= \frac{back_G}{I_{A}}
+\end{aligned}\right.
+$$
+
 ```elixir
 compute_alpha = fn front, back ->
   Nx.add(back, 255)
