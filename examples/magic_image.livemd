@@ -262,10 +262,8 @@ Drag the generated image and hover it over the black background on the right han
 [
   ["Generated Image", merged],
   [
-    "Black Background",
-    Kino.HTML.new("""
-    <div style="background: black; height: #{rows * 0.5}px; width: #{cols}px; max-height: 50%; max-width: 100%"></div>
-    """)
+    "Black Background", 
+    Evision.Mat.last_dim_as_channel(Evision.Mat.full({cols, rows, 3}, 0, :u8))
   ]
 ]
 |> Enum.map(fn [label, img] ->
