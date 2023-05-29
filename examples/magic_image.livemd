@@ -1,0 +1,300 @@
+<!-- livebook:{"persist_outputs":true} -->
+
+# Magic Image: Alpha Channel
+
+```elixir
+Mix.install([
+  {:evision, "~> 0.1"},
+  {:kino, "~> 0.7"},
+  {:req, "~> 0.3"},
+  {:nx, "~> 0.4"}
+])
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+:ok
+```
+
+## Get Images for Front and Back Layers (optional)
+
+Upload your favorite images for this interesting experiment!
+
+Note that the image of the frontlayer should be preferrablly bright, while the image of the backlayer should be relatively dimmed.
+
+But if you don't have any images at hand, this livebook will load some example images, and you can come back later!
+
+```elixir
+front_layer_input = Kino.Input.image("Frontlayer")
+back_layer_input = Kino.Input.image("Backlayer")
+Kino.Layout.grid([front_layer_input, back_layer_input], columns: 2)
+```
+
+## Load Images
+
+```elixir
+load_layer = fn kino_input, url, save_as ->
+  case Kino.Input.read(kino_input) do
+    %{data: data, height: height, width: width} ->
+      Evision.Mat.from_binary(data, {:u, 8}, height, width, 3)
+      |> Evision.cvtColor(Evision.Constant.cv_COLOR_BGR2GRAY())
+
+    nil ->
+      unless File.exists?(save_as) do
+        Req.get!(url, http_errors: :raise, output: save_as, cache: false)
+      end
+
+      Evision.imread(save_as, flags: Evision.Constant.cv_IMREAD_GRAYSCALE())
+  end
+end
+
+front =
+  load_layer.(
+    front_layer_input,
+    "https://raw.githubusercontent.com/cocoa-xu/evision/master/test/testdata/front.jpg",
+    "front.jpg"
+  )
+
+back =
+  load_layer.(
+    front_layer_input,
+    "https://raw.githubusercontent.com/cocoa-xu/evision/master/test/testdata/back.jpg",
+    "back.jpg"
+  )
+
+Kino.Layout.grid([front, back], columns: 2)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+%Evision.Mat{
+  channels: 1,
+  dims: 2,
+  type: {:u, 8},
+  raw_type: 0,
+  shape: {667, 1000},
+  ref: #Reference<0.3899563693.4086431769.126173>
+}
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+%Evision.Mat{
+  channels: 1,
+  dims: 2,
+  type: {:u, 8},
+  raw_type: 0,
+  shape: {563, 1000},
+  ref: #Reference<0.3899563693.4086431769.126174>
+}
+```
+
+## Resize Layers to Same Size
+
+```elixir
+resize_layers = fn front_layer, back_layer ->
+  {{f_cols, f_rows}, {b_cols, b_rows}} = {front_layer.shape, back_layer.shape}
+  {rows, cols} = {round(max(f_rows, b_rows)), round(max(f_cols, b_cols))}
+  size = {cols, rows}
+  front_canvas = Evision.Mat.full(size, 255.0, :f32)
+  back_canvas = Evision.Mat.full(size, 0.0, :f32)
+
+  do_resize = fn layer, canvas ->
+    {layer_cols, layer_rows} = layer.shape
+
+    {overlay_rows_start, overlay_cols_start} =
+      if layer_cols == cols do
+        {0, round((cols - layer_cols) / 2)}
+      else
+        {round((rows - layer_rows) / 2), 0}
+      end
+
+    Evision.Mat.update_roi(
+      canvas,
+      [
+        {overlay_cols_start, overlay_cols_start + layer_cols},
+        {overlay_rows_start, overlay_rows_start + layer_rows}
+      ],
+      Evision.Mat.as_type(layer, :f32)
+    )
+  end
+
+  front = do_resize.(front_layer, front_canvas)
+  back = do_resize.(back_layer, back_canvas)
+  {front, back}
+end
+
+{f, b} = resize_layers.(front, back)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+{%Evision.Mat{
+   channels: 1,
+   dims: 2,
+   type: {:f, 32},
+   raw_type: 5,
+   shape: {667, 1000},
+   ref: #Reference<0.3899563693.4086431768.119728>
+ },
+ %Evision.Mat{
+   channels: 1,
+   dims: 2,
+   type: {:f, 32},
+   raw_type: 5,
+   shape: {667, 1000},
+   ref: #Reference<0.3899563693.4086431768.119730>
+ }}
+```
+
+## Adjust Intensity
+
+To achieve best result, the image of the frontlayer should be preferrablly bright, while the image of the backlayer should be generally dimmed.
+
+We can do this by increasing (and decreasing) their pixel intensity accordingly.
+
+```elixir
+front_shift = Kino.Input.range("Frontlayer Intensity Shift", min: -255, max: 255, default: 40)
+back_shift = Kino.Input.range("Backlayer Intensity Shift", min: -255, max: 255, default: -10)
+Kino.Layout.grid([front_shift, back_shift], columns: 2)
+```
+
+```elixir
+shift_color = fn layer, shift ->
+  Nx.add(Evision.Mat.to_nx(layer, Nx.BinaryBackend), shift)
+  |> Nx.clip(0, 255)
+end
+
+f_ready = shift_color.(f, Kino.Input.read(front_shift))
+b_ready = shift_color.(b, Kino.Input.read(back_shift))
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+#Nx.Tensor<
+  f32[667][1000]
+  [
+    [130.0, 133.0, 137.0, 140.0, 143.0, 147.0, 151.0, 153.0, 159.0, 161.0, 165.0, 167.0, 169.0, 171.0, 173.0, 175.0, 177.0, 179.0, 180.0, 182.0, 183.0, 184.0, 186.0, 187.0, 186.0, 187.0, 188.0, 190.0, 191.0, 191.0, 191.0, 190.0, 189.0, 192.0, 196.0, 198.0, 200.0, 199.0, 195.0, 190.0, 180.0, 161.0, 140.0, 118.0, 93.0, 81.0, 81.0, 79.0, 78.0, 80.0, ...],
+    ...
+  ]
+>
+```
+
+## Compute Values for Alpha and Grey Channels
+
+Based on the formular given on the Wiki page of [alpha blending](https://en.wikipedia.org/wiki/Alpha_compositing#Alpha_blending)
+
+$$
+\left\{\begin{aligned}
+out_A &= src_A + dst_A(1-src_A)\\
+out_{RGB} &= \frac{(src_{RGB}src_A + dst_{RGB}dst_A(1-src_A))}{out_A}\\
+out_A &= 0 \implies out_{RGB} = 0
+\end{aligned}\right.
+$$
+
+```elixir
+compute_alpha = fn front, back ->
+  Nx.add(back, 255)
+  |> Nx.subtract(front)
+  |> Nx.add(1.0e-12)
+  |> Nx.clip(0, 255)
+end
+
+alpha = compute_alpha.(f_ready, b_ready)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+#Nx.Tensor<
+  f32[667][1000]
+  [
+    [182.0, 186.0, 191.0, 194.0, 196.0, 200.0, 205.0, 208.0, 214.0, 214.0, 216.0, 218.0, 220.0, 223.0, 225.0, 229.0, 230.0, 232.0, 232.0, 234.0, 234.0, 235.0, 237.0, 238.0, 236.0, 237.0, 240.0, 243.0, 241.0, 241.0, 242.0, 240.0, 239.0, 242.0, 246.0, 248.0, 250.0, 249.0, 245.0, 240.0, 230.0, 208.0, 186.0, 165.0, 140.0, 129.0, 129.0, 124.0, 127.0, 128.0, ...],
+    ...
+  ]
+>
+```
+
+```elixir
+compute_grey = fn back, alpha ->
+  Nx.multiply(back, 255)
+  |> Nx.divide(alpha)
+end
+
+grey = compute_grey.(b_ready, alpha)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+#Nx.Tensor<
+  f32[667][1000]
+  [
+    [182.14285278320312, 182.33871459960938, 182.90576171875, 184.02061462402344, 186.04591369628906, 187.4250030517578, 187.8292694091797, 187.57211303710938, 189.46261596679688, 191.84579467773438, 194.7916717529297, 195.3440399169922, 195.88636779785156, 195.53811645507812, 196.06666564941406, 194.86898803710938, 196.2391357421875, 196.74569702148438, 197.84483337402344, 198.3333282470703, 199.42308044433594, 199.65957641601562, 200.1265869140625, 200.35714721679688, 200.97457885742188, 201.20252990722656, 199.75, 199.38272094726562, 202.09542846679688, 202.09542846679688, 201.2603302001953, 201.875, 201.65272521972656, 202.31405639648438, 203.1707305908203, 203.58871459960938, 204.0, 203.79518127441406, 202.9591827392578, 201.875, 199.56521606445312, 197.3798065185547, 191.93548583984375, 182.36363220214844, 169.39285278320312, 160.11627197265625, 160.11627197265625, 162.4596710205078, 156.61416625976562, 159.375, ...],
+    ...
+  ]
+>
+```
+
+## Merge into An Image with Alpha Channel
+
+```elixir
+merged = Evision.merge([grey, grey, grey, alpha])
+{cols, rows, _} = merged.shape
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+{667, 1000, 4}
+```
+
+## Visualise
+
+Drag the generated image and hover it over the black background on the right hand-side, and it will "change" from one image (front layer) to the other one (back layer).
+
+```elixir
+[
+  ["Generated Image", merged],
+  [
+    "Black Background",
+    Kino.HTML.new("""
+    <div style="background: black; height: #{rows * 0.5}px; width: #{cols}px; max-height: 50%; max-width: 100%"></div>
+    """)
+  ]
+]
+|> Enum.map(fn [label, img] ->
+  Kino.Layout.grid([img, Kino.Markdown.new("**#{label}**")], boxed: true)
+end)
+|> Kino.Layout.grid(columns: 2)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+%Evision.Mat{
+  channels: 4,
+  dims: 2,
+  type: {:f, 32},
+  raw_type: 29,
+  shape: {667, 1000, 4},
+  ref: #Reference<0.3899563693.4086431768.119735>
+}
+```
+
+## Save the Merged Image
+
+```elixir
+Evision.imwrite("merged.png", merged)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+true
+```

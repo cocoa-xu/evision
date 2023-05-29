@@ -78,6 +78,14 @@ Related functions:
 
 [![Run in Livebook](https://livebook.dev/badge/v1/gray.svg)](https://livebook.dev/run?url=https%3A%2F%2Fgithub.com%2Fcocoa-xu%2Fevision%2Fblob%2Fmain%2Fexamples%2Fsudoku.livemd)
 
+### Magic Image
+
+Are you interested in learning how to create an image that displays different content on both white and black backgrounds? It's alpha channel magic!
+
+[magic_image.livemd](magic_image.livemd)
+
+[![Run in Livebook](https://livebook.dev/badge/v1/gray.svg)](https://livebook.dev/run?url=https%3A%2F%2Fgithub.com%2Fcocoa-xu%2Fevision%2Fblob%2Fmain%2Fexamples%2Fmagic_image.livemd)
+
 ### Simple use of Evision in a Machine Learning Pipeline with Nx and torhcx
 
 [cifar10.livemd](cifar10.livemd)
