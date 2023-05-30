@@ -1,0 +1,215 @@
+# U2Net Portrait
+
+```elixir
+# set `EVISION_PREFER_PRECOMPILED` to `false`
+# if you prefer `:evision` to be compiled from source
+# note that to compile from source, you may need at least 1GB RAM
+
+# FIXME: the exported ONNX model seems to resize the result
+# image in wrong interpolation mode.
+
+Mix.install(
+  [
+    {:evision, "~> 0.1"},
+    {:req, "~> 0.3"},
+    {:kino, "~> 0.7"}
+  ],
+  system_env: [
+    {"EVISION_PREFER_PRECOMPILED", true}
+  ]
+)
+```
+
+## Download the model
+
+```elixir
+model_url =
+  "https://github.com/cocoa-xu/U-2-Net/releases/download/onnx-20230530/u2net_portrait.onnx"
+
+save_as = "u2net_portrait.onnx"
+
+unless File.exists?(save_as) do
+  Req.get!(model_url, http_errors: :raise, output: save_as, cache: false)
+end
+
+:ok
+```
+
+## Load model
+
+```elixir
+net = Evision.DNN.readNetFromONNX(save_as)
+```
+
+## Get Input Image
+
+```elixir
+content_image_input = Kino.Input.image("Content image")
+```
+
+```elixir
+img =
+  case Kino.Input.read(content_image_input) do
+    %{data: data, height: height, width: width} ->
+      Evision.Mat.from_binary(data, {:u, 8}, height, width, 3)
+      |> Evision.cvtColor(Evision.Constant.cv_COLOR_RGB2BGR())
+
+    _ ->
+      raise RuntimeError, "please upload an image in Kino"
+  end
+
+img
+```
+
+## Detect Faces
+
+```elixir
+face_cascade_path =
+  Path.join([
+    :code.priv_dir(:evision),
+    "share/opencv4/haarcascades/haarcascade_frontalface_default.xml"
+  ])
+
+face_cascade = Evision.CascadeClassifier.cascadeClassifier(face_cascade_path)
+```
+
+```elixir
+grey_img = Evision.cvtColor(img, Evision.Constant.cv_COLOR_BGR2GRAY())
+
+faces =
+  Evision.CascadeClassifier.detectMultiScale(
+    face_cascade,
+    grey_img,
+    scaleFactor: 1.1,
+    minNeighbors: 4
+  )
+
+faces =
+  if Enum.count(faces) == 0 do
+    # no face detected
+    # use the whole image and the inference will run on the whole image
+    {h, w} = grey_img.shape
+    {0, 0, h, w}
+  else
+    faces
+  end
+```
+
+## Get the largest face in the image
+
+```elixir
+{_, largest_face} =
+  Enum.map_reduce(faces, {0, 0}, fn cur_face = {_, _, w, h}, {area, face} ->
+    cur_area = w * h
+
+    if area < cur_area do
+      {cur_area, cur_face}
+    else
+      {area, face}
+    end
+  end)
+
+largest_face
+```
+
+## Crop the largest face
+
+crop the face with a bigger bbox
+
+```elixir
+{x, y, w, h} = largest_face
+{height, width} = grey_img.shape
+{l, r, t, b} = {0, 0, 0, 0}
+lpad = round(w * 0.4)
+left = x - lpad
+
+{l, left} =
+  if left < 0 do
+    l = lpad - x
+    {l, 0}
+  else
+    {l, left}
+  end
+
+rpad = round(w * 0.4)
+right = x + w + rpad
+
+{r, right} =
+  if right > width do
+    r = right - width
+    {r, width}
+  else
+    {r, right}
+  end
+
+tpad = round(h * 0.6)
+top = y - tpad
+
+{t, top} =
+  if top < 0 do
+    t = tpad - y
+    {t, 0}
+  else
+    {t, top}
+  end
+
+bpad = round(h * 0.2)
+bottom = y + h + bpad
+
+{b, bottom} =
+  if bottom > height do
+    b = bottom - height
+    {b, height}
+  else
+    {b, bottom}
+  end
+
+face_img = img[[{top, bottom}, {left, right}]]
+im_face = Evision.resize(face_img, {512, 512}, interpolation: Evision.Constant.cv_INTER_AREA())
+```
+
+## Feed the input image to the model
+
+```elixir
+im_face_nx = Evision.Mat.to_nx(im_face, Nx.BinaryBackend)
+max = Nx.reshape(im_face_nx, {:auto})[Nx.argmax(im_face_nx)]
+im_face_nx = Nx.divide(im_face_nx, max)
+
+tmp_img =
+  Nx.stack(
+    [
+      Nx.divide(Nx.subtract(im_face_nx[[.., .., 0]], 0.485), 0.229),
+      Nx.divide(Nx.subtract(im_face_nx[[.., .., 1]], 0.456), 0.224),
+      Nx.divide(Nx.subtract(im_face_nx[[.., .., 2]], 0.406), 0.225)
+    ],
+    axis: -1
+  )
+
+im_face_ready = Evision.Mat.from_nx_2d(tmp_img)
+```
+
+```elixir
+blob =
+  Evision.DNN.blobFromImage(
+    im_face_ready,
+    size: {512, 512},
+    swapRB: false
+  )
+
+Evision.DNN.Net.setInput(net, blob)
+[d1] = Evision.DNN.Net.forward(net)
+d1 = Evision.Mat.to_nx(d1, Nx.BinaryBackend)
+```
+
+```elixir
+normPred = fn d ->
+  ad1 = Nx.reshape(d, {:auto})
+  ma = ad1[Nx.argmax(d)]
+  mi = ad1[Nx.argmin(d)]
+  Nx.divide(Nx.subtract(d, mi), Nx.subtract(ma, mi))
+end
+
+pred = Nx.subtract(1, d1[[.., 0, .., ..]])
+pred = normPred.(pred)
+Evision.Mat.from_nx(Nx.as_type(Nx.multiply(255, Nx.squeeze(pred)), :u8))
+```
