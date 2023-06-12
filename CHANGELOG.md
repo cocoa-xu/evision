@@ -1,6 +1,6 @@
 # Changelog
 
-## v0.1.31 (2022-04-17)
+## v0.1.31 (2023-04-17)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.31) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.31)
 
 ### Changed
@@ -38,13 +38,13 @@
     {[1.0], [0]}
     ```
 
-## v0.1.30 (2022-03-24)
+## v0.1.30 (2023-03-24)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.30) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.30)
 
 ### Fixed
 - [smartcell] Fixed outputBlob is embedded in a list for CRNN and MobileNetV1 models.
 
-## v0.1.29 (2022-03-13)
+## v0.1.29 (2023-03-13)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.29) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.29)
 
 ### Fixed
@@ -52,14 +52,14 @@
 - [smartcell] Fixed PPResnet based models.
 - [smartcell] Fixed invalid charset URLs as they were removed in the upstream repo. CRNN models URLs to commit 12817b80.
 
-## v0.1.28 (2022-01-25)
+## v0.1.28 (2023-01-25)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.28) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.28)
 
 ### Fixed
 - [py_src] `ArgInfo.has_default` is now set to `true` if `a.defval` is `f"{a.tp}()"`. Fixed [#174](https://github.com/cocoa-xu/evision/issues/174).
 - [ci-win-precompile-core] Removed the line that deletes the `priv/x64` directory. It should be removed in the last version because we will add `priv/x64` to the DLL search path instead of copying all opencv dll files to the `priv` directory.
 
-## v0.1.27 (2022-01-23)
+## v0.1.27 (2023-01-23)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.27) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.27)
 
 ### Breaking Changes
@@ -113,7 +113,7 @@
 
   Lastly, if `EVISION_ENABLE_CUDA` is `true` while `EVISION_ENABLE_CONTRIB` is `false`, CUDA related modules will not be compiled/downloaded.
 
-## v0.1.26 (2022-01-21)
+## v0.1.26 (2023-01-21)
 Please use `v0.1.27` as precompilation binaries for targets `x86_64-windows-msvc-contrib-cuda*` and `x86_64-linux-gnu-contrib-cuda*` were incorrect.
 
 ## v0.1.25 (2022-12-18)
