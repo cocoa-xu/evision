@@ -259,6 +259,10 @@ class CppHeaderParser(object):
         if "CV_EXPORTS_W_SIMPLE" in l:
             l = l.replace("CV_EXPORTS_W_SIMPLE", "")
             modlist.append("/Simple")
+        if "CV_EXPORTS_W_PARAMS" in l:
+            l = l.replace("CV_EXPORTS_W_PARAMS", "")
+            modlist.append("/Map")
+            modlist.append("/Params")
         npos = l.find("CV_EXPORTS_AS")
         if npos < 0:
             npos = l.find('CV_WRAP_AS')
@@ -393,6 +397,7 @@ class CppHeaderParser(object):
             [~]<function_name>
             (<arg_type1> <arg_name1>[=<default_value1>] [, <arg_type2> <arg_name2>[=<default_value2>] ...])
             [const] {; | <function_body>}
+
         Returns the function declaration entry:
         [<func name>, <return value C-type>, <list of modifiers>, <list of arguments>, <original return type>, <docstring>] (see above)
         """
@@ -611,6 +616,8 @@ class CppHeaderParser(object):
                                                              ("InputOutputArray", mat),
                                                              ("OutputArray", mat),
                                                              ("noArray", arg_type)]).strip()
+                    if '/IO' in modlist and '/O' in modlist:
+                        modlist.remove('/O')
                     args.append([arg_type, arg_name, defval, modlist])
                 npos = arg_start-1
 
@@ -628,12 +635,14 @@ class CppHeaderParser(object):
     def get_dotted_name(self, name):
         """
         adds the dot-separated container class/namespace names to the bare function/class name, e.g. when we have
+
         namespace cv {
         class A {
         public:
             f(int);
         };
         }
+
         the function will convert "A" to "cv.A" and "f" to "cv.A.f".
         """
         if not self.block_stack:
@@ -661,6 +670,7 @@ class CppHeaderParser(object):
     def parse_stmt(self, stmt, end_token, mat="Mat", docstring=""):
         """
         parses the statement (ending with ';' or '}') or a block head (ending with '{')
+
         The function calls parse_class_decl or parse_func_decl when necessary. It returns
         <block_type>, <block_name>, <parse_flag>, <declaration>
         where the first 3 values only make sense for blocks (i.e. code blocks, namespaces, classes, enums and such)
@@ -772,7 +782,15 @@ class CppHeaderParser(object):
                 var_list = [var_name1] + [i.strip() for i in var_list[1:]]
 
                 for v in var_list:
-                    class_decl[3].append([var_type, v, "", var_modlist])
+                    prop_definition = v.split('=')
+                    prop_name = prop_definition[0].strip()
+                    if len(prop_definition) == 1:
+                        # default value is not provided
+                        prop_default_value = ''
+                    else:
+                        prop_default_value = prop_definition[-1]
+                    class_decl[3].append([var_type, prop_name, prop_default_value,
+                                          var_modlist])
             return stmt_type, "", False, None
 
         # something unknown

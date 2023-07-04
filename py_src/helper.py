@@ -638,6 +638,7 @@ def is_struct(argtype: str, also_get: Optional[str] = None, classname: Optional[
         'MergeMertens': 'Evision.MergeMertens',
         'MergeRobertson': 'Evision.MergeRobertson',
         'ORB': 'Evision.ORB',
+        'RotatedRect': 'Evision.RotatedRect',
         'PyRotationWarper': 'Evision.PyRotationWarper',
         'QRCodeDetector': 'Evision.QRCodeDetector',
         'QRCodeEncoder': 'Evision.QRCodeEncoder',
@@ -832,6 +833,8 @@ def is_struct(argtype: str, also_get: Optional[str] = None, classname: Optional[
         "TrackerNano_Params": "Evision.TrackerNano.Params",
 
         "ArucoDetector": "Evision.ArUco.ArucoDetector",
+        "QRCodeDetectorAruco": "Evision.QRCodeDetectorAruco",
+        "GraphicalCodeDetector": "Evision.GraphicalCodeDetector",
 
         "mcc_CChecker": "Evision.MCC.CCheckerDetector",
         "dnn_Net": "Evision.DNN.Net",
@@ -1199,6 +1202,14 @@ def map_argtype_in_spec_erlang(classname: str, argtype: str, is_in: bool, decl: 
         return '#evision_ocl_device{}'
     elif argtype == 'Index' and classname == 'flann_Index':
          return '#evision_flann_index{}'
+    elif argtype == 'QRCodeDetectorAruco':
+        return '#evision_qrcode_detector_aruco{}'
+    elif argtype == 'QRCodeDetectorAruco_Params':
+        return 'term()'
+    elif argtype in ['aruco_DetectorParameters', 'aruco::DetectorParameters']:
+        return 'term()'
+    elif argtype == 'PolishingMethod' and classname == 'UsacParams':
+        return 'integer()'
     else:
         if argtype == 'LayerId':
             return 'term()'
@@ -1291,6 +1302,14 @@ def map_argtype_in_spec_elixir(classname: str, argtype: str, is_in: bool, decl: 
         return 'Evision.OCL.Device.t()'
     elif argtype == 'Index' and classname == 'flann_Index':
          return 'Evision.Flann.Index.t()'
+    elif argtype == 'QRCodeDetectorAruco':
+        return 'Evision.QRCodeDetectorAruco'
+    elif argtype in ['QRCodeDetectorAruco_Params', 'QRCodeDetectorAruco::Params']:
+        return 'Evision.QRCodeDetectorAruco.Params'
+    elif argtype in ['aruco_DetectorParameters', 'aruco::DetectorParameters']:
+        return 'Evision.Aruco.DetectorParameters'
+    elif argtype == 'PolishingMethod' and classname == 'UsacParams':
+        return 'integer()'
     else:
         if argtype == 'LayerId':
             return 'term()'
@@ -1427,7 +1446,8 @@ def map_uppercase_to_erlang_name(name):
         "GScalar": "gScalar",
         "GStreamingCompiled": "gStreamingCompiled",
 
-        "EMDHistogramCostExtractor": "emdHistogramCostExtractor"
+        "EMDHistogramCostExtractor": "emdHistogramCostExtractor",
+        "QRCodeDetectorAruco": "qrCodeDetectorAruco"
     }
     if name[0:3] == 'cv_':
         name = name[3:]
