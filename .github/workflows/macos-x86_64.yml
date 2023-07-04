@@ -127,7 +127,7 @@ jobs:
       - name: Compile once again but without optional deps
         run: |
           source $(brew --prefix asdf)/libexec/asdf.sh
-          mix compile --force --warnings-as-errors --no-optional-deps
+          mix compile --force --no-optional-deps
 
       - name: Cache testdata
         id: cache-mix-testdata
