@@ -80,6 +80,7 @@ jobs:
       - name: Get mix deps
         if: steps.cache-mix-deps.outputs.cache-hit != 'true'
         run: |
+          source $(brew --prefix asdf)/libexec/asdf.sh
           mix deps.get
 
       - name: Cache OpenCV source code
@@ -109,10 +110,13 @@ jobs:
       - name: Compile OpenCV
         if: steps.cache-mix-compile_opencv.outputs.cache-hit != 'true'
         run: |
+          source $(brew --prefix asdf)/libexec/asdf.sh
           mix compile_opencv
 
       - name: Mix Compile
         run: |
+          source $(brew --prefix asdf)/libexec/asdf.sh
+
           rm -f _build/test/lib/evision/priv/evision.so
 
           rm -rf lib/generated && rm -rf src/generated
@@ -121,7 +125,9 @@ jobs:
           mix compile
 
       - name: Compile once again but without optional deps
-        run: mix compile --force --warnings-as-errors --no-optional-deps
+        run: |
+          source $(brew --prefix asdf)/libexec/asdf.sh
+          mix compile --force --warnings-as-errors --no-optional-deps
 
       - name: Cache testdata
         id: cache-mix-testdata
@@ -139,4 +145,5 @@ jobs:
           # export ERL_BASE="$(dirname $(dirname $(which erl)))"
           # export BEAM_SMP="$(find "${ERL_BASE}" -name beam.smp)"
           # codesign -s - -f --entitlements tmp.entitlements "${BEAM_SMP}"
+          source $(brew --prefix asdf)/libexec/asdf.sh
           find ./test -name '*_test.exs' -exec bash -c "echo {} && mix test --include require_downloading --include require_ffmpeg {}" \;
