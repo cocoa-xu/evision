@@ -65,6 +65,7 @@ jobs:
           asdf install elixir ${{ env.ELIXIR_VERSION }}
           asdf global erlang ${{ env.OTP_VERSION }}
           asdf global elixir ${{ env.ELIXIR_VERSION }}
+          source $(brew --prefix asdf)/libexec/asdf.sh
           mix local.hex --force
           mix local.rebar --force
 
