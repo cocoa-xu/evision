@@ -15,9 +15,7 @@ jobs:
     env:
       OPENCV_VER: "4.7.0"
       MIX_ENV: prod
-      OTP_VERSION: "25.2"
-      NIF_VERSION: "2.16"
-      ELIXIR_VERSION: "1.14.3"
+      ELIXIR_VERSION: "1.15.2"
       EVISION_PREFER_PRECOMPILED: "false"
       EVISION_GENERATE_LANG: "erlang,elixir"
     strategy:
@@ -30,49 +28,119 @@ jobs:
               c_compiler: gcc
               cpp_compiler: g++
               deb_arch: amd64
+              OTP_VERSION: "25"
+              NIF_VERSION: "2.16"
           - pair:
               arch: i686-linux-gnu
               cmake_toolchain_file: cc_toolchain/i686-linux-gnu.cmake
               c_compiler: gcc-i686-linux-gnu
               cpp_compiler: g++-i686-linux-gnu
               deb_arch: i386
+              OTP_VERSION: "25"
+              NIF_VERSION: "2.16"
           - pair:
               arch: aarch64-linux-gnu
               cmake_toolchain_file: cc_toolchain/aarch64-linux-gnu.cmake
               c_compiler: gcc-aarch64-linux-gnu
               cpp_compiler: g++-aarch64-linux-gnu
               deb_arch: arm64
+              OTP_VERSION: "25"
+              NIF_VERSION: "2.16"
           - pair:
               arch: armv7l-linux-gnueabihf
               cmake_toolchain_file: cc_toolchain/armv7l-linux-gnueabihf.cmake
               c_compiler: gcc-arm-linux-gnueabihf
               cpp_compiler: g++-arm-linux-gnueabihf
               deb_arch: armhf
+              OTP_VERSION: "25"
+              NIF_VERSION: "2.16"
           - pair:
               arch: ppc64le-linux-gnu
               cmake_toolchain_file: cc_toolchain/ppc64le-linux-gnu.cmake
               c_compiler: gcc-powerpc64le-linux-gnu
               cpp_compiler: g++-powerpc64le-linux-gnu
               deb_arch: ppc64el
+              OTP_VERSION: "25"
+              NIF_VERSION: "2.16"
           - pair:
               arch: s390x-linux-gnu
               cmake_toolchain_file: cc_toolchain/s390x-linux-gnu.cmake
               c_compiler: gcc-s390x-linux-gnu
               cpp_compiler: g++-s390x-linux-gnu
               deb_arch: s390x
+              OTP_VERSION: "25"
+              NIF_VERSION: "2.16"
           - pair:
               arch: riscv64-linux-gnu
               cmake_toolchain_file: cc_toolchain/riscv64-linux-gnu.cmake
               c_compiler: gcc-riscv64-linux-gnu
               cpp_compiler: g++-riscv64-linux-gnu
               deb_arch: riscv64
+              OTP_VERSION: "25"
+              NIF_VERSION: "2.16"
+          - pair:
+              arch: x86_64-linux-gnu
+              cmake_toolchain_file: ""
+              c_compiler: gcc
+              cpp_compiler: g++
+              deb_arch: amd64
+              OTP_VERSION: "26"
+              NIF_VERSION: "2.17"
+          - pair:
+              arch: i686-linux-gnu
+              cmake_toolchain_file: cc_toolchain/i686-linux-gnu.cmake
+              c_compiler: gcc-i686-linux-gnu
+              cpp_compiler: g++-i686-linux-gnu
+              deb_arch: i386
+              OTP_VERSION: "26"
+              NIF_VERSION: "2.17"
+          - pair:
+              arch: aarch64-linux-gnu
+              cmake_toolchain_file: cc_toolchain/aarch64-linux-gnu.cmake
+              c_compiler: gcc-aarch64-linux-gnu
+              cpp_compiler: g++-aarch64-linux-gnu
+              deb_arch: arm64
+              OTP_VERSION: "26"
+              NIF_VERSION: "2.17"
+          - pair:
+              arch: armv7l-linux-gnueabihf
+              cmake_toolchain_file: cc_toolchain/armv7l-linux-gnueabihf.cmake
+              c_compiler: gcc-arm-linux-gnueabihf
+              cpp_compiler: g++-arm-linux-gnueabihf
+              deb_arch: armhf
+              OTP_VERSION: "26"
+              NIF_VERSION: "2.17"
+          - pair:
+              arch: ppc64le-linux-gnu
+              cmake_toolchain_file: cc_toolchain/ppc64le-linux-gnu.cmake
+              c_compiler: gcc-powerpc64le-linux-gnu
+              cpp_compiler: g++-powerpc64le-linux-gnu
+              deb_arch: ppc64el
+              OTP_VERSION: "26"
+              NIF_VERSION: "2.17"
+          - pair:
+              arch: s390x-linux-gnu
+              cmake_toolchain_file: cc_toolchain/s390x-linux-gnu.cmake
+              c_compiler: gcc-s390x-linux-gnu
+              cpp_compiler: g++-s390x-linux-gnu
+              deb_arch: s390x
+              OTP_VERSION: "26"
+              NIF_VERSION: "2.17"
+          - pair:
+              arch: riscv64-linux-gnu
+              cmake_toolchain_file: cc_toolchain/riscv64-linux-gnu.cmake
+              c_compiler: gcc-riscv64-linux-gnu
+              cpp_compiler: g++-riscv64-linux-gnu
+              deb_arch: riscv64
+              OTP_VERSION: "26"
+              NIF_VERSION: "2.17"
 
     steps:
       - uses: actions/checkout@v3
 
       - uses: erlef/setup-beam@v1
         with:
-          otp-version: ${{ env.OTP_VERSION }}
+          otp-version: ${{ matrix.pair.OTP_VERSION }}
           elixir-version: ${{ env.ELIXIR_VERSION }}
 
       - name: Install system dependencies
@@ -83,7 +151,7 @@ jobs:
         id: cache-mix-deps
         uses: actions/cache@v3
         with:
-          key: deps-${{ hashFiles('mix.lock') }}-${{ env.OTP_VERSION }}-${{ env.ELIXIR_VERSION }}
+          key: deps-${{ hashFiles('mix.lock') }}-${{ matrix.pair.OTP_VERSION }}-${{ env.ELIXIR_VERSION }}
           path: |
             ./deps
 
@@ -136,7 +204,7 @@ jobs:
 
       - name: Create precompiled library (without contrib modules)
         run: |
-          export PKG_NAME=evision-nif_${NIF_VERSION}-${{ matrix.pair.arch }}-${GITHUB_REF##*/v}
+          export PKG_NAME=evision-nif_${{ matrix.pair.NIF_VERSION }}-${{ matrix.pair.arch }}-${GITHUB_REF##*/v}
           mkdir -p "${PKG_NAME}"
           cp -a _build/${MIX_ENV}/lib/evision/priv "${PKG_NAME}"
           cp -a lib/generated "${PKG_NAME}/elixir_generated"
@@ -177,7 +245,7 @@ jobs:
 
       - name: Create precompiled library (with contrib modules)
         run: |
-          export PKG_NAME=evision-nif_${NIF_VERSION}-${{ matrix.pair.arch }}-contrib-${GITHUB_REF##*/v}
+          export PKG_NAME=evision-nif_${{ matrix.pair.NIF_VERSION }}-${{ matrix.pair.arch }}-contrib-${GITHUB_REF##*/v}
           mkdir -p "${PKG_NAME}"
           cp -a _build/${MIX_ENV}/lib/evision/priv "${PKG_NAME}"
           cp -a lib/generated "${PKG_NAME}/elixir_generated"
