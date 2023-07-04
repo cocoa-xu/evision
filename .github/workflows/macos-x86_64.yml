@@ -43,7 +43,7 @@ concurrency:
 
 jobs:
   mix_test:
-    runs-on: macos-12-xl
+    runs-on: macos-12
     env:
       OPENCV_VER: "4.7.0"
       MIX_ENV: "test"
