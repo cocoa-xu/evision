@@ -269,7 +269,7 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
   end
 
   defp warning_if_no_cacertfile!(nil) do
-    Logger.warn("""
+    Logger.warning("""
     No certificate trust store was found.
     Tried looking for: #{inspect(@certificate_locations)}
     A certificate trust store is required in

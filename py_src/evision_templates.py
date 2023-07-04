@@ -197,7 +197,7 @@ gen_evision_nif_load_nif = """
     case :erlang.load_nif(nif_file, 0) do
       :ok -> :ok
       {:error, {:reload, _}} -> :ok
-      {:error, reason} -> Logger.warn("Failed to load nif: #{inspect(reason)}")
+      {:error, reason} -> Logger.warning("Failed to load nif: #{inspect(reason)}")
     end
   end
 """
