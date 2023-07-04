@@ -47,7 +47,7 @@ jobs:
     runs-on: windows-latest
     env:
       MIX_ENV: test
-      OPENCV_VER: "4.7.0"
+      OPENCV_VER: "4.8.0"
       OTP_VERSION: "25.2"
       ELIXIR_VERSION: "1.14.3"
       EVISION_PREFER_PRECOMPILED: "false"

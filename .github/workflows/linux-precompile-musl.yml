@@ -15,7 +15,7 @@ jobs:
     container: alpine:latest
     env:
       MIX_ENV: prod
-      OPENCV_VER: "4.7.0"
+      OPENCV_VER: "4.8.0"
       OTP_VERSION: "25.2"
       NIF_VERSION: "2.16"
       ELIXIR_VERSION: "1.14.3"
@@ -156,7 +156,7 @@ jobs:
   zig_build:
     runs-on: ubuntu-20.04
     env:
-      OPENCV_VER: "4.7.0"
+      OPENCV_VER: "4.8.0"
       MIX_ENV: prod
       OTP_VERSION: "25.2"
       NIF_VERSION: "2.16"
