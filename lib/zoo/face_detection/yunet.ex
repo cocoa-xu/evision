@@ -243,15 +243,15 @@ defmodule Evision.Zoo.FaceDetection.YuNet do
   @spec model_info(:default_model | :quant_model) :: {String.t(), String.t()}
   def model_info(:default_model) do
     {
-      "https://github.com/opencv/opencv_zoo/blob/cd1ac4e61dc51575cac38d6346494865d0dfa5ba/models/face_detection_yunet/face_detection_yunet_2022mar.onnx?raw=true",
+      "https://github.com/opencv/opencv_zoo/blob/7e062e54cf5410c09b795ff71b4a255e58498c79/models/face_detection_yunet/face_detection_yunet_2022mar.onnx?raw=true",
       "face_detection_yunet_2022mar.onnx"
     }
   end
 
   def model_info(:quant_model) do
     {
-      "https://github.com/opencv/opencv_zoo/blob/cd1ac4e61dc51575cac38d6346494865d0dfa5ba/models/face_detection_yunet/face_detection_yunet_2022mar-act_int8-wt_int8-quantized.onnx?raw=true",
-      "face_detection_yunet_2022mar-act_int8-wt_int8-quantized.onnx"
+      "https://github.com/opencv/opencv_zoo/blob/7e062e54cf5410c09b795ff71b4a255e58498c79/models/face_detection_yunet/face_detection_yunet_2022mar_int8.onnx?raw=true",
+      "face_detection_yunet_2022mar_int8.onnx"
     }
   end
 

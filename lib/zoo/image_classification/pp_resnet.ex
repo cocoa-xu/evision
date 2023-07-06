@@ -216,8 +216,8 @@ defmodule Evision.Zoo.ImageClassification.PPResNet do
 
   def model_info(:quant_model) do
     {
-      "https://github.com/opencv/opencv_zoo/blob/main/models/image_classification_ppresnet/image_classification_ppresnet50_2022jan-act_int8-wt_int8-quantized.onnx?raw=true",
-      "image_classification_ppresnet50_2022jan-act_int8-wt_int8-quantized.onnx"
+      "https://github.com/opencv/opencv_zoo/blob/main/models/image_classification_ppresnet/image_classification_ppresnet50_2022jan_int8.onnx?raw=true",
+      "image_classification_ppresnet50_2022jan_int8.onnx"
     }
   end
 
@@ -227,7 +227,7 @@ defmodule Evision.Zoo.ImageClassification.PPResNet do
   @spec labels :: {String.t(), String.t()}
   def labels do
     {
-      "https://raw.githubusercontent.com/opencv/opencv_zoo/master/models/image_classification_ppresnet/imagenet_labels.txt",
+      "https://raw.githubusercontent.com/opencv/opencv_zoo/1147b6cd24c36c6ba849812a6f4c22a4ec1c5135/models/image_classification_ppresnet/imagenet_labels.txt",
       "image_classification_ppresnet50_imagenet_labels.txt"
     }
   end
