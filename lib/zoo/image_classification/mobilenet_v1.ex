@@ -208,14 +208,14 @@ defmodule Evision.Zoo.ImageClassification.MobileNetV1 do
   @spec model_info(:default_model | :quant_model) :: {String.t(), String.t()}
   def model_info(:default_model) do
     {
-      "https://github.com/opencv/opencv_zoo/blob/master/models/image_classification_mobilenet/image_classification_mobilenetv1_2022apr.onnx?raw=true",
+      "https://github.com/opencv/opencv_zoo/blob/main/models/image_classification_mobilenet/image_classification_mobilenetv1_2022apr.onnx?raw=true",
       "image_classification_mobilenetv1_2022apr.onnx"
     }
   end
 
   def model_info(:quant_model) do
     {
-      "https://github.com/opencv/opencv_zoo/blob/master/models/image_classification_mobilenet/image_classification_mobilenetv1_2022apr-int8-quantized.onnx?raw=true",
+      "https://github.com/opencv/opencv_zoo/blob/main/models/image_classification_mobilenet/image_classification_mobilenetv1_2022apr-int8-quantized.onnx?raw=true",
       "image_classification_mobilenetv1_2022apr-int8-quantized.onnx"
     }
   end
