@@ -436,8 +436,8 @@ defmodule Evision.Zoo.FaceRecognition.SFace do
 
           case {original_results, comparison_results} do
             {%Evision.Mat{}, %Evision.Mat{}} ->
-              original_bbox = Nx.reverse(Evision.Mat.to_nx(original_results, Nx.BinaryBackend)[0])
-              comparison_bbox = Nx.reverse(Evision.Mat.to_nx(comparison_results, Nx.BinaryBackend)[0])
+              original_bbox = Evision.Mat.to_nx(original_results, Nx.BinaryBackend)[0][0..-2//1]
+              comparison_bbox = Evision.Mat.to_nx(comparison_results, Nx.BinaryBackend)[0][0..-2//1]
 
               original_feature = Evision.Zoo.FaceRecognition.SFace.infer(recognizer, original_image, original_bbox)
               comparison_feature = Evision.Zoo.FaceRecognition.SFace.infer(recognizer, comparison_image, comparison_bbox)
