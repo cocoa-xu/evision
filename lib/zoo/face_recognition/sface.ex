@@ -439,8 +439,21 @@ defmodule Evision.Zoo.FaceRecognition.SFace do
               original_bbox = Evision.Mat.to_nx(original_results, Nx.BinaryBackend)[0][0..-2//1]
               comparison_bbox = Evision.Mat.to_nx(comparison_results, Nx.BinaryBackend)[0][0..-2//1]
 
-              original_feature = Evision.Zoo.FaceRecognition.SFace.infer(recognizer, original_image, original_bbox)
-              comparison_feature = Evision.Zoo.FaceRecognition.SFace.infer(recognizer, comparison_image, comparison_bbox)
+              original_blob =
+                Evision.FaceRecognizerSF.alignCrop(recognizer, original_image, original_bbox)
+
+              original_feature =
+                Evision.FaceRecognizerSF.feature(recognizer, original_blob)
+                |> Evision.Mat.to_nx()
+                |> Evision.Mat.from_nx()
+
+              comparison_blob =
+                Evision.FaceRecognizerSF.alignCrop(recognizer, comparison_image, comparison_bbox)
+
+              comparison_feature =
+                Evision.FaceRecognizerSF.feature(recognizer, comparison_blob)
+                |> Evision.Mat.to_nx()
+                |> Evision.Mat.from_nx()
 
               %{matched: matched, retval: val, measure: measure} = Evision.Zoo.FaceRecognition.SFace.match_feature(
                 recognizer, original_feature, comparison_feature)
