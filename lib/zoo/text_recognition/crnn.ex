@@ -239,57 +239,57 @@ defmodule Evision.Zoo.TextRecognition.CRNN do
   @spec model_info(:ch | :ch_fp16 | :ch_int8 | :cn | :cn_int8 | :en | :en_fp16 | :en_int8) :: {String.t(), String.t()}
   def model_info(:en) do
     {
-      "https://github.com/opencv/opencv_zoo/blob/12817b8013bbcf7a08cf89179da4ebae1a1d76d7/models/text_recognition_crnn/text_recognition_CRNN_EN_2021sep.onnx?raw=true",
+      "https://github.com/opencv/opencv_zoo/blob/main/models/text_recognition_crnn/text_recognition_CRNN_EN_2021sep.onnx?raw=true",
       "text_recognition_CRNN_EN_2021sep.onnx"
     }
   end
 
   def model_info(:en_fp16) do
     {
-      "https://github.com/opencv/opencv_zoo/blob/12817b8013bbcf7a08cf89179da4ebae1a1d76d7/models/text_recognition_crnn/text_recognition_CRNN_EN_2022oct_fp16.onnx?raw=true",
+      "https://github.com/opencv/opencv_zoo/blob/main/models/text_recognition_crnn/text_recognition_CRNN_EN_2022oct_fp16.onnx?raw=true",
       "text_recognition_CRNN_EN_2022oct_fp16.onnx"
     }
   end
 
   def model_info(:en_int8) do
     {
-      "https://github.com/opencv/opencv_zoo/blob/12817b8013bbcf7a08cf89179da4ebae1a1d76d7/models/text_recognition_crnn/text_recognition_CRNN_EN_2022oct_int8.onnx?raw=true",
+      "https://github.com/opencv/opencv_zoo/blob/main/models/text_recognition_crnn/text_recognition_CRNN_EN_2022oct_int8.onnx?raw=true",
       "text_recognition_CRNN_EN_2022oct_int8.onnx"
     }
   end
 
   def model_info(:ch) do
     {
-      "https://github.com/opencv/opencv_zoo/blob/12817b8013bbcf7a08cf89179da4ebae1a1d76d7/models/text_recognition_crnn/text_recognition_CRNN_CH_2021sep.onnx?raw=true",
+      "https://github.com/opencv/opencv_zoo/blob/main/models/text_recognition_crnn/text_recognition_CRNN_CH_2021sep.onnx?raw=true",
       "text_recognition_CRNN_CH_2021sep.onnx"
     }
   end
 
   def model_info(:ch_fp16) do
     {
-      "https://github.com/opencv/opencv_zoo/blob/12817b8013bbcf7a08cf89179da4ebae1a1d76d7/models/text_recognition_crnn/text_recognition_CRNN_CH_2022oct_fp16.onnx?raw=true",
+      "https://github.com/opencv/opencv_zoo/blob/main/models/text_recognition_crnn/text_recognition_CRNN_CH_2022oct_fp16.onnx?raw=true",
       "text_recognition_CRNN_CH_2022oct_fp16.onnx"
     }
   end
 
   def model_info(:ch_int8) do
     {
-      "https://github.com/opencv/opencv_zoo/blob/12817b8013bbcf7a08cf89179da4ebae1a1d76d7/models/text_recognition_crnn/text_recognition_CRNN_CH_2022oct_int8.onnx?raw=true",
+      "https://github.com/opencv/opencv_zoo/blob/main/models/text_recognition_crnn/text_recognition_CRNN_CH_2022oct_int8.onnx?raw=true",
       "text_recognition_CRNN_CH_2022oct_int8.onnx"
     }
   end
 
   def model_info(:cn) do
     {
-      "https://github.com/opencv/opencv_zoo/blob/12817b8013bbcf7a08cf89179da4ebae1a1d76d7/models/text_recognition_crnn/text_recognition_CRNN_CN_2021nov.onnx?raw=true",
+      "https://github.com/opencv/opencv_zoo/blob/main/models/text_recognition_crnn/text_recognition_CRNN_CN_2021nov.onnx?raw=true",
       "text_recognition_CRNN_CN_2021nov.onnx"
     }
   end
 
   def model_info(:cn_int8) do
     {
-      "https://github.com/opencv/opencv_zoo/blob/12817b8013bbcf7a08cf89179da4ebae1a1d76d7/models/text_recognition_crnn/text_recognition_CRNN_CN_2021nov-act_int8-wt_int8-quantized.onnx?raw=true",
-      "text_recognition_CRNN_CN_2021nov-act_int8-wt_int8-quantized.onnx"
+      "https://github.com/opencv/opencv_zoo/blob/main/models/text_recognition_crnn/text_recognition_CRNN_CN_2021nov_int8.onnx?raw=true",
+      "text_recognition_CRNN_CN_2021nov_int8.onnx"
     }
   end
 
