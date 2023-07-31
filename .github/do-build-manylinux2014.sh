@@ -38,6 +38,7 @@ yum install -y openssl-devel ncurses-devel perl-IPC-Cmd python3 && \
 cd /work
 export EVISION_ENABLE_CONTRIB="${EVISION_ENABLE_CONTRIB}"
 export CMAKE_TOOLCHAIN_FILE="${CMAKE_TOOLCHAIN_FILE}"
+export MIX_ENV="${MIX_ENV}"
 rm -f _build/${MIX_ENV}/lib/evision/priv/evision.so
 
 rm -rf lib/generated && rm -rf src/generated
