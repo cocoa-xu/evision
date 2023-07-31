@@ -20,7 +20,7 @@ yum install -y openssl-devel ncurses-devel perl-IPC-Cmd python3 && \
     cd / && \
     git clone https://github.com/asdf-vm/asdf.git ~/.asdf --branch ${ASDF_VERSION} && \
     . "/root/.asdf/asdf.sh" && \
-    export KERL_CONFIGURE_OPTIONS="--without-javac --with-ssl=/openssl-${OPENSSL_VERSION}/openssl-build" && \
+    export KERL_CONFIGURE_OPTIONS="--without-javac --with-ssl=/openssl-${OPENSSL_VERSION}/openssl-build/usr/local" && \
     asdf plugin add erlang && \
     asdf plugin add elixir && \
     asdf install erlang ${OTP_VERSION} && \
