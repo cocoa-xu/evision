@@ -22,13 +22,13 @@ jobs:
       matrix:
         include:
           - pair: 
-            OTP_VERSION: "25.3"
-            NIF_VERSION: "2.16"
-            ELIXIR_VERSION: "1.15.4"
+              OTP_VERSION: "25.3.2.5"
+              NIF_VERSION: "2.16"
+              ELIXIR_VERSION: "1.15.4"
           - pair: 
-            OTP_VERSION: "26.0.2"
-            NIF_VERSION: "2.17"
-            ELIXIR_VERSION: "1.15.4"
+              OTP_VERSION: "26.0.2"
+              NIF_VERSION: "2.17"
+              ELIXIR_VERSION: "1.15.4"
     steps:
       - uses: actions/checkout@v3
       - name: Install system dependencies
@@ -42,7 +42,7 @@ jobs:
           cd "otp_src_${{ matrix.pair.OTP_VERSION }}"
           ./configure
           make -j`nproc` install
-          
+
           git clone -b "v${{ matrix.pair.ELIXIR_VERSION }}" https://github.com/elixir-lang/elixir.git
           cd elixir
           make compile
