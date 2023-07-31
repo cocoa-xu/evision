@@ -1,0 +1,134 @@
+name: linux-precompile-x86_64-manylinux2014-gnu
+
+on:
+  push:
+    tags:
+      - 'v*'
+      - 'v-manylinux2014-test'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  mix_compile:
+    runs-on: ubuntu-20.04
+    env:
+      OPENCV_VER: "4.8.0"
+      MIX_ENV: prod
+      EVISION_PREFER_PRECOMPILED: "false"
+      EVISION_GENERATE_LANG: "erlang,elixir"
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - pair:
+              arch: x86_64-linux-gnu
+              cmake_toolchain_file: ""
+              c_compiler: gcc
+              cpp_compiler: g++
+              deb_arch: amd64
+              OTP_VERSION: "25"
+              NIF_VERSION: "2.16"
+              ELIXIR_VERSION: "1.15.4"
+          - pair:
+              arch: x86_64-linux-gnu
+              cmake_toolchain_file: ""
+              c_compiler: gcc
+              cpp_compiler: g++
+              deb_arch: amd64
+              OTP_VERSION: "26"
+              NIF_VERSION: "2.17"
+              ELIXIR_VERSION: "1.15.4"
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: pull docker
+        run: |
+          sudo docker pull quay.io/pypa/manylinux2014_x86_64:latest
+
+      - name: Cache mix packages
+        id: cache-mix-deps
+        uses: actions/cache@v3
+        with:
+          key: deps-${{ hashFiles('mix.lock') }}-${{ matrix.pair.OTP_VERSION }}-${{ matrix.pair.ELIXIR_VERSION }}
+          path: |
+            ./deps
+
+      - name: Get mix deps
+        if: steps.cache-mix-deps.outputs.cache-hit != 'true'
+        run: |
+          mix deps.get
+
+      - name: Cache OpenCV source code
+        id: cache-opencv
+        uses: actions/cache@v3
+        with:
+          key: opencv-with-contrib-${{ env.OPENCV_VER }}
+          path: |
+            ./3rd_party
+
+      - name: Download OpenCV source code
+        if: steps.cache-opencv.outputs.cache-hit != 'true'
+        run: |
+          bash scripts/download_opencv.sh ${OPENCV_VER} 3rd_party/cache 3rd_party/opencv/
+          bash scripts/download_opencv_contrib.sh ${OPENCV_VER} 3rd_party/cache 3rd_party/opencv/
+
+      - name: Mix Compile (without contrib modules)
+        run: |
+          cp .github/script-to-build-manylinux2014.sh ./
+          cp .github/do-build-manylinux2014.sh ./
+          
+          export EVISION_ENABLE_CONTRIB=false
+
+          if [ "${{ matrix.pair.cmake_toolchain_file }}" != "" ]; then
+            export CMAKE_TOOLCHAIN_FILE="$(pwd)/${{ matrix.pair.cmake_toolchain_file }}"
+          fi
+          echo "CMAKE_TOOLCHAIN_FILE: ${CMAKE_TOOLCHAIN_FILE}"
+
+          rm -rf "./_build/${{ env.MIX_ENV }}/lib/evision"
+
+          bash ./script-to-build-manylinux2014.sh "${{ env.MIX_ENV }}" "${{ matrix.pair.OTP_VERSION }}" "${{ matrix.pair.ELIXIR_VERSION }}" "${EVISION_ENABLE_CONTRIB}" "${CMAKE_TOOLCHAIN_FILE}"
+
+      - name: Create precompiled library (without contrib modules)
+        run: |
+          export PKG_NAME=evision-nif_${{ matrix.pair.NIF_VERSION }}-${{ matrix.pair.arch }}-${GITHUB_REF##*/v}
+          mkdir -p "${PKG_NAME}"
+          cp -a _build/${MIX_ENV}/lib/evision/priv "${PKG_NAME}"
+          cp -a lib/generated "${PKG_NAME}/elixir_generated"
+          cp -a src/generated "${PKG_NAME}/erlang_generated"
+          tar -czf "${PKG_NAME}.tar.gz" "${PKG_NAME}"
+          rm -rf "${PKG_NAME}"
+          ls -lah "${PKG_NAME}.tar.gz"
+          mkdir -p artifacts
+          mv "${PKG_NAME}.tar.gz" artifacts
+
+      - name: Mix Compile (with contrib modules)
+        run: |
+          export EVISION_ENABLE_CONTRIB=true
+
+          if [ "${{ matrix.pair.cmake_toolchain_file }}" != "" ]; then
+            export CMAKE_TOOLCHAIN_FILE="$(pwd)/${{ matrix.pair.cmake_toolchain_file }}"
+          fi
+          echo "CMAKE_TOOLCHAIN_FILE: ${CMAKE_TOOLCHAIN_FILE}"
+
+          rm -rf "./_build/${{ env.MIX_ENV }}/lib/evision"
+
+          bash ./script-to-build-manylinux2014.sh "${{ env.MIX_ENV }}" "${{ matrix.pair.OTP_VERSION }}" "${{ matrix.pair.ELIXIR_VERSION }}" "${EVISION_ENABLE_CONTRIB}" "${CMAKE_TOOLCHAIN_FILE}"
+
+      - name: Create precompiled library (with contrib modules)
+        run: |
+          export PKG_NAME=evision-nif_${{ matrix.pair.NIF_VERSION }}-${{ matrix.pair.arch }}-contrib-${GITHUB_REF##*/v}
+          mkdir -p "${PKG_NAME}"
+          cp -a _build/${MIX_ENV}/lib/evision/priv "${PKG_NAME}"
+          cp -a lib/generated "${PKG_NAME}/elixir_generated"
+          cp -a src/generated "${PKG_NAME}/erlang_generated"
+          tar -czf "${PKG_NAME}.tar.gz" "${PKG_NAME}"
+          rm -rf "${PKG_NAME}"
+          ls -lah "${PKG_NAME}.tar.gz"
+          mkdir -p artifacts
+          mv "${PKG_NAME}.tar.gz" artifacts
+
+      - uses: softprops/action-gh-release@v1
+        with:
+          files: artifacts/*.tar.gz

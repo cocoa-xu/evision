@@ -23,14 +23,6 @@ jobs:
       matrix:
         include:
           - pair:
-              arch: x86_64-linux-gnu
-              cmake_toolchain_file: ""
-              c_compiler: gcc
-              cpp_compiler: g++
-              deb_arch: amd64
-              OTP_VERSION: "25"
-              NIF_VERSION: "2.16"
-          - pair:
               arch: i686-linux-gnu
               cmake_toolchain_file: cc_toolchain/i686-linux-gnu.cmake
               c_compiler: gcc-i686-linux-gnu
@@ -78,14 +70,6 @@ jobs:
               deb_arch: riscv64
               OTP_VERSION: "25"
               NIF_VERSION: "2.16"
-          - pair:
-              arch: x86_64-linux-gnu
-              cmake_toolchain_file: ""
-              c_compiler: gcc
-              cpp_compiler: g++
-              deb_arch: amd64
-              OTP_VERSION: "26"
-              NIF_VERSION: "2.17"
           - pair:
               arch: i686-linux-gnu
               cmake_toolchain_file: cc_toolchain/i686-linux-gnu.cmake
