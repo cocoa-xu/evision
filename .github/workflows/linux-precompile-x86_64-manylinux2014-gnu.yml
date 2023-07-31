@@ -45,19 +45,6 @@ jobs:
         run: |
           sudo docker pull quay.io/pypa/manylinux2014_x86_64:latest
 
-      - name: Cache mix packages
-        id: cache-mix-deps
-        uses: actions/cache@v3
-        with:
-          key: deps-${{ hashFiles('mix.lock') }}-${{ matrix.pair.OTP_VERSION }}-${{ matrix.pair.ELIXIR_VERSION }}
-          path: |
-            ./deps
-
-      - name: Get mix deps
-        if: steps.cache-mix-deps.outputs.cache-hit != 'true'
-        run: |
-          mix deps.get
-
       - name: Cache OpenCV source code
         id: cache-opencv
         uses: actions/cache@v3
