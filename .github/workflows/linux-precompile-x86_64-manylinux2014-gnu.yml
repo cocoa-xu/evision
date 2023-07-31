@@ -27,7 +27,7 @@ jobs:
               cmake_toolchain_file: ""
               c_compiler: gcc
               cpp_compiler: g++
-              OTP_VERSION: "25"
+              OTP_VERSION: "25.3.2"
               NIF_VERSION: "2.16"
               ELIXIR_VERSION: "1.15.4"
           - pair:
@@ -35,7 +35,7 @@ jobs:
               cmake_toolchain_file: ""
               c_compiler: gcc
               cpp_compiler: g++
-              OTP_VERSION: "26"
+              OTP_VERSION: "26.0.2"
               NIF_VERSION: "2.17"
               ELIXIR_VERSION: "1.15.4"
     steps:
@@ -108,7 +108,7 @@ jobs:
       - name: Create precompiled library (with contrib modules)
         run: |
           # export PKG_NAME=evision-nif_${{ matrix.pair.NIF_VERSION }}-${{ matrix.pair.arch }}-contrib-${GITHUB_REF##*/v}
-          
+
           # todo: use the line above
           export PKG_NAME=evision-nif_${{ matrix.pair.NIF_VERSION }}-${{ matrix.pair.arch }}-${GITHUB_REF}
 
