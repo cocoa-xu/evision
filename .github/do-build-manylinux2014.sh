@@ -37,6 +37,7 @@ yum install -y openssl-devel ncurses-devel perl-IPC-Cmd python3 && \
 cd /work
 export EVISION_ENABLE_CONTRIB="${EVISION_ENABLE_CONTRIB}"
 export MIX_ENV="${MIX_ENV}"
+export EVISION_PREFER_PRECOMPILED="false"
 rm -f _build/${MIX_ENV}/lib/evision/priv/evision.so
 
 rm -rf lib/generated && rm -rf src/generated
