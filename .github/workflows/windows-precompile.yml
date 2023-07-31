@@ -14,8 +14,8 @@ jobs:
     runs-on: windows-latest
     env:
       MIX_ENV: prod
-      OPENCV_VER: "4.7.0"
-      ELIXIR_VERSION: "1.15.2"
+      OPENCV_VER: "4.8.0"
+      ELIXIR_VERSION: "1.15.4"
       EVISION_PREFER_PRECOMPILED: "false"
       EVISION_GENERATE_LANG: "erlang,elixir"
       MAKE: "nmake"

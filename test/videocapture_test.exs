@@ -11,14 +11,17 @@ defmodule Evision.VideoCapture.Test do
 
     %Evision.VideoCapture{
       isOpened: true,
-      fps: 43.2,
+      fps: 60.0,
       frame_count: 18.0,
       frame_height: 1080.0,
       frame_width: 1920.0
     } = video
 
     fourcc = Evision.VideoCapture.get(video, Evision.Constant.cv_CAP_PROP_FOURCC())
-    assert 828_601_960.0 == fourcc
+
+    # "\x63\x76\x65\x68"
+    # "cveh" => "hevc"
+    assert 1668703592.0 == fourcc
 
     %Evision.Mat{shape: {1080, 1920, 3}} = Evision.VideoCapture.read(video)
 

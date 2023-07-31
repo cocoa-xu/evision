@@ -35,6 +35,5 @@ defmodule Evision.DNN.TextDetectionModelDB.Test do
 
     assert vertices == [[{2, 19}, {2, 8}, {27, 5}, {27, 17}]]
     assert Enum.count(confidences) > 0
-    assert Enum.all?(confidences, fn x -> x == 1.0 end)
   end
 end

@@ -329,6 +329,10 @@ class FuncInfo(object):
                 if defval and len(defval) > 0:
                     if arg_type_info.atype == "QRCodeEncoder_Params":
                         code_decl += "    QRCodeEncoder::Params %s=%s;\n" % (a.name, defval)
+                    elif arg_type_info.atype == "QRCodeDetectorAruco_Params":
+                        code_decl += "    QRCodeDetectorAruco::Params %s=%s;\n" % (a.name, defval)
+                    elif arg_type_info.atype == "aruco_DetectorParameters":
+                        code_decl += "    aruco::DetectorParameters %s=%s;\n" % (a.name, defval)
                     else:
                         if arg_type_info.atype == "FileStorage" or (underscore_type in all_classes and all_classes[underscore_type].issimple is False):
                             code_decl += "    Ptr<%s> ptr_%s;\n" % (arg_type_info.atype, a.name,)
@@ -342,6 +346,10 @@ class FuncInfo(object):
                         if arg_type_info.atype == "FileStorage" or (underscore_type in all_classes and all_classes[underscore_type].issimple is False):
                             code_decl += "    Ptr<%s> ptr_%s;\n" % (arg_type_info.atype, a.name)
                             code_from_ptr += "    %s %s; if (ptr_%s.get()) { %s = *ptr_%s.get(); }\n    " % (arg_type_info.atype, a.name, a.name, a.name, a.name)
+                        elif arg_type_info.atype == "QRCodeDetectorAruco_Params":
+                            code_decl += "    QRCodeDetectorAruco::Params %s;\n" % (a.name,)
+                        elif arg_type_info.atype == "aruco_DetectorParameters":
+                            code_decl += "    aruco::DetectorParameters %s;\n" % (a.name,)
                         else:
                             code_decl += "    %s %s;\n" % (arg_type_info.atype, a.name)
 
