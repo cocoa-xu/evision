@@ -37,18 +37,19 @@ jobs:
 
       - name: Compile and Install Erlang and Elixir using asdf
         run: |
+          rm -rf ${HOME}/.asdf
           git clone https://github.com/asdf-vm/asdf.git ${HOME}/.asdf --branch v0.12.0
           export ASDF_DIR="${HOME}/.asdf"
           . "${HOME}/.asdf/asdf.sh"
           export KERL_CONFIGURE_OPTIONS="--without-javac"
-          asdf plugin add erlang
-          asdf plugin add elixir
-          asdf install erlang "${{ matrix.pair.OTP_VERSION }}"
-          asdf install elixir "${{ matrix.pair.ELIXIR_VERSION }}"
-          asdf global erlang "${{ matrix.pair.OTP_VERSION }}"
-          asdf global elixir "${{ matrix.pair.ELIXIR_VERSION }}"
-          mix local.hex --force
-          mix local.rebar --force
+          asdf plugin add erlang || true
+          asdf plugin add elixir || true
+          asdf install erlang "${{ matrix.pair.OTP_VERSION }}" || true
+          asdf install elixir "${{ matrix.pair.ELIXIR_VERSION }}" || true
+          asdf global erlang "${{ matrix.pair.OTP_VERSION }}" || true
+          asdf global elixir "${{ matrix.pair.ELIXIR_VERSION }}" || true
+          mix local.hex --force || true
+          mix local.rebar --force || true
 
       - name: Cache mix packages
         id: cache-mix-deps
