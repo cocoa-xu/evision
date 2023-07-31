@@ -50,13 +50,13 @@ jobs:
       OPENCV_VER: "4.7.0"
       NERVES_LIVEBOOK_VER: "v0.10.1"
       
-      ELIXIR_VERSION: "1.15.2"
+      ELIXIR_VERSION: "1.15.4"
       EVISION_PREFER_PRECOMPILED: "false"
 
     strategy:
       matrix:
         target: [rpi4, rpi3a, rpi3, rpi2, rpi0, rpi, bbb, osd32mp1, npi_imx6ull, grisp2, mangopi_mq_pro]
-        otp_version: ["25", "26"]
+        otp_version: ["25"]
 
     steps:
       - uses: actions/checkout@v3
