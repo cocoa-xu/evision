@@ -87,7 +87,7 @@ set_target_properties(evision PROPERTIES
 )
 
 if(UNIX AND NOT APPLE)
-    set_target_properties(evision PROPERTIES INSTALL_RPATH "\$ORIGIN/lib")
+    set_target_properties(evision PROPERTIES INSTALL_RPATH "\$ORIGIN/lib:\$ORIGIN/lib64")
 elseif(UNIX AND APPLE)
     # Although the compiler complains about not using these,
     # things only work with them set
