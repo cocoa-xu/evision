@@ -16,28 +16,36 @@ jobs:
     env:
       MIX_ENV: prod
       OPENCV_VER: "4.7.0"
-      OTP_VERSION: "25.2"
-      NIF_VERSION: "2.16"
-      ELIXIR_VERSION: "1.14.3"
       EVISION_PREFER_PRECOMPILED: "false"
       EVISION_GENERATE_LANG: "erlang,elixir"
+    strategy:
+      matrix:
+        include:
+          - pair: 
+            OTP_VERSION: "25.3"
+            NIF_VERSION: "2.16"
+            ELIXIR_VERSION: "1.14.3"
+          - pair: 
+            OTP_VERSION: "26.0.2"
+            NIF_VERSION: "2.17"
+            ELIXIR_VERSION: "1.15.4"
     steps:
       - uses: actions/checkout@v3
       - name: Install system dependencies
         run: |
           apk add cmake make python3 bash curl unzip gcc g++ ncurses-dev openssl-dev linux-headers perl git dpkg patch
-          
+
       - name: Compile and Install Erlang and Elixir using asdf
         run: |
           git clone https://github.com/asdf-vm/asdf.git ~/.asdf --branch v0.12.0
           . "$HOME/.asdf/asdf.sh"
-          export KERL_CONFIGURE_OPTIONS="--without-javac --with-ssl=${OPENSSL_PATH}"
+          export KERL_CONFIGURE_OPTIONS="--without-javac"
           asdf plugin add erlang
           asdf plugin add elixir
-          asdf install erlang "${OTP_VERSION}"
-          asdf install elixir "${ELIXIR_VERSION}"
-          asdf global erlang "${OTP_VERSION}"
-          asdf global elixir "${ELIXIR_VERSION}"
+          asdf install erlang "${matrix.pair.OTP_VERSION}"
+          asdf install elixir "${matrix.pair.ELIXIR_VERSION}"
+          asdf global erlang "${matrix.pair.OTP_VERSION}"
+          asdf global elixir "${matrix.pair.ELIXIR_VERSION}"
           mix local.hex --force
           mix local.rebar --force
 
@@ -45,7 +53,7 @@ jobs:
         id: cache-mix-deps
         uses: actions/cache@v3
         with:
-          key: deps-${{ hashFiles('mix.lock') }}-${{ env.OTP_VERSION }}-${{ env.ELIXIR_VERSION }}
+          key: deps-${{ hashFiles('mix.lock') }}-${{ matrix.pair.OTP_VERSION }}-${{ matrix.pair.ELIXIR_VERSION }}
           path: |
             ./deps
 
@@ -80,7 +88,6 @@ jobs:
 
       - name: Compile OpenCV (without contrib modules)
         run: |
-          export PATH="${PATH}:${HOME}/.elixir/elixir-${ELIXIR_VERSION}/bin"
           export EVISION_ENABLE_CONTRIB=false
           . "$HOME/.asdf/asdf.sh"
 
@@ -90,7 +97,6 @@ jobs:
 
       - name: Mix compile (without contrib modules)
         run: |
-          export PATH="${PATH}:${HOME}/.elixir/elixir-${ELIXIR_VERSION}/bin"
           export EVISION_ENABLE_CONTRIB=false
 
           . "$HOME/.asdf/asdf.sh"
@@ -104,8 +110,7 @@ jobs:
 
       - name: Create precompiled library (without contrib modules)
         run: |
-          export PKG_NAME=evision-nif_${NIF_VERSION}-x86_64-linux-musl-${GITHUB_REF##*/v}
-          export PATH="${PATH}:${HOME}/.elixir/elixir-${ELIXIR_VERSION}/bin"
+          export PKG_NAME=evision-nif_${{ matrix.pair.NIF_VERSION }}-x86_64-linux-musl-${GITHUB_REF##*/v}
           mkdir -p "${PKG_NAME}"
           cp -a _build/${MIX_ENV}/lib/evision/priv "${PKG_NAME}"
           cp -a lib/generated "${PKG_NAME}/elixir_generated"
@@ -118,7 +123,6 @@ jobs:
 
       - name: Compile OpenCV (with contrib modules)
         run: |
-          export PATH="${PATH}:${HOME}/.elixir/elixir-${ELIXIR_VERSION}/bin"
           export EVISION_ENABLE_CONTRIB=true
 
           . "$HOME/.asdf/asdf.sh"
@@ -129,7 +133,6 @@ jobs:
 
       - name: Mix compile (without contrib modules)
         run: |
-          export PATH="${PATH}:${HOME}/.elixir/elixir-${ELIXIR_VERSION}/bin"
           export EVISION_ENABLE_CONTRIB=true
 
           . "$HOME/.asdf/asdf.sh"
@@ -143,7 +146,7 @@ jobs:
 
       - name: Create precompiled library (with contrib modules)
         run: |
-          export PKG_NAME=evision-nif_${NIF_VERSION}-x86_64-linux-musl-contrib-${GITHUB_REF##*/v}
+          export PKG_NAME=evision-nif_${{ matrix.pair.NIF_VERSION }}-x86_64-linux-musl-contrib-${GITHUB_REF##*/v}
           export PATH="${PATH}:${HOME}/.elixir/elixir-${ELIXIR_VERSION}/bin"
           mkdir -p "${PKG_NAME}"
           cp -a _build/${MIX_ENV}/lib/evision/priv "${PKG_NAME}"
@@ -164,16 +167,33 @@ jobs:
     env:
       OPENCV_VER: "4.7.0"
       MIX_ENV: prod
-      OTP_VERSION: "25.2"
-      NIF_VERSION: "2.16"
-      ELIXIR_VERSION: "1.14.3"
       ZIG_VERSION: "0.8.0"
       EVISION_PREFER_PRECOMPILED: "false"
       EVISION_GENERATE_LANG: "erlang,elixir"
     strategy:
       fail-fast: false
       matrix:
-        arch: [aarch64-linux-musl, riscv64-linux-musl]
+        include:
+          - pair:
+            arch: aarch64-linux-musl
+            OTP_VERSION: "25.3"
+            NIF_VERSION: "2.16"
+            ELIXIR_VERSION: "1.14.3"
+          - pair:
+            arch: aarch64-linux-musl
+            OTP_VERSION: "26.0.2"
+            NIF_VERSION: "2.17"
+            ELIXIR_VERSION: "1.15.4"
+          - pair:
+            arch: riscv64-linux-musl
+            OTP_VERSION: "25.3"
+            NIF_VERSION: "2.16"
+            ELIXIR_VERSION: "1.14.3"
+          - pair:
+            arch: riscv64-linux-musl
+            OTP_VERSION: "26.0.2"
+            NIF_VERSION: "2.17"
+            ELIXIR_VERSION: "1.15.4"
 
     steps:
       - uses: actions/checkout@v3
@@ -181,8 +201,8 @@ jobs:
       - name: Install OTP and Elixir
         uses: erlef/setup-beam@v1
         with:
-          otp-version: ${{ env.OTP_VERSION }}
-          elixir-version: ${{ env.ELIXIR_VERSION }}
+          otp-version: ${{ matrix.pair.OTP_VERSION }}
+          elixir-version: ${{ matrix.pair.ELIXIR_VERSION }}
 
       - name: Install Zig
         uses: goto-bus-stop/setup-zig@v1
@@ -198,7 +218,7 @@ jobs:
         id: cache-mix-deps
         uses: actions/cache@v3
         with:
-          key: deps-${{ hashFiles('mix.lock') }}-${{ env.OTP_VERSION }}-${{ env.ELIXIR_VERSION }}
+          key: deps-${{ hashFiles('mix.lock') }}-${{ matrix.pair.OTP_VERSION }}-${{ matrix.pair.ELIXIR_VERSION }}
           path: |
             ./deps
 
@@ -258,7 +278,7 @@ jobs:
 
       - name: Create precompiled library (without contrib modules)
         run: |
-          export PKG_NAME=evision-nif_${NIF_VERSION}-${{ matrix.arch }}-${GITHUB_REF##*/v}
+          export PKG_NAME=evision-nif_${{ matrix.pair.NIF_VERSION }}-${{ matrix.arch }}-${GITHUB_REF##*/v}
           mkdir -p "${PKG_NAME}"
           cp -a _build/${MIX_ENV}/lib/evision/priv "${PKG_NAME}"
           cp -a lib/generated "${PKG_NAME}/elixir_generated"
@@ -296,7 +316,7 @@ jobs:
 
       - name: Create precompiled library (with contrib modules)
         run: |
-          export PKG_NAME=evision-nif_${NIF_VERSION}-${{ matrix.arch }}-contrib-${GITHUB_REF##*/v}
+          export PKG_NAME=evision-nif_${{ matrix.pair.NIF_VERSION }}-${{ matrix.arch }}-contrib-${GITHUB_REF##*/v}
           mkdir -p "${PKG_NAME}"
           cp -a _build/${MIX_ENV}/lib/evision/priv "${PKG_NAME}"
           cp -a lib/generated "${PKG_NAME}/elixir_generated"
