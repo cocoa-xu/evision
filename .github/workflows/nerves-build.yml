@@ -48,20 +48,53 @@ jobs:
       MIX_ENV: prod
       NERVES_PROJ_NAME: nerves_evision
       OPENCV_VER: "4.7.0"
-      NERVES_LIVEBOOK_VER: "v0.8.1"
-      OTP_VERSION: "25.2"
-      ELIXIR_VERSION: "1.14.3"
+      NERVES_LIVEBOOK_VER: "v0.10.1"
+      
+      ELIXIR_VERSION: "1.15.4"
       EVISION_PREFER_PRECOMPILED: "false"
 
     strategy:
       matrix:
-        target: [rpi4, rpi3a, rpi3, rpi2, rpi0, rpi, bbb, osd32mp1, npi_imx6ull, grisp2, mangopi_mq_pro]
+        include:
+          - pair:
+              target: rpi4
+              otp_version: "26"
+          - pair:
+              target: rpi3a
+              otp_version: "26"
+          - pair:
+              target: rpi3
+              otp_version: "26"
+          - pair:
+              target: rpi2
+              otp_version: "26"
+          - pair:
+              target: rpi0
+              otp_version: "26"
+          - pair:
+              target: rpi
+              otp_version: "26"
+          - pair:
+              target: bbb
+              otp_version: "26"
+          - pair:
+              target: osd32mp1
+              otp_version: "26"
+          - pair:
+              target: npi_imx6ull
+              otp_version: "26"
+          - pair:
+              target: mangopi_mq_pro
+              otp_version: "26"
+          - pair:
+              target: grisp2
+              otp_version: "26"
 
     steps:
       - uses: actions/checkout@v3
       - uses: erlef/setup-beam@v1
         with:
-          otp-version: ${{ env.OTP_VERSION }}
+          otp-version: ${{ matrix.pair.otp_version }}
           elixir-version: ${{ env.ELIXIR_VERSION }}
 
       - name: Install nerves and system dependencies
@@ -76,7 +109,7 @@ jobs:
         id: cache-mix-deps
         uses: actions/cache@v3
         with:
-          key: deps-${{ hashFiles('mix.lock') }}-${{ env.OTP_VERSION }}-${{ env.ELIXIR_VERSION }}
+          key: deps-${{ hashFiles('mix.lock') }}-${{ matrix.pair.otp_version }}-${{ env.ELIXIR_VERSION }}
           path: |
             ./deps
 
@@ -115,7 +148,7 @@ jobs:
           mv mix.exs.tmp mix.exs
           sed -i 's/nx, "~> 0.3.0/nx, "~> 0.4/g' mix.exs
           cat mix.exs
-          export MIX_TARGET=${{ matrix.target }}
+          export MIX_TARGET=${{ matrix.pair.target }}
           mix deps.get
           mix deps.update nx
           mix deps.update kino
@@ -125,15 +158,15 @@ jobs:
           mix deps.compile
           mix firmware
           mkdir -p "/tmp/firmware"
-          cp "./_build/${MIX_TARGET}_${MIX_ENV}/nerves/images/nerves_livebook.fw" "/tmp/firmware/${NERVES_PROJ_NAME}_${{ matrix.target }}_${MIX_ENV}.fw"
+          cp "./_build/${MIX_TARGET}_${MIX_ENV}/nerves/images/nerves_livebook.fw" "/tmp/firmware/${NERVES_PROJ_NAME}_${{ matrix.pair.target }}_${MIX_ENV}.fw"
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v2.2.4
         with:
-          name: ${{ env.NERVES_PROJ_NAME }}_${{ matrix.target }}_${{ env.MIX_ENV }}.fw
-          path: /tmp/firmware/${{ env.NERVES_PROJ_NAME }}_${{ matrix.target }}_${{ env.MIX_ENV }}.fw
+          name: ${{ env.NERVES_PROJ_NAME }}_${{ matrix.pair.target }}_${{ env.MIX_ENV }}.fw
+          path: /tmp/firmware/${{ env.NERVES_PROJ_NAME }}_${{ matrix.pair.target }}_${{ env.MIX_ENV }}.fw
       
       - uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          files: /tmp/firmware/${{ env.NERVES_PROJ_NAME }}_${{ matrix.target }}_${{ env.MIX_ENV }}.fw
+          files: /tmp/firmware/${{ env.NERVES_PROJ_NAME }}_${{ matrix.pair.target }}_${{ env.MIX_ENV }}.fw

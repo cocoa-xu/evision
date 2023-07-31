@@ -17,7 +17,6 @@ jobs:
       OPENCV_VER: "4.7.0"
       EVISION_PREFER_PRECOMPILED: "false"
       EVISION_GENERATE_LANG: "erlang,elixir"
-      NIF_VERSION: "2.16"
     strategy:
       fail-fast: false
       matrix:
@@ -25,16 +24,43 @@ jobs:
           - pair:
               arch: x86_64
               arch_name: x86_64
+              NIF_VERSION: "2.16"
+              OTP_VERSION: "25.3.2.2"
+              ELIXIR_VERSION: "1.15.2"
           - pair:
               arch: arm64
               arch_name: aarch64
+              NIF_VERSION: "2.16"
+              OTP_VERSION: "25.3.2.2"
+              ELIXIR_VERSION: "1.15.2"
+          - pair:
+              arch: x86_64
+              arch_name: x86_64
+              NIF_VERSION: "2.17"
+              OTP_VERSION: "26.0.2"
+              ELIXIR_VERSION: "1.15.2"
+          - pair:
+              arch: arm64
+              arch_name: aarch64
+              NIF_VERSION: "2.17"
+              OTP_VERSION: "26.0.2"
+              ELIXIR_VERSION: "1.15.2"
 
     steps:
       - uses: actions/checkout@v3
 
       - name: Install Erlang and Elixir
         run: |
-          brew install erlang elixir
+          brew install autoconf coreutils curl git openssl wxwidgets asdf ffmpeg
+          brew link ffmpeg
+          asdf plugin add erlang https://github.com/asdf-vm/asdf-erlang.git
+          asdf plugin-add elixir https://github.com/asdf-vm/asdf-elixir.git
+          export KERL_CONFIGURE_OPTIONS="--disable-debug --without-javac"
+          asdf install erlang ${{ env.OTP_VERSION }}
+          asdf install elixir ${{ env.ELIXIR_VERSION }}
+          asdf global erlang ${{ env.OTP_VERSION }}
+          asdf global elixir ${{ env.ELIXIR_VERSION }}
+          source $(brew --prefix asdf)/libexec/asdf.sh
           mix local.hex --force
           mix local.rebar --force
 
@@ -49,6 +75,7 @@ jobs:
       - name: Get mix deps
         if: steps.cache-mix-deps.outputs.cache-hit != 'true'
         run: |
+          source $(brew --prefix asdf)/libexec/asdf.sh
           mix deps.get
 
       - name: Cache OpenCV source code
@@ -67,6 +94,7 @@ jobs:
 
       - name: Compile OpenCV (without contrib modules)
         run: |
+          source $(brew --prefix asdf)/libexec/asdf.sh
           export EVISION_ENABLE_CONTRIB=false
           export CMAKE_OPENCV_OPTIONS="-D WITH_FFMPEG=OFF"
           if [ "${{ matrix.pair.arch }}" = "arm64" ]; then
@@ -80,6 +108,7 @@ jobs:
 
       - name: Mix compile (without contrib modules)
         run: |
+          source $(brew --prefix asdf)/libexec/asdf.sh
           export EVISION_ENABLE_CONTRIB=false
           export CMAKE_OPENCV_OPTIONS="-D WITH_FFMPEG=OFF"
           if [ "${{ matrix.pair.arch }}" = "arm64" ]; then
@@ -95,7 +124,7 @@ jobs:
 
       - name: Create precompiled library (without contrib modules)
         run: |
-          export PKG_NAME=evision-nif_${NIF_VERSION}-${{ matrix.pair.arch_name }}-apple-darwin-${GITHUB_REF##*/v}
+          export PKG_NAME=evision-nif_${{ matrix.pair.NIF_VERSION }}-${{ matrix.pair.arch_name }}-apple-darwin-${GITHUB_REF##*/v}
           mkdir -p "${PKG_NAME}"
           cp -a _build/${MIX_ENV}/lib/evision/priv "${PKG_NAME}"
           cp -a lib/generated "${PKG_NAME}/elixir_generated"
@@ -108,6 +137,7 @@ jobs:
       
       - name: Compile OpenCV (with contrib modules)
         run: |
+          source $(brew --prefix asdf)/libexec/asdf.sh
           export EVISION_ENABLE_CONTRIB=true
           export CMAKE_OPENCV_OPTIONS="-D WITH_FFMPEG=OFF"
           if [ "${{ matrix.pair.arch }}" = "arm64" ]; then
@@ -121,6 +151,7 @@ jobs:
 
       - name: Mix compile (with contrib modules)
         run: |
+          source $(brew --prefix asdf)/libexec/asdf.sh
           export EVISION_ENABLE_CONTRIB=true
           export CMAKE_OPENCV_OPTIONS="-D WITH_FFMPEG=OFF"
           if [ "${{ matrix.pair.arch }}" = "arm64" ]; then
@@ -136,7 +167,7 @@ jobs:
 
       - name: Create precompiled library (with contrib modules)
         run: |
-          export PKG_NAME=evision-nif_${NIF_VERSION}-${{ matrix.pair.arch_name }}-apple-darwin-contrib-${GITHUB_REF##*/v}
+          export PKG_NAME=evision-nif_${{ matrix.pair.NIF_VERSION }}-${{ matrix.pair.arch_name }}-apple-darwin-contrib-${GITHUB_REF##*/v}
           mkdir -p "${PKG_NAME}"
           cp -a _build/${MIX_ENV}/lib/evision/priv "${PKG_NAME}"
           cp -a lib/generated "${PKG_NAME}/elixir_generated"
