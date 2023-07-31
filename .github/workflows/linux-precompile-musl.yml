@@ -37,8 +37,8 @@ jobs:
 
       - name: Compile and Install Erlang and Elixir using asdf
         run: |
-          git clone https://github.com/asdf-vm/asdf.git ~/.asdf --branch v0.12.0
-          . "~/.asdf/asdf.sh"
+          git clone https://github.com/asdf-vm/asdf.git ${HOME}/.asdf --branch v0.12.0
+          . "${HOME}/.asdf/asdf.sh"
           export KERL_CONFIGURE_OPTIONS="--without-javac"
           asdf plugin add erlang
           asdf plugin add elixir
@@ -60,7 +60,7 @@ jobs:
       - name: Get mix deps
         if: steps.cache-mix-deps.outputs.cache-hit != 'true'
         run: |
-          . "~/.asdf/asdf.sh"
+          . "${HOME}/.asdf/asdf.sh"
           mix deps.get
 
       - name: Cache OpenCV Source Code
@@ -89,7 +89,7 @@ jobs:
       - name: Compile OpenCV (without contrib modules)
         run: |
           export EVISION_ENABLE_CONTRIB=false
-          . "~/.asdf/asdf.sh"
+          . "${HOME}/.asdf/asdf.sh"
 
           rm -rf "./_build/${{ env.MIX_ENV }}/lib/evision"
 
@@ -99,7 +99,7 @@ jobs:
         run: |
           export EVISION_ENABLE_CONTRIB=false
 
-          . "~/.asdf/asdf.sh"
+          . "${HOME}/.asdf/asdf.sh"
 
           rm -f _build/${MIX_ENV}/lib/evision/priv/evision.so
 
@@ -125,7 +125,7 @@ jobs:
         run: |
           export EVISION_ENABLE_CONTRIB=true
 
-          . "~/.asdf/asdf.sh"
+          . "${HOME}/.asdf/asdf.sh"
 
           rm -rf "./_build/${{ env.MIX_ENV }}/lib/evision"
 
@@ -135,7 +135,7 @@ jobs:
         run: |
           export EVISION_ENABLE_CONTRIB=true
 
-          . "~/.asdf/asdf.sh"
+          . "${HOME}/.asdf/asdf.sh"
 
           rm -f _build/${MIX_ENV}/lib/evision/priv/evision.so
 
