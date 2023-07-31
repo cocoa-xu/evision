@@ -58,7 +58,7 @@ jobs:
         include:
           - pair:
               target: rpi4
-              otp_version: "25"
+              otp_version: "26"
           - pair:
               target: rpi3a
               otp_version: "26"
