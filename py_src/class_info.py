@@ -114,14 +114,16 @@ class ClassInfo(object):
         while base_class is not None:
             if base_class \
                 and (
-                        current_class.cname.startswith("cv::ml") 
+                        base_class == "GraphicalCodeDetector"
+                        or current_class.cname.startswith("cv::ml") 
+                        or "Calibrate" in current_class.cname 
                         or "Calibrate" in current_class.cname 
                         or (current_class.base is not None and "Feature2D" in current_class.base) 
                         or (current_class.base is not None and "Matcher" in current_class.base)
                         or (current_class.base is not None and "Algorithm" in current_class.base)
                         or (current_class.base is not None and current_class.cname.startswith("cv::dnn"))
                     ):
-                if base_class in codegen.classes:
+                if base_class in codegen.classes and current_class.base is not None:
                     base_class = codegen.classes[current_class.base]
                     for base_method_name in base_class.methods:
                         if base_method_name not in methods:
