@@ -242,7 +242,8 @@ class ClassInfo(object):
         while base_class is not None:
             if base_class \
                 and (
-                        current_class.cname.startswith("cv::ml") 
+                        base_class == "GraphicalCodeDetector"
+                        or current_class.cname.startswith("cv::ml") 
                         or "Calibrate" in current_class.cname 
                         or (current_class.base is not None and "Feature2D" in current_class.base) 
                         or (current_class.base is not None and "Matcher" in current_class.base)
