@@ -64,28 +64,28 @@ jobs:
               otp_version: "26"
           - pair:
               target: rpi3
-              otp_version: "25"
+              otp_version: "26"
           - pair:
               target: rpi2
-              otp_version: "25"
+              otp_version: "26"
           - pair:
               target: rpi0
               otp_version: "26"
           - pair:
               target: rpi
-              otp_version: "25"
+              otp_version: "26"
           - pair:
               target: bbb
-              otp_version: "25"
+              otp_version: "26"
           - pair:
               target: osd32mp1
-              otp_version: "25"
+              otp_version: "26"
           - pair:
               target: npi_imx6ull
-              otp_version: "25"
+              otp_version: "26"
           - pair:
               target: mangopi_mq_pro
-              otp_version: "25"
+              otp_version: "26"
           - pair:
               target: grisp2
               otp_version: "26"
