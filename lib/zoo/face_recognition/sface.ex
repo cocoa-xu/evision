@@ -322,15 +322,15 @@ defmodule Evision.Zoo.FaceRecognition.SFace do
   @spec model_info(:default_model | :quant_model) :: {String.t(), String.t()}
   def model_info(:default_model) do
     {
-      "https://github.com/opencv/opencv_zoo/blob/master/models/face_recognition_sface/face_recognition_sface_2021dec.onnx?raw=true",
+      "https://github.com/opencv/opencv_zoo/blob/main/models/face_recognition_sface/face_recognition_sface_2021dec.onnx?raw=true",
       "face_recognition_sface_2021dec.onnx"
     }
   end
 
   def model_info(:quant_model) do
     {
-      "https://github.com/opencv/opencv_zoo/blob/master/models/face_recognition_sface/face_recognition_sface_2021dec-act_int8-wt_int8-quantized.onnx?raw=true",
-      "face_recognition_sface_2021dec-act_int8-wt_int8-quantized.onnx"
+      "https://github.com/opencv/opencv_zoo/blob/main/models/face_recognition_sface/face_recognition_sface_2021dec_int8.onnx?raw=true",
+      "face_recognition_sface_2021dec_int8.onnx"
     }
   end
 
@@ -436,11 +436,24 @@ defmodule Evision.Zoo.FaceRecognition.SFace do
 
           case {original_results, comparison_results} do
             {%Evision.Mat{}, %Evision.Mat{}} ->
-              original_bbox = Nx.reverse(Evision.Mat.to_nx(original_results, Nx.BinaryBackend)[0])
-              comparison_bbox = Nx.reverse(Evision.Mat.to_nx(comparison_results, Nx.BinaryBackend)[0])
+              original_bbox = Evision.Mat.to_nx(original_results, Nx.BinaryBackend)[0][0..-2//1]
+              comparison_bbox = Evision.Mat.to_nx(comparison_results, Nx.BinaryBackend)[0][0..-2//1]
 
-              original_feature = Evision.Zoo.FaceRecognition.SFace.infer(recognizer, original_image, original_bbox)
-              comparison_feature = Evision.Zoo.FaceRecognition.SFace.infer(recognizer, comparison_image, comparison_bbox)
+              original_blob =
+                Evision.FaceRecognizerSF.alignCrop(recognizer, original_image, original_bbox)
+
+              original_feature =
+                Evision.FaceRecognizerSF.feature(recognizer, original_blob)
+                |> Evision.Mat.to_nx()
+                |> Evision.Mat.from_nx()
+
+              comparison_blob =
+                Evision.FaceRecognizerSF.alignCrop(recognizer, comparison_image, comparison_bbox)
+
+              comparison_feature =
+                Evision.FaceRecognizerSF.feature(recognizer, comparison_blob)
+                |> Evision.Mat.to_nx()
+                |> Evision.Mat.from_nx()
 
               %{matched: matched, retval: val, measure: measure} = Evision.Zoo.FaceRecognition.SFace.match_feature(
                 recognizer, original_feature, comparison_feature)

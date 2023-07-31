@@ -3,11 +3,10 @@ defmodule Evision.ML.DTrees.Test do
 
   @moduletag timeout: 120_000
 
-  @wine_mirror_base "https://mirrors.uwucocoa.moe/dataset/wine/"
   @tag :ml
   @tag :require_downloading
   test "decision tree" do
-    {features, labels} = Scidata.Wine.download(base_url: @wine_mirror_base)
+    {features, labels} = Scidata.Wine.download()
     categories = Enum.count(Enum.uniq(labels))
     features = Evision.Mat.from_nx(Nx.tensor(features, type: :f32, backend: Evision.Backend))
     labels = Evision.Mat.from_nx(Nx.tensor(labels, type: :s32, backend: Evision.Backend))

@@ -208,15 +208,15 @@ defmodule Evision.Zoo.ImageClassification.MobileNetV1 do
   @spec model_info(:default_model | :quant_model) :: {String.t(), String.t()}
   def model_info(:default_model) do
     {
-      "https://github.com/opencv/opencv_zoo/blob/master/models/image_classification_mobilenet/image_classification_mobilenetv1_2022apr.onnx?raw=true",
+      "https://github.com/opencv/opencv_zoo/blob/main/models/image_classification_mobilenet/image_classification_mobilenetv1_2022apr.onnx?raw=true",
       "image_classification_mobilenetv1_2022apr.onnx"
     }
   end
 
   def model_info(:quant_model) do
     {
-      "https://github.com/opencv/opencv_zoo/blob/master/models/image_classification_mobilenet/image_classification_mobilenetv1_2022apr-int8-quantized.onnx?raw=true",
-      "image_classification_mobilenetv1_2022apr-int8-quantized.onnx"
+      "https://github.com/opencv/opencv_zoo/blob/main/models/image_classification_mobilenet/image_classification_mobilenetv1_2022apr_int8.onnx?raw=true",
+      "image_classification_mobilenetv1_2022apr_int8.onnx"
     }
   end
 
@@ -226,7 +226,7 @@ defmodule Evision.Zoo.ImageClassification.MobileNetV1 do
   @spec labels :: {String.t(), String.t()}
   def labels do
     {
-      "https://raw.githubusercontent.com/opencv/opencv_zoo/master/models/image_classification_mobilenet/imagenet_labels.txt",
+      "https://raw.githubusercontent.com/opencv/opencv_zoo/ca3e31aa1f1b1330d008598659d386bd06f300b0/models/image_classification_mobilenet/imagenet_labels.txt",
       "image_classification_mobilenetv1_imagenet_labels.txt"
     }
   end

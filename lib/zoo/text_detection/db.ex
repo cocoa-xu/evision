@@ -187,7 +187,7 @@ defmodule Evision.Zoo.TextDetection.DB do
   @spec model_info(:default_model | :quant_model) :: {String.t(), String.t()}
   def model_info(:ic15_resnet18) do
     {
-      "https://github.com/opencv/opencv_zoo/blob/master/models/text_detection_db/text_detection_DB_IC15_resnet18_2021sep.onnx?raw=true",
+      "https://github.com/opencv/opencv_zoo/blob/main/models/text_detection_db/text_detection_DB_IC15_resnet18_2021sep.onnx?raw=true",
       "text_detection_DB_IC15_resnet18_2021sep.onnx"
     }
   end
@@ -202,7 +202,7 @@ defmodule Evision.Zoo.TextDetection.DB do
 
   def model_info(:td500_resnet18) do
     {
-      "https://github.com/opencv/opencv_zoo/blob/master/models/text_detection_db/text_detection_DB_TD500_resnet18_2021sep.onnx?raw=true",
+      "https://github.com/opencv/opencv_zoo/blob/main/models/text_detection_db/text_detection_DB_TD500_resnet18_2021sep.onnx?raw=true",
       "text_detection_DB_TD500_resnet18_2021sep.onnx"
     }
   end

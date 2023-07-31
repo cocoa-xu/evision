@@ -16,8 +16,6 @@ jobs:
     env:
       MIX_ENV: prod
       OPENCV_VER: "4.8.0"
-      OTP_VERSION: "25.2"
-      NIF_VERSION: "2.16"
       ELIXIR_VERSION: "1.14.3"
       EVISION_PREFER_PRECOMPILED: "false"
       EVISION_GENERATE_LANG: "erlang,elixir"
@@ -33,10 +31,28 @@ jobs:
         include:
           - cuda_ver: "11.1.1"
             cuda_id: "111"
+            OTP_VERSION: "25"
+            NIF_VERSION: "2.16"
           - cuda_ver: "11.4.3"
             cuda_id: "114"
+            OTP_VERSION: "25"
+            NIF_VERSION: "2.16"
           - cuda_ver: "11.8.0"
             cuda_id: "118"
+            OTP_VERSION: "25"
+            NIF_VERSION: "2.16"
+          - cuda_ver: "11.1.1"
+            cuda_id: "111"
+            OTP_VERSION: "26"
+            NIF_VERSION: "2.17"
+          - cuda_ver: "11.4.3"
+            cuda_id: "114"
+            OTP_VERSION: "26"
+            NIF_VERSION: "2.17"
+          - cuda_ver: "11.8.0"
+            cuda_id: "118"
+            OTP_VERSION: "26"
+            NIF_VERSION: "2.17"
 
     steps:
       - uses: actions/checkout@v3
@@ -51,7 +67,7 @@ jobs:
 
       - uses: erlef/setup-beam@v1
         with:
-          otp-version: ${{ env.OTP_VERSION }}
+          otp-version: ${{ matrix.OTP_VERSION }}
           elixir-version: ${{ env.ELIXIR_VERSION }}
 
       - uses: ilammy/msvc-dev-cmd@v1
@@ -87,7 +103,7 @@ jobs:
         run: |
           export RUNNER_DIR=`pwd`
           cd C:/evision
-          export PKG_NAME=evision-nif_${NIF_VERSION}-x86_64-windows-msvc-contrib-cuda${{ matrix.cuda_id }}-${GITHUB_REF##*/v}
+          export PKG_NAME=evision-nif_${{ matrix.NIF_VERSION }}-x86_64-windows-msvc-contrib-cuda${{ matrix.cuda_id }}-${GITHUB_REF##*/v}
           mkdir -p "${PKG_NAME}"
           cp -a _build/${MIX_ENV}/lib/evision/priv "${PKG_NAME}"
           cp -a lib/generated "${PKG_NAME}/elixir_generated"

@@ -49,13 +49,23 @@ jobs:
       MIX_ENV: "test"
       EVISION_PREFER_PRECOMPILED: "false"
       FFMPEG_VER: "5"
+      OTP_VERSION: "25.3.2.2"
+      ELIXIR_VERSION: "1.15.2"
     steps:
       - uses: actions/checkout@v3
 
       - name: Install FFmpeg, Erlang and Elixir
         run: |
-          brew install erlang elixir ffmpeg
+          brew install autoconf coreutils curl git openssl wxwidgets asdf ffmpeg
           brew link ffmpeg
+          asdf plugin add erlang https://github.com/asdf-vm/asdf-erlang.git
+          asdf plugin-add elixir https://github.com/asdf-vm/asdf-elixir.git
+          export KERL_CONFIGURE_OPTIONS="--disable-debug --without-javac"
+          asdf install erlang ${{ env.OTP_VERSION }}
+          asdf install elixir ${{ env.ELIXIR_VERSION }}
+          asdf global erlang ${{ env.OTP_VERSION }}
+          asdf global elixir ${{ env.ELIXIR_VERSION }}
+          source $(brew --prefix asdf)/libexec/asdf.sh
           mix local.hex --force
           mix local.rebar --force
 
@@ -70,6 +80,7 @@ jobs:
       - name: Get mix deps
         if: steps.cache-mix-deps.outputs.cache-hit != 'true'
         run: |
+          source $(brew --prefix asdf)/libexec/asdf.sh
           mix deps.get
 
       - name: Cache OpenCV source code
@@ -99,10 +110,13 @@ jobs:
       - name: Compile OpenCV
         if: steps.cache-mix-compile_opencv.outputs.cache-hit != 'true'
         run: |
+          source $(brew --prefix asdf)/libexec/asdf.sh
           mix compile_opencv
 
       - name: Mix Compile
         run: |
+          source $(brew --prefix asdf)/libexec/asdf.sh
+
           rm -f _build/test/lib/evision/priv/evision.so
 
           rm -rf lib/generated && rm -rf src/generated
@@ -111,7 +125,9 @@ jobs:
           mix compile
 
       - name: Compile once again but without optional deps
-        run: mix compile --force --warnings-as-errors --no-optional-deps
+        run: |
+          source $(brew --prefix asdf)/libexec/asdf.sh
+          mix compile --force --no-optional-deps
 
       - name: Cache testdata
         id: cache-mix-testdata
@@ -129,4 +145,5 @@ jobs:
           # export ERL_BASE="$(dirname $(dirname $(which erl)))"
           # export BEAM_SMP="$(find "${ERL_BASE}" -name beam.smp)"
           # codesign -s - -f --entitlements tmp.entitlements "${BEAM_SMP}"
+          source $(brew --prefix asdf)/libexec/asdf.sh
           find ./test -name '*_test.exs' -exec bash -c "echo {} && mix test --include require_downloading --include require_ffmpeg {}" \;

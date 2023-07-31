@@ -755,7 +755,8 @@ defmodule Evision.MixProject do
             "CMAKE_OPTIONS" => cmake_options,
             "ENABLED_CV_MODULES" => enabled_modules,
             "TARGET_ABI" => System.get_env("TARGET_ABI", target_abi),
-            "EVISION_GENERATE_LANG" => System.get_env("EVISION_GENERATE_LANG", "elixir")
+            "EVISION_GENERATE_LANG" => System.get_env("EVISION_GENERATE_LANG", "elixir"),
+            "EVISION_PREFER_PRECOMPILED" => "false"
           }
 
           {[:elixir_make] ++ Mix.compilers(), make_env}
@@ -1100,7 +1101,7 @@ defmodule Evision.MixProject do
       ## kino: for smart cells and better output in livebook
       {:kino, "~> 0.7", optional: true},
       ## progress_bar: for the model zoo smart cell
-      {:progress_bar, "~> 2.0", optional: true},
+      {:progress_bar, "~> 3.0", optional: true},
 
       # docs
       {:ex_doc, "~> 0.29", only: :docs, runtime: false},
