@@ -17,6 +17,7 @@ on:
       - '.github/workflows/macos-*.yml'
       - '.github/workflows/test-*.yml'
       - '.github/workflows/windows-precompile.yml'
+      - '.github/*manylinux*.sh'
   push:
     branches:
       - main
@@ -37,6 +38,7 @@ on:
       - '.github/workflows/test-*.yml'
       - '.github/workflows/windows-precompile-cuda.yml'
       - '.github/workflows/windows-precompile.yml'
+      - '.github/*manylinux*.sh'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

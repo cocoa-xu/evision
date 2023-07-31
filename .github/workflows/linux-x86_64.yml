@@ -22,6 +22,7 @@ on:
       - '.github/workflows/linux-s390x.yml'
       - '.github/workflows/linux-cuda-*.yml'
       - '.github/workflows/linux-precompile-*.yml'
+      - '.github/*manylinux*.sh'
   push:
     branches:
       - main
@@ -49,6 +50,7 @@ on:
       - '.github/workflows/linux-s390x.yml'
       - '.github/workflows/linux-cuda-*.yml'
       - '.github/workflows/linux-precompile-*.yml'
+      - '.github/*manylinux*.sh'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

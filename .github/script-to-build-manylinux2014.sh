@@ -11,5 +11,5 @@ CMAKE_TOOLCHAIN_FILE=$5
 echo "$(pwd)"
 ls -lah
 sudo docker run --privileged --network=host --rm -v `pwd`:/work quay.io/pypa/manylinux2014_x86_64:latest \
-    sh -c 'ls -lah && echo $(pwd) && chmod a+x /work/do-build-maylinux2014.sh && /work/do-build-maylinux2014.sh ${MIX_ENV} ${OTP_VERSION} ${ELIXIR_VERSION} ${EVISION_ENABLE_CONTRIB} ${CMAKE_TOOLCHAIN_FILE}'
+    sh -c 'ls -lah && echo $(pwd) && ls -lah /work && chmod a+x /work/do-build-maylinux2014.sh && /work/do-build-maylinux2014.sh ${MIX_ENV} ${OTP_VERSION} ${ELIXIR_VERSION} ${EVISION_ENABLE_CONTRIB} ${CMAKE_TOOLCHAIN_FILE}'
 sudo chmod -R a+wr `pwd`/_build
