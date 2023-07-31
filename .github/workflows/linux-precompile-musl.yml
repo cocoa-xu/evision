@@ -24,7 +24,7 @@ jobs:
           - pair: 
             OTP_VERSION: "25.3"
             NIF_VERSION: "2.16"
-            ELIXIR_VERSION: "1.14.3"
+            ELIXIR_VERSION: "1.15.4"
           - pair: 
             OTP_VERSION: "26.0.2"
             NIF_VERSION: "2.17"
@@ -37,19 +37,19 @@ jobs:
 
       - name: Compile and Install Erlang and Elixir using asdf
         run: |
-          rm -rf ${HOME}/.asdf
-          git clone https://github.com/asdf-vm/asdf.git ${HOME}/.asdf --branch v0.12.0
-          export ASDF_DIR="${HOME}/.asdf"
-          . "${HOME}/.asdf/asdf.sh"
-          export KERL_CONFIGURE_OPTIONS="--without-javac"
-          asdf plugin add erlang || true
-          asdf plugin add elixir || true
-          asdf install erlang "${{ matrix.pair.OTP_VERSION }}" || true
-          asdf install elixir "${{ matrix.pair.ELIXIR_VERSION }}" || true
-          asdf global erlang "${{ matrix.pair.OTP_VERSION }}" || true
-          asdf global elixir "${{ matrix.pair.ELIXIR_VERSION }}" || true
-          mix local.hex --force || true
-          mix local.rebar --force || true
+          curl -fSL "https://github.com/erlang/otp/releases/download/OTP-${{ matrix.pair.OTP_VERSION }}/otp_src_${{ matrix.pair.OTP_VERSION }}.tar.gz" -o "otp_src_${{ matrix.pair.OTP_VERSION }}.tar.gz"
+          tar xzf "otp_src_${{ matrix.pair.OTP_VERSION }}.tar.gz"
+          cd "otp_src_${{ matrix.pair.OTP_VERSION }}"
+          ./configure
+          make -j`nproc` install
+          
+          git clone -b "v${{ matrix.pair.ELIXIR_VERSION }}" https://github.com/elixir-lang/elixir.git
+          cd elixir
+          make compile
+          make install
+
+          mix local.hex --force
+          mix local.rebar --force
 
       - name: Cache mix packages
         id: cache-mix-deps
@@ -62,8 +62,6 @@ jobs:
       - name: Get mix deps
         if: steps.cache-mix-deps.outputs.cache-hit != 'true'
         run: |
-          export ASDF_DIR="${HOME}/.asdf"
-          . "${HOME}/.asdf/asdf.sh"
           mix deps.get
 
       - name: Cache OpenCV Source Code
@@ -92,8 +90,6 @@ jobs:
       - name: Compile OpenCV (without contrib modules)
         run: |
           export EVISION_ENABLE_CONTRIB=false
-          export ASDF_DIR="${HOME}/.asdf"
-          . "${HOME}/.asdf/asdf.sh"
 
           rm -rf "./_build/${{ env.MIX_ENV }}/lib/evision"
 
@@ -102,9 +98,6 @@ jobs:
       - name: Mix compile (without contrib modules)
         run: |
           export EVISION_ENABLE_CONTRIB=false
-
-          export ASDF_DIR="${HOME}/.asdf"
-          . "${HOME}/.asdf/asdf.sh"
 
           rm -f _build/${MIX_ENV}/lib/evision/priv/evision.so
 
@@ -130,9 +123,6 @@ jobs:
         run: |
           export EVISION_ENABLE_CONTRIB=true
 
-          export ASDF_DIR="${HOME}/.asdf"
-          . "${HOME}/.asdf/asdf.sh"
-
           rm -rf "./_build/${{ env.MIX_ENV }}/lib/evision"
 
           mix compile_opencv
@@ -140,9 +130,6 @@ jobs:
       - name: Mix compile (without contrib modules)
         run: |
           export EVISION_ENABLE_CONTRIB=true
-
-          export ASDF_DIR="${HOME}/.asdf"
-          . "${HOME}/.asdf/asdf.sh"
 
           rm -f _build/${MIX_ENV}/lib/evision/priv/evision.so
 
