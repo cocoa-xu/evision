@@ -26,20 +26,18 @@ jobs:
       - name: Install system dependencies
         run: |
           apk add cmake make python3 bash curl unzip gcc g++ ncurses-dev openssl-dev linux-headers perl git dpkg patch
-          curl -fSL "https://repo.uwucocoa.moe/pool/main/erlang_${OTP_VERSION}_musl-linux-amd64.deb" -o "erlang_${OTP_VERSION}_musl-linux-amd64.deb"
-          dpkg -i "erlang_${OTP_VERSION}_musl-linux-amd64.deb"
-
-      - name: Install elixir
+          
+      - name: Compile and Install Erlang and Elixir using asdf
         run: |
-          mkdir -p "${HOME}/.elixir"
-          cd "${HOME}/.elixir"
-          curl -fSL https://github.com/elixir-lang/elixir/archive/refs/tags/v${ELIXIR_VERSION}.tar.gz -o v${ELIXIR_VERSION}.tar.gz
-          tar xf "v${ELIXIR_VERSION}.tar.gz"
-          rm -f "v${ELIXIR_VERSION}.tar.gz"
-          cd "elixir-${ELIXIR_VERSION}"
-          make clean
-          make install
-          export PATH="${PATH}:${HOME}/.elixir/elixir-${ELIXIR_VERSION}/bin"
+          git clone https://github.com/asdf-vm/asdf.git ~/.asdf --branch v0.12.0
+          . "$HOME/.asdf/asdf.sh"
+          export KERL_CONFIGURE_OPTIONS="--without-javac --with-ssl=${OPENSSL_PATH}"
+          asdf plugin add erlang
+          asdf plugin add elixir
+          asdf install erlang "${OTP_VERSION}"
+          asdf install elixir "${ELIXIR_VERSION}"
+          asdf global erlang "${OTP_VERSION}"
+          asdf global elixir "${ELIXIR_VERSION}"
           mix local.hex --force
           mix local.rebar --force
 
@@ -54,6 +52,7 @@ jobs:
       - name: Get mix deps
         if: steps.cache-mix-deps.outputs.cache-hit != 'true'
         run: |
+          . "$HOME/.asdf/asdf.sh"
           mix deps.get
 
       - name: Cache OpenCV Source Code
@@ -83,6 +82,7 @@ jobs:
         run: |
           export PATH="${PATH}:${HOME}/.elixir/elixir-${ELIXIR_VERSION}/bin"
           export EVISION_ENABLE_CONTRIB=false
+          . "$HOME/.asdf/asdf.sh"
 
           rm -rf "./_build/${{ env.MIX_ENV }}/lib/evision"
 
@@ -92,6 +92,8 @@ jobs:
         run: |
           export PATH="${PATH}:${HOME}/.elixir/elixir-${ELIXIR_VERSION}/bin"
           export EVISION_ENABLE_CONTRIB=false
+
+          . "$HOME/.asdf/asdf.sh"
 
           rm -f _build/${MIX_ENV}/lib/evision/priv/evision.so
 
@@ -119,6 +121,8 @@ jobs:
           export PATH="${PATH}:${HOME}/.elixir/elixir-${ELIXIR_VERSION}/bin"
           export EVISION_ENABLE_CONTRIB=true
 
+          . "$HOME/.asdf/asdf.sh"
+
           rm -rf "./_build/${{ env.MIX_ENV }}/lib/evision"
 
           mix compile_opencv
@@ -127,6 +131,8 @@ jobs:
         run: |
           export PATH="${PATH}:${HOME}/.elixir/elixir-${ELIXIR_VERSION}/bin"
           export EVISION_ENABLE_CONTRIB=true
+
+          . "$HOME/.asdf/asdf.sh"
 
           rm -f _build/${MIX_ENV}/lib/evision/priv/evision.so
 
