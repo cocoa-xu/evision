@@ -61,7 +61,7 @@ jobs:
               otp_version: "25"
           - pair:
               target: rpi3a
-              otp_version: "25"
+              otp_version: "26"
           - pair:
               target: rpi3
               otp_version: "25"
@@ -70,7 +70,7 @@ jobs:
               otp_version: "25"
           - pair:
               target: rpi0
-              otp_version: "25"
+              otp_version: "26"
           - pair:
               target: rpi
               otp_version: "25"
