@@ -57,38 +57,38 @@ jobs:
       matrix:
         include:
           - pair:
-            target: rpi4
-            otp_version: "25"
+              target: rpi4
+              otp_version: "25"
           - pair:
-            target: rpi3a
-            otp_version: "25"
+              target: rpi3a
+              otp_version: "25"
           - pair:
-            target: rpi3
-            otp_version: "25"
+              target: rpi3
+              otp_version: "25"
           - pair:
-            target: rpi2
-            otp_version: "25"
+              target: rpi2
+              otp_version: "25"
           - pair:
-            target: rpi0
-            otp_version: "25"
+              target: rpi0
+              otp_version: "25"
           - pair:
-            target: rpi
-            otp_version: "25"
+              target: rpi
+              otp_version: "25"
           - pair:
-            target: bbb
-            otp_version: "25"
+              target: bbb
+              otp_version: "25"
           - pair:
-            target: osd32mp1
-            otp_version: "25"
+              target: osd32mp1
+              otp_version: "25"
           - pair:
-            target: npi_imx6ull
-            otp_version: "25"
+              target: npi_imx6ull
+              otp_version: "25"
           - pair:
-            target: mangopi_mq_pro
-            otp_version: "25"
+              target: mangopi_mq_pro
+              otp_version: "25"
           - pair:
-            target: grisp2
-            otp_version: "25"
+              target: grisp2
+              otp_version: "26"
 
     steps:
       - uses: actions/checkout@v3
