@@ -103,7 +103,7 @@ jobs:
 
           rm -rf "./_build/${{ env.MIX_ENV }}/lib/evision"
 
-          bash ./script-to-build-manylinux2014.sh "${{ env.MIX_ENV }}" "${{ matrix.pair.OTP_VERSION }}" "${{ matrix.pair.ELIXIR_VERSION }}" "${EVISION_ENABLE_CONTRIB}" "${CMAKE_TOOLCHAIN_FILE}"
+          bash ./script-to-build-manylinux2014.sh "${{ env.MIX_ENV }}" "${{ matrix.pair.OTP_VERSION }}" "${{ matrix.pair.ELIXIR_VERSION }}" "true"
 
       - name: Create precompiled library (with contrib modules)
         run: |

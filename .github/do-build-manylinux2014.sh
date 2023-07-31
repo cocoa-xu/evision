@@ -6,7 +6,6 @@ MIX_ENV=$1
 OTP_VERSION=$2
 ELIXIR_VERSION=$3
 EVISION_ENABLE_CONTRIB=$4
-CMAKE_TOOLCHAIN_FILE=$5
 
 OPENSSL_VERSION="3.1.1"
 ASDF_VERSION="v0.12.0"
@@ -37,7 +36,6 @@ yum install -y openssl-devel ncurses-devel perl-IPC-Cmd python3 && \
 # Mix compile
 cd /work
 export EVISION_ENABLE_CONTRIB="${EVISION_ENABLE_CONTRIB}"
-export CMAKE_TOOLCHAIN_FILE="${CMAKE_TOOLCHAIN_FILE}"
 export MIX_ENV="${MIX_ENV}"
 rm -f _build/${MIX_ENV}/lib/evision/priv/evision.so
 
