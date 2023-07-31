@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.1.32 (2023-07-31)
+[Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.32) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.32)
+
+### Changed
+- Updated to OpenCV 4.8.0. Some APIs have changed, please see OpenCV's release note for more information.
+
 ## v0.1.31 (2023-04-17)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.31) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.31)
 
