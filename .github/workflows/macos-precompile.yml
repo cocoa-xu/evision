@@ -56,10 +56,10 @@ jobs:
           asdf plugin add erlang https://github.com/asdf-vm/asdf-erlang.git
           asdf plugin-add elixir https://github.com/asdf-vm/asdf-elixir.git
           export KERL_CONFIGURE_OPTIONS="--disable-debug --without-javac"
-          asdf install erlang ${{ env.OTP_VERSION }}
-          asdf install elixir ${{ env.ELIXIR_VERSION }}
-          asdf global erlang ${{ env.OTP_VERSION }}
-          asdf global elixir ${{ env.ELIXIR_VERSION }}
+          asdf install erlang ${{ matrix.pair.OTP_VERSION }}
+          asdf install elixir ${{ matrix.pair.ELIXIR_VERSION }}
+          asdf global erlang ${{ matrix.pair.OTP_VERSION }}
+          asdf global elixir ${{ matrix.pair.ELIXIR_VERSION }}
           source $(brew --prefix asdf)/libexec/asdf.sh
           mix local.hex --force
           mix local.rebar --force
