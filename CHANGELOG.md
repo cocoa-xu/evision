@@ -1,10 +1,11 @@
 # Changelog
 
-## v0.1.32 (2023-07-31)
+## v0.1.32 (2023-08-01)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.32) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.32)
 
 ### Changed
 - Updated to OpenCV 4.8.0. Some APIs have changed, please see OpenCV's release note for more information.
+- Using manylinux2014 to build precompiled binaries for x86_64-linux-gnu (w/ and w/o contrib, except for the cuda ones). This allows us to only require glibc version to be at least 2.17.
 
 ## v0.1.31 (2023-04-17)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.31) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.31)
