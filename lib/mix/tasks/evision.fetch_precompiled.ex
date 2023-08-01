@@ -26,7 +26,8 @@ defmodule Mix.Tasks.Evision.Fetch do
     all: :boolean,
     only_local: :boolean,
     print: :boolean,
-    ignore_unavailable: :boolean
+    ignore_unavailable: :boolean,
+    dry_run: :boolean
   ]
 
   @impl true
@@ -37,47 +38,54 @@ defmodule Mix.Tasks.Evision.Fetch do
   @impl true
   def run(flags) when is_list(flags) do
     {options, _args, _invalid} = OptionParser.parse(flags, strict: @switches)
-    nif_version = Precompile.get_nif_version()
     urls =
       cond do
         Keyword.get(options, :all) ->
-          Precompile.available_nif_urls(nif_version)
+          {_, urls} =
+            Enum.map_reduce(Precompile.get_available_nif_versions(), [], fn nif_version, urls ->
+              {nil, [Precompile.available_nif_urls(nif_version) | urls]}
+            end)
+          List.flatten(urls)
 
         Keyword.get(options, :only_local) ->
-          [Precompile.current_target_nif_url(nif_version)]
+          [Precompile.current_target_nif_url(Precompile.get_nif_version())]
 
         true ->
           raise "you need to specify either \"--all\" or \"--only-local\" flags"
       end
 
-    result =
-      Task.async_stream(urls, fn url ->
-          filename = basename_from_url(url)
-          cache_to = Path.join([Precompile.cache_dir(), filename])
-          {:ok, algo, checksum} = Precompile.download!(url, cache_to, true)
-          Logger.info("downloaded: url=#{url}, file=#{cache_to}, checksum[#{algo}]=#{checksum}")
-          %{
-            url: url,
-            path: filename,
-            checksum: checksum,
-            checksum_algo: String.to_atom(algo)
-          }
-        end,
-        timeout: :infinity
-      )
+    if Keyword.get(options, :dry_run) do
+      Enum.each(urls, &IO.puts/1)
+    else
+      result =
+        Task.async_stream(urls, fn url ->
+            filename = basename_from_url(url)
+            cache_to = Path.join([Precompile.cache_dir(), filename])
+            {:ok, algo, checksum} = Precompile.download!(url, cache_to, true)
+            Logger.info("downloaded: url=#{url}, file=#{cache_to}, checksum[#{algo}]=#{checksum}")
+            %{
+              url: url,
+              path: filename,
+              checksum: checksum,
+              checksum_algo: String.to_atom(algo)
+            }
+          end,
+          timeout: :infinity
+        )
 
-    result = Enum.map(result, fn {:ok, r} -> r end)
-    if Keyword.get(options, :print) do
-      result
-      |> Enum.map(fn map ->
-        {Path.basename(Map.fetch!(map, :path)), Map.fetch!(map, :checksum)}
-      end)
-      |> Enum.sort()
-      |> Enum.map_join("\n", fn {file, checksum} -> "#{checksum}  #{file}" end)
-      |> IO.puts()
+      result = Enum.map(result, fn {:ok, r} -> r end)
+      if Keyword.get(options, :print) do
+        result
+        |> Enum.map(fn map ->
+          {Path.basename(Map.fetch!(map, :path)), Map.fetch!(map, :checksum)}
+        end)
+        |> Enum.sort()
+        |> Enum.map_join("\n", fn {file, checksum} -> "#{checksum}  #{file}" end)
+        |> IO.puts()
+      end
+
+      write_checksum!(result)
     end
-
-    write_checksum!(result)
   end
 
   defp write_checksum!(result, app \\ Mix.Project.config()[:app]) do
