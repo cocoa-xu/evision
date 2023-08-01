@@ -100,6 +100,10 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
     end
   end
 
+  def get_available_nif_versions do
+    @available_nif_versions
+  end
+
   def get_nif_version do
     System.get_env("TARGET_NIF_VERSION", to_string(:erlang.system_info(:nif_version)))
   end
