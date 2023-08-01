@@ -58,6 +58,7 @@ concurrency:
 
 jobs:
   musl:
+    if: "!contains(github.event.pull_request.labels.*.name, 'skip ci')"
     runs-on: ubuntu-20.04
     container: alpine:latest
     env:
@@ -153,6 +154,7 @@ jobs:
           mix test --include require_downloading
 
   gnu:
+    if: "!contains(github.event.pull_request.labels.*.name, 'skip ci')"
     runs-on: ubuntu-20.04
     env:
       MIX_ENV: test

@@ -45,6 +45,7 @@ concurrency:
 
 jobs:
   mix_test:
+    if: "!contains(github.event.pull_request.labels.*.name, 'skip ci')"
     runs-on: macos-12
     env:
       OPENCV_VER: "4.8.0"

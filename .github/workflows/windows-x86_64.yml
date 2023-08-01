@@ -46,6 +46,7 @@ concurrency:
 
 jobs:
   mix_test:
+    if: "!contains(github.event.pull_request.labels.*.name, 'skip ci')"
     runs-on: windows-latest
     env:
       MIX_ENV: test

@@ -45,6 +45,7 @@ concurrency:
 
 jobs:
   mix_compile:
+    if: "!contains(github.event.pull_request.labels.*.name, 'skip ci')"
     runs-on: ubuntu-20.04
     env:
       MIX_ENV: prod
