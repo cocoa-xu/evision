@@ -1,3 +1,4 @@
+if Code.ensure_loaded?(Evision) do
 defmodule Evision.Zoo.FaceRecognition do
   @moduledoc """
   Face recognition model collection.
@@ -36,4 +37,5 @@ defmodule Evision.Zoo.FaceRecognition do
       []
     end
   end
+end
 end

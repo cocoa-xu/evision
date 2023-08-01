@@ -1,3 +1,4 @@
+if Code.ensure_loaded?(Evision) do
 defmodule Evision.Backend do
   @behaviour Nx.Backend
   defstruct [:ref]
@@ -821,4 +822,5 @@ defmodule Evision.Backend do
       "Pull request would be more than welcomed if you'd like to implmenent this function and make contributions."
     end
   end
+end
 end

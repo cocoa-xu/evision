@@ -1,3 +1,4 @@
+if Code.ensure_loaded?(Evision) do
 defmodule Evision.Zoo.FaceDetection.YuNet do
   @moduledoc """
   YuNet is a light-weight, fast and accurate face detection model
@@ -339,4 +340,5 @@ defmodule Evision.Zoo.FaceDetection.YuNet do
       end
     ]
   end
+end
 end

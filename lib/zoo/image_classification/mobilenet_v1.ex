@@ -1,3 +1,4 @@
+if Code.ensure_loaded?(Evision) do
 defmodule Evision.Zoo.ImageClassification.MobileNetV1 do
   @moduledoc """
   MobileNets: Efficient Convolutional Neural Networks for Mobile Vision Applications
@@ -316,4 +317,5 @@ defmodule Evision.Zoo.ImageClassification.MobileNetV1 do
       end
     ]
   end
+end
 end

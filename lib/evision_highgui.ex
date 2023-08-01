@@ -1,3 +1,4 @@
+if Code.ensure_loaded?(Evision) do
 defmodule Evision.HighGui do
   @moduledoc """
   High-level Graphical User Interface
@@ -75,4 +76,5 @@ defmodule Evision.HighGui do
   def destroyAllWindows do
     :evision_nif.destroyAllWindows()
   end
+end
 end

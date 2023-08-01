@@ -1,3 +1,4 @@
+if Code.ensure_loaded?(Evision) do
 defmodule Evision.Wx do
   @moduledoc """
   Interact with wxWidgets
@@ -237,4 +238,5 @@ defmodule Evision.Wx do
   defp draw_canvas(_, _canvas, _bitmap) do
     :ok
   end
+end
 end

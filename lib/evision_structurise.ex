@@ -1,3 +1,4 @@
+if Code.ensure_loaded?(Evision) do
 defmodule Evision.Internal.Structurise do
   @moduledoc false
 
@@ -84,4 +85,5 @@ defmodule Evision.Internal.Structurise do
 
   @spec from_struct(term()) :: term()
   def from_struct(pass_through), do: pass_through
+end
 end

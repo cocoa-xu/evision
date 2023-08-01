@@ -1,3 +1,4 @@
+if Code.ensure_loaded?(Evision) do
 defmodule Evision.Zoo.TextRecognition.CRNN do
   @moduledoc """
   An End-to-End Trainable Neural Network for Image-based Sequence Recognition and Its Application to Scene Text Recognition.
@@ -4660,4 +4661,5 @@ defmodule Evision.Zoo.TextRecognition.CRNN do
     ^
     """
   end
+end
 end

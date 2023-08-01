@@ -1,3 +1,4 @@
+if Code.ensure_loaded?(Evision) do
 defmodule Evision.Zoo.ImageSegmentation do
   @moduledoc """
   Image segmentation model collection.
@@ -57,4 +58,5 @@ defmodule Evision.Zoo.ImageSegmentation do
 
     gen_color_map(lab >>> 3, i, j + 1, [c1, c2, c3])
   end
+end
 end

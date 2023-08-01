@@ -1,3 +1,4 @@
+if Code.ensure_loaded?(Evision) do
 defmodule Evision.Mat do
   @moduledoc """
   Evision Mat
@@ -2162,4 +2163,5 @@ defmodule Evision.Mat do
     )
     |> Evision.Internal.Structurise.to_struct()
   end
+end
 end
