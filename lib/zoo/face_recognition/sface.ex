@@ -1,4 +1,3 @@
-if Code.ensure_loaded?(Evision) do
 defmodule Evision.Zoo.FaceRecognition.SFace do
   @moduledoc """
   SFace: Sigmoid-Constrained Hypersphere Loss for Robust Face Recognition
@@ -487,5 +486,4 @@ defmodule Evision.Zoo.FaceRecognition.SFace do
       end
     ]
   end
-end
 end

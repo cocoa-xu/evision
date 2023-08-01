@@ -1,4 +1,3 @@
-if Code.ensure_loaded?(Evision) do
 defmodule Evision.Zoo.TextDetection do
   @moduledoc """
   Text detection model collection.
@@ -39,5 +38,4 @@ defmodule Evision.Zoo.TextDetection do
       []
     end
   end
-end
 end

@@ -1,4 +1,3 @@
-if Code.ensure_loaded?(Evision) do
 defmodule Evision.Zoo do
   @moduledoc """
   Evision Model Zoo
@@ -216,5 +215,4 @@ defmodule Evision.Zoo do
 
     {backend, target}
   end
-end
 end

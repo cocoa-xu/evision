@@ -1,4 +1,3 @@
-if Code.ensure_loaded?(Evision) do
 defmodule Evision.Zoo.TextDetection.DB do
   @moduledoc """
   Real-time Scene Text Detection with Differentiable Binarization
@@ -322,5 +321,4 @@ defmodule Evision.Zoo.TextDetection.DB do
       end
     ]
   end
-end
 end

@@ -1,4 +1,3 @@
-if Code.ensure_loaded?(Evision) do
 defmodule Evision.Zoo.ImageClassification.PPResNet do
   @moduledoc """
   Deep Residual Learning for Image Recognition.
@@ -318,5 +317,4 @@ defmodule Evision.Zoo.ImageClassification.PPResNet do
       end
     ]
   end
-end
 end

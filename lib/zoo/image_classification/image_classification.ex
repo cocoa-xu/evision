@@ -1,4 +1,3 @@
-if Code.ensure_loaded?(Evision) do
 defmodule Evision.Zoo.ImageClassification do
   @moduledoc """
   Image classfication model collection.
@@ -42,5 +41,4 @@ defmodule Evision.Zoo.ImageClassification do
       []
     end
   end
-end
 end

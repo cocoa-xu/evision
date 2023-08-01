@@ -1,4 +1,3 @@
-if Code.ensure_loaded?(Evision) do
 defmodule Evision.Zoo.ImageSegmentation.PPHumanSeg do
   @moduledoc """
   PP-Human Segmentation model.
@@ -280,5 +279,4 @@ defmodule Evision.Zoo.ImageSegmentation.PPHumanSeg do
       end
     ]
   end
-end
 end
