@@ -54,10 +54,10 @@ if Code.ensure_loaded?(Kino.SmartCell) do
             do: {field, attrs[field] || default}
 
       {:ok,
-        assign(ctx,
-          id: @smartcell_id,
-          fields: fields
-        )}
+       assign(ctx,
+         id: @smartcell_id,
+         fields: fields
+       )}
     end
 
     defp field_defaults_for(task_id, variant_id) do
@@ -77,13 +77,13 @@ if Code.ensure_loaded?(Kino.SmartCell) do
       {backend_options, target_options} = Evision.Zoo.available_backend_and_target()
 
       {:ok,
-        %{
-          id: ctx.assigns.id,
-          fields: ctx.assigns.fields,
-          tasks: tasks_list(),
-          backend_options: backend_options,
-          target_options: target_options
-        }, ctx}
+       %{
+         id: ctx.assigns.id,
+         fields: ctx.assigns.fields,
+         tasks: tasks_list(),
+         backend_options: backend_options,
+         target_options: target_options
+       }, ctx}
     end
 
     @impl true

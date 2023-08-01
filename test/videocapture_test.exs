@@ -21,7 +21,7 @@ defmodule Evision.VideoCapture.Test do
 
     # "\x63\x76\x65\x68"
     # "cveh" => "hevc"
-    assert 1668703592.0 == fourcc
+    assert 1_668_703_592.0 == fourcc
 
     %Evision.Mat{shape: {1080, 1920, 3}} = Evision.VideoCapture.read(video)
 

@@ -420,7 +420,9 @@ defmodule Evision.Mat do
   @spec quicklook(Evision.Mat.t()) :: Evision.Mat.t()
   def quicklook(%Evision.Mat{dims: dims, channels: c, shape: shape} = mat) do
     if Application.get_env(:evision, :display_inline_image_max_size) == :error do
-      Application.put_env(:evision, :display_inline_image_max_size, {8192, 8192}, persistent: true)
+      Application.put_env(:evision, :display_inline_image_max_size, {8192, 8192},
+        persistent: true
+      )
     end
 
     is_2d_image =
