@@ -1,0 +1,14 @@
+{"1.2.0",
+[{<<"cc_precompiler">>,{pkg,<<"cc_precompiler">>,<<"0.1.8">>},0},
+ {<<"dll_loader_helper">>,{pkg,<<"dll_loader_helper">>,<<"1.0.0">>},0},
+ {<<"elixir_make">>,{pkg,<<"elixir_make">>,<<"0.7.6">>},1}]}.
+[
+{pkg_hash,[
+ {<<"cc_precompiler">>, <<"933A5F4DA3B19EE56539A076076CE4D7716D64EFC8DB46FD066996A7E46E2BFD">>},
+ {<<"dll_loader_helper">>, <<"8B960745743845AB1E3559EB3EBACE7CC9C621FB61965603FA2C3499EC1C22D2">>},
+ {<<"elixir_make">>, <<"67716309DC5D43E16B5ABBD00C01B8DF6A0C2AB54A8F595468035A50189F9169">>}]},
+{pkg_hash_ext,[
+ {<<"cc_precompiler">>, <<"176BDF4366956E456BF761B54AD70BC4103D0269CA9558FD7CEE93D1B3F116DB">>},
+ {<<"dll_loader_helper">>, <<"3F1E257072F57CE502C00B250F01210217D690203DACFA7C0311CEEEC91D897C">>},
+ {<<"elixir_make">>, <<"5A0569756B0F7873A77687800C164CCA6DFC03A09418E6FCF853D78991F49940">>}]}
+].
