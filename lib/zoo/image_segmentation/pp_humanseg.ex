@@ -183,14 +183,14 @@ defmodule Evision.Zoo.ImageSegmentation.PPHumanSeg do
   @spec model_info(:default_model | :quant_model) :: {String.t(), String.t()}
   def model_info(:default_model) do
     {
-      "https://github.com/opencv/opencv_zoo/blob/main/models/human_segmentation_pphumanseg/human_segmentation_pphumanseg_2023mar.onnx?raw=true",
+      "https://github.com/opencv/opencv_zoo/blob/0d619617a8e9a389150d8c76e417451a19468150/models/human_segmentation_pphumanseg/human_segmentation_pphumanseg_2023mar.onnx?raw=true",
       "human_segmentation_pphumanseg_2023mar.onnx"
     }
   end
 
   def model_info(:quant_model) do
     {
-      "https://github.com/opencv/opencv_zoo/blob/main/models/human_segmentation_pphumanseg/human_segmentation_pphumanseg_2023mar_int8?raw=true",
+      "https://github.com/opencv/opencv_zoo/blob/0d619617a8e9a389150d8c76e417451a19468150/models/human_segmentation_pphumanseg/human_segmentation_pphumanseg_2023mar_int8?raw=true",
       "human_segmentation_pphumanseg_2023mar_int8.onnx"
     }
   end
