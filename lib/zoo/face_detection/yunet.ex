@@ -243,7 +243,7 @@ defmodule Evision.Zoo.FaceDetection.YuNet do
   @spec model_info(:default_model | :quant_model) :: {String.t(), String.t()}
   def model_info(:default_model) do
     {
-      "https://github.com/opencv/opencv_zoo/blob/main/models/face_detection_yunet/face_detection_yunet_2023mar.onnx?raw=true",
+      "https://github.com/opencv/opencv_zoo/blob/0d619617a8e9a389150d8c76e417451a19468150/models/face_detection_yunet/face_detection_yunet_2023mar.onnx?raw=true",
       "face_detection_yunet_2023mar.onnx"
     }
   end
