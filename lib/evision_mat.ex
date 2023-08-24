@@ -652,7 +652,6 @@ defmodule Evision.Mat do
         end
       end
 
-      @spec to_livebook(Evision.Mat.t()) :: Kino.Output.t()
       def to_livebook(mat) when is_struct(mat, Evision.Mat) do
         render_types = Evision.Mat.kino_render_tab_order()
 
