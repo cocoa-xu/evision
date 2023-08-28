@@ -2382,6 +2382,9 @@ static int convert_to_char(ErlNifEnv *env, ERL_NIF_TERM o, char *dst, const ArgI
 #include "modules/evision_videocapture.h"
 // #include "modules/evision_dnn.h"
 
+// Windows only
+#include "modules/evision_dll_loader_helper.h"
+
 /************************************************************************/
 
 #include "evision_generated_modules_content.h"

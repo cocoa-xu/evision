@@ -756,8 +756,8 @@ def is_struct(argtype: str, also_get: Optional[str] = None, classname: Optional[
         "TrackerCSRT_Params": "Evision.TrackerCSRT.Params",
         "TrackerKCF": "Evision.TrackerKCF",
         "TrackerKCF_Params": "Evision.TrackerKCF.Params",
-        "HistogramPhaseUnwrapping": "Evision.HistogramPhaseUnwrapping",
-        "HistogramPhaseUnwrapping_Params": "Evision.HistogramPhaseUnwrapping.Params",
+        "HistogramPhaseUnwrapping": "Evision.PhaseUnwrapping.HistogramPhaseUnwrapping",
+        "HistogramPhaseUnwrapping_Params": "Evision.PhaseUnwrapping.HistogramPhaseUnwrapping.Params",
         "Facemark": "Evision.Face.Facemark",
 
         "ImgHashBase": "Evision.ImgHash.ImgHashBase",
@@ -791,18 +791,18 @@ def is_struct(argtype: str, also_get: Optional[str] = None, classname: Optional[
         "FastBilateralSolverFilter": "Evision.XImgProc.FastBilateralSolverFilter",
         "FastGlobalSmootherFilter": "Evision.XImgProc.FastGlobalSmootherFilter",
         "FastLineDetector": "Evision.XImgProc.FastLineDetector",
-        "GraphSegmentation": "Evision.XImgProc.GraphSegmentation",
+        "GraphSegmentation": "Evision.XImgProc.Segmentation.GraphSegmentation",
         "GuidedFilter": "Evision.XImgProc.GuidedFilter",
         "RFFeatureGetter": "Evision.XImgProc.RFFeatureGetter",
         "RICInterpolator": "Evision.XImgProc.RICInterpolator",
         "ScanSegment": "Evision.XImgProc.ScanSegment",
-        "SelectiveSearchSegmentation": "Evision.XImgProc.SelectiveSearchSegmentation",
-        "SelectiveSearchSegmentationStrategyColor": "Evision.XImgProc.SelectiveSearchSegmentationStrategyColor",
-        "SelectiveSearchSegmentationStrategyFill": "Evision.XImgProc.SelectiveSearchSegmentationStrategyFill",
-        "SelectiveSearchSegmentationStrategy": "Evision.XImgProc.SelectiveSearchSegmentationStrategy",
-        "SelectiveSearchSegmentationStrategyMultiple": "Evision.XImgProc.SelectiveSearchSegmentationStrategyMultiple",
-        "SelectiveSearchSegmentationStrategySize": "Evision.XImgProc.SelectiveSearchSegmentationStrategySize",
-        "SelectiveSearchSegmentationStrategyTexture": "Evision.XImgProc.SelectiveSearchSegmentationStrategyTexture",
+        "SelectiveSearchSegmentation": "Evision.XImgProc.Segmentation.SelectiveSearchSegmentation",
+        "SelectiveSearchSegmentationStrategyColor": "Evision.XImgProc.Segmentation.SelectiveSearchSegmentationStrategyColor",
+        "SelectiveSearchSegmentationStrategyFill": "Evision.XImgProc.Segmentation.SelectiveSearchSegmentationStrategyFill",
+        "SelectiveSearchSegmentationStrategy": "Evision.XImgProc.Segmentation.SelectiveSearchSegmentationStrategy",
+        "SelectiveSearchSegmentationStrategyMultiple": "Evision.XImgProc.Segmentation.SelectiveSearchSegmentationStrategyMultiple",
+        "SelectiveSearchSegmentationStrategySize": "Evision.XImgProc.Segmentation.SelectiveSearchSegmentationStrategySize",
+        "SelectiveSearchSegmentationStrategyTexture": "Evision.XImgProc.Segmentation.SelectiveSearchSegmentationStrategyTexture",
         "StructuredEdgeDetection": "Evision.XImgProc.StructuredEdgeDetection",
         "SuperpixelLSC": "Evision.XImgProc.SuperpixelLSC",
         "SuperpixelSEEDS": "Evision.XImgProc.SuperpixelSEEDS",
@@ -912,7 +912,10 @@ def is_struct(argtype: str, also_get: Optional[str] = None, classname: Optional[
         argtype = argtype[len('Ptr<'):-1].strip()
     arg_is_struct = argtype in struct_types or argtype in special_structs
 
-    if argtype in ["pair<int, double>", "Scalar", "kinfu_VolumeType", "VolumeType", "Volume"]:
+    if argtype in ["pair<int, double>", "Scalar", "kinfu_VolumeType", "VolumeType", "Volume", 
+                   "Vec2d", "Vec2f", "Vec2i", "Vec3d", "Vec3f", "Vec3i", "Vec4d", "Vec4f", "Vec4i",
+                   "DataLayout", "ImagePaddingMode",
+                   "SolverType", "SupportRegionType"]:
         return False
 
     is_strict_match = False
@@ -1182,10 +1185,17 @@ def map_argtype_in_spec_erlang(classname: str, argtype: str, is_in: bool, decl: 
         argtype_inner = ", ".join([map_argtype_in_spec_erlang(classname, a.strip(), is_in, decl) for a in argtype[len('std::pair<'):-1].split(",")])
         spec_type = '{' + argtype_inner + '}'
         return spec_type
+    elif argtype == "QRCodeDetectorAruco_Params":
+        return "#evision_qrcodedetectoraruco_params{}"
+    elif argtype == "HistogramPhaseUnwrapping":
+        return "#evision_phaseunwrapping_histogramphaseunwrapping{}"
+    elif argtype == "HistogramPhaseUnwrapping_Params":
+        return "#evision_phaseunwrapping_histogramphaseunwrapping_params{}"
     elif is_struct(argtype, classname=classname, decl=decl):
         _, struct_name = is_struct(argtype, also_get='struct_name', classname=classname, decl=decl)
         ty = struct_name.replace('.', '_').lower()
-        return f'#{ty}' + '{}'
+        ret = f'#{ty}' + '{}'
+        return ret
     elif argtype in manual_type_spec_map:
         return manual_type_spec_map[argtype]
     elif argtype in ["FeatureDetector", "DescriptorExtractor"]:
@@ -1221,6 +1231,12 @@ def map_argtype_in_spec_erlang(classname: str, argtype: str, is_in: bool, decl: 
             return '#evision_aruco_board{}'
         if argtype in ['Board', 'Dictionary'] and len(decl) > 0 and decl[0].startswith("cv.aruco."):
             return '#evision_aruco_board{}'
+        # dnn
+        if argtype in ['DataLayout', 'ImagePaddingMode']:
+            return 'integer()'
+        # optflow
+        if argtype in ['SolverType', 'SupportRegionType']:
+            return 'integer()'
         else:
             print(f'warning: generate_spec: unknown argtype `{argtype}`, input_arg? {is_in}, class={classname}')
             raise RuntimeError("erlang spec")
@@ -1283,6 +1299,12 @@ def map_argtype_in_spec_elixir(classname: str, argtype: str, is_in: bool, decl: 
         argtype_inner = ", ".join([map_argtype_in_spec_elixir(classname, a.strip(), is_in, decl) for a in argtype[len('std::pair<'):-1].split(",")])
         spec_type = '{' + argtype_inner + '}'
         return spec_type
+    elif argtype == "QRCodeDetectorAruco_Params":
+        return "Evision.QRCodeDetectorAruco.Params"
+    elif argtype == "HistogramPhaseUnwrapping":
+        return "Evision.PhaseUnwrapping.HistogramPhaseUnwrapping"
+    elif argtype == "HistogramPhaseUnwrapping_Params":
+        return "Evision.PhaseUnwrapping.HistogramPhaseUnwrapping.Params"
     elif is_struct(argtype, classname=classname, decl=decl):
         _, struct_name = is_struct(argtype, also_get='struct_name', classname=classname, decl=decl)
         return f'{struct_name}.t()'
@@ -1320,6 +1342,12 @@ def map_argtype_in_spec_elixir(classname: str, argtype: str, is_in: bool, decl: 
                 return f'Evision.ArUco.Board.t()'
             elif argtype == 'Dictionary':
                 return f'Evision.ArUco.Dictionary.t()'
+        # dnn
+        if argtype in ['DataLayout', 'ImagePaddingMode']:
+            return 'integer()'
+        # optflow
+        if argtype in ['SolverType', 'SupportRegionType']:
+            return 'integer()'
         else:
             print(f'warning: generate_spec: unknown argtype `{argtype}`, input_arg? {is_in}, class={classname}')
             return 'term()'

@@ -1,57 +1,6 @@
-/_build
-/cover
-/deps
-/doc
-/.fetch
-erl_crash.dump
-*.ez
-*.beam
-/config/*.secret.exs
 .elixir_ls/
-/c_src/evision_generated_*
-/c_src/evision_signatures.json
-/c_src/evision_custom_headers.h
-/c_src/configuration.private.hpp
-/c_src/headers.txt
-/c_src/headers-contrib.txt
 .DS_Store
 .vscode/
 .idea/
 .cache/
-/cmake_*/
-/priv/
-*.pyc
 /*.xcodeproj/
-/c_src/evision_custom_headers/*
-/lib/evision.ex
-/src/evision.erl
-3rd_party/cache
-3rd_party/opencv
-/lib/generated
-/src/generated
-
-# testdata
-/test/testdata/models/
-/test/testdata/photo_hdr_test/
-/test/testdata/yolov4.weights
-/test/testdata/efficientnet-b7.onnx
-/test/testdata/DB_IC15_resnet18.onnx
-/test/testdata/frozen_east_text_detection.pb
-/test/testdata/frozen_east_text_detection.pb.part1
-/test/testdata/frozen_east_text_detection.pb.part2
-
-# examples
-/examples/Lenna_test_image.png
-/examples/classification_classes_ILSVRC2012.txt
-/examples/coco_names.txt
-/examples/dnn_detection_test.jpg
-/examples/space_shuttle.jpg
-/examples/ssd_mobilenet_v2_coco_2018_03_29**
-/examples/test.png
-
-# we don't need to track checksum.exs in git
-# it should only be tracked by hex.pm (in `Evision.MixProject.package()[:files]`)
-checksum.exs
-
-# manually track this file in git
-checksum.erl

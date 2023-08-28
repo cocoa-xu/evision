@@ -96,6 +96,8 @@ class BeamWrapperGenerator(object):
         self.evision_erlang_hrl.write(
             "-record(evision_mat, {channels, dims, type, raw_type, shape, ref}).\n"
             "-record(evision_videocapture, {fps, frame_count, frame_width, frame_height, isOpened, ref}).\n"
+            "-record(evision_flann_indexparams, { ref }).\n"
+            "-record(evision_linedescriptor_binarydescriptor_keyline, {ref}).\n"
         )
 
         self.evision_modules = {}

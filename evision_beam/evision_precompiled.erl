@@ -8,7 +8,7 @@
 -define(EVISION_DLL_FILE, "priv/evision.dll").
 -define(ERLANG_GENERATED_SOURCE_DIR, "src/generated").
 
--include_lib("kernel/include/file.hrl").cc_toolchain
+-include_lib("kernel/include/file.hrl").
 
 app_version() ->
     {ok, Cwd} = file:get_cwd(),
