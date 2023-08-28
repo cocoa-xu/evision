@@ -1,0 +1,3 @@
+test/testdata/*.onnx
+test/testdata/frozen_east_text_detection.*
+test/testdata/photo_hdr_test/*.png
