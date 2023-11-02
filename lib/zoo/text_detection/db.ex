@@ -306,7 +306,13 @@ defmodule Evision.Zoo.TextDetection.DB do
           Kino.Frame.render(frame, Kino.Markdown.new("Running..."))
 
           {original_height, original_width} = {image.height, image.width}
-          image = Evision.Mat.from_binary(image.data, {:u, 8}, image.height, image.width, 3)
+
+          image =
+            image.file_ref
+            |> Kino.Input.file_path()
+            |> File.read!()
+            |> Evision.Mat.from_binary({:u, 8}, image.height, image.width, 3)
+
           image_ = Evision.resize(image, unquote({width, height}))
           {detections, confidences} = Evision.Zoo.TextDetection.DB.infer(model, image_)
 

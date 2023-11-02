@@ -265,7 +265,13 @@ defmodule Evision.Zoo.ImageSegmentation.PPHumanSeg do
           Kino.Frame.render(frame, Kino.Markdown.new("Running..."))
 
           {height, width} = {image.height, image.width}
-          image = Evision.Mat.from_binary(image.data, {:u, 8}, height, width, 3)
+
+          image =
+            image.file_ref
+            |> Kino.Input.file_path()
+            |> File.read!()
+            |> Evision.Mat.from_binary({:u, 8}, height, width, 3)
+
           results = Evision.Zoo.ImageSegmentation.PPHumanSeg.infer(model, image)
           results = Evision.resize(results, {width, height}, interpolation: Evision.Constant.cv_INTER_NEAREST())
 

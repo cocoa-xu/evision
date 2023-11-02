@@ -327,7 +327,12 @@ defmodule Evision.Zoo.FaceDetection.YuNet do
         |> Kino.listen(fn %{data: %{image: image}} ->
           Kino.Frame.render(frame, Kino.Markdown.new("Running..."))
 
-          image = Evision.Mat.from_binary(image.data, {:u, 8}, image.height, image.width, 3)
+          image =
+            image.file_ref
+            |> Kino.Input.file_path()
+            |> File.read!()
+            |> Evision.Mat.from_binary({:u, 8}, image.height, image.width, 3)
+
           results = Evision.Zoo.FaceDetection.YuNet.infer(model, image)
 
           image = Evision.cvtColor(image, Evision.Constant.cv_COLOR_RGB2BGR())

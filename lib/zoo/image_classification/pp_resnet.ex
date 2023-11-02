@@ -303,7 +303,13 @@ defmodule Evision.Zoo.ImageClassification.PPResNet do
           Kino.Frame.render(frame, Kino.Markdown.new("Running..."))
 
           {height, width} = {image.height, image.width}
-          image = Evision.Mat.from_binary(image.data, {:u, 8}, height, width, 3)
+
+          image =
+            image.file_ref
+            |> Kino.Input.file_path()
+            |> File.read!()
+            |> Evision.Mat.from_binary({:u, 8}, height, width, 3)
+
           image_ = Evision.resize(image, {256, 256})[[16..239, 16..239]]
           results = Evision.Zoo.ImageClassification.PPResNet.infer(model, image_, top_k: unquote(top_k))
 

@@ -12,7 +12,7 @@ Mix.install(
   [
     {:evision, "~> 0.1"},
     {:req, "~> 0.3"},
-    {:kino, "~> 0.7"}
+    {:kino, "~> 0.11"}
   ],
   system_env: [
     {"EVISION_PREFER_PRECOMPILED", true}
@@ -50,8 +50,11 @@ content_image_input = Kino.Input.image("Content image")
 ```elixir
 img =
   case Kino.Input.read(content_image_input) do
-    %{data: data, height: height, width: width} ->
-      Evision.Mat.from_binary(data, {:u, 8}, height, width, 3)
+    %{file_ref: file_ref, height: height, width: width} ->
+      file_ref
+      |> Kino.Input.file_path()
+      |> File.read!()
+      |> Evision.Mat.from_binary({:u, 8}, height, width, 3)
       |> Evision.cvtColor(Evision.Constant.cv_COLOR_RGB2BGR())
 
     _ ->
