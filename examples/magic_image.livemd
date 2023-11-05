@@ -5,7 +5,7 @@
 ```elixir
 Mix.install([
   {:evision, "~> 0.1"},
-  {:kino, "~> 0.7"},
+  {:kino, "~> 0.11"},
   {:req, "~> 0.3"},
   {:nx, "~> 0.4"}
 ])
@@ -36,8 +36,11 @@ Kino.Layout.grid([front_layer_input, back_layer_input], columns: 2)
 ```elixir
 load_layer = fn kino_input, url, save_as ->
   case Kino.Input.read(kino_input) do
-    %{data: data, height: height, width: width} ->
-      Evision.Mat.from_binary(data, {:u, 8}, height, width, 3)
+    %{file_ref: file_ref, height: height, width: width} ->
+      file_ref
+      |> Kino.Input.file_path()
+      |> File.read!()
+      |> Evision.Mat.from_binary({:u, 8}, height, width, 3)
       |> Evision.cvtColor(Evision.Constant.cv_COLOR_BGR2GRAY())
 
     nil ->
@@ -259,7 +262,7 @@ $$
 ```elixir
 compute_alpha = fn front, back ->
   Nx.add(back, 255)
-  |> Nx.subtract(front)  
+  |> Nx.subtract(front)
   |> Nx.clip(0, 255)
   |> Nx.add(1.0e-12)
   |> Nx.clip(0, 255)
@@ -322,7 +325,7 @@ Drag the generated image and hover it over the black background on the right han
 [
   ["Generated Image", merged],
   [
-    "Black Background", 
+    "Black Background",
     Evision.Mat.last_dim_as_channel(Evision.Mat.full({cols, rows, 3}, 0, :u8))
   ]
 ]

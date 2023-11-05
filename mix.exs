@@ -1104,7 +1104,7 @@ defmodule Evision.MixProject do
 
       # optional
       ## kino: for smart cells and better output in livebook
-      {:kino, "~> 0.7", optional: true},
+      {:kino, "~> 0.11", optional: true},
       ## progress_bar: for the model zoo smart cell
       {:progress_bar, "~> 2.0 or ~> 3.0", optional: true},
 

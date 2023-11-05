@@ -528,7 +528,13 @@ defmodule Evision.Zoo.TextRecognition.CRNN do
           {original_height, original_width} = {image.height, image.width}
           scale_height = original_height / unquote(detector_height)
           scale_width = original_width / unquote(detector_width)
-          image = Evision.Mat.from_binary(image.data, {:u, 8}, image.height, image.width, 3)
+
+          image =
+            image.file_ref
+            |> Kino.Input.file_path()
+            |> File.read!()
+            |> Evision.Mat.from_binary({:u, 8}, image.height, image.width, 3)
+
           image_ = Evision.resize(image, unquote({detector_width, detector_height}))
 
           charset = Evision.Zoo.TextRecognition.CRNN.get_charset(unquote(charset))

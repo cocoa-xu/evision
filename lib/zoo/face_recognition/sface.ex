@@ -426,10 +426,17 @@ defmodule Evision.Zoo.FaceRecognition.SFace do
         |> Kino.listen(fn %{data: %{original: original_image, comparison: comparison_image}} ->
           Kino.Frame.render(frame, Kino.Markdown.new("Running..."))
 
-          original_image = Evision.Mat.from_binary(original_image.data, {:u, 8},
-            original_image.height, original_image.width, 3)
-          comparison_image = Evision.Mat.from_binary(comparison_image.data, {:u, 8},
-            comparison_image.height, comparison_image.width, 3)
+          original_image =
+            original_image.file_ref
+            |> Kino.Input.file_path()
+            |> File.read!()
+            |> Evision.Mat.from_binary({:u, 8}, original_image.height, original_image.width, 3)
+
+          comparison_image =
+            comparison_image.file_ref
+            |> Kino.Input.file_path()
+            |> File.read!()
+            |> Evision.Mat.from_binary({:u, 8}, comparison_image.height, comparison_image.width, 3)
 
           original_results = unquote(detector_module).infer(detector, original_image)
           comparison_results = unquote(detector_module).infer(detector, comparison_image)
