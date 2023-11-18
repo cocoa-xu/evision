@@ -148,6 +148,7 @@ jobs:
           tail -n "+${LINE}" mix.exs >> mix.exs.tmp
           mv mix.exs.tmp mix.exs
           sed -i 's/nx, "~> 0.3.0/nx, "~> 0.4/g' mix.exs
+          sed -i 's/kino, "~> 0.7/kino, "~> 0.11/g' mix.exs
           cat mix.exs
           export MIX_TARGET=${{ matrix.pair.target }}
           mix deps.get
