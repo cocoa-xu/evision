@@ -404,6 +404,19 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
     # TODO: This may no longer be necessary from Erlang/OTP 26.0 or later.
     http_options = https_opts(String.to_charlist(URI.parse(url).host))
 
+    if proxy = System.get_env("HTTP_PROXY") || System.get_env("http_proxy") do
+      Mix.shell().info("Using HTTP_PROXY: #{proxy}")
+      %{host: host, port: port} = URI.parse(proxy)
+
+      :httpc.set_options([{:proxy, {{String.to_charlist(host), port}, []}}])
+    end
+
+    if proxy = System.get_env("HTTPS_PROXY") || System.get_env("https_proxy") do
+      Mix.shell().info("Using HTTPS_PROXY: #{proxy}")
+      %{host: host, port: port} = URI.parse(proxy)
+      :httpc.set_options([{:https_proxy, {{String.to_charlist(host), port}, []}}])
+    end
+
     case :httpc.request(:get, arg, http_options, opts) do
       {:ok, {{_, 200, _}, _, body}} ->
         File.write!(save_as, body)
