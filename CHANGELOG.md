@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.1.34 (2023-11-18)
+[Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.34) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.34)
+
+### Changed
+- [compatibilities] Make it compatible with newer versions of Kino. Thanks for the contribution from @jonatanklosko.
+
 ## v0.1.32 (2023-08-01)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.32) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.32)
 
