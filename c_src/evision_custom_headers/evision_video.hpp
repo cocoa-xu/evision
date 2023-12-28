@@ -7,4 +7,8 @@ typedef TrackerDaSiamRPN::Params TrackerDaSiamRPN_Params;
 typedef TrackerNano::Params TrackerNano_Params;
 #endif
 
+#if (CV_VERSION_MAJOR >= 4 && CV_VERSION_MINOR >= 9)
+typedef TrackerVit::Params TrackerVit_Params;
+#endif
+
 #endif
