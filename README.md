@@ -659,6 +659,98 @@ config :evision, enabled_img_codecs: [
     export OPENCV_GIT_REPO="https://github.com/username/opencv.git"
     ```
 
+- How do I test for a new pre-release of OpenCV?
+
+    Suppose that OpenCV has a new pre-release (usually a new tagged version), 4.9.0, then you need
+    to do the following to test and maybe also add/change some lines so that the new version is
+    usable.
+
+    First of all, disable using precompiled binaries.
+
+    ```shell
+    export EVISION_PREFER_PRECOMPILED=false
+    ```
+
+    Then set to use source code from GitHub.
+
+    ```shell
+    export OPENCV_USE_GIT_HEAD=true
+    export OPENCV_USE_GIT_BRANCH=4.9.0
+    
+    export OPENCV_CONTRIB_USE_GIT_HEAD=true
+    export OPENCV_CONTRIB_USE_GIT_BRANCH=4.9.0
+    ```
+
+    After that, we can try to build it. Usually, this is likely to fail without any changes to the source code
+    in the evision library. I'll mention possible fixes for that in a minute.
+
+    ```shell
+    rm -rf _build/test/lib/evision
+    export MIX_ENV=test
+    iex -S mix
+    ```
+
+- Troubleshooting pre-release versions of OpenCV
+
+    1. unknown type name 'XXXXXXXX_Params'
+    
+        When you see error messages like:
+
+        ```
+        In file included from /home/runner/evision/c_src/evision.cpp:2373:
+        /home/runner/evision/c_src/evision_generated_funcs.h:3685:5: error: unknown type name 'TrackerVit_Params'
+            TrackerVit_Params parameters=TrackerVit::Params();
+        ```
+
+        That usually means we need to copy some headers from OpenCV's source code for compatibilties. You can find
+        them in 
+        
+        ```
+        3rd_party/opencv/opencv-${OPENCV_VER}/modules/${MODULE_NAME}/misc/python/
+        ```
+
+        where `${OPENCV_VER}` is the version name and `${MODULE_NAME}` is the corresponding module of that `XXXXX_Params`. 
+        To find the corresponding module of `XXXXX_Params`, one good way is to search the OpenCV source code. In this example, `TrackerVit` is in the `video` module:
+
+        ```shell
+        $ cd 3rd_party/opencv/opencv-4.9.0/modules/
+        $ rg --no-ignore 'TrackerVit::Params'
+        video/src/tracking/tracker_vit.cpp
+        24:TrackerVit::Params::Params()
+        43:    TrackerVitImpl(const TrackerVit::Params& parameters)
+        60:    TrackerVit::Params params;
+        210:Ptr<TrackerVit> TrackerVit::create(const TrackerVit::Params& parameters)
+        216:Ptr<TrackerVit> TrackerVit::create(const TrackerVit::Params& parameters)
+
+        video/include/opencv2/video/tracking.hpp
+        914:    @param parameters vit tracker parameters TrackerVit::Params
+        917:    Ptr<TrackerVit> create(const TrackerVit::Params& parameters = TrackerVit::Params());
+
+        video/test/test_trackers.cpp
+        166:    cv::TrackerVit::Params params;
+        ```
+
+        However, as the time of writing, OpenCV's official source didn't add `TrackerVit::Params` to 
+
+        ```shell
+        3rd_party/opencv/opencv-4.9.0/modules/video/misc/python/pyopencv_video.hpp
+        ```
+
+        So we can either say this pre-release version is not ready for evision, or we can simply add
+        some lines in evision's codebase to fix it. For this particular issue, we can edit this file:
+
+        ```
+        c_src/evision_custom_headers/evision_video.hpp
+        ```
+
+        and add the following lines to it.
+
+        ```shell
+        #if (CV_VERSION_MAJOR >= 4 && CV_VERSION_MINOR >= 9)
+        typedef TrackerVit::Params TrackerVit_Params;
+        #endif
+        ```
+
 - How do I set the number of jobs for compiling?
 
     ```shell
