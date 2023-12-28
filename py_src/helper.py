@@ -839,6 +839,8 @@ def is_struct(argtype: str, also_get: Optional[str] = None, classname: Optional[
         "mcc_CChecker": "Evision.MCC.CCheckerDetector",
         "dnn_Net": "Evision.DNN.Net",
 
+        "TrackerVit": "Evision.TrackerVit",
+
         "BinaryDescriptor": "Evision.LineDescriptor.BinaryDescriptor",
         "KeyLine": "Evision.LineDescriptor.BinaryDescriptor.KeyLine",
         "BinaryDescriptorMatcher": "Evision.LineDescriptor.BinaryDescriptorMatcher",
@@ -1202,6 +1204,8 @@ def map_argtype_in_spec_erlang(classname: str, argtype: str, is_in: bool, decl: 
         return '#evision_ocl_device{}'
     elif argtype == 'Index' and classname == 'flann_Index':
          return '#evision_flann_index{}'
+    elif argtype == 'TrackerVit':
+        return '#evision_tracker_vit'
     elif argtype == 'QRCodeDetectorAruco':
         return '#evision_qrcode_detector_aruco{}'
     elif argtype == 'QRCodeDetectorAruco_Params':
@@ -1302,6 +1306,8 @@ def map_argtype_in_spec_elixir(classname: str, argtype: str, is_in: bool, decl: 
         return 'Evision.OCL.Device.t()'
     elif argtype == 'Index' and classname == 'flann_Index':
          return 'Evision.Flann.Index.t()'
+    elif argtype == 'TrackerVit':
+        return 'Evision.TrackerVit'
     elif argtype == 'QRCodeDetectorAruco':
         return 'Evision.QRCodeDetectorAruco'
     elif argtype in ['QRCodeDetectorAruco_Params', 'QRCodeDetectorAruco::Params']:
