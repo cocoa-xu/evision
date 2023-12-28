@@ -22,7 +22,7 @@ ifneq ($(OPENCV_USE_GIT_HEAD), false)
 	OPENCV_VER=$(OPENCV_USE_GIT_BRANCH)
 endif
 OPENCV_CONTRIB_USE_GIT_HEAD ?= false
-OPENCV_GIT_REPO ?= "https://github.com/opencv/opencv_contrib.git"
+OPENCV_CONTRIB_GIT_REPO ?= "https://github.com/opencv/opencv_contrib.git"
 OPENCV_CONTRIB_VER ?= 4.8.0
 ifneq ($(OPENCV_CONTRIB_USE_GIT_HEAD), false)
 	OPENCV_CONTRIB_VER=$(OPENCV_CONTRIB_USE_GIT_BRANCH)
