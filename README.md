@@ -149,7 +149,7 @@ iex> mat = Evision.Mat.from_nx(t)
 
 #### Unsupported Type Map
 
-As OpenCV does not support the following types (yet, as of OpenCV 4.8.0)
+As OpenCV does not support the following types (yet, as of OpenCV 4.9.0)
 
 - `{:s, 64}`
 - `{:u, 32}`
@@ -320,6 +320,7 @@ Compatible OpenCV versions:
 - 4.6.0
 - 4.7.0
 - 4.8.0
+- 4.9.0
 
 by compatible, it means these versions can compile successfully, and I tested a small range of functions. Tons of tests
 should be written, and then we can have a list for tested OpenCV versions.
@@ -519,7 +520,7 @@ To obtain and compile OpenCV's source code from official releases, the following
 # optional
 ## set OpenCV version
 ##   the corresponding license file should be available at https://github.com/opencv/opencv/blob/${OPENCV_VER}/LICENSE
-export OPENCV_VER="4.8.0"
+export OPENCV_VER="4.9.0"
 
 # optional
 ## Use Debug build
@@ -797,7 +798,7 @@ Say you have the following MIX environment variables:
 # set by MIX
 MIX_ENV=dev
 # set by evision or you
-OPENCV_VER=4.8.0
+OPENCV_VER=4.9.0
 # set by yourself if you're compiling evision to a nerves firmware
 MIX_TARGET=rpi4
 ```
