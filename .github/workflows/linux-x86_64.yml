@@ -62,7 +62,7 @@ jobs:
     container: alpine:latest
     env:
       MIX_ENV: test
-      OPENCV_VER: "4.8.0"
+      OPENCV_VER: "4.9.0"
       OTP_VERSION: "25.2"
       ELIXIR_VERSION: "1.14.3"
       EVISION_PREFER_PRECOMPILED: "false"
@@ -120,7 +120,7 @@ jobs:
         id: cache-mix-compile_opencv
         uses: actions/cache@v3
         with:
-          key: compile-opencv-${{ env.OPENCV_VER }}-x86_64-linux-musl-${{ hashFiles('Makefile') }}
+          key: compile-opencv-v${{ env.OPENCV_VER }}-x86_64-linux-musl-${{ hashFiles('Makefile') }}
           path: |
             ./_build/${{ env.MIX_ENV }}/lib/evision
             ./c_src/headers.txt
@@ -156,7 +156,7 @@ jobs:
     runs-on: ubuntu-20.04
     env:
       MIX_ENV: test
-      OPENCV_VER: "4.8.0"
+      OPENCV_VER: "4.9.0"
       OTP_VERSION: "25.2"
       ELIXIR_VERSION: "1.14.3"
       EVISION_PREFER_PRECOMPILED: "false"

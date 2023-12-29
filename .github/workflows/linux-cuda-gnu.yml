@@ -79,7 +79,7 @@ jobs:
       DEBIAN_FRONTEND: noninteractive
       # evision related env vars
       MIX_ENV: test
-      OPENCV_VER: "4.8.0"
+      OPENCV_VER: "4.9.0"
       OTP_VERSION: "25.2"
       ELIXIR_VERSION: "1.14.3"
       EVISION_PREFER_PRECOMPILED: "false"
