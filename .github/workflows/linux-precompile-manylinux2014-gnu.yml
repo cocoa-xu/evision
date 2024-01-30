@@ -110,7 +110,7 @@ jobs:
           fi
           echo "CMAKE_TOOLCHAIN_FILE: ${CMAKE_TOOLCHAIN_FILE}"
 
-          rm -rf "./_build/${{ env.MIX_ENV }}/lib/evision"
+          sudo rm -rf "./_build/${{ env.MIX_ENV }}/lib/evision"
 
           bash ./script-to-build-manylinux2014.sh "${{ env.MIX_ENV }}" "${{ matrix.pair.OTP_VERSION }}" "${{ matrix.pair.arch }}" "${{ matrix.pair.ELIXIR_VERSION }}" "${EVISION_ENABLE_CONTRIB}" "${CMAKE_TOOLCHAIN_FILE}"
 
@@ -137,7 +137,7 @@ jobs:
           fi
           echo "CMAKE_TOOLCHAIN_FILE: ${CMAKE_TOOLCHAIN_FILE}"
 
-          rm -rf "./_build/${{ env.MIX_ENV }}/lib/evision"
+          sudo rm -rf "./_build/"
 
           bash ./script-to-build-manylinux2014.sh "${{ env.MIX_ENV }}" "${{ matrix.pair.OTP_VERSION }}" "${{ matrix.pair.arch }}" "${{ matrix.pair.ELIXIR_VERSION }}" "true"
 
