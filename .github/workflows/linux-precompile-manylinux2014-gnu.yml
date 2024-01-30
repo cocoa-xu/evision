@@ -39,11 +39,16 @@ jobs:
               NIF_VERSION: "2.17"
               ELIXIR_VERSION: "1.16.0"
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-      - name: pull docker
+      - name: Pull Docker Image
         run: |
           sudo docker pull quay.io/pypa/manylinux2014_x86_64:latest
+
+      - name: Install system dependecies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential automake autoconf pkg-config bc m4 curl git libssl-dev libncurses5-dev ca-certificates
 
       - name: Cache OpenCV source code
         id: cache-opencv
