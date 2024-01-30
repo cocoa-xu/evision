@@ -108,7 +108,7 @@ jobs:
             ./c_src/configuration.private.hpp
 
       - name: Compile OpenCV
-        if: steps.cache-mix-compile_opencv.outputs.cache-hit != 'true'
+        if: steps.cache-mix-compile.outputs.cache-hit != 'true'
         shell: bash
         run: |
           rm -f Makefile
