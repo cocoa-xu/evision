@@ -4,6 +4,7 @@ on:
   pull_request:
     types: [ labeled, synchronize, opened, reopened ]
     paths-ignore:
+      - 'assets/**'
       - '*.md'
       - '**/*.md'
       - 'LICENSE*'
@@ -27,6 +28,7 @@ on:
     branches:
       - main
     paths-ignore:
+      - 'assets/**'
       - '*.md'
       - '**/*.md'
       - 'LICENSE*'

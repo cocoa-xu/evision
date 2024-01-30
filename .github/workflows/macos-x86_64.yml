@@ -3,6 +3,7 @@ name: macos-x86_64
 on:
   pull_request:
     paths-ignore:
+      - 'assets/**'
       - '*.md'
       - '**/*.md'
       - 'LICENSE*'
@@ -23,6 +24,7 @@ on:
       - main
       - test-*
     paths-ignore:
+      - 'assets/**'
       - '*.md'
       - '**/*.md'
       - 'LICENSE*'

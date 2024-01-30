@@ -5,6 +5,7 @@ on:
     branches:
       - python-compatibility
     paths-ignore:
+      - 'assets/**'
       - '**/README.md'
       - 'examples/**'
       - 'test/**'
