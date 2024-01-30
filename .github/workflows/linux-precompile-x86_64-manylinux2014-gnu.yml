@@ -12,7 +12,7 @@ concurrency:
 
 jobs:
   mix_compile:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     env:
       OPENCV_VER: "4.9.0"
       MIX_ENV: prod
@@ -27,17 +27,17 @@ jobs:
               cmake_toolchain_file: ""
               c_compiler: gcc
               cpp_compiler: g++
-              OTP_VERSION: "25.3.2"
+              OTP_VERSION: "25.3.2.8"
               NIF_VERSION: "2.16"
-              ELIXIR_VERSION: "1.15.4"
+              ELIXIR_VERSION: "1.16.0"
           - pair:
               arch: x86_64-linux-gnu
               cmake_toolchain_file: ""
               c_compiler: gcc
               cpp_compiler: g++
-              OTP_VERSION: "26.0.2"
+              OTP_VERSION: "26.1.2"
               NIF_VERSION: "2.17"
-              ELIXIR_VERSION: "1.15.4"
+              ELIXIR_VERSION: "1.16.0"
     steps:
       - uses: actions/checkout@v3
 
@@ -59,11 +59,45 @@ jobs:
           bash scripts/download_opencv.sh ${OPENCV_VER} 3rd_party/cache 3rd_party/opencv/
           bash scripts/download_opencv_contrib.sh ${OPENCV_VER} 3rd_party/cache 3rd_party/opencv/
 
+      - name: Cache OTP
+        uses: actions/cache@v3
+        id: cache-otp
+        with:
+          path: ./cache/otp
+          key: otp-${{ matrix.pair.OTP_VERSION }}-${{ matrix.pair.arch }}
+
+      - name: Download OTP
+        if: steps.cache-otp.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ./cache/otp
+          curl -fSL https://cocoa.build/otp/v${{ matrix.pair.OTP_VERSION }}/otp-${{ matrix.pair.arch }}.tar.gz -o ./cache/otp/otp-v${{ matrix.pair.OTP_VERSION }}-${{ matrix.pair.arch }}.tar.gz
+          cd ./cache/otp
+          tar -xzf otp-v${{ matrix.pair.OTP_VERSION }}-${{ matrix.pair.arch }}.tar.gz
+
+      - name: Cache Elixir
+        id: cache-elixir
+        uses: actions/cache@v3
+        with:
+          path: ./cache/elixir
+          key: elixir-${{ matrix.pair.ELIXIR_VERSION }}-${{ matrix.pair.arch }}
+
+      - name: Download and Compile Elixir
+        if: steps.cache-elixir.outputs.cache-hit != 'true'
+        run: |
+          export PATH=$(pwd)/./cache/otp/usr/local/bin:$(pwd)/./cache/elixir/elixir-${{ matrix.pair.ELIXIR_VERSION }}/bin:${PATH}
+          export ERL_ROOTDIR=$(pwd)/./cache/otp/usr/local/lib/erlang
+          mkdir -p ./cache/elixir
+          curl -fSL https://github.com/elixir-lang/elixir/archive/refs/tags/v${{ matrix.pair.ELIXIR_VERSION }}.tar.gz -o ./cache/elixir/elixir-${{ matrix.pair.ELIXIR_VERSION }}.tar.gz
+          cd ./cache/elixir
+          tar -xzf elixir-${{ matrix.pair.ELIXIR_VERSION }}.tar.gz
+          cd elixir-${{ matrix.pair.ELIXIR_VERSION }}
+          make -j$(nproc) compile
+
       - name: Mix Compile (without contrib modules)
         run: |
           cp .github/script-to-build-manylinux2014.sh ./
           cp .github/do-build-manylinux2014.sh ./
-          
+
           export EVISION_ENABLE_CONTRIB=false
 
           if [ "${{ matrix.pair.cmake_toolchain_file }}" != "" ]; then
@@ -73,7 +107,7 @@ jobs:
 
           rm -rf "./_build/${{ env.MIX_ENV }}/lib/evision"
 
-          bash ./script-to-build-manylinux2014.sh "${{ env.MIX_ENV }}" "${{ matrix.pair.OTP_VERSION }}" "${{ matrix.pair.ELIXIR_VERSION }}" "${EVISION_ENABLE_CONTRIB}" "${CMAKE_TOOLCHAIN_FILE}"
+          bash ./script-to-build-manylinux2014.sh "${{ env.MIX_ENV }}" "${{ matrix.pair.OTP_VERSION }}" "${{ matrix.pair.arch }}" "${{ matrix.pair.ELIXIR_VERSION }}" "${EVISION_ENABLE_CONTRIB}" "${CMAKE_TOOLCHAIN_FILE}"
 
       - name: Create precompiled library (without contrib modules)
         run: |
@@ -100,7 +134,7 @@ jobs:
 
           rm -rf "./_build/${{ env.MIX_ENV }}/lib/evision"
 
-          bash ./script-to-build-manylinux2014.sh "${{ env.MIX_ENV }}" "${{ matrix.pair.OTP_VERSION }}" "${{ matrix.pair.ELIXIR_VERSION }}" "true"
+          bash ./script-to-build-manylinux2014.sh "${{ env.MIX_ENV }}" "${{ matrix.pair.OTP_VERSION }}" "${{ matrix.pair.arch }}" "${{ matrix.pair.ELIXIR_VERSION }}" "true"
 
       - name: Create precompiled library (with contrib modules)
         run: |
