@@ -1,4 +1,4 @@
-<h1><img src="https://github.com/cocoa-xu/evision/raw/main/logo.png" alt="Logo" width="128"></h1>
+<h1><img src="https://github.com/cocoa-xu/evision/raw/main/assets/logo.png" alt="Logo" width="128"></h1>
 
 # evision
 
