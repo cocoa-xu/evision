@@ -35,7 +35,7 @@ jobs:
               cmake_toolchain_file: ""
               c_compiler: gcc
               cpp_compiler: g++
-              OTP_VERSION: "26.1.2"
+              OTP_VERSION: "26.2.1"
               NIF_VERSION: "2.17"
               ELIXIR_VERSION: "1.16.0"
     steps:
@@ -48,7 +48,7 @@ jobs:
       - name: Install system dependecies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential automake autoconf pkg-config bc m4 curl git libssl-dev libncurses5-dev ca-certificates
+          sudo apt-get install -y build-essential automake autoconf pkg-config bc m4 curl git libtinfo5 libssl-dev libncurses5-dev ca-certificates
 
       - name: Cache OpenCV source code
         id: cache-opencv
