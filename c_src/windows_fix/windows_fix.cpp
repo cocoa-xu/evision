@@ -1,4 +1,9 @@
 #include <erl_nif.h>
+#include <string>
+#include <cstring>
+#include <stdlib.h>
+#include <sstream>
+#include <vector>
 #include "../nif_utils.hpp"
 
 #if defined(_WIN32) || defined(WIN32) || defined(__CYGWIN__) || defined(__MINGW32__) || defined(__BORLANDC__)
@@ -6,9 +11,6 @@
 #endif
 
 #ifdef OS_WIN
-#include <string>
-#include <sstream>
-#include <stdlib.h>
 #include <windows.h>
 #include <libloaderapi.h>
 #include <winbase.h>
@@ -21,7 +23,7 @@ extern "C"
 #endif
     #ifdef OS_WIN
     int evision_windows_fix_dir_exists(LPCWSTR path) {
-        DWORD dwAttrib = GetFileAttributes(path);
+        DWORD dwAttrib = GetFileAttributesW(path);
         return (dwAttrib != INVALID_FILE_ATTRIBUTES && (dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
     }
 
@@ -40,7 +42,7 @@ extern "C"
                 fprintf(stderr, "GetModuleHandle failed, error = %d\r\n", ret);
             }
 
-            if (GetModuleFileName(hm, (LPWSTR)path, sizeof(path)) == 0) {
+            if (GetModuleFileNameW(hm, (LPWSTR)path, sizeof(path)) == 0) {
                 int ret = GetLastError();
                 fprintf(stderr, "GetModuleFileName failed, error = %d\r\n", ret);
             }
@@ -60,7 +62,7 @@ extern "C"
                     t << vc_version;
                     t << L"\\lib";
                     auto probe = t.str();
-                    if (dirExists((LPCWSTR)probe.c_str())) {
+                    if (evision_windows_fix_dir_exists((LPCWSTR)probe.c_str())) {
                         lib_dir = probe;
                         break;
                     }
@@ -73,7 +75,7 @@ extern "C"
                     t << vc_version;
                     t << L"\\lib";
                     auto probe = t.str();
-                    if (dirExists((LPCWSTR)probe.c_str())) {
+                    if (evision_windows_fix_dir_exists((LPCWSTR)probe.c_str())) {
                         lib_dir = probe;
                         break;
                     }
@@ -81,7 +83,7 @@ extern "C"
             }
 
             if (lib_dir.length() == 0) {
-                ERL_NIF_TERM ret_term = erlang::nif::error(env, "Cannot detect OpenCV lib directory");
+                ERL_NIF_TERM ret_term = evision::nif::error(env, "Cannot detect OpenCV lib directory");
                 return ret_term;
             }
 
@@ -103,11 +105,11 @@ extern "C"
                 LPTSTR error_text = nullptr;
                 FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, HRESULT_FROM_WIN32(error), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR)&error_text, 0, NULL);
                 if (error_text != nullptr) {
-                    ERL_NIF_TERM ret_term = erlang::nif::error(env, error_text);
+                    ERL_NIF_TERM ret_term = evision::nif::error(env, error_text);
                     LocalFree(error_text);
                     return ret_term;
                 } else {
-                    ERL_NIF_TERM ret_term = erlang::nif::error(env, "error happened when adding OpenCV runtime DLL path, but cannot get formatted error message");
+                    ERL_NIF_TERM ret_term = evision::nif::error(env, "error happened when adding OpenCV runtime DLL path, but cannot get formatted error message");
                     return ret_term;
                 }
             }
@@ -137,11 +139,11 @@ extern "C"
                     LPTSTR error_text = nullptr;
                     FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, HRESULT_FROM_WIN32(error), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR)&error_text, 0, NULL);
                     if (error_text != nullptr) {
-                        ERL_NIF_TERM ret_term = erlang::nif::error(env, error_text);
+                        ERL_NIF_TERM ret_term = evision::nif::error(env, error_text);
                         LocalFree(error_text);
                         return ret_term;
                     } else {
-                        ERL_NIF_TERM ret_term = erlang::nif::error(env, "error happened when adding CUDA runtime DLL path, but cannot get formatted error message");
+                        ERL_NIF_TERM ret_term = evision::nif::error(env, "error happened when adding CUDA runtime DLL path, but cannot get formatted error message");
                         return ret_term;
                     }
                 }
