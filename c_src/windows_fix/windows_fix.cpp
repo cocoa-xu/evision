@@ -37,7 +37,7 @@ extern "C"
             std::wstring directory;
             wchar_t path[65536];
             HMODULE hm = NULL;
-            if (GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, (LPCWSTR)&evision_windows_fix_run_once, &hm) == 0) {
+            if (GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, (LPCWSTR)&evision_windows_fix_run_once, &hm) == 0) {
                 int ret = GetLastError();
                 fprintf(stderr, "GetModuleHandle failed, error = %d\r\n", ret);
             }
@@ -118,7 +118,7 @@ extern "C"
 
         if (!cuda_path_updated) {
             WCHAR CUDARuntimeDIRBuffer[65536];
-            CUDARuntimeDIRBuffer[0] = L'\0';
+            memset(CUDARuntimeDIRBuffer, 0, sizeof(CUDARuntimeDIRBuffer));
             DWORD cudaLen = GetEnvironmentVariableW(L"EVISION_CUDA_RUNTIME_DIR", CUDARuntimeDIRBuffer, 65536);
 
             if (cudaLen > 0) {
@@ -133,7 +133,7 @@ extern "C"
 
                 SetEnvironmentVariableW(L"PATH", newPath);
                 SetDefaultDllDirectories(LOAD_LIBRARY_SEARCH_DEFAULT_DIRS | LOAD_LIBRARY_SEARCH_USER_DIRS);
-                DLL_DIRECTORY_COOKIE ret = AddDllDirectory(opencvLibDirectoryPCWSTR);
+                DLL_DIRECTORY_COOKIE ret = AddDllDirectory(CUDARuntimeDIRBuffer);
                 if (ret == 0) {
                     DWORD error = GetLastError();
                     LPTSTR error_text = nullptr;
