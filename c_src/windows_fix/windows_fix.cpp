@@ -37,7 +37,7 @@ extern "C"
             std::wstring directory;
             wchar_t path[65536];
             HMODULE hm = NULL;
-            if (GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, (LPCWSTR)&main, &hm) == 0) {
+            if (GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, (LPCWSTR)&evision_windows_fix_run_once, &hm) == 0) {
                 int ret = GetLastError();
                 fprintf(stderr, "GetModuleHandle failed, error = %d\r\n", ret);
             }
