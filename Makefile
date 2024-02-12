@@ -4,6 +4,7 @@ endif
 
 PRIV_DIR = $(MIX_APP_PATH)/priv
 EVISION_SO = $(PRIV_DIR)/evision.so
+WINDOWS_FIX_SO = $(PRIV_DIR)/windows_fix.so
 SRC = $(shell pwd)/src
 C_SRC = $(shell pwd)/c_src
 PY_SRC = $(shell pwd)/py_src
@@ -210,6 +211,7 @@ $(EVISION_SO): $(C_SRC_HEADERS_TXT)
 			|| { echo "\033[0;31mincomplete build of OpenCV found in '$(CMAKE_OPENCV_BUILD_DIR)', please delete that directory and retry\033[0m" && exit 1 ; } ; } \
 			&& if [ "$(EVISION_PREFER_PRECOMPILED)" != "true" ]; then \
 				cp "$(CMAKE_EVISION_BUILD_DIR)/evision.so" "$(EVISION_SO)" ; \
+				cp "$(CMAKE_EVISION_BUILD_DIR)/windows_fix.so" "$(WINDOWS_FIX_SO)" ; \
 			fi ; \
 		fi
 
