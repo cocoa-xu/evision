@@ -71,15 +71,17 @@ jobs:
           arch: x64
           vsversion: "2019"
 
-      - uses: cocoa-xu/cuda-toolkit@v0.4.0
-        if: ${{ matrix.cudnn }} == "8.7.0"
+      - name: Install CUDA with cuDNN 8.7.0
+        uses: cocoa-xu/cuda-toolkit@v0.4.0
+        if: ${{ matrix.cudnn }} == '8.7.0'
         with:
           cuda: ${{ matrix.cuda_ver }}
           cudnn: ${{ matrix.cudnn }}
           cudnn_url: ${{ secrets.CUDA_V870_WINDOWS_X86_64_CUDA11 }}
 
-      - uses: cocoa-xu/cuda-toolkit@v0.4.0
-        if: ${{ matrix.cudnn }} == "8.9.0"
+      - name: Install CUDA with cuDNN 8.9.0
+        uses: cocoa-xu/cuda-toolkit@v0.4.0
+        if: ${{ matrix.cudnn }} == '8.9.0'
         with:
           cuda: ${{ matrix.cuda_ver }}
           cudnn: ${{ matrix.cudnn }}
