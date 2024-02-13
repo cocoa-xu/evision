@@ -191,7 +191,18 @@ gen_evision_nif_load_nif = """
     case :erlang.load_nif(nif_file, 0) do
       :ok -> :ok
       {:error, {:reload, _}} -> :ok
-      {:error, reason} -> Logger.warning("Failed to load nif: #{inspect(reason)}")
+      {:error, reason} ->
+        Logger.warning("Failed to load nif: #{inspect(reason)}")
+        case :os.type() do
+          {:win32, _} ->
+            case :erlang.load_nif("#{nif_file}.dll", 0) do
+              :ok -> :ok
+              {:error, {:reload, _}} -> :ok
+              {:error, reason} -> Logger.warning("Failed to load nif: #{inspect(reason)}")
+            end
+          _ ->
+            {:error, reason}
+        end
     end
   end
 """
