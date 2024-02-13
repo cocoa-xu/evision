@@ -72,7 +72,7 @@ jobs:
 
       - name: Cache mix packages
         id: cache-mix-deps
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           key: deps-${{ hashFiles('mix.lock') }}-${{ env.OTP_VERSION }}-${{ env.ELIXIR_VERSION }}
           path: |
@@ -86,7 +86,7 @@ jobs:
 
       - name: Cache OpenCV source code
         id: cache-opencv
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           key: opencv-${{ env.OPENCV_VER }}
           path: |
@@ -100,7 +100,7 @@ jobs:
 
       - name: Cache compiled OpenCV
         id: cache-mix-compile
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           key: compiled-opencv-${{ env.OPENCV_VER }}-x86_64-windows-msvc-${{ hashFiles('Makefile.win') }}-${{ hashFiles('py_src/*.py') }}
           path: |
@@ -134,7 +134,7 @@ jobs:
 
       - name: Cache testdata
         id: cache-mix-testdata
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           key: testdata-${{ hashFiles('test/downloading_list.txt') }}
           path: |

@@ -94,7 +94,7 @@ jobs:
               otp_version: "26"
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: erlef/setup-beam@v1
         with:
           otp-version: ${{ matrix.pair.otp_version }}
@@ -110,7 +110,7 @@ jobs:
       
       - name: Cache mix packages
         id: cache-mix-deps
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           key: deps-${{ hashFiles('mix.lock') }}-${{ matrix.pair.otp_version }}-${{ env.ELIXIR_VERSION }}
           path: |
@@ -123,7 +123,7 @@ jobs:
 
       - name: Cache OpenCV
         id: cache-opencv
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           key: opencv-${{ env.OPENCV_VER }}
           path: |

@@ -52,7 +52,7 @@ jobs:
 
       - name: Cache OpenCV source code
         id: cache-opencv
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           key: opencv-with-contrib-${{ env.OPENCV_VER }}
           path: |
@@ -65,7 +65,7 @@ jobs:
           bash scripts/download_opencv_contrib.sh ${OPENCV_VER} 3rd_party/cache 3rd_party/opencv/
 
       - name: Cache OTP
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         id: cache-otp
         with:
           path: ./cache/otp
@@ -81,7 +81,7 @@ jobs:
 
       - name: Cache Elixir
         id: cache-elixir
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ./cache/elixir
           key: elixir-${{ matrix.pair.ELIXIR_VERSION }}-${{ matrix.pair.arch }}

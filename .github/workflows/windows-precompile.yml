@@ -46,7 +46,7 @@ jobs:
               NIF_VERSION: "2.17"
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - uses: erlef/setup-beam@v1
         with:
@@ -59,7 +59,7 @@ jobs:
 
       - name: Cache mix packages
         id: cache-mix-deps
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           key: deps-${{ hashFiles('mix.lock') }}-${{ matrix.pair.OTP_VERSION }}-${{ env.ELIXIR_VERSION }}
           path: |
@@ -73,7 +73,7 @@ jobs:
 
       - name: Cache OpenCV source code
         id: cache-opencv
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           key: opencv-with-contrib-${{ env.OPENCV_VER }}
           path: |

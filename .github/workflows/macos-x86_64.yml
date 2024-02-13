@@ -56,7 +56,7 @@ jobs:
       OTP_VERSION: "25.3.2.2"
       ELIXIR_VERSION: "1.15.2"
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Install FFmpeg, Erlang and Elixir
         run: |
@@ -75,7 +75,7 @@ jobs:
 
       - name: Cache mix packages
         id: cache-mix-deps
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           key: deps-${{ hashFiles('mix.lock') }}
           path: |
@@ -89,7 +89,7 @@ jobs:
 
       - name: Cache OpenCV source code
         id: cache-opencv
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           key: opencv-with-contrib-${{ env.OPENCV_VER }}
           path: |
@@ -103,7 +103,7 @@ jobs:
 
       - name: Cache compiled OpenCV
         id: cache-mix-compile_opencv
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           key: compiled-with-ffmpeg${{ env.FFMPEG_VER }}-opencv-${{ env.OPENCV_VER }}-x86_64-apple-darwin-${{ hashFiles('Makefile') }}-${{ hashFiles('py_src/*.py') }}
           path: |
@@ -135,7 +135,7 @@ jobs:
 
       - name: Cache testdata
         id: cache-mix-testdata
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           key: testdata-${{ hashFiles('test/downloading_list.txt') }}
           path: |

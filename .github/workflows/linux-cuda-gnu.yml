@@ -88,7 +88,7 @@ jobs:
       EVISION_ENABLE_CUDA: "true"
       PKG_CONFIG_PATH: "/usr/lib/x86_64-linux-gnu/pkgconfig"
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Install system dependencies
         run: |
@@ -106,7 +106,7 @@ jobs:
 
       - name: Cache mix packages
         id: cache-mix-deps
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           key: deps-${{ hashFiles('mix.lock') }}-${{ env.OTP_VERSION }}-${{ env.ELIXIR_VERSION }}
           path: |
@@ -119,7 +119,7 @@ jobs:
 
       - name: Cache OpenCV
         id: cache-opencv
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           key: opencv-with-contrib-${{ env.OPENCV_VER }}
           path: |
@@ -133,7 +133,7 @@ jobs:
 
       - name: Cache compiled OpenCV
         id: cache-mix-compile_opencv
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           key: compiled-opencv-${{ env.OPENCV_VER }}-cuda${{ matrix.cuda_ver }}-x86_64-linux-gnu-${{ hashFiles('Makefile') }}
           path: |
@@ -155,7 +155,7 @@ jobs:
 
       - name: Cache testdata
         id: cache-mix-testdata
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           key: testdata-${{ hashFiles('test/downloading_list.txt') }}
           path: |

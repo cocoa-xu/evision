@@ -16,36 +16,27 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - container: nvidia/cuda:11.1.1-cudnn8-devel-ubuntu20.04
-            cuda_ver: "11.1.1"
-            cuda_id: "111"
-            OTP_VERSION: "25"
-            NIF_VERSION: "2.16"
-          - container: nvidia/cuda:11.4.3-cudnn8-devel-ubuntu20.04
-            cuda_ver: "11.4.3"
-            cuda_id: "114"
-            OTP_VERSION: "25"
-            NIF_VERSION: "2.16"
           - container: nvidia/cuda:11.8.0-cudnn8-devel-ubuntu20.04
             cuda_ver: "11.8.0"
             cuda_id: "118"
             OTP_VERSION: "25"
             NIF_VERSION: "2.16"
-          - container: nvidia/cuda:11.1.1-cudnn8-devel-ubuntu20.04
-            cuda_ver: "11.1.1"
-            cuda_id: "111"
-            OTP_VERSION: "26"
-            NIF_VERSION: "2.17"
-          - container: nvidia/cuda:11.4.3-cudnn8-devel-ubuntu20.04
-            cuda_ver: "11.4.3"
-            cuda_id: "114"
-            OTP_VERSION: "26"
-            NIF_VERSION: "2.17"
           - container: nvidia/cuda:11.8.0-cudnn8-devel-ubuntu20.04
             cuda_ver: "11.8.0"
             cuda_id: "118"
             OTP_VERSION: "26"
             NIF_VERSION: "2.17"
+          - container: nvidia/cuda:12.1.0-cudnn8-devel-ubuntu20.04
+            cuda_ver: "12.1.0"
+            cuda_id: "121"
+            OTP_VERSION: "25"
+            NIF_VERSION: "2.16"
+          - container: nvidia/cuda:12.1.0-cudnn8-devel-ubuntu20.04
+            cuda_ver: "12.1.0"
+            cuda_id: "121"
+            OTP_VERSION: "26"
+            NIF_VERSION: "2.17"
+
     container: ${{ matrix.container }}
     env:
       # container env vars
@@ -64,7 +55,7 @@ jobs:
       EVISION_ENABLE_CUDA: "true"
       PKG_CONFIG_PATH: "/usr/lib/x86_64-linux-gnu/pkgconfig"
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Install system dependencies
         run: |
@@ -82,7 +73,7 @@ jobs:
 
       - name: Cache mix packages
         id: cache-mix-deps
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           key: deps-${{ hashFiles('mix.lock') }}-${{ matrix.OTP_VERSION }}-${{ env.ELIXIR_VERSION }}
           path: |
@@ -95,7 +86,7 @@ jobs:
 
       - name: Cache OpenCV
         id: cache-opencv
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           key: opencv-with-contrib-${{ env.OPENCV_VER }}
           path: |
@@ -109,7 +100,7 @@ jobs:
 
       - name: Cache compiled OpenCV
         id: cache-mix-compile_opencv
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           key: precompiled-opencv-${{ env.OPENCV_VER }}-cuda${{ matrix.cuda_ver }}-x86_64-linux-gnu-${{ hashFiles('Makefile') }}
           path: |

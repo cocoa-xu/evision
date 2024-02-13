@@ -47,7 +47,7 @@ jobs:
               ELIXIR_VERSION: "1.15.2"
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Install Erlang and Elixir
         run: |
@@ -66,7 +66,7 @@ jobs:
 
       - name: Cache mix packages
         id: cache-mix-deps
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           key: deps-${{ hashFiles('mix.lock') }}
           path: |
@@ -80,7 +80,7 @@ jobs:
 
       - name: Cache OpenCV source code
         id: cache-opencv
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           key: opencv-with-contrib-${{ env.OPENCV_VER }}
           path: |

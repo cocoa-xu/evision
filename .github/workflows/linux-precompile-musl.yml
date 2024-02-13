@@ -30,7 +30,7 @@ jobs:
               NIF_VERSION: "2.17"
               ELIXIR_VERSION: "1.15.4"
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Install system dependencies
         run: |
           apk add cmake make python3 bash curl unzip gcc g++ ncurses-dev openssl-dev linux-headers perl git dpkg patch
@@ -53,7 +53,7 @@ jobs:
 
       - name: Cache mix packages
         id: cache-mix-deps
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           key: deps-${{ hashFiles('mix.lock') }}-${{ matrix.pair.OTP_VERSION }}-${{ matrix.pair.ELIXIR_VERSION }}
           path: |
@@ -66,7 +66,7 @@ jobs:
 
       - name: Cache OpenCV Source Code
         id: cache-opencv
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           key: opencv-${{ env.OPENCV_VER }}
           path: |
@@ -79,7 +79,7 @@ jobs:
 
       - name: Cache compiled OpenCV
         id: cache-mix-compile_opencv
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           key: precompiled-opencv-${{ env.OPENCV_VER }}-${{ runner.os }}-x86_64-linux-musl-${{ hashFiles('cc_toolchain/**') }}-${{ hashFiles('Makefile') }}-${{ hashFiles('py_src/*.py') }}
           path: |
@@ -189,7 +189,7 @@ jobs:
               ELIXIR_VERSION: "1.15.4"
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Install OTP and Elixir
         uses: erlef/setup-beam@v1
@@ -209,7 +209,7 @@ jobs:
 
       - name: Cache mix packages
         id: cache-mix-deps
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           key: deps-${{ hashFiles('mix.lock') }}-${{ matrix.pair.OTP_VERSION }}-${{ matrix.pair.ELIXIR_VERSION }}
           path: |
@@ -222,7 +222,7 @@ jobs:
 
       - name: Cache OpenCV source code
         id: cache-opencv
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           key: opencv-with-contrib-${{ env.OPENCV_VER }}
           path: |
@@ -236,7 +236,7 @@ jobs:
 
       - name: Cache compiled OpenCV
         id: cache-mix-compile_opencv
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           key: precompiled-opencv-${{ env.OPENCV_VER }}-${{ matrix.pair.arch }}-${{ hashFiles('cc_toolchain/*linux-musl.cmake') }}-${{ hashFiles('cc_toolchain/zig.toolchain.cmake') }}-${{ hashFiles('Makefile') }}-${{ hashFiles('py_src/*.py') }}
           path: |

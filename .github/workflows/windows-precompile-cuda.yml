@@ -55,7 +55,7 @@ jobs:
             NIF_VERSION: "2.17"
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Git Checkout
         shell: bash
