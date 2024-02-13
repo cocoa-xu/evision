@@ -2,7 +2,7 @@ defmodule Evision.MixProject.Metadata do
   @moduledoc false
 
   def app, do: :evision
-  def version, do: "0.1.34"
+  def version, do: "0.1.35"
   def github_url, do: "https://github.com/cocoa-xu/evision"
   def opencv_version, do: "4.9.0"
   # only means compatible. need to write more tests
@@ -531,12 +531,19 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
       else
         "evision.so"
       end
+    windows_fix_so_file =
+      if os == "windows" do
+        "windows_fix.dll"
+      else
+        "windows_fix.so"
+      end
 
     evision_so_file = Path.join([app_priv(), evision_so_file])
+    windows_fix_so_file = Path.join([app_priv(), windows_fix_so_file])
 
     # first we check if we already have the NIF file
     # if not, then we defintely need to copy it (and other files) from somewhere
-    needs_copy = !File.exists?(evision_so_file)
+    needs_copy = !File.exists?(evision_so_file) or !File.exists?(windows_fix_so_file)
 
     if needs_copy do
       # to copy the nif file and other files
@@ -727,10 +734,17 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
       else
         "evision.so"
       end
+    windows_fix_so_file =
+      if os == "windows" do
+        "windows_fix.dll"
+      else
+        "windows_fix.so"
+      end
 
     evision_so_file = Path.join([app_priv(), evision_so_file])
+    windows_fix_so_file = Path.join([app_priv(), windows_fix_so_file])
 
-    if !File.exists?(evision_so_file) do
+    if !File.exists?(evision_so_file) or !File.exists?(windows_fix_so_file) do
       with {:precompiled, _} <- deploy_type(true) do
         version = Metadata.version()
         nif_version = get_nif_version()
@@ -1112,7 +1126,6 @@ defmodule Evision.MixProject do
       {:castore, "~> 0.1 or ~> 1.0"},
 
       # runtime
-      {:dll_loader_helper, "~> 0.1"},
       {:nx, "~> 0.4"},
 
       # optional

@@ -46,7 +46,7 @@ if(WIN32)
     math(EXPR _PRIV_DIR_LENGTH "${_PRIV_DIR_LENGTH}+1")
     math(EXPR _OpenCV_REL_LIB_LENGTH "${_OpenCV_LIB_PATH_LENGTH}-${_PRIV_DIR_LENGTH}")
     string(SUBSTRING "${OpenCV_LIB_PATH}" "${_PRIV_DIR_LENGTH}" "${_OpenCV_REL_LIB_LENGTH}" EVISION_REL_LIB)
-    execute_process(COMMAND python3.exe "${PY_SRC}\\gen2.py" "--c_src=${C_SRC}" "--elixir_gen=${GENERATED_ELIXIR_SRC_DIR}" "--erlang_gen=${GENERATED_ERLANG_SRC_DIR}" "--headers=${C_SRC}\\${C_SRC_HEADERS_TXT}" "--lang=${EVISION_GENERATE_LANG}" "--modules=${ENABLED_CV_MODULES}" "--win_dll=${EVISION_REL_LIB}" RESULT_VARIABLE STATUS)
+    execute_process(COMMAND python3.exe "${PY_SRC}\\gen2.py" "--c_src=${C_SRC}" "--elixir_gen=${GENERATED_ELIXIR_SRC_DIR}" "--erlang_gen=${GENERATED_ERLANG_SRC_DIR}" "--headers=${C_SRC}\\${C_SRC_HEADERS_TXT}" "--lang=${EVISION_GENERATE_LANG}" "--modules=${ENABLED_CV_MODULES}" RESULT_VARIABLE STATUS)
 else()
     execute_process(COMMAND bash -c "python3 ${PY_SRC}/gen2.py --c_src=\"${C_SRC}\" --elixir_gen=\"${GENERATED_ELIXIR_SRC_DIR}\" --erlang_gen=\"${GENERATED_ERLANG_SRC_DIR}\" --headers=\"${C_SRC}/${C_SRC_HEADERS_TXT}\" --lang=\"${EVISION_GENERATE_LANG}\" --modules=\"${ENABLED_CV_MODULES}\"" RESULT_VARIABLE STATUS)
 endif()
@@ -107,3 +107,20 @@ else()
 
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -Wall -Wextra -Wno-unused-parameter -Wno-missing-field-initializers -Wno-deprecated-declarations -Wno-unused-but-set-variable")
 endif()
+
+add_library(windows_fix SHARED
+    "${C_SRC}/windows_fix/windows_fix.cpp"
+)
+install(
+    TARGETS windows_fix
+    RUNTIME DESTINATION "${PRIV_DIR}"
+)
+set_property(TARGET windows_fix PROPERTY CXX_STANDARD 14)
+if(NOT WIN32)
+    set_target_properties(windows_fix PROPERTIES SUFFIX ".so")
+endif()
+set_target_properties(windows_fix PROPERTIES PREFIX "")
+set_target_properties(windows_fix PROPERTIES
+    INSTALL_RPATH_USE_LINK_PATH TRUE
+    BUILD_WITH_INSTALL_RPATH TRUE
+)

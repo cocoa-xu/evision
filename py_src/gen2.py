@@ -32,18 +32,13 @@ else:
 
 
 class BeamWrapperGenerator(object):
-    def __init__(self, enabled_modules, langs, win_dll):
+    def __init__(self, enabled_modules, langs):
         self.clear()
         self.argname_prefix_re = re.compile(r'^[_]*')
         self.inline_docs_code_type_re = re.compile(r'@code{.(.*)}')
         self.inline_docs_inline_math_re = re.compile(r'(?:.*?)\\\\f[$\[](.*?)\\\\f[$\]]', re.MULTILINE|re.DOTALL)
         self.enabled_modules = enabled_modules
         self.langs = langs
-        self.win_dll = win_dll
-        if self.win_dll is None:
-            self.win_dll = ''
-        if len(self.win_dll) > 4 and self.win_dll[-4:] == '/lib':
-            self.win_dll = f"{self.win_dll[:-4]}/bin"
 
     def clear(self):
         self.classes = {}
@@ -551,8 +546,8 @@ class BeamWrapperGenerator(object):
         self.clear()
         self.parser = hdr_parser.CppHeaderParser(generate_umat_decls=True, generate_gpumat_decls=True)
 
-        self.evision_nif.write('defmodule :evision_nif do\n{}\n'.format(ET.gen_evision_nif_load_nif %(self.win_dll, )))
-        self.evision_nif_erlang.write('-module(evision_nif).\n-compile(nowarn_export_all).\n-compile([export_all]).\n\n{}\n{}\n'.format(ET.gen_evision_nif_load_nif_erlang % (self.win_dll,), ET.gen_cv_types_erlang))
+        self.evision_nif.write('defmodule :evision_nif do\n{}\n'.format(ET.gen_evision_nif_load_nif))
+        self.evision_nif_erlang.write('-module(evision_nif).\n-compile(nowarn_export_all).\n-compile([export_all]).\n\n{}\n{}\n'.format(ET.gen_evision_nif_load_nif_erlang, ET.gen_cv_types_erlang))
 
         self.code_ns_reg.write('static ErlNifFunc nif_functions[] = {\n')
         self.gen_enabled_modules()
@@ -780,7 +775,6 @@ if __name__ == "__main__":
     parser.add_argument("--headers", help="Path to the headers.txt/header-contrib.txt in c_src")
     parser.add_argument("--lang", type=str, help="Comma-seperated values. erlang,elixir")
     parser.add_argument("--modules", type=str, default='', help="Comma-seperated values.")
-    parser.add_argument("--win_dll", type=str, default='', help="Path to OpenCV libs on Windows")
     args = parser.parse_args()
 
     srcfiles = hdr_parser.opencv_hdr_list
@@ -805,7 +799,7 @@ if __name__ == "__main__":
                        'stitching', 'ts', 'video', 'videoio', 'dnn']
     if len(args.modules) > 0:
         enabled_modules = args.modules.split(",")
-    generator = BeamWrapperGenerator(enabled_modules, lang, args.win_dll)
+    generator = BeamWrapperGenerator(enabled_modules, lang)
     rmtree(elixir_dstdir)
     rmtree(erlang_dstdir)
     makedirs(elixir_dstdir)

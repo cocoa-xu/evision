@@ -4,6 +4,7 @@ MIX_APP_PATH=$(MAKEDIR)
 
 PRIV_DIR = $(MIX_APP_PATH)/priv
 EVISION_SO = $(PRIV_DIR)/evision.dll
+WINDOWS_FIX_SO = $(PRIV_DIR)/windows_fix.dll
 SRC = $(MAKEDIR)\src
 C_SRC = $(MAKEDIR)\c_src
 PY_SRC = $(MAKEDIR)\py_src
