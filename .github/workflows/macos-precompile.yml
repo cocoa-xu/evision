@@ -11,7 +11,7 @@ concurrency:
 
 jobs:
   mix_compile:
-    runs-on: macos-12
+    runs-on: ${{ matrix.pair.os }}
     env:
       MIX_ENV: prod
       OPENCV_VER: "4.9.0"
@@ -22,32 +22,37 @@ jobs:
       matrix:
         include:
           - pair:
+              os: macos-12
               arch: x86_64
               arch_name: x86_64
               NIF_VERSION: "2.16"
               OTP_VERSION: "25.3.2.2"
-              ELIXIR_VERSION: "1.15.2"
+              ELIXIR_VERSION: "1.16.0"
           - pair:
+              os: macos-14
               arch: arm64
               arch_name: aarch64
               NIF_VERSION: "2.16"
               OTP_VERSION: "25.3.2.2"
-              ELIXIR_VERSION: "1.15.2"
+              ELIXIR_VERSION: "1.16.0"
           - pair:
+              os: macos-12
               arch: x86_64
               arch_name: x86_64
               NIF_VERSION: "2.17"
-              OTP_VERSION: "26.0.2"
-              ELIXIR_VERSION: "1.15.2"
+              OTP_VERSION: "26.2.2"
+              ELIXIR_VERSION: "1.16.0"
           - pair:
+              os: macos-14
               arch: arm64
               arch_name: aarch64
               NIF_VERSION: "2.17"
-              OTP_VERSION: "26.0.2"
-              ELIXIR_VERSION: "1.15.2"
+              OTP_VERSION: "26.2.2"
+              ELIXIR_VERSION: "1.16.0"
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Install Erlang and Elixir
         run: |
@@ -98,7 +103,7 @@ jobs:
           export EVISION_ENABLE_CONTRIB=false
           export CMAKE_OPENCV_OPTIONS="-D WITH_FFMPEG=OFF"
           if [ "${{ matrix.pair.arch }}" = "arm64" ]; then
-            export CMAKE_OPENCV_OPTIONS="${CMAKE_OPENCV_OPTIONS} -D WITH_IPP=OFF -D ENABLE_NEON=OFF -D CMAKE_OSX_ARCHITECTURES=arm64"
+            export CMAKE_OPENCV_OPTIONS="${CMAKE_OPENCV_OPTIONS} -D WITH_IPP=OFF -D CMAKE_OSX_ARCHITECTURES=arm64"
             export CMAKE_EVISION_OPTIONS="-D CMAKE_OSX_ARCHITECTURES=arm64"
           fi
 

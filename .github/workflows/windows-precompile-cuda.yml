@@ -29,29 +29,34 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - cuda_ver: "11.8.0"
-            cuda_id: "118"
-            cudnn: "8.7.0"
-            OTP_VERSION: "25"
-            NIF_VERSION: "2.16"
-          - cuda_ver: "11.8.0"
-            cuda_id: "118"
-            cudnn: "8.7.0"
-            OTP_VERSION: "26"
-            NIF_VERSION: "2.17"
-          - cuda_ver: "12.1.0"
-            cuda_id: "121"
-            cudnn: "8.9.0"
-            OTP_VERSION: "25"
-            NIF_VERSION: "2.16"
-          - cuda_ver: "12.1.0"
-            cuda_id: "121"
-            cudnn: "8.9.0"
-            OTP_VERSION: "26"
-            NIF_VERSION: "2.17"
+          - pair:
+              cuda_ver: "11.8.0"
+              cuda_id: "118"
+              cudnn: "8.7.0"
+              OTP_VERSION: "25"
+              NIF_VERSION: "2.16"
+          - pair:
+              cuda_ver: "11.8.0"
+              cuda_id: "118"
+              cudnn: "8.7.0"
+              OTP_VERSION: "26"
+              NIF_VERSION: "2.17"
+          - pair:
+              cuda_ver: "12.1.0"
+              cuda_id: "121"
+              cudnn: "8.9.0"
+              OTP_VERSION: "25"
+              NIF_VERSION: "2.16"
+          - pair:
+              cuda_ver: "12.1.0"
+              cuda_id: "121"
+              cudnn: "8.9.0"
+              OTP_VERSION: "26"
+              NIF_VERSION: "2.17"
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Git Checkout
         shell: bash
@@ -63,7 +68,7 @@ jobs:
 
       - uses: erlef/setup-beam@v1
         with:
-          otp-version: ${{ matrix.OTP_VERSION }}
+          otp-version: ${{ matrix.pair.OTP_VERSION }}
           elixir-version: ${{ env.ELIXIR_VERSION }}
 
       - uses: ilammy/msvc-dev-cmd@v1
@@ -73,18 +78,18 @@ jobs:
 
       - name: Install CUDA with cuDNN 8.7.0
         uses: cocoa-xu/cuda-toolkit@v0.4.0
-        if: ${{ matrix.cudnn }} == '8.7.0'
+        if: ${{ matrix.pair.cudnn }} == '8.7.0'
         with:
-          cuda: ${{ matrix.cuda_ver }}
-          cudnn: ${{ matrix.cudnn }}
+          cuda: ${{ matrix.pair.cuda_ver }}
+          cudnn: ${{ matrix.pair.cudnn }}
           cudnn_url: ${{ secrets.CUDA_V870_WINDOWS_X86_64_CUDA11 }}
 
       - name: Install CUDA with cuDNN 8.9.0
         uses: cocoa-xu/cuda-toolkit@v0.4.0
-        if: ${{ matrix.cudnn }} == '8.9.0'
+        if: ${{ matrix.pair.cudnn }} == '8.9.0'
         with:
-          cuda: ${{ matrix.cuda_ver }}
-          cudnn: ${{ matrix.cudnn }}
+          cuda: ${{ matrix.pair.cuda_ver }}
+          cudnn: ${{ matrix.pair.cudnn }}
           cudnn_url: ${{ secrets.CUDA_V890_WINDOWS_X86_64_CUDA12 }}
       
       - uses: actions/setup-python@v4
@@ -108,7 +113,7 @@ jobs:
         run: |
           export RUNNER_DIR=`pwd`
           cd C:/evision
-          export PKG_NAME=evision-nif_${{ matrix.NIF_VERSION }}-x86_64-windows-msvc-contrib-cuda${{ matrix.cuda_id }}-${GITHUB_REF##*/v}
+          export PKG_NAME=evision-nif_${{ matrix.pair.NIF_VERSION }}-x86_64-windows-msvc-contrib-cuda${{ matrix.pair.cuda_id }}-${GITHUB_REF##*/v}
           mkdir -p "${PKG_NAME}"
           cp -a _build/${MIX_ENV}/lib/evision/priv "${PKG_NAME}"
           cp -a lib/generated "${PKG_NAME}/elixir_generated"
