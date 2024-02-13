@@ -456,9 +456,8 @@ export EVISION_ENABLE_CUDA=true
 ## set a CUDA version that matches your local CUDA driver
 ## (this environment variable is only required for users who'd like to use precompiled binaries)
 ## available ones are 
-## 111, for CUDA 11.1.x, built with CUDA 11.1.1
-## 114, for CUDA 11.4.x, built with CUDA 11.4.3
-## 118, for CUDA 11.8.x, built with CUDA 11.8.0
+## 118, for CUDA 11.8+, built with CUDA 11.8.0
+## 121, for CUDA 12.1+, built with CUDA 12.1.0
 export EVISION_CUDA_VERSION=118
 ## opencv_contrib modules is enabled by default
 export EVISION_ENABLE_CONTRIB=true
@@ -511,7 +510,7 @@ export EVISION_PRECOMPILED_CACHE_DIR="$(pwd)/.cache"
 
   OpenCV 4.5.5 requires at least CMake 3.5.1.
 
-- Erlang development library/headers. Tested on OTP/25.
+- Erlang development library/headers. Tested on OTP/25 and OTP/26.
 
 #### Build from source
 To obtain and compile OpenCV's source code from official releases, the following environment variables can affect the build

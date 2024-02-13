@@ -29,28 +29,24 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - cuda_ver: "11.1.1"
-            cuda_id: "111"
-            OTP_VERSION: "25"
-            NIF_VERSION: "2.16"
-          - cuda_ver: "11.4.3"
-            cuda_id: "114"
+          - cuda_ver: "11.8.0"
+            cuda_id: "118"
+            cudnn: "8.7.0"
             OTP_VERSION: "25"
             NIF_VERSION: "2.16"
           - cuda_ver: "11.8.0"
             cuda_id: "118"
+            cudnn: "8.7.0"
+            OTP_VERSION: "26"
+            NIF_VERSION: "2.17"
+          - cuda_ver: "12.1.0"
+            cuda_id: "121"
+            cudnn: "8.9.0"
             OTP_VERSION: "25"
             NIF_VERSION: "2.16"
-          - cuda_ver: "11.1.1"
-            cuda_id: "111"
-            OTP_VERSION: "26"
-            NIF_VERSION: "2.17"
-          - cuda_ver: "11.4.3"
-            cuda_id: "114"
-            OTP_VERSION: "26"
-            NIF_VERSION: "2.17"
-          - cuda_ver: "11.8.0"
-            cuda_id: "118"
+          - cuda_ver: "12.1.0"
+            cuda_id: "121"
+            cudnn: "8.9.0"
             OTP_VERSION: "26"
             NIF_VERSION: "2.17"
 
@@ -75,12 +71,19 @@ jobs:
           arch: x64
           vsversion: "2019"
 
-      - uses: cocoa-xu/cuda-toolkit@v0.3.0
-        id: cuda-toolkit
+      - uses: cocoa-xu/cuda-toolkit@v0.4.0
+        if: ${{ matrix.cudnn }} == "8.7.0"
         with:
           cuda: ${{ matrix.cuda_ver }}
-          cudnn: "8.7.0"
+          cudnn: ${{ matrix.cudnn }}
           cudnn_url: ${{ secrets.CUDA_V870_WINDOWS_X86_64_CUDA11 }}
+
+      - uses: cocoa-xu/cuda-toolkit@v0.4.0
+        if: ${{ matrix.cudnn }} == "8.9.0"
+        with:
+          cuda: ${{ matrix.cuda_ver }}
+          cudnn: ${{ matrix.cudnn }}
+          cudnn_url: ${{ secrets.CUDA_V890_WINDOWS_X86_64_CUDA12 }}
       
       - uses: actions/setup-python@v4
         with:
