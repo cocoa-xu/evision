@@ -6,6 +6,10 @@ typedef std::vector<cuda::GpuMat> vector_GpuMat;
 typedef cuda::GpuMat::Allocator GpuMat_Allocator;
 typedef cuda::HostMem::AllocType HostMem_AllocType;
 typedef cuda::Event::CreateFlags Event_CreateFlags;
+typedef cuda::GpuMat cuda_GpuMat;
+typedef cuda::Stream cuda_Stream;
+typedef cuda::Event cuda_Event;
+typedef cuda::HostMem cuda_HostMem;
 
 template<> struct evisionVecConverter<cuda::GpuMat>
 {
