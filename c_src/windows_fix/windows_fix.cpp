@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <sstream>
 #include <vector>
+#include <stdio.h>
 #include "../nif_utils.hpp"
 
 #if defined(_WIN32) || defined(WIN32) || defined(__CYGWIN__) || defined(__MINGW32__) || defined(__BORLANDC__)
@@ -114,6 +115,7 @@ extern "C"
                 }
             }
             opencv_path_updated = true;
+            printf("added opencv lib dir: %ws\r\n", opencvLibDirectoryPCWSTR);
         }
 
         if (!cuda_path_updated) {
