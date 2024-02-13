@@ -115,7 +115,6 @@ extern "C"
                 }
             }
             opencv_path_updated = true;
-            printf("added opencv lib dir: %ws\r\n", opencvLibDirectoryPCWSTR);
         }
 
         if (!cuda_path_updated) {
