@@ -58,7 +58,8 @@ jobs:
       MAKE: "nmake"
 
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - uses: erlef/setup-beam@v1
         with:
@@ -119,6 +120,7 @@ jobs:
         run: |
           rm -f Makefile
           rm -f "_build/${MIX_ENV}/lib/evision/priv/evision.dll"
+          rm -f "_build/${MIX_ENV}/lib/evision/priv/windows_fix.dll"
 
           rm -rf lib/generated && rm -rf src/generated
           mkdir -p lib/generated && mkdir -p src/generated
@@ -126,7 +128,9 @@ jobs:
           mix compile
 
       - name: Compile once again but without optional deps
-        run: mix compile --force --warnings-as-errors --no-optional-deps
+        shell: bash
+        run: |
+          mix compile --force --warnings-as-errors --no-optional-deps
 
       - name: Cache testdata
         id: cache-mix-testdata
@@ -140,3 +144,16 @@ jobs:
         shell: bash
         run: |
           mix test --include require_downloading --include require_ffmpeg --exclude may_crash
+
+      - name: Create tarball
+        if: always()
+        shell: bash
+        run: |
+          tar -czf evision-x86_64-windows-msvc.tar.gz -C "_build/${MIX_ENV}/lib/evision" .
+
+      - name: Upload build artifacts
+        if: always()
+        uses: actions/upload-artifact@v2.2.4
+        with:
+          name: evision-x86_64-windows-msvc.tar.gz
+          path: evision-x86_64-windows-msvc.tar.gz
