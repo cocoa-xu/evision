@@ -1,6 +1,4 @@
-<h1><img src="https://github.com/cocoa-xu/evision/raw/main/assets/logo.png" alt="Logo" width="128"></h1>
-
-# evision
+<img src="https://github.com/cocoa-xu/evision/raw/main/assets/repository-open-graph.png" alt="Logo"/>
 
 [![Hex.pm](https://img.shields.io/hexpm/v/evision.svg?style=flat&color=blue)](https://hex.pm/packages/evision)
 
