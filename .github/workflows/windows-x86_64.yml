@@ -144,16 +144,3 @@ jobs:
         shell: bash
         run: |
           mix test --include require_downloading --include require_ffmpeg --exclude may_crash
-
-      - name: Create tarball
-        if: always()
-        shell: bash
-        run: |
-          tar -czf evision-x86_64-windows-msvc.tar.gz -C "_build/${MIX_ENV}/lib/evision" .
-
-      - name: Upload build artifacts
-        if: always()
-        uses: actions/upload-artifact@v2.2.4
-        with:
-          name: evision-x86_64-windows-msvc.tar.gz
-          path: evision-x86_64-windows-msvc.tar.gz

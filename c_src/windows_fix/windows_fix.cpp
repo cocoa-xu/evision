@@ -61,7 +61,7 @@ extern "C"
                     std::wstringstream t;
                     t << priv_dir + L"\\x64\\vc";
                     t << vc_version;
-                    t << L"\\lib";
+                    t << L"\\bin";
                     auto probe = t.str();
                     if (evision_windows_fix_dir_exists((LPCWSTR)probe.c_str())) {
                         lib_dir = probe;
@@ -74,7 +74,7 @@ extern "C"
                     std::wstringstream t;
                     t << priv_dir + L"\\x32\\vc";
                     t << vc_version;
-                    t << L"\\lib";
+                    t << L"\\bin";
                     auto probe = t.str();
                     if (evision_windows_fix_dir_exists((LPCWSTR)probe.c_str())) {
                         lib_dir = probe;
