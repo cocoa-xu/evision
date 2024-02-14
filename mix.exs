@@ -31,7 +31,9 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
     "riscv64-linux-gnu",
     "riscv64-linux-musl",
     "i686-linux-gnu",
-    "x86_64-windows-msvc"
+    "x86_64-windows-msvc",
+    "aarch64-apple-darwin-ios",
+    "aarch64-apple-darwin-xros",
   ]
 
   @available_nif_versions [
@@ -109,63 +111,70 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
   end
 
   def get_target do
-    target = String.split(to_string(:erlang.system_info(:system_architecture)), "-")
+    case System.get_env("MIX_TARGET") do
+      "ios" =>
+        {"aarch64-apple-darwin-ios", ["aarch64", "apple", "darwin"]}
+      "xros" ->
+        {"aarch64-apple-darwin-xros", ["aarch64", "apple", "darwin"]}
+      _ ->
+      target = String.split(to_string(:erlang.system_info(:system_architecture)), "-")
 
-    [arch, os, abi] =
-      case Enum.count(target) do
-        3 ->
-          target
+      [arch, os, abi] =
+        case Enum.count(target) do
+          3 ->
+            target
 
-        4 ->
-          [arch, _vendor, os, abi] = target
-          [arch, os, abi]
+          4 ->
+            [arch, _vendor, os, abi] = target
+            [arch, os, abi]
 
-        1 ->
-          with ["win32"] <- target do
-            ["x86_64", "windows", "msvc"]
-          else
-            [unknown_target] ->
-              [unknown_target, "unknown", nil]
-          end
-      end
-
-    abi =
-      case abi do
-        "darwin" <> _ ->
-          "darwin"
-
-        "win32" ->
-          {compiler_id, _} = :erlang.system_info(:c_compiler_used)
-
-          case compiler_id do
-            :msc -> "msvc"
-            _ -> to_string(compiler_id)
-          end
-
-        _ ->
-          abi
-      end
-
-    arch =
-      if os == "windows" do
-        case String.downcase(System.get_env("PROCESSOR_ARCHITECTURE")) do
-          "arm64" ->
-            "aarch64"
-
-          arch when arch in ["x64", "x86_64", "amd64"] ->
-            "x86_64"
-
-          arch ->
-            arch
+          1 ->
+            with ["win32"] <- target do
+              ["x86_64", "windows", "msvc"]
+            else
+              [unknown_target] ->
+                [unknown_target, "unknown", nil]
+            end
         end
-      else
-        arch
-      end
 
-    abi = System.get_env("TARGET_ABI", abi)
-    os = System.get_env("TARGET_OS", os)
-    arch = System.get_env("TARGET_ARCH", arch)
-    {Enum.join([arch, os, abi], "-"), [arch, os, abi]}
+      abi =
+        case abi do
+          "darwin" <> _ ->
+            "darwin"
+
+          "win32" ->
+            {compiler_id, _} = :erlang.system_info(:c_compiler_used)
+
+            case compiler_id do
+              :msc -> "msvc"
+              _ -> to_string(compiler_id)
+            end
+
+          _ ->
+            abi
+        end
+
+      arch =
+        if os == "windows" do
+          case String.downcase(System.get_env("PROCESSOR_ARCHITECTURE")) do
+            "arm64" ->
+              "aarch64"
+
+            arch when arch in ["x64", "x86_64", "amd64"] ->
+              "x86_64"
+
+            arch ->
+              arch
+          end
+        else
+          arch
+        end
+
+      abi = System.get_env("TARGET_ABI", abi)
+      os = System.get_env("TARGET_OS", os)
+      arch = System.get_env("TARGET_ARCH", arch)
+      {Enum.join([arch, os, abi], "-"), [arch, os, abi]}
+    end
   end
 
   def use_precompiled?(log? \\ false) do

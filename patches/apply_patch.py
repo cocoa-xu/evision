@@ -93,7 +93,28 @@ string(REPLACE "opencv_" "" OPENCV_MODULES_BUILD_ST          "${OPENCV_MODULES_B
             dst.write(fixed.getvalue())
 
 
-patches = [patch_fix_getLayerShapes, patch_winograd, patch_rpath_linux]
+def patch_python_bindings_generator(opencv_version: str, opencv_src_root: str):
+    # CMakeLists.txt
+    cmakelists_txt = Path(opencv_src_root) / 'CMakeLists.txt'
+    fixed = StringIO()
+    patched_1 = False
+    with open(cmakelists_txt, 'r') as source:
+        for line in source:
+            if not patched_1 and line.strip() == 'if(ANDROID OR APPLE_FRAMEWORK OR WINRT)':
+                fixed.write("""if(ANDROID OR APPLE_FRAMEWORK OR WINRT) # patched
+  add_subdirectory(bindings)
+""")
+                patched_1 = True
+            else:
+                fixed.write(line)
+
+    if patched_1:
+        with open(cmakelists_txt, 'w') as dst:
+            dst.truncate(0)
+            dst.write(fixed.getvalue())
+
+
+patches = [patch_fix_getLayerShapes, patch_winograd, patch_rpath_linux, patch_python_bindings_generator]
 
 
 if __name__ == '__main__':

@@ -1,0 +1,174 @@
+name: macos-precompile
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      release_version:
+        required: true
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  mix_compile:
+    runs-on: macos-14
+    env:
+      MIX_ENV: prod
+      OPENCV_VER: "4.9.0"
+      EVISION_PREFER_PRECOMPILED: "false"
+      EVISION_GENERATE_LANG: "erlang,elixir"
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - pair:
+              mix_target: ios
+              arch_name: aarch64
+              NIF_VERSION: "2.16"
+              OTP_VERSION: "25.3.2.2"
+              ELIXIR_VERSION: "1.16.0"
+          - pair:
+              mix_target: ios
+              arch_name: aarch64
+              NIF_VERSION: "2.17"
+              OTP_VERSION: "26.2.2"
+              ELIXIR_VERSION: "1.16.0"
+          - pair:
+              mix_target: xros
+              arch_name: aarch64
+              NIF_VERSION: "2.16"
+              OTP_VERSION: "25.3.2.2"
+              ELIXIR_VERSION: "1.16.0"
+          - pair:
+              mix_target: xros
+              arch_name: aarch64
+              NIF_VERSION: "2.17"
+              OTP_VERSION: "26.2.2"
+              ELIXIR_VERSION: "1.16.0"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Erlang and Elixir
+        run: |
+          brew install autoconf coreutils curl git openssl asdf
+          brew link ffmpeg
+          asdf plugin add erlang https://github.com/asdf-vm/asdf-erlang.git
+          asdf plugin-add elixir https://github.com/asdf-vm/asdf-elixir.git
+          export KERL_CONFIGURE_OPTIONS="--disable-debug --without-javac"
+          asdf install erlang ${{ matrix.pair.OTP_VERSION }}
+          asdf install elixir ${{ matrix.pair.ELIXIR_VERSION }}
+          asdf global erlang ${{ matrix.pair.OTP_VERSION }}
+          asdf global elixir ${{ matrix.pair.ELIXIR_VERSION }}
+          source $(brew --prefix asdf)/libexec/asdf.sh
+          mix local.hex --force
+          mix local.rebar --force
+
+      - name: Cache mix packages
+        id: cache-mix-deps
+        uses: actions/cache@v4
+        with:
+          key: deps-${{ hashFiles('mix.lock') }}
+          path: |
+            ./deps
+
+      - name: Get mix deps
+        if: steps.cache-mix-deps.outputs.cache-hit != 'true'
+        run: |
+          source $(brew --prefix asdf)/libexec/asdf.sh
+          mix deps.get
+
+      - name: Cache OpenCV source code
+        id: cache-opencv
+        uses: actions/cache@v4
+        with:
+          key: opencv-with-contrib-${{ env.OPENCV_VER }}
+          path: |
+            ./3rd_party
+
+      - name: Download OpenCV source code
+        if: steps.cache-opencv.outputs.cache-hit != 'true'
+        run: |
+          bash scripts/download_opencv.sh ${OPENCV_VER} 3rd_party/cache 3rd_party/opencv/
+          bash scripts/download_opencv_contrib.sh ${OPENCV_VER} 3rd_party/cache 3rd_party/opencv/
+
+      - name: Compile OpenCV (without contrib modules)
+        run: |
+          source $(brew --prefix asdf)/libexec/asdf.sh
+          export EVISION_ENABLE_CONTRIB=false
+          export MIX_TARGET=${{ matrix.pair.mix_target }}
+
+          rm -rf "./_build/${{ matrix.pair.mix_target }}_${{ env.MIX_ENV }}/lib/evision"
+
+          mix compile_opencv
+
+      - name: Mix compile (without contrib modules)
+        run: |
+          source $(brew --prefix asdf)/libexec/asdf.sh
+          export EVISION_ENABLE_CONTRIB=false
+          export MIX_TARGET=${{ matrix.pair.mix_target }}
+
+          rm -f _build/${{ matrix.pair.mix_target }}_${{ env.MIX_ENV }}/lib/evision/priv/evision.so
+
+          rm -rf lib/generated && rm -rf src/generated
+          mkdir -p lib/generated && mkdir -p src/generated
+
+          mix compile
+
+      - name: Create precompiled library (without contrib modules)
+        run: |
+          export PKG_NAME=evision-nif_${{ matrix.pair.NIF_VERSION }}-${{ matrix.pair.arch_name }}-apple-darwin-${{ matrix.pair.mix_target }}-${GITHUB_REF##*/v}
+          mkdir -p "${PKG_NAME}"
+          cp -a _build/${{ matrix.pair.mix_target }}_${MIX_ENV}/lib/evision/priv "${PKG_NAME}"
+          cp -a lib/generated "${PKG_NAME}/elixir_generated"
+          cp -a src/generated "${PKG_NAME}/erlang_generated"
+          tar -czf "${PKG_NAME}.tar.gz" "${PKG_NAME}"
+          rm -rf "${PKG_NAME}"
+          ls -lah "${PKG_NAME}.tar.gz"
+          mkdir -p artifacts
+          mv "${PKG_NAME}.tar.gz" artifacts
+      
+      - name: Compile OpenCV (with contrib modules)
+        run: |
+          source $(brew --prefix asdf)/libexec/asdf.sh
+          export EVISION_ENABLE_CONTRIB=true
+          export MIX_TARGET=${{ matrix.pair.mix_target }}
+
+          rm -rf "./_build/${{ matrix.pair.mix_target }}_${{ env.MIX_ENV }}/lib/evision"
+
+          mix compile_opencv
+
+      - name: Mix compile (with contrib modules)
+        run: |
+          source $(brew --prefix asdf)/libexec/asdf.sh
+          export EVISION_ENABLE_CONTRIB=true
+          export MIX_TARGET=${{ matrix.pair.mix_target }}
+
+          rm -f _build/${{ matrix.pair.mix_target }}_${{ env.MIX_ENV }}/lib/evision/priv/evision.so
+
+          rm -rf lib/generated && rm -rf src/generated
+          mkdir -p lib/generated && mkdir -p src/generated
+
+          mix compile
+
+      - name: Create precompiled library (with contrib modules)
+        run: |
+          export PKG_NAME=evision-nif_${{ matrix.pair.NIF_VERSION }}-${{ matrix.pair.arch_name }}-apple-darwin-contrib-${{ matrix.pair.mix_target }}-${GITHUB_REF##*/v}
+          mkdir -p "${PKG_NAME}"
+          cp -a _build/${{ matrix.pair.mix_target }}_${MIX_ENV}/lib/evision/priv "${PKG_NAME}"
+          cp -a lib/generated "${PKG_NAME}/elixir_generated"
+          cp -a src/generated "${PKG_NAME}/erlang_generated"
+          tar -czf "${PKG_NAME}.tar.gz" "${PKG_NAME}"
+          rm -rf "${PKG_NAME}"
+          ls -lah "${PKG_NAME}.tar.gz"
+          mkdir -p artifacts
+          mv "${PKG_NAME}.tar.gz" artifacts
+
+      - uses: softprops/action-gh-release@v1
+        with:
+          files: artifacts/*.tar.gz
