@@ -252,7 +252,12 @@ $(EVISION_SO): $(C_SRC_HEADERS_TXT)
 			&& if [ "$(EVISION_PREFER_PRECOMPILED)" != "true" ]; then \
 				cp "$(CMAKE_EVISION_BUILD_DIR)/evision.so" "$(EVISION_SO)" ; \
 				cp "$(CMAKE_EVISION_BUILD_DIR)/windows_fix.so" "$(WINDOWS_FIX_SO)" ; \
-			fi ; \
+			fi && \
+			if [ "$(MIX_TARGET)" = "ios" ]; then \
+				rm -rf "$(PRIV_DIR)/lib" "$(PRIV_DIR)/include" ; \
+			elif [ "$(MIX_TARGET)" = "xros" ]; then \
+				rm -rf "$(PRIV_DIR)/lib" "$(PRIV_DIR)/include" ; \
+			else
 		fi
 
 clean_dev:
