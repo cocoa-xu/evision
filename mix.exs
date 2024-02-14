@@ -1247,6 +1247,7 @@ defmodule Evision.MixProject do
           c_src/evision.cpp
           c_src/evision_custom_headers.h
           c_src/nif_utils.hpp
+          c_src/windows_fix
           py_src/*.py
           scripts
           patches
