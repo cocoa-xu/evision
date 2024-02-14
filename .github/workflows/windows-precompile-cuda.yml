@@ -65,7 +65,7 @@ jobs:
           vsversion: "2019"
 
       - name: Install CUDA with cuDNN 8.7.0
-        uses: cocoa-xu/cuda-toolkit@v12.3.2
+        uses: cocoa-xu/cuda-toolkit@v0.5.0
         with:
           cuda: ${{ matrix.pair.cuda_ver }}
           cudnn: ${{ matrix.pair.cudnn }}
@@ -161,7 +161,7 @@ jobs:
           vsversion: "2019"
 
       - name: Install CUDA with cuDNN 8.9.0
-        uses: cocoa-xu/cuda-toolkit@v12.3.2
+        uses: cocoa-xu/cuda-toolkit@v0.5.0
         with:
           cuda: ${{ matrix.pair.cuda_ver }}
           cudnn: ${{ matrix.pair.cudnn }}
