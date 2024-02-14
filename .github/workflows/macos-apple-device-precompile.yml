@@ -122,6 +122,9 @@ jobs:
 
       - name: Create precompiled library (without contrib modules)
         run: |
+          if [ -n "${{ github.event.inputs.release_version }}" ]; then
+            export GITHUB_REF="refs/tags/${{ github.event.inputs.release_version }}"
+          fi
           export PKG_NAME=evision-nif_${{ matrix.pair.NIF_VERSION }}-${{ matrix.pair.arch_name }}-apple-darwin-${{ matrix.pair.mix_target }}-${GITHUB_REF##*/v}
           mkdir -p "${PKG_NAME}"
           cp -a _build/${{ matrix.pair.mix_target }}_${MIX_ENV}/lib/evision/priv "${PKG_NAME}"
@@ -132,7 +135,7 @@ jobs:
           ls -lah "${PKG_NAME}.tar.gz"
           mkdir -p artifacts
           mv "${PKG_NAME}.tar.gz" artifacts
-      
+
       - name: Compile OpenCV (with contrib modules)
         run: |
           source $(brew --prefix asdf)/libexec/asdf.sh
@@ -158,6 +161,9 @@ jobs:
 
       - name: Create precompiled library (with contrib modules)
         run: |
+          if [ -n "${{ github.event.inputs.release_version }}" ]; then
+            export GITHUB_REF="refs/tags/${{ github.event.inputs.release_version }}"
+          fi
           export PKG_NAME=evision-nif_${{ matrix.pair.NIF_VERSION }}-${{ matrix.pair.arch_name }}-apple-darwin-contrib-${{ matrix.pair.mix_target }}-${GITHUB_REF##*/v}
           mkdir -p "${PKG_NAME}"
           cp -a _build/${{ matrix.pair.mix_target }}_${MIX_ENV}/lib/evision/priv "${PKG_NAME}"
