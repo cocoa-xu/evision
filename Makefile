@@ -257,7 +257,7 @@ $(EVISION_SO): $(C_SRC_HEADERS_TXT)
 				rm -rf "$(PRIV_DIR)/lib" "$(PRIV_DIR)/include" ; \
 			elif [ "$(MIX_TARGET)" = "xros" ]; then \
 				rm -rf "$(PRIV_DIR)/lib" "$(PRIV_DIR)/include" ; \
-			else
+			fi ; \
 		fi
 
 clean_dev:
