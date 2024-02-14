@@ -18,6 +18,7 @@ on:
       - '.github/workflows/windows-*.yml'
       - '.github/workflows/test-*.yml'
       - '.github/workflows/macos-precompile.yml'
+      - '.github/workflows/macos-apple-device-precompile.yml'
       - '.github/*manylinux*.sh'
   push:
     branches:
