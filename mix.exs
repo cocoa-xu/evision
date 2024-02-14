@@ -976,7 +976,8 @@ defmodule Evision.MixProject do
       surface_matching: true,
       text: true,
       tracking: true,
-      wechat_qrcode: true,
+      wechat_qrcode:
+        System.get_env("MIX_TARGET") != "ios" or System.get_env("MIX_TARGET") != "xros",
       xfeatures2d: true,
       ximgproc: true,
       xphoto: true,
@@ -1007,15 +1008,12 @@ defmodule Evision.MixProject do
   }
   defp module_configuration, do: @module_configuration
 
-  @enabled_img_codecs [
-    :png,
-    :jpeg,
-    :tiff,
-    :webp,
-    :openjpeg,
-    :jasper,
-    :openexr
-  ]
+  @enabled_img_codecs (if System.get_env("MIX_TARGET") == "ios" or
+                            System.get_env("MIX_TARGET") == "xros" do
+                         []
+                       else
+                         [:png, :jpeg, :tiff, :webp, :openjpeg, :jasper, :openexr]
+                       end)
 
   # To make things easier, you can set `compile_mode` to `only_enabled_modules` so
   # that only modules specified in `enabled_modules` will be compiled. Like-wise,
