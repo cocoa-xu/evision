@@ -94,8 +94,8 @@ string(REPLACE "opencv_" "" OPENCV_MODULES_BUILD_ST          "${OPENCV_MODULES_B
 
 
 def patch_python_bindings_generator(opencv_version: str, opencv_src_root: str):
-    # CMakeLists.txt
-    cmakelists_txt = Path(opencv_src_root) / 'CMakeLists.txt'
+    # modules/python/CMakeLists.txt
+    cmakelists_txt = Path(opencv_src_root) / 'modules' / 'python' / 'CMakeLists.txt'
     fixed = StringIO()
     patched_1 = False
     with open(cmakelists_txt, 'r') as source:
