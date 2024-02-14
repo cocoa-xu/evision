@@ -41,9 +41,8 @@ Mix.install([
   # your local CUDA runtime version
   #
   # current available versions are
-  # - 111
-  # - 114
   # - 118
+  # - 121
   {"EVISION_CUDA_VERSION", "118"},
 
   # require for Windows users when 

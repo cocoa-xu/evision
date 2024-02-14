@@ -8,7 +8,7 @@ defmodule Evision.MixProject.Metadata do
   # only means compatible. need to write more tests
   def compatible_opencv_versions, do: ["4.5.3", "4.5.4", "4.5.5", "4.6.0", "4.7.0", "4.8.0", "4.9.0"]
   def default_cuda_version, do: "118"
-  def all_cuda_version, do: ["111", "114", "118"]
+  def all_cuda_version, do: ["118", "121"]
 end
 
 defmodule Mix.Tasks.Compile.EvisionPrecompiled do
@@ -417,6 +417,7 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
       :httpc.set_options([{:https_proxy, {{String.to_charlist(host), port}, []}}])
     end
 
+    Mix.shell().info("Downloading precompiled tarball from: #{url}")
     case :httpc.request(:get, arg, http_options, opts) do
       {:ok, {{_, 200, _}, _, body}} ->
         File.write!(save_as, body)
