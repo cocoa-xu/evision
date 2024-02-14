@@ -6,7 +6,9 @@ defmodule Evision.MixProject.Metadata do
   def github_url, do: "https://github.com/cocoa-xu/evision"
   def opencv_version, do: "4.9.0"
   # only means compatible. need to write more tests
-  def compatible_opencv_versions, do: ["4.5.3", "4.5.4", "4.5.5", "4.6.0", "4.7.0", "4.8.0", "4.9.0"]
+  def compatible_opencv_versions,
+    do: ["4.5.3", "4.5.4", "4.5.5", "4.6.0", "4.7.0", "4.8.0", "4.9.0"]
+
   def default_cuda_version, do: "118"
   def all_cuda_version, do: ["118", "121"]
 end
@@ -33,7 +35,7 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
     "i686-linux-gnu",
     "x86_64-windows-msvc",
     "aarch64-apple-darwin-ios",
-    "aarch64-apple-darwin-xros",
+    "aarch64-apple-darwin-xros"
   ]
 
   @available_nif_versions [
@@ -112,68 +114,70 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
 
   def get_target do
     case System.get_env("MIX_TARGET") do
-      "ios" =>
+      "ios" ->
         {"aarch64-apple-darwin-ios", ["aarch64", "apple", "darwin"]}
+
       "xros" ->
         {"aarch64-apple-darwin-xros", ["aarch64", "apple", "darwin"]}
+
       _ ->
-      target = String.split(to_string(:erlang.system_info(:system_architecture)), "-")
+        target = String.split(to_string(:erlang.system_info(:system_architecture)), "-")
 
-      [arch, os, abi] =
-        case Enum.count(target) do
-          3 ->
-            target
+        [arch, os, abi] =
+          case Enum.count(target) do
+            3 ->
+              target
 
-          4 ->
-            [arch, _vendor, os, abi] = target
-            [arch, os, abi]
+            4 ->
+              [arch, _vendor, os, abi] = target
+              [arch, os, abi]
 
-          1 ->
-            with ["win32"] <- target do
-              ["x86_64", "windows", "msvc"]
-            else
-              [unknown_target] ->
-                [unknown_target, "unknown", nil]
-            end
-        end
-
-      abi =
-        case abi do
-          "darwin" <> _ ->
-            "darwin"
-
-          "win32" ->
-            {compiler_id, _} = :erlang.system_info(:c_compiler_used)
-
-            case compiler_id do
-              :msc -> "msvc"
-              _ -> to_string(compiler_id)
-            end
-
-          _ ->
-            abi
-        end
-
-      arch =
-        if os == "windows" do
-          case String.downcase(System.get_env("PROCESSOR_ARCHITECTURE")) do
-            "arm64" ->
-              "aarch64"
-
-            arch when arch in ["x64", "x86_64", "amd64"] ->
-              "x86_64"
-
-            arch ->
-              arch
+            1 ->
+              with ["win32"] <- target do
+                ["x86_64", "windows", "msvc"]
+              else
+                [unknown_target] ->
+                  [unknown_target, "unknown", nil]
+              end
           end
-        else
-          arch
-        end
 
-      abi = System.get_env("TARGET_ABI", abi)
-      os = System.get_env("TARGET_OS", os)
-      arch = System.get_env("TARGET_ARCH", arch)
-      {Enum.join([arch, os, abi], "-"), [arch, os, abi]}
+        abi =
+          case abi do
+            "darwin" <> _ ->
+              "darwin"
+
+            "win32" ->
+              {compiler_id, _} = :erlang.system_info(:c_compiler_used)
+
+              case compiler_id do
+                :msc -> "msvc"
+                _ -> to_string(compiler_id)
+              end
+
+            _ ->
+              abi
+          end
+
+        arch =
+          if os == "windows" do
+            case String.downcase(System.get_env("PROCESSOR_ARCHITECTURE")) do
+              "arm64" ->
+                "aarch64"
+
+              arch when arch in ["x64", "x86_64", "amd64"] ->
+                "x86_64"
+
+              arch ->
+                arch
+            end
+          else
+            arch
+          end
+
+        abi = System.get_env("TARGET_ABI", abi)
+        os = System.get_env("TARGET_OS", os)
+        arch = System.get_env("TARGET_ARCH", arch)
+        {Enum.join([arch, os, abi], "-"), [arch, os, abi]}
     end
   end
 
@@ -427,6 +431,7 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
     end
 
     Mix.shell().info("Downloading precompiled tarball from: #{url}")
+
     case :httpc.request(:get, arg, http_options, opts) do
       {:ok, {{_, 200, _}, _, body}} ->
         File.write!(save_as, body)
@@ -541,6 +546,7 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
       else
         "evision.so"
       end
+
     windows_fix_so_file =
       if os == "windows" do
         "windows_fix.dll"
@@ -744,6 +750,7 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
       else
         "evision.so"
       end
+
     windows_fix_so_file =
       if os == "windows" do
         "windows_fix.dll"
