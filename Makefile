@@ -163,6 +163,12 @@ $(HEADERS_TXT): $(CONFIGURATION_PRIVATE_HPP)
 		python3 "$(shell pwd)/patches/apply_patch.py" "$(OPENCV_DIR)" "$(OPENCV_VER)" ; \
 		mkdir -p "$(CMAKE_OPENCV_BUILD_DIR)" && \
 		cd "$(CMAKE_OPENCV_BUILD_DIR)" && \
+		if [ "$(MIX_TARGET)" = "ios" ]; then \
+			export IPHONEOS_DEPLOYMENT_TARGET=$(IPHONEOS_DEPLOYMENT_TARGET) ; \
+		elif [ "$(MIX_TARGET)" = "xros" ]; then \
+			export VISIONOS_DEPLOYMENT_TARGET=$(VISIONOS_DEPLOYMENT_TARGET) ; \
+		fi && \
+		echo "CMAKE_OPTIONS: $(CMAKE_OPTIONS)" && \
 		cmake -D CMAKE_BUILD_TYPE="$(CMAKE_BUILD_TYPE)" \
 			-D CMAKE_INSTALL_PREFIX="$(PRIV_DIR)" \
 			-D PYTHON3_EXECUTABLE="$(PYTHON3_EXECUTABLE)" \
