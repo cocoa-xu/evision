@@ -533,6 +533,255 @@ bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Vec<_Tp, cn>& vec, const ArgInfo
     return evision_to(env, o, (Matx<_Tp, cn, 1>&)vec, info);
 }
 
+#ifdef HAVE_OPENCV_FEATURES2D
+template<>
+bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, cv::Ptr<cv::Feature2D> &feature, const ArgInfo& info)
+{
+    if (evision::nif::check_nil(env, obj)) {
+        return false;
+    }
+
+    {
+        using source_type = evision_res<cv::Ptr<cv::AKAZE>>;
+        source_type * in_res;
+        if (enif_get_resource(env, obj, source_type::type, (void **)&in_res) ) {
+            feature = in_res->val;
+            return true;
+        }
+    }
+
+    {
+        using source_type = evision_res<cv::Ptr<cv::AffineFeature>>;
+        source_type * in_res;
+        if (enif_get_resource(env, obj, source_type::type, (void **)&in_res) ) {
+            feature = in_res->val;
+            return true;
+        }
+    }
+
+    {
+        using source_type = evision_res<cv::Ptr<cv::AgastFeatureDetector>>;
+        source_type * in_res;
+        if (enif_get_resource(env, obj, source_type::type, (void **)&in_res) ) {
+            feature = in_res->val;
+            return true;
+        }
+    }
+
+    {
+        using source_type = evision_res<cv::Ptr<cv::BRISK>>;
+        source_type * in_res;
+        if (enif_get_resource(env, obj, source_type::type, (void **)&in_res) ) {
+            feature = in_res->val;
+            return true;
+        }
+    }
+
+    {
+        using source_type = evision_res<cv::Ptr<cv::FastFeatureDetector>>;
+        source_type * in_res;
+        if (enif_get_resource(env, obj, source_type::type, (void **)&in_res) ) {
+            feature = in_res->val;
+            return true;
+        }
+    }
+
+    {
+        using source_type = evision_res<cv::Ptr<cv::GFTTDetector>>;
+        source_type * in_res;
+        if (enif_get_resource(env, obj, source_type::type, (void **)&in_res) ) {
+            feature = in_res->val;
+            return true;
+        }
+    }
+
+    {
+        using source_type = evision_res<cv::Ptr<cv::KAZE>>;
+        source_type * in_res;
+        if (enif_get_resource(env, obj, source_type::type, (void **)&in_res) ) {
+            feature = in_res->val;
+            return true;
+        }
+    }
+
+    {
+        using source_type = evision_res<cv::Ptr<cv::MSER>>;
+        source_type * in_res;
+        if (enif_get_resource(env, obj, source_type::type, (void **)&in_res) ) {
+            feature = in_res->val;
+            return true;
+        }
+    }
+
+    {
+        using source_type = evision_res<cv::Ptr<cv::ORB>>;
+        source_type * in_res;
+        if (enif_get_resource(env, obj, source_type::type, (void **)&in_res) ) {
+            feature = in_res->val;
+            return true;
+        }
+    }
+
+    {
+        using source_type = evision_res<cv::Ptr<cv::SIFT>>;
+        source_type * in_res;
+        if (enif_get_resource(env, obj, source_type::type, (void **)&in_res) ) {
+            feature = in_res->val;
+            return true;
+        }
+    }
+
+    {
+        using source_type = evision_res<cv::Ptr<cv::SimpleBlobDetector>>;
+        source_type * in_res;
+        if (enif_get_resource(env, obj, source_type::type, (void **)&in_res) ) {
+            feature = in_res->val;
+            return true;
+        }
+    }
+
+#ifdef HAVE_OPENCV_XFEATURES2D
+    {
+        using source_type = evision_res<cv::Ptr<cv::xfeatures2d::AffineFeature2D>>;
+        source_type * in_res;
+        if (enif_get_resource(env, obj, source_type::type, (void **)&in_res) ) {
+            feature = in_res->val;
+            return true;
+        }
+    }
+
+    {
+        using source_type = evision_res<cv::Ptr<cv::xfeatures2d::BEBLID>>;
+        source_type * in_res;
+        if (enif_get_resource(env, obj, source_type::type, (void **)&in_res) ) {
+            feature = in_res->val;
+            return true;
+        }
+    }
+
+    {
+        using source_type = evision_res<cv::Ptr<cv::xfeatures2d::BoostDesc>>;
+        source_type * in_res;
+        if (enif_get_resource(env, obj, source_type::type, (void **)&in_res) ) {
+            feature = in_res->val;
+            return true;
+        }
+    }
+
+    {
+        using source_type = evision_res<cv::Ptr<cv::xfeatures2d::BriefDescriptorExtractor>>;
+        source_type * in_res;
+        if (enif_get_resource(env, obj, source_type::type, (void **)&in_res) ) {
+            feature = in_res->val;
+            return true;
+        }
+    }
+
+    {
+        using source_type = evision_res<cv::Ptr<cv::xfeatures2d::DAISY>>;
+        source_type * in_res;
+        if (enif_get_resource(env, obj, source_type::type, (void **)&in_res) ) {
+            feature = in_res->val;
+            return true;
+        }
+    }
+
+    {
+        using source_type = evision_res<cv::Ptr<cv::xfeatures2d::FREAK>>;
+        source_type * in_res;
+        if (enif_get_resource(env, obj, source_type::type, (void **)&in_res) ) {
+            feature = in_res->val;
+            return true;
+        }
+    }
+
+    {
+        using source_type = evision_res<cv::Ptr<cv::xfeatures2d::HarrisLaplaceFeatureDetector>>;
+        source_type * in_res;
+        if (enif_get_resource(env, obj, source_type::type, (void **)&in_res) ) {
+            feature = in_res->val;
+            return true;
+        }
+    }
+
+    {
+        using source_type = evision_res<cv::Ptr<cv::xfeatures2d::LATCH>>;
+        source_type * in_res;
+        if (enif_get_resource(env, obj, source_type::type, (void **)&in_res) ) {
+            feature = in_res->val;
+            return true;
+        }
+    }
+
+    {
+        using source_type = evision_res<cv::Ptr<cv::xfeatures2d::LUCID>>;
+        source_type * in_res;
+        if (enif_get_resource(env, obj, source_type::type, (void **)&in_res) ) {
+            feature = in_res->val;
+            return true;
+        }
+    }
+
+    {
+        using source_type = evision_res<cv::Ptr<cv::xfeatures2d::MSDDetector>>;
+        source_type * in_res;
+        if (enif_get_resource(env, obj, source_type::type, (void **)&in_res) ) {
+            feature = in_res->val;
+            return true;
+        }
+    }
+
+    {
+        using source_type = evision_res<cv::Ptr<cv::xfeatures2d::SURF>>;
+        source_type * in_res;
+        if (enif_get_resource(env, obj, source_type::type, (void **)&in_res) ) {
+            feature = in_res->val;
+            return true;
+        }
+    }
+
+    {
+        using source_type = evision_res<cv::Ptr<cv::xfeatures2d::StarDetector>>;
+        source_type * in_res;
+        if (enif_get_resource(env, obj, source_type::type, (void **)&in_res) ) {
+            feature = in_res->val;
+            return true;
+        }
+    }
+
+    {
+        using source_type = evision_res<cv::Ptr<cv::xfeatures2d::TBMR>>;
+        source_type * in_res;
+        if (enif_get_resource(env, obj, source_type::type, (void **)&in_res) ) {
+            feature = in_res->val;
+            return true;
+        }
+    }
+
+    {
+        using source_type = evision_res<cv::Ptr<cv::xfeatures2d::TEBLID>>;
+        source_type * in_res;
+        if (enif_get_resource(env, obj, source_type::type, (void **)&in_res) ) {
+            feature = in_res->val;
+            return true;
+        }
+    }
+
+    {
+        using source_type = evision_res<cv::Ptr<cv::xfeatures2d::VGG>>;
+        source_type * in_res;
+        if (enif_get_resource(env, obj, source_type::type, (void **)&in_res) ) {
+            feature = in_res->val;
+            return true;
+        }
+    }
+
+#endif
+
+    return false;
+}
+#endif
+
 template<>
 ERL_NIF_TERM evision_from(ErlNifEnv *env, const Mat& m)
 {

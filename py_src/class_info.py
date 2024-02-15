@@ -116,8 +116,8 @@ class ClassInfo(object):
                 and (
                         base_class == "GraphicalCodeDetector"
                         or current_class.cname.startswith("cv::ml") 
-                        or "Calibrate" in current_class.cname 
-                        or "Calibrate" in current_class.cname 
+                        or "Calibrate" in current_class.cname
+                        or "Calibrate" in current_class.cname
                         or (current_class.base is not None and "Feature2D" in current_class.base) 
                         or (current_class.base is not None and "Matcher" in current_class.base)
                         or (current_class.base is not None and "Algorithm" in current_class.base)
@@ -125,16 +125,7 @@ class ClassInfo(object):
                     ):
                 if base_class in codegen.classes and current_class.base is not None:
                     base_class = codegen.classes[current_class.base]
-                    for base_method_name in base_class.methods:
-                        if base_method_name not in methods:
-                            base_method = base_class.methods[base_method_name].__deepcopy__()
-                            base_method.classname = self.name
-                            for v in base_method.variants:
-                                v.classname = self.name
-                            methods[base_method_name] = base_method
-                        else:
-                            # print(self.cname, "overrides base method:", base_method_name)
-                            _ = 0
+                    self._add_methods_from_class(base_class, methods)
                     base_class, current_class = current_class.base, base_class
                 else:
                     break
@@ -163,8 +154,20 @@ class ClassInfo(object):
                 self.name, wname=self.cname, name=pname, is_ns=False)
             module_file_generator.gen_property(self.cname, self.name, pname, m)
 
+    def _add_methods_from_class(self, from_class, existing_methods):
+        for base_method_name in from_class.methods:
+            if base_method_name not in existing_methods:
+                base_method = from_class.methods[base_method_name].__deepcopy__()
+                for v in base_method.variants:
+                    v.base_classname = base_method.classname
+                    v.from_base = True
+                base_method.classname = self.name
+                existing_methods[base_method_name] = base_method
+            else:
+                # print(self.cname, "overrides base method:", base_method_name)
+                _ = 0
+
     def gen_code(self, codegen):
-        all_classes = codegen.classes
         if self.ismap:
             return self.gen_map_code(codegen)
         getset_code = StringIO()
@@ -233,6 +236,7 @@ class ClassInfo(object):
                     name=self.name, member=pname,
                     storage_name=self.cname if self.issimple else "Ptr<{}>".format(self.cname)))
 
+        # generate instance methods
         methods_code = StringIO()
         methods_inits = StringIO()
 
@@ -252,17 +256,7 @@ class ClassInfo(object):
                     ):
                 if base_class in codegen.classes and current_class.base is not None:
                     base_class = codegen.classes[current_class.base]
-                    for base_method_name in base_class.methods:
-                        if base_method_name not in methods:
-                            base_method = base_class.methods[base_method_name].__deepcopy__()
-                            for v in base_method.variants:
-                                v.base_classname = base_method.classname
-                                v.from_base = True
-                            base_method.classname = self.name
-                            methods[base_method_name] = base_method
-                        else:
-                            # print(self.cname, "overrides base method:", base_method_name)
-                            _ = 0
+                    self._add_methods_from_class(base_class, methods)
                     base_class, current_class = current_class.base, base_class
                 else:
                     break

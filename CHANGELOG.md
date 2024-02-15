@@ -1,5 +1,33 @@
 # Changelog
 
+## main
+[Browse the Repository](https://github.com/cocoa-xu/evision/)
+
+### Fix
+- Allow implicitly cast to `Evision.Feature2D` from the following types:
+  - `Evision.AKAZE`
+  - `Evision.AffineFeature`
+  - `Evision.AgastFeatureDetector`
+  - `Evision.BRISK`
+  - `Evision.FastFeatureDetector`
+  - `Evision.GFTTDetector`
+  - `Evision.KAZE`
+  - `Evision.MSER`
+  - `Evision.ORB`
+  - `Evision.SimpleBlobDetector`
+  - `Evision.XFeatures2D.BEBLID`
+  - `Evision.XFeatures2D.BoostDesc`
+  - `Evision.XFeatures2D.BriefDescriptorExtractor`
+  - `Evision.XFeatures2D.DAISY`
+  - `Evision.XFeatures2D.FREAK`
+  - `Evision.XFeatures2D.LATCH`
+  - `Evision.XFeatures2D.LUCID`
+  - `Evision.XFeatures2D.MSDDetector`
+  - `Evision.XFeatures2D.StarDetector`
+  - `Evision.XFeatures2D.TBMR`
+  - `Evision.XFeatures2D.TEBLID`
+  - `Evision.XFeatures2D.VGG`
+
 ## v0.1.35 (2024-02-14)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.35) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.35)
 

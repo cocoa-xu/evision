@@ -1352,6 +1352,8 @@ def map_argtype_to_guard_elixir(argname, argtype, classname: Optional[str] = Non
         return f'is_tuple({argname})'
     elif is_struct(argtype, classname=classname):
         _, struct_name = is_struct(argtype, also_get='struct_name', classname=classname)
+        if struct_name == 'Evision.Feature2D':
+            return f''
         if struct_name == 'Evision.Mat':
             return f'(is_struct({argname}, Evision.Mat) or is_struct({argname}, Nx.Tensor))'
         else:
