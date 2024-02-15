@@ -1,7 +1,7 @@
 # Changelog
 
-## main
-[Browse the Repository](https://github.com/cocoa-xu/evision/)
+## v0.1.36 (2024-02-16)
+[Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.36) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.36)
 
 ### Fix
 - Allow implicitly cast to `Evision.Feature2D` from the following types:
@@ -27,6 +27,9 @@
   - `Evision.XFeatures2D.TBMR`
   - `Evision.XFeatures2D.TEBLID`
   - `Evision.XFeatures2D.VGG`
+  
+### Added
+- [experimental] Support compiling for iOS. Precompiled binaries are also available for iOS, but they are not tested yet, and they require a few more steps to use. Please see [this guide](https://github.com/cocoa-xu/evision/pull/79) for more information.
 
 ## v0.1.35 (2024-02-14)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.35) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.35)
