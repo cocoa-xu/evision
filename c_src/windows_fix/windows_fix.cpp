@@ -37,15 +37,18 @@ extern "C"
         if (!opencv_path_updated) {
             std::wstring directory;
             wchar_t path[65536];
+            char err_msg[128] = { '\0' };
             HMODULE hm = NULL;
             if (GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, (LPCWSTR)&evision_windows_fix_run_once, &hm) == 0) {
                 int ret = GetLastError();
-                fprintf(stderr, "GetModuleHandle failed, error = %d\r\n", ret);
+                snprintf(err_msg, sizeof(err_msg) - 1, "GetModuleHandle failed, error = %d", ret);
+                return evision::nif::error(env, err_msg);
             }
 
             if (GetModuleFileNameW(hm, (LPWSTR)path, sizeof(path)) == 0) {
                 int ret = GetLastError();
-                fprintf(stderr, "GetModuleFileName failed, error = %d\r\n", ret);
+                snprintf(err_msg, sizeof(err_msg) - 1, "GetModuleFileName failed, error = %d\r\n", ret);
+                return error(env, err_msg);
             }
 
             directory = path;
@@ -53,7 +56,7 @@ extern "C"
             auto pos = directory.find_last_of(backslash);
             auto priv_dir = directory.substr(0, pos);
             std::wstring lib_dir;
-                
+
             // test from vc10 to vc99
             // this should last for a while
             if (sizeof(void*) == 8) {
