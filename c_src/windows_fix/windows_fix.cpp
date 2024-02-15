@@ -47,8 +47,8 @@ extern "C"
 
             if (GetModuleFileNameW(hm, (LPWSTR)path, sizeof(path)) == 0) {
                 int ret = GetLastError();
-                snprintf(err_msg, sizeof(err_msg) - 1, "GetModuleFileName failed, error = %d\r\n", ret);
-                return error(env, err_msg);
+                snprintf(err_msg, sizeof(err_msg) - 1, "GetModuleFileName failed, error = %d", ret);
+                return evision::nif::error(env, err_msg);
             }
 
             directory = path;
