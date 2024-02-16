@@ -22,15 +22,14 @@ jobs:
       matrix:
         include:
           - pair: 
-              OTP_VERSION: "25.3.2.5"
+              OTP_VERSION: "25.3"
               NIF_VERSION: "2.16"
-              ELIXIR_VERSION: "1.15.4"
-          - pair: 
-              OTP_VERSION: "26.0.2"
-              NIF_VERSION: "2.17"
-              ELIXIR_VERSION: "1.15.4"
+              ELIXIR_VERSION: "1.16.1"
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Install system dependencies
         run: |
           apk add cmake make python3 bash curl unzip gcc g++ ncurses-dev openssl-dev linux-headers perl git dpkg patch
@@ -175,22 +174,12 @@ jobs:
               arch: aarch64-linux-musl
               OTP_VERSION: "25.3"
               NIF_VERSION: "2.16"
-              ELIXIR_VERSION: "1.14.3"
-          - pair:
-              arch: aarch64-linux-musl
-              OTP_VERSION: "26.0.2"
-              NIF_VERSION: "2.17"
-              ELIXIR_VERSION: "1.15.4"
+              ELIXIR_VERSION: "1.16.1"
           - pair:
               arch: riscv64-linux-musl
               OTP_VERSION: "25.3"
               NIF_VERSION: "2.16"
-              ELIXIR_VERSION: "1.14.3"
-          - pair:
-              arch: riscv64-linux-musl
-              OTP_VERSION: "26.0.2"
-              NIF_VERSION: "2.17"
-              ELIXIR_VERSION: "1.15.4"
+              ELIXIR_VERSION: "1.16.1"
 
     steps:
       - name: Checkout

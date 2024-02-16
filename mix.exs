@@ -39,12 +39,11 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
     "aarch64-apple-darwin-ios"
   ]
 
-  @available_nif_versions [
-    "2.16",
-    "2.17"
-  ]
+  @compile_nif_version "2.16"
 
-  def available_nif_urls(nif_version, version \\ Metadata.version()) do
+  def available_nif_urls(_host_nif_version, version \\ Metadata.version()) do
+    nif_version = get_compile_nif_version()
+
     Enum.reduce(@available_targets, [], fn target, acc ->
       no_contrib = get_download_url(target, version, nif_version, false, false, "")
       with_contrib = get_download_url(target, version, nif_version, true, false, "")
@@ -62,8 +61,9 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
     end)
   end
 
-  def current_target_nif_url(nif_version, version \\ Metadata.version()) do
+  def current_target_nif_url(_host_nif_version, version \\ Metadata.version()) do
     {target, _} = get_target()
+    nif_version = get_compile_nif_version()
     enable_contrib = System.get_env("EVISION_ENABLE_CONTRIB", "true") == "true"
 
     if enable_contrib do
@@ -105,12 +105,12 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
     end
   end
 
-  def get_available_nif_versions do
-    @available_nif_versions
+  def get_compile_nif_version do
+    @compile_nif_version
   end
 
   def get_nif_version do
-    System.get_env("TARGET_NIF_VERSION", to_string(:erlang.system_info(:nif_version)))
+    to_string(:erlang.system_info(:nif_version))
   end
 
   def get_target do
@@ -230,13 +230,30 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
   end
 
   def available_for_nif_version?(nif_version, log? \\ false) do
-    available_for_nif_version? = Enum.member?(@available_nif_versions, nif_version)
+    host_nif_version =
+      case Enum.count(String.split(nif_version, ".")) do
+        2 ->
+          Version.parse!("#{nif_version}.0")
+
+        3 ->
+          Version.parse!(nif_version)
+
+        _ ->
+          raise RuntimeError, "unknown nif_version: #{nif_version}"
+      end
+
+    compile_nif_version = get_compile_nif_version()
+    available_for_nif_version? = Version.compare(compile_nif_version, host_nif_version) != :gt
 
     if log? do
       if available_for_nif_version? do
-        Logger.info("Current NIF version `#{nif_version}` has precompiled binaries.")
+        Logger.info(
+          "Current host NIF version is `#{nif_version}`, will use precompiled binaries with NIF version #{compile_nif_version}."
+        )
       else
-        Logger.warning("Current NIF version `#{nif_version}` does not have precompiled binaries.")
+        Logger.warning(
+          "Current host NIF version `#{nif_version}` does not have precompiled binaries."
+        )
       end
     end
 

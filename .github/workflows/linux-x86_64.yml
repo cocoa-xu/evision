@@ -66,11 +66,13 @@ jobs:
     env:
       MIX_ENV: test
       OPENCV_VER: "4.9.0"
-      OTP_VERSION: "25.2"
-      ELIXIR_VERSION: "1.14.3"
+      OTP_VERSION: "26.2"
+      ELIXIR_VERSION: "1.16.1"
       EVISION_PREFER_PRECOMPILED: "false"
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Install system dependencies
         run: |
           apk add cmake make python3 bash curl unzip gcc g++ ncurses-dev openssl-dev linux-headers perl git dpkg ca-certificates
