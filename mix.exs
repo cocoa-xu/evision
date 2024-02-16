@@ -28,6 +28,7 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
     "x86_64-linux-gnu",
     "x86_64-linux-musl",
     "armv7l-linux-gnueabihf",
+    "armv6-linux-gnueabihf",
     "ppc64le-linux-gnu",
     "s390x-linux-gnu",
     "riscv64-linux-gnu",
@@ -175,7 +176,14 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
 
         abi = System.get_env("TARGET_ABI", abi)
         os = System.get_env("TARGET_OS", os)
-        arch = System.get_env("TARGET_ARCH", arch)
+
+        arch =
+          if String.match?(System.get_env("TARGET_CPU", ""), ~r/arm11[357]6/) do
+            "armv6"
+          else
+            System.get_env("TARGET_ARCH", arch)
+          end
+
         {Enum.join([arch, os, abi], "-"), [arch, os, abi]}
     end
   end
