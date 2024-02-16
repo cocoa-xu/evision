@@ -11,7 +11,7 @@ concurrency:
 
 jobs:
   alpine:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     container: alpine:latest
     env:
       MIX_ENV: prod
@@ -35,7 +35,7 @@ jobs:
         run: |
           apk add cmake make python3 bash curl unzip gcc g++ ncurses-dev openssl-dev linux-headers perl git dpkg patch
 
-      - name: Compile and Install Erlang and Elixir using asdf
+      - name: Compile and Install Erlang and Elixir
         run: |
           curl -fSL "https://github.com/erlang/otp/releases/download/OTP-${{ matrix.pair.OTP_VERSION }}/otp_src_${{ matrix.pair.OTP_VERSION }}.tar.gz" -o "otp_src_${{ matrix.pair.OTP_VERSION }}.tar.gz"
           tar xzf "otp_src_${{ matrix.pair.OTP_VERSION }}.tar.gz"
@@ -189,7 +189,8 @@ jobs:
               ELIXIR_VERSION: "1.15.4"
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Install OTP and Elixir
         uses: erlef/setup-beam@v1
