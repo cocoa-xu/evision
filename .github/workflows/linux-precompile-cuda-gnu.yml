@@ -90,25 +90,13 @@ jobs:
           bash scripts/download_opencv.sh ${OPENCV_VER} 3rd_party/cache 3rd_party/opencv/
           bash scripts/download_opencv_contrib.sh ${OPENCV_VER} 3rd_party/cache 3rd_party/opencv/
 
-      - name: Cache compiled OpenCV
-        id: cache-mix-compile_opencv
-        uses: actions/cache@v4
-        with:
-          key: precompiled-opencv-${{ env.OPENCV_VER }}-cuda${{ matrix.cuda_ver }}-x86_64-linux-gnu-${{ hashFiles('Makefile') }}
-          path: |
-            ./_build/${{ env.MIX_ENV }}/lib/evision
-            ./c_src/headers.txt
-            ./c_src/configuration.private.hpp
-
       - name: Compile OpenCV
-        if: steps.cache-mix-compile_opencv.outputs.cache-hit != 'true'
         run: |
           mix compile_opencv
 
       - name: Mix Compile
         run: |
           rm -f _build/${{ env.MIX_ENV }}/lib/evision/priv/evision.so
-          ls -la ./c_src
           mix compile
           ls -la ./lib/generated
 
