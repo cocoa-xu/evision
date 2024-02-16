@@ -38,6 +38,10 @@ defmodule Evision.Zoo.TextRecognition.CRNN do
               %{value: "db_ic15_resnet50", label: "DB IC15 ResNet50"},
               %{value: "db_td500_resnet18", label: "DB TD500 ResNet18"},
               %{value: "db_td500_resnet50", label: "DB TD500 ResNet50"},
+              %{value: "ppocrv3_en", label: "PP-OCR V3 EN"},
+              %{value: "ppocrv3_en_int8", label: "PP-OCR V3 EN (int8)"},
+              %{value: "ppocrv3_cn", label: "PP-OCR V3 CN"},
+              %{value: "ppocrv3_cn_int8", label: "PP-OCR V3 CN (int8)"},
             ]
           },
         ]
