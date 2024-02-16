@@ -10,28 +10,23 @@
 #include <wchar.h>
 #include <erl_nif.h>
 
-ERL_NIF_TERM atom(ErlNifEnv *env, const char *msg)
-{
-  ERL_NIF_TERM a;
-  if (enif_make_existing_atom(env, msg, &a, ERL_NIF_LATIN1)) {
-    return a;
-  } else {
-    return enif_make_atom(env, msg);
-  }
+ERL_NIF_TERM atom(ErlNifEnv *env, const char *msg) {
+    ERL_NIF_TERM a;
+    if (enif_make_existing_atom(env, msg, &a, ERL_NIF_LATIN1)) {
+        return a;
+    } else {
+        return enif_make_atom(env, msg);
+    }
 }
 
-// Helper for returning `{:error, msg}` from NIF.
-ERL_NIF_TERM error(ErlNifEnv *env, const char *msg)
-{
-  ERL_NIF_TERM error_atom = atom(env, "error");
-  ERL_NIF_TERM msg_term = enif_make_string(env, msg, ERL_NIF_LATIN1);
-  return enif_make_tuple2(env, atom, msg_term);
+ERL_NIF_TERM error(ErlNifEnv *env, const char *msg) {
+    ERL_NIF_TERM error_atom = atom(env, "error");
+    ERL_NIF_TERM msg_term = enif_make_string(env, msg, ERL_NIF_LATIN1);
+    return enif_make_tuple2(env, atom, msg_term);
 }
 
-// Helper for returning `{:ok, term}` from NIF.
-ERL_NIF_TERM ok(ErlNifEnv *env)
-{
-  return atom(env, "ok");
+ERL_NIF_TERM ok(ErlNifEnv *env) {
+    return atom(env, "ok");
 }
 
 int evision_windows_fix_dir_exists(LPCWSTR path) {
@@ -45,10 +40,24 @@ static ERL_NIF_TERM evision_windows_fix_run_once(ErlNifEnv* env, int argc, const
 
     if (opencv_path_updated && cuda_path_updated) return ok(env);
 
+    char err_msg[128] = { '\0' };
+    SYSTEM_INFO systemInfo;
+    GetNativeSystemInfo(&systemInfo);
+
+    std::wstring cpu_arch;
+    if (systemInfo.wProcessorArchitecture == PROCESSOR_ARCHITECTURE_AMD64) {
+        cpu_arch = L"x64";
+    } else if (systemInfo.wProcessorArchitecture == PROCESSOR_ARCHITECTURE_ARM64) {
+        cpu_arch = L"ARM64";
+    } else {
+        snprintf(err_msg, sizeof(err_msg) - 1, "Cannot determine current processor architecture: %d", systemInfo.wProcessorArchitecture);
+        return error(env, err_msg);
+    }
+
     if (!opencv_path_updated) {
         std::wstring directory;
         wchar_t path[65536];
-        char err_msg[128] = { '\0' };
+        
         HMODULE hm = NULL;
         if (GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, (LPCWSTR)&evision_windows_fix_run_once, &hm) == 0) {
             int ret = GetLastError();
@@ -73,7 +82,7 @@ static ERL_NIF_TERM evision_windows_fix_run_once(ErlNifEnv* env, int argc, const
         if (sizeof(void*) == 8) {
             for (int vc_version = 10; vc_version < 99; vc_version++) {
                 std::wstringstream t;
-                t << priv_dir + L"\\x64\\vc";
+                t << priv_dir << L"\\" << cpu_arch << L"\\vc";
                 t << vc_version;
                 t << L"\\bin";
                 auto probe = t.str();

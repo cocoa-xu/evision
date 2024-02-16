@@ -247,7 +247,9 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
       end
 
     compile_nif_version = get_compile_nif_version()
-    available_for_nif_version? = Version.compare(Version.parse!("#{compile_nif_version}.0"), host_nif_version) != :gt
+
+    available_for_nif_version? =
+      Version.compare(Version.parse!("#{compile_nif_version}.0"), host_nif_version) != :gt
 
     if log? do
       if available_for_nif_version? do
@@ -836,6 +838,19 @@ defmodule Evision.MixProject do
             "EVISION_GENERATE_LANG" => System.get_env("EVISION_GENERATE_LANG", "elixir"),
             "EVISION_PREFER_PRECOMPILED" => "false"
           }
+
+          make_env =
+            case :os.type() do
+              {:win32, _} ->
+                Map.put_new(
+                  make_env,
+                  "PYTHON3_EXECUTABLE",
+                  System.find_executable("python3") || System.find_executable("python")
+                )
+
+              _ ->
+                make_env
+            end
 
           {[:elixir_make] ++ Mix.compilers(), make_env}
         else
