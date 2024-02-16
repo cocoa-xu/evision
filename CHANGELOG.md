@@ -7,6 +7,7 @@
 - [nerves-build] use fwup v1.10.1
 - [precompiled] support `armv6-linux-gnueabihf` target
 - [precompiled] precompiled binaries are now built with Erlang/OTP NIF version 2.16, and they are compatible with NIF version 2.16 and later.
+- [model_zoo] use permanent URLs for text recognition models.
 
 ### Added
 - [experimental] support `aarch64-windows-msvc` target
