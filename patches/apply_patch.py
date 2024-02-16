@@ -71,7 +71,7 @@ def patch_rpath_linux(opencv_version: str, opencv_src_root: str):
     with open(cmakelists_txt, 'r') as source:
         for line in source:
             if not patched_1 and line.strip() == 'string(REPLACE "opencv_" "" OPENCV_MODULES_BUILD_ST          "${OPENCV_MODULES_BUILD_ST}")':
-                fixed.write("""if(UNIX AND NOT APPLE)
+                fixed.write(r"""if(UNIX AND NOT APPLE)
   foreach(the_module ${OPENCV_MODULES_BUILD_ST})
     set_target_properties(${the_module} PROPERTIES
       INSTALL_RPATH_USE_LINK_PATH TRUE
