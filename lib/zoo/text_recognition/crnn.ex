@@ -246,8 +246,8 @@ defmodule Evision.Zoo.TextRecognition.CRNN do
 
   def model_info(:en_fp16) do
     {
-      "https://github.com/opencv/opencv_zoo/raw/fd2da740ebc6d0fe489d86cb55133148978cd82e/models/text_recognition_crnn/text_recognition_CRNN_EN_2022oct_fp16.onnx",
-      "text_recognition_CRNN_EN_2022oct_fp16.onnx"
+      "https://github.com/opencv/opencv_zoo/raw/fd2da740ebc6d0fe489d86cb55133148978cd82e/models/text_recognition_crnn/text_recognition_CRNN_EN_2023feb_fp16.onnx",
+      "text_recognition_CRNN_EN_2023feb_fp16.onnx"
     }
   end
 
@@ -267,8 +267,8 @@ defmodule Evision.Zoo.TextRecognition.CRNN do
 
   def model_info(:ch_fp16) do
     {
-      "https://github.com/opencv/opencv_zoo/raw/fd2da740ebc6d0fe489d86cb55133148978cd82e/models/text_recognition_crnn/text_recognition_CRNN_CH_2022oct_fp16.onnx",
-      "text_recognition_CRNN_CH_2022oct_fp16.onnx"
+      "https://github.com/opencv/opencv_zoo/raw/fd2da740ebc6d0fe489d86cb55133148978cd82e/models/text_recognition_crnn/text_recognition_CRNN_CH_2023feb_fp16.onnx",
+      "text_recognition_CRNN_CH_2023feb_fp16.onnx"
     }
   end
 
