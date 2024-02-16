@@ -252,7 +252,6 @@ $(EVISION_SO): $(C_SRC_HEADERS_TXT)
 			|| { echo "\033[0;31mincomplete build of OpenCV found in '$(CMAKE_OPENCV_BUILD_DIR)', please delete that directory and retry\033[0m" && exit 1 ; } ; } \
 			&& if [ "$(EVISION_PREFER_PRECOMPILED)" != "true" ]; then \
 				cp "$(CMAKE_EVISION_BUILD_DIR)/evision.so" "$(EVISION_SO)" ; \
-				cp "$(CMAKE_EVISION_BUILD_DIR)/windows_fix.so" "$(WINDOWS_FIX_SO)" ; \
 			fi && \
 			if [ "$(MIX_TARGET)" = "ios" ]; then \
 				rm -rf "$(PRIV_DIR)/lib" "$(PRIV_DIR)/include" ; \
