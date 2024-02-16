@@ -793,7 +793,7 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
     if !File.exists?(evision_so_file) or !File.exists?(windows_fix_so_file) do
       with {:precompiled, _} <- deploy_type(true) do
         version = Metadata.version()
-        nif_version = get_nif_version()
+        nif_version = get_compile_nif_version()
         enable_contrib = System.get_env("EVISION_ENABLE_CONTRIB", "true") == "true"
         enable_cuda = System.get_env("EVISION_ENABLE_CUDA", "false") == "true"
         cuda_version = System.get_env("EVISION_CUDA_VERSION", Metadata.default_cuda_version())
