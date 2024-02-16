@@ -2,7 +2,7 @@ defmodule Evision.MixProject.Metadata do
   @moduledoc false
 
   def app, do: :evision
-  def version, do: "0.1.37-dev"
+  def version, do: "0.1.36"
   def github_url, do: "https://github.com/cocoa-xu/evision"
   def opencv_version, do: "4.9.0"
   # only means compatible. need to write more tests
@@ -247,7 +247,7 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
       end
 
     compile_nif_version = get_compile_nif_version()
-    available_for_nif_version? = Version.compare(compile_nif_version, host_nif_version) != :gt
+    available_for_nif_version? = Version.compare(Version.parse!("#{compile_nif_version}.0"), host_nif_version) != :gt
 
     if log? do
       if available_for_nif_version? do
