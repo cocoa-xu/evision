@@ -37,7 +37,6 @@ def patch_fix_getLayerShapes(opencv_version: str, opencv_src_root: str):
 
 def patch_winograd(opencv_version: str, opencv_src_root: str):
     if opencv_version not in ['4.7.0']:
-        print(f"warning: skipped applying `patch_winograd` to opencv version `{opencv_version}`")
         return
 
     # modules/dnn/src/layers/fast_convolution/fast_convolution.cpp
@@ -113,8 +112,36 @@ def patch_python_bindings_generator(opencv_version: str, opencv_src_root: str):
             dst.truncate(0)
             dst.write(fixed.getvalue())
 
+def patch_intrin_rvv(opencv_version: str, opencv_src_root: str):
+    if opencv_version not in ['4.9.0']:
+        print(f"warning: skipped, applying `patch_intrin_rvv` to opencv version `{opencv_version}`")
+    # modules/core/include/opencv2/core/hal/intrin_rvv.hpp
+    intrin_rvv_hpp = Path(opencv_src_root) / 'modules' / 'core' / 'include' / 'opencv2' / 'core' / 'hal' / 'intrin_rvv.hpp'
+    fixed = StringIO()
+    patched_1 = False
+    with open(intrin_rvv_hpp, 'r') as source:
+        for line in source:
+            if not patched_1 and line.strip() == '#define OPENCV_HAL_INTRIN_RVV_HPP':
+                fixed.write("""#define OPENCV_HAL_INTRIN_RVV_HPP // patched
+typedef float float32_t;
+typedef double float64_t;
+""")
+                patched_1 = True
+            else:
+                fixed.write(line)
 
-patches = [patch_fix_getLayerShapes, patch_winograd, patch_rpath_linux, patch_python_bindings_generator]
+    if patched_1:
+        with open(intrin_rvv_hpp, 'w') as dst:
+            dst.truncate(0)
+            dst.write(fixed.getvalue())
+
+patches = [
+    patch_fix_getLayerShapes,
+    patch_winograd,
+    patch_rpath_linux,
+    patch_python_bindings_generator,
+    patch_intrin_rvv
+]
 
 
 if __name__ == '__main__':
