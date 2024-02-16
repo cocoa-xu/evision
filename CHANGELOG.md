@@ -8,6 +8,7 @@
 - [precompiled] support `armv6-linux-gnueabihf` target
 - [precompiled] precompiled binaries are now built with Erlang/OTP NIF version 2.16, and they are compatible with NIF version 2.16 and later.
 - [model_zoo] use permanent URLs for text recognition models.
+- [model_zoo] use permanent URLs for text detection IC15 and TD500 models.
 
 ### Added
 - [experimental] support `aarch64-windows-msvc` target

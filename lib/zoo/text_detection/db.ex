@@ -187,7 +187,7 @@ defmodule Evision.Zoo.TextDetection.DB do
   @spec model_info(:default_model | :quant_model) :: {String.t(), String.t()}
   def model_info(:ic15_resnet18) do
     {
-      "https://github.com/opencv/opencv_zoo/blob/main/models/text_detection_db/text_detection_DB_IC15_resnet18_2021sep.onnx?raw=true",
+      "https://github.com/opencv/opencv_zoo/raw/b32d27c8f138ffd625efc52e2d82f8b7d54dabc7/models/text_detection_db/text_detection_DB_IC15_resnet18_2021sep.onnx",
       "text_detection_DB_IC15_resnet18_2021sep.onnx"
     }
   end
@@ -195,14 +195,14 @@ defmodule Evision.Zoo.TextDetection.DB do
   def model_info(:ic15_resnet50) do
     {
       # source: https://docs.opencv.org/4.x/d4/d43/tutorial_dnn_text_spotting.html
-      "https://drive.google.com/uc?export=download&id=17_ABp79PlFt9yPCxSaarVc_DKTmrSGGf",
+      "https://github.com/cocoa-xu/evision-misc/releases/download/v20240216/text_detection_DB_IC15_resnet50.onnx",
       "text_detection_DB_IC15_resnet50.onnx"
     }
   end
 
   def model_info(:td500_resnet18) do
     {
-      "https://github.com/opencv/opencv_zoo/blob/main/models/text_detection_db/text_detection_DB_TD500_resnet18_2021sep.onnx?raw=true",
+      "https://github.com/opencv/opencv_zoo/raw/b32d27c8f138ffd625efc52e2d82f8b7d54dabc7/models/text_detection_db/text_detection_DB_TD500_resnet18_2021sep.onnx",
       "text_detection_DB_TD500_resnet18_2021sep.onnx"
     }
   end
@@ -210,7 +210,7 @@ defmodule Evision.Zoo.TextDetection.DB do
   def model_info(:td500_resnet50) do
     {
       # source: https://docs.opencv.org/4.x/d4/d43/tutorial_dnn_text_spotting.html
-      "https://drive.google.com/uc?export=download&id=19YWhArrNccaoSza0CfkXlA8im4-lAGsR",
+      "https://github.com/cocoa-xu/evision-misc/releases/download/v20240216/text_detection_DB_TD500_resnet50.onnx",
       "text_detection_DB_TD500_resnet50.onnx"
     }
   end
