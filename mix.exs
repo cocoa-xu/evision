@@ -41,6 +41,10 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
 
   @compile_nif_version "2.16"
 
+  def get_available_nif_versions do
+    ["2.16", "2.17"]
+  end
+
   def available_nif_urls(_host_nif_version, version \\ Metadata.version()) do
     nif_version = get_compile_nif_version()
 
