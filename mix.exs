@@ -34,8 +34,7 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
     "riscv64-linux-musl",
     "i686-linux-gnu",
     "x86_64-windows-msvc",
-    "aarch64-apple-darwin-ios",
-    "aarch64-apple-darwin-xros"
+    "aarch64-apple-darwin-ios"
   ]
 
   @available_nif_versions [
