@@ -170,7 +170,7 @@ jobs:
           mkdir -p "${PKG_NAME}"
 
           export PRIV_DIR="_build/${{ matrix.pair.mix_target }}_${MIX_ENV}/lib/evision/priv"
-          rm -rf "$(PRIV_DIR)/lib" "$(PRIV_DIR)/include" ; \
+          rm -rf "${PRIV_DIR}/lib" "${PRIV_DIR}/include"
           cp -a "${PRIV_DIR}" "${PKG_NAME}"
           cp -a lib/generated "${PKG_NAME}/elixir_generated"
           cp -a src/generated "${PKG_NAME}/erlang_generated"

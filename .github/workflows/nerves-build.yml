@@ -169,6 +169,8 @@ jobs:
           sed -i 's/"welcome.livemd"\,/"welcome.livemd"\, "evision_examples",/g' lib/nerves_livebook/application.ex
           export MAKE_BUILD_FLAGS="-j$(nproc)"
           mix deps.compile
+          export PRIV_DIR="_build/${MIX_TARGET}_${MIX_ENV}/lib/evision/priv"
+          rm -rf "${PRIV_DIR}/include"
           mix firmware
           mkdir -p "/tmp/firmware"
           cp "./_build/${MIX_TARGET}_${MIX_ENV}/nerves/images/nerves_livebook.fw" "/tmp/firmware/${NERVES_PROJ_NAME}_${{ matrix.pair.target }}_${MIX_ENV}.fw"

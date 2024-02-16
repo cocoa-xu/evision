@@ -105,7 +105,9 @@ jobs:
         run: |
           export PKG_NAME=evision-nif_${{ matrix.pair.NIF_VERSION }}-${{ matrix.pair.arch_name }}-windows-msvc-${GITHUB_REF##*/v}
           mkdir -p "${PKG_NAME}"
-          cp -a _build/${MIX_ENV}/lib/evision/priv "${PKG_NAME}"
+          export PRIV_DIR="_build/${MIX_ENV}/lib/evision/priv"
+          rm -rf "${PRIV_DIR}/include"
+          cp -a "${PRIV_DIR}" "${PKG_NAME}"
           cp -a lib/generated "${PKG_NAME}/elixir_generated"
           cp -a src/generated "${PKG_NAME}/erlang_generated"
           tar -czf "${PKG_NAME}.tar.gz" "${PKG_NAME}"
@@ -132,7 +134,9 @@ jobs:
         run: |
           export PKG_NAME=evision-nif_${{ matrix.pair.NIF_VERSION }}-${{ matrix.pair.arch_name }}-windows-msvc-contrib-${GITHUB_REF##*/v}
           mkdir -p "${PKG_NAME}"
-          cp -a _build/${MIX_ENV}/lib/evision/priv "${PKG_NAME}"
+          export PRIV_DIR="_build/${MIX_ENV}/lib/evision/priv"
+          rm -rf "${PRIV_DIR}/include"
+          cp -a "${PRIV_DIR}" "${PKG_NAME}"
           cp -a lib/generated "${PKG_NAME}/elixir_generated"
           cp -a src/generated "${PKG_NAME}/erlang_generated"
           tar -czf "${PKG_NAME}.tar.gz" "${PKG_NAME}"
