@@ -139,7 +139,8 @@ $(HEADERS_TXT): $(CONFIGURATION_PRIVATE_HPP)
 !IF "$(EVISION_PREFER_PRECOMPILED)" != "true"
 	@ if not exist "$(CMAKE_OPENCV_BUILD_DIR)" mkdir "$(CMAKE_OPENCV_BUILD_DIR)"
 	@ if not exist "$(HEADERS_TXT)" if "$(EVISION_DO_OPENCV_COMPILE)" == "true" ( \
-		python3 "$(PATCHES_DIR)\apply_patch.py" "$(OPENCV_DIR)" "$(OPENCV_VER)" \
+		python3 "$(PATCHES_DIR)\apply_patch.py" "$(OPENCV_DIR)" "$(OPENCV_VER)" || \
+		python "$(PATCHES_DIR)\apply_patch.py" "$(OPENCV_DIR)" "$(OPENCV_VER)" \
 	)
 	@ if not exist "$(HEADERS_TXT)" if "$(EVISION_DO_OPENCV_COMPILE)" == "true" ( \
 		cd "$(CMAKE_OPENCV_BUILD_DIR)" && \
