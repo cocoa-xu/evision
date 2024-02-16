@@ -52,13 +52,16 @@ jobs:
       MIX_ENV: prod
       NERVES_PROJ_NAME: nerves_evision
       OPENCV_VER: "4.9.0"
-      NERVES_LIVEBOOK_VER: "v0.10.1"
-      ELIXIR_VERSION: "1.15.4"
+      NERVES_LIVEBOOK_VER: "v0.12.1"
+      ELIXIR_VERSION: "1.16.1"
       EVISION_PREFER_PRECOMPILED: "false"
 
     strategy:
       matrix:
         include:
+          - pair:
+              target: rpi5
+              otp_version: "26"
           - pair:
               target: rpi4
               otp_version: "26"
@@ -87,10 +90,13 @@ jobs:
               target: npi_imx6ull
               otp_version: "26"
           - pair:
+              target: grisp2
+              otp_version: "26"
+          - pair:
               target: mangopi_mq_pro
               otp_version: "26"
           - pair:
-              target: grisp2
+              target: srhub
               otp_version: "26"
 
     steps:
@@ -109,7 +115,7 @@ jobs:
           sudo apt-get update && sudo apt-get install -y build-essential automake autoconf pkg-config bc m4 unzip zip curl git libssl-dev libncurses5-dev python3 ca-certificates squashfs-tools ssh-askpass libmnl-dev
           mix local.hex --force
           mix local.rebar --force
-      
+
       - name: Cache mix packages
         id: cache-mix-deps
         uses: actions/cache@v4
@@ -151,7 +157,6 @@ jobs:
           echo '      {:evision, path: "../evision"},' >> mix.exs.tmp
           tail -n "+${LINE}" mix.exs >> mix.exs.tmp
           mv mix.exs.tmp mix.exs
-          sed -i 's/nx, "~> 0.3.0/nx, "~> 0.4/g' mix.exs
           sed -i 's/kino, "~> 0.7/kino, "~> 0.11/g' mix.exs
           cat mix.exs
           export MIX_TARGET=${{ matrix.pair.target }}
