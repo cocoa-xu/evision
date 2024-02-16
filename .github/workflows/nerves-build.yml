@@ -150,6 +150,9 @@ jobs:
           cd ../
           git clone https://github.com/livebook-dev/nerves_livebook.git
           cd nerves_livebook
+          if [ "${{ matrix.pair.target }}" = "mangopi_mq_pro" ]; then
+            export NERVES_LIVEBOOK_VER=v0.10.1
+          fi
           git checkout "${NERVES_LIVEBOOK_VER}"
           git checkout mix.exs
           LINE="$(grep -n 'toolshed' mix.exs | awk -F: '{print $1+1}')"
