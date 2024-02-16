@@ -176,6 +176,9 @@ jobs:
           if [ "${{ matrix.pair.cmake_toolchain_file }}" != "" ]; then
             export CMAKE_TOOLCHAIN_FILE="$(pwd)/${{ matrix.pair.cmake_toolchain_file }}"
           fi
+          if [ "${{ matrix.pair.arch }}" = "armv6-linux-gnueabihf" ]; then
+            export TARGET_GCC_FLAGS="-mabi=aapcs-linux -mfpu=vfp -marm -fstack-protector-strong -mfloat-abi=hard -mcpu=arm1176jzf-s -fPIE -pie -Wl,-z,now -Wl,-z,relro"
+          fi
           echo "CMAKE_TOOLCHAIN_FILE: ${CMAKE_TOOLCHAIN_FILE}"
 
           rm -rf "./_build/${{ env.MIX_ENV }}/lib/evision"
@@ -216,6 +219,9 @@ jobs:
 
           if [ "${{ matrix.pair.cmake_toolchain_file }}" != "" ]; then
             export CMAKE_TOOLCHAIN_FILE="$(pwd)/${{ matrix.pair.cmake_toolchain_file }}"
+          fi
+          if [ "${{ matrix.pair.arch }}" = "armv6-linux-gnueabihf" ]; then
+            export TARGET_GCC_FLAGS="-mabi=aapcs-linux -mfpu=vfp -marm -fstack-protector-strong -mfloat-abi=hard -mcpu=arm1176jzf-s -fPIE -pie -Wl,-z,now -Wl,-z,relro"
           fi
           echo "CMAKE_TOOLCHAIN_FILE: ${CMAKE_TOOLCHAIN_FILE}"
 
