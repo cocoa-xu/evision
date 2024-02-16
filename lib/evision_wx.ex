@@ -24,7 +24,8 @@ defmodule Evision.Wx do
     end
 
     @spec imshow(String.t(), Evision.Mat.maybe_mat_in()) :: :ok
-    def imshow(window_name, image) when is_binary(window_name) and is_struct(image, Evision.Mat) do
+    def imshow(window_name, image)
+        when is_binary(window_name) and is_struct(image, Evision.Mat) do
       check_wx!()
 
       windows = Process.get(@process_env_key, %{})
@@ -119,15 +120,15 @@ defmodule Evision.Wx do
         :wxFrame.show(frame)
 
         {frame,
-        %{
-          window_name: window_name,
-          window: window,
-          frame: frame,
-          panel: panel,
-          canvas: canvas,
-          bitmap: bitmap,
-          image: nil
-        }}
+         %{
+           window_name: window_name,
+           window: window,
+           frame: frame,
+           panel: panel,
+           canvas: canvas,
+           bitmap: bitmap,
+           image: nil
+         }}
       end)
     end
 
@@ -199,14 +200,14 @@ defmodule Evision.Wx do
         end
 
       with true <- image_h > 0 and image_w > 0 and canvas_h > 0 and canvas_w > 0,
-          proportional = min(canvas_w / image_w, canvas_h / image_h),
-          {target_w, target_h} = {trunc(image_w * proportional), trunc(image_h * proportional)},
-          resized = Evision.resize(image, {target_w, target_h}),
-          true <- is_struct(resized, Evision.Mat),
-          rgb = Evision.cvtColor(resized, Evision.Constant.cv_COLOR_BGR2RGB()),
-          true <- is_struct(rgb, Evision.Mat),
-          binary = Evision.Mat.to_binary(rgb),
-          true <- is_binary(binary) do
+           proportional = min(canvas_w / image_w, canvas_h / image_h),
+           {target_w, target_h} = {trunc(image_w * proportional), trunc(image_h * proportional)},
+           resized = Evision.resize(image, {target_w, target_h}),
+           true <- is_struct(resized, Evision.Mat),
+           rgb = Evision.cvtColor(resized, Evision.Constant.cv_COLOR_BGR2RGB()),
+           true <- is_struct(rgb, Evision.Mat),
+           binary = Evision.Mat.to_binary(rgb),
+           true <- is_binary(binary) do
         img = :wxImage.new(target_w, target_h, binary)
         bmp = :wxBitmap.new(img)
 
