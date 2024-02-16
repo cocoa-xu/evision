@@ -7,13 +7,13 @@
 - [nerves-build] use fwup v1.10.1
 - [precompiled] support `armv6-linux-gnueabihf` target
 - [precompiled] precompiled binaries are now built with Erlang/OTP NIF version 2.16, and they are compatible with NIF version 2.16 and later.
-- [model_zoo] use permanent URLs for text recognition models.
-- [model_zoo] use permanent URLs for text detection IC15 and TD500 models.
+- [model_zoo] use permanent URLs for face detection, face recognition, text recognition, text detection IC15 and TD500 models.
 
 ### Added
 - [experimental] support `aarch64-windows-msvc` target
 - [nerves-build] added `rpi5` and `srhub`
 - [model_zoo] added PP-OCR V3 text detection models
+- [model_zoo] added image classification mobilenet v2 models
 
 ## v0.1.36 (2024-02-16)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.36) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.36)
