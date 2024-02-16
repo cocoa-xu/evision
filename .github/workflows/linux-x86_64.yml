@@ -66,7 +66,7 @@ jobs:
     env:
       MIX_ENV: test
       OPENCV_VER: "4.9.0"
-      OTP_VERSION: "26.2"
+      OTP_VERSION: "26.2.2"
       ELIXIR_VERSION: "1.16.1"
       EVISION_PREFER_PRECOMPILED: "false"
     steps:
@@ -76,8 +76,8 @@ jobs:
       - name: Install system dependencies
         run: |
           apk add cmake make python3 bash curl unzip gcc g++ ncurses-dev openssl-dev linux-headers perl git dpkg ca-certificates
-          curl -fSL "https://repo.uwucocoa.moe/pool/main/erlang_${OTP_VERSION}_musl-linux-amd64.deb" -o "erlang_${OTP_VERSION}_musl-linux-amd64.deb"
-          dpkg -i "erlang_${OTP_VERSION}_musl-linux-amd64.deb"
+          curl -fSL https://github.com/cocoa-xu/otp-build/releases/download/v${{ env.OTP_VERSION }}/otp-x86_64-linux-musl.tar.gz -o /tmp/otp-v${{ env.OTP_VERSION }}-x86_64-linux-musl.tar.gz
+          tar -xzf /tmp/otp-v${{ env.OTP_VERSION }}-x86_64-linux-musl.tar.gz -C /usr/local --strip-components=3
 
       - name: Install elixir
         run: |
