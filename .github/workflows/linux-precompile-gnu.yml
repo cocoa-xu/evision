@@ -44,6 +44,13 @@ jobs:
               OTP_VERSION: "25"
               NIF_VERSION: "2.16"
           - pair:
+              arch: armv6-linux-gnueabihf
+              cmake_toolchain_file: cc_toolchain/armv6-nerves-linux-gnueabihf.cmake
+              c_compiler: armv6-nerves-linux-gnueabihf-gcc
+              cpp_compiler: armv6-nerves-linux-gnueabihf-g++
+              OTP_VERSION: "25"
+              NIF_VERSION: "2.16"
+          - pair:
               arch: ppc64le-linux-gnu
               cmake_toolchain_file: cc_toolchain/ppc64le-linux-gnu.cmake
               c_compiler: gcc-powerpc64le-linux-gnu
@@ -86,6 +93,13 @@ jobs:
               OTP_VERSION: "26"
               NIF_VERSION: "2.17"
           - pair:
+              arch: armv6-linux-gnueabihf
+              cmake_toolchain_file: cc_toolchain/armv6-nerves-linux-gnueabihf.cmake
+              c_compiler: armv6-nerves-linux-gnueabihf-gcc
+              cpp_compiler: armv6-nerves-linux-gnueabihf-g++
+              OTP_VERSION: "26"
+              NIF_VERSION: "2.17"
+          - pair:
               arch: ppc64le-linux-gnu
               cmake_toolchain_file: cc_toolchain/ppc64le-linux-gnu.cmake
               c_compiler: gcc-powerpc64le-linux-gnu
@@ -108,7 +122,8 @@ jobs:
               NIF_VERSION: "2.17"
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - uses: erlef/setup-beam@v1
         with:
@@ -117,7 +132,15 @@ jobs:
 
       - name: Install system dependencies
         run: |
-          sudo apt-get install -y build-essential automake autoconf pkg-config bc m4 unzip zip curl git gzip python3 ca-certificates ${{ matrix.pair.c_compiler }} ${{ matrix.pair.cpp_compiler }} libncurses5-dev libssl-dev
+          sudo apt-get update -q
+          sudo apt-get install -y build-essential automake autoconf pkg-config bc m4 unzip zip curl git gzip python3 ca-certificates libncurses5-dev libssl-dev
+          if [ "${{ matrix.pair.arch }}" = "armv6-linux-gnueabihf" ]; then
+            curl -fSL https://github.com/nerves-project/toolchains/releases/download/v13.2.0/nerves_toolchain_armv6_nerves_linux_gnueabihf-linux_x86_64-13.2.0-363664F.tar.xz -o nerves_toolchain_armv6_nerves_linux_gnueabihf-linux_x86_64-13.2.0-363664F.tar.xz
+            tar -xf nerves_toolchain_armv6_nerves_linux_gnueabihf-linux_x86_64-13.2.0-363664F.tar.xz
+            sudo mv nerves_toolchain_armv6_nerves_linux_gnueabihf-linux_x86_64-13.2.0 /usr/local/bin/nerves_toolchain_armv6_nerves_linux_gnueabihf-linux_x86_64-13.2.0
+          else
+            sudo apt-get install -y ${{ matrix.pair.c_compiler }} ${{ matrix.pair.cpp_compiler }}   
+          fi
 
       - name: Cache mix packages
         id: cache-mix-deps
