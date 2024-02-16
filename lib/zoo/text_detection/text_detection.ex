@@ -8,6 +8,10 @@ defmodule Evision.Zoo.TextDetection do
     "db_ic15_resnet50" => Evision.Zoo.TextDetection.DB,
     "db_td500_resnet18" => Evision.Zoo.TextDetection.DB,
     "db_td500_resnet50" => Evision.Zoo.TextDetection.DB,
+    "ppocrv3_en" => Evision.Zoo.TextDetection.PPOCRV3,
+    "ppocrv3_en_int8" => Evision.Zoo.TextDetection.PPOCRV3,
+    "ppocrv3_cn" => Evision.Zoo.TextDetection.PPOCRV3,
+    "ppocrv3_cn_int8" => Evision.Zoo.TextDetection.PPOCRV3
   }
   @module_list Enum.uniq(Map.values(@modules))
 

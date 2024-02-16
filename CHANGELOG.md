@@ -12,6 +12,7 @@
 ### Added
 - [experimental] support `aarch64-windows-msvc` target
 - [nerves-build] added `rpi5` and `srhub`
+- [model_zoo] added PP-OCR V3 text detection models
 
 ## v0.1.36 (2024-02-16)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.36) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.36)
