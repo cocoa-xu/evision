@@ -209,14 +209,14 @@ defmodule Evision.Zoo.ImageClassification.PPResNet do
   @spec model_info(:default_model | :quant_model) :: {String.t(), String.t()}
   def model_info(:default_model) do
     {
-      "https://github.com/opencv/opencv_zoo/blob/main/models/image_classification_ppresnet/image_classification_ppresnet50_2022jan.onnx?raw=true",
+      "https://github.com/opencv/opencv_zoo/raw/fd2da740ebc6d0fe489d86cb55133148978cd82e/models/image_classification_ppresnet/image_classification_ppresnet50_2022jan.onnx",
       "image_classification_ppresnet50_2022jan.onnx"
     }
   end
 
   def model_info(:quant_model) do
     {
-      "https://github.com/opencv/opencv_zoo/blob/main/models/image_classification_ppresnet/image_classification_ppresnet50_2022jan_int8.onnx?raw=true",
+      "https://github.com/opencv/opencv_zoo/raw/fd2da740ebc6d0fe489d86cb55133148978cd82e/models/image_classification_ppresnet/image_classification_ppresnet50_2022jan_int8.onnx",
       "image_classification_ppresnet50_2022jan_int8.onnx"
     }
   end
