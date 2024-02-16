@@ -89,6 +89,7 @@ jobs:
           if [ "${{ matrix.pair.vcvarsall }}" = "amd64_arm64" ]; then
             export CMAKE_GENERATOR_TYPE="${{ matrix.pair.CMAKE_GENERATOR_TYPE }}"
             export CMAKE_TOOLCHAIN_FILE="$(pwd)/${{ matrix.pair.CMAKE_TOOLCHAIN_FILE }}"
+            export MSBUILD_PLATFORM="${{ matrix.pair.msbuild_platform }}"
           fi
           rm -f Makefile
           rm -f _build/${{ env.MIX_ENV }}/lib/evision/priv/evision.dll
@@ -118,6 +119,7 @@ jobs:
           if [ "${{ matrix.pair.vcvarsall }}" = "amd64_arm64" ]; then
             export CMAKE_GENERATOR_TYPE="${{ matrix.pair.CMAKE_GENERATOR_TYPE }}"
             export CMAKE_TOOLCHAIN_FILE="$(pwd)/${{ matrix.pair.CMAKE_TOOLCHAIN_FILE }}"
+            export MSBUILD_PLATFORM="${{ matrix.pair.msbuild_platform }}"
           fi
           rm -f Makefile
           rm -f _build/${{ env.MIX_ENV }}/lib/evision/priv/evision.dll
