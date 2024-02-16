@@ -65,9 +65,11 @@ jobs:
           cudnn: ${{ matrix.pair.cudnn }}
           cudnn_url: ${{ secrets.CUDA_V870_WINDOWS_X86_64_CUDA11 }}
       
-      - uses: actions/setup-python@v4
+      # check python version and their EOL
+      # https://devguide.python.org/versions/
+      - uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: '3.12'
 
       - name: Get mix deps
         shell: bash
@@ -157,9 +159,11 @@ jobs:
           cudnn: ${{ matrix.pair.cudnn }}
           cudnn_url: ${{ secrets.CUDA_V890_WINDOWS_X86_64_CUDA12 }}
       
-      - uses: actions/setup-python@v4
+      # check python version and their EOL
+      # https://devguide.python.org/versions/
+      - uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: '3.12'
 
       - name: Get mix deps
         shell: bash
