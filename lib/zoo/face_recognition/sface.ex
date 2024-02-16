@@ -322,14 +322,14 @@ defmodule Evision.Zoo.FaceRecognition.SFace do
   @spec model_info(:default_model | :quant_model) :: {String.t(), String.t()}
   def model_info(:default_model) do
     {
-      "https://github.com/opencv/opencv_zoo/blob/main/models/face_recognition_sface/face_recognition_sface_2021dec.onnx?raw=true",
+      "https://github.com/opencv/opencv_zoo/raw/fd2da740ebc6d0fe489d86cb55133148978cd82e/models/face_recognition_sface/face_recognition_sface_2021dec.onnx",
       "face_recognition_sface_2021dec.onnx"
     }
   end
 
   def model_info(:quant_model) do
     {
-      "https://github.com/opencv/opencv_zoo/blob/main/models/face_recognition_sface/face_recognition_sface_2021dec_int8.onnx?raw=true",
+      "https://github.com/opencv/opencv_zoo/raw/fd2da740ebc6d0fe489d86cb55133148978cd82e/models/face_recognition_sface/face_recognition_sface_2021dec_int8.onnx",
       "face_recognition_sface_2021dec_int8.onnx"
     }
   end
