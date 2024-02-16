@@ -14,6 +14,17 @@ defmodule Evision.TestHelper do
     opts = [body_format: :binary]
     arg = {url, []}
 
+    if proxy = System.get_env("HTTP_PROXY") || System.get_env("http_proxy") do
+      %{host: host, port: port} = URI.parse(proxy)
+
+      :httpc.set_options([{:proxy, {{String.to_charlist(host), port}, []}}])
+    end
+
+    if proxy = System.get_env("HTTPS_PROXY") || System.get_env("https_proxy") do
+      %{host: host, port: port} = URI.parse(proxy)
+      :httpc.set_options([{:https_proxy, {{String.to_charlist(host), port}, []}}])
+    end
+
     body =
       case :httpc.request(:get, arg, http_opts, opts) do
         {:ok, {{_, 200, _}, _, body}} ->
