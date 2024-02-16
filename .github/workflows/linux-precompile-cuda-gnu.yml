@@ -37,15 +37,17 @@ jobs:
       LC_ALL: en_US.UTF-8
       DEBIAN_FRONTEND: noninteractive
       # evision related env vars
-      MIX_ENV: test
+      MIX_ENV: prod
       OPENCV_VER: "4.9.0"
       ELIXIR_VERSION: "1.15.2"
       EVISION_PREFER_PRECOMPILED: "false"
       EVISION_GENERATE_LANG: "erlang,elixir"
       EVISION_ENABLE_CUDA: "true"
       PKG_CONFIG_PATH: "/usr/lib/x86_64-linux-gnu/pkgconfig"
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Install system dependencies
         run: |
