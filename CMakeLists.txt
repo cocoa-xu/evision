@@ -108,19 +108,18 @@ else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -Wall -Wextra -Wno-unused-parameter -Wno-missing-field-initializers -Wno-deprecated-declarations -Wno-unused-but-set-variable")
 endif()
 
-add_library(windows_fix SHARED
-    "${C_SRC}/windows_fix/windows_fix.cpp"
-)
-install(
-    TARGETS windows_fix
-    RUNTIME DESTINATION "${PRIV_DIR}"
-)
-set_property(TARGET windows_fix PROPERTY CXX_STANDARD 14)
-if(NOT WIN32)
-    set_target_properties(windows_fix PROPERTIES SUFFIX ".so")
+if(WIN32)
+    add_library(windows_fix SHARED
+        "${C_SRC}/windows_fix/windows_fix.cpp"
+    )
+    install(
+        TARGETS windows_fix
+        RUNTIME DESTINATION "${PRIV_DIR}"
+    )
+    set_property(TARGET windows_fix PROPERTY CXX_STANDARD 14)
+    set_target_properties(windows_fix PROPERTIES PREFIX "")
+    set_target_properties(windows_fix PROPERTIES
+        INSTALL_RPATH_USE_LINK_PATH TRUE
+        BUILD_WITH_INSTALL_RPATH TRUE
+    )
 endif()
-set_target_properties(windows_fix PROPERTIES PREFIX "")
-set_target_properties(windows_fix PROPERTIES
-    INSTALL_RPATH_USE_LINK_PATH TRUE
-    BUILD_WITH_INSTALL_RPATH TRUE
-)

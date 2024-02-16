@@ -1,22 +1,25 @@
 defmodule :evision_windows_fix do
   @moduledoc false
-  @on_load :fix_windows
-  def fix_windows do
-    require Logger
-    nif_file = "#{:code.priv_dir(:evision)}/windows_fix"
+  @on_load :__on_load__
+  def __on_load__ do
+    case :os.type() do
+      {:win32, _} ->
+        path = :filename.join(:code.priv_dir(:evision), ~c"windows_fix")
+        :erlang.load_nif(path, 0)
+        run_once()
 
-    case :erlang.load_nif(nif_file, 0) do
-      :ok ->
+      _ ->
         :ok
-
-      {:error, {:reload, _}} ->
-        :ok
-
-      {:error, reason} ->
-        Logger.warning("Failed to load nif: #{inspect(reason)}")
-        {:error, reason}
     end
   end
 
-  def run_once, do: :erlang.nif_error(":evision_windows_fix.run_once/0 not loaded")
+  def run_once do
+    case :os.type() do
+      {:win32, _} ->
+        :erlang.nif_error(:undef)
+
+      _ ->
+        :ok
+    end
+  end
 end
