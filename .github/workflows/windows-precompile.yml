@@ -23,13 +23,13 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # - pair:
-          #     arch: arm64
-          #     arch_name: aarch64
-          #     msbuild_platform: ARM64
-          #     vcvarsall: amd64_arm64
-          #     CMAKE_GENERATOR_TYPE: "Visual Studio 17"
-          #     CMAKE_TOOLCHAIN_FILE: "cc_toolchain/aarch64-windows-msvc.cmake"
+          - pair:
+              arch: arm64
+              arch_name: aarch64
+              msbuild_platform: ARM64
+              vcvarsall: amd64_arm64
+              CMAKE_GENERATOR_TYPE: "Visual Studio 17 2022"
+              CMAKE_TOOLCHAIN_FILE: "cc_toolchain/aarch64-windows-msvc.cmake"
           - pair:
               arch: x64
               arch_name: x86_64
@@ -46,7 +46,8 @@ jobs:
               NIF_VERSION: "2.17"
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - uses: erlef/setup-beam@v1
         with:
@@ -93,7 +94,6 @@ jobs:
           if [ "${{ matrix.pair.vcvarsall }}" = "amd64_arm64" ]; then
             export CMAKE_GENERATOR_TYPE="${{ matrix.pair.CMAKE_GENERATOR_TYPE }}"
             export CMAKE_TOOLCHAIN_FILE="$(pwd)/${{ matrix.pair.CMAKE_TOOLCHAIN_FILE }}"
-            export TOOLCHAIN_FILE="$(pwd)/${{ matrix.pair.CMAKE_TOOLCHAIN_FILE }}"
           fi
           rm -f Makefile
           rm -f _build/${{ env.MIX_ENV }}/lib/evision/priv/evision.dll
@@ -121,7 +121,6 @@ jobs:
           if [ "${{ matrix.pair.vcvarsall }}" = "amd64_arm64" ]; then
             export CMAKE_GENERATOR_TYPE="${{ matrix.pair.CMAKE_GENERATOR_TYPE }}"
             export CMAKE_TOOLCHAIN_FILE="$(pwd)/${{ matrix.pair.CMAKE_TOOLCHAIN_FILE }}"
-            export TOOLCHAIN_FILE="$(pwd)/${{ matrix.pair.CMAKE_TOOLCHAIN_FILE }}"
           fi
           rm -f Makefile
           rm -f _build/${{ env.MIX_ENV }}/lib/evision/priv/evision.dll

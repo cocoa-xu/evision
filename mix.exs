@@ -34,6 +34,7 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
     "riscv64-linux-gnu",
     "riscv64-linux-musl",
     "i686-linux-gnu",
+    "aarch64-windows-msvc",
     "x86_64-windows-msvc",
     "aarch64-apple-darwin-ios"
   ]
