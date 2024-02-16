@@ -1,4 +1,4 @@
-defmodule Evision.Features2D.Test do
+defmodule Evision.XFeatures2D.Test do
   use ExUnit.Case
 
   setup do
@@ -6,7 +6,7 @@ defmodule Evision.Features2D.Test do
     %{image: image}
   end
 
-  describe "implicit cast to Evision.Features2D okay" do
+  describe "implicit cast to Evision.XFeatures2D okay" do
     test "from Evision.XFeatures2D.BEBLID.t()", %{image: image} do
       detector = Evision.XFeatures2D.BEBLID.create(0.5)
       {:error, msg} = Evision.Detail.computeImageFeatures2(detector, image)
