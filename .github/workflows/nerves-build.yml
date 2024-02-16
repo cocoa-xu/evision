@@ -172,7 +172,7 @@ jobs:
           cp "./_build/${MIX_TARGET}_${MIX_ENV}/nerves/images/nerves_livebook.fw" "/tmp/firmware/${NERVES_PROJ_NAME}_${{ matrix.pair.target }}_${MIX_ENV}.fw"
 
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v2.2.4
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ env.NERVES_PROJ_NAME }}_${{ matrix.pair.target }}_${{ env.MIX_ENV }}.fw
           path: /tmp/firmware/${{ env.NERVES_PROJ_NAME }}_${{ matrix.pair.target }}_${{ env.MIX_ENV }}.fw
