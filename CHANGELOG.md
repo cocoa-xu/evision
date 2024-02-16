@@ -5,7 +5,8 @@
 
 ### Changes
 - [nerves-build] use fwup v1.10.1
-- [precompiled] support `armv6-linux-gnueabihf` targets.
+- [nerves-build] added `rpi5` and `srhub`
+- [precompiled] support `armv6-linux-gnueabihf` target
 
 ## v0.1.36 (2024-02-16)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.36) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.36)
