@@ -416,13 +416,13 @@ defmodule Evision.Zoo.TextRecognition.CRNN do
         params: smartcell_params(),
         docs: docs()
       },
-      # %{
-      #   id: "crnn_en_fp16",
-      #   label: "CRNN EN (FP16)",
-      #   docs_url: "https://github.com/opencv/opencv_zoo/tree/master/models/text_recognition_crnn",
-      #   params: smartcell_params(),
-      #   docs: docs()
-      # },
+      %{
+        id: "crnn_en_fp16",
+        label: "CRNN EN (FP16)",
+        docs_url: "https://github.com/opencv/opencv_zoo/tree/master/models/text_recognition_crnn",
+        params: smartcell_params(),
+        docs: docs()
+      },
       %{
         id: "crnn_en_int8",
         label: "CRNN EN (INT8)",
@@ -437,13 +437,13 @@ defmodule Evision.Zoo.TextRecognition.CRNN do
         params: smartcell_params(),
         docs: docs()
       },
-      # %{
-      #   id: "crnn_ch_fp16",
-      #   label: "CRNN CH (FP16)",
-      #   docs_url: "https://github.com/opencv/opencv_zoo/tree/master/models/text_recognition_crnn",
-      #   params: smartcell_params(),
-      #   docs: docs()
-      # },
+      %{
+        id: "crnn_ch_fp16",
+        label: "CRNN CH (FP16)",
+        docs_url: "https://github.com/opencv/opencv_zoo/tree/master/models/text_recognition_crnn",
+        params: smartcell_params(),
+        docs: docs()
+      },
       %{
         id: "crnn_ch_int8",
         label: "CRNN CH (INT8)",
@@ -507,6 +507,13 @@ defmodule Evision.Zoo.TextRecognition.CRNN do
               {Evision.Zoo.TextDetection.DB, String.to_atom(db_detector)}
             _ ->
               raise "Unknown DB variant: #{inspect(db_detector)}"
+          end
+        "ppocrv3_" <> ppocrv3_detector ->
+          case ppocrv3_detector do
+            ppocrv3_detector when ppocrv3_detector in ["en", "en_int8", "cn", "cn_int8"] ->
+              {Evision.Zoo.TextDetection.PPOCRV3, String.to_atom(ppocrv3_detector)}
+            _ ->
+              raise "Unknown PP-OCR V3 variant: #{inspect(ppocrv3_detector)}"
           end
         unknown_id ->
           raise "Unknown text detector: #{inspect(unknown_id)}"
