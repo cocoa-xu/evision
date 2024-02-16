@@ -94,7 +94,9 @@ jobs:
               otp_version: "26"
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - uses: erlef/setup-beam@v1
         with:
           otp-version: ${{ matrix.pair.otp_version }}
@@ -137,8 +139,8 @@ jobs:
       - name: Make a nerves project
         run: |
           mix archive.install hex nerves_bootstrap --force || true
-          wget -k https://github.com/fwup-home/fwup/releases/download/v1.9.1/fwup_1.9.1_amd64.deb -O ./fwup_1.9.1_amd64.deb
-          sudo dpkg -i ./fwup_1.9.1_amd64.deb
+          wget -k https://github.com/fwup-home/fwup/releases/download/v1.10.1/fwup_1.10.1_amd64.deb -O ./fwup_1.10.1_amd64.deb
+          sudo dpkg -i ./fwup_1.10.1_amd64.deb
           cd ../
           git clone https://github.com/livebook-dev/nerves_livebook.git
           cd nerves_livebook

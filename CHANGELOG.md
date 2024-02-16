@@ -1,5 +1,11 @@
 # Changelog
 
+## main
+[Browse the Repository](https://github.com/cocoa-xu/evision)
+
+### Changes
+- [nerves-build] use fwup v1.10.1
+
 ## v0.1.36 (2024-02-16)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.36) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.36)
 
