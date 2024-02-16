@@ -31,23 +31,11 @@ jobs:
               NIF_VERSION: "2.16"
               OTP_VERSION: "25.3.2.2"
               ELIXIR_VERSION: "1.16.0"
-          - pair:
-              mix_target: ios
-              arch_name: aarch64
-              NIF_VERSION: "2.17"
-              OTP_VERSION: "26.2.2"
-              ELIXIR_VERSION: "1.16.0"
           # - pair:
           #     mix_target: xros
           #     arch_name: aarch64
           #     NIF_VERSION: "2.16"
           #     OTP_VERSION: "25.3.2.2"
-          #     ELIXIR_VERSION: "1.16.0"
-          # - pair:
-          #     mix_target: xros
-          #     arch_name: aarch64
-          #     NIF_VERSION: "2.17"
-          #     OTP_VERSION: "26.2.2"
           #     ELIXIR_VERSION: "1.16.0"
 
     steps:

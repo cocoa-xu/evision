@@ -30,16 +30,10 @@ jobs:
               OTP_VERSION: "25.3.2.8"
               NIF_VERSION: "2.16"
               ELIXIR_VERSION: "1.16.0"
-          - pair:
-              arch: x86_64-linux-gnu
-              cmake_toolchain_file: ""
-              c_compiler: gcc
-              cpp_compiler: g++
-              OTP_VERSION: "26.2.1"
-              NIF_VERSION: "2.17"
-              ELIXIR_VERSION: "1.16.0"
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Pull Docker Image
         run: |

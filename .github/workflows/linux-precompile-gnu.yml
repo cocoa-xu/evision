@@ -15,7 +15,7 @@ jobs:
     env:
       OPENCV_VER: "4.9.0"
       MIX_ENV: prod
-      ELIXIR_VERSION: "1.15.2"
+      ELIXIR_VERSION: "1.16.1"
       EVISION_PREFER_PRECOMPILED: "false"
       EVISION_GENERATE_LANG: "erlang,elixir"
     strategy:
@@ -71,55 +71,6 @@ jobs:
               cpp_compiler: g++-riscv64-linux-gnu
               OTP_VERSION: "25"
               NIF_VERSION: "2.16"
-          - pair:
-              arch: i686-linux-gnu
-              cmake_toolchain_file: cc_toolchain/i686-linux-gnu.cmake
-              c_compiler: gcc-i686-linux-gnu
-              cpp_compiler: g++-i686-linux-gnu
-              OTP_VERSION: "26"
-              NIF_VERSION: "2.17"
-          - pair:
-              arch: aarch64-linux-gnu
-              cmake_toolchain_file: cc_toolchain/aarch64-linux-gnu.cmake
-              c_compiler: gcc-aarch64-linux-gnu
-              cpp_compiler: g++-aarch64-linux-gnu
-              OTP_VERSION: "26"
-              NIF_VERSION: "2.17"
-          - pair:
-              arch: armv7l-linux-gnueabihf
-              cmake_toolchain_file: cc_toolchain/armv7l-linux-gnueabihf.cmake
-              c_compiler: gcc-arm-linux-gnueabihf
-              cpp_compiler: g++-arm-linux-gnueabihf
-              OTP_VERSION: "26"
-              NIF_VERSION: "2.17"
-          - pair:
-              arch: armv6-linux-gnueabihf
-              cmake_toolchain_file: cc_toolchain/armv6-nerves-linux-gnueabihf.cmake
-              c_compiler: armv6-nerves-linux-gnueabihf-gcc
-              cpp_compiler: armv6-nerves-linux-gnueabihf-g++
-              OTP_VERSION: "26"
-              NIF_VERSION: "2.17"
-          - pair:
-              arch: ppc64le-linux-gnu
-              cmake_toolchain_file: cc_toolchain/ppc64le-linux-gnu.cmake
-              c_compiler: gcc-powerpc64le-linux-gnu
-              cpp_compiler: g++-powerpc64le-linux-gnu
-              OTP_VERSION: "26"
-              NIF_VERSION: "2.17"
-          - pair:
-              arch: s390x-linux-gnu
-              cmake_toolchain_file: cc_toolchain/s390x-linux-gnu.cmake
-              c_compiler: gcc-s390x-linux-gnu
-              cpp_compiler: g++-s390x-linux-gnu
-              OTP_VERSION: "26"
-              NIF_VERSION: "2.17"
-          - pair:
-              arch: riscv64-linux-gnu
-              cmake_toolchain_file: cc_toolchain/riscv64-linux-gnu.cmake
-              c_compiler: gcc-riscv64-linux-gnu
-              cpp_compiler: g++-riscv64-linux-gnu
-              OTP_VERSION: "26"
-              NIF_VERSION: "2.17"
 
     steps:
       - name: Checkout
