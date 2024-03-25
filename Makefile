@@ -194,8 +194,6 @@ $(HEADERS_TXT): $(CONFIGURATION_PRIVATE_HPP)
 			-D BUILD_ZLIB=ON \
 			-D BUILD_opencv_gapi=OFF \
 			-D BUILD_opencv_apps=OFF \
-			-D CMAKE_C_FLAGS=-DPNG_ARM_NEON_OPT=0 \
-			-D CMAKE_CXX_FLAGS=-DPNG_ARM_NEON_OPT=0 \
 			$(CMAKE_OPTIONS) "$(OPENCV_DIR)" && \
 		if [ "$(MIX_TARGET)" = "ios" ]; then \
 			xcodebuild BITCODE_GENERATION_MODE=bitcode IPHONEOS_DEPLOYMENT_TARGET=$(IPHONEOS_DEPLOYMENT_TARGET) ARCHS=$(IPHONEOS_ARCH) -sdk iphoneos -configuration $(CMAKE_BUILD_TYPE) -parallelizeTargets -jobs $(DEFAULT_JOBS) -target ALL_BUILD build ; \
