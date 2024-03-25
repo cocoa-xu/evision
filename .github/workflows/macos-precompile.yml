@@ -127,7 +127,7 @@ jobs:
           ls -lah "${PKG_NAME}.tar.gz"
           mkdir -p artifacts
           mv "${PKG_NAME}.tar.gz" artifacts
-      
+
       - name: Compile OpenCV (with contrib modules)
         run: |
           source $(brew --prefix asdf)/libexec/asdf.sh

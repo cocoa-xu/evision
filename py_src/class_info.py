@@ -291,13 +291,21 @@ class ClassInfo(object):
             constructor_name = self.constructor.get_wrapper_name(True)
 
         elixir_module_name = get_elixir_module_name(self.cname)
+        if 'XImgProc.Segmentation.' in elixir_module_name:
+            elixir_module_name = elixir_module_name.replace('XImgProc.Segmentation.', 'XImgProc.')
+        elif elixir_module_name == 'PhaseUnwrapping.HistogramPhaseUnwrapping':
+            elixir_module_name = 'HistogramPhaseUnwrapping'
+        elif elixir_module_name == 'PhaseUnwrapping.HistogramPhaseUnwrapping.Params':
+            elixir_module_name = 'HistogramPhaseUnwrapping.Params'
         elixir_module_name_underscore = elixir_module_name.replace(".", "_")
-        if elixir_module_name in ["Text.ERFilter.Callback"] and elixir_module_name_underscore not in evision_modules:
+        if elixir_module_name not in ["Text.ERFilter.Callback"] and elixir_module_name_underscore not in evision_modules:
             module_file_generator = ModuleGenerator(elixir_module_name)
             module_file_generator.write_elixir(f'defmodule Evision.{elixir_module_name} do\n')
 
             atom_elixir_module_name = elixir_module_name
-            atom_erlang_module_name = elixir_module_name
+            if not atom_elixir_module_name.startswith("Evision."):
+                atom_elixir_module_name = f"Evision.{atom_elixir_module_name}"
+            atom_erlang_module_name = atom_elixir_module_name
             if '.' in atom_elixir_module_name:
                 atom_elixir_module_name = f'"{atom_elixir_module_name}"'
             module_file_generator.write_elixir(
@@ -309,9 +317,11 @@ class ClassInfo(object):
             atom_erlang_module_name = atom_erlang_module_name.replace("Evision.", "evision_").replace(".", "_").lower()
             if not atom_erlang_module_name.startswith("evision_"):
                 atom_erlang_module_name = f"evision_{atom_erlang_module_name}"
+
+            module_file_generator.write_erlang(f'-module({atom_erlang_module_name.lower()}).\n-compile(nowarn_export_all).\n-compile([export_all]).\n-include("evision.hrl").\n\n')    
             module_file_generator.write_erlang(
                 ES.generic_struct_template_erlang.substitute(
-                    atom_elixir_module_name=elixir_module_name,
+                    atom_elixir_module_name=atom_elixir_module_name.replace('"', ''),
                     atom_erlang_module_name=atom_erlang_module_name
                 )
             )
