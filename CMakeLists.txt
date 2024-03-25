@@ -95,7 +95,7 @@ if(UNIX AND NOT APPLE)
 elseif(UNIX AND APPLE)
     # Although the compiler complains about not using these,
     # things only work with them set
-    set(CMAKE_SHARED_LINKER_FLAGS "-flat_namespace -undefined suppress -undefined dynamic_lookup")
+    set(CMAKE_SHARED_LINKER_FLAGS "-flat_namespace -undefined dynamic_lookup")
     set_target_properties(evision PROPERTIES INSTALL_RPATH "@loader_path/lib")
 endif()
 
