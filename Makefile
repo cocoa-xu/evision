@@ -3,6 +3,7 @@ ifndef MIX_APP_PATH
 endif
 
 PRIV_DIR = $(MIX_APP_PATH)/priv
+OPENCV_CONFIG_CMAKE = $(PRIV_DIR)/lib/cmake/opencv4/OpenCVConfig.cmake
 EVISION_SO = $(PRIV_DIR)/evision.so
 WINDOWS_FIX_SO = $(PRIV_DIR)/windows_fix.so
 SRC = $(shell pwd)/src
@@ -128,6 +129,9 @@ MAKE_BUILD_FLAGS ?= -j$(DEFAULT_JOBS)
 EVISION_GENERATE_LANG ?= elixir
 EVISION_PREFER_PRECOMPILED ?= false
 EVISION_COMPILE_WITH_REBAR ?= false
+ifeq ($(EVISION_PREFER_PRECOMPILED), true)
+	EVISION_GENERATE_LANG = elixir,erlang
+endif
 EVISION_PRECOMPILED_CACHE_DIR ?= $(shell pwd)/.cache
 EVISION_MAKE ?= make
 
@@ -170,7 +174,7 @@ $(CONFIGURATION_PRIVATE_HPP): $(OPENCV_CONFIGURATION_PRIVATE_HPP)
 	fi
 
 $(HEADERS_TXT): $(CONFIGURATION_PRIVATE_HPP)
-	@ if [ "$(EVISION_PREFER_PRECOMPILED)" != "true" ] && [ "$(EVISION_COMPILE_WITH_REBAR)" != "true" ]; then \
+	@ if [ "$(EVISION_PREFER_PRECOMPILED)" != "true" ]; then \
 		python3 "$(shell pwd)/patches/apply_patch.py" "$(OPENCV_DIR)" "$(OPENCV_VER)" ; \
 		mkdir -p "$(CMAKE_OPENCV_BUILD_DIR)" && \
 		cd "$(CMAKE_OPENCV_BUILD_DIR)" && \
@@ -194,6 +198,7 @@ $(HEADERS_TXT): $(CONFIGURATION_PRIVATE_HPP)
 			-D BUILD_ZLIB=ON \
 			-D BUILD_opencv_gapi=OFF \
 			-D BUILD_opencv_apps=OFF \
+			-D BUILD_opencv_java=OFF \
 			-D CMAKE_C_FLAGS=-DPNG_ARM_NEON_OPT=0 \
 			-D CMAKE_CXX_FLAGS=-DPNG_ARM_NEON_OPT=0 \
 			$(CMAKE_OPTIONS) "$(OPENCV_DIR)" && \
@@ -204,8 +209,7 @@ $(HEADERS_TXT): $(CONFIGURATION_PRIVATE_HPP)
 			xcodebuild BITCODE_GENERATION_MODE=bitcode XROS_DEPLOYMENT_TARGET=$(XROS_DEPLOYMENT_TARGET) ARCHS=$(VISIONOS_ARCH) -sdk visionos -configuration $(CMAKE_BUILD_TYPE) -parallelizeTargets -jobs $(DEFAULT_JOBS) -target ALL_BUILD build ; \
 			cmake -DBUILD_TYPE=$(CMAKE_BUILD_TYPE) -P cmake_install.cmake ; \
 		else \
-			make "$(MAKE_BUILD_FLAGS)" ; \
-			cd "$(CMAKE_OPENCV_BUILD_DIR)" && make install; \
+			make -j$(DEFAULT_JOBS) ; \
 		fi && \
 		if [ "$(OPENCV_HEADERS_TXT)" != "$(HEADERS_TXT)" ]; then \
 			cp -f "$(OPENCV_HEADERS_TXT)" "$(HEADERS_TXT)" ; \
@@ -217,10 +221,13 @@ $(C_SRC_HEADERS_TXT): $(HEADERS_TXT)
 		cp -f "$(HEADERS_TXT)" "$(C_SRC_HEADERS_TXT)" ; \
 	fi
 
-opencv: $(C_SRC_HEADERS_TXT)
+$(OPENCV_CONFIG_CMAKE):
+	@cd "$(CMAKE_OPENCV_BUILD_DIR)" && make install
+
+opencv: $(C_SRC_HEADERS_TXT) $(OPENCV_CONFIG_CMAKE)
 	@echo > /dev/null
 
-$(EVISION_SO): $(C_SRC_HEADERS_TXT)
+$(EVISION_SO): $(C_SRC_HEADERS_TXT) $(OPENCV_CONFIG_CMAKE)
 	@ mkdir -p "$(EVISION_PRECOMPILED_CACHE_DIR)"
 	@ mkdir -p "$(PRIV_DIR)"
 	@ mkdir -p "$(GENERATED_ELIXIR_SRC_DIR)"
@@ -231,6 +238,7 @@ $(EVISION_SO): $(C_SRC_HEADERS_TXT)
 			erlc evision_precompiled.erl && \
 			erl -noshell -s evision_precompiled install_precompiled_binary_if_available -s init stop ; } || \
 		{ \
+		 	DEFAULT_JOBS=$(shell erl -noshell -eval "io:format('~p~n',[erlang:system_info(logical_processors_online)]), halt().") \
 			$(EVISION_MAKE) EVISION_PREFER_PRECOMPILED=false EVISION_COMPILE_WITH_REBAR=true ; } ; \
 	fi
 	@ if [ ! -f "${EVISION_SO}" ]; then \
@@ -248,7 +256,7 @@ $(EVISION_SO): $(C_SRC_HEADERS_TXT)
 			-D EVISION_GENERATE_LANG="$(EVISION_GENERATE_LANG)" \
 			-D EVISION_ENABLE_CONTRIB="$(EVISION_ENABLE_CONTRIB)" \
 			$(CMAKE_CONFIGURE_FLAGS) $(CMAKE_EVISION_OPTIONS) "$(shell pwd)" && \
-			make "$(MAKE_BUILD_FLAGS)" \
+			make "-j$(DEFAULT_JOBS)" \
 			|| { echo "\033[0;31mincomplete build of OpenCV found in '$(CMAKE_OPENCV_BUILD_DIR)', please delete that directory and retry\033[0m" && exit 1 ; } ; } \
 			&& if [ "$(EVISION_PREFER_PRECOMPILED)" != "true" ]; then \
 				cp "$(CMAKE_EVISION_BUILD_DIR)/evision.so" "$(EVISION_SO)" ; \
