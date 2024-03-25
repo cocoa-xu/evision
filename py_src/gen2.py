@@ -90,6 +90,7 @@ class BeamWrapperGenerator(object):
 
         self.evision_erlang_hrl.write(
             "-record(evision_mat, {channels, dims, type, raw_type, shape, ref}).\n"
+            "-record(evision_cuda_gpumat, {channels, type, raw_type, shape, ref, elemSize}).\n"
             "-record(evision_videocapture, {fps, frame_count, frame_width, frame_height, isOpened, ref}).\n"
         )
 
@@ -372,11 +373,26 @@ class BeamWrapperGenerator(object):
             inner_ns = wname.split('::')
             elixir_module_name = make_elixir_module_names(separated_ns=inner_ns)
 
+        if 'histogramphaseunwrapping' in module_name.lower():
+            print(module_name)
+
         if module_name == 'ximgproc_segmentation':
             elixir_module_name = "XImgProc"
             inner_ns = ["Segmentation"]
         elif module_name == 'utils_nested':
             elixir_module_name = "Utils.Nested"
+        elif module_name == 'ximgproc_segmentation_GraphSegmentation':
+            elixir_module_name = "XImgProc.GraphSegmentation"
+            inner_ns = ["Segmentation"]
+        elif module_name == 'ximgproc_segmentation_SelectiveSearchSegmentationStrategy':
+            elixir_module_name = "XImgProc.SelectiveSearchSegmentationStrategy"
+            inner_ns = ["Segmentation"]
+        elif module_name == 'ximgproc_segmentation_SelectiveSearchSegmentationStrategyMultiple':
+            elixir_module_name = "XImgProc.SelectiveSearchSegmentationStrategyMultiple"
+            inner_ns = ["Segmentation"]
+        elif module_name == 'phase_unwrapping_HistogramPhaseUnwrapping':
+            elixir_module_name = "HistogramPhaseUnwrapping"
+            inner_ns = ["PhaseUnwrapping"]
         else:
             elixir_module_name = elixir_module_name.replace('_', '').strip()
 
@@ -393,7 +409,7 @@ class BeamWrapperGenerator(object):
             if not evision_module_filename.startswith("evision_"):
                 module_file_generator.write_erlang(f'-module(evision_{evision_module_filename.lower()}).\n-compile(nowarn_export_all).\n-compile([export_all]).\n-include("evision.hrl").\n\n')
             else:
-                module_file_generator.write_erlang(f'-module({evision_module_filename.lower()}).\n--compile(nowarn_export_all).\ncompile([export_all]).\n-include("evision.hrl").\n\n')
+                module_file_generator.write_erlang(f'-module({evision_module_filename.lower()}).\n-compile(nowarn_export_all).\n-compile([export_all]).\n-include("evision.hrl").\n\n')
 
             if ES.evision_structs.get(elixir_module_name, None) is not None:
                 module_file_generator.write_elixir(ES.evision_structs[elixir_module_name]["elixir"])
@@ -404,8 +420,14 @@ class BeamWrapperGenerator(object):
             if elixir_module_name not in evision_structrised_classes:
                 mapped_elixir_module_name = get_elixir_module_name(elixir_module_name)
                 atom_elixir_module_name = f"Evision.{mapped_elixir_module_name}"
-                atom_erlang_module_name = elixir_module_name
-                module_file_generator.write_elixir(
+                atom_erlang_module_name = atom_elixir_module_name
+                if atom_erlang_module_name == 'Evision.XImgProc.Segmentation.GraphSegmentation':
+                    atom_erlang_module_name = 'Evision.XImgProc.GraphSegmentation'
+                elif atom_erlang_module_name == 'Evision.XImgProc.Segmentation.SelectiveSearchSegmentationStrategy':
+                    atom_erlang_module_name = 'Evision.XImgProc.SelectiveSearchSegmentationStrategy'
+                elif atom_erlang_module_name == 'Evision.PhaseUnwrapping.HistogramPhaseUnwrapping':
+                    atom_erlang_module_name = 'Evision.HistogramPhaseUnwrapping'
+                module_file_generator.write_elixir( 
                     ES.generic_struct_template_elixir.substitute(
                         atom_elixir_module_name=atom_elixir_module_name,
                         elixir_module_name=mapped_elixir_module_name
