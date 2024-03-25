@@ -80,11 +80,11 @@ install(
 )
 target_link_libraries(evision "${OpenCV_LIBS}")
 set_property(TARGET evision PROPERTY CXX_STANDARD 14)
+set_property(TARGET evision PROPERTY POSITION_INDEPENDENT_CODE ON)
 set_target_properties(evision PROPERTIES PREFIX "")
 if(NOT WIN32)
     set_target_properties(evision PROPERTIES SUFFIX ".so")
 endif()
-
 set_target_properties(evision PROPERTIES
     INSTALL_RPATH_USE_LINK_PATH TRUE
     BUILD_WITH_INSTALL_RPATH TRUE
@@ -103,13 +103,7 @@ include_directories(${ERTS_INCLUDE_DIR})
 if(WIN32)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /bigobj /wd4996 /wd4267 /wd4068")
 else()
-    if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g3")
-    else()
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
-    endif()
-
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -Wall -Wextra -Wno-unused-parameter -Wno-missing-field-initializers -Wno-deprecated-declarations -Wno-unused-but-set-variable")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-parameter -Wno-missing-field-initializers -Wno-deprecated-declarations -Wno-unused-but-set-variable")
 endif()
 
 if(WIN32)
@@ -121,6 +115,7 @@ if(WIN32)
         RUNTIME DESTINATION "${PRIV_DIR}"
     )
     set_property(TARGET windows_fix PROPERTY CXX_STANDARD 14)
+    set_property(TARGET windows_fix PROPERTY POSITION_INDEPENDENT_CODE ON)
     set_target_properties(windows_fix PROPERTIES PREFIX "")
     set_target_properties(windows_fix PROPERTIES
         INSTALL_RPATH_USE_LINK_PATH TRUE
