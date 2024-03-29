@@ -19,7 +19,7 @@ if (-Not(Test-Path -Path $opencv_source_root -PathType container))
 {
     if (-Not(Test-Path -Path $opencv_contrib_source_zip -PathType Leaf))
     {
-        Invoke-WebRequest -Uri $opencv_contrib_zip_url -OutFile $opencv_contrib_source_zip
+        (New-Object Net.WebClient).DownloadFile($opencv_contrib_zip_url,$opencv_contrib_source_zip)
     }
     Expand-Archive -Path $opencv_contrib_source_zip -DestinationPath $opencv_root_dir
 }
