@@ -30,7 +30,90 @@ imdecode(Buf, Flags) ->
 
 
 def evision_elixir_module_fixes(): 
-    return {"DNN": [
+    return {
+      "VideoCapture": [
+        ("""
+  @doc \"\"\"
+  Wait for ready frames from VideoCapture.
+
+  ##### Positional Arguments
+  - **streams**: `[Evision.VideoCapture]`.
+
+    input video streams
+
+  ##### Keyword Arguments
+  - **timeoutNs**: `int64`.
+
+    number of nanoseconds (0 - infinite)
+
+  ##### Return
+  - **retval**: `bool`
+  - **readyIndex**: `[int]`.
+
+    stream indexes with grabbed frames (ready to use .retrieve() to fetch actual frame)
+
+  @return `true` if streamReady is not empty
+  @throws Exception %Exception on stream errors (check .isOpened() to filter out malformed streams) or VideoCapture type is not supported
+  The primary use of the function is in multi-camera environments.
+  The method fills the ready state vector, grabs video frame, if camera is ready.
+  After this call use VideoCapture::retrieve() to decode and fetch frame data.
+
+  Python prototype (for reference only):
+  ```python3
+  waitAny(streams[, timeoutNs]) -> retval, readyIndex
+  ```
+  \"\"\"
+  @spec waitAny(list(Evision.VideoCapture.t()), [{atom(), term()},...] | nil) :: list(integer()) | false | {:error, String.t()}
+  def waitAny(streams, opts) when is_list(streams) and (opts == nil or (is_list(opts) and is_tuple(hd(opts))))
+  do
+    positional = [
+      streams: Evision.Internal.Structurise.from_struct(streams)
+    ]
+    :evision_nif.videoCapture_waitAny(positional ++ Evision.Internal.Structurise.from_struct(opts || []))
+     |> __to_struct__()
+  end
+
+  @doc \"\"\"
+  Wait for ready frames from VideoCapture.
+
+  ##### Positional Arguments
+  - **streams**: `[Evision.VideoCapture]`.
+
+    input video streams
+
+  ##### Keyword Arguments
+  - **timeoutNs**: `int64`.
+
+    number of nanoseconds (0 - infinite)
+
+  ##### Return
+  - **retval**: `bool`
+  - **readyIndex**: `[int]`.
+
+    stream indexes with grabbed frames (ready to use .retrieve() to fetch actual frame)
+
+  @return `true` if streamReady is not empty
+  @throws Exception %Exception on stream errors (check .isOpened() to filter out malformed streams) or VideoCapture type is not supported
+  The primary use of the function is in multi-camera environments.
+  The method fills the ready state vector, grabs video frame, if camera is ready.
+  After this call use VideoCapture::retrieve() to decode and fetch frame data.
+
+  Python prototype (for reference only):
+  ```python3
+  waitAny(streams[, timeoutNs]) -> retval, readyIndex
+  ```
+  \"\"\"
+  @spec waitAny(list(Evision.VideoCapture.t())) :: list(integer()) | false | {:error, String.t()}
+  def waitAny(streams) when is_list(streams)
+  do
+    positional = [
+      streams: Evision.Internal.Structurise.from_struct(streams)
+    ]
+    :evision_nif.videoCapture_waitAny(positional)
+    |> __to_struct__()
+  end
+  """, "")],
+      "DNN": [
         ("""
   @doc \"\"\"
   Performs non maximum suppression given boxes and corresponding scores.

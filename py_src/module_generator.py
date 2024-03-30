@@ -258,6 +258,8 @@ class ModuleGenerator(object):
         nif_name, func_name = func.get_wrapper_name(True)
         if func_name in special_handling_funcs() or func_name in special_handling_funcs_only_in_beam():
             return
+        if 'waitany' in func_name.lower():
+            print(func_name, "1")
         if len(func_name) > 0 and not ('a' <= func_name[0] <= 'z'):
             func_name = func_name.lower()
             nif_name = nif_name.lower()

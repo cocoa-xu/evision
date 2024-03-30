@@ -111,6 +111,7 @@ def special_handling_funcs():
             'destroyWindow',
             'destroyAllWindows',
             'imdecode',
+            'videoCapture_waitAny_static',
             'videoCapture_waitAny']
         ]
 

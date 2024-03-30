@@ -141,8 +141,6 @@ class FuncInfo(object):
         if self.classname and not self.is_static and not self.isconstructor:
             opt_arg_index = 1
         # special handling for these highgui functions
-        if fname == 'evision_cv_videoCapture_waitAny_static':
-            return ""
         if fname in special_handling_funcs():
             return ""
         code = "%s\n{\n" % (proto,)

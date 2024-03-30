@@ -373,9 +373,6 @@ class BeamWrapperGenerator(object):
             inner_ns = wname.split('::')
             elixir_module_name = make_elixir_module_names(separated_ns=inner_ns)
 
-        if 'histogramphaseunwrapping' in module_name.lower():
-            print(module_name)
-
         if module_name == 'ximgproc_segmentation':
             elixir_module_name = "XImgProc"
             inner_ns = ["Segmentation"]
