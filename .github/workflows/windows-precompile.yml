@@ -148,6 +148,6 @@ jobs:
 
       - uses: softprops/action-gh-release@v1
         with:
-          files: 
+          files: |
             artifacts/*.tar.gz
             artifacts/*.sha256

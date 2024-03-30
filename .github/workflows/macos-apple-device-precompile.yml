@@ -175,14 +175,14 @@ jobs:
       - uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          files: 
+          files: |
             artifacts/*.tar.gz
             artifacts/*.sha256
 
       - uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/') == false
         with:
-          files: 
+          files: |
             artifacts/*.tar.gz
             artifacts/*.sha256
           tag_name: ${{ github.event.inputs.release_version }}
