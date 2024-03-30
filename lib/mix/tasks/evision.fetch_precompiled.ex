@@ -63,7 +63,7 @@ defmodule Mix.Tasks.Evision.Fetch do
         Task.async_stream(checksum_urls, fn url ->
             filename = basename_from_url(url)
             filename = String.replace(filename, ".#{Atom.to_string(checksum_algo)}", "")
-            checksum_content = Precompile.download!(url)
+            {:ok, checksum_content} = Precompile.download!(url)
             [checksum, _] = String.split(checksum_content, " ", trim: true)
             Logger.info("downloaded: url=#{url}, file=#{filename}, checksum[#{Atom.to_string(checksum_algo)}]=#{checksum}")
             %{
