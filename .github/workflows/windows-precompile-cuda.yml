@@ -100,10 +100,14 @@ jobs:
           ls -lah "${PKG_NAME}.tar.gz"
           mkdir -p "${RUNNER_DIR}/artifacts"
           mv "${PKG_NAME}.tar.gz" "${RUNNER_DIR}/artifacts"
+          cd "${RUNNER_DIR}/artifacts"
+          sha256sum "${PKG_NAME}.tar.gz" | tee "${PKG_NAME}.tar.gz.sha256"
 
       - uses: softprops/action-gh-release@v1
         with:
-          files: artifacts/*.tar.gz
+          files: 
+            artifacts/*.tar.gz
+            artifacts/*.sha256
 
   windows-precompile-cuda12:
     runs-on: windows-2019
@@ -194,7 +198,11 @@ jobs:
           ls -lah "${PKG_NAME}.tar.gz"
           mkdir -p "${RUNNER_DIR}/artifacts"
           mv "${PKG_NAME}.tar.gz" "${RUNNER_DIR}/artifacts"
+          cd "${RUNNER_DIR}/artifacts"
+          sha256sum "${PKG_NAME}.tar.gz" | tee "${PKG_NAME}.tar.gz.sha256"
 
       - uses: softprops/action-gh-release@v1
         with:
-          files: artifacts/*.tar.gz
+          files:
+            artifacts/*.tar.gz
+            artifacts/*.sha256

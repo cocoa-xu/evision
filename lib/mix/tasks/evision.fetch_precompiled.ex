@@ -53,21 +53,24 @@ defmodule Mix.Tasks.Evision.Fetch do
         true ->
           raise "you need to specify either \"--all\" or \"--only-local\" flags"
       end
+    checksum_algo = Precompile.checksum_algo()
+    checksum_urls = Enum.map(urls, fn url -> "#{url}.#{Atom.to_string(checksum_algo)}" end)
 
     if Keyword.get(options, :dry_run) do
-      Enum.each(urls, &IO.puts/1)
+      Enum.each(checksum_urls, &IO.puts/1)
     else
       result =
-        Task.async_stream(urls, fn url ->
+        Task.async_stream(checksum_urls, fn url ->
             filename = basename_from_url(url)
-            cache_to = Path.join([Precompile.cache_dir(), filename])
-            {:ok, algo, checksum} = Precompile.download!(url, cache_to, true)
-            Logger.info("downloaded: url=#{url}, file=#{cache_to}, checksum[#{algo}]=#{checksum}")
+            filename = String.replace(filename, ".#{Atom.to_string(checksum_algo)}", "")
+            checksum_content = Precompile.download!(url)
+            [checksum, _] = String.split(checksum_content, " ", trim: true)
+            Logger.info("downloaded: url=#{url}, file=#{filename}, checksum[#{Atom.to_string(checksum_algo)}]=#{checksum}")
             %{
-              url: url,
+              url: String.replace(url, ".#{Atom.to_string(checksum_algo)}", ""),
               path: filename,
               checksum: checksum,
-              checksum_algo: String.to_atom(algo)
+              checksum_algo: checksum_algo
             }
           end,
           timeout: :infinity

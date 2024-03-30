@@ -125,6 +125,8 @@ jobs:
           ls -lah "${PKG_NAME}.tar.gz"
           mkdir -p artifacts
           mv "${PKG_NAME}.tar.gz" artifacts
+          cd artifacts
+          sha256sum "${PKG_NAME}.tar.gz" | tee "${PKG_NAME}.tar.gz.sha256"
 
       - name: Compile OpenCV (with contrib modules)
         run: |
@@ -167,15 +169,21 @@ jobs:
           ls -lah "${PKG_NAME}.tar.gz"
           mkdir -p artifacts
           mv "${PKG_NAME}.tar.gz" artifacts
+          cd artifacts
+          sha256sum "${PKG_NAME}.tar.gz" | tee "${PKG_NAME}.tar.gz.sha256"
 
       - uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          files: artifacts/*.tar.gz
+          files: 
+            artifacts/*.tar.gz
+            artifacts/*.sha256
 
       - uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/') == false
         with:
-          files: artifacts/*.tar.gz
+          files: 
+            artifacts/*.tar.gz
+            artifacts/*.sha256
           tag_name: ${{ github.event.inputs.release_version }}
           name: ${{ github.event.inputs.release_version }}

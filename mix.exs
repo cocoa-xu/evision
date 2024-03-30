@@ -2,7 +2,7 @@ defmodule Evision.MixProject.Metadata do
   @moduledoc false
 
   def app, do: :evision
-  def version, do: "0.1.37"
+  def version, do: "0.1.38"
   def github_url, do: "https://github.com/cocoa-xu/evision"
   def opencv_version, do: "4.9.0"
   # only means compatible. need to write more tests
@@ -441,6 +441,13 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
   end
 
   def download!(url, save_as, true) do
+    with {:ok, body} <- download!(url) do
+      File.write!(save_as, body)
+      checksum(save_as)
+    end
+  end
+
+  def download!(url) do
     opts = [body_format: :binary]
     arg = {url, []}
 
@@ -465,8 +472,7 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
 
     case :httpc.request(:get, arg, http_options, opts) do
       {:ok, {{_, 200, _}, _, body}} ->
-        File.write!(save_as, body)
-        checksum(save_as)
+        {:ok, body}
 
       {:error, reason} ->
         raise RuntimeError, "Cannot download file from #{url}: #{reason}."
@@ -537,6 +543,8 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
   end
 
   @checksum_algo :sha256
+  def checksum_algo, do: @checksum_algo
+
   def checksum(file_path, algo \\ @checksum_algo) do
     case File.read(file_path) do
       {:ok, content} ->

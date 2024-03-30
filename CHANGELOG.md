@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.1.38 (2024-03-30)
+[Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.38) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.38)
+
+### Fix
+- [videocapture] fixed an issue where invoking `Evision.VideoCapture.waitAny/{1,2}` reports a NIF error `"cv::VideoCapture::waitAny not loaded"`.
+
 ## v0.1.37 (2024-02-17)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.37) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.37)
 

@@ -111,6 +111,8 @@ jobs:
           ls -lah "${PKG_NAME}.tar.gz"
           mkdir -p artifacts
           mv "${PKG_NAME}.tar.gz" artifacts
+          cd artifacts
+          sha256sum "${PKG_NAME}.tar.gz" | tee "${PKG_NAME}.tar.gz.sha256"
       
       - name: Mix compile (with contrib modules)
         shell: bash
@@ -141,7 +143,11 @@ jobs:
           ls -lah "${PKG_NAME}.tar.gz"
           mkdir -p artifacts
           mv "${PKG_NAME}.tar.gz" artifacts
+          cd artifacts
+          sha256sum "${PKG_NAME}.tar.gz" | tee "${PKG_NAME}.tar.gz.sha256"
 
       - uses: softprops/action-gh-release@v1
         with:
-          files: artifacts/*.tar.gz
+          files: 
+            artifacts/*.tar.gz
+            artifacts/*.sha256
