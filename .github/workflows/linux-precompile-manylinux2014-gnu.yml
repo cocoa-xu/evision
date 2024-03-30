@@ -155,7 +155,7 @@ jobs:
           cd artifacts
           sha256sum "${PKG_NAME}.tar.gz" | tee "${PKG_NAME}.tar.gz.sha256"
 
-      - uses: softprops/action-gh-release@v1
+      - uses: softprops/action-gh-release@v2
         with:
           files: |
             artifacts/*.tar.gz
