@@ -19,42 +19,6 @@
 | Windows 2022     | x86_64         | msvc |[![CI](https://github.com/cocoa-xu/evision/actions/workflows/windows-x86_64.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/windows-x86_64.yml) | Yes |
 | Windows 2022     | aarch64        | msvc |[![CI](https://github.com/cocoa-xu/evision/actions/workflows/windows-x86_64.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/windows-precompile.yml) | Yes |
 
-## Docs
-Online docs for the latest released version is available on Hex.pm, [https://hexdocs.pm/evision/](https://hexdocs.pm/evision/).
-
-## Useful links
-- [Installation](https://github.com/cocoa-xu/evision?tab=readme-ov-file#installation)
-- [Use Precompiled Library (Default)](https://github.com/cocoa-xu/evision?tab=readme-ov-file#use-precompiled-library-default)
-- [Compile evision from source](https://github.com/cocoa-xu/evision/wiki/Compile-evision-from-source)
-- [Nerves Support](https://github.com/cocoa-xu/evision/wiki/Nerves-Support)
-- [Register Builtin Smart Cells](https://github.com/cocoa-xu/evision/wiki/Register-Builtin-Smart-Cells)
-- [Integration with Nx](https://github.com/cocoa-xu/evision/wiki/Integration-with-Nx)
-- [Access behaviour (Getting a sub-area of an image)](https://github.com/cocoa-xu/evision/wiki/Access-behaviour-(Getting-a-sub%E2%80%90area-of-an-image))
-
-## Examples
-
-Some [examples](https://github.com/cocoa-xu/evision/tree/main/examples) are available in the `examples` directory.
-
-## Description
-
-`evision` will pull OpenCV source code from GitHub, then parse and automatically generate corresponding OpenCV-Elixir bindings.
-
-This project uses and modifies `gen2.py` and `hdr_parser.py` from the `python` module in the [OpenCV repo](https://github.com/opencv/opencv) so that they output header files that can be used in Elixir bindings. 
-
-We hope this project can largely reduce the work of manually porting OpenCV functions/modules to Elixir.
-
-Compatible OpenCV versions:
-- 4.5.3
-- 4.5.4
-- 4.5.5
-- 4.6.0
-- 4.7.0
-- 4.8.0
-- 4.9.0
-
-by compatible, it means these versions can compile successfully, and I tested a small range of functions. Tons of tests
-should be written, and then we can have a list for tested OpenCV versions.
-
 ## Installation
 
 In order to use `evision`, you will need Elixir installed. Then create an Elixir project via the `mix` build tool:
@@ -82,15 +46,9 @@ The following environment variables can be set based on your needs.
 
 (Note that precompiled binaries do not use FFmpeg. If you'd like to use FFmpeg, please compile from source (please see instructions in the next section) and set corresponding environment variables. We're considering this option at the moment.)
 
-#### Important notes
-It is recommended to use `:evision` from hex.pm.
-```elixir
-def deps do
-  [
-    {:evision, "~> 0.1"}
-  ]
-end
-```
+<details>
+
+<summary>Advanced Options</summary>
 
 #### TARGET_ABI
 **Required if and only if the target is using musl libc.**
@@ -222,6 +180,45 @@ $Env:EVISION_CUDA_RUNTIME_DIR="C:/PATH WITH SPACE/TO/YOUR/CUDA/RUNTIME/BIN"
 ## set the cache directory for the precompiled archive file
 export EVISION_PRECOMPILED_CACHE_DIR="$(pwd)/.cache"
 ```
+
+</details>
+
+
+## Examples
+
+Some [examples](https://github.com/cocoa-xu/evision/tree/main/examples) are available in the `examples` directory.
+
+## Description
+
+`evision` will pull OpenCV source code from GitHub, then parse and automatically generate corresponding OpenCV-Elixir bindings.
+
+This project uses and modifies `gen2.py` and `hdr_parser.py` from the `python` module in the [OpenCV repo](https://github.com/opencv/opencv) so that they output header files that can be used in Elixir bindings. 
+
+We hope this project can largely reduce the work of manually porting OpenCV functions/modules to Elixir.
+
+Compatible OpenCV versions:
+- 4.5.3
+- 4.5.4
+- 4.5.5
+- 4.6.0
+- 4.7.0
+- 4.8.0
+- 4.9.0
+
+by compatible, it means these versions can compile successfully, and I tested a small range of functions. Tons of tests
+should be written, and then we can have a list for tested OpenCV versions.
+
+## Docs
+Online docs for the latest released version is available on Hex.pm, [https://hexdocs.pm/evision/](https://hexdocs.pm/evision/).
+
+## Useful links
+- [Installation](https://github.com/cocoa-xu/evision?tab=readme-ov-file#installation)
+- [Use Precompiled Library (Default)](https://github.com/cocoa-xu/evision?tab=readme-ov-file#use-precompiled-library-default)
+- [Compile evision from source](https://github.com/cocoa-xu/evision/wiki/Compile-evision-from-source)
+- [Nerves Support](https://github.com/cocoa-xu/evision/wiki/Nerves-Support)
+- [Register Builtin Smart Cells](https://github.com/cocoa-xu/evision/wiki/Register-Builtin-Smart-Cells)
+- [Integration with Nx](https://github.com/cocoa-xu/evision/wiki/Integration-with-Nx)
+- [Access behaviour (Getting a sub-area of an image)](https://github.com/cocoa-xu/evision/wiki/Access-behaviour-(Getting-a-sub%E2%80%90area-of-an-image))
 
 ### Acknowledgements
 - `gen2.py`, `hdr_parser.py` and `c_src/erlcompat.hpp` were directly copied from the `python` module in the [OpenCV repo](https://github.com/opencv/opencv). Changes applied.
