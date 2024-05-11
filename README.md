@@ -27,7 +27,7 @@ In order to use `evision`, you will need Elixir installed. Then create an Elixir
 $ mix new my_app
 ```
 
-Then you can add `evision` as dependency in your `mix.exs`.
+Then you can add `evision` as a dependency in your `mix.exs`.
 
 ```elixir
 def deps do
@@ -37,7 +37,7 @@ def deps do
 end
 ```
 
-Please note that although `:evision` is available on hex.pm now, it's still in its early versions. And it will remain on v0.1.x for a while, and all v0.1.x versions should be treated as in very active development. Please read the `CHANGELOG.md` for all breaking changes even it's a "minor" update.
+Please note that although `:evision` is available on hex.pm now, it's still in its early versions. And it will remain on v0.1.x for a while, and all v0.1.x versions should be treated as in very active development. Please read the `CHANGELOG.md` for all breaking changes even if it's a "minor" update.
 
 Therefore, it's recommended to use a specific version (i.e., include the minor version number in `deps`, `{:evision, "~> 0.1.8"}`, instead of `{:evision, "~> 0.1"}`) at the moment.
 
@@ -221,5 +221,5 @@ Online docs for the latest released version is available on Hex.pm, [https://hex
 - [Access behaviour (Getting a sub-area of an image)](https://github.com/cocoa-xu/evision/wiki/Access-behaviour-(Getting-a-sub%E2%80%90area-of-an-image))
 
 ### Acknowledgements
-- `gen2.py`, `hdr_parser.py` and `c_src/erlcompat.hpp` were directly copied from the `python` module in the [OpenCV repo](https://github.com/opencv/opencv). Changes applied.
-- `Makefile`, `CMakeLists.txt` and `c_src/nif_utils.hpp` were also copied from the `torchx` module in the [elixir-nx repo](https://github.com/elixir-nx/nx). Minor changes applied.
+- `gen2.py`, `hdr_parser.py`, and `c_src/erlcompat.hpp` were directly copied from the `python` module in the [OpenCV repo](https://github.com/opencv/opencv). Changes applied.
+- `Makefile`, `CMakeLists.txt`, and `c_src/nif_utils.hpp` were also copied from the `torchx` module in the [elixir-nx repo](https://github.com/elixir-nx/nx). Minor changes applied.
