@@ -16,6 +16,7 @@ class FuncVariant(object):
         self.name = self.wname = name
         self.isconstructor = isconstructor
         self.isphantom = isphantom
+        self.keyword_args = set()
 
         self.decl = decl
         self.docstring = decl[5]
@@ -486,6 +487,20 @@ class FuncVariant(object):
 
         inline_doc = inline_docs.getvalue()[:-1]
         return inline_doc.rstrip()
+    
+    def keyword_arg_names(self, kind: str):
+        if self.has_opts:
+            out_args = [o[0] for o in self.py_outlist]
+            optional_args = []
+            for (arg_name, argno, argtype) in self.py_arglist[self.pos_end:]:
+                if arg_name not in out_args:
+                    optional_args.append((arg_name, argno, argtype))
+            if len(optional_args) > 0:
+                for (arg_name, _, _) in optional_args:
+                    normalized_arg_name = map_argname(kind, arg_name)
+                    normalized_arg_name = normalized_arg_name.replace(":", "")
+                    self.keyword_args.add(normalized_arg_name)
+        return self.keyword_args
 
     def generate_spec(self, kind: str, module_func_name: str, is_instance_method: bool, include_opts: bool, in_args: list=None, out_args: list=None, is_static: bool=False) -> str:
         if kind == 'elixir':
@@ -534,7 +549,15 @@ class FuncVariant(object):
             for argtype in in_args:
                 in_args_spec.append(map_argtype_in_spec('elixir', self.classname, argtype, is_in=True, decl=self.decl))
         if self.has_opts and include_opts:
-            in_args_spec.append('[{atom(), term()},...] | nil')
+            keyword_arg_names = self.keyword_arg_names('elixir')
+            named_in_args_spec = []
+            for arg_name in keyword_arg_names:
+                named_in_args_spec.append(f'{{:{arg_name}, term()}}')
+            if len(named_in_args_spec) > 0:
+                named_in_args_spec = f"[{', '.join(named_in_args_spec)}, " + "{atom(), term()},...] | nil"
+            else:
+                named_in_args_spec = "[{atom(), term()},...] | nil"
+            in_args_spec.append(named_in_args_spec)
         if is_instance_method:
             self.spec_self = ''
             tmp_name = self.classname
