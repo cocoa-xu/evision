@@ -172,7 +172,7 @@ defmodule Evision.Zoo.Utils.HTTP do
         {to_charlist(key), to_charlist(value)}
       end)
 
-    [{'user-agent', 'evision'} | headers]
+    [{~c"user-agent", ~c"evision"} | headers]
   end
 
   defp parse_headers(headers) do

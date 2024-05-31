@@ -182,7 +182,7 @@ gen_evision_nif_load_nif = """
   @on_load :load_nif
   def load_nif do
     require Logger
-    nif_file = '#{:code.priv_dir(:evision)}/evision'
+    nif_file = ~c"#{:code.priv_dir(:evision)}/evision"
     case :evision_windows_fix.run_once() do
       :ok -> :ok
       {:error, reason} -> Logger.warning("Failed to run windows fix: #{inspect(reason)}")
