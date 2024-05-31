@@ -554,7 +554,7 @@ class FuncVariant(object):
             for arg_name in keyword_arg_names:
                 named_in_args_spec.append(f'{{:{arg_name}, term()}}')
             if len(named_in_args_spec) > 0:
-                named_in_args_spec = f"[{', '.join(named_in_args_spec)}, " + "{atom(), term()},...] | nil"
+                named_in_args_spec = f"[{' | '.join(named_in_args_spec)} " + " | {atom(), term()}] | nil"
             else:
                 named_in_args_spec = "[{atom(), term()},...] | nil"
             in_args_spec.append(named_in_args_spec)
