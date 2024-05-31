@@ -63,7 +63,7 @@ def evision_elixir_module_fixes():
   waitAny(streams[, timeoutNs]) -> retval, readyIndex
   ```
   \"\"\"
-  @spec waitAny(list(Evision.VideoCapture.t()), [{atom(), term()},...] | nil) :: list(integer()) | false | {:error, String.t()}
+  @spec waitAny(list(Evision.VideoCapture.t()), [{:timeoutNs, term()}, {atom(), term()},...] | nil) :: list(integer()) | false | {:error, String.t()}
   def waitAny(streams, opts) when is_list(streams) and (opts == nil or (is_list(opts) and is_tuple(hd(opts))))
   do
     positional = [
@@ -154,7 +154,7 @@ def evision_elixir_module_fixes():
   NMSBoxes(bboxes, scores, score_threshold, nms_threshold[, eta[, top_k]]) -> indices
   ```
   \"\"\"
-  @spec nmsBoxes(list({number(), number(), number(), number()}) | Evision.Mat.t() | Nx.Tensor.t(), list(number()), number(), number(), [{atom(), term()},...] | nil) :: list(integer()) | {:error, String.t()}
+  @spec nmsBoxes(list({number(), number(), number(), number()}) | Evision.Mat.t() | Nx.Tensor.t(), list(number()), number(), number(), [{:eta, term()}, {:top_k, term()}, {atom(), term()},...] | nil) :: list(integer()) | {:error, String.t()}
   def nmsBoxes(bboxes, scores, score_threshold, nms_threshold, opts) when is_list(bboxes) and is_list(scores) and is_float(score_threshold) and is_float(nms_threshold) and (opts == nil or (is_list(opts) and is_tuple(hd(opts))))
   do
     positional = [
@@ -304,7 +304,7 @@ def evision_elixir_module_fixes():
   NMSBoxesBatched(bboxes, scores, class_ids, score_threshold, nms_threshold[, eta[, top_k]]) -> indices
   ```
   \"\"\"
-  @spec nmsBoxesBatched(list({number(), number(), number(), number()}), list(number()), list(integer()), number(), number(), [{atom(), term()},...] | nil) :: list(integer()) | {:error, String.t()}
+  @spec nmsBoxesBatched(list({number(), number(), number(), number()}), list(number()), list(integer()), number(), number(), [{:eta, term()}, {:top_k, term()}, {atom(), term()},...] | nil) :: list(integer()) | {:error, String.t()}
   def nmsBoxesBatched(bboxes, scores, class_ids, score_threshold, nms_threshold, opts) when is_list(bboxes) and is_list(scores) and is_list(class_ids) and is_float(score_threshold) and is_float(nms_threshold) and (opts == nil or (is_list(opts) and is_tuple(hd(opts))))
   do
     positional = [
@@ -477,7 +477,7 @@ def evision_elixir_module_fixes():
   softNMSBoxes(bboxes, scores, score_threshold, nms_threshold[, top_k[, sigma[, method]]]) -> updated_scores, indices
   ```
   \"\"\"
-  @spec softNMSBoxes(list({number(), number(), number(), number()}), list(number()), number(), number(), [{atom(), term()},...] | nil) :: {list(number()), list(integer())} | {:error, String.t()}
+  @spec softNMSBoxes(list({number(), number(), number(), number()}), list(number()), number(), number(), [{:top_k, term()}, {:sigma, term()}, {:method, term()}, {atom(), term()},...] | nil) :: {list(number()), list(integer())} | {:error, String.t()}
   def softNMSBoxes(bboxes, scores, score_threshold, nms_threshold, opts) when is_list(bboxes) and is_list(scores) and is_float(score_threshold) and is_float(nms_threshold) and (opts == nil or (is_list(opts) and is_tuple(hd(opts))))
   do
     positional = [
