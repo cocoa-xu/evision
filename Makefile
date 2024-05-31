@@ -46,7 +46,7 @@ CMAKE_OPENCV_IMG_CODER_SELECTION ?= -D BUILD_PNG=ON \
 -D BUILD_OPENJPEG=ON \
 -D BUILD_JASPER=ON \
 -D BUILD_OPENEXR=ON
-DEFAULT_JOBS ?= 1
+DEFAULT_JOBS ?= $(shell erl -noshell -eval "io:format('~p~n',[erlang:system_info(logical_processors_online)]), halt().")
 CMAKE_OPENCV_OPTIONS ?= ""
 CMAKE_OPTIONS ?= $(CMAKE_OPENCV_MODULE_SELECTION)
 ENABLED_CV_MODULES ?= ""
