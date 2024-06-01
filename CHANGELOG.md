@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.1.39 (2024-06-01)
+[Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.39) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.39)
+
+### Changes
+- Validate allowed keyword arguments.
+- List all allowed keyword arguments in the function specs.
+
 ## v0.1.38 (2024-03-30)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.1.38) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.1.38)
 
