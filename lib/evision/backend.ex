@@ -108,51 +108,6 @@ defmodule Evision.Backend do
   end
 
   @impl true
-  @spec random_uniform(Nx.Tensor.t(), number(), number(), any()) :: Nx.Tensor.t()
-  def random_uniform(%T{type: {s, _} = type, shape: shape} = out, min, max, _backend_options)
-      when s in [:u, :s, :f] do
-    min = to_number(min)
-    max = to_number(max)
-
-    Evision.randu(
-      reject_error(Evision.Mat.zeros(shape, type)),
-      reject_error(Evision.Mat.number(min, type)),
-      reject_error(Evision.Mat.number(max, type))
-    )
-    |> reject_error()
-    |> Evision.Mat.as_type(type)
-    |> reject_error()
-    |> to_nx(out)
-  end
-
-  def random_uniform(%T{type: {:c, _}, shape: _shape} = _out, _min, _max, _backend_options) do
-    raise ArgumentError, "Complex number is not support yet"
-  end
-
-  @impl true
-  @spec random_normal(Nx.Tensor.t(), number | Nx.Tensor.t(), number | Nx.Tensor.t(), any) ::
-          Nx.Tensor.t()
-  def random_normal(%T{type: {s, _} = type, shape: shape} = out, mu, sigma, _backend_options)
-      when s in [:u, :s, :f] do
-    mu = to_number(mu)
-    sigma = to_number(sigma)
-
-    Evision.randn(
-      reject_error(Evision.Mat.zeros(shape, type)),
-      reject_error(Evision.Mat.number(mu, type)),
-      reject_error(Evision.Mat.number(sigma, type))
-    )
-    |> reject_error()
-    |> Evision.Mat.as_type(type)
-    |> reject_error()
-    |> to_nx(out)
-  end
-
-  def random_normal(%T{type: {:c, _}, shape: _shape} = _out, _min, _max, _backend_options) do
-    raise ArgumentError, "Complex number is not support yet"
-  end
-
-  @impl true
   @spec backend_copy(Nx.Tensor.t(), atom, any) :: Nx.Tensor.t()
   def backend_copy(tensor, Nx.Tensor, opts) do
     backend_copy(tensor, Nx.BinaryBackend, opts)
