@@ -547,8 +547,14 @@ class ModuleGenerator(object):
                         # generate binding code with opts args
                         func_arity = len(module_func_args_with_opts.split(','))
                         if kind == 'elixir':
+                            keyword_arg_names_elixir = func_variant.keyword_arg_names(kind)
+                            if len(keyword_arg_names_elixir) > 0:
+                                allowed_opts = ', '.join([f':{arg}' for arg in keyword_arg_names_elixir])
+                                keyword_validate = f'    Keyword.validate!(opts || [], [{allowed_opts}])\n'
+                            else:
+                                keyword_validate = ''
                             function_code.write(f'  {function_spec_opts}\n'
-                                f'  def {module_func_name}({module_func_args_with_opts}){when_guard_with_opts}do\n'
+                                f'  def {module_func_name}({module_func_args_with_opts}){when_guard_with_opts}do\n{keyword_validate}'
                                 f'    {positional_args}\n'
                                 f'    :evision_nif.{nif_name}({func_args_with_opts})\n'
                                 '     |> __to_struct__()\n'
