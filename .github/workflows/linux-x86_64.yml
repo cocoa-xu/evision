@@ -13,6 +13,7 @@ on:
       - 'cc_toolchain/**'
       - 'c_src/windows_fix/windows_fix.cpp'
       - 'checksum.exs'
+      - 'do_release.sh'
       - '.github/FUNDING.yml'
       - '.github/workflows/nerves-*'
       - '.github/workflows/macos-*'

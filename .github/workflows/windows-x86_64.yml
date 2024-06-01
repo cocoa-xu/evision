@@ -12,6 +12,7 @@ on:
       - 'Makefile'
       - 'cc_toolchain/**'
       - 'checksum.exs'
+      - 'do_release.sh'
       - '.github/FUNDING.yml'
       - '.github/workflows/nerves-*.yml'
       - '.github/workflows/linux-*.yml'
