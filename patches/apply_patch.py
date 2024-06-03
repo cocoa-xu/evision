@@ -9,8 +9,30 @@ else:
     from cStringIO import StringIO
 
 
+def patch_imread(opencv_version: str, opencv_src_root: str):
+    if opencv_version not in ['4.10.0']:
+        print(f"warning: applying `patch_imread` to opencv version `{opencv_version}`")
+    
+    # modules/imgcodecs/src/loadsave.cpp
+    loadsave_cpp = Path(opencv_src_root) / 'modules' / 'imgcodecs' / 'src' / 'loadsave.cpp'
+    fixed = StringIO()
+    patched_1 = False
+    with open(loadsave_cpp, 'r') as source:
+        for line in source:
+            if not patched_1 and line.strip() == 'Mat img = dst.getMat();':
+                fixed.write("    Mat& img = dst.getMatRef(); // patched\n")
+                patched_1 = True
+            else:
+                fixed.write(line)
+    
+    if patched_1:
+        with open(loadsave_cpp, 'w') as dst:
+            dst.truncate(0)
+            dst.write(fixed.getvalue())
+                
+
 def patch_fix_getLayerShapes(opencv_version: str, opencv_src_root: str):
-    if opencv_version not in ['4.5.4', '4.5.5', '4.6.0', '4.7.0', '4.8.0', '4.9.0']:
+    if opencv_version not in ['4.5.4', '4.5.5', '4.6.0', '4.7.0', '4.8.0', '4.9.0', '4.10.0']:
         print(f"warning: applying `patch_fix_getLayerShapes` to opencv version `{opencv_version}`")
 
     # modules/dnn/include/opencv2/dnn/dnn.hpp
@@ -140,7 +162,8 @@ patches = [
     patch_winograd,
     patch_rpath_linux,
     patch_python_bindings_generator,
-    patch_intrin_rvv
+    patch_intrin_rvv,
+    patch_imread
 ]
 
 

@@ -138,7 +138,7 @@ defmodule Evision.Test do
     bin = Evision.Mat.to_binary(mat)
 
     avg = Enum.sum(:binary.bin_to_list(bin)) / byte_size(bin)
-    {avg_cv, 0.0, 0.0, 0.0} = Evision.mean(mat)
+    {avg_cv, +0.0, +0.0, +0.0} = Evision.mean(mat)
     assert abs(avg - avg_cv) < 0.00000001
   end
 

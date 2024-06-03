@@ -204,6 +204,7 @@ Compatible OpenCV versions:
 - 4.7.0
 - 4.8.0
 - 4.9.0
+- 4.10.0
 
 by compatible, it means these versions can compile successfully, and I tested a small range of functions. Tons of tests
 should be written, and then we can have a list for tested OpenCV versions.

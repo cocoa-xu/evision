@@ -14,7 +14,7 @@ jobs:
   mix_compile:
     runs-on: ubuntu-latest
     env:
-      OPENCV_VER: "4.9.0"
+      OPENCV_VER: "4.10.0"
       MIX_ENV: prod
       EVISION_PREFER_PRECOMPILED: "false"
       EVISION_GENERATE_LANG: "erlang,elixir"
