@@ -32,14 +32,10 @@ Then you can add `evision` as a dependency in your `mix.exs`.
 ```elixir
 def deps do
   [
-    {:evision, "~> 0.1"}
+    {:evision, "~> 0.2"}
   ]
 end
 ```
-
-Please note that although `:evision` is available on hex.pm now, it's still in its early versions. And it will remain on v0.1.x for a while, and all v0.1.x versions should be treated as in very active development. Please read the `CHANGELOG.md` for all breaking changes even if it's a "minor" update.
-
-Therefore, it's recommended to use a specific version (i.e., include the minor version number in `deps`, `{:evision, "~> 0.1.8"}`, instead of `{:evision, "~> 0.1"}`) at the moment.
 
 ### Use Precompiled Library (Default)
 The following environment variables can be set based on your needs.
@@ -107,7 +103,7 @@ export EVISION_PREFER_PRECOMPILED=false
 For livebook users, 
 ```elixir
 Mix.install([
-  {:evision, "~> 0.1"}
+  {:evision, "~> 0.2"}
 ], system_env: [
   {"EVISION_PREFER_PRECOMPILED", "false"}
 ])

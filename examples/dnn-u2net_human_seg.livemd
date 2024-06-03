@@ -8,7 +8,7 @@
 
 Mix.install(
   [
-    {:evision, "~> 0.1"},
+    {:evision, "~> 0.2"},
     {:req, "~> 0.3"},
     {:kino, "~> 0.11"}
   ],
