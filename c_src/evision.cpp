@@ -1378,6 +1378,26 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const Rect& r)
 }
 
 template<>
+bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, Rect2f& r, const ArgInfo& info)
+{
+    RefWrapper<float> values[] = {
+        RefWrapper<float>(r.x), RefWrapper<float>(r.y),
+        RefWrapper<float>(r.width), RefWrapper<float>(r.height)};
+    return parseSequence(env, obj, values, info);
+}
+
+template<>
+ERL_NIF_TERM evision_from(ErlNifEnv *env, const Rect2f& r)
+{
+    return enif_make_tuple4(env,
+        evision_from(env, r.x),
+        evision_from(env, r.y),
+        evision_from(env, r.width),
+        evision_from(env, r.height)
+    );
+}
+
+template<>
 bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, Rect2d& r, const ArgInfo& info)
 {
     RefWrapper<double> values[] = {

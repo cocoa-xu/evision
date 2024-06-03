@@ -42,10 +42,10 @@ defmodule Evision.ML.SVM.Test do
     float_bytes = 4
 
     support_vector =
-      for i <- (rows - 1)..0, reduce: [] do
+      for i <- Range.new(rows - 1, 0, -1), reduce: [] do
         support_vector ->
           current_vector =
-            for j <- (cols - 1)..0, reduce: [] do
+            for j <- Range.new(cols - 1, 0, -1), reduce: [] do
               vec ->
                 <<float_data::float-size(32)-little>> =
                   :binary.part(sv_binary, (i * cols + j) * float_bytes, 4)
@@ -64,7 +64,7 @@ defmodule Evision.ML.SVM.Test do
     height = 512
 
     response_data =
-      for x <- (width - 1)..0, y <- (height - 1)..0, reduce: [] do
+      for x <- Range.new(width - 1, 0, -1), y <- Range.new(height - 1, 0, -1), reduce: [] do
         acc ->
           %Mat{} =
             sample =
