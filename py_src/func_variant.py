@@ -671,8 +671,8 @@ class FuncVariant(object):
             in_args_spec.append('[{atom(), term()},...] | nil')
         if is_instance_method:
             self.spec_self = ''
-            tmp_name = self.classname
-            if len(self.classname) > 0:
+            tmp_name = module_name
+            if len(tmp_name) > 0:
                 is_param = False
                 if tmp_name.endswith('_Param'):
                     tmp_name = tmp_name[:len('_Param')]
