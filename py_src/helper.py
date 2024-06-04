@@ -1357,7 +1357,7 @@ def map_argtype_in_spec_erlang(classname: str, argtype: str, is_in: bool, decl: 
         return f'#{ty}' + '{}'
     else:
         print(f'warning: generate_spec: unknown argtype `{argtype}`, input_arg? {is_in}, class={classname}')
-        raise RuntimeError("erlang spec")
+        # raise RuntimeError("erlang spec")
         return 'term()'
 
 def map_argtype_in_spec_elixir(classname: str, argtype: str, is_in: bool, decl: list) -> str:
