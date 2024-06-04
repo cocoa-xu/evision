@@ -662,6 +662,8 @@ def is_struct(argtype: str, also_get: Optional[str] = None, classname: Optional[
         'cuda_StereoBM': 'Evision.CUDA.StereoBM',
         'cuda_StereoConstantSpaceBP': 'Evision.CUDA.StereoConstantSpaceBP',
         'cuda_StereoSGM': 'Evision.CUDA.StereoSGM',
+        "CUDA.CannyEdgeDetector": "Evision.CUDA.CannyEdgeDetector",
+        "CUDA.TemplateMatching": "Evision.CUDA.TemplateMatching",
         'Stream': 'Evision.CUDA.Stream',
         'CUDA.SURFCUDA': 'Evision.CUDA.SURFCUDA',
         'TargetArchs': 'Evision.CUDA.TargetArchs',

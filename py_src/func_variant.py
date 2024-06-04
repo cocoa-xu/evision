@@ -698,7 +698,6 @@ class FuncVariant(object):
                 ty = struct_name.replace('.', '_').lower()
                 self.spec_self = f'#{ty}'+'{}'
             else:
-                print(f'warning: {self.spec_self} should be a struct. classname={self.classname}')
                 ty = self.spec_self.replace('.', '_').lower()
                 self.spec_self = f'#evision_{ty}' + '{}'
             in_args_spec.insert(0, self.spec_self)
