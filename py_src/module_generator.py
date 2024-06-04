@@ -421,8 +421,8 @@ class ModuleGenerator(object):
 
                     positional_args, positional_var = func_variant.positional_args(kind)
                     opts_args = func_variant.opts_args(kind, in_func_body=True)
-                    function_spec = func_variant.generate_spec(kind, module_func_name, is_instance_method, include_opts=False, is_static=func.is_static)
-                    function_spec_opts = func_variant.generate_spec(kind, module_func_name, is_instance_method, include_opts=True, is_static=func.is_static)
+                    function_spec = func_variant.generate_spec(kind, module_func_name, is_instance_method, include_opts=False, module_name=self.module_name, is_static=func.is_static)
+                    function_spec_opts = func_variant.generate_spec(kind, module_func_name, is_instance_method, include_opts=True, module_name=self.module_name, is_static=func.is_static)
 
                     # merge positional args and opts args
                     func_args = positional_var

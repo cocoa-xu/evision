@@ -16,7 +16,7 @@ class FuncVariant(object):
         self.name = self.wname = name
         self.isconstructor = isconstructor
         self.isphantom = isphantom
-        self.keyword_args = set()
+        self.keyword_args = []
 
         self.decl = decl
         self.docstring = decl[5]
@@ -489,6 +489,7 @@ class FuncVariant(object):
         return inline_doc.rstrip()
     
     def keyword_arg_names(self, kind: str):
+        keyword_args = set()
         if self.has_opts:
             out_args = [o[0] for o in self.py_outlist]
             optional_args = []
@@ -499,18 +500,19 @@ class FuncVariant(object):
                 for (arg_name, _, _) in optional_args:
                     normalized_arg_name = map_argname(kind, arg_name)
                     normalized_arg_name = normalized_arg_name.replace(":", "")
-                    self.keyword_args.add(normalized_arg_name)
+                    keyword_args.add(normalized_arg_name)
+        self.keyword_args = sorted(keyword_args)
         return self.keyword_args
 
-    def generate_spec(self, kind: str, module_func_name: str, is_instance_method: bool, include_opts: bool, in_args: list=None, out_args: list=None, is_static: bool=False) -> str:
+    def generate_spec(self, kind: str, module_func_name: str, is_instance_method: bool, include_opts: bool, module_name: str, in_args: list=None, out_args: list=None, is_static: bool=False) -> str:
         if kind == 'elixir':
-            return self.generate_spec_elixir(module_func_name, is_instance_method, include_opts, in_args, out_args, is_static)
+            return self.generate_spec_elixir(module_func_name, is_instance_method, include_opts, module_name, in_args, out_args, is_static)
         elif kind == 'erlang':
-            return self.generate_spec_erlang(module_func_name, is_instance_method, include_opts, in_args, out_args, is_static)
+            return self.generate_spec_erlang(module_func_name, is_instance_method, include_opts, module_name, in_args, out_args, is_static)
         else:
             return ''
 
-    def generate_spec_elixir(self, module_func_name: str, is_instance_method: bool, include_opts: bool, in_args: list=None, out_args: list=None, is_static: bool=False) -> str:
+    def generate_spec_elixir(self, module_func_name: str, is_instance_method: bool, include_opts: bool, module_name: str, in_args: list=None, out_args: list=None, is_static: bool=False) -> str:
         spec = StringIO()
         ismethod = self.classname != "" and not self.isconstructor
 
@@ -560,9 +562,10 @@ class FuncVariant(object):
             in_args_spec.append(named_in_args_spec)
         if is_instance_method:
             self.spec_self = ''
-            tmp_name = self.classname
+            tmp_name = module_name
+            # tmp_name = self.classname
 
-            if len(self.classname) > 0:
+            if len(tmp_name) > 0:
                 is_param = False
                 if tmp_name.endswith('_Param'):
                     tmp_name = tmp_name[:len('_Param')]
@@ -630,7 +633,7 @@ class FuncVariant(object):
         spec = spec.getvalue()
         return spec
 
-    def generate_spec_erlang(self, module_func_name: str, is_instance_method: bool, include_opts: bool, in_args: list=None, out_args: list=None, is_static: bool=False) -> str:
+    def generate_spec_erlang(self, module_func_name: str, is_instance_method: bool, include_opts: bool, module_name: str, in_args: list=None, out_args: list=None, is_static: bool=False) -> str:
         spec = StringIO()
 
         if out_args is None:

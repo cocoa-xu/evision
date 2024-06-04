@@ -1,3 +1,11 @@
+# Changelog
+
+## v0.2.1 (2024-06-04)
+[Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.2.1) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.2.1)
+
+### Fixes
+- Fixed function specs where type hints for sub-classes were using the type of their parent-classes.
+
 ## v0.2.0 (2024-06-03)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.2.0) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.2.0)
 
