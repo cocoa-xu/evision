@@ -609,9 +609,9 @@ def evision_elixir_module_fixes():
     end
   end
 """, """
-  def dnn_NMSBoxes(_opts \\\\ []), do: :erlang.nif_error("dnn::NMSBoxes not loaded")
-  def dnn_NMSBoxesBatched(_opts \\\\ []), do: :erlang.nif_error("dnn::NMSBoxesBatched not loaded")
-  def dnn_softNMSBoxes(_opts \\\\ []), do: :erlang.nif_error("dnn::softNMSBoxes not loaded")
+  def dnn_NMSBoxes(_opts \\\\ []), do: :erlang.nif_error(:undef)
+  def dnn_NMSBoxesBatched(_opts \\\\ []), do: :erlang.nif_error(:undef)
+  def dnn_softNMSBoxes(_opts \\\\ []), do: :erlang.nif_error(:undef)
 """)
     ]}
 

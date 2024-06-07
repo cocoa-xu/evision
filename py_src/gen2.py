@@ -557,7 +557,7 @@ class BeamWrapperGenerator(object):
 
         self.code_funcs.write("}\n")
         self.code_ns_reg.write(f'    F(enabled_modules, evision_cv_enabled_modules, 0),\n')
-        self.evision_nif.write(f'  def enabled_modules, do: :erlang.nif_error("enabled_modules not loaded")\n')
+        self.evision_nif.write(f'  def enabled_modules, do: :erlang.nif_error(:undef)\n')
         self.evision_nif_erlang.write(f'enabled_modules() ->\n    not_loaded(?LINE).\n')
 
     def gen(self, srcfiles, output_path, erl_output_path, erlang_output_path):
