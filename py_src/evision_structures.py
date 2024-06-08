@@ -46,7 +46,7 @@ videocapture_struct_elixir = '  @typedoc """\n' + \
   alias __MODULE__, as: T
 
   @doc false
-  def __to_struct__(cap = %{:class => Evision.VideoCapture, :ref => ref}) do
+  def to_struct(cap = %{:class => Evision.VideoCapture, :ref => ref}) do
     %T{
       fps: cap.fps,
       frame_count: cap.frame_count,
@@ -57,21 +57,21 @@ videocapture_struct_elixir = '  @typedoc """\n' + \
     }
   end
 
-  def __to_struct__({:ok, cap = %{:class => Evision.VideoCapture}}) do
-    {:ok, __to_struct__(cap)}
+  def to_struct({:ok, cap = %{:class => Evision.VideoCapture}}) do
+    {:ok, to_struct(cap)}
   end
 
-  def __to_struct__(pass_through) do
+  def to_struct(pass_through) do
     Evision.Internal.Structurise.to_struct(pass_through)
   end
 """
 
 videocapture_struct_erlang = """
-'__to_struct__'(#{class := 'VideoCapture', ref := Ref}) ->
+to_struct(#{class := 'Elixir.Evision.VideoCapture', ref := Ref}) ->
   #evision_videocapture{
       ref = Ref
   };
-'__to_struct__'(Any) ->
+to_struct(Any) ->
     evision_internal_structurise:to_struct(Any).
 """
 
@@ -118,7 +118,7 @@ gpumat_struct_elixir = '  @typedoc """\n' + \
   alias __MODULE__, as: T
 
   @doc false
-  def __to_struct__(%{
+  def to_struct(%{
         :class => Evision.CUDA.GpuMat,
         :channels => channels,
         :type => type,
@@ -137,17 +137,17 @@ gpumat_struct_elixir = '  @typedoc """\n' + \
     }
   end
 
-  def __to_struct__({:ok, mat = %{:class => Evision.CUDA.GpuMat}}) do
-    {:ok, __to_struct__(mat)}
+  def to_struct({:ok, mat = %{:class => Evision.CUDA.GpuMat}}) do
+    {:ok, to_struct(mat)}
   end
 
-  def __to_struct__(pass_through) do
+  def to_struct(pass_through) do
     Evision.Internal.Structurise.to_struct(pass_through)
   end
 """
 
 gpumat_struct_erlang = """
-'__to_struct__'(#{class := 'Elixir.Evision.CUDA.GpuMat', ref := Ref, channels := Channels, type := Type, raw_type := RawType, shape := Shape, elemSize := ElemSize}) ->
+to_struct(#{class := 'Elixir.Evision.CUDA.GpuMat', ref := Ref, channels := Channels, type := Type, raw_type := RawType, shape := Shape, elemSize := ElemSize}) ->
   #evision_cuda_gpumat{
       channels = Channels,
       type = Type,
@@ -156,7 +156,7 @@ gpumat_struct_erlang = """
       ref = Ref,
       elemSize = ElemSize
   };
-'__to_struct__'(Any) ->
+to_struct(Any) ->
     evision_internal_structurise:to_struct(Any).
 """
 
@@ -174,17 +174,17 @@ generic_struct_template_elixir = Template(
   alias __MODULE__, as: T
 
   @doc false
-  def __to_struct__({:ok, %{class: ${atom_elixir_module_name}, ref: ref}}) do
+  def to_struct({:ok, %{class: ${atom_elixir_module_name}, ref: ref}}) do
     {:ok, %T{ref: ref}}
   end
 
-  def __to_struct__(%{class: ${atom_elixir_module_name}, ref: ref}) do
+  def to_struct(%{class: ${atom_elixir_module_name}, ref: ref}) do
     %T{
       ref: ref
     }
   end
 
-  def __to_struct__(ret) do
+  def to_struct(ret) do
     Evision.Internal.Structurise.to_struct(ret)
   end
 """
@@ -192,11 +192,11 @@ generic_struct_template_elixir = Template(
 
 generic_struct_template_erlang = Template(
   """
-'__to_struct__'(#{class := '${atom_elixir_module_name}', ref := Ref}) ->
+to_struct(#{class := '${atom_elixir_module_name}', ref := Ref}) ->
   #${atom_erlang_module_name}{
       ref = Ref
   };
-'__to_struct__'(Any) ->
+to_struct(Any) ->
     evision_internal_structurise:to_struct(Any).
 
 """

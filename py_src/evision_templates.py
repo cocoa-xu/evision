@@ -284,7 +284,7 @@ code_ret_dnn_setter = Template("""bool success;
 elixir_property_getter = Template("""  @spec get_${property_name}(${self_spec}) :: ${prop_spec}
   def get_${property_name}(self) do
     :evision_nif.${nif_name}(Evision.Internal.Structurise.from_struct(self))
-    |> __to_struct__()
+    |> to_struct()
   end
 """)
 
@@ -292,7 +292,7 @@ erlang_property_getter = Template("""-spec get_${property_name}(${self_spec}) ->
 get_${property_name}(Self) ->
     SelfRef = evision_internal_structurise:from_struct(Self),
     Ret = evision_nif:${nif_name}(SelfRef),
-    '__to_struct__'(Ret).
+    to_struct(Ret).
 """)
 
 elixir_property_setter = Template("""  @spec set_${property_name}(${self_spec_in}, ${prop_spec}) :: ${self_spec_out}
@@ -301,7 +301,7 @@ elixir_property_setter = Template("""  @spec set_${property_name}(${self_spec_in
         Evision.Internal.Structurise.from_struct(self),
         [${property_name}: Evision.Internal.Structurise.from_struct(prop)]
     )
-    |> __to_struct__()
+    |> to_struct()
   end
 """)
 
@@ -310,7 +310,7 @@ set_${property_name}(Self, Prop) ->
     SelfRef = evision_internal_structurise:from_struct(Self),
     PropRef = evision_internal_structurise:from_struct(Prop),
     Ret = evision_nif:${nif_name}(SelfRef, [{${property_name}, PropRef}]),
-    '__to_struct__'(Ret).
+    to_struct(Ret).
 """)
 
 # template for `Evision.enabled_modules/0`

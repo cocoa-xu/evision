@@ -78,14 +78,14 @@ class BeamWrapperGenerator(object):
         self.evision_elixir.write('defmodule Evision do\n')
         self.evision_elixir.write('  import Kernel, except: [apply: 2, apply: 3, min: 2, max: 2]\n\n')
         self.evision_elixir.write('  @doc false\n')
-        self.evision_elixir.write('  def __to_struct__(any), do: Evision.Internal.Structurise.to_struct(any)\n\n')
+        self.evision_elixir.write('  def to_struct(any), do: Evision.Internal.Structurise.to_struct(any)\n\n')
 
         self.evision_constant_elixir.write('defmodule Evision.Constant do\n')
         self.evision_constant_elixir.write('  import Bitwise\n')
         self.evision_constant_elixir.write(ET.gen_cv_types_elixir)
 
         self.evision_erlang.write('-module(evision).\n-compile(nowarn_export_all).\n-compile([export_all]).\n-include("evision.hrl").\n\n')
-        self.evision_erlang.write('\'__to_struct__\'(Any) ->\n  evision_internal_structurise:to_struct(Any).\n\n')
+        self.evision_erlang.write('\'to_struct\'(Any) ->\n  evision_internal_structurise:to_struct(Any).\n\n')
 
         self.evision_constant_erlang.write('-module(evision_constant).\n-compile(nowarn_export_all).\n-compile([export_all]).\n\n')
 

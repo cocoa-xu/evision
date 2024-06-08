@@ -71,7 +71,7 @@ def evision_elixir_module_fixes():
       streams: Evision.Internal.Structurise.from_struct(streams)
     ]
     :evision_nif.videoCapture_waitAny(positional ++ Evision.Internal.Structurise.from_struct(opts))
-     |> __to_struct__()
+     |> to_struct()
   end
 
   @doc \"\"\"
@@ -111,7 +111,7 @@ def evision_elixir_module_fixes():
       streams: Evision.Internal.Structurise.from_struct(streams)
     ]
     :evision_nif.videoCapture_waitAny(positional)
-    |> __to_struct__()
+    |> to_struct()
   end
   """, "")],
       "DNN": [
@@ -166,7 +166,7 @@ def evision_elixir_module_fixes():
       nms_threshold: Evision.Internal.Structurise.from_struct(nms_threshold)
     ]
     :evision_nif.dnn_NMSBoxes(positional ++ Evision.Internal.Structurise.from_struct(opts))
-    |> __to_struct__()
+    |> to_struct()
   end
 
   def nmsBoxes(bboxes, scores, score_threshold, nms_threshold, opts) when (is_struct(bboxes, Evision.Mat) or is_struct(bboxes, Nx.Tensor)) and is_list(scores) and is_float(score_threshold) and is_float(nms_threshold) and (opts == nil or (is_list(opts) and is_tuple(hd(opts))))
@@ -180,7 +180,7 @@ def evision_elixir_module_fixes():
           nms_threshold: Evision.Internal.Structurise.from_struct(nms_threshold)
         ]
         :evision_nif.dnn_NMSBoxes(positional ++ Evision.Internal.Structurise.from_struct(opts || []))
-        |> __to_struct__()
+        |> to_struct()
       invalid_shape ->
         {:error, "Expected a tensor or a mat with shape `{n, 4}`, got `#{inspect(invalid_shape)}`"}
     end
@@ -235,7 +235,7 @@ def evision_elixir_module_fixes():
       nms_threshold: Evision.Internal.Structurise.from_struct(nms_threshold)
     ]
     :evision_nif.dnn_NMSBoxes(positional)
-    |> __to_struct__()
+    |> to_struct()
   end
 
   def nmsBoxes(bboxes, scores, score_threshold, nms_threshold) when (is_struct(bboxes, Evision.Mat) or is_struct(bboxes, Nx.Tensor)) and is_list(scores) and is_float(score_threshold) and is_float(nms_threshold)
@@ -257,7 +257,7 @@ def evision_elixir_module_fixes():
           nms_threshold: Evision.Internal.Structurise.from_struct(nms_threshold)
         ]
         :evision_nif.dnn_NMSBoxes(positional)
-        |> __to_struct__()
+        |> to_struct()
       invalid_shape ->
         {:error, "Expected a tensor or a mat with shape `{n, 4}`, got `#{inspect(invalid_shape)}`"}
     end
@@ -318,7 +318,7 @@ def evision_elixir_module_fixes():
       nms_threshold: Evision.Internal.Structurise.from_struct(nms_threshold)
     ]
     :evision_nif.dnn_NMSBoxesBatched(positional ++ Evision.Internal.Structurise.from_struct(opts))
-     |> __to_struct__()
+     |> to_struct()
   end
 
   def nmsBoxesBatched(bboxes, scores, class_ids, score_threshold, nms_threshold, opts) when (is_struct(bboxes, Evision.Mat) or is_struct(bboxes, Nx.Tensor)) and is_list(scores) and is_list(class_ids) and is_float(score_threshold) and is_float(nms_threshold) and (opts == nil or (is_list(opts) and is_tuple(hd(opts))))
@@ -342,7 +342,7 @@ def evision_elixir_module_fixes():
           nms_threshold: Evision.Internal.Structurise.from_struct(nms_threshold)
         ]
         :evision_nif.dnn_NMSBoxesBatched(positional ++ Evision.Internal.Structurise.from_struct(opts))
-        |> __to_struct__()
+        |> to_struct()
       invalid_shape ->
         {:error, "Expected a tensor or a mat with shape `{n, 4}`, got `#{inspect(invalid_shape)}`"}
     end
@@ -402,7 +402,7 @@ def evision_elixir_module_fixes():
       nms_threshold: Evision.Internal.Structurise.from_struct(nms_threshold)
     ]
     :evision_nif.dnn_NMSBoxesBatched(positional)
-    |> __to_struct__()
+    |> to_struct()
   end
 
   def nmsBoxesBatched(bboxes, scores, class_ids, score_threshold, nms_threshold) when (is_struct(bboxes, Evision.Mat) or is_struct(bboxes, Nx.Tensor)) and is_list(scores) and is_list(class_ids) and is_float(score_threshold) and is_float(nms_threshold)
@@ -425,7 +425,7 @@ def evision_elixir_module_fixes():
           nms_threshold: Evision.Internal.Structurise.from_struct(nms_threshold)
         ]
         :evision_nif.dnn_NMSBoxesBatched(positional)
-        |> __to_struct__()
+        |> to_struct()
       invalid_shape ->
         {:error, "Expected a tensor or a mat with shape `{n, 4}`, got `#{inspect(invalid_shape)}`"}
     end
@@ -492,7 +492,7 @@ def evision_elixir_module_fixes():
       nms_threshold: Evision.Internal.Structurise.from_struct(nms_threshold)
     ]
     :evision_nif.dnn_softNMSBoxes(positional ++ Evision.Internal.Structurise.from_struct(opts))
-     |> __to_struct__()
+     |> to_struct()
   end
 
   def softNMSBoxes(bboxes, scores, score_threshold, nms_threshold, opts) when (is_struct(bboxes, Evision.Mat) or is_struct(bboxes, Nx.Tensor)) and is_list(scores) and is_float(score_threshold) and is_float(nms_threshold) and (opts == nil or (is_list(opts) and is_tuple(hd(opts))))
@@ -515,7 +515,7 @@ def evision_elixir_module_fixes():
           nms_threshold: Evision.Internal.Structurise.from_struct(nms_threshold)
         ]
         :evision_nif.dnn_softNMSBoxes(positional ++ Evision.Internal.Structurise.from_struct(opts))
-        |> __to_struct__()
+        |> to_struct()
       invalid_shape ->
         {:error, "Expected a tensor or a mat with shape `{n, 4}`, got `#{inspect(invalid_shape)}`"}
     end
@@ -581,7 +581,7 @@ def evision_elixir_module_fixes():
       nms_threshold: Evision.Internal.Structurise.from_struct(nms_threshold)
     ]
     :evision_nif.dnn_softNMSBoxes(positional)
-    |> __to_struct__()
+    |> to_struct()
   end
 
   def softNMSBoxes(bboxes, scores, score_threshold, nms_threshold) when (is_struct(bboxes, Evision.Mat) or is_struct(bboxes, Nx.Tensor)) and is_list(scores) and is_float(score_threshold) and is_float(nms_threshold)
@@ -603,7 +603,7 @@ def evision_elixir_module_fixes():
           nms_threshold: Evision.Internal.Structurise.from_struct(nms_threshold)
         ]
         :evision_nif.dnn_softNMSBoxes(positional)
-        |> __to_struct__()
+        |> to_struct()
       invalid_shape ->
         {:error, "Expected a tensor or a mat with shape `{n, 4}`, got `#{inspect(invalid_shape)}`"}
     end
@@ -627,7 +627,7 @@ nmsBoxes(Bboxes, Scores, Score_threshold, Nms_threshold, Options) when is_list(B
     {nms_threshold, Nms_threshold}
   ],
   Ret = evision_nif:dnn_NMSBoxes(Positional ++ evision_internal_structurise:from_struct(Options)),
-  '__to_struct__'(Ret).
+  to_struct(Ret).
 
 -spec nmsBoxes(list({number(), number(), number(), number()}), list(number()), number(), number()) -> list(integer()) | {error, binary()}.
 nmsBoxes(Bboxes, Scores, Score_threshold, Nms_threshold) when is_list(Bboxes), is_list(Scores), is_float(Score_threshold), is_float(Nms_threshold)->
@@ -638,7 +638,7 @@ nmsBoxes(Bboxes, Scores, Score_threshold, Nms_threshold) when is_list(Bboxes), i
     {nms_threshold, Nms_threshold}
   ],
   Ret = evision_nif:dnn_NMSBoxes(Positional),
-  '__to_struct__'(Ret).
+  to_struct(Ret).
 
 -spec nmsBoxesBatched(list({number(), number(), number(), number()}), list(number()), list(integer()), number(), number(), [{atom(), term()},...] | nil) -> list(integer()) | {error, binary()}.
 nmsBoxesBatched(Bboxes, Scores, Class_ids, Score_threshold, Nms_threshold, Options) when is_list(Bboxes), is_list(Scores), is_list(Class_ids), is_float(Score_threshold), is_float(Nms_threshold), is_list(Options), is_tuple(hd(Options)), tuple_size(hd(Options)) == 2->
@@ -650,7 +650,7 @@ nmsBoxesBatched(Bboxes, Scores, Class_ids, Score_threshold, Nms_threshold, Optio
     {nms_threshold, Nms_threshold}
   ],
   Ret = evision_nif:dnn_NMSBoxesBatched(Positional ++ evision_internal_structurise:from_struct(Options)),
-  '__to_struct__'(Ret).
+  to_struct(Ret).
 
 -spec nmsBoxesBatched(list({number(), number(), number(), number()}), list(number()), list(integer()), number(), number()) -> list(integer()) | {error, binary()}.
 nmsBoxesBatched(Bboxes, Scores, Class_ids, Score_threshold, Nms_threshold) when is_list(Bboxes), is_list(Scores), is_list(Class_ids), is_float(Score_threshold), is_float(Nms_threshold)->
@@ -662,7 +662,7 @@ nmsBoxesBatched(Bboxes, Scores, Class_ids, Score_threshold, Nms_threshold) when 
     {nms_threshold, Nms_threshold}
   ],
   Ret = evision_nif:dnn_NMSBoxesBatched(Positional),
-  '__to_struct__'(Ret).
+  to_struct(Ret).
 
 -spec softNMSBoxes(list({number(), number(), number(), number()}), list(number()), number(), number(), [{atom(), term()},...] | nil) -> {list(number()), list(integer())} | {error, binary()}.
 softNMSBoxes(Bboxes, Scores, Score_threshold, Nms_threshold, Options) when is_list(Bboxes), is_list(Scores), is_float(Score_threshold), is_float(Nms_threshold), is_list(Options), is_tuple(hd(Options)), tuple_size(hd(Options)) == 2->
@@ -673,7 +673,7 @@ softNMSBoxes(Bboxes, Scores, Score_threshold, Nms_threshold, Options) when is_li
     {nms_threshold, Nms_threshold}
   ],
   Ret = evision_nif:dnn_softNMSBoxes(Positional ++ evision_internal_structurise:from_struct(Options)),
-  '__to_struct__'(Ret).
+  to_struct(Ret).
 
 -spec softNMSBoxes(list({number(), number(), number(), number()}), list(number()), number(), number()) -> {list(number()), list(integer())} | {error, binary()}.
 softNMSBoxes(Bboxes, Scores, Score_threshold, Nms_threshold) when is_list(Bboxes), is_list(Scores), is_float(Score_threshold), is_float(Nms_threshold)->
@@ -684,7 +684,7 @@ softNMSBoxes(Bboxes, Scores, Score_threshold, Nms_threshold) when is_list(Bboxes
     {nms_threshold, Nms_threshold}
   ],
   Ret = evision_nif:dnn_softNMSBoxes(Positional),
-  '__to_struct__'(Ret).
+  to_struct(Ret).
 """, """
 dnn_NMSBoxes(_opts) ->
   not_loaded(?LINE).

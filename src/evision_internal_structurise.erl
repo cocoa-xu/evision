@@ -12,7 +12,7 @@ to_struct(Ret) when is_map(Ret) ->
                 Name ->
                     list_to_atom(string:to_lower("evision_" ++ Name))
             end,
-            try Module:'__to_struct__'(Ret) of
+            try Module:to_struct(Ret) of
                 Result ->
                     Result
             catch
@@ -32,9 +32,9 @@ to_struct(PassThrough) ->
 
 from_struct(MaybeRecord) when is_tuple(MaybeRecord), tuple_size(MaybeRecord) > 0, is_atom(element(1, MaybeRecord)) ->
     RecordName = element(1, MaybeRecord),
-    case erlang:function_exported(RecordName, '__from_struct__', 1) of
+    case erlang:function_exported(RecordName, from_struct, 1) of
         true ->
-            RecordName:'__from_struct__'(MaybeRecord);
+            RecordName:from_struct(MaybeRecord);
         false ->
             List = [to_struct(element(I, MaybeRecord)) || I <- lists:seq(1, tuple_size(MaybeRecord))],
             list_to_tuple(List)
