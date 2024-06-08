@@ -2645,6 +2645,7 @@ static int convert_to_char(ErlNifEnv *env, ERL_NIF_TERM o, char *dst, const ArgI
 
 // manually coded modules
 #include "modules/evision_mat.h"
+#include "modules/evision_gpumat.h"
 #include "modules/evision_highgui.h"
 #include "modules/evision_imdecode.h"
 #include "modules/evision_backend/backend.h"

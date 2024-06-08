@@ -44,10 +44,12 @@ static ERL_NIF_TERM evision_cv_mat_to_pointer(ErlNifEnv *env, int argc, const ER
     std::map<std::string, ERL_NIF_TERM> erl_terms;
     int nif_opts_index = 0;
     evision::nif::parse_arg(env, nif_opts_index, argv, erl_terms);
+    std::string pointer_kind;
 
     {
         evision_res<cv::Mat *> * res;
-        if( enif_get_resource(env, evision_get_kw(env, erl_terms, "img"), evision_res<cv::Mat *>::type, (void **)&res) ) {
+        if( enif_get_resource(env, evision_get_kw(env, erl_terms, "img"), evision_res<cv::Mat *>::type, (void **)&res) &&
+            evision_to_safe(env, evision_get_kw(env, erl_terms, "mode"), pointer_kind, ArgInfo("mode", 1))) {
             std::vector<unsigned char> pointer_vec;
             std::uintptr_t ptr = (std::uintptr_t)res->val->data;
             if (pointer_kind == "local") {

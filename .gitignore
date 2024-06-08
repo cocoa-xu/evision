@@ -49,6 +49,9 @@ erl_crash.dump
 /examples/ssd_mobilenet_v2_coco_2018_03_29**
 /examples/test.png
 
+# nvcc
+c_src/modules/evision_cuda.o
+
 # we don't need to track checksum.exs in git
 # it should only be tracked by hex.pm (in `Evision.MixProject.package()[:files]`)
 checksum.exs

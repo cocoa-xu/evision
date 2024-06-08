@@ -13,6 +13,7 @@ import re
 from erl_enum_expression_generator import ErlEnumExpressionGenerator
 import evision_templates as ET
 import evision_structures as ES
+import evision_extra_functions as EF
 from helper import *
 from namespace import Namespace
 from func_info import FuncInfo
@@ -412,6 +413,12 @@ class BeamWrapperGenerator(object):
                 module_file_generator.write_elixir(ES.evision_structs[elixir_module_name]["elixir"])
                 module_file_generator.write_elixir("\n")
                 module_file_generator.write_erlang(ES.evision_structs[elixir_module_name]["erlang"])
+                module_file_generator.write_erlang("\n")
+                
+            if EF.extra_functions.get(elixir_module_name, None) is not None:
+                module_file_generator.write_elixir(EF.extra_functions[elixir_module_name]["elixir"])
+                module_file_generator.write_elixir("\n")
+                module_file_generator.write_erlang(EF.extra_functions[elixir_module_name]["erlang"])
                 module_file_generator.write_erlang("\n")
 
             if elixir_module_name not in evision_structrised_classes:
