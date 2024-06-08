@@ -1193,7 +1193,7 @@ defmodule Evision.MixProject do
       {:castore, "~> 0.1 or ~> 1.0"},
 
       # runtime
-      {:nx, "~> 0.4"},
+      {:nx, "~> 0.7"},
 
       # optional
       ## kino: for smart cells and better output in livebook

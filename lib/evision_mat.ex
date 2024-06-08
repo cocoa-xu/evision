@@ -834,6 +834,15 @@ defmodule Evision.Mat do
     {:ok, nil}
   end
 
+  @doc """
+  Get raw pointers
+
+  Currently only supports `Evision.CUDA.GpuMat.t()` and `mode` is `:local`
+  """
+  def to_pointer(%{ref: ref}, mode) do
+    :evision_nif.mat_to_pointer(ref, mode: mode)
+  end
+
   @impl Access
   @doc """
   Access.get_and_update/3 implementation for Evision.Mat
