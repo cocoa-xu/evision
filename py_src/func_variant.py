@@ -694,7 +694,10 @@ class FuncVariant(object):
                     out_args = [self.spec_self]
 
             if is_struct(self.spec_self, classname=self.classname):
-                _, struct_name = is_struct(self.spec_self, also_get='struct_name', classname=self.classname)
+                _, struct_name = is_struct(self.spec_self, also_get='struct_name', classname=self.classname, decl=self.decl)
+                # duplicated = struct_name.split('.')
+                # if len(duplicated) >= 3 and duplicated[1] == duplicated[2]:
+                #     print("here", self.spec_self, "classname", self.classname)
                 ty = struct_name.replace('.', '_').lower()
                 self.spec_self = f'#{ty}'+'{}'
             else:

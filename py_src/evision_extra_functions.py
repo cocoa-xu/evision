@@ -19,9 +19,9 @@ gpumat_to_pointer_elixir = '''  @doc """
 
 gpumat_to_pointer_erlang = """
 to_pointer(#{class := 'Elixir.Evision.CUDA.GpuMat', ref := Ref}) ->
-  :evision_nif.cuda_cuda_GpuMat_to_pointer([{img, Ref}, {mode, local}]).
+  evision_nif:cuda_cuda_GpuMat_to_pointer([{img, Ref}, {mode, local}]).
 to_pointer(#{class := 'Elixir.Evision.CUDA.GpuMat', ref := Ref}, Mode) ->
-  :evision_nif.cuda_cuda_GpuMat_to_pointer([{img, Ref}, {mode, Mode}]).
+  evision_nif:cuda_cuda_GpuMat_to_pointer([{img, Ref}, {mode, Mode}]).
 """
 
 extra_functions = {
