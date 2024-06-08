@@ -1296,7 +1296,7 @@ def map_argtype_in_spec_erlang(classname: str, argtype: str, is_in: bool, decl: 
     elif argtype == 'float':
         return 'number()'
     elif argtype in ['String', 'c_string', 'string', 'cv::String', 'std::string']:
-        return 'binary()'
+        return '(unicode:charlist() or binary())'
     elif argtype in ['char', 'uchar']:
         return 'char()'
     elif argtype == 'void':
@@ -1544,7 +1544,7 @@ def map_argtype_to_guard_erlang(argname, argtype, classname: Optional[str] = Non
     elif argtype == 'float':
         return f'is_float({argname})'
     elif argtype == 'String' or argtype == 'c_string' or argtype == 'string':
-        return f'is_list({argname})'
+        return f'(is_list({argname}) or is_binary({argname}))'
     elif argtype == 'char':
         return f'is_list({argname})'
     elif argtype == 'Range':
