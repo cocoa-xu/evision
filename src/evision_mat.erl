@@ -19,6 +19,14 @@
 '__from_struct__'(#evision_mat{ref=Ref}) ->
     Ref.
 
+to_pointer(Mat) when is_tuple(Mat), tuple_size(Mat) > 0, element(1, Mat) == evision_mat ->
+  MatRef = '__from_struct__'(Mat),
+  evision_nif:mat_at([{img, MatRef}, {mode, local}]).
+
+to_pointer(Mat, Mode) when is_tuple(Mat), tuple_size(Mat) > 0, element(1, Mat) == evision_mat, is_atom(Mode) ->
+  MatRef = '__from_struct__'(Mat),
+  evision_nif:mat_at([{img, MatRef}, {mode, Mode}]).
+
 full(Shape, Number, {T, L}) when is_tuple(Shape) ->
     ToShape = [element(I, Shape) || I <- lists:seq(1, tuple_size(Shape))],
     Ret = evision_nif:mat_full([{number, Number}, {t, T}, {l, L}, {shape, ToShape}]),
