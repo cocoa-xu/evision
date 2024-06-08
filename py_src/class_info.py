@@ -321,7 +321,7 @@ class ClassInfo(object):
             module_file_generator.write_erlang(f'-module({atom_erlang_module_name.lower()}).\n-compile(nowarn_export_all).\n-compile([export_all]).\n-include("evision.hrl").\n\n')    
             module_file_generator.write_erlang(
                 ES.generic_struct_template_erlang.substitute(
-                    atom_elixir_module_name=atom_elixir_module_name.replace('"', ''),
+                    atom_elixir_module_name=f"Elixir1.{atom_elixir_module_name.replace('"', '')}",
                     atom_erlang_module_name=atom_erlang_module_name
                 )
             )

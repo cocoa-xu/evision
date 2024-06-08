@@ -5,11 +5,18 @@ to_struct(Ret) when is_map(Ret) ->
     case maps:is_key(class, Ret) of
         true ->
             Class = maps:get(class, Ret),
-            Module = list_to_atom(string:to_lower(io_lib:fwrite("evision_~s", [Class]))),
-            case erlang:function_exported(Module, '__to_struct__', 1) of
-                true ->
-                    Module:'__to_struct__'(Ret);
-                false ->
+            ClassName = atom_to_list(Class),
+            Module = case string:prefix(ClassName, "Elixir.Evision.") of
+                nomatch ->
+                    list_to_atom(string:to_lower(io_lib:fwrite("evision_~s", [ClassName])));
+                Name ->
+                    list_to_atom(string:to_lower("evision_" ++ Name))
+            end,
+            try Module:'__to_struct__'(Ret) of
+                Result ->
+                    Result
+            catch
+                _ ->
                     Ret
             end;
         false ->

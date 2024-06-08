@@ -4,7 +4,7 @@
 
 -include("generated/evision.hrl").
 
-'__to_struct__'(#{class := 'Mat', channels := Channels, dims := Dims, type := Type, raw_type := RawType, shape := Shape, ref := Ref}) ->
+'__to_struct__'(#{class := 'Elixir.Evision.Mat', channels := Channels, dims := Dims, type := Type, raw_type := RawType, shape := Shape, ref := Ref}) ->
     #evision_mat{
         channels = Channels,
         dims = Dims,

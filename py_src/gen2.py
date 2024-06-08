@@ -85,7 +85,7 @@ class BeamWrapperGenerator(object):
         self.evision_constant_elixir.write(ET.gen_cv_types_elixir)
 
         self.evision_erlang.write('-module(evision).\n-compile(nowarn_export_all).\n-compile([export_all]).\n-include("evision.hrl").\n\n')
-        self.evision_erlang.write('\'__to_struct__\'(Any) ->\n  evision_internal_structurise:from_struct(Any).\n\n')
+        self.evision_erlang.write('\'__to_struct__\'(Any) ->\n  evision_internal_structurise:to_struct(Any).\n\n')
 
         self.evision_constant_erlang.write('-module(evision_constant).\n-compile(nowarn_export_all).\n-compile([export_all]).\n\n')
 
@@ -442,7 +442,7 @@ class BeamWrapperGenerator(object):
                     atom_erlang_module_name = f"evision_{atom_erlang_module_name}"
                 module_file_generator.write_erlang(
                     ES.generic_struct_template_erlang.substitute(
-                        atom_elixir_module_name=f"Elixir.{mapped_elixir_module_name}",
+                        atom_elixir_module_name=f"Elixir.{atom_elixir_module_name}",
                         atom_erlang_module_name=atom_erlang_module_name
                     )
                 )
