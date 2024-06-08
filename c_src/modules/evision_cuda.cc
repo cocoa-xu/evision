@@ -4,6 +4,8 @@
 #include <cuda_runtime.h>
 
 #include <cstring>
+#include <cstdint>
+#include <vector>
 #include <iostream>
 
 std::pair<std::vector<unsigned char>, int> get_cuda_ipc_handle(std::uintptr_t ptr) {

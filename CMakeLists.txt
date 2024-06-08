@@ -66,10 +66,27 @@ endif()
 if(WIN32)
     string(REPLACE "\\" "/" C_SRC "${C_SRC}")
 endif()
-file(GLOB evision_bindings_main "${C_SRC}/*.hpp" "${C_SRC}/*.h" "${C_SRC}/*.cpp" "${C_SRC}/*.cc")
+file(GLOB evision_bindings_main "${C_SRC}/*.hpp" "${C_SRC}/*.h" "${C_SRC}/*.cpp")
 file(GLOB evision_custom_headers "${C_SRC}/evision_custom_headers/*.hpp")
 file(GLOB evision_modules "${C_SRC}/modules/*.hpp" "${C_SRC}/modules/*.h")
 file(GLOB evision_backend "${C_SRC}/modules/evision_backend/*.h")
+set(EVISION_LIBRARIES "${OpenCV_LIBS}")
+
+if(EVISION_ENABLE_CUDA)
+    find_package(CUDA REQUIRED)
+    include_directories("${CUDA_INCLUDE_DIRS}")
+    execute_process(COMMAND bash -c "nvcc -shared -Xcompiler -fPIC -DCUDA_ENABLED -c \"${C_SRC}/modules/evision_cuda.cc\" -o \"${C_SRC}/modules/evision_cuda.o\"" RESULT_VARIABLE STATUS)
+    if(STATUS STREQUAL "0")
+        message(STATUS "Successfully compiled evision_cuda.cc using nvcc")
+    else()
+        message(FATAL_ERROR "Failed to compile evision_cuda.cc using nvcc")
+    endif()
+    list(APPEND evision_bindings_main "${C_SRC}/modules/evision_cuda.o")
+    list(APPEND EVISION_LIBRARIES cudart)
+    add_compile_definitions(CUDA_ENABLED)
+else()
+    list(APPEND evision_bindings_main "${C_SRC}/modules/evision_cuda.cc" "${C_SRC}/modules/evision_cuda.h")
+endif()
 
 add_library(evision SHARED
     ${evision_bindings_main}
@@ -77,17 +94,11 @@ add_library(evision SHARED
     ${evision_modules}
     ${evision_backend}
 )
-
-if(EVISION_ENABLE_CUDA)
-    find_package(CUDA REQUIRED)
-    include_directories("${CUDA_INCLUDE_DIRS}")
-    target_compile_definitions(evision PRIVATE EVISION_HAVE_CUDA)
-endif()
 install(
     TARGETS evision
     RUNTIME DESTINATION "${PRIV_DIR}"
 )
-target_link_libraries(evision "${OpenCV_LIBS}")
+target_link_libraries(evision "${EVISION_LIBRARIES}")
 set_property(TARGET evision PROPERTY CXX_STANDARD 14)
 set_property(TARGET evision PROPERTY POSITION_INDEPENDENT_CODE ON)
 set_target_properties(evision PROPERTIES PREFIX "")

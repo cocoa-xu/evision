@@ -65,15 +65,13 @@ static ERL_NIF_TERM evision_cv_mat_to_pointer(ErlNifEnv *env, int argc, const ER
                     pointer_vec.push_back(bytePtr[i]);
                 }
             }
-            // todo: use nvcc to compile `evision_cuda.{cc,h}`
-            //
-            // else if (pointer_kind == "cuda_ipc") {
-            //     auto result = get_cuda_ipc_handle(ptr);
-            //     if (result.second) {
-            //         return evision::nif::error(env, "Unable to get cuda IPC handle");
-            //     }
-            //     pointer_vec = result.first;
-            // }
+            else if (pointer_kind == "cuda_ipc") {
+                auto result = get_cuda_ipc_handle(ptr);
+                if (result.second) {
+                    return evision::nif::error(env, "Unable to get cuda IPC handle");
+                }
+                pointer_vec = result.first;
+            }
             if (pointer_vec.size() == 0) {
                 return enif_make_badarg(env);
             }
