@@ -837,7 +837,8 @@ defmodule Evision.Mat do
   @doc """
   Get raw pointers
 
-  Currently only supports `Evision.CUDA.GpuMat.t()` and `mode` is `:local`
+  Currently only supports `Evision.CUDA.GpuMat.t()` and
+  when `mode` is either `:local` or `:cuda_ipc`
   """
   def to_pointer(%{ref: ref}, mode) do
     :evision_nif.mat_to_pointer(ref, mode: mode)

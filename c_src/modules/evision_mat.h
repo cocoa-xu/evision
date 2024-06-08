@@ -12,6 +12,9 @@
 #else
 #include <unistd.h>
 #endif
+#if EVISION_HAVE_CUDA
+#include <cuda_runtime.h>
+#endif
 #include "../nif_utils.hpp"
 #include "evision_mat_utils.hpp"
 #include "evision_backend/backend.h"
@@ -35,6 +38,24 @@ static ERL_NIF_TERM evision_cv_mat_empty(ErlNifEnv *env, int argc, const ERL_NIF
     return _evision_make_mat_resource_into_map(env, *res->val, ret);
 }
 
+std::pair<std::vector<unsigned char>, int> get_cuda_ipc_handle(std::uintptr_t ptr) {
+#ifndef EVISION_HAVE_CUDA
+  return std::make_pair({}, true);
+#else
+  cudaIpcMemHandle_t ipc_handle;
+  cudaError_t status = cudaIpcGetMemHandle(&ipc_handle, reinterpret_cast<void*>(ptr));
+
+  // Assuming sizeof(cudaIpcMemHandle_t) is constant
+  const size_t size = sizeof(cudaIpcMemHandle_t);
+
+  // Copy the memory handle to a byte array
+  std::vector<unsigned char> result(size);
+  memcpy(result.data(), &ipc_handle, size);
+
+  return std::make_pair(result, status != cudaSuccess);
+#endif
+}
+
 // @evision c: mat_to_pointer,evision_cv_mat_to_pointer,2
 // @evision nif: def mat_to_pointer(_self,_opts \\ []), do: :erlang.nif_error("Mat::to_pointer not loaded")
 static ERL_NIF_TERM evision_cv_mat_to_pointer(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
@@ -56,20 +77,20 @@ static ERL_NIF_TERM evision_cv_mat_to_pointer(ErlNifEnv *env, int argc, const ER
         if (evision_cuda_GpuMat_getp(env, self, self1)) {
             Ptr<cv::cuda::GpuMat> _self_ = *(self1);
             std::vector<unsigned char> pointer_vec;
+            std::uintptr_t ptr = (std::uintptr_t)_self_->cudaPtr();
             if (pointer_kind == "local") {
-                std::uintptr_t ptr = (std::uintptr_t)_self_->cudaPtr();
                 unsigned char* bytePtr = reinterpret_cast<unsigned char*>(&ptr);
                 for (size_t i = 0; i < sizeof(void*); i++) {
                     pointer_vec.push_back(bytePtr[i]);
                 }
             }
-            // else if (pointer_kind == "cuda_ipc") {
-            //     auto result = get_cuda_ipc_handle(ptr);
-            //     if (result.second) {
-            //     return exla::nif::error(env, "Unable to get cuda IPC handle");
-            //     }
-            //     pointer_vec = result.first;
-            // }
+            else if (pointer_kind == "cuda_ipc") {
+                auto result = get_cuda_ipc_handle(ptr);
+                if (result.second) {
+                    return evision::nif::error(env, "Unable to get cuda IPC handle");
+                }
+                pointer_vec = result.first;
+            }
             if (pointer_vec.size() == 0) {
                 return enif_make_badarg(env);
             }

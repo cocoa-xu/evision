@@ -36,6 +36,9 @@ else()
     set(C_SRC_HEADERS_TXT "headers.txt")
 endif()
 
+option(EVISION_ENABLE_CUDA "Enable OpenCV CUDA modules" ON)
+message(STATUS "EVISION_ENABLE_CUDA=${EVISION_ENABLE_CUDA}")
+
 if(POLICY CMP0068)
     cmake_policy(SET CMP0068 NEW)
 endif()
@@ -74,6 +77,12 @@ add_library(evision SHARED
     ${evision_modules}
     ${evision_backend}
 )
+
+if(EVISION_ENABLE_CUDA)
+    find_package(CUDA REQUIRED)
+    include_directories("${CUDA_INCLUDE_DIRS}")
+    target_compile_definitions(evision PRIVATE EVISION_HAVE_CUDA)
+endif()
 install(
     TARGETS evision
     RUNTIME DESTINATION "${PRIV_DIR}"

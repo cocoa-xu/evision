@@ -61,6 +61,7 @@ else
 	C_SRC_HEADERS_TXT = "$(C_SRC)/headers.txt"
 	HEADERS_TXT = $(CMAKE_OPENCV_BUILD_DIR)/modules/python_bindings_generator/headers.txt
 endif
+EVISION_ENABLE_CUDA ?= false
 # ------ options for opencv_contrib end ------
 
 # ------ Apple device specific options start ------
@@ -253,6 +254,7 @@ $(EVISION_SO): $(C_SRC_HEADERS_TXT) $(OPENCV_CONFIG_CMAKE)
 			-D ENABLED_CV_MODULES=$(ENABLED_CV_MODULES) \
 			-D EVISION_GENERATE_LANG="$(EVISION_GENERATE_LANG)" \
 			-D EVISION_ENABLE_CONTRIB="$(EVISION_ENABLE_CONTRIB)" \
+			-D EVISION_ENABLE_CUDA="$(EVISION_ENABLE_CUDA)" \
 			$(CMAKE_CONFIGURE_FLAGS) $(CMAKE_EVISION_OPTIONS) "$(shell pwd)" && \
 			make "-j$(DEFAULT_JOBS)" \
 			|| { echo "\033[0;31mincomplete build of OpenCV found in '$(CMAKE_OPENCV_BUILD_DIR)', please delete that directory and retry\033[0m" && exit 1 ; } ; } \
