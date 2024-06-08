@@ -5,7 +5,7 @@
 #include "../../ArgInfo.hpp"
 
 // @evision c: mat_floor, evision_cv_mat_floor, 1
-// @evision nif: def mat_floor(_opts \\ []), do: :erlang.nif_error("Mat::floor not loaded")
+// @evision nif: def mat_floor(_opts \\ []), do: :erlang.nif_error(:undef)
 static ERL_NIF_TERM evision_cv_mat_floor(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;

@@ -5,7 +5,7 @@
 #include "../../ArgInfo.hpp"
 
 // @evision c: mat_to_batched,evision_cv_mat_to_batched,1
-// @evision nif: def mat_to_batched(_opts \\ []), do: :erlang.nif_error("Mat::to_batched not loaded")
+// @evision nif: def mat_to_batched(_opts \\ []), do: :erlang.nif_error(:undef)
 static ERL_NIF_TERM evision_cv_mat_to_batched(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;

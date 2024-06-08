@@ -5,7 +5,7 @@
 #include "../../ArgInfo.hpp"
 
 // @evision c: mat_expm1, evision_cv_mat_expm1, 1
-// @evision nif: def mat_expm1(_opts \\ []), do: :erlang.nif_error("Mat::expm1 not loaded")
+// @evision nif: def mat_expm1(_opts \\ []), do: :erlang.nif_error(:undef)
 static ERL_NIF_TERM evision_cv_mat_expm1(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;

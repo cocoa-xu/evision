@@ -6,7 +6,7 @@
 #include "../evision_mat_utils.hpp"
 
 // @evision c: mat_add, evision_cv_mat_add, 1
-// @evision nif: def mat_add(_opts \\ []), do: :erlang.nif_error("Mat::add not loaded")
+// @evision nif: def mat_add(_opts \\ []), do: :erlang.nif_error(:undef)
 static ERL_NIF_TERM evision_cv_mat_add(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     using namespace evision::nif;
@@ -35,7 +35,7 @@ static ERL_NIF_TERM evision_cv_mat_add(ErlNifEnv *env, int argc, const ERL_NIF_T
 }
 
 // @evision c: mat_add_typed, evision_cv_mat_add_typed, 1
-// @evision nif: def mat_add_typed(_opts \\ []), do: :erlang.nif_error("Mat::add not loaded")
+// @evision nif: def mat_add_typed(_opts \\ []), do: :erlang.nif_error(:undef)
 static ERL_NIF_TERM evision_cv_mat_add_typed(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;

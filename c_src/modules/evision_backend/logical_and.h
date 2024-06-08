@@ -5,7 +5,7 @@
 #include "../../ArgInfo.hpp"
 
 // @evision c: mat_logical_and, evision_cv_mat_logical_and, 1
-// @evision nif: def mat_logical_and(_opts \\ []), do: :erlang.nif_error("Mat::logical_and not loaded")
+// @evision nif: def mat_logical_and(_opts \\ []), do: :erlang.nif_error(:undef)
 static ERL_NIF_TERM evision_cv_mat_logical_and(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;

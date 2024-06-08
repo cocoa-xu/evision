@@ -5,7 +5,7 @@
 #include "../../ArgInfo.hpp"
 
 // @evision c: mat_bitwise_xor, evision_cv_mat_bitwise_xor, 1
-// @evision nif: def mat_bitwise_xor(_opts \\ []), do: :erlang.nif_error("Mat::bitwise_xor not loaded")
+// @evision nif: def mat_bitwise_xor(_opts \\ []), do: :erlang.nif_error(:undef)
 static ERL_NIF_TERM evision_cv_mat_bitwise_xor(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;

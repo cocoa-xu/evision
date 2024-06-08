@@ -126,7 +126,7 @@ void transpose(void * original, void * out, uint64_t ndims, int * shape, int * n
 }
 
 // @evision c: mat_transpose,evision_cv_mat_transpose,1
-// @evision nif: def mat_transpose(_opts \\ []), do: :erlang.nif_error("Mat::transpose not loaded")
+// @evision nif: def mat_transpose(_opts \\ []), do: :erlang.nif_error(:undef)
 static ERL_NIF_TERM evision_cv_mat_transpose(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;

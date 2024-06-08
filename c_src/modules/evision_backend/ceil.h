@@ -5,7 +5,7 @@
 #include "../../ArgInfo.hpp"
 
 // @evision c: mat_ceil, evision_cv_mat_ceil, 1
-// @evision nif: def mat_ceil(_opts \\ []), do: :erlang.nif_error("Mat::ceil not loaded")
+// @evision nif: def mat_ceil(_opts \\ []), do: :erlang.nif_error(:undef)
 static ERL_NIF_TERM evision_cv_mat_ceil(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;

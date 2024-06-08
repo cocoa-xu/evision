@@ -5,7 +5,7 @@
 #include "../../ArgInfo.hpp"
 
 // @evision c: mat_clip, evision_cv_mat_clip, 1
-// @evision nif: def mat_clip(_opts \\ []), do: :erlang.nif_error("Mat::clip not loaded")
+// @evision nif: def mat_clip(_opts \\ []), do: :erlang.nif_error(:undef)
 static ERL_NIF_TERM evision_cv_mat_clip(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;
