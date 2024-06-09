@@ -312,7 +312,7 @@ def map_argtype_to_type(argtype: str, classname: Optional[str] = None):
     if len(argtype) > 0 and argtype[-1] == '*':
         argtype = argtype[:-1]
 
-    if is_int_type(argtype):
+    if is_int_type(argtype) or is_enum_type(argtype, classname, decl=None):
         return 'i'
     elif argtype == 'bool':
         return 'b'
@@ -390,7 +390,7 @@ def is_basic_types(argtype: str):
         argtype = argtype[len("vector<"):-1]
         return is_basic_types(argtype)
     return argtype in ['bool', 'float', 'double', 'string', 'void*', 'String', 'c_string'] or \
-        is_int_type(argtype) or is_tuple_type(argtype)
+        is_int_type(argtype) or is_tuple_type(argtype) or is_enum_type(argtype, classname=None, decl=None)
 
 def is_int_type(argtype):
     int_types = [
@@ -407,58 +407,70 @@ def is_int_type(argtype):
         'int',
         'size_t',
         'int64',
-        'ORB_ScoreType',
-        'ORB::ScoreType',
-        'dnn_Backend',
-        'dnn_Target',
-        'AKAZE_DescriptorType',
-        'AKAZE::DescriptorType',
-        'KAZE_DiffusivityType',
-        'KAZE::DiffusivityType',
-        'DescriptorMatcher_MatcherType',
-        'AgastFeatureDetector_DetectorType',
-        'AgastFeatureDetector::DetectorType',
-        'FastFeatureDetector_DetectorType',
-        'FastFeatureDetector::DetectorType',
-        'InterpolationFlags',
-        'AccessFlag',
-        'WaveCorrectKind',
-        'VideoCaptureAPIs',
-        'flann_distance_t',
-        'cvflann_flann_algorithm_t',
-        'cvflann::flann_algorithm_t',
-        'cvflann_flann_distance_t',
-        'cvflann::flann_distance_t',
-        'DeviceInfo::ComputeMode',
-        'CorrectionLevel',
-        'EncodeMode',
-        'LocalOptimMethod',
-        'NeighborSearchMethod',
-        'SamplingMethod',
-        'ScoreMethod',
-        'HOGDescriptor_HistogramNormType',
-        "VolumeType",
-        "Volume",
-        "kinfu_VolumeType",
-        "text_decoder_mode",
-        "cuda_ConnectedComponentsAlgorithmsTypes",
-        'CCM_TYPE',
-        'COLOR_SPACE',
-        'CONST_COLOR',
-        'DISTANCE_TYPE',
-        'INITIAL_METHOD_TYPE',
-        'LINEAR_TYPE',
-        'InterpolationType',
-        'SolverType',
-        'SupportRegionType',
-        'CornerRefineMethod',
-        'PatternPositionType',
-        'PredefinedDictionaryType',
-        'DataLayout',
-        'ImagePaddingMode',
-        'TYPECHART',
     ]
     return argtype in int_types
+
+def is_enum_type(argtype, classname, decl, get_type: str=None):
+    enum_types = {
+        'ORB_ScoreType': 'Evision.ORB.ScoreType.enum()',
+        'ORB::ScoreType': 'Evision.ORB.ScoreType.enum()',
+        'dnn_Backend': 'Evision.DNN.Backend.enum()',
+        'dnn_Target': 'Evision.DNN.Target.enum()',
+        'Target': 'Evision.DNN.Target.enum()',
+        'AKAZE_DescriptorType': 'Evision.AKAZE.DescriptorType.enum()',
+        'AKAZE::DescriptorType': 'Evision.AKAZE.DescriptorType.enum()',
+        'KAZE_DiffusivityType': 'Evision.KAZE.DiffusivityType.enum()',
+        'KAZE::DiffusivityType': 'Evision.KAZE.DiffusivityType.enum()',
+        'DescriptorMatcher_MatcherType': 'integer()',
+        'AgastFeatureDetector_DetectorType': 'Evision.AgastFeatureDetector.DetectorType.enum()',
+        'AgastFeatureDetector::DetectorType': 'Evision.AgastFeatureDetector.DetectorType.enum()',
+        'FastFeatureDetector_DetectorType': 'Evision.FastFeatureDetector.DetectorType.enum()',
+        'FastFeatureDetector::DetectorType': 'Evision.FastFeatureDetector.DetectorType.enum()',
+        'InterpolationFlags': 'Evision.InterpolationFlags.enum()',
+        'AccessFlag': 'Evision.AccessFlag.enum()',
+        'WaveCorrectKind': 'Evision.Detail.WaveCorrectKind.enum()',
+        'VideoCaptureAPIs': 'Evision.VideoCaptureAPIs.enum()',
+        'PolishingMethod': 'Evision.PolishingMethod.enum()',
+        'VideoCaptureAPIs': 'Evision.VideoCaptureAPIs.enum()',
+        'DeviceInfo::ComputeMode': 'Evision.CUDA.DeviceInfo.ComputeMode.enum()',
+        'CorrectionLevel': 'Evision.QRCodeEncoder.CorrectionLevel.enum()',
+        'EncodeMode': 'Evision.QRCodeEncoder.EncodeMode.enum()',
+        'LocalOptimMethod': 'Evision.LocalOptimMethod.enum()',
+        'NeighborSearchMethod': 'Evision.NeighborSearchMethod.enum()',
+        'SamplingMethod': 'Evision.SamplingMethod.enum()',
+        'ScoreMethod': 'Evision.ScoreMethod.enum()',
+        'HOGDescriptor_HistogramNormType': 'Evision.HOGDescriptor.HistogramNormType.enum()',
+        "VolumeType": 'Evision.KinFu.VolumeType.enum()',
+        "kinfu_VolumeType": 'Evision.KinFu.VolumeType.enum()',
+        "text_decoder_mode": 'Evision.Text.DecoderMode.enum()',
+        "cuda_ConnectedComponentsAlgorithmsTypes": 'Evision.ConnectedComponentsAlgorithmsTypes.enum()',
+        'CCM_TYPE': 'Evision.CCM.CCM_TYPE.enum()',
+        'COLOR_SPACE': 'Evision.CCM.COLOR_SPACE.enum()',
+        'CONST_COLOR': 'Evision.CCM.CONST_COLOR.enum()',
+        'DISTANCE_TYPE': 'Evision.CCM.DISTANCE_TYPE.enum()',
+        'INITIAL_METHOD_TYPE': 'Evision.CCM.INITIAL_METHOD_TYPE.enum()',
+        'LINEAR_TYPE': 'Evision.CCM.LINEAR_TYPE.enum()',
+        'InterpolationType': '(Evision.InterpolationFlags.enum() | Evision.InterpolationMasks.enum())',
+        'CornerRefineMethod': 'Evision.ArUco.CornerRefineMethod.enum()',
+        'PatternPositionType': 'Evision.ArUco.PatternPositionType.enum()',
+        'PredefinedDictionaryType': 'Evision.ArUco.PredefinedDictionaryType.enum()',
+        'DataLayout': 'Evision.DNN.DataLayout.enum()',
+        'ImagePaddingMode': 'Evision.DNN.ImagePaddingMode.enum()',
+        'TYPECHART': 'Evision.MCC.TYPECHART.enum()',
+        'SolverType': 'integer()',
+        'SupportRegionType': 'integer()',
+        'flann_distance_t': 'integer()',
+        'cvflann_flann_algorithm_t': 'integer()',
+        'cvflann::flann_algorithm_t': 'integer()',
+        'cvflann_flann_distance_t': 'integer()',
+        'cvflann::flann_distance_t': 'integer()',
+    }
+    if get_type is None:
+        return argtype in enum_types
+    elif get_type == 'elixir':
+        return enum_types[argtype]
+    else:
+        return 'integer()'
 
 def is_list_type(argtype):
     list_types = [
@@ -1152,7 +1164,7 @@ def is_struct(argtype: str, also_get: Optional[str] = None, classname: Optional[
         argtype = argtype[len('Ptr<'):-1].strip()
     arg_is_struct = argtype in struct_types or argtype in special_structs
 
-    if argtype in ["pair<int, double>", "Scalar", "kinfu_VolumeType", "VolumeType", "Volume"]:
+    if argtype in ["pair<int, double>", "Scalar", "kinfu_VolumeType", "VolumeType"]:
         return False
 
     is_strict_match = False
@@ -1348,7 +1360,6 @@ manual_type_spec_map_common = {
     'TermCriteria': '{integer(), integer(), number()}',
     'cv::TermCriteria': '{integer(), integer(), number()}',
     'MatShape': 'list(integer())',
-    'VideoCaptureAPIs': 'number()',
 }
 
 manual_type_spec_elixir = {
@@ -1403,7 +1414,7 @@ def map_argtype_in_spec_erlang(classname: str, argtype: str, is_in: bool, decl: 
     if argtype.startswith("cv::"):
         argtype = argtype[4:]
 
-    if is_int_type(argtype):
+    if is_int_type(argtype) or is_enum_type(argtype, classname, decl):
         return 'integer()'
     elif argtype == 'bool':
         return 'boolean()'
@@ -1412,7 +1423,7 @@ def map_argtype_in_spec_erlang(classname: str, argtype: str, is_in: bool, decl: 
     elif argtype == 'float':
         return 'number()'
     elif argtype in ['String', 'c_string', 'string', 'cv::String', 'std::string']:
-        return '(unicode:charlist() | binary())'
+        return 'unicode:charlist()'
     elif argtype in ['char', 'uchar']:
         return 'char()'
     elif argtype == 'void':
@@ -1431,8 +1442,6 @@ def map_argtype_in_spec_erlang(classname: str, argtype: str, is_in: bool, decl: 
         return '#evision_linemod_modality{}'
     elif argtype in vec_out_types:
         return vec_out_types[argtype]
-    elif argtype == 'Target':
-        return 'integer()'
     elif 'IndexParams' in argtype:
         return 'map()'
     elif argtype in ["FeatureDetector", "DescriptorExtractor"]:
@@ -1451,13 +1460,11 @@ def map_argtype_in_spec_erlang(classname: str, argtype: str, is_in: bool, decl: 
         return '#evision_qrcodedetectoraruco{}'
     elif argtype in ['aruco_DetectorParameters', 'aruco::DetectorParameters']:
         return 'term()'
-    elif argtype == 'PolishingMethod' and classname == 'UsacParams':
-        return 'integer()'
     elif argtype == 'LayerId':
         return 'term()'
     elif argtype == 'GpuMat' or argtype == 'cuda::GpuMat':
         return '#evision_cuda_gpumat{}'
-    elif argtype == 'IndexParams' or argtype == 'SearchParams' or argtype == 'Moments':
+    elif argtype == 'SearchParams' or argtype == 'Moments':
         return 'map()'
     elif argtype in ['Board', 'Dictionary'] and len(decl) > 0 and decl[0].startswith("cv.aruco."):
         return '#evision_aruco_board{}'
@@ -1518,6 +1525,8 @@ def map_argtype_in_spec_elixir(classname: str, argtype: str, is_in: bool, decl: 
 
     if is_int_type(argtype):
         return 'integer()'
+    elif is_enum_type(argtype, classname, decl):
+        return is_enum_type(argtype, classname, decl, get_type='elixir')
     elif argtype == 'bool':
         return 'boolean()'
     elif argtype == 'double':
@@ -1540,9 +1549,9 @@ def map_argtype_in_spec_elixir(classname: str, argtype: str, is_in: bool, decl: 
         return 'term()'
     elif argtype == 'ERFilter::Callback':
         return 'term()'
-    elif argtype == 'Target':
-        return 'integer()'
     elif 'IndexParams' in argtype:
+        return 'map()'
+    elif argtype == 'SearchParams' or argtype == 'Moments':
         return 'map()'
     elif argtype in vec_out_types:
         return vec_out_types[argtype]
@@ -1559,8 +1568,6 @@ def map_argtype_in_spec_elixir(classname: str, argtype: str, is_in: bool, decl: 
         return 'reference()'
     elif argtype == 'Status' and classname == 'Stitcher':
         return 'integer()'
-    elif argtype == 'COLOR_SPACE' or argtype == 'CONST_COLOR':
-        return 'integer()'
     elif argtype == 'Device' and classname == 'ocl_Device':
         return 'Evision.OCL.Device.t()'
     elif argtype == 'Index' and classname == 'flann_Index':
@@ -1573,12 +1580,8 @@ def map_argtype_in_spec_elixir(classname: str, argtype: str, is_in: bool, decl: 
         return 'Evision.QRCodeDetectorAruco.Params'
     elif argtype in ['aruco_DetectorParameters', 'aruco::DetectorParameters']:
         return 'Evision.Aruco.DetectorParameters'
-    elif argtype == 'PolishingMethod' and classname == 'UsacParams':
-        return 'integer()'
     elif argtype == 'LayerId':
         return 'term()'
-    elif argtype == 'IndexParams' or argtype == 'SearchParams' or argtype == 'Moments':
-        return 'map()'
     elif argtype in manual_type_spec_elixir:
         return manual_type_spec_elixir[argtype]
     elif len(decl) > 0 and decl[0].startswith("cv.aruco.") and argtype in ['Board', 'Dictionary']:
@@ -1605,6 +1608,8 @@ def map_argtype_in_spec_elixir(classname: str, argtype: str, is_in: bool, decl: 
     elif is_struct(argtype, classname=classname, decl=decl):
         _, struct_name = is_struct(argtype, also_get='struct_name', classname=classname, decl=decl)
         return f'{struct_name}.t()'
+    elif 'Volume' == argtype:
+        return 'Evision.KinFu.Volume.t()'
     else:
         # print(f'warning: generate_spec: unknown argtype `{argtype}`, input_arg? {is_in}, class={classname}')
         return 'term()'
@@ -1613,7 +1618,7 @@ def map_argtype_to_guard_elixir(argname, argtype, classname: Optional[str] = Non
     if argtype == 'vector_char' or argtype == 'vector_uchar' or argtype == 'std::vector<char>' or argtype == 'std::vector<uchar>':
         return f'is_binary({argname})'
 
-    if is_int_type(argtype):
+    if is_int_type(argtype) or is_enum_type(argtype, classname, None):
         return f'is_integer({argname})'
     elif argtype == 'bool':
         return f'is_boolean({argname})'
@@ -1627,10 +1632,10 @@ def map_argtype_to_guard_elixir(argname, argtype, classname: Optional[str] = Non
         return f'(-128 <= {argname} and {argname} <= 127)'
     elif argtype == 'Range':
         return f'(is_tuple({argname}) or {argname} == :all)'
-    elif argtype == 'COLOR_SPACE' or argtype == 'CONST_COLOR':
-        return f'is_integer({argname})'
     elif is_tuple_type(argtype):
         return f'is_tuple({argname})'
+    elif argtype == 'IndexParams' or argtype == 'SearchParams' or argtype == 'Moments':
+        return f'is_map({argname})'
     elif is_struct(argtype, classname=classname):
         _, struct_name = is_struct(argtype, also_get='struct_name', classname=classname)
         if struct_name == 'Evision.Feature2D':
@@ -1639,24 +1644,21 @@ def map_argtype_to_guard_elixir(argname, argtype, classname: Optional[str] = Non
             return f'(is_struct({argname}, Evision.Mat) or is_struct({argname}, Nx.Tensor))'
         else:
             return f'is_struct({argname}, {struct_name})'
+    elif 'Volume' == argtype:
+        return f'is_struct({argname}, Evision.KinFu.Volume)'
     elif is_ref_or_struct(argtype):
         return f'(is_reference({argname}) or is_struct({argname}))'
     elif is_list_type(argtype):
         return f'is_list({argname})'
     else:
-        if argtype == 'LayerId':
-            return ''
-        if argtype == 'IndexParams' or argtype == 'SearchParams' or argtype == 'Moments':
-            return f'is_map({argname})'
-        else:
-            return ''
+        return ''
 
 
 def map_argtype_to_guard_erlang(argname, argtype, classname: Optional[str] = None):
     if argtype == 'vector_char' or argtype == 'vector_uchar' or argtype == 'std::vector<char>' or argtype == 'std::vector<uchar>':
         return f'is_binary({argname})'
 
-    if is_int_type(argtype):
+    if is_int_type(argtype) or is_enum_type(argtype, classname, None):
         return f'is_integer({argname})'
     elif argtype == 'bool':
         return f'is_boolean({argname})'
@@ -1670,10 +1672,10 @@ def map_argtype_to_guard_erlang(argname, argtype, classname: Optional[str] = Non
         return f'is_list({argname})'
     elif argtype == 'Range':
         return f'(is_tuple({argname}) or {argname} == all)'
-    elif argtype == 'COLOR_SPACE' or argtype == 'CONST_COLOR':
-        return f'is_integer({argname})'
     elif is_tuple_type(argtype):
         return f'is_tuple({argname})'
+    elif argtype == 'IndexParams' or argtype == 'SearchParams' or argtype == 'Moments':
+        return f'is_map({argname})'
     elif is_struct(argtype, classname=classname):
         _, struct_name = is_struct(argtype, also_get='struct_name', classname=classname)
         struct_name = struct_name.replace(".", "_").lower()
@@ -1685,12 +1687,7 @@ def map_argtype_to_guard_erlang(argname, argtype, classname: Optional[str] = Non
     elif is_list_type(argtype):
         return f'is_list({argname})'
     else:
-        if argtype == 'LayerId':
-            return ''
-        if argtype == 'IndexParams' or argtype == 'SearchParams' or argtype == 'Moments':
-            return f'is_map({argname})'
-        else:
-            return ''
+        return ''
 
 
 def map_uppercase_to_erlang_name(name):

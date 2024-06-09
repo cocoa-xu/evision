@@ -111,6 +111,18 @@ defmodule Evision.Mat do
   """
   @type maybe_mat_in :: reference() | Evision.Mat.t() | Nx.Tensor.t()
 
+  @type enum :: integer()
+  @doc enum: true
+  def cv_MAGIC_VAL, do: 1124007936
+  @doc enum: true
+  def cv_AUTO_STEP, do: 0
+  @doc enum: true
+  def cv_MAGIC_MASK, do: 4294901760
+  @doc enum: true
+  def cv_TYPE_MASK, do: 4095
+  @doc enum: true
+  def cv_DEPTH_MASK, do: 7
+
   @doc false
   def to_struct(%{
         :channels => channels,

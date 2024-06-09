@@ -46,6 +46,7 @@ class BeamWrapperGenerator(object):
         self.namespaces = {}
         self.consts = {}
         self.enums = {}
+        self.typed_enums = {}
         self.enum_names = {}
         self.enum_names_io = StringIO()
         self.enum_names_io_erlang = StringIO()
@@ -145,9 +146,143 @@ class BeamWrapperGenerator(object):
             classes.insert(0, namespace.pop())
         return namespace, classes, chunks[-1]
 
-
-    def add_const(self, name, decl):
+    def add_const(self, name, decl, original_name=None):
         (module_name, erl_const_name) = name.split('.')[-2:]
+        if original_name is not None:
+            if not original_name.startswith('cv.'):
+                print(f'warning: enum name {original_name} does not start with `cv.`')
+                sys.exit(-1)
+            if original_name.endswith('.<unnamed>'):
+                original_name = original_name[:-10]
+            if original_name == 'cv':
+               struct_name = 'Evision'
+            else:
+                original_name = original_name[3:]
+                if is_struct(original_name):
+                    _, struct_name = is_struct(original_name, also_get='struct_name')
+                    # print(f'warning: enum name {name} should in {struct_name}')
+                else:
+                    mname = {
+                        'aruco.CornerRefineMethod': 'Evision.ArUco.CornerRefineMethod',
+                        'aruco.PatternPositionType': 'Evision.ArUco.PatternPositionType',
+                        'aruco.PredefinedDictionaryType': 'Evision.ArUco.PredefinedDictionaryType',
+                        'bgsegm.LSBPCameraMotionCompensation': 'Evision.BgSegm.LSBPCameraMotionCompensation',
+                        'bioinspired': 'Evision.Bioinspired',
+                        'ccm.CCM_TYPE': 'Evision.CCM.CCM_TYPE',
+                        'ccm.COLOR_SPACE': 'Evision.CCM.COLOR_SPACE',
+                        'ccm.CONST_COLOR': 'Evision.CCM.CONST_COLOR',
+                        'ccm.DISTANCE_TYPE': 'Evision.CCM.DISTANCE_TYPE',
+                        'ccm.INITIAL_METHOD_TYPE': 'Evision.CCM.INITIAL_METHOD_TYPE',
+                        'ccm.LINEAR_TYPE': 'Evision.CCM.LINEAR_TYPE',
+                        'cuda.SURF_CUDA.KeypointLayout': 'Evision.CUDA.SURF_CUDA.KeypointLayout',
+                        'detail.Blender': 'Evision.Detail.Blender',
+                        'detail.CvFeatureParams.FeatureType': 'Evision.Detail.CvFeatureParams.FeatureType',
+                        'detail.DpSeamFinder.CostFunction': 'Evision.Detail.DpSeamFinder.CostFunction',
+                        'detail.ExposureCompensator': 'Evision.Detail.ExposureCompensator',
+                        'detail.GraphCutSeamFinderBase.CostType': 'Evision.Detail.GraphCutSeamFinderBase.CostType',
+                        'detail.SeamFinder': 'Evision.Detail.SeamFinder',
+                        'detail.Timelapser': 'Evision.Detail.Timelapser',
+                        'detail.TrackerContribSamplerCSC': 'Evision.Detail.TrackerContribSamplerCSC',
+                        'detail.TrackerSamplerCS': 'Evision.Detail.TrackerSamplerCS',
+                        'detail.TrackerSamplerCSC.MODE': 'Evision.Detail.TrackerSamplerCSC.MODE',
+                        'detail.WaveCorrectKind': 'Evision.Detail.WaveCorrectKind',
+                        'fisheye': 'Evision.FishEye',
+                        'ft': 'Evision.Ft',
+                        'kinfu.VolumeType': 'Evision.KinFu.VolumeType',
+                        'mcc.TYPECHART': 'Evision.MCC.TYPECHART',
+                        'ml.LogisticRegression.Methods': 'Evision.ML.LogisticRegression.Methods',
+                        'ml.SVMSGD.MarginType': 'Evision.ML.SVMSGD.MarginType',
+                        'multicalib.MultiCameraCalibration': 'Evision.MultiCalib.MultiCameraCalibration',
+                        'omnidir': 'Evision.Omnidir',
+                        'rgbd.DepthCleaner.DEPTH_CLEANER_METHOD': 'Evision.RGBD.DepthCleaner.DEPTH_CLEANER_METHOD',
+                        'rgbd.Odometry': 'Evision.RGBD.Odometry',
+                        'rgbd.OdometryFrame': 'Evision.RGBD.OdometryFrame',
+                        'rgbd.RgbdNormals.RGBD_NORMALS_METHOD': 'Evision.RGBD.RgbdNormals.RGBD_NORMALS_METHOD',
+                        'rgbd.RgbdPlane.RGBD_PLANE_METHOD': 'Evision.RGBD.RgbdPlane.RGBD_PLANE_METHOD',
+                        'stereo.StereoBinaryBM': 'Evision.Stereo.StereoBinaryBM',
+                        'stereo.StereoBinarySGBM': 'Evision.Stereo.StereoBinarySGBM',
+                        'stereo.StereoMatcher': 'Evision.Stereo.StereoMatcher',
+                        'text': 'Evision.Text',
+                        'text.classifier_type': 'Evision.Text.ClassifierType',
+                        'text.decoder_mode': 'Evision.Text.DecoderMode',
+                        'text.erGrouping_Modes': 'Evision.Text.ERGroupingModes',
+                        'text.ocr_engine_mode': 'Evision.Text.OCREngineMode',
+                        'text.page_seg_mode': 'Evision.Text.PageSegMode',
+                        'xfeatures2d.BEBLID.BeblidSize': 'Evision.XFeatures2D.BEBLID.BeblidSize',
+                        'xfeatures2d.DAISY.NormalizationType': 'Evision.XFeatures2D.DAISY.NormalizationType',
+                        'xfeatures2d.PCTSignatures.DistanceFunction': 'Evision.XFeatures2D.PCTSignatures.DistanceFunction',
+                        'xfeatures2d.PCTSignatures.PointDistribution': 'Evision.XFeatures2D.PCTSignatures.PointDistribution',
+                        'xfeatures2d.PCTSignatures.SimilarityFunction': 'Evision.XFeatures2D.PCTSignatures.SimilarityFunction',
+                        'xfeatures2d.TEBLID.TeblidSize': 'Evision.XFeatures2D.TEBLID.TeblidSize',
+                        'ximgproc.AngleRangeOption': 'Evision.XImgProc.AngleRangeOption',
+                        'ximgproc.EdgeAwareFiltersList': 'Evision.XImgProc.EdgeAwareFiltersList',
+                        'ximgproc.EdgeDrawing.GradientOperator': 'Evision.XImgProc.EdgeDrawing.GradientOperator',
+                        'ximgproc.HoughDeskewOption': 'Evision.XImgProc.HoughDeskewOption',
+                        'ximgproc.HoughOp': 'Evision.XImgProc.HoughOp',
+                        'ximgproc.LocalBinarizationMethods': 'Evision.XImgProc.LocalBinarizationMethods',
+                        'ximgproc.SLICType': 'Evision.XImgProc.SLICType',
+                        'ximgproc.ThinningTypes': 'Evision.XImgProc.ThinningTypes',
+                        'ximgproc.WMFWeightType': 'Evision.XImgProc.WMFWeightType',
+                        'img_hash.BlockMeanHashMode': 'Evision.ImgHash.BlockMeanHashMode',
+                        'structured_light': 'Evision.StructuredLight',
+                        'stereo': 'Evision.Stereo',
+                        'detail.TestOp': 'Evision.Detail.TestOp',
+                        'cuda.HostMem.AllocType': 'Evision.CUDA.HostMem.AllocType',
+                        'cuda.Event.CreateFlags': 'Evision.CUDA.Event.CreateFlags',
+                        'cuda.FeatureSet': 'Evision.CUDA.FeatureSet',
+                        'cuda.DeviceInfo.ComputeMode': 'Evision.CUDA.DeviceInfo.ComputeMode',
+                        '_InputArray.KindFlag': 'Evision.Mat.KindFlag',
+                        '_OutputArray.DepthMask': 'Evision.Mat.DepthMask',
+                        'ocl.Device': 'Evision.OCL.Device',
+                        'ocl.KernelArg': 'Evision.OCL.KernelArg',
+                        'ocl.OclVectorStrategy': 'Evision.OCL.OclVectorStrategy',
+                        'ogl.Buffer.Target': 'Evision.OGL.Buffer.Target',
+                        'ogl.Buffer.Access': 'Evision.OGL.Buffer.Access',
+                        'ogl.Texture2D.Format': 'Evision.OGL.Texture2D.Format',
+                        'ogl.RenderModes': 'Evision.OGL.RenderModes',
+                        'flann.FlannIndexType': 'Evision.Flann.FlannIndexType',
+                        'ml.VariableTypes': 'Evision.ML.VariableTypes',
+                        'ml.ErrorTypes': 'Evision.ML.ErrorTypes',
+                        'ml.SampleTypes': 'Evision.ML.SampleTypes',
+                        'ml.StatModel.Flags': 'Evision.ML.StatModel.Flags',
+                        'ml.KNearest.Types': 'Evision.ML.KNearest.Types',
+                        'ml.SVM.Types': 'Evision.ML.SVM.Types',
+                        'ml.SVM.KernelTypes': 'Evision.ML.SVM.KernelTypes',
+                        'ml.SVM.ParamTypes': 'Evision.ML.SVM.ParamTypes',
+                        'ml.EM.Types': 'Evision.ML.EM.Types',
+                        'ml.EM': 'Evision.ML.EM',
+                        'ml.DTrees.Flags': 'Evision.ML.DTrees.Flags',
+                        'ml.Boost.Types': 'Evision.ML.Boost.Types',
+                        'ml.ANN_MLP.TrainingMethods': 'Evision.ML.ANN_MLP.TrainingMethods',
+                        'ml.ANN_MLP.ActivationFunctions': 'Evision.ML.ANN_MLP.ActivationFunctions',
+                        'ml.ANN_MLP.TrainFlags': 'Evision.ML.ANN_MLP.TrainFlags',
+                        'ml.LogisticRegression.RegKinds': 'Evision.ML.LogisticRegression.RegKinds',
+                        'ml.SVMSGD.SvmsgdType': 'Evision.ML.SVMSGD.SvmsgdType',
+                        'xphoto.TransformTypes': 'Evision.XPhoto.TransformTypes',
+                        'xphoto.Bm3dSteps': 'Evision.XPhoto.Bm3dSteps',
+                        'xphoto.InpaintTypes': 'Evision.XPhoto.InpaintTypes',
+                        'dnn.Backend': 'Evision.DNN.Backend',
+                        'dnn.Target': 'Evision.DNN.Target',
+                        'dnn.DataLayout': 'Evision.DNN.DataLayout',
+                        'dnn.ImagePaddingMode': 'Evision.DNN.ImagePaddingMode',
+                        'dnn.SoftNMSMethod': 'Evision.DNN.SoftNMSMethod',
+                    }
+                    if not any([x[0].islower() or x[0] == '_' for x in original_name.split('.')]):
+                        struct_name = f'Evision.{original_name}'
+                    else:
+                        the_name = mname.get(original_name, None)
+                        if the_name is not None:
+                            struct_name = the_name
+                        else:
+                            print(f'warning: enum name {original_name} is not a struct')
+                            struct_name = '!fixme!'
+            typed_enum = self.typed_enums.get(struct_name, None)
+            if typed_enum is None:
+                self.typed_enums[struct_name] = list()
+        else:
+            print(f'warning: const named `{name}` does not have an original name')
+            struct_name = '!fixme!'
+
         val = decl[1]
         skip_this = False
         if val == "std::numeric_limits<uint8_t>::max()":
@@ -164,6 +299,9 @@ class BeamWrapperGenerator(object):
             erl_const_name = map_argname('elixir', erl_const_name, ignore_upper_starting=True)
             if self.enum_names.get(val, None) is not None:
                 val = f'cv_{val}()'
+
+            self.typed_enums[struct_name].append((erl_const_name, val, val_erlang))
+            
             if self.enum_names.get(erl_const_name, None) is None:
                 self.enum_names[erl_const_name] = val
                 self.enum_names_io.write(f"  def cv_{erl_const_name}, do: {val}\n")
@@ -196,16 +334,16 @@ class BeamWrapperGenerator(object):
         #print(cname + ' => ' + str(py_name) + ' (value=' + value + ')')
 
     def add_enum(self, name, decl):
+        original_name = name
         wname = normalize_class_name(name)
         if wname.endswith("<unnamed>"):
             wname = None
         else:
             self.enums[wname] = name
         const_decls = decl[3]
-
         for decl in const_decls:
-            name = decl[0]
-            self.add_const(name.replace("const ", "").strip(), decl)
+            enum_name = decl[0].replace("const ", "").strip()
+            self.add_const(enum_name, decl, original_name=original_name)
 
     def add_func(self, decl):
         namespace, classes, barename = self.split_decl_name(decl[0])
@@ -701,10 +839,25 @@ class BeamWrapperGenerator(object):
         for name, constinfo in constlist:
             self.gen_const_reg(constinfo)
 
+        bitwise_ops = ['band', 'bnot', 'bor', 'bsl', 'bsr', 'bxor']
+
         # end 'evision.ex'
         if 'elixir' in self.langs:
             for fix in evision_elixir_fixes():
                 self.evision_elixir.write(fix)
+                self.evision_elixir.write("\n")
+            evision_enums = self.typed_enums.get('Evision', None)
+            if evision_enums is not None:
+                enum_written = set()
+                for enum_name, enum_values_elixir, _ in evision_enums:
+                    if any([x in enum_values_elixir for x in bitwise_ops]):
+                        self.evision_elixir.write(f'  import Bitwise\n\n')
+                        break
+                self.evision_elixir.write(f'  @type enum :: integer()\n')
+                for enum_name, enum_values_elixir, _ in evision_enums:
+                    enum_written.add(enum_name)
+                    self.evision_elixir.write(f'  @doc enum: true\n')
+                    self.evision_elixir.write(f'  def cv_{enum_name}, do: {enum_values_elixir}\n')
                 self.evision_elixir.write("\n")
             self.evision_elixir.write(ET.enabled_modules_code.substitute(
                 enabled_modules=",".join([f'\n      "{m}"' for m in self.enabled_modules]))
@@ -717,9 +870,20 @@ class BeamWrapperGenerator(object):
             for fix in evision_erlang_fixes():
                 self.evision_erlang.write(fix)
                 self.evision_erlang.write("\n")
+            evision_enums = self.typed_enums.get('Evision', None)
+            if evision_enums is not None:
+                enum_written = set()
+                for enum_name, _, enum_values_erlang in evision_enums:
+                    if enum_name in enum_written:
+                        continue
+                    enum_written.add(enum_name)
+                    self.evision_erlang.write(f'cv_{enum_name}() ->\n  {enum_values_erlang}.\n')
+                self.evision_erlang.write("\n")
             self.evision_erlang.write(ET.enabled_modules_code_erlang.substitute(
                 enabled_modules=",".join([f'\'{m}\'' for m in self.enabled_modules]))
             )
+
+        self.typed_enums['Evision'] = None
 
         # That's it. Now save all the files
         self.save(output_path, "evision_generated_include.h", self.code_include)
@@ -731,6 +895,8 @@ class BeamWrapperGenerator(object):
         # write all module files
         for name in self.evision_modules:
             module_file_generator = self.evision_modules[name]
+            
+            delete_typed_enum = False
 
             if 'elixir' in self.langs:
                 if name in evision_elixir_module_fixes():
@@ -738,6 +904,24 @@ class BeamWrapperGenerator(object):
                     for f,d in fixes:
                         module_file_generator.write_elixir(f)
                         self.evision_nif.write(d)
+                typed_enum_key = f'Evision.{module_file_generator.module_name}'
+                evision_enums = self.typed_enums.get(typed_enum_key, None)
+                if evision_enums is not None:
+                    enum_written = set()
+                    for enum_name, enum_values_elixir, _ in evision_enums:
+                        if any([x in enum_values_elixir for x in bitwise_ops]):
+                            module_file_generator.write_elixir(f'  import Bitwise\n\n')
+                            break
+
+                    module_file_generator.write_elixir(f'  @type enum :: integer()\n')
+                    for enum_name, enum_values_elixir, _ in evision_enums:
+                        if enum_name in enum_written:
+                            continue
+                        enum_written.add(enum_name)
+                        module_file_generator.write_elixir(f'  @doc enum: true\n')
+                        module_file_generator.write_elixir(f'  def cv_{enum_name}, do: {enum_values_elixir}\n')
+                    module_file_generator.write_elixir("\n")
+                    delete_typed_enum = True
                 module_file_generator.end('elixir')
                 self.evision_nif.write(module_file_generator.get_nif_declaration('elixir'))
                 self.save(erl_output_path, f"evision_{name.lower()}.ex", module_file_generator.get_generated_code('elixir'))
@@ -748,13 +932,67 @@ class BeamWrapperGenerator(object):
                     for f,d in fixes:
                         module_file_generator.write_erlang(f)
                         self.evision_nif_erlang.write(d)
+                typed_enum_key = f'Evision.{module_file_generator.module_name}'
+                evision_enums = self.typed_enums.get(typed_enum_key, None)
+                if evision_enums is not None:
+                    enum_written = set()
+                    for enum_name, _, enum_values_erlang in evision_enums:
+                        if enum_name in enum_written:
+                            continue
+                        enum_written.add(enum_name)
+                        module_file_generator.write_erlang(f'cv_{enum_name}() ->\n  {enum_values_erlang}.\n')
+                    module_file_generator.write_erlang("\n")
+                    delete_typed_enum = True
                 module_file_generator.end('erlang')
                 self.evision_nif_erlang.write(module_file_generator.get_nif_declaration('erlang'))
                 self.save(erlang_output_path, f"evision_{name.lower()}.erl", module_file_generator.get_generated_code('erlang'))
             
+            if delete_typed_enum:
+                del self.typed_enums[typed_enum_key]
+
             self.code_ns_reg.write(module_file_generator.get_erl_nif_func_entry())
 
-        
+        # write all typed enum files
+        for typed_enum_key, evision_enums in self.typed_enums.items():
+            if evision_enums is None:
+                continue
+            elixir_module_name = typed_enum_key[8:]
+            if typed_enum_key == 'Evision.Mat':
+                continue
+            else:
+                module_file_generator = ModuleGenerator(elixir_module_name)
+            if 'elixir' in self.langs:
+                module_file_generator.write_elixir(f'defmodule {typed_enum_key} do\n')
+                
+                for enum_name, enum_values_elixir, _ in evision_enums:
+                    if any([x in enum_values_elixir for x in bitwise_ops]):
+                        module_file_generator.write_elixir(f'  import Bitwise\n\n')
+                        break
+
+                module_file_generator.write_elixir(f'  @type enum :: integer()\n')
+                enum_written = set()
+                for enum_name, enum_values_elixir, _ in evision_enums:
+                    if enum_name in enum_written:
+                        continue
+                    enum_written.add(enum_name)
+                    module_file_generator.write_elixir(f'  @doc enum: true\n')
+                    module_file_generator.write_elixir(f'  def cv_{enum_name}, do: {enum_values_elixir}\n')
+                module_file_generator.end('elixir')
+                name = elixir_module_name.replace('.', '_')
+                self.save(erl_output_path, f"evision_{name.lower()}.ex", module_file_generator.get_generated_code('elixir'))
+            
+            if 'erlang' in self.langs:
+                erlang_module_name = typed_enum_key.replace('.', '_').lower()
+                module_file_generator.write_erlang(f'-module({erlang_module_name}).\n-compile(nowarn_export_all).\n-compile([export_all]).\n\n')
+                enum_written = set()
+                for enum_name, _, enum_values_erlang in evision_enums:
+                    if enum_name in enum_written:
+                        continue
+                    enum_written.add(enum_name)
+                    module_file_generator.write_erlang(f'cv_{enum_name}() ->\n  {enum_values_erlang}.\n')
+                module_file_generator.end('erlang')
+                self.save(erlang_output_path, f"{erlang_module_name}.erl", module_file_generator.get_generated_code('erlang'))
+
         if 'elixir' in self.langs:
             # 'evision_nif.ex'
             self.evision_nif.write(self.evision_ex.get_nif_declaration('elixir'))
