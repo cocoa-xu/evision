@@ -160,7 +160,6 @@ class BeamWrapperGenerator(object):
                 original_name = original_name[3:]
                 if is_struct(original_name):
                     _, struct_name = is_struct(original_name, also_get='struct_name')
-                    # print(f'warning: enum name {name} should in {struct_name}')
                 else:
                     mname = {
                         'aruco.CornerRefineMethod': 'Evision.ArUco.CornerRefineMethod',
@@ -175,6 +174,20 @@ class BeamWrapperGenerator(object):
                         'ccm.INITIAL_METHOD_TYPE': 'Evision.CCM.INITIAL_METHOD_TYPE',
                         'ccm.LINEAR_TYPE': 'Evision.CCM.LINEAR_TYPE',
                         'cuda.SURF_CUDA.KeypointLayout': 'Evision.CUDA.SURF_CUDA.KeypointLayout',
+                        'cuda.DemosaicTypes': 'Evision.CUDA.DemosaicTypes',
+                        'cuda.AlphaCompTypes': 'Evision.CUDA.AlphaCompTypes',
+                        'cuda.ConnectedComponentsAlgorithmsTypes': 'Evision.CUDA.ConnectedComponentsAlgorithmsTypes',
+                        'cuda.MomentsOrder': 'Evision.CUDA.MomentsOrder',
+                        'cudacodec.Codec': 'Evision.CUDACodec.Codec',
+                        'cudacodec.ColorFormat': 'Evision.CUDACodec.ColorFormat',
+                        'cudacodec.EncodeParamsRcMode': 'Evision.CUDACodec.EncodeParamsRcMode',
+                        'cudacodec.EncodeMultiPass': 'Evision.CUDACodec.EncodeMultiPass',
+                        'cudacodec.EncodeProfile': 'Evision.CUDACodec.EncodeProfile',
+                        'cudacodec.EncodePreset': 'Evision.CUDACodec.EncodePreset',
+                        'cudacodec.EncodeTuningInfo': 'Evision.CUDACodec.EncodeTuningInfo',
+                        'cudacodec.ChromaFormat': 'Evision.CUDACodec.ChromaFormat',
+                        'cudacodec.DeinterlaceMode': 'Evision.CUDACodec.DeinterlaceMode',
+                        'cudacodec.VideoReaderProps': 'Evision.CUDACodec.VideoReaderProps',
                         'detail.Blender': 'Evision.Detail.Blender',
                         'detail.CvFeatureParams.FeatureType': 'Evision.Detail.CvFeatureParams.FeatureType',
                         'detail.DpSeamFinder.CostFunction': 'Evision.Detail.DpSeamFinder.CostFunction',
