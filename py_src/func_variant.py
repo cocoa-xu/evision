@@ -789,9 +789,9 @@ class FuncVariant(object):
         return positional, positional_var
     
     def positional_args_erlang(self):
-        # [{elixir_arg_atom, ErlangVar}, ...]
+        # [{elixir_arg_atom, evision_internal_structurise:from_struct(ErlangVar)}, ...]
         positional_var = 'Positional'
-        positional = '{} = [{}\n  ]'.format(positional_var, ",".join(['\n    {}, {}'.format('{' + map_argname('elixir', arg_name), map_argname('erlang', arg_name) + '}') for (arg_name, _, argtype) in self.py_arglist[:self.pos_end]]))
+        positional = '{} = [{}\n  ]'.format(positional_var, ",".join(['\n    {}, evision_internal_structurise:from_struct({}'.format('{' + map_argname('elixir', arg_name), map_argname('erlang', arg_name) + ')}') for (arg_name, _, argtype) in self.py_arglist[:self.pos_end]]))
         return positional, positional_var
 
     def func_args(self, kind: str, instance_method: bool = False, in_func_body: bool = False):

@@ -3,7 +3,7 @@
 -compile([export_all]).
 
 imshow(WinName, Mat) when is_binary(WinName) ->
-    evision_nif:imshow([{winname, WinName}, {mat, Mat}]).
+    evision_nif:imshow([{winname, WinName}, {mat, evision_internal_structurise:from_struct(Mat)}]).
 
 waitKey(Delay) when is_integer(Delay) ->
     evision_nif:waitKey([{delay, Delay}]).

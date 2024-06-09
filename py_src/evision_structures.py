@@ -72,7 +72,10 @@ to_struct(#{class := 'Elixir.Evision.VideoCapture', ref := Ref}) ->
       ref = Ref
   };
 to_struct(Any) ->
-    evision_internal_structurise:to_struct(Any).
+  evision_internal_structurise:to_struct(Any).
+
+from_struct(#evision_videocapture{ref = Ref}) ->
+  Ref.
 """
 
 gpumat_struct_elixir = '  @typedoc """\n' + \
@@ -158,6 +161,9 @@ to_struct(#{class := 'Elixir.Evision.CUDA.GpuMat', ref := Ref, channels := Chann
   };
 to_struct(Any) ->
     evision_internal_structurise:to_struct(Any).
+
+from_struct(#evision_cuda_gpumat{ref = Ref}) ->
+  Ref.
 """
 
 generic_struct_template_elixir = Template(
@@ -199,6 +205,8 @@ to_struct(#{class := '${atom_elixir_module_name}', ref := Ref}) ->
 to_struct(Any) ->
     evision_internal_structurise:to_struct(Any).
 
+from_struct(#${atom_erlang_module_name}{ref = Ref}) ->
+  Ref.
 """
 )
 

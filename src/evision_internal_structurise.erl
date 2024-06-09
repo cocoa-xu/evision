@@ -32,10 +32,11 @@ to_struct(PassThrough) ->
 
 from_struct(MaybeRecord) when is_tuple(MaybeRecord), tuple_size(MaybeRecord) > 0, is_atom(element(1, MaybeRecord)) ->
     RecordName = element(1, MaybeRecord),
-    case erlang:function_exported(RecordName, from_struct, 1) of
-        true ->
-            RecordName:from_struct(MaybeRecord);
-        false ->
+    try RecordName:from_struct(MaybeRecord) of
+        Result ->
+            Result
+    catch 
+        _ ->
             List = [to_struct(element(I, MaybeRecord)) || I <- lists:seq(1, tuple_size(MaybeRecord))],
             list_to_tuple(List)
     end;

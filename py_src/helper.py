@@ -1679,7 +1679,7 @@ def map_argtype_to_guard_erlang(argname, argtype, classname: Optional[str] = Non
         struct_name = struct_name.replace(".", "_").lower()
         if not struct_name.startswith("evision_"):
             struct_name = f"evision_{struct_name}"
-        return f'(is_tuple({argname}) and tuple_size({argname}) > 0 and (element(1, {argname}) == {struct_name}))'
+        return f'(is_tuple({argname}) and (element(1, {argname}) == {struct_name}))'
     elif is_ref_or_struct(argtype):
         return f'is_reference({argname})'
     elif is_list_type(argtype):

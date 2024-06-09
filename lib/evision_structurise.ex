@@ -8,7 +8,7 @@ defmodule Evision.Internal.Structurise do
 
   def to_struct(ret = %{:class => module_name}) when is_atom(module_name) do
     if Code.ensure_loaded?(module_name) do
-      module_name.__to_struct__(ret)
+      module_name.to_struct(ret)
     else
       ret
     end

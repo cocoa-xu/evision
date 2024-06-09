@@ -112,7 +112,7 @@ defmodule Evision.Mat do
   @type maybe_mat_in :: reference() | Evision.Mat.t() | Nx.Tensor.t()
 
   @doc false
-  def __to_struct__(%{
+  def to_struct(%{
         :channels => channels,
         :dims => dims,
         :type => type,
@@ -130,7 +130,7 @@ defmodule Evision.Mat do
     }
   end
 
-  def __to_struct__(ret) do
+  def to_struct(ret) do
     Evision.Internal.Structurise.to_struct(ret)
   end
 
