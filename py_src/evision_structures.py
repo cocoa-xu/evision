@@ -193,6 +193,10 @@ generic_struct_template_elixir = Template(
   def to_struct(ret) do
     Evision.Internal.Structurise.to_struct(ret)
   end
+  
+  def from_struct(%T{ref: ref}) do
+    ref
+  end
 """
 )
 
