@@ -10,6 +10,7 @@ SRC = $(shell pwd)/src
 C_SRC = $(shell pwd)/c_src
 PY_SRC = $(shell pwd)/py_src
 LIB_SRC = $(shell pwd)/lib
+GLEAM_SRC = $(shell pwd)/gleam_src
 SCRIPTS = $(shell pwd)/scripts
 ifdef CMAKE_TOOLCHAIN_FILE
 	CMAKE_CONFIGURE_FLAGS=-D CMAKE_TOOLCHAIN_FILE="$(CMAKE_TOOLCHAIN_FILE)"
@@ -113,6 +114,7 @@ OPENCV_HEADERS_TXT = $(CMAKE_OPENCV_BUILD_DIR)/modules/python_bindings_generator
 CONFIGURATION_PRIVATE_HPP = $(C_SRC)/configuration.private.hpp
 GENERATED_ELIXIR_SRC_DIR = $(LIB_SRC)/generated
 GENERATED_ERLANG_SRC_DIR = $(SRC)/generated
+GENERATED_GLEAM_SRC_DIR = $(GLEAM_SRC)
 CMAKE_EVISION_BUILD_DIR = $(MIX_APP_PATH)/cmake_evision
 CMAKE_EVISION_OPTIONS ?= ""
 ifeq ($(MIX_TARGET), ios)
@@ -248,6 +250,7 @@ $(EVISION_SO): $(C_SRC_HEADERS_TXT) $(OPENCV_CONFIG_CMAKE)
 			-D C_SRC="$(C_SRC)" \
 			-D GENERATED_ELIXIR_SRC_DIR="$(GENERATED_ELIXIR_SRC_DIR)" \
 			-D GENERATED_ERLANG_SRC_DIR="$(GENERATED_ERLANG_SRC_DIR)" \
+			-D GENERATED_GLEAM_SRC_DIR="$(GENERATED_GLEAM_SRC_DIR)" \
 			-D PY_SRC="$(PY_SRC)" \
 			-D MIX_APP_PATH="$(MIX_APP_PATH)" \
 			-D PRIV_DIR="$(PRIV_DIR)" \
