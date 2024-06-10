@@ -102,7 +102,8 @@ jobs:
           export PKG_NAME=evision-nif_${{ matrix.pair.NIF_VERSION }}-${{ matrix.pair.arch_name }}-windows-msvc-${GITHUB_REF##*/v}
           mkdir -p "${PKG_NAME}"
           export PRIV_DIR="$(pwd)/_build/${MIX_ENV}/lib/evision/priv"
-          mv "${PRIV_DIR}/include" C:/evision/include
+          export TMP_INCLUDE_DIR="$(pwd)/include"
+          mv "${PRIV_DIR}/include" "${TMP_INCLUDE_DIR}"
           cp -a "${PRIV_DIR}" "${PKG_NAME}"
           cp -a lib/generated "${PKG_NAME}/elixir_generated"
           cp -a src/generated "${PKG_NAME}/erlang_generated"
@@ -113,7 +114,7 @@ jobs:
           mv "${PKG_NAME}.tar.gz" artifacts
           cd artifacts
           sha256sum "${PKG_NAME}.tar.gz" | tee "${PKG_NAME}.tar.gz.sha256"
-          mv C:/evision/include "${PRIV_DIR}/include"
+          mv "${TMP_INCLUDE_DIR}" "${PRIV_DIR}/include"
 
       - name: Mix compile (without contrib modules) for Gleam (experimental)
         shell: bash
@@ -136,7 +137,8 @@ jobs:
           export PKG_NAME=evision-nif_${{ matrix.pair.NIF_VERSION }}-${{ matrix.pair.arch_name }}-windows-msvc-${GITHUB_REF##*/v}
           mkdir -p "${PKG_NAME}"
           export PRIV_DIR="$(pwd)/_build/${MIX_ENV}/lib/evision/priv"
-          mv "${PRIV_DIR}/include" C:/evision/include
+          export TMP_INCLUDE_DIR="$(pwd)/include"
+          mv "${PRIV_DIR}/include" "${TMP_INCLUDE_DIR}"
           cp -a "${PRIV_DIR}" "${PKG_NAME}"
           cp -a gleam_src "${PKG_NAME}/gleam_generated"
           tar -czf "${PKG_NAME}.tar.gz" "${PKG_NAME}"
@@ -146,7 +148,7 @@ jobs:
           mv "${PKG_NAME}.tar.gz" artifacts
           cd artifacts
           sha256sum "${PKG_NAME}.tar.gz" | tee "${PKG_NAME}.tar.gz.sha256"
-          mv C:/evision/include "${PRIV_DIR}/include"
+          mv "${TMP_INCLUDE_DIR}" "${PRIV_DIR}/include"
 
       - name: Mix compile (with contrib modules)
         shell: bash
@@ -168,7 +170,8 @@ jobs:
           export PKG_NAME=evision-nif_${{ matrix.pair.NIF_VERSION }}-${{ matrix.pair.arch_name }}-windows-msvc-contrib-${GITHUB_REF##*/v}
           mkdir -p "${PKG_NAME}"
           export PRIV_DIR="$(pwd)/_build/${MIX_ENV}/lib/evision/priv"
-          mv "${PRIV_DIR}/include" C:/evision/include
+          export TMP_INCLUDE_DIR="$(pwd)/include"
+          mv "${PRIV_DIR}/include" "${TMP_INCLUDE_DIR}"
           cp -a "${PRIV_DIR}" "${PKG_NAME}"
           cp -a lib/generated "${PKG_NAME}/elixir_generated"
           cp -a src/generated "${PKG_NAME}/erlang_generated"
@@ -179,7 +182,7 @@ jobs:
           mv "${PKG_NAME}.tar.gz" artifacts
           cd artifacts
           sha256sum "${PKG_NAME}.tar.gz" | tee "${PKG_NAME}.tar.gz.sha256"
-          mv C:/evision/include "${PRIV_DIR}/include"
+          mv "${TMP_INCLUDE_DIR}" "${PRIV_DIR}/include"
 
       - name: Mix compile (with contrib modules) for Gleam (experimental)
         shell: bash
@@ -202,7 +205,8 @@ jobs:
           export PKG_NAME=gleam_evision-nif_${{ matrix.pair.NIF_VERSION }}-${{ matrix.pair.arch_name }}-windows-msvc-contrib-${GITHUB_REF##*/v}
           mkdir -p "${PKG_NAME}"
           export PRIV_DIR="$(pwd)/_build/${MIX_ENV}/lib/evision/priv"
-          mv "${PRIV_DIR}/include" C:/evision/include
+          export TMP_INCLUDE_DIR="$(pwd)/include"
+          mv "${PRIV_DIR}/include" "${TMP_INCLUDE_DIR}"
           cp -a "${PRIV_DIR}" "${PKG_NAME}"
           cp -a gleam_src "${PKG_NAME}/gleam_generated"
           tar -czf "${PKG_NAME}.tar.gz" "${PKG_NAME}"
@@ -212,7 +216,7 @@ jobs:
           mv "${PKG_NAME}.tar.gz" artifacts
           cd artifacts
           sha256sum "${PKG_NAME}.tar.gz" | tee "${PKG_NAME}.tar.gz.sha256"
-          mv C:/evision/include "${PRIV_DIR}/include"
+          mv "${TMP_INCLUDE_DIR}" "${PRIV_DIR}/include"
 
       - uses: softprops/action-gh-release@v2
         with:
