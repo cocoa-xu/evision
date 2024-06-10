@@ -42,7 +42,7 @@ message(STATUS "EVISION_ENABLE_CUDA=${EVISION_ENABLE_CUDA}")
 option(GLEAM_EVISION "Compile for Gleam" OFF)
 if(GLEAM_EVISION)
     add_compile_definitions(GLEAM_EVISION)
-    set(EVISION_GENERATE_LANG "gleam")
+    set(EVISION_GENERATE_LANG "gleam,elixir")
 endif()
 
 if(POLICY CMP0068)
