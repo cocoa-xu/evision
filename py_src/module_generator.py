@@ -218,7 +218,7 @@ class ModuleGenerator(object):
                     self.write_gleam(functions[0][1])
                     if not has_gleam:
                         self.write_gleam_file(functions[0][2])
-                        has_gleam = True
+                        # has_gleam = True
                 else:
                     functions = sorted(functions, key=lambda x: -x[0])
                     for _, function_code, typed_function in functions[:-1]:
@@ -227,7 +227,7 @@ class ModuleGenerator(object):
                     self.write_gleam(functions[-1][1])
                     if not has_gleam:
                         self.write_gleam_file(functions[-1][2])
-                        has_gleam = True
+                        # has_gleam = True
         self.gleam_ended = True
 
     def gen_constructor(self, full_qualified_name: str, constructor: str, func: FuncInfo, namespace_list: list):
@@ -277,7 +277,8 @@ class ModuleGenerator(object):
                 "nif_args": '_self',
                 "nif_template": Template('${nif_name}(${nif_args}) ->\n    not_loaded(?LINE).\n'),
                 "self_spec": self_spec_in["gleam"],
-                'prop_spec': prop_spec_out["gleam"]
+                'prop_spec': prop_spec_out["gleam"],
+                'typed_function': Template('@external(erlang, "${erlang_module}", "${nif_name}")\npub fn ${typed_function_name}(self: self) -> prop\n\n')
             }
         }
         self._gen_property_impl(class_name, property_name, func_arity, generating_type, property_templates)
@@ -319,7 +320,8 @@ class ModuleGenerator(object):
                     "nif_template": Template('${nif_name}(${nif_args}) ->\n    not_loaded(?LINE).\n'),
                     "self_spec_in": self_spec_in["gleam"],
                     "self_spec_out": self_spec_out["gleam"],
-                    'prop_spec': prop_spec_in["gleam"]
+                    'prop_spec': prop_spec_in["gleam"],
+                    'typed_function': Template('@external(erlang, "${erlang_module}", "${nif_name}")\npub fn ${typed_function_name}(self: self, prop: prop) -> any\n\n')
                 },
             }
             self._gen_property_impl(class_name, property_name, func_arity, generating_type, property_templates)
@@ -347,7 +349,14 @@ class ModuleGenerator(object):
 
         for kind, template in property_templates.items():
             self.register_nif(kind, nif_name, template)
-            self.add_function(kind, func_name, func_arity, 0, property_code[kind])
+            if kind == 'gleam':
+                typed_function_tmpl = template['typed_function']
+                typed_function_module_name = self.module_name.replace('.', '_').lower()
+                typed_function_name = self.to_gleam_func_name(nif_name)
+                typed_function = typed_function_tmpl.substitute(erlang_module=typed_function_module_name, nif_name=nif_name, typed_function_name=typed_function_name)
+                self.add_function(kind, func_name, func_arity, 0, property_code[kind], typed_function=typed_function)
+            else:
+                self.add_function(kind, func_name, func_arity, 0, property_code[kind])
 
     def _process_function(self, full_qualified_name: str, name: str, func: FuncInfo, is_ns: bool, is_constructor: bool, namespace_list: list):
         # ======== step 1. get wrapper name and ensure function name starts with a lowercase letter ========
@@ -573,7 +582,8 @@ class ModuleGenerator(object):
                         elif kind == 'gleam':
                             function_code.write(f'{module_func_name}(Self) ->\n'
                                 f'  evision_nif:{nif_name}(evision_internal_structurise:from_struct(Self), []).\n')
-                            self.add_function(kind, module_func_name, 1, guards_count=0, generated_code=function_code.getvalue())
+                            typed_function = '@external(erlang, "evision_net", "forward")\npub fn forward1(self: any) -> any \n\n'
+                            self.add_function(kind, module_func_name, 1, guards_count=0, generated_code=function_code.getvalue(), typed_function=typed_function)
                             function_code = StringIO()
                             function_code.write(f'{module_func_name}(Self, Options) when is_list(Options), is_tuple(hd(Options)), tuple_size(hd(Options)) == 2 ->\n'
                                 f'  Ret = evision_nif:{nif_name}(evision_internal_structurise:from_struct(Self), evision_internal_structurise:from_struct(Options)),\n'
@@ -639,19 +649,20 @@ class ModuleGenerator(object):
                                 f'  Ret = evision_nif:{nif_name}(evision_internal_structurise:from_struct(Self), []),\n'
                                 "  to_struct(Ret).\n\n"
                             )
+                            typed_function_name = module_func_name.lower()
+                            typed_function = f'@external(erlang, "evision_net", "getLayerShapes")\npub fn {typed_function_name}1(self: any) -> any \n\n'
                             self.add_function(kind, module_func_name, 
-                                function_arity=1, 
-                                guards_count=0,
-                                generated_code=function_code.getvalue()
+                                function_arity=1,
+                                guards_count=3,
+                                generated_code=function_code.getvalue(),
+                                typed_function=typed_function
                             )
                             function_code = StringIO()
                             function_code.write(f'{module_func_name}(Self, Options) when is_list(Options), is_tuple(hd(Options)), tuple_size(hd(Options)) == 2 ->\n'
                                 f'  Ret = evision_nif:{nif_name}(evision_internal_structurise:from_struct(Self), evision_internal_structurise:from_struct(Options)),\n'
                                 "  to_struct(Ret).\n\n"
                             )
-                            # typed_function = '@external(erlang, "evision_net", "getLayerShapes")\npub fn get_layer_shapes1(self: any) -> any \n\n'
-                            # typed_function = '@external(erlang, "evision_net", "getLayersShapes")\npub fn get_layers_shapes2(self: any, opts: any) -> any \n\n'
-                            typed_function = None
+                            typed_function = f'@external(erlang, "evision_net", "getLayersShapes")\npub fn {typed_function_name}2(self: any, opts: any) -> any \n\n'
                             self.add_function(kind, module_func_name, 
                                 function_arity=2,
                                 guards_count=3,
@@ -754,7 +765,7 @@ class ModuleGenerator(object):
                         self.add_function(kind, module_func_name, func_arity,
                             guards_count=3 + len(func_guard),
                             generated_code=function_code.getvalue(),
-                            typed_function=None
+                            typed_function=typed_function
                         )
                         # "empty" buffer in function_code
                         # so that we can use it later
@@ -806,7 +817,7 @@ class ModuleGenerator(object):
                         typed_function = f'@external(erlang, "evision_{typed_function_module_name}", "{module_func_name}")\n'
                     
                     func_name_with_arity = ''
-                    if more_than_one_variant and func_args_with_opts:
+                    if more_than_one_variant or func_args_with_opts:
                         func_name_with_arity = f'{func_arity}'
                     if is_instance_method:
                         if func_arity == 1:
