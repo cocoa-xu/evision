@@ -11,6 +11,7 @@ on:
       - 'LICENSE*'
       - 'examples/**'
       - 'nerves/**'
+      - 'gleam_src/**'
       - 'Makefile.win'
       - 'cc_toolchain/**'
       - 'checksum.exs'

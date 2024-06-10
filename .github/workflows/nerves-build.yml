@@ -8,6 +8,7 @@ on:
       - '**/*.md'
       - 'LICENSE*'
       - 'examples/**'
+      - 'gleam_src/**'
       - 'test/**'
       - 'Makefile.win'
       - 'cc_toolchain/**'
