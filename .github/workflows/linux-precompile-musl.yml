@@ -142,7 +142,9 @@ jobs:
           mv "${PRIV_DIR}/include" /tmp/include
           cp -a "${PRIV_DIR}" "${PKG_NAME}"
           cp -a gleam_src "${PKG_NAME}/gleam_generated"
-          cp -a src/*.erl "${PKG_NAME}/gleam_generated/"
+          cp -a src/evision_highgui.erl "${PKG_NAME}/gleam_generated/"
+          cp -a src/evision_internal_structurise.erl "${PKG_NAME}/gleam_generated/"
+          cp -a src/evision_windows_fix.erl "${PKG_NAME}/gleam_generated/"
           tar -czf "${PKG_NAME}.tar.gz" "${PKG_NAME}"
           rm -rf "${PKG_NAME}"
           ls -lah "${PKG_NAME}.tar.gz"
