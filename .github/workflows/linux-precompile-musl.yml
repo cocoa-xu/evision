@@ -110,7 +110,7 @@ jobs:
           export PKG_NAME=evision-nif_${{ matrix.pair.NIF_VERSION }}-x86_64-linux-musl-${GITHUB_REF##*/v}
           mkdir -p "${PKG_NAME}"
           export PRIV_DIR="_build/${MIX_ENV}/lib/evision/priv"
-          rm -rf "${PRIV_DIR}/include"
+          mv "${PRIV_DIR}/include" /tmp/include
           cp -a "${PRIV_DIR}" "${PKG_NAME}"
           cp -a lib/generated "${PKG_NAME}/elixir_generated"
           cp -a src/generated "${PKG_NAME}/erlang_generated"
@@ -121,6 +121,7 @@ jobs:
           mv "${PKG_NAME}.tar.gz" artifacts
           cd artifacts
           sha256sum "${PKG_NAME}.tar.gz" | tee "${PKG_NAME}.tar.gz.sha256"
+          mv /tmp/include "${PRIV_DIR}/include"
 
       - name: Mix compile (without contrib modules) for Gleam (experimental)
         run: |
@@ -138,7 +139,7 @@ jobs:
           export PKG_NAME=gleam_evision-nif_${{ matrix.pair.NIF_VERSION }}-x86_64-linux-musl-${GITHUB_REF##*/v}
           mkdir -p "${PKG_NAME}"
           export PRIV_DIR="_build/${MIX_ENV}/lib/evision/priv"
-          rm -rf "${PRIV_DIR}/include"
+          mv "${PRIV_DIR}/include" /tmp/include
           cp -a "${PRIV_DIR}" "${PKG_NAME}"
           cp -a gleam_src "${PKG_NAME}/gleam_generated"
           tar -czf "${PKG_NAME}.tar.gz" "${PKG_NAME}"
@@ -148,6 +149,7 @@ jobs:
           mv "${PKG_NAME}.tar.gz" artifacts
           cd artifacts
           sha256sum "${PKG_NAME}.tar.gz" | tee "${PKG_NAME}.tar.gz.sha256"
+          mv /tmp/include "${PRIV_DIR}/include"
 
       - name: Compile OpenCV (with contrib modules)
         run: |
@@ -173,7 +175,7 @@ jobs:
           export PKG_NAME=evision-nif_${{ matrix.pair.NIF_VERSION }}-x86_64-linux-musl-contrib-${GITHUB_REF##*/v}
           mkdir -p "${PKG_NAME}"
           export PRIV_DIR="_build/${MIX_ENV}/lib/evision/priv"
-          rm -rf "${PRIV_DIR}/include"
+          mv "${PRIV_DIR}/include" /tmp/include
           cp -a "${PRIV_DIR}" "${PKG_NAME}"
           cp -a lib/generated "${PKG_NAME}/elixir_generated"
           cp -a src/generated "${PKG_NAME}/erlang_generated"
@@ -184,6 +186,7 @@ jobs:
           mv "${PKG_NAME}.tar.gz" artifacts
           cd artifacts
           sha256sum "${PKG_NAME}.tar.gz" | tee "${PKG_NAME}.tar.gz.sha256"
+          mv /tmp/include "${PRIV_DIR}/include"
 
       - name: Mix compile (with contrib modules) for Gleam (experimental)
         run: |
@@ -199,7 +202,7 @@ jobs:
           export PKG_NAME=gleam_evision-nif_${{ matrix.pair.NIF_VERSION }}-x86_64-linux-musl-contrib-${GITHUB_REF##*/v}
           mkdir -p "${PKG_NAME}"
           export PRIV_DIR="_build/${MIX_ENV}/lib/evision/priv"
-          rm -rf "${PRIV_DIR}/include"
+          mv "${PRIV_DIR}/include" /tmp/include
           cp -a "${PRIV_DIR}" "${PKG_NAME}"
           cp -a gleam_src/generated "${PKG_NAME}/gleam_generated"
           tar -czf "${PKG_NAME}.tar.gz" "${PKG_NAME}"
@@ -209,6 +212,7 @@ jobs:
           mv "${PKG_NAME}.tar.gz" artifacts
           cd artifacts
           sha256sum "${PKG_NAME}.tar.gz" | tee "${PKG_NAME}.tar.gz.sha256"
+          mv /tmp/include "${PRIV_DIR}/include"
 
       - uses: softprops/action-gh-release@v2
         with:
@@ -326,7 +330,7 @@ jobs:
           export PKG_NAME=evision-nif_${{ matrix.pair.NIF_VERSION }}-${{ matrix.pair.arch }}-${GITHUB_REF##*/v}
           mkdir -p "${PKG_NAME}"
           export PRIV_DIR="_build/${MIX_ENV}/lib/evision/priv"
-          rm -rf "${PRIV_DIR}/include"
+          mv "${PRIV_DIR}/include" /tmp/include
           cp -a "${PRIV_DIR}" "${PKG_NAME}"
           cp -a lib/generated "${PKG_NAME}/elixir_generated"
           cp -a src/generated "${PKG_NAME}/erlang_generated"
@@ -337,6 +341,7 @@ jobs:
           mv "${PKG_NAME}.tar.gz" artifacts
           cd artifacts
           sha256sum "${PKG_NAME}.tar.gz" | tee "${PKG_NAME}.tar.gz.sha256"
+          mv /tmp/include "${PRIV_DIR}/include"
 
       - name: Mix compile (without contrib modules) for Gleam (experimental)
         run: |
@@ -357,7 +362,7 @@ jobs:
           export PKG_NAME=gleam_evision-nif_${{ matrix.pair.NIF_VERSION }}-${{ matrix.pair.arch }}-${GITHUB_REF##*/v}
           mkdir -p "${PKG_NAME}"
           export PRIV_DIR="_build/${MIX_ENV}/lib/evision/priv"
-          rm -rf "${PRIV_DIR}/include"
+          mv "${PRIV_DIR}/include" /tmp/include
           cp -a "${PRIV_DIR}" "${PKG_NAME}"
           cp -a gleam_src "${PKG_NAME}/gleam_generated"
           tar -czf "${PKG_NAME}.tar.gz" "${PKG_NAME}"
@@ -367,6 +372,7 @@ jobs:
           mv "${PKG_NAME}.tar.gz" artifacts
           cd artifacts
           sha256sum "${PKG_NAME}.tar.gz" | tee "${PKG_NAME}.tar.gz.sha256"
+          mv /tmp/include "${PRIV_DIR}/include"
 
       - name: Compile OpenCV (with contrib modules)
         run: |
@@ -398,7 +404,7 @@ jobs:
           export PKG_NAME=evision-nif_${{ matrix.pair.NIF_VERSION }}-${{ matrix.pair.arch }}-contrib-${GITHUB_REF##*/v}
           mkdir -p "${PKG_NAME}"
           export PRIV_DIR="_build/${MIX_ENV}/lib/evision/priv"
-          rm -rf "${PRIV_DIR}/include"
+          mv "${PRIV_DIR}/include" /tmp/include
           cp -a "${PRIV_DIR}" "${PKG_NAME}"
           cp -a lib/generated "${PKG_NAME}/elixir_generated"
           cp -a src/generated "${PKG_NAME}/erlang_generated"
@@ -409,6 +415,7 @@ jobs:
           mv "${PKG_NAME}.tar.gz" artifacts
           cd artifacts
           sha256sum "${PKG_NAME}.tar.gz" | tee "${PKG_NAME}.tar.gz.sha256"
+          mv /tmp/include "${PRIV_DIR}/include"
 
       - name: Mix compile (with contrib modules) for Gleam (experimental)
         run: |
@@ -428,7 +435,7 @@ jobs:
           export PKG_NAME=gleam_evision-nif_${{ matrix.pair.NIF_VERSION }}-${{ matrix.pair.arch }}-contrib-${GITHUB_REF##*/v}
           mkdir -p "${PKG_NAME}"
           export PRIV_DIR="_build/${MIX_ENV}/lib/evision/priv"
-          rm -rf "${PRIV_DIR}/include"
+          mv "${PRIV_DIR}/include" /tmp/include
           cp -a "${PRIV_DIR}" "${PKG_NAME}"
           cp -a gleam_src "${PKG_NAME}/gleam_generated"
           tar -czf "${PKG_NAME}.tar.gz" "${PKG_NAME}"
@@ -438,6 +445,7 @@ jobs:
           mv "${PKG_NAME}.tar.gz" artifacts
           cd artifacts
           sha256sum "${PKG_NAME}.tar.gz" | tee "${PKG_NAME}.tar.gz.sha256"
+          mv /tmp/include "${PRIV_DIR}/include"
 
       - uses: softprops/action-gh-release@v2
         with:
