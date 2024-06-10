@@ -27,7 +27,13 @@ imdecode(Buf, Flags) ->
   evision_internal_structurise:to_struct(Ret).
 """
     ]
-
+def evision_erlang_fixes_gleam_typed():
+    return [
+        """
+@external(erlang, "evision", "imdecode")
+pub fn imdecode(buf: BitArray, flags: Int) -> Mat
+"""
+    ]
 
 def evision_elixir_module_fixes(): 
     return {

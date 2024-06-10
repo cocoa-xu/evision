@@ -245,7 +245,11 @@ ERL_NIF_TERM evision_from_as_map(ErlNifEnv *env, const cv::Ptr<cv::cuda::GpuMat>
     shape[0] = enif_make_int(env, src->rows);
     shape[1] = enif_make_int(env, src->cols);
     shape[2] = enif_make_int(env, src->channels());
+#ifdef GLEAM_EVISION
+    values[item_index] = enif_make_list_from_array(env, shape, 3);
+#else
     values[item_index] = enif_make_tuple_from_array(env, shape, 3);
+#endif
     item_index++;
 
     ERL_NIF_TERM map;

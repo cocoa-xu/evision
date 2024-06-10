@@ -288,6 +288,8 @@ def when_guard(kind: str, func_guard_data: list):
         return when_guard_elixir(func_guard_data)
     elif kind == 'erlang':
         return when_guard_erlang(func_guard_data)
+    elif kind == 'gleam':
+        return when_guard_erlang(func_guard_data)
     else:
         print(f'warning: when_guard: unknown kind `{kind}`')
     return ' '
@@ -345,6 +347,8 @@ def map_argname(kind, argname, **kwargs):
         return map_argname_elixir(argname, **kwargs)
     elif kind == 'erlang':
         return map_argname_erlang(argname, **kwargs)
+    elif kind == 'gleam':
+        return map_argname_erlang(argname, **kwargs)
     else:
         print(f'warning: map_argname: unknown kind `{kind}`')
 
@@ -380,6 +384,8 @@ def map_argtype_to_guard(kind, argname, argtype, classname: Optional[str] = None
     if kind == 'elixir':
         return map_argtype_to_guard_elixir(argname, argtype, classname=classname)
     elif kind == 'erlang':
+        return map_argtype_to_guard_erlang(argname, argtype, classname=classname)
+    elif kind == 'gleam':
         return map_argtype_to_guard_erlang(argname, argtype, classname=classname)
     else:
         print(f'warning: map_argtype_to_guard: unknown kind `{kind}`')
@@ -801,8 +807,10 @@ def is_struct(argtype: str, also_get: Optional[str] = None, classname: Optional[
         'HausdorffDistanceExtractor': 'Evision.HausdorffDistanceExtractor',
         'HFS.HfsSegment': 'Evision.HFS.HfsSegment',
         'HistogramCostExtractor': 'Evision.HistogramCostExtractor',
-        'HistogramPhaseUnwrapping': 'Evision.HistogramPhaseUnwrapping',
-        'HistogramPhaseUnwrapping_Params': 'Evision.HistogramPhaseUnwrapping.Params',
+        'PhaseUnwrapping.HistogramPhaseUnwrapping': 'Evision.PhaseUnwrapping.HistogramPhaseUnwrapping',
+        'PhaseUnwrapping.HistogramPhaseUnwrapping_Params': 'Evision.PhaseUnwrapping.HistogramPhaseUnwrapping.Params',
+        'HistogramPhaseUnwrapping': 'Evision.PhaseUnwrapping.HistogramPhaseUnwrapping',
+        'HistogramPhaseUnwrapping_Params': 'Evision.PhaseUnwrapping.HistogramPhaseUnwrapping.Params',
         'HOGDescriptor': 'Evision.HOGDescriptor',
         'ImgHash.BlockMeanHash': 'Evision.ImgHash.BlockMeanHash',
         'ColorMomentHash': 'Evision.ImgHash.ColorMomentHash',
@@ -1391,8 +1399,104 @@ def map_argtype_in_spec(kind: str, classname: str, argtype: str, is_in: bool, de
         return map_argtype_in_spec_elixir(classname, argtype, is_in, decl)
     elif kind == 'erlang':
         return map_argtype_in_spec_erlang(classname, argtype, is_in, decl)
+    elif kind == 'gleam':
+        return map_argtype_in_spec_erlang(classname, argtype, is_in, decl)
     else:
         return ''
+    
+def add_to_import_list(import_list: dict, module_name: str, module_class: str):
+    if module_name not in import_list:
+        import_list[module_name] = set()
+    import_list[module_name].add(module_class)
+    
+def map_argtype_in_gleam_type(classname: str, argtype: str, is_in: bool, decl: list) -> str:
+    global vec_out_types
+    import_list = {}
+    argtype = argtype.strip()
+    if len(argtype) > 0 and argtype[-1] == '*':
+        if argtype == 'char*' or argtype == 'uchar*':
+            return 'BitArray'
+        argtype = argtype[:-1]
+    if argtype.startswith('Ptr<'):
+        if argtype == 'Ptr<char>' or argtype == 'Ptr<uchar>':
+            return 'BitArray'
+        argtype = argtype[len('Ptr<'):-1]
+
+    argtype = argtype.strip()
+    if argtype.startswith("cv::"):
+        argtype = argtype[4:]
+
+    if is_int_type(argtype) or is_enum_type(argtype, classname, decl):
+        return 'Int', import_list
+    elif argtype == 'bool':
+        return 'Bool', import_list
+    elif argtype == 'double' or argtype == 'float':
+        return 'Float', import_list
+    elif argtype in ['String', 'c_string', 'string', 'cv::String', 'std::string']:
+        return 'String', import_list
+    elif argtype in ['char', 'uchar']:
+        return 'Int', import_list
+    elif argtype == 'void':
+        add_to_import_list(import_list, 'evision/types', 'Void')
+        return 'Void', import_list
+    elif argtype in ['Mat', 'UMat', 'cv::Mat', 'cv::UMat']:
+        add_to_import_list(import_list, 'evision/mat', 'Mat')
+        return 'Mat', import_list
+    elif argtype in vec_out_types:
+        return vec_out_types[argtype]
+    elif argtype in evision_structrised_classes:
+        return f'Evision.{argtype}.t()'
+    elif argtype in ["FeatureDetector", "DescriptorExtractor"]:
+        return 'reference() | term()'
+    elif argtype in ['GpuMat::Allocator', 'GpuMat_Allocator']:
+        return 'reference()'
+    elif argtype == 'Status' and classname == 'Stitcher':
+        return 'integer()'
+    elif argtype == 'Device' and classname == 'ocl_Device':
+        return 'Evision.OCL.Device.t()'
+    elif argtype == 'Index' and classname == 'flann_Index':
+         return 'Evision.Flann.Index.t()'
+    elif argtype == 'TrackerVit':
+        return 'Evision.TrackerVit'
+    elif argtype == 'QRCodeDetectorAruco':
+        return 'Evision.QRCodeDetectorAruco'
+    elif argtype in ['QRCodeDetectorAruco_Params', 'QRCodeDetectorAruco::Params']:
+        return 'Evision.QRCodeDetectorAruco.Params'
+    elif argtype in ['aruco_DetectorParameters', 'aruco::DetectorParameters']:
+        return 'Evision.Aruco.DetectorParameters'
+    elif argtype == 'LayerId':
+        return 'term()'
+    elif argtype in manual_type_spec_elixir:
+        return manual_type_spec_elixir[argtype]
+    elif len(decl) > 0 and decl[0].startswith("cv.aruco.") and argtype in ['Board', 'Dictionary']:
+        if argtype == 'Board':
+            return 'Evision.ArUco.Board.t()'
+        elif argtype == 'Dictionary':
+            return 'Evision.ArUco.Dictionary.t()'
+    elif argtype.startswith('vector_'):
+        argtype_inner = argtype[len('vector_'):]
+        if argtype == 'vector_char' or argtype == 'vector_uchar':
+            return 'binary()'
+        spec_type = 'List(' + map_argtype_in_spec_elixir(classname, argtype_inner, is_in, decl) + ')'
+        return spec_type
+    elif argtype.startswith('std::vector<'):
+        if argtype == 'std::vector<char>' or argtype == 'std::vector<uchar>':
+            return 'BitArray()'
+        argtype_inner = argtype[len('std::vector<'):-1]
+        spec_type = 'List(' + map_argtype_in_spec_elixir(classname, argtype_inner, is_in, decl) + ')'
+        return spec_type
+    elif argtype.startswith('std::pair<'):
+        argtype_inner = ", ".join([map_argtype_in_spec_elixir(classname, a.strip(), is_in, decl) for a in argtype[len('std::pair<'):-1].split(",")])
+        spec_type = '{' + argtype_inner + '}'
+        return spec_type
+    elif is_struct(argtype, classname=classname, decl=decl):
+        _, struct_name = is_struct(argtype, also_get='struct_name', classname=classname, decl=decl)
+        return f'{struct_name}.t()'
+    elif 'Volume' == argtype:
+        return 'Evision.KinFu.Volume.t()'
+    else:
+        # print(f'warning: generate_spec: unknown argtype `{argtype}`, input_arg? {is_in}, class={classname}')
+        return 'Void'
 
 def map_argtype_in_spec_erlang(classname: str, argtype: str, is_in: bool, decl: list) -> str:
     global vec_out_types
@@ -1496,11 +1600,6 @@ def map_argtype_in_spec_erlang(classname: str, argtype: str, is_in: bool, decl: 
     elif is_struct(argtype, classname=classname, decl=decl):
         _, struct_name = is_struct(argtype, also_get='struct_name', classname=classname, decl=decl)
         ty = struct_name.replace('.', '_').lower()
-        if 'bgsegm_bgsegm_' in ty:
-            # dynafu_dynafu_
-            # detail_detail_
-            # saliency_saliency_
-            print(f'!!!warning: {argtype},{classname},{struct_name},{ty}')
         return f'#{ty}' + '{}'
     else:
         print(f'warning: generate_spec: unknown argtype `{argtype}`, input_arg? {is_in}, class={classname}')

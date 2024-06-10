@@ -33,7 +33,8 @@ class ModuleGenerator(object):
         #       entry: (number_guards, function_code)
         self.function = {
             "elixir": {},
-            "erlang": {}
+            "erlang": {},
+            "gleam": {}
         }
 
         # group function inline docs by function_name, then function_arity
@@ -46,7 +47,8 @@ class ModuleGenerator(object):
         #       entry: (inline_docs, function_head)
         self.inline_docs = {
             "elixir": {},
-            "erlang": {}
+            "erlang": {},
+            "gleam": {}
         }
 
         # key: kind
@@ -56,6 +58,8 @@ class ModuleGenerator(object):
         #   generated content will go into the `evision_{self.module_name}.ex` file
         # key == 'erlang'
         #   generated content will go into the `evision_{self.module_name}.erl` file
+        # key == 'gleam'
+        #   generated content will go into the `{self.module_name}.erl` file
         self.module = {}
 
         # generated entries will go into the corresponding nif file
@@ -64,7 +68,11 @@ class ModuleGenerator(object):
         #
         # key == 'elixir', file => `evision_nif.ex`
         # key == 'erlang', file => `evision_nif.erl`
+        # key == 'gleam', file => `evision_nif.erl`
         self.nif_declaration = {}
+        
+        self.erlang_ended = False
+        self.gleam_ended = False
 
     def get_erl_nif_func_entry(self):
         return self.erl_nif_func_entry.getvalue()
@@ -75,9 +83,12 @@ class ModuleGenerator(object):
         return self.nif_declaration[kind].getvalue()
 
     def get_generated_code(self, kind: str):
+        if kind == 'gleam':
+            return self.module[kind][0].getvalue()
+        elif kind == 'gleam_file':
+            return self.module['gleam'][1].getvalue()
         if self.module.get(kind, None) is None:
             return ''
-        return self.module[kind].getvalue()
 
     def write_elixir(self, content: str):
         if self.module.get('elixir', None) is None:
@@ -88,12 +99,29 @@ class ModuleGenerator(object):
         if self.module.get('erlang', None) is None:
             self.module['erlang'] = StringIO()
         self.module['erlang'].write(content)
+    
+    def write_gleam(self, content: str):
+        if self.module.get('gleam', None) is None:
+            self.module['gleam'] = []
+            self.module['gleam'].append(StringIO())
+            self.module['gleam'].append(StringIO())
+        self.module['gleam'][0].write(content)
+        
+    def write_gleam_file(self, content: str):
+        if self.module.get('gleam', None) is None:
+            self.module['gleam'] = []
+            self.module['gleam'].append(StringIO())
+            self.module['gleam'].append(StringIO())
+        if content != None:
+            self.module['gleam'][1].write(content)
 
     def end(self, kind: str):
         if kind == 'elixir' and kind in self.function:
             self.end_elixir()
         elif kind == 'erlang' and kind in self.function:
             self.end_erlang()
+        elif kind == 'gleam' and kind in self.function:
+            self.end_gleam()
 
     def end_elixir(self):
         for function_name, function in self.function['elixir'].items():
@@ -117,6 +145,8 @@ class ModuleGenerator(object):
         self.write_elixir("end\n")
 
     def end_erlang(self):
+        if self.erlang_ended:
+            return
         for function_name, function in self.function['erlang'].items():
             for arity, functions in function.items():
                 docs_spec_mfa = self.inline_docs['erlang'].get(function_name, {}).get(arity, [])
@@ -150,6 +180,53 @@ class ModuleGenerator(object):
                     for _, function_code in functions[:-1]:
                         self.write_erlang(function_code[:-3] + ';\n')
                     self.write_erlang(functions[-1][1])
+        self.erlang_ended = True
+
+    def end_gleam(self):
+        if self.gleam_ended:
+            return
+        for function_name, function in self.function['gleam'].items():
+            has_gleam = False
+            for arity, functions in function.items():
+                docs_spec_mfa = self.inline_docs['gleam'].get(function_name, {}).get(arity, [])
+                if len(docs_spec_mfa) > 0:
+                    if len(docs_spec_mfa) == 1:
+                        _docs, spec = docs_spec_mfa[0]
+                        self.write_gleam(spec)
+                        self.write_gleam("\n")
+                    else:
+                        _docs, spec = docs_spec_mfa[0]
+                        prefix = spec[:-1].index("(")
+                        self.write_gleam(spec[:-1])
+                        self.write_gleam("\n")
+                        space = ' ' * (prefix - 1)
+                        for i in range(1, len(docs_spec_mfa) - 1):
+                            _docs, spec = docs_spec_mfa[i]
+                            self.write_gleam(space)
+                            self.write_gleam(';')
+                            self.write_gleam(spec[prefix:-1])
+                            self.write_gleam("\n")
+                        _docs, spec = docs_spec_mfa[-1]
+                        self.write_gleam(space)
+                        self.write_gleam(';')
+                        self.write_gleam(spec[prefix:])
+                        self.write_gleam("\n")
+
+                if len(functions) == 1:
+                    self.write_gleam(functions[0][1])
+                    if not has_gleam:
+                        self.write_gleam_file(functions[0][2])
+                        has_gleam = True
+                else:
+                    functions = sorted(functions, key=lambda x: -x[0])
+                    for _, function_code, typed_function in functions[:-1]:
+                        self.write_gleam(function_code[:-3] + ';\n')
+                        # self.write_gleam_file(typed_function)
+                    self.write_gleam(functions[-1][1])
+                    if not has_gleam:
+                        self.write_gleam_file(functions[-1][2])
+                        has_gleam = True
+        self.gleam_ended = True
 
     def gen_constructor(self, full_qualified_name: str, constructor: str, func: FuncInfo, namespace_list: list):
         self._process_function(full_qualified_name, name=constructor, func=func, is_ns=False, is_constructor=True, namespace_list=namespace_list)
@@ -169,11 +246,13 @@ class ModuleGenerator(object):
             cname = '_'.join(ns[-2:])
         self_spec_in = {
             "elixir": map_argtype_in_spec('elixir', class_name, cname, is_in=True, decl=[]),
-            "erlang": map_argtype_in_spec('erlang', class_name, cname, is_in=True, decl=[])
+            "erlang": map_argtype_in_spec('erlang', class_name, cname, is_in=True, decl=[]),
+            "gleam": map_argtype_in_spec('gleam', class_name, cname, is_in=True, decl=[])
         }
         prop_spec_out = {
             "elixir": map_argtype_in_spec('elixir', class_name, property.tp, is_in=False, decl=[]),
             "erlang": map_argtype_in_spec('erlang', class_name, property.tp, is_in=False, decl=[]),
+            "gleam": map_argtype_in_spec('gleam', class_name, property.tp, is_in=False, decl=[]),
         }
         generating_type = 'get'
         property_templates = {
@@ -190,6 +269,13 @@ class ModuleGenerator(object):
                 "nif_template": Template('${nif_name}(${nif_args}) ->\n    not_loaded(?LINE).\n'),
                 "self_spec": self_spec_in["erlang"],
                 'prop_spec': prop_spec_out["erlang"]
+            },
+            "gleam": {
+                "getter_template": ET.erlang_property_getter,
+                "nif_args": '_self',
+                "nif_template": Template('${nif_name}(${nif_args}) ->\n    not_loaded(?LINE).\n'),
+                "self_spec": self_spec_in["gleam"],
+                'prop_spec': prop_spec_out["gleam"]
             }
         }
         self._gen_property_impl(class_name, property_name, func_arity, generating_type, property_templates)
@@ -199,11 +285,13 @@ class ModuleGenerator(object):
             func_arity = 2
             self_spec_out = {
                 "elixir": map_argtype_in_spec('elixir', class_name, cname, is_in=False, decl=[]),
-                "erlang": map_argtype_in_spec('erlang', class_name, cname, is_in=False, decl=[])
+                "erlang": map_argtype_in_spec('erlang', class_name, cname, is_in=False, decl=[]),
+                "gleam": map_argtype_in_spec('gleam', class_name, cname, is_in=False, decl=[]),
             }
             prop_spec_in = {
                 "elixir": map_argtype_in_spec('elixir', class_name, property.tp, is_in=True, decl=[]),
-                "erlang": map_argtype_in_spec('erlang', class_name, property.tp, is_in=True, decl=[])
+                "erlang": map_argtype_in_spec('erlang', class_name, property.tp, is_in=True, decl=[]),
+                "gleam": map_argtype_in_spec('gleam', class_name, property.tp, is_in=True, decl=[])
             }
             generating_type = 'set'
             property_templates = {
@@ -222,7 +310,15 @@ class ModuleGenerator(object):
                     "self_spec_in": self_spec_in["erlang"],
                     "self_spec_out": self_spec_out["erlang"],
                     'prop_spec': prop_spec_in["erlang"]
-                }
+                },
+                "gleam": {
+                    "setter_template": ET.erlang_property_setter,
+                    "nif_args": '_self, _prop',
+                    "nif_template": Template('${nif_name}(${nif_args}) ->\n    not_loaded(?LINE).\n'),
+                    "self_spec_in": self_spec_in["gleam"],
+                    "self_spec_out": self_spec_out["gleam"],
+                    'prop_spec': prop_spec_in["gleam"]
+                },
             }
             self._gen_property_impl(class_name, property_name, func_arity, generating_type, property_templates)
 
@@ -243,7 +339,7 @@ class ModuleGenerator(object):
         # generate code
         property_code = {}
         for kind, template in property_templates.items():
-            if kind == 'erlang':
+            if kind == 'erlang' or kind == 'gleam':
                 property_name = map_argname('elixir', property_name)
             property_code[kind] = template[f"{generating_type}ter_template"].substitute(property_name=property_name, nif_name=nif_name, **template)
 
@@ -271,12 +367,17 @@ class ModuleGenerator(object):
             "erlang": {
                 "nif_args": '_opts',
                 "nif_template": Template('${nif_name}(${nif_args}) ->\n    not_loaded(?LINE).\n'),
+            },
+            "gleam": {
+                "nif_args": '_opts',
+                "nif_template": Template('${nif_name}(${nif_args}) ->\n    not_loaded(?LINE).\n'),
             }
         }
 
         if not is_ns and func.classname and not func.is_static and not is_constructor:
             function_templates["elixir"]["nif_args"] = f'_self, {function_templates["elixir"]["nif_args"]}'
             function_templates["erlang"]["nif_args"] = f'_self, {function_templates["erlang"]["nif_args"]}'
+            function_templates["gleam"]["nif_args"] = f'_self, {function_templates["gleam"]["nif_args"]}'
 
         # ======== step 3. register this NIF function ========
         for kind, template in function_templates.items():
@@ -416,10 +517,13 @@ class ModuleGenerator(object):
                     module_func_args = func_args
                     module_func_args_with_opts = func_args_with_opts
 
-                    positional_args, positional_var = func_variant.positional_args(kind)
+                    if kind == 'gleam':
+                        positional_args, positional_var, positional_arg_types = func_variant.positional_args(kind)
+                    else:
+                        positional_args, positional_var = func_variant.positional_args(kind)
                     opts_args = func_variant.opts_args(kind, in_func_body=True)
-                    function_spec = func_variant.generate_spec(kind, module_func_name, is_instance_method, include_opts=False, module_name=self.module_name, is_static=func.is_static)
-                    function_spec_opts = func_variant.generate_spec(kind, module_func_name, is_instance_method, include_opts=True, module_name=self.module_name, is_static=func.is_static)
+                    function_spec = func_variant.generate_spec(kind, module_func_name, is_instance_method, include_opts=False, module_name=self.module_name)
+                    function_spec_opts = func_variant.generate_spec(kind, module_func_name, is_instance_method, include_opts=True, module_name=self.module_name)
 
                     # merge positional args and opts args
                     func_args = positional_var
@@ -429,7 +533,8 @@ class ModuleGenerator(object):
                     if is_instance_method:
                         self_arg = {
                             'elixir': 'Evision.Internal.Structurise.from_struct(self)', 
-                            'erlang': 'evision_internal_structurise:from_struct(Self)'
+                            'erlang': 'evision_internal_structurise:from_struct(Self)',
+                            'gleam': 'evision_internal_structurise:from_struct(Self)'
                         }
                         func_args = f'{self_arg[kind]}, {func_args}'
                         if len(func_args_with_opts) > 0:
@@ -446,7 +551,7 @@ class ModuleGenerator(object):
                                 f'    :evision_nif.{nif_name}(self, opts)\n'
                                 '    |> to_struct()\n'
                                 '  end\n')
-                            self.add_function(kind, module_func_name, func_arity, 
+                            self.add_function(kind, module_func_name, func_arity,
                                 guards_count=3, 
                                 generated_code=function_code.getvalue()
                             )
@@ -463,6 +568,17 @@ class ModuleGenerator(object):
                                 f'  Ret = evision_nif:{nif_name}(evision_internal_structurise:from_struct(Self), evision_internal_structurise:from_struct(Options)),\n'
                                 "  to_struct(Ret).\n\n")
                             self.add_function(kind, module_func_name, 2, guards_count=3, generated_code=function_code.getvalue())
+                        elif kind == 'gleam':
+                            function_code.write(f'{module_func_name}(Self) ->\n'
+                                f'  evision_nif:{nif_name}(evision_internal_structurise:from_struct(Self), []).\n')
+                            self.add_function(kind, module_func_name, 1, guards_count=0, generated_code=function_code.getvalue())
+                            function_code = StringIO()
+                            function_code.write(f'{module_func_name}(Self, Options) when is_list(Options), is_tuple(hd(Options)), tuple_size(hd(Options)) == 2 ->\n'
+                                f'  Ret = evision_nif:{nif_name}(evision_internal_structurise:from_struct(Self), evision_internal_structurise:from_struct(Options)),\n'
+                                "  to_struct(Ret).\n\n")
+                            typed_function = '@external(erlang, "evision_net", "forward")\npub fn forward(self: any) -> any \n\n'
+                            typed_function += '@external(erlang, "evision_net", "forward")\npub fn forward(self: any, opts: any) -> any \n\n'
+                            self.add_function(kind, module_func_name, 2, guards_count=3, generated_code=function_code.getvalue(), typed_function=typed_function)
                         continue
 
                     if func_name.startswith(evision_nif_prefix() + "dnn_dnn_Net") and (module_func_name == "getLayerShapes" or module_func_name == "getLayersShapes"):
@@ -471,11 +587,13 @@ class ModuleGenerator(object):
                             specs = {
                                 'getLayerShapes': {
                                     'elixir': '@spec getLayerShapes(Evision.Net.t(), [{{atom(), term()}},...] | nil) :: {list(list(integer())), list(list(integer()))} | {:error, String.t()}',
-                                    'erlang': '-spec getLayerShapes(#evision_mat{}, [{{atom(), term()}},...] | nil) -> {list(list(integer())), list(list(integer()))} | {error, binary()}.'
+                                    'erlang': '-spec getLayerShapes(#evision_mat{}, [{{atom(), term()}},...] | nil) -> {list(list(integer())), list(list(integer()))} | {error, binary()}.',
+                                    'gleam': '-spec getLayerShapes(#evision_mat{}, [{{atom(), term()}},...] | nil) -> {list(list(integer())), list(list(integer()))} | {error, binary()}.'
                                 },
                                 'getLayersShapes': {
                                     'elixir': '@spec getLayerShapes(Evision.Net.t(), [{{atom(), term()}},...] | nil) :: {list(integer()), list(list(list(integer()))), list(list(list(integer())))} | {:error, String.t()}',
-                                    'erlang': '-spec getLayerShapes(#evision_mat{}, [{{atom(), term()}},...] | nil) ->  {list(integer()), list(list(list(integer()))), list(list(list(integer())))} | {error, binary()}.'
+                                    'erlang': '-spec getLayerShapes(#evision_mat{}, [{{atom(), term()}},...] | nil) ->  {list(integer()), list(list(list(integer()))), list(list(list(integer())))} | {error, binary()}.',
+                                    'gleam': '-spec getLayerShapes(#evision_mat{}, [{{atom(), term()}},...] | nil) ->  {list(integer()), list(list(list(integer()))), list(list(list(integer())))} | {error, binary()}.'
                                 }
                             }
                             spec = specs[module_func_name][kind]
@@ -515,6 +633,29 @@ class ModuleGenerator(object):
                                 guards_count=3,
                                 generated_code=function_code.getvalue()
                             )
+                        elif kind == 'gleam':
+                            function_code.write(f'{module_func_name}(Self) ->\n'
+                                f'  Ret = evision_nif:{nif_name}(evision_internal_structurise:from_struct(Self), []),\n'
+                                "  to_struct(Ret).\n\n"
+                            )
+                            self.add_function(kind, module_func_name, 
+                                function_arity=1, 
+                                guards_count=0,
+                                generated_code=function_code.getvalue()
+                            )
+                            function_code = StringIO()
+                            function_code.write(f'{module_func_name}(Self, Options) when is_list(Options), is_tuple(hd(Options)), tuple_size(hd(Options)) == 2 ->\n'
+                                f'  Ret = evision_nif:{nif_name}(evision_internal_structurise:from_struct(Self), evision_internal_structurise:from_struct(Options)),\n'
+                                "  to_struct(Ret).\n\n"
+                            )
+                            typed_function = '@external(erlang, "evision_net", "getLayerShapes")\npub fn get_layer_shapes(self: any) -> any \n\n'
+                            typed_function += '@external(erlang, "evision_net", "getLayersShapes")\npub fn get_layers_shapes(self: any, opts: any) -> any \n\n'
+                            self.add_function(kind, module_func_name, 
+                                function_arity=2,
+                                guards_count=3,
+                                generated_code=function_code.getvalue(),
+                                typed_function=typed_function
+                            )
                         continue
 
                     # if func_args_with_opts is not None
@@ -530,6 +671,8 @@ class ModuleGenerator(object):
                                 when_guard_with_opts = f' {when_guard_with_opts.strip()} and (opts == nil or (is_list(opts) and is_tuple(hd(opts))))\n  '
                             elif kind == 'erlang':
                                 when_guard_with_opts = f' {when_guard_with_opts.strip()}, is_list(Options), is_tuple(hd(Options)), tuple_size(hd(Options)) == 2'
+                            elif kind == 'gleam':
+                                when_guard_with_opts = f' {when_guard_with_opts.strip()}, is_list(Options), is_tuple(hd(Options)), tuple_size(hd(Options)) == 2'
                             else:
                                 raise RuntimeError(f"unknown kind `{kind}`")
                         else:
@@ -537,6 +680,8 @@ class ModuleGenerator(object):
                             if kind == 'elixir':
                                 when_guard_with_opts = ' when opts == nil or (is_list(opts) and is_tuple(hd(opts)))\n  '
                             elif kind == 'erlang':
+                                when_guard_with_opts = ' when is_list(Options), is_tuple(hd(Options)), tuple_size(hd(Options)) == 2'
+                            elif kind == 'gleam':
                                 when_guard_with_opts = ' when is_list(Options), is_tuple(hd(Options)), tuple_size(hd(Options)) == 2'
                             else:
                                 raise RuntimeError(f"unknown kind `{kind}`")
@@ -573,13 +718,31 @@ class ModuleGenerator(object):
                                 inline_docs=inline_doc,
                                 typespec=function_spec_opts
                             )
+                        elif kind == 'gleam':
+                            function_code.write(
+                                f'{module_func_name}({module_func_args_with_opts}){when_guard_with_opts}->\n'
+                                f'  {positional_args},\n'
+                                f'  Ret = evision_nif:{nif_name}({func_args_with_opts}),\n'
+                                "  to_struct(Ret).\n\n"
+                            )
+                            
+                            self.add_function_docs(kind, module_func_name, func_arity,
+                                inline_docs=inline_doc,
+                                typespec=function_spec_opts,
+                            )
                         else:
                             raise RuntimeError(f"unknown kind `{kind}`")
 
                         # add this function to the collection
+                        if self.module_name == 'Evision':
+                            typed_function = f'@external(erlang, "evision", "{module_func_name}")\n'
+                        else:
+                            typed_function = f'@external(erlang, "evision_{self.module_name.replace('.', '_').lower()}", "{module_func_name}")\n'
+                        typed_function += f'pub fn {self.to_gleam_func_name(module_func_name)}({", ".join([f"arg{i}: any" for i in range(func_arity)])}, opts: any) -> any\n\n'
                         self.add_function(kind, module_func_name, func_arity,
                             guards_count=3 + len(func_guard),
-                            generated_code=function_code.getvalue()
+                            generated_code=function_code.getvalue(),
+                            typed_function=typed_function
                         )
                         # "empty" buffer in function_code
                         # so that we can use it later
@@ -610,10 +773,32 @@ class ModuleGenerator(object):
                             inline_docs=inline_doc,
                             typespec=function_spec
                         )
+                    elif kind == 'gleam':
+                        function_code.write(
+                            f'{module_func_name}({module_func_args}){func_when_guard}->\n'
+                            f'  {positional_args},\n'
+                            f'  Ret = evision_nif:{nif_name}({func_args}),\n'
+                            "  to_struct(Ret).\n\n"
+                        )
+                        self.add_function_docs(kind, module_func_name, func_arity,
+                            inline_docs=inline_doc,
+                            typespec=function_spec
+                        )
                     else:
                         raise RuntimeError(f"unknown kind `{kind}`")
                     # add this function to the collection
-                    self.add_function(kind, module_func_name, func_arity, guards_count=len(func_guard), generated_code=function_code.getvalue())
+                    if self.module_name == 'Evision':
+                        typed_function = f'@external(erlang, "evision", "{module_func_name}")\n'
+                    else:
+                        typed_function = f'@external(erlang, "evision_{self.module_name.replace('.', '_').lower()}", "{module_func_name}")\n'
+                    typed_function += f'pub fn {self.to_gleam_func_name(module_func_name)}({", ".join([f"arg{i}: any" for i in range(func_arity)])}) -> any\n\n'
+                    self.add_function(kind, module_func_name, func_arity, guards_count=len(func_guard), generated_code=function_code.getvalue(), typed_function=typed_function)
+
+    def to_gleam_func_name(self, module_func_name: str):
+        gleam_func_name = module_func_name.lower()
+        if gleam_func_name == 'type':
+            gleam_func_name = 'type_'
+        return gleam_func_name
 
     def _reject_ns_func(self, full_qualified_name: str, class_name: str, func_name: str):
         if func_name != f'{evision_nif_prefix()}{class_name}':
@@ -684,7 +869,7 @@ class ModuleGenerator(object):
             self.nif_declaration[kind].write(nif_declaration)
             nif_declared[kind][nif_name] = True
 
-    def add_function(self, kind: str, function_name: str, function_arity: int, guards_count: int, generated_code: str):
+    def add_function(self, kind: str, function_name: str, function_arity: int, guards_count: int, generated_code: str, typed_function: str = None):
         if self.function.get(kind, None) is None:
             self.function[kind] = {}
         function_dict = self.function[kind]
@@ -692,7 +877,10 @@ class ModuleGenerator(object):
             function_dict[function_name] = {}
         if function_arity not in function_dict[function_name]:
             function_dict[function_name][function_arity] = []
-        function_dict[function_name][function_arity].append((guards_count, generated_code))
+        if kind == 'gleam':
+            function_dict[function_name][function_arity].append((guards_count, generated_code, typed_function))
+        else:
+            function_dict[function_name][function_arity].append((guards_count, generated_code))
 
     def add_function_docs(self, kind: str, function_name: str, function_arity: int, inline_docs: str, typespec: str = None):
         if self.inline_docs.get(kind, None) is None:
@@ -702,9 +890,12 @@ class ModuleGenerator(object):
             inline_docs_dict[function_name] = {}
         if function_arity not in inline_docs_dict[function_name]:
             inline_docs_dict[function_name][function_arity] = []
+        
         if kind == 'elixir':
             inline_docs_dict[function_name][function_arity].append(inline_docs)
         elif kind == 'erlang':
+            inline_docs_dict[function_name][function_arity].append((inline_docs, typespec))
+        elif kind == 'gleam':
             inline_docs_dict[function_name][function_arity].append((inline_docs, typespec))
 
     def print_functions(self, kind: str):

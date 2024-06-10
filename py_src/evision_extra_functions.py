@@ -27,7 +27,8 @@ to_pointer(#{class := 'Elixir.Evision.CUDA.GpuMat', ref := Ref}, Mode) ->
 extra_functions = {
     "CUDA.GpuMat": {
       "elixir": gpumat_to_pointer_elixir, 
-      "erlang": gpumat_to_pointer_erlang
+      "erlang": gpumat_to_pointer_erlang,
+      "gleam": gpumat_to_pointer_erlang
     }
 }
 

@@ -43,7 +43,11 @@ static ERL_NIF_TERM _evision_get_mat_shape(ErlNifEnv *env, const cv::Mat& img) {
     if (include_channels) {
         shape[dims - 1] = enif_make_int(env, channels);
     }
+#ifdef GLEAM_EVISION
+    ERL_NIF_TERM ret = enif_make_list_from_array(env, shape, dims);
+#else
     ERL_NIF_TERM ret = enif_make_tuple_from_array(env, shape, dims);
+#endif
     enif_free(shape);
     return ret;
 }

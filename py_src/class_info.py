@@ -280,7 +280,7 @@ class ClassInfo(object):
         return code
 
 
-    def gen_def(self, codegen, evision_modules, evision_erlang_hrl):
+    def gen_def(self, codegen, evision_modules, evision_erlang_hrl, evision_gleam_hrl):
         all_classes = codegen.classes
         baseptr = "NoBase"
         if self.base and self.base in all_classes:
@@ -293,10 +293,6 @@ class ClassInfo(object):
         elixir_module_name = get_elixir_module_name(self.cname)
         if 'XImgProc.Segmentation.' in elixir_module_name:
             elixir_module_name = elixir_module_name.replace('XImgProc.Segmentation.', 'XImgProc.')
-        elif elixir_module_name == 'PhaseUnwrapping.HistogramPhaseUnwrapping':
-            elixir_module_name = 'HistogramPhaseUnwrapping'
-        elif elixir_module_name == 'PhaseUnwrapping.HistogramPhaseUnwrapping.Params':
-            elixir_module_name = 'HistogramPhaseUnwrapping.Params'
         elixir_module_name_underscore = elixir_module_name.replace(".", "_")
         if elixir_module_name not in ["Text.ERFilter.Callback"] and elixir_module_name_underscore not in evision_modules:
             module_file_generator = ModuleGenerator(elixir_module_name)
@@ -325,7 +321,18 @@ class ClassInfo(object):
                     atom_erlang_module_name=atom_erlang_module_name
                 )
             )
+            module_file_generator.write_gleam(f'-module({atom_erlang_module_name.lower()}).\n-compile(nowarn_export_all).\n-compile([export_all]).\n-include("evision.hrl").\n\n')    
+            module_file_generator.write_gleam(
+                ES.generic_struct_template_erlang.substitute(
+                    atom_elixir_module_name="Elixir." + atom_elixir_module_name.replace('"', ''),
+                    atom_erlang_module_name=atom_erlang_module_name
+                )
+            )
             evision_erlang_hrl.write(
+                f"-record({atom_erlang_module_name}, "
+                "{ref}).\n"
+            )
+            evision_gleam_hrl.write(
                 f"-record({atom_erlang_module_name}, "
                 "{ref}).\n"
             )

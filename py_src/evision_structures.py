@@ -217,11 +217,13 @@ from_struct(#${atom_erlang_module_name}{ref = Ref}) ->
 evision_structs = {
     "VideoCapture": {
       "elixir": videocapture_struct_elixir, 
-      "erlang": videocapture_struct_erlang
+      "erlang": videocapture_struct_erlang,
+      "gleam": videocapture_struct_erlang
     },
     "CUDA.GpuMat": {
       "elixir": gpumat_struct_elixir, 
-      "erlang": gpumat_struct_erlang
+      "erlang": gpumat_struct_erlang,
+      "gleam": gpumat_struct_erlang
     }
 }
 

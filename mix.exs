@@ -1239,7 +1239,8 @@ defmodule Evision.MixProject do
       ],
       before_closing_body_tag: &before_closing_body_tag/1,
       groups_for_functions: [
-        external: &(&1[:namespace] == :external)
+        external: &(&1[:namespace] == :external),
+        Enumerator: &(&1[:enum] == true)
       ]
     ]
   end

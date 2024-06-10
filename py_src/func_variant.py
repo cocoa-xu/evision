@@ -146,6 +146,8 @@ class FuncVariant(object):
             return self.inline_docs_elixir(is_instance_method, module_name)
         elif kind == 'erlang':
             return self.inline_docs_erlang(is_instance_method, module_name)
+        elif kind == 'gleam':
+            return self.inline_docs_erlang(is_instance_method, module_name)
         else:
             return ''
 
@@ -503,41 +505,45 @@ class FuncVariant(object):
                     keyword_args.add(normalized_arg_name)
         self.keyword_args = sorted(keyword_args)
         return self.keyword_args
+    
+    def out_args(self):
+        out_args = list(self.py_outlist)
+        out_args_name = [o[0] for o in out_args]
+        
+        if len(out_args_name) > 0 and (out_args_name[0] in ['retval', 'self']) and self.py_outlist[0][1] == -1:
+            if out_args_name[0] == 'retval':
+                out_args = [self.rettype]
+            elif out_args_name[0] == 'self':
+                out_args = [self.name]
+            out_args_name = out_args_name[1:]
+        elif self.isconstructor:
+            out_args = [self.classname]
+        else:
+            if self.name == "setInputParams":
+                out_args = [self.classname[4:]]
+            else:
+                out_args = []
 
-    def generate_spec(self, kind: str, module_func_name: str, is_instance_method: bool, include_opts: bool, module_name: str, in_args: list=None, out_args: list=None, is_static: bool=False) -> str:
+        for arg in self.args:
+            if arg.name in out_args_name:
+                out_args.append(arg.tp)
+        return out_args, out_args_name
+
+    def generate_spec(self, kind: str, module_func_name: str, is_instance_method: bool, include_opts: bool, module_name: str, in_args: list=None) -> str:
         if kind == 'elixir':
-            return self.generate_spec_elixir(module_func_name, is_instance_method, include_opts, module_name, in_args, out_args, is_static)
+            return self.generate_spec_elixir(module_func_name, is_instance_method, include_opts, module_name, in_args)
         elif kind == 'erlang':
-            return self.generate_spec_erlang(module_func_name, is_instance_method, include_opts, module_name, in_args, out_args, is_static)
+            return self.generate_spec_erlang(module_func_name, is_instance_method, include_opts, module_name, in_args)
+        elif kind == 'gleam':
+            return self.generate_spec_erlang(module_func_name, is_instance_method, include_opts, module_name, in_args)
         else:
             return ''
 
-    def generate_spec_elixir(self, module_func_name: str, is_instance_method: bool, include_opts: bool, module_name: str, in_args: list=None, out_args: list=None, is_static: bool=False) -> str:
+    def generate_spec_elixir(self, module_func_name: str, is_instance_method: bool, include_opts: bool, module_name: str, in_args: list=None) -> str:
         spec = StringIO()
         ismethod = self.classname != "" and not self.isconstructor
 
-        if out_args is None:
-            out_args = self.py_outlist
-            out_args_name = [o[0] for o in out_args]
-            
-            if len(out_args_name) > 0 and (out_args_name[0] in ['retval', 'self']) and self.py_outlist[0][1] == -1:
-                if out_args_name[0] == 'retval':
-                    out_args = [self.rettype]
-                elif out_args_name[0] == 'self':
-                    out_args = [self.name]
-                out_args_name = out_args_name[1:]
-            elif self.isconstructor:
-                out_args = [self.classname]
-            else:
-                if self.name == "setInputParams":
-                    out_args = [self.classname[4:]]
-                else:
-                    out_args = []
-
-            for arg in self.args:
-                if arg.name in out_args_name:
-                    out_args.append(arg.tp)
-
+        out_args, out_args_name = self.out_args()
         if in_args is None:
             if self.min_args > 0:
                 in_args = []
@@ -633,28 +639,10 @@ class FuncVariant(object):
         spec = spec.getvalue()
         return spec
 
-    def generate_spec_erlang(self, module_func_name: str, is_instance_method: bool, include_opts: bool, module_name: str, in_args: list=None, out_args: list=None, is_static: bool=False) -> str:
+    def generate_spec_erlang(self, module_func_name: str, is_instance_method: bool, include_opts: bool, module_name: str, in_args: list=None) -> str:
         spec = StringIO()
 
-        if out_args is None:
-            out_args = self.py_outlist
-            out_args_name = [o[0] for o in out_args]
-
-            if len(out_args_name) > 0 and (out_args_name[0] in ['retval', 'self']) and self.py_outlist[0][1] == -1:
-                if out_args_name[0] == 'retval':
-                    out_args = [self.rettype]
-                elif out_args_name[0] == 'self':
-                    out_args = [self.name]
-                out_args_name = out_args_name[1:]
-            elif self.isconstructor:
-                out_args = [self.classname]
-            else:
-                out_args = []
-
-            for arg in self.args:
-                if arg.name in out_args_name:
-                    out_args.append(arg.tp)
-
+        out_args, out_args_name = self.out_args()
         if in_args is None:
             if self.min_args > 0:
                 in_args = []
@@ -751,6 +739,8 @@ class FuncVariant(object):
                 return self.opts_args_elixir(in_func_body=in_func_body)
             elif kind == 'erlang':
                 return self.opts_args_erlang(in_func_body=in_func_body)
+            elif kind == 'gleam':
+                return self.opts_args_erlang(in_func_body=in_func_body)
             else:
                 print(f'warning: opt_args: unknown kind `{kind}`')
                 return ''
@@ -780,6 +770,8 @@ class FuncVariant(object):
             return self.positional_args_elixir()
         elif kind == 'erlang':
             return self.positional_args_erlang()
+        elif kind == 'gleam':
+            return self.positional_args_gleam()
         else:
             print(f'warning: positional_args: unknown kind `{kind}`')
 
@@ -793,6 +785,12 @@ class FuncVariant(object):
         positional_var = 'Positional'
         positional = '{} = [{}\n  ]'.format(positional_var, ",".join(['\n    {}, evision_internal_structurise:from_struct({}'.format('{' + map_argname('elixir', arg_name), map_argname('erlang', arg_name) + ')}') for (arg_name, _, argtype) in self.py_arglist[:self.pos_end]]))
         return positional, positional_var
+    
+    def positional_args_gleam(self):
+        positional_var = 'Positional'
+        positional = '{} = [{}\n  ]'.format(positional_var, ",".join(['\n    {}, evision_internal_structurise:from_struct({}'.format('{' + map_argname('elixir', arg_name), map_argname('erlang', arg_name) + ')}') for (arg_name, _, argtype) in self.py_arglist[:self.pos_end]]))
+        pos_typed = [(argname, argtype) for (argname, _, argtype) in self.py_arglist[:self.pos_end]]
+        return positional, positional_var, pos_typed
 
     def func_args(self, kind: str, instance_method: bool = False, in_func_body: bool = False):
         positional_args = self.py_arglist[:self.pos_end]
@@ -811,6 +809,10 @@ class FuncVariant(object):
                 if in_func_body:
                     self_arg = 'Evision.Internal.Structurise.from_struct(self)'
             elif kind == 'erlang':
+                self_arg = 'Self'
+                if in_func_body:
+                    self_arg = 'evision_internal_structurise:from_struct(Self)'
+            elif kind == 'gleam':
                 self_arg = 'Self'
                 if in_func_body:
                     self_arg = 'evision_internal_structurise:from_struct(Self)'

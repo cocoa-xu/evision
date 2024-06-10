@@ -128,6 +128,10 @@ class FuncInfo(object):
         name = self.argname_prefix_re.sub('', argname)
         return f"{name[0:1].upper()}{name[1:]}"
 
+    def map_gleam_argname(self, argname):
+        name = self.argname_prefix_re.sub('', argname)
+        return f"{name[0:1].upper()}{name[1:]}"
+
     def should_return_self(self):
         if self.classname.startswith("dnn_"):
             if self.name.startswith('set'):

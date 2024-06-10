@@ -135,6 +135,7 @@ ifeq ($(EVISION_COMPILE_WITH_REBAR), true)
 endif
 EVISION_PRECOMPILED_CACHE_DIR ?= $(shell pwd)/.cache
 EVISION_MAKE ?= make
+GLEAM_EVISION ?= false
 
 .DEFAULT_GLOBAL := build
 
@@ -255,6 +256,7 @@ $(EVISION_SO): $(C_SRC_HEADERS_TXT) $(OPENCV_CONFIG_CMAKE)
 			-D EVISION_GENERATE_LANG="$(EVISION_GENERATE_LANG)" \
 			-D EVISION_ENABLE_CONTRIB="$(EVISION_ENABLE_CONTRIB)" \
 			-D EVISION_ENABLE_CUDA="$(EVISION_ENABLE_CUDA)" \
+			-D GLEAM_EVISION="$(GLEAM_EVISION)" \
 			$(CMAKE_CONFIGURE_FLAGS) $(CMAKE_EVISION_OPTIONS) "$(shell pwd)" && \
 			make "-j$(DEFAULT_JOBS)" \
 			|| { echo "\033[0;31mincomplete build of OpenCV found in '$(CMAKE_OPENCV_BUILD_DIR)', please delete that directory and retry\033[0m" && exit 1 ; } ; } \

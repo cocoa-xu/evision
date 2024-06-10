@@ -19,11 +19,12 @@ from namespace import Namespace
 from func_info import FuncInfo
 from class_info import ClassInfo
 from module_generator import ModuleGenerator
-from fixes import evision_elixir_fixes, evision_erlang_fixes, evision_elixir_module_fixes, evision_erlang_module_fixes
+from fixes import evision_elixir_fixes, evision_erlang_fixes, evision_elixir_module_fixes, evision_erlang_module_fixes, evision_erlang_fixes_gleam_typed
 from pathlib import Path
 import os
 from os import makedirs
 from shutil import rmtree
+from glob import glob
 
 
 if sys.version_info[0] >= 3:
@@ -58,9 +59,10 @@ class BeamWrapperGenerator(object):
 
         # lib/generated/evision_nif.ex
         self.evision_nif = StringIO()
-
         # src/generated/evision_nif.erl
         self.evision_nif_erlang = StringIO()
+        # gleam_src/evision_nif.erl
+        self.evision_nif_gleam = StringIO()
 
         # lib/generated/evision.ex
         self.evision_elixir = StringIO()
@@ -73,7 +75,15 @@ class BeamWrapperGenerator(object):
         self.evision_constant_erlang = StringIO()
         # src/evision.hrl
         self.evision_erlang_hrl = StringIO()
-
+        
+        # gleam_src/evision.erl
+        self.evision_gleam = StringIO()
+        # gleam_src/evision.gleam
+        self.evision_gleam_typed = StringIO()
+        # gleam_src/evision_constant.erl
+        self.evision_constant_gleam = StringIO()
+        # gleam_src/evision.hrl
+        self.evision_gleam_hrl = StringIO()
 
         self.evision_ex = ModuleGenerator("Evision")
         self.evision_elixir.write('defmodule Evision do\n')
@@ -86,11 +96,21 @@ class BeamWrapperGenerator(object):
         self.evision_constant_elixir.write(ET.gen_cv_types_elixir)
 
         self.evision_erlang.write('-module(evision).\n-compile(nowarn_export_all).\n-compile([export_all]).\n-include("evision.hrl").\n\n')
-        self.evision_erlang.write('\'to_struct\'(Any) ->\n  evision_internal_structurise:to_struct(Any).\n\n')
+        self.evision_erlang.write('to_struct(Any) ->\n  evision_internal_structurise:to_struct(Any).\n\n')
+        self.evision_gleam.write('-module(evision).\n-compile(nowarn_export_all).\n-compile([export_all]).\n-include("evision.hrl").\n\n')
+        self.evision_gleam.write('to_struct(Any) ->\n  evision_internal_structurise:to_struct(Any).\n\n')
+        self.evision_gleam_typed.write('import evision/mat.{type Mat}\n')
+        self.evision_gleam_typed.write('import gleam/dict.{type Dict}\n\n')
 
         self.evision_constant_erlang.write('-module(evision_constant).\n-compile(nowarn_export_all).\n-compile([export_all]).\n\n')
+        self.evision_constant_gleam.write('-module(evision_constant).\n-compile(nowarn_export_all).\n-compile([export_all]).\n\n')
 
         self.evision_erlang_hrl.write(
+            "-record(evision_mat, {channels, dims, type, raw_type, shape, ref}).\n"
+            "-record(evision_cuda_gpumat, {channels, type, raw_type, shape, ref, elemSize}).\n"
+            "-record(evision_videocapture, {fps, frame_count, frame_width, frame_height, isOpened, ref}).\n"
+        )
+        self.evision_gleam_hrl.write(
             "-record(evision_mat, {channels, dims, type, raw_type, shape, ref}).\n"
             "-record(evision_cuda_gpumat, {channels, type, raw_type, shape, ref, elemSize}).\n"
             "-record(evision_videocapture, {fps, frame_count, frame_width, frame_height, isOpened, ref}).\n"
@@ -458,8 +478,10 @@ class BeamWrapperGenerator(object):
                             self.code_ns_reg.write(f'    F_CPU({erl_name}, {func_name}, {func_arity}),\n')
                         if int(func_arity) > 0:
                             self.evision_nif_erlang.write(f'{erl_name}(_opts) ->\n    not_loaded(?LINE).\n')
+                            self.evision_nif_gleam.write(f'{erl_name}(_opts) ->\n    not_loaded(?LINE).\n')
                         else:
                             self.evision_nif_erlang.write(f'{erl_name}() ->\n    not_loaded(?LINE).\n')
+                            self.evision_nif_gleam.write(f'{erl_name}() ->\n    not_loaded(?LINE).\n')
                     elif line.startswith("// @evision nif: "):
                         line = line[len("// @evision nif: "):].strip()
                         self.evision_nif.write(f'  {line}\n')
@@ -540,8 +562,7 @@ class BeamWrapperGenerator(object):
             elixir_module_name = "XImgProc.SelectiveSearchSegmentationStrategyMultiple"
             inner_ns = ["Segmentation"]
         elif module_name == 'phase_unwrapping_HistogramPhaseUnwrapping':
-            elixir_module_name = "HistogramPhaseUnwrapping"
-            inner_ns = ["PhaseUnwrapping"]
+            elixir_module_name = "PhaseUnwrapping.HistogramPhaseUnwrapping"
         else:
             elixir_module_name = elixir_module_name.replace('_', '').strip()
 
@@ -557,20 +578,26 @@ class BeamWrapperGenerator(object):
 
             if not evision_module_filename.startswith("evision_"):
                 module_file_generator.write_erlang(f'-module(evision_{evision_module_filename.lower()}).\n-compile(nowarn_export_all).\n-compile([export_all]).\n-include("evision.hrl").\n\n')
+                module_file_generator.write_gleam(f'-module(evision_{evision_module_filename.lower()}).\n-compile(nowarn_export_all).\n-compile([export_all]).\n-include("evision.hrl").\n\n')
             else:
                 module_file_generator.write_erlang(f'-module({evision_module_filename.lower()}).\n-compile(nowarn_export_all).\n-compile([export_all]).\n-include("evision.hrl").\n\n')
+                module_file_generator.write_gleam(f'-module({evision_module_filename.lower()}).\n-compile(nowarn_export_all).\n-compile([export_all]).\n-include("evision.hrl").\n\n')
 
             if ES.evision_structs.get(elixir_module_name, None) is not None:
                 module_file_generator.write_elixir(ES.evision_structs[elixir_module_name]["elixir"])
                 module_file_generator.write_elixir("\n")
                 module_file_generator.write_erlang(ES.evision_structs[elixir_module_name]["erlang"])
                 module_file_generator.write_erlang("\n")
+                module_file_generator.write_gleam(ES.evision_structs[elixir_module_name]["erlang"])
+                module_file_generator.write_gleam("\n")
                 
             if EF.extra_functions.get(elixir_module_name, None) is not None:
                 module_file_generator.write_elixir(EF.extra_functions[elixir_module_name]["elixir"])
                 module_file_generator.write_elixir("\n")
                 module_file_generator.write_erlang(EF.extra_functions[elixir_module_name]["erlang"])
                 module_file_generator.write_erlang("\n")
+                module_file_generator.write_gleam(EF.extra_functions[elixir_module_name]["erlang"])
+                module_file_generator.write_gleam("\n")
 
             if elixir_module_name not in evision_structrised_classes:
                 mapped_elixir_module_name = get_elixir_module_name(elixir_module_name)
@@ -580,8 +607,6 @@ class BeamWrapperGenerator(object):
                     atom_erlang_module_name = 'Evision.XImgProc.GraphSegmentation'
                 elif atom_erlang_module_name == 'Evision.XImgProc.Segmentation.SelectiveSearchSegmentationStrategy':
                     atom_erlang_module_name = 'Evision.XImgProc.SelectiveSearchSegmentationStrategy'
-                elif atom_erlang_module_name == 'Evision.PhaseUnwrapping.HistogramPhaseUnwrapping':
-                    atom_erlang_module_name = 'Evision.HistogramPhaseUnwrapping'
                 module_file_generator.write_elixir( 
                     ES.generic_struct_template_elixir.substitute(
                         atom_elixir_module_name=atom_elixir_module_name,
@@ -597,7 +622,17 @@ class BeamWrapperGenerator(object):
                         atom_erlang_module_name=atom_erlang_module_name
                     )
                 )
+                module_file_generator.write_gleam(
+                    ES.generic_struct_template_erlang.substitute(
+                        atom_elixir_module_name=f"Elixir.{atom_elixir_module_name}",
+                        atom_erlang_module_name=atom_erlang_module_name
+                    )
+                )
                 self.evision_erlang_hrl.write(
+                    f"-record({atom_erlang_module_name}, "
+                    "{ref}).\n"
+                )
+                self.evision_gleam_hrl.write(
                     f"-record({atom_erlang_module_name}, "
                     "{ref}).\n"
                 )
@@ -717,14 +752,16 @@ class BeamWrapperGenerator(object):
         self.code_ns_reg.write(f'    F(enabled_modules, evision_cv_enabled_modules, 0),\n')
         self.evision_nif.write(f'  def enabled_modules, do: :erlang.nif_error(:undef)\n')
         self.evision_nif_erlang.write(f'enabled_modules() ->\n    not_loaded(?LINE).\n')
+        self.evision_nif_gleam.write(f'enabled_modules() ->\n    not_loaded(?LINE).\n')
 
-    def gen(self, srcfiles, output_path, erl_output_path, erlang_output_path):
+    def gen(self, srcfiles, output_path, erl_output_path, erlang_output_path, gleam_output_path):
         self.output_path = output_path
         self.clear()
         self.parser = hdr_parser.CppHeaderParser(generate_umat_decls=True, generate_gpumat_decls=True)
 
         self.evision_nif.write('defmodule :evision_nif do\n{}\n'.format(ET.gen_evision_nif_load_nif))
         self.evision_nif_erlang.write('-module(evision_nif).\n-compile(nowarn_export_all).\n-compile([export_all]).\n\n{}\n{}\n'.format(ET.gen_evision_nif_load_nif_erlang, ET.gen_cv_types_erlang))
+        self.evision_nif_gleam.write('-module(evision_nif).\n-compile(nowarn_export_all).\n-compile([export_all]).\n\n{}\n{}\n'.format(ET.gen_evision_nif_load_nif_erlang, ET.gen_cv_types_erlang))
 
         self.code_ns_reg.write('static ErlNifFunc nif_functions[] = {\n')
         self.gen_enabled_modules()
@@ -827,7 +864,7 @@ class BeamWrapperGenerator(object):
         for decl_idx, name, classinfo in classlist1:
             if classinfo.ismap:
                 continue
-            self.code_type_publish.write(classinfo.gen_def(self, self.evision_modules, self.evision_erlang_hrl))
+            self.code_type_publish.write(classinfo.gen_def(self, self.evision_modules, self.evision_erlang_hrl, self.evision_gleam_hrl))
 
         # step 3: generate the code for all the global functions
         for ns_name, ns in sorted(self.namespaces.items()):
@@ -879,7 +916,6 @@ class BeamWrapperGenerator(object):
         # end 'evision.erl'
         if 'erlang' in self.langs:
             self.evision_ex.end('erlang')
-            self.evision_erlang.write(self.evision_ex.get_generated_code('erlang'))
             for fix in evision_erlang_fixes():
                 self.evision_erlang.write(fix)
                 self.evision_erlang.write("\n")
@@ -895,6 +931,31 @@ class BeamWrapperGenerator(object):
             self.evision_erlang.write(ET.enabled_modules_code_erlang.substitute(
                 enabled_modules=",".join([f'\'{m}\'' for m in self.enabled_modules]))
             )
+
+        # end gleam's 'evision.erl'
+        if 'gleam' in self.langs:
+            self.evision_ex.end('gleam')
+            for fix in evision_erlang_fixes():
+                self.evision_gleam.write(fix)
+                self.evision_gleam.write("\n")
+            for fix in evision_erlang_fixes_gleam_typed():
+                self.evision_gleam_typed.write(fix)
+                self.evision_gleam_typed.write("\n")
+            evision_enums = self.typed_enums.get('Evision', None)
+            if evision_enums is not None:
+                enum_written = set()
+                for enum_name, _, enum_values_erlang in evision_enums:
+                    if enum_name in enum_written:
+                        continue
+                    enum_written.add(enum_name)
+                    self.evision_gleam.write(f'cv_{enum_name}() ->\n  {enum_values_erlang}.\n')
+                    self.evision_gleam_typed.write(f'@external(erlang, "evision", "cv_{enum_name}")\n')
+                    self.evision_gleam_typed.write(f'pub fn {enum_name.lower()}() -> Int\n\n')
+                self.evision_gleam.write("\n")
+            self.evision_gleam.write(ET.enabled_modules_code_erlang.substitute(
+                enabled_modules=",".join([f'\'{m}\'' for m in self.enabled_modules]))
+            )
+            self.evision_gleam_typed.write('@external(erlang, "evision", "enabled_modules")\npub fn enabled_modules() -> Dict(String, Bool)\n\n')
 
         self.typed_enums['Evision'] = None
 
@@ -959,9 +1020,42 @@ class BeamWrapperGenerator(object):
                 module_file_generator.end('erlang')
                 self.evision_nif_erlang.write(module_file_generator.get_nif_declaration('erlang'))
                 self.save(erlang_output_path, f"evision_{name.lower()}.erl", module_file_generator.get_generated_code('erlang'))
-            
+
+            if 'gleam' in self.langs:
+                if name in evision_erlang_module_fixes():
+                    fixes = evision_erlang_module_fixes()[name]
+                    for f,d in fixes:
+                        module_file_generator.write_gleam(f)
+                        self.evision_nif_gleam.write(d)
+                typed_enum_key = f'Evision.{module_file_generator.module_name}'
+                erlang_module_name = typed_enum_key.replace('.', '_').lower()
+                typed_gleam_names = typed_enum_key.split('.')
+                typed_gleam_name = typed_gleam_names[-1].lower()
+                typed_gleam = StringIO()
+                evision_enums = self.typed_enums.get(typed_enum_key, None)
+                if evision_enums is not None:
+                    enum_written = set()
+                    for enum_name, _, enum_values_erlang in evision_enums:
+                        if enum_name in enum_written:
+                            continue
+                        enum_written.add(enum_name)
+                        module_file_generator.write_gleam(f'cv_{enum_name}() ->\n  {enum_values_erlang}.\n')
+                        typed_gleam.write(f'@external(erlang, "{erlang_module_name}", "cv_{enum_name}")\n')
+                        typed_gleam.write(f'pub fn {enum_name.lower()}() -> Int\n\n')
+                    module_file_generator.write_gleam("\n")
+                    delete_typed_enum = True
+                module_file_generator.end('gleam')
+                self.evision_nif_gleam.write(module_file_generator.get_nif_declaration('gleam'))
+                self.save(gleam_output_path, f"evision_{name.lower()}.erl", module_file_generator.get_generated_code('gleam'))
+                typed_enums = typed_gleam.getvalue()
+                if typed_gleam_name == 'type':
+                    typed_gleam_name = typed_gleam_names[-2].lower() + '_' + typed_gleam_name
+                if len(typed_enums) > 0:
+                    self.save(gleam_output_path + '/' + "/".join([x.lower() for x in typed_gleam_names[:-1]]), f"{typed_gleam_name}.gleam", typed_gleam.getvalue())
+                self.save(gleam_output_path + '/' + "/".join([x.lower() for x in typed_gleam_names[:-1]]), f"{typed_gleam_name}.gleam", module_file_generator.get_generated_code('gleam_file'))
+
             if delete_typed_enum:
-                del self.typed_enums[typed_enum_key]
+                self.typed_enums[typed_enum_key] = None
 
             self.code_ns_reg.write(module_file_generator.get_erl_nif_func_entry())
 
@@ -974,6 +1068,7 @@ class BeamWrapperGenerator(object):
                 continue
             else:
                 module_file_generator = ModuleGenerator(elixir_module_name)
+
             if 'elixir' in self.langs:
                 module_file_generator.write_elixir(f'defmodule {typed_enum_key} do\n')
                 
@@ -1006,6 +1101,26 @@ class BeamWrapperGenerator(object):
                 module_file_generator.end('erlang')
                 self.save(erlang_output_path, f"{erlang_module_name}.erl", module_file_generator.get_generated_code('erlang'))
 
+            if 'gleam' in self.langs:
+                erlang_module_name = typed_enum_key.replace('.', '_').lower()
+                typed_gleam_names = typed_enum_key.split('.')
+                typed_gleam_name = typed_gleam_names[-1].lower()
+                module_file_generator.write_gleam(f'-module({erlang_module_name}).\n-compile(nowarn_export_all).\n-compile([export_all]).\n\n')
+                enum_written = set()
+                typed_gleam = StringIO()
+                for enum_name, _, enum_values_erlang in evision_enums:
+                    if enum_name in enum_written:
+                        continue
+                    enum_written.add(enum_name)
+                    module_file_generator.write_gleam(f'cv_{enum_name}() ->\n  {enum_values_erlang}.\n')
+                    typed_gleam.write(f'@external(erlang, "{erlang_module_name}", "cv_{enum_name}")\n')
+                    typed_gleam.write(f'pub fn {enum_name.lower()}() -> Int\n\n')
+                module_file_generator.end('gleam')
+                self.save(gleam_output_path, f"{erlang_module_name}.erl", module_file_generator.get_generated_code('gleam'))
+                if typed_gleam_name == 'type':
+                    typed_gleam_name = typed_gleam_names[-2].lower() + '_' + typed_gleam_name
+                self.save(gleam_output_path + '/' + "/".join([x.lower() for x in typed_gleam_names[:-1]]), f"{typed_gleam_name}.gleam", typed_gleam.getvalue())
+
         if 'elixir' in self.langs:
             # 'evision_nif.ex'
             self.evision_nif.write(self.evision_ex.get_nif_declaration('elixir'))
@@ -1029,7 +1144,7 @@ class BeamWrapperGenerator(object):
 
             # 'evision.erl'
             self.evision_ex.end('erlang')
-            self.evision_elixir.write(self.evision_ex.get_generated_code('erlang'))
+            self.evision_erlang.write(self.evision_ex.get_generated_code('erlang'))
             self.save(erlang_output_path, "evision.erl", self.evision_erlang)            
 
             # 'evision_constant.erl'
@@ -1040,8 +1155,40 @@ class BeamWrapperGenerator(object):
             # 'evision.hrl'
             self.save(erlang_output_path, "evision.hrl", self.evision_erlang_hrl)
 
+        if 'gleam' in self.langs:
+            # 'evision_nif.erl'
+            self.evision_nif_gleam.write(self.evision_ex.get_nif_declaration('gleam'))
+            self.save(gleam_output_path, "evision_nif.erl", self.evision_nif_gleam)
+            
+            # 'evision.erl'
+            self.evision_ex.end('gleam')
+            self.evision_gleam.write(self.evision_ex.get_generated_code('gleam'))
+            self.evision_gleam_typed.write(self.evision_ex.get_generated_code('gleam_file'))
+            self.save(gleam_output_path, "evision.erl", self.evision_gleam)
+            self.save(gleam_output_path + "/evision", "evision.gleam", self.evision_gleam_typed)
+
+            # 'evision.hrl'
+            self.save(gleam_output_path, "evision.hrl", self.evision_gleam_hrl)
+
         self.code_ns_reg.write('\n};\n\n')
         self.save(output_path, "evision_generated_modules_content.h", self.code_ns_reg)
+
+
+def prepare_gleam_dstdir(gleam_dstdir):
+    outdated_files = glob(gleam_dstdir + "/*.erl")
+    for f in outdated_files:
+        Path(f).unlink()
+
+    protected_files = ['highgui.gleam', 'mat.gleam', 'types.gleam']
+    outdated_files = glob(gleam_dstdir + "/evision/*")
+    for f in outdated_files:
+        outdated_file = Path(f)
+        if outdated_file.name in protected_files:
+            continue
+        if outdated_file.is_dir():
+            rmtree(outdated_file)
+        else:
+            outdated_file.unlink()
 
 
 if __name__ == "__main__":
@@ -1049,8 +1196,9 @@ if __name__ == "__main__":
     parser.add_argument("--c_src", type=str, default="./c_src", help="Path to the c_src dir")
     parser.add_argument("--elixir_gen", type=str, default="./lib", help="Path to the output dir of elixir binding files")
     parser.add_argument("--erlang_gen", type=str, default="./src", help="Path to the output dir of erlang binding files")
+    parser.add_argument("--gleam_gen", type=str, default="./gleam_src", help="Path to the output dir of gleam binding files")
     parser.add_argument("--headers", help="Path to the headers.txt/header-contrib.txt in c_src")
-    parser.add_argument("--lang", type=str, help="Comma-seperated values. erlang,elixir")
+    parser.add_argument("--lang", type=str, help="Comma-seperated values. erlang,elixir,gleam")
     parser.add_argument("--modules", type=str, default='', help="Comma-seperated values.")
     args = parser.parse_args()
 
@@ -1058,18 +1206,19 @@ if __name__ == "__main__":
     dstdir = args.c_src
     elixir_dstdir = args.elixir_gen
     erlang_dstdir = args.erlang_gen
+    gleam_dstdir = args.gleam_gen
 
     if len(args.headers) > 4:
         with open(args.headers, 'r') as f:
             srcfiles = [l.strip() for l in f.readlines()]
     lang = []
-    if len(args.lang) > 5:
-        lang = [l.lower().strip() for l in args.lang.split(",")]
+    if len(args.lang) >= 5:
+        lang = list(set([l.lower().strip() for l in args.lang.split(",")]))
     if len(lang) == 0:
         raise RuntimeError("env var EVISION_GENERATE_LANG is empty")
     for l in lang:
-        if l not in ['elixir', 'erlang']:
-            raise RuntimeError(f"unknown value found in EVISION_GENERATE_LANG: `{l}`. Allowed values are `elixir`, `erlang`")
+        if l not in ['elixir', 'erlang', 'gleam']:
+            raise RuntimeError(f"unknown value found in EVISION_GENERATE_LANG: `{l}`. Allowed values are `elixir`, `erlang`, `gleam`")
 
     # default
     enabled_modules = ['calib3d', 'core', 'features2d', 'flann', 'highgui', 'imgcodecs', 'imgproc', 'ml', 'photo',
@@ -1081,6 +1230,7 @@ if __name__ == "__main__":
     rmtree(erlang_dstdir)
     makedirs(elixir_dstdir)
     makedirs(erlang_dstdir)
-    generator.gen(srcfiles, dstdir, elixir_dstdir, erlang_dstdir)
+    prepare_gleam_dstdir(gleam_dstdir)
+    generator.gen(srcfiles, dstdir, elixir_dstdir, erlang_dstdir, gleam_dstdir)
     # for n in generator.namespaces:
     #     print(f'"{n}": &(&1[:namespace] == :"{n}"),')
