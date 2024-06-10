@@ -739,7 +739,8 @@ class ModuleGenerator(object):
                         if self.module_name == 'Evision':
                             typed_function = f'@external(erlang, "evision", "{module_func_name}")\n'
                         else:
-                            typed_function = f'@external(erlang, "evision_{self.module_name.replace('.', '_').lower()}", "{module_func_name}")\n'
+                            typed_function_module_name = self.module_name.replace('.', '_').lower()
+                            typed_function = f'@external(erlang, "evision_{typed_function_module_name}", "{module_func_name}")\n'
                         if func_arity == 1:
                             if is_instance_method:
                                 typed_function += f'pub fn {self.to_gleam_func_name(module_func_name)}1(self: self) -> any\n\n'
@@ -801,7 +802,8 @@ class ModuleGenerator(object):
                     if self.module_name == 'Evision':
                         typed_function = f'@external(erlang, "evision", "{module_func_name}")\n'
                     else:
-                        typed_function = f'@external(erlang, "evision_{self.module_name.replace('.', '_').lower()}", "{module_func_name}")\n'
+                        typed_function_module_name = self.module_name.replace('.', '_').lower()
+                        typed_function = f'@external(erlang, "evision_{typed_function_module_name}", "{module_func_name}")\n'
                     
                     func_name_with_arity = ''
                     if more_than_one_variant and func_args_with_opts:
