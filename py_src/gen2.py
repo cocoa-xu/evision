@@ -1182,26 +1182,6 @@ class BeamWrapperGenerator(object):
         self.save(output_path, "evision_generated_modules_content.h", self.code_ns_reg)
 
 
-def prepare_gleam_dstdir(gleam_dstdir):
-    outdated_files = glob(gleam_dstdir + "/*.erl")
-    for f in outdated_files:
-        outdated_file = Path(f)
-        if outdated_file.name == 'evision_mat.erl':
-            continue
-        Path(f).unlink()
-
-    protected_files = ['highgui.gleam', 'mat.gleam', 'types.gleam']
-    outdated_files = glob(gleam_dstdir + "/evision/*")
-    for f in outdated_files:
-        outdated_file = Path(f)
-        if outdated_file.name in protected_files:
-            continue
-        if outdated_file.is_dir():
-            rmtree(outdated_file)
-        else:
-            outdated_file.unlink()
-
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--c_src", type=str, default="./c_src", help="Path to the c_src dir")
@@ -1241,7 +1221,6 @@ if __name__ == "__main__":
     rmtree(erlang_dstdir)
     makedirs(elixir_dstdir)
     makedirs(erlang_dstdir)
-    prepare_gleam_dstdir(gleam_dstdir)
     generator.gen(srcfiles, dstdir, elixir_dstdir, erlang_dstdir, gleam_dstdir)
     # for n in generator.namespaces:
     #     print(f'"{n}": &(&1[:namespace] == :"{n}"),')
