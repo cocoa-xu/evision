@@ -110,6 +110,7 @@ static ERL_NIF_TERM evision_windows_fix_run_once(ErlNifEnv* env, int argc, const
             ERL_NIF_TERM ret_term = error(env, "Cannot detect OpenCV lib directory");
             return ret_term;
         }
+        printf("Found OpenCV Lib Directory: %ls\r\n", lib_dir.c_str());
 
         PCWSTR opencvLibDirectoryPCWSTR = lib_dir.c_str();
         WCHAR pathBuffer[65536];
