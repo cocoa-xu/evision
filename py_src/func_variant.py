@@ -528,34 +528,41 @@ class FuncVariant(object):
             if arg.name in out_args_name:
                 out_args.append(arg.tp)
         return out_args, out_args_name
+    
+    def in_args(self, out_args):
+        in_args = None
+        in_args_name = None
+        if self.min_args > 0:
+            in_args = []
+            in_args_name = []
+            for (arg_name, _, argtype) in self.py_arglist[:self.pos_end]:
+                if arg_name not in out_args:
+                    in_args.append(argtype)
+                    in_args_name.append(arg_name)
+        return in_args, in_args_name
 
-    def generate_spec(self, kind: str, module_func_name: str, is_instance_method: bool, include_opts: bool, module_name: str, in_args: list=None) -> str:
+    def generate_spec(self, kind: str, module_func_name: str, is_instance_method: bool, include_opts: bool, module_name: str) -> str:
         if kind == 'elixir':
-            return self.generate_spec_elixir(module_func_name, is_instance_method, include_opts, module_name, in_args)
+            return self.generate_spec_elixir(module_func_name, is_instance_method, include_opts, module_name)
         elif kind == 'erlang':
-            return self.generate_spec_erlang(module_func_name, is_instance_method, include_opts, module_name, in_args)
+            return self.generate_spec_erlang(module_func_name, is_instance_method, include_opts, module_name)
         elif kind == 'gleam':
-            return self.generate_spec_erlang(module_func_name, is_instance_method, include_opts, module_name, in_args)
+            return self.generate_spec_erlang(module_func_name, is_instance_method, include_opts, module_name)
         else:
             return ''
 
-    def generate_spec_elixir(self, module_func_name: str, is_instance_method: bool, include_opts: bool, module_name: str, in_args: list=None) -> str:
+    def generate_spec_elixir(self, module_func_name: str, is_instance_method: bool, include_opts: bool, module_name: str) -> str:
         spec = StringIO()
         ismethod = self.classname != "" and not self.isconstructor
 
         out_args, out_args_name = self.out_args()
-        if in_args is None:
-            if self.min_args > 0:
-                in_args = []
-                for (arg_name, _, argtype) in self.py_arglist[:self.pos_end]:
-                    if arg_name not in out_args:
-                        in_args.append(argtype)
-
-        spec.write(f'@spec {module_func_name}(')
+        in_args, in_args_name = self.in_args(out_args)
         in_args_spec = []
         if in_args is not None:
             for argtype in in_args:
                 in_args_spec.append(map_argtype_in_spec('elixir', self.classname, argtype, is_in=True, decl=self.decl))
+
+        spec.write(f'@spec {module_func_name}(')
         if self.has_opts and include_opts:
             keyword_arg_names = self.keyword_arg_names('elixir')
             named_in_args_spec = []
@@ -639,16 +646,11 @@ class FuncVariant(object):
         spec = spec.getvalue()
         return spec
 
-    def generate_spec_erlang(self, module_func_name: str, is_instance_method: bool, include_opts: bool, module_name: str, in_args: list=None) -> str:
+    def generate_spec_erlang(self, module_func_name: str, is_instance_method: bool, include_opts: bool, module_name: str) -> str:
         spec = StringIO()
 
         out_args, out_args_name = self.out_args()
-        if in_args is None:
-            if self.min_args > 0:
-                in_args = []
-                for (arg_name, _, argtype) in self.py_arglist[:self.pos_end]:
-                    if arg_name not in out_args:
-                        in_args.append(argtype)
+        in_args, in_args_name = self.in_args(out_args)
 
         spec.write(f'-spec {module_func_name}(')
         in_args_spec = []

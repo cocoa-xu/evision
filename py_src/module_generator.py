@@ -89,6 +89,8 @@ class ModuleGenerator(object):
             return self.module['gleam'][1].getvalue()
         if self.module.get(kind, None) is None:
             return ''
+        else:
+            return self.module[kind].getvalue()
 
     def write_elixir(self, content: str):
         if self.module.get('elixir', None) is None:
@@ -186,8 +188,8 @@ class ModuleGenerator(object):
         if self.gleam_ended:
             return
         for function_name, function in self.function['gleam'].items():
-            has_gleam = False
             for arity, functions in function.items():
+                has_gleam = False
                 docs_spec_mfa = self.inline_docs['gleam'].get(function_name, {}).get(arity, [])
                 if len(docs_spec_mfa) > 0:
                     if len(docs_spec_mfa) == 1:
@@ -422,7 +424,6 @@ class ModuleGenerator(object):
             # get a sorted list based on the number of guards in descending order
             # i.e., function variant that has the most number of constraints will be the first element in the list
             func_guards_len_desc = list(reversed(argsort([len(g) for g in func_guards[kind]])))
-
             # start from the variant with the most number of constraints/guards
             for i in func_guards_len_desc:
                 # generated binding code will be written to this variable
@@ -576,8 +577,7 @@ class ModuleGenerator(object):
                             function_code.write(f'{module_func_name}(Self, Options) when is_list(Options), is_tuple(hd(Options)), tuple_size(hd(Options)) == 2 ->\n'
                                 f'  Ret = evision_nif:{nif_name}(evision_internal_structurise:from_struct(Self), evision_internal_structurise:from_struct(Options)),\n'
                                 "  to_struct(Ret).\n\n")
-                            typed_function = '@external(erlang, "evision_net", "forward")\npub fn forward(self: any) -> any \n\n'
-                            typed_function += '@external(erlang, "evision_net", "forward")\npub fn forward(self: any, opts: any) -> any \n\n'
+                            typed_function = '@external(erlang, "evision_net", "forward")\npub fn forward2(self: any, opts: any) -> any \n\n'
                             self.add_function(kind, module_func_name, 2, guards_count=3, generated_code=function_code.getvalue(), typed_function=typed_function)
                         continue
 
@@ -648,8 +648,9 @@ class ModuleGenerator(object):
                                 f'  Ret = evision_nif:{nif_name}(evision_internal_structurise:from_struct(Self), evision_internal_structurise:from_struct(Options)),\n'
                                 "  to_struct(Ret).\n\n"
                             )
-                            typed_function = '@external(erlang, "evision_net", "getLayerShapes")\npub fn get_layer_shapes(self: any) -> any \n\n'
-                            typed_function += '@external(erlang, "evision_net", "getLayersShapes")\npub fn get_layers_shapes(self: any, opts: any) -> any \n\n'
+                            # typed_function = '@external(erlang, "evision_net", "getLayerShapes")\npub fn get_layer_shapes1(self: any) -> any \n\n'
+                            # typed_function = '@external(erlang, "evision_net", "getLayersShapes")\npub fn get_layers_shapes2(self: any, opts: any) -> any \n\n'
+                            typed_function = None
                             self.add_function(kind, module_func_name, 
                                 function_arity=2,
                                 guards_count=3,
@@ -738,11 +739,20 @@ class ModuleGenerator(object):
                             typed_function = f'@external(erlang, "evision", "{module_func_name}")\n'
                         else:
                             typed_function = f'@external(erlang, "evision_{self.module_name.replace('.', '_').lower()}", "{module_func_name}")\n'
-                        typed_function += f'pub fn {self.to_gleam_func_name(module_func_name)}({", ".join([f"arg{i}: any" for i in range(func_arity)])}, opts: any) -> any\n\n'
+                        if func_arity == 1:
+                            if is_instance_method:
+                                typed_function += f'pub fn {self.to_gleam_func_name(module_func_name)}1(self: self) -> any\n\n'
+                            else:
+                                typed_function += f'pub fn {self.to_gleam_func_name(module_func_name)}1(opts: opts) -> any\n\n'
+                        else:
+                            if is_instance_method:
+                                typed_function += f'pub fn {self.to_gleam_func_name(module_func_name)}{func_arity}(self: self, {", ".join([f"{self.to_gleam_arg_name(func_variant.py_arglist[i][0])}: any{i}" for i in range(func_arity - 1)])}) -> any\n\n'
+                            else:
+                                typed_function += f'pub fn {self.to_gleam_func_name(module_func_name)}{func_arity}({", ".join([f"{self.to_gleam_arg_name(func_variant.py_arglist[i][0])}: any{i}" for i in range(func_arity - 1)])}, opts: opts) -> any\n\n'
                         self.add_function(kind, module_func_name, func_arity,
                             guards_count=3 + len(func_guard),
                             generated_code=function_code.getvalue(),
-                            typed_function=typed_function
+                            typed_function=None
                         )
                         # "empty" buffer in function_code
                         # so that we can use it later
@@ -791,7 +801,13 @@ class ModuleGenerator(object):
                         typed_function = f'@external(erlang, "evision", "{module_func_name}")\n'
                     else:
                         typed_function = f'@external(erlang, "evision_{self.module_name.replace('.', '_').lower()}", "{module_func_name}")\n'
-                    typed_function += f'pub fn {self.to_gleam_func_name(module_func_name)}({", ".join([f"arg{i}: any" for i in range(func_arity)])}) -> any\n\n'
+                    if is_instance_method:
+                        if func_arity == 1:
+                            typed_function += f'pub fn {self.to_gleam_func_name(module_func_name)}{func_arity}(self: self) -> any\n\n'
+                        else:
+                            typed_function += f'pub fn {self.to_gleam_func_name(module_func_name)}{func_arity}(self: self, {", ".join([f"{self.to_gleam_arg_name(func_variant.py_arglist[i][0])}: any{i}" for i in range(func_arity - 1)])}) -> any\n\n'
+                    else:
+                        typed_function += f'pub fn {self.to_gleam_func_name(module_func_name)}{func_arity}({", ".join([f"{self.to_gleam_arg_name(func_variant.py_arglist[i][0])}: any{i}" for i in range(func_arity)])}) -> any\n\n'
                     self.add_function(kind, module_func_name, func_arity, guards_count=len(func_guard), generated_code=function_code.getvalue(), typed_function=typed_function)
 
     def to_gleam_func_name(self, module_func_name: str):
@@ -799,6 +815,14 @@ class ModuleGenerator(object):
         if gleam_func_name == 'type':
             gleam_func_name = 'type_'
         return gleam_func_name
+    
+    def to_gleam_arg_name(self, func_arg_name: str):
+        gleam_arg_name = func_arg_name.lower()
+        if gleam_arg_name.startswith('_'):
+            gleam_arg_name = gleam_arg_name[1:]
+        if gleam_arg_name in ['type', 'test']:
+            gleam_arg_name = f'{gleam_arg_name}_'
+        return gleam_arg_name
 
     def _reject_ns_func(self, full_qualified_name: str, class_name: str, func_name: str):
         if func_name != f'{evision_nif_prefix()}{class_name}':
