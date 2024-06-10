@@ -1,13 +1,14 @@
-import gleam/erlang/atom.{type Atom}
+import evision/types.{type DType}
+import gleam/erlang.{type Reference}
 
 pub type Mat {
   Mat(
     channels: Int,
     dims: Int,
-    dtype: #(Atom, Int),
+    dtype: DType,
     raw_type: Int,
     shape: List(Int),
-    ref: Int,
+    ref: Reference,
   )
 }
 

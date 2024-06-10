@@ -700,3 +700,26 @@ dnn_softNMSBoxes(_opts) ->
   not_loaded(?LINE).
 """)
     ]}
+
+def evision_gleam_module_fixes():
+    return {"DNN": [
+"""
+@external(erlang, "evision_dnn", "nmsBoxes")
+pub fn nms_boxes5(bboxes: boxes, scores: scores, score_threshold: score_threshold, nms_threshold: nms_threshold, options: options) -> any
+
+@external(erlang, "evision_dnn", "nmsBoxes")
+pub fn nms_boxes4(bboxes: boxes, scores: scores, score_threshold: score_threshold, nms_threshold: nms_threshold) -> any
+
+@external(erlang, "evision_dnn", "nmsBoxesBatched")
+pub fn nms_boxes_batched6(bboxes: boxes, scores: scores, class_ids: class_ids, score_threshold: score_threshold, nms_threshold: nms_threshold, options: options) -> any
+
+@external(erlang, "evision_dnn", "nmsBoxesBatched")
+pub fn nms_boxes_batched5(bboxes: boxes, scores: scores, class_ids: class_ids, score_threshold: score_threshold, nms_threshold: nms_threshold) -> any
+
+@external(erlang, "evision_dnn", "softNMSBoxes")
+pub fn soft_nms_boxes5(bboxes: boxes, scores: scores, score_threshold: score_threshold, nms_threshold: nms_threshold, options: options) -> any
+
+@external(erlang, "evision_dnn", "softNMSBoxes")
+pub fn soft_nms_boxes4(bboxes: boxes, scores: scores, score_threshold: score_threshold, nms_threshold: nms_threshold) -> any
+"""
+    ]}

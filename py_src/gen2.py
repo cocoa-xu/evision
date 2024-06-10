@@ -19,7 +19,7 @@ from namespace import Namespace
 from func_info import FuncInfo
 from class_info import ClassInfo
 from module_generator import ModuleGenerator
-from fixes import evision_elixir_fixes, evision_erlang_fixes, evision_elixir_module_fixes, evision_erlang_module_fixes, evision_erlang_fixes_gleam_typed
+from fixes import evision_elixir_fixes, evision_erlang_fixes, evision_elixir_module_fixes, evision_erlang_module_fixes, evision_erlang_fixes_gleam_typed, evision_gleam_module_fixes
 from pathlib import Path
 import os
 from os import makedirs
@@ -588,8 +588,10 @@ class BeamWrapperGenerator(object):
                 module_file_generator.write_elixir("\n")
                 module_file_generator.write_erlang(ES.evision_structs[elixir_module_name]["erlang"])
                 module_file_generator.write_erlang("\n")
-                module_file_generator.write_gleam(ES.evision_structs[elixir_module_name]["erlang"])
+                module_file_generator.write_gleam(ES.evision_structs[elixir_module_name]["gleam"][0])
                 module_file_generator.write_gleam("\n")
+                module_file_generator.write_gleam_file(ES.evision_structs[elixir_module_name]["gleam"][1])
+                module_file_generator.write_gleam_file("\n")
                 
             if EF.extra_functions.get(elixir_module_name, None) is not None:
                 module_file_generator.write_elixir(EF.extra_functions[elixir_module_name]["elixir"])
@@ -636,6 +638,8 @@ class BeamWrapperGenerator(object):
                     f"-record({atom_erlang_module_name}, "
                     "{ref}).\n"
                 )
+                gleam_named_type = atom_elixir_module_name.split(".")[-1]
+                module_file_generator.write_gleam_file("import gleam/erlang.{type Reference}\n\npub type " + gleam_named_type + " {\n  " + gleam_named_type + "(\n    ref: Reference\n  )\n}\n\n")
 
             self.evision_modules[evision_module_filename] = module_file_generator
             return self.evision_modules[evision_module_filename], inner_ns
@@ -1044,6 +1048,10 @@ class BeamWrapperGenerator(object):
                         typed_gleam.write(f'pub fn {enum_name.lower()}() -> Int\n\n')
                     module_file_generator.write_gleam("\n")
                     delete_typed_enum = True
+                if name in evision_gleam_module_fixes():
+                    fixes = evision_gleam_module_fixes()[name]
+                    for f in fixes:
+                        module_file_generator.write_gleam_file(f)
                 module_file_generator.end('gleam')
                 self.evision_nif_gleam.write(module_file_generator.get_nif_declaration('gleam'))
                 self.save(gleam_output_path, f"evision_{name.lower()}.erl", module_file_generator.get_generated_code('gleam'))
