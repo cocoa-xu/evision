@@ -117,7 +117,7 @@ jobs:
         run: |
           export PKG_NAME=evision-nif_${{ matrix.pair.NIF_VERSION }}-${{ matrix.pair.arch_name }}-apple-darwin-${GITHUB_REF##*/v}
           mkdir -p "${PKG_NAME}"
-          export PRIV_DIR="_build/${MIX_ENV}/lib/evision/priv"
+          export PRIV_DIR="$(pwd)/_build/${MIX_ENV}/lib/evision/priv"
           mv "${PRIV_DIR}/include" /tmp/include
           cp -a "${PRIV_DIR}" "${PKG_NAME}"
           cp -a lib/generated "${PKG_NAME}/elixir_generated"
@@ -151,7 +151,7 @@ jobs:
         run: |
           export PKG_NAME=gleam_evision-nif_${{ matrix.pair.NIF_VERSION }}-${{ matrix.pair.arch_name }}-apple-darwin-${GITHUB_REF##*/v}
           mkdir -p "${PKG_NAME}"
-          export PRIV_DIR="_build/${MIX_ENV}/lib/evision/priv"
+          export PRIV_DIR="$(pwd)/_build/${MIX_ENV}/lib/evision/priv"
           mv "${PRIV_DIR}/include" /tmp/include
           cp -a "${PRIV_DIR}" "${PKG_NAME}"
           cp -a gleam_src "${PKG_NAME}/gleam_generated"
@@ -198,7 +198,7 @@ jobs:
         run: |
           export PKG_NAME=evision-nif_${{ matrix.pair.NIF_VERSION }}-${{ matrix.pair.arch_name }}-apple-darwin-contrib-${GITHUB_REF##*/v}
           mkdir -p "${PKG_NAME}"
-          export PRIV_DIR="_build/${MIX_ENV}/lib/evision/priv"
+          export PRIV_DIR="$(pwd)/_build/${MIX_ENV}/lib/evision/priv"
           mv "${PRIV_DIR}/include" /tmp/include
           cp -a "${PRIV_DIR}" "${PKG_NAME}"
           cp -a lib/generated "${PKG_NAME}/elixir_generated"
@@ -231,7 +231,7 @@ jobs:
         run: |
           export PKG_NAME=gleam_evision-nif_${{ matrix.pair.NIF_VERSION }}-${{ matrix.pair.arch_name }}-apple-darwin-contrib-${GITHUB_REF##*/v}
           mkdir -p "${PKG_NAME}"
-          export PRIV_DIR="_build/${MIX_ENV}/lib/evision/priv"
+          export PRIV_DIR="$(pwd)/_build/${MIX_ENV}/lib/evision/priv"
           mv "${PRIV_DIR}/include" /tmp/include
           cp -a "${PRIV_DIR}" "${PKG_NAME}"
           cp -a gleam_src "${PKG_NAME}/gleam_generated"
