@@ -1,5 +1,18 @@
 # Changelog
 
+## main
+[Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.2.1) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.2.1)
+
+### Added
+- Experimental support for CUDA shared memory via `Evision.CUDA.GpuMat.to_pointer/{1,2}`.
+- Experimental support for Gleam. See [gleam_evision_demo](https://github.com/cocoa-xu/gleam_evision_demo) for more information.
+
+### Changes
+- General improvements to the typespecs. Enumerators now also have their own modules.
+
+### Fixes
+- Fixed Erlang bindings when converting from Elixir structs to Erlang records and vice versa.
+
 ## v0.2.1 (2024-06-04)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.2.1) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.2.1)
 

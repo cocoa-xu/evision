@@ -195,6 +195,12 @@ pub type GpuMat {
     elem_size: Int,
   )
 }
+
+@external(erlang, "evision_cuda_gpumat", "to_pointer")
+pub fn to_pointer(mat: GpuMat) -> any
+
+@external(erlang, "evision_cuda_gpumat", "to_pointer")
+pub fn to_pointer_mode(mat: GpuMat, mode: mode) -> any
 """
 
 generic_struct_template_elixir = Template(
