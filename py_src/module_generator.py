@@ -424,6 +424,7 @@ class ModuleGenerator(object):
             # get a sorted list based on the number of guards in descending order
             # i.e., function variant that has the most number of constraints will be the first element in the list
             func_guards_len_desc = list(reversed(argsort([len(g) for g in func_guards[kind]])))
+            more_than_one_variant = len(func_guards_len_desc) > 1
             # start from the variant with the most number of constraints/guards
             for i in func_guards_len_desc:
                 # generated binding code will be written to this variable
@@ -801,13 +802,17 @@ class ModuleGenerator(object):
                         typed_function = f'@external(erlang, "evision", "{module_func_name}")\n'
                     else:
                         typed_function = f'@external(erlang, "evision_{self.module_name.replace('.', '_').lower()}", "{module_func_name}")\n'
+                    
+                    func_name_with_arity = ''
+                    if more_than_one_variant and func_args_with_opts:
+                        func_name_with_arity = f'{func_arity}'
                     if is_instance_method:
                         if func_arity == 1:
-                            typed_function += f'pub fn {self.to_gleam_func_name(module_func_name)}{func_arity}(self: self) -> any\n\n'
+                            typed_function += f'pub fn {self.to_gleam_func_name(module_func_name)}{func_name_with_arity}(self: self) -> any\n\n'
                         else:
-                            typed_function += f'pub fn {self.to_gleam_func_name(module_func_name)}{func_arity}(self: self, {", ".join([f"{self.to_gleam_arg_name(func_variant.py_arglist[i][0])}: any{i}" for i in range(func_arity - 1)])}) -> any\n\n'
+                            typed_function += f'pub fn {self.to_gleam_func_name(module_func_name)}{func_name_with_arity}(self: self, {", ".join([f"{self.to_gleam_arg_name(func_variant.py_arglist[i][0])}: any{i}" for i in range(func_arity - 1)])}) -> any\n\n'
                     else:
-                        typed_function += f'pub fn {self.to_gleam_func_name(module_func_name)}{func_arity}({", ".join([f"{self.to_gleam_arg_name(func_variant.py_arglist[i][0])}: any{i}" for i in range(func_arity)])}) -> any\n\n'
+                        typed_function += f'pub fn {self.to_gleam_func_name(module_func_name)}{func_name_with_arity}({", ".join([f"{self.to_gleam_arg_name(func_variant.py_arglist[i][0])}: any{i}" for i in range(func_arity)])}) -> any\n\n'
                     self.add_function(kind, module_func_name, func_arity, guards_count=len(func_guard), generated_code=function_code.getvalue(), typed_function=typed_function)
 
     def to_gleam_func_name(self, module_func_name: str):
