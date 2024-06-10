@@ -1177,6 +1177,7 @@ class BeamWrapperGenerator(object):
 def prepare_gleam_dstdir(gleam_dstdir):
     outdated_files = glob(gleam_dstdir + "/*.erl")
     for f in outdated_files:
+        outdated_file = Path(f)
         if outdated_file.name == 'evision_mat.erl':
             continue
         Path(f).unlink()
