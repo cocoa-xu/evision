@@ -98,15 +98,10 @@ jobs:
           cp .github/do-build-manylinux2014.sh ./
 
           export EVISION_ENABLE_CONTRIB=false
-
-          if [ "${{ matrix.pair.cmake_toolchain_file }}" != "" ]; then
-            export CMAKE_TOOLCHAIN_FILE="$(pwd)/${{ matrix.pair.cmake_toolchain_file }}"
-          fi
-          echo "CMAKE_TOOLCHAIN_FILE: ${CMAKE_TOOLCHAIN_FILE}"
+          export GLEAM_EVISION=false
 
           sudo rm -rf "./_build/${{ env.MIX_ENV }}/lib/evision"
-
-          bash ./script-to-build-manylinux2014.sh "${{ env.MIX_ENV }}" "${{ matrix.pair.OTP_VERSION }}" "${{ matrix.pair.arch }}" "${{ matrix.pair.ELIXIR_VERSION }}" "${EVISION_ENABLE_CONTRIB}" "${CMAKE_TOOLCHAIN_FILE}"
+          bash ./script-to-build-manylinux2014.sh "${{ env.MIX_ENV }}" "${{ matrix.pair.OTP_VERSION }}" "${{ matrix.pair.arch }}" "${{ matrix.pair.ELIXIR_VERSION }}" "${EVISION_ENABLE_CONTRIB}" "${GLEAM_EVISION}"
 
       - name: Create precompiled library (without contrib modules)
         run: |
@@ -125,18 +120,37 @@ jobs:
           cd artifacts
           sha256sum "${PKG_NAME}.tar.gz" | tee "${PKG_NAME}.tar.gz.sha256"
 
+      - name: Mix Compile (without contrib modules) for Gleam (experimental)
+        run: |
+          export EVISION_ENABLE_CONTRIB=false
+          export GLEAM_EVISION=true
+
+          sudo rm -rf "./_build/"
+          bash ./script-to-build-manylinux2014.sh "${{ env.MIX_ENV }}" "${{ matrix.pair.OTP_VERSION }}" "${{ matrix.pair.arch }}" "${{ matrix.pair.ELIXIR_VERSION }}" "${EVISION_ENABLE_CONTRIB}" "${GLEAM_EVISION}"
+
+      - name: Create precompiled library (without contrib modules) for Gleam (experimental)
+        run: |
+          export PKG_NAME=gleam_evision-nif_${{ matrix.pair.NIF_VERSION }}-${{ matrix.pair.arch }}-${GITHUB_REF##*/v}
+          mkdir -p "${PKG_NAME}"
+          export PRIV_DIR="_build/${MIX_ENV}/lib/evision/priv"
+          sudo rm -rf "${PRIV_DIR}/include"
+          cp -a "${PRIV_DIR}" "${PKG_NAME}"
+          cp -a gleam_src "${PKG_NAME}/gleam_generated"
+          tar -czf "${PKG_NAME}.tar.gz" "${PKG_NAME}"
+          rm -rf "${PKG_NAME}"
+          ls -lah "${PKG_NAME}.tar.gz"
+          mkdir -p artifacts
+          mv "${PKG_NAME}.tar.gz" artifacts
+          cd artifacts
+          sha256sum "${PKG_NAME}.tar.gz" | tee "${PKG_NAME}.tar.gz.sha256"
+
       - name: Mix Compile (with contrib modules)
         run: |
           export EVISION_ENABLE_CONTRIB=true
-
-          if [ "${{ matrix.pair.cmake_toolchain_file }}" != "" ]; then
-            export CMAKE_TOOLCHAIN_FILE="$(pwd)/${{ matrix.pair.cmake_toolchain_file }}"
-          fi
-          echo "CMAKE_TOOLCHAIN_FILE: ${CMAKE_TOOLCHAIN_FILE}"
+          export GLEAM_EVISION=false
 
           sudo rm -rf "./_build/"
-
-          bash ./script-to-build-manylinux2014.sh "${{ env.MIX_ENV }}" "${{ matrix.pair.OTP_VERSION }}" "${{ matrix.pair.arch }}" "${{ matrix.pair.ELIXIR_VERSION }}" "true"
+          bash ./script-to-build-manylinux2014.sh "${{ env.MIX_ENV }}" "${{ matrix.pair.OTP_VERSION }}" "${{ matrix.pair.arch }}" "${{ matrix.pair.ELIXIR_VERSION }}" "${EVISION_ENABLE_CONTRIB}" "${GLEAM_EVISION}"
 
       - name: Create precompiled library (with contrib modules)
         run: |
@@ -147,6 +161,30 @@ jobs:
           cp -a "${PRIV_DIR}" "${PKG_NAME}"
           cp -a lib/generated "${PKG_NAME}/elixir_generated"
           cp -a src/generated "${PKG_NAME}/erlang_generated"
+          tar -czf "${PKG_NAME}.tar.gz" "${PKG_NAME}"
+          rm -rf "${PKG_NAME}"
+          ls -lah "${PKG_NAME}.tar.gz"
+          mkdir -p artifacts
+          mv "${PKG_NAME}.tar.gz" artifacts
+          cd artifacts
+          sha256sum "${PKG_NAME}.tar.gz" | tee "${PKG_NAME}.tar.gz.sha256"
+
+      - name: Mix Compile (with contrib modules) for Gleam (experimental)
+        run: |
+          export EVISION_ENABLE_CONTRIB=true
+          export GLEAM_EVISION=true
+
+          sudo rm -rf "./_build/"
+          bash ./script-to-build-manylinux2014.sh "${{ env.MIX_ENV }}" "${{ matrix.pair.OTP_VERSION }}" "${{ matrix.pair.arch }}" "${{ matrix.pair.ELIXIR_VERSION }}" "${EVISION_ENABLE_CONTRIB}" "${GLEAM_EVISION}"
+
+      - name: Create precompiled library (with contrib modules)
+        run: |
+          export PKG_NAME=gleam_evision-nif_${{ matrix.pair.NIF_VERSION }}-${{ matrix.pair.arch }}-contrib-${GITHUB_REF##*/v}
+          mkdir -p "${PKG_NAME}"
+          export PRIV_DIR="_build/${MIX_ENV}/lib/evision/priv"
+          sudo rm -rf "${PRIV_DIR}/include"
+          cp -a "${PRIV_DIR}" "${PKG_NAME}"
+          cp -a gleam_src "${PKG_NAME}/gleam_generated"
           tar -czf "${PKG_NAME}.tar.gz" "${PKG_NAME}"
           rm -rf "${PKG_NAME}"
           ls -lah "${PKG_NAME}.tar.gz"

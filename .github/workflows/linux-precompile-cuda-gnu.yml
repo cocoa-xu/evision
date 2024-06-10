@@ -118,8 +118,39 @@ jobs:
           cd artifacts
           sha256sum "${PKG_NAME}.tar.gz" | tee "${PKG_NAME}.tar.gz.sha256"
 
-      - uses: softprops/action-gh-release@v2
+      - name: Upload precompiled library
+        uses: softprops/action-gh-release@v2
         with:
           files: |
             artifacts/*.tar.gz
             artifacts/*.sha256
+
+      - name: Mix Compile for Gleam (experimental)
+        run: |
+          export GLEAM_EVISION=true
+          rm -f _build/${{ env.MIX_ENV }}/lib/evision/priv/evision.so
+          mix compile
+
+      - name: Create precompiled library for gleam (experimental)
+        run: |
+          export PKG_NAME=gleam_evision-nif_${{ matrix.NIF_VERSION }}-x86_64-linux-gnu-contrib-cuda${{ matrix.cuda_id }}-${GITHUB_REF##*/v}
+          mkdir -p "${PKG_NAME}"
+
+          export PRIV_DIR="_build/${MIX_ENV}/lib/evision/priv"
+          rm -rf "${PRIV_DIR}/include"
+          cp -a "${PRIV_DIR}" "${PKG_NAME}"
+          cp -a gleam_src "${PKG_NAME}/gleam_generated"
+          tar -czf "${PKG_NAME}.tar.gz" "${PKG_NAME}"
+          rm -rf "${PKG_NAME}"
+          ls -lah "${PKG_NAME}.tar.gz"
+          mkdir -p artifacts
+          mv "${PKG_NAME}.tar.gz" artifacts
+          cd artifacts
+          sha256sum "${PKG_NAME}.tar.gz" | tee "${PKG_NAME}.tar.gz.sha256"
+
+      - name: Upload precompiled library for gleam (experimental)
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/gleam_evision*.tar.gz
+            artifacts/gleam_evision*.sha256
