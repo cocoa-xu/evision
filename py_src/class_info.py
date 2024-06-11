@@ -18,19 +18,30 @@ else:
 class ClassInfo(object):
     def __init__(self, name, decl=None, codegen=None):
         # Scope name can be a module or other class e.g. cv::SimpleBlobDetector::Params
-        scope_name, self.original_name = name.rsplit(".", 1)
+        self.original_scope_name, self.original_name = name.rsplit(".", 1)
 
         # In case scope refer the outer class exported with different name
         if codegen:
-            scope_name = codegen.get_export_scope_name(scope_name)
-        self.scope_name = re.sub(r"^cv\.?", "", scope_name)
+            self.export_scope_name = codegen.get_export_scope_name(
+                self.original_scope_name
+            )
+        else:
+            self.export_scope_name = self.original_scope_name
+        self.export_scope_name = re.sub(r"^cv\.?", "", self.export_scope_name)
 
         self.export_name = self.original_name
+        
+        self.class_id = normalize_class_name(name)
+        
+        # ---- added by evision? ----
+        # self.name = self.wname = normalize_class_name(name)
+        # self.sname = name[name.rfind('.') + 1:]
+        # customname = False
+        # ---- added by evision? ----
 
         self.cname = name.replace(".", "::")
-        self.name = self.wname = normalize_class_name(name)
-        self.sname = name[name.rfind('.') + 1:]
         self.ismap = False
+        self.is_parameters = False
         self.issimple = False
         self.isalgorithm = False
         self.methods = {}
@@ -39,8 +50,8 @@ class ClassInfo(object):
         self.consts = {}
         self.base = None
         self.constructor = None
-        customname = False
-
+        if self.
+        
         if decl:
             bases = decl[1].split()[1:]
             if len(bases) > 1:
@@ -58,33 +69,53 @@ class ClassInfo(object):
 
             for m in decl[2]:
                 if m.startswith("="):
-                    wname = m[1:]
-                    npos = name.rfind('.')
-                    if npos >= 0:
-                        self.wname = normalize_class_name(name[:npos] + '.' + wname)
-                    else:
-                        self.wname = wname
-                    customname = True
+                    # Aliasing only affects the exported class name, not class identifier
+                    self.export_name = m[1:]
+                    
+                    # ---- added by evision? ----
+                    # wname = m[1:]
+                    # npos = name.rfind('.')
+                    # if npos >= 0:
+                    #     self.wname = normalize_class_name(name[:npos] + '.' + wname)
+                    # else:
+                    #     self.wname = wname
+                    # customname = True
+                    # ---- added by evision? ----
+                    
                 elif m == "/Map":
                     self.ismap = True
                 elif m == "/Simple":
                     self.issimple = True
+                elif m == "/Params":
+                    self.is_parameters = True
+                    self.issimple = True
             self.props = [ClassProp(p) for p in decl[3]]
 
-        if not customname and self.wname.startswith("Cv"):
-            self.wname = self.wname[2:]
+        if not self.has_export_alias and self.original_name.startswith("Cv"):
+            self.export_name = self.export_name[2:]
 
     @property
-    def full_scope_name(self):
-        return "cv." + self.scope_name if len(self.scope_name) else "cv"
+    def wname(self):
+        if len(self.export_scope_name) > 0:
+            return self.export_scope_name.replace(".", "_") + "_" + self.export_name
+
+        return self.export_name
+    
+    @property
+    def name(self):
+        return self.class_id
+    
+    @property
+    def full_export_scope_name(self):
+        return "cv." + self.export_scope_name if len(self.export_scope_name) else "cv"
 
     @property
     def full_export_name(self):
-        return self.full_scope_name + "." + self.export_name
+        return self.full_export_scope_name + "." + self.export_name
 
     @property
     def full_original_name(self):
-        return self.full_scope_name + "." + self.original_name
+        return self.original_scope_name + "." + self.original_name
 
     @property
     def has_export_alias(self):
@@ -290,6 +321,8 @@ class ClassInfo(object):
         if self.constructor is not None:
             constructor_name = self.constructor.get_wrapper_name(True)
 
+        # ---- added by evision ----
+        # evision: this is where we generate Erlang records and Elixir's defstruct for each class
         elixir_module_name = get_elixir_module_name(self.cname)
         if 'XImgProc.Segmentation.' in elixir_module_name:
             elixir_module_name = elixir_module_name.replace('XImgProc.Segmentation.', 'XImgProc.')
@@ -338,12 +371,13 @@ class ClassInfo(object):
             )
 
             evision_modules[elixir_module_name_underscore] = module_file_generator
+        # ---- added by evision ----
 
         return "CV_ERL_TYPE({}, {}, {}, {}, {}, {}, {});\n".format(
-            self.wname,
-            self.name,
+            self.export_name,
+            self.class_id,
             self.cname if self.issimple else "Ptr<{}>".format(self.cname),
-            self.sname if self.issimple else "Ptr",
+            self.original_name if self.issimple else "Ptr",
             baseptr,
             constructor_name,
             elixir_module_name

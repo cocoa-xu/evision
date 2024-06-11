@@ -31,8 +31,11 @@ class FuncInfo(object):
         copy_info.variants = copy.deepcopy(self.variants)
         return copy_info
 
-    def add_variant(self, decl, isphantom=False):
-        self.variants.append(FuncVariant(self.classname, self.name, decl, self.isconstructor, isphantom=isphantom))
+    def add_variant(self, decl, known_classes, isphantom=False):
+        self.variants.append(
+            FuncVariant(self.namespace, self.classname, self.name, decl,
+                        self.isconstructor, known_classes, isphantom=isphantom)
+        )
 
     def get_wrapper_name(self, add_cv):
         name = self.name
@@ -225,6 +228,8 @@ class FuncInfo(object):
             if umat_ones.get(c, None) is not None:
                 sorted_variants.extend([f[0] for f in umat_ones[c]])
 
+        # show_debug = 'DumpNamed' in fname or 'coDetector_write' in fname
+        show_debug = 'AffineBestOf2NearestMatcher_apply2' in fname
         for v in sorted_variants:
             code_decl = ""
             code_ret = ""
@@ -236,16 +241,21 @@ class FuncInfo(object):
             if v.isphantom and ismethod and not self.is_static:
                 code_args += "_self_"
 
+            # ---- added by evision ----
             min_kw_count = len(v.py_arglist[:v.pos_end])
             if min_kw_count > 0:
                 code_cvt_list.append(f"num_kw_args >= {min_kw_count}")
+            # ---- added by evision ----
 
             # declare all the C function arguments,
             # add necessary conversions from Erlang objects to code_cvt_list,
             # form the function/method call,
             # for the list of type mappings
             code_from_ptr = ""
+            instantiated_args = set()
             for a_index, a in enumerate(v.args):
+                if show_debug:
+                    print(f"arg: {a.name}, {a.tp}, {a.defval}, {a.py_inputarg}, {a.py_outputarg}, is_smart_ptr={a.is_smart_ptr}, enclosing_arg={a.enclosing_arg}")
                 if a.tp in ignored_arg_types():
                     defval = a.defval
                     if not defval and a.tp.endswith("*"):
@@ -265,26 +275,51 @@ class FuncInfo(object):
                     if tp.endswith("*"):
                         defval0 = "0"
                 tp_candidates = [a.tp, normalize_class_name(self.namespace + "." + a.tp), normalize_class_name(self.classname + "." + a.tp)]
-                
+
+                # ---- added by evision start ----
                 if "::" in tp:
                     underscore_type = tp.replace("::", "_")
                 else:
                     underscore_type = tp_candidates[1].replace(".", "_")
+                # ---- added by evision end ----
 
                 if any(tp in codegen.enums.keys() for tp in tp_candidates):
                     defval0 = "static_cast<%s>(%d)" % (a.tp, 0)
 
-                arg_type_info = simple_argtype_mapping.get(tp, ArgTypeInfo(tp, FormatStrings.object, defval0, True, False))
-                if any(tp in codegen.enums.keys() for tp in tp_candidates):
-                    defval = None
-                    if len(a.defval) == 0:
-                        defval = f"static_cast<std::underlying_type_t<{arg_type_info.atype}>>({arg_type_info.default_value})"
+                # ---- added by evision start ----
+                if tp in simple_argtype_mapping:
+                    arg_type_info = simple_argtype_mapping[tp]
+                else:
+                    if tp in all_classes:
+                        tp_classinfo = all_classes[tp]
+                        if show_debug:
+                            print("a.tp: ", a.tp)
+                        if a.tp == 'UMat' or a.tp == 'Mat' or a.tp == 'cuda::GpuMat':
+                            tp_classinfo.issimple = True
+                        cname_of_value = tp_classinfo.cname if tp_classinfo.issimple else "Ptr<{}>".format(tp_classinfo.cname)
+                        if show_debug:
+                            print("cname_of_value: ", cname_of_value)
+                        arg_type_info = ArgTypeInfo(cname_of_value, FormatStrings.object, defval0, True, False)
+                        assert not (a.is_smart_ptr and tp_classinfo.issimple), "Can't pass 'simple' type as Ptr<>"
+                        if not a.is_smart_ptr and not tp_classinfo.issimple:
+                            assert amp == ''
+                            amp = '*'
                     else:
-                        defval = f"static_cast<std::underlying_type_t<{arg_type_info.atype}>>({a.defval})"
-                    arg_type_info = ArgTypeInfo(f"std::underlying_type_t<{arg_type_info.atype}>", arg_type_info.format_str, defval, True, True)
-                    a.defval = defval
+                        arg_type_info = ArgTypeInfo(tp, FormatStrings.object, defval0, True, False)
+                        if any(tp in codegen.enums.keys() for tp in tp_candidates):
+                            defval = None
+                            if len(a.defval) == 0:
+                                defval = f"static_cast<std::underlying_type_t<{arg_type_info.atype}>>({arg_type_info.default_value})"
+                            else:
+                                defval = f"static_cast<std::underlying_type_t<{arg_type_info.atype}>>({a.defval})"
+                            arg_type_info = ArgTypeInfo(f"std::underlying_type_t<{arg_type_info.atype}>", arg_type_info.format_str, defval, True, True)
+                            a.defval = defval
+                # ---- added by evision end ----
 
-                defval = a.defval
+                if a.enclosing_arg:
+                    defval = a.enclosing_arg.defval
+                else:
+                    defval = a.defval
                 if not defval:
                     defval = arg_type_info.default_value
                 else:
@@ -299,12 +334,10 @@ class FuncInfo(object):
                     defval = ""
                 if a.outputarg and not a.inputarg:
                     defval = ""
-                if defval is None:
-                    defval = ""
 
                 parse_name = a.name
-                if a.py_inputarg:
-                    parse_name = "erl_term_" + a.name
+                if a.py_inputarg and arg_type_info.strict_conversion:
+                    parse_name = "erl_term_" + a.full_name.replace('.', '_')
                     elixir_argname = self.map_elixir_argname(a.name)
                     erl_term = "evision_get_kw(env, erl_terms, \"%s\")" % (elixir_argname,)
                     self_offset = 0
@@ -312,22 +345,25 @@ class FuncInfo(object):
                         self_offset = 1
                     if a_index + self_offset < opt_arg_index:
                         erl_term = "argv[%d]" % (a_index + opt_arg_index,)
+
                     if a.tp == 'char':
-                        code_cvt_list.append("convert_to_char(env, %s, &%s, %s)" % (erl_term, a.name, a.crepr(defval)))
+                        code_cvt_list.append("convert_to_char(env, %s, &%s, %s)" % (erl_term, a.full_name, a.crepr()))
                     elif a.tp == 'c_string':
-                        code_cvt_list.append("convert_to_char(env, %s, &%s, %s)" % (erl_term, a.name, a.crepr(defval)))
+                        code_cvt_list.append("convert_to_char(env, %s, &%s, %s)" % (erl_term, a.full_name, a.crepr()))
                     elif a.tp == 'FileStorage':
-                        code_cvt_list.append("evision_to_safe(env, %s, ptr_%s, %s)" % (erl_term, a.name, a.crepr(defval)))
+                        code_cvt_list.append("evision_to_safe(env, %s, ptr_%s, %s)" % (erl_term, a.full_name, a.crepr()))
                     elif underscore_type in all_classes and all_classes[underscore_type].issimple is False:
-                        code_cvt_list.append("evision_to_safe(env, %s, ptr_%s, %s)" % (erl_term, a.name, a.crepr(defval)))
+                        code_cvt_list.append("evision_to_safe(env, %s, ptr_%s, %s)" % (erl_term, a.full_name, a.crepr()))
                     else:
-                        code_cvt_list.append("evision_to_safe(env, %s, %s, %s)" % (erl_term, a.name, a.crepr(defval)))
+                        code_cvt_list.append("evision_to_safe(env, %s, %s, %s)" % (erl_term, a.full_name, a.crepr()))
                         if elixir_argname == 'outBlobNames':
                             # outBlobNames cannot be `[]`
                             code_cvt_list.append("%s.size() > 0" % (a.name,))
 
                 all_cargs.append([arg_type_info, parse_name])
 
+                # ---- changed by evision start ----
+                declared = True
                 if defval and len(defval) > 0:
                     if arg_type_info.atype == "QRCodeEncoder_Params":
                         code_decl += "    QRCodeEncoder::Params %s=%s;\n" % (a.name, defval)
@@ -340,7 +376,7 @@ class FuncInfo(object):
                             code_decl += "    Ptr<%s> ptr_%s;\n" % (arg_type_info.atype, a.name,)
                             code_from_ptr += "    %s %s; if (ptr_%s.get()) { %s = *ptr_%s.get(); } else { %s = %s; }\n    " % (arg_type_info.atype, a.name, a.name, a.name, a.name, a.name, defval)
                         else:
-                            code_decl += "    %s %s=%s;\n" % (arg_type_info.atype, a.name, defval)
+                            declared = False
                 else:
                     if a.name == "nodeName":
                         code_decl += "    %s %s = String();\n" % (arg_type_info.atype, a.name)
@@ -353,7 +389,44 @@ class FuncInfo(object):
                         elif arg_type_info.atype == "aruco_DetectorParameters":
                             code_decl += "    aruco::DetectorParameters %s;\n" % (a.name,)
                         else:
-                            code_decl += "    %s %s;\n" % (arg_type_info.atype, a.name)
+                            declared = False
+
+                # Argument is actually a part of the named arguments structure,
+                # but it is possible to mimic further processing like it is normal arg
+                from_ptr = False
+                if a.tp == 'FileStorage' or (underscore_type in all_classes and all_classes[underscore_type].issimple is False):
+                    from_ptr = True
+
+                if not declared:
+                    var_name = a.name
+                    if from_ptr:
+                        var_name = f"ptr_{a.name}"
+                        code_from_ptr += "    %s %s; if (ptr_%s.get()) { %s = *ptr_%s.get(); }\n    " % (a.tp, a.name, a.name, a.name, a.name)
+                        amp = ""
+                        if show_debug:
+                            print("arg_type_info.atype: ", arg_type_info.atype)
+                            print("a.tp: ", a.tp)
+                    if a.enclosing_arg is None:
+                        if defval and len(defval) > 0:
+                            code_decl += "    %s %s=%s;\n" % (arg_type_info.atype, var_name, defval)
+                        else:
+                            code_decl += "    %s %s;\n" % (arg_type_info.atype, var_name)
+                    else:
+                        a = a.enclosing_arg
+                        arg_type_info = ArgTypeInfo(a.tp, FormatStrings.object,
+                                                    default_value=a.defval,
+                                                    strict_conversion=True)
+                        # Skip further actions if enclosing argument is already instantiated
+                        # by its another field
+                        if a.name in instantiated_args:
+                            continue
+                        instantiated_args.add(a.name)
+                        defval = a.defval
+                        if defval and len(defval) > 0:
+                            code_decl += "    %s %s=%s;\n" % (arg_type_info.atype, var_name, defval)
+                        else:
+                            code_decl += "    %s %s;\n" % (arg_type_info.atype, var_name)
+                # ---- changed by evision end ----
 
                 if not code_args.endswith("("):
                     code_args += ", "
@@ -372,9 +445,11 @@ class FuncInfo(object):
                 if selfinfo.issimple:
                     templ_prelude = ET.gen_template_simple_call_constructor_prelude
                     templ = ET.gen_template_simple_call_constructor
+                    # ---- added by evision start ----
                     if "cv::dnn::" in selfinfo.cname:
                         templ_prelude = ET.gen_template_simple_call_dnn_constructor_prelude
                         templ = ET.gen_template_simple_call_dnn_constructor
+                    # ---- added by evision end ----
                 else:
                     templ_prelude = ET.gen_template_call_constructor_prelude
                     templ = ET.gen_template_call_constructor
@@ -430,12 +505,15 @@ class FuncInfo(object):
                 code_parse = "if((argc - nif_opts_index == 1) && erl_terms.size() == 0)"
 
             if len(v.py_outlist) == 0:
+                # ---- changed by evision start ----
+                # evision: return `:ok` if the function has no output
                 code_ret = "return evision::nif::atom(env, \"ok\")"
 
                 if not v.isphantom and ismethod and not self.is_static:
                     module_name = get_elixir_module_name(selfinfo.cname)
                     code_ret = "bool success;\n" \
                         f"            return evision_from_as_map(env, _self_, self, \"Elixir.Evision.{module_name}\", success)"
+                # ---- changed by evision end ----
             elif len(v.py_outlist) == 1:
                 if self.isconstructor:
                     selftype = selfinfo.cname
@@ -520,12 +598,12 @@ class FuncInfo(object):
             classinfo = all_classes[self.classname]
             #if dump: pprint(vars(classinfo))
             if self.isconstructor:
-                py_name = 'cv.' + classinfo.wname
-            elif self.is_static:
-                py_name = '.'.join([self.namespace, classinfo.sname + '_' + self.variants[0].wname])
+                py_name = classinfo.full_export_name
             else:
+                py_name = classinfo.full_export_name + "." + self.variants[0].wname
+
+            if not self.is_static and not self.isconstructor:
                 cname = classinfo.cname + '::' + cname
-                py_name = 'cv.' + classinfo.wname + '.' + self.variants[0].wname
         else:
             py_name = '.'.join([self.namespace, self.variants[0].wname])
         #if dump: print(cname + " => " + py_name)

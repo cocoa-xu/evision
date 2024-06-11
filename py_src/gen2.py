@@ -413,7 +413,7 @@ class BeamWrapperGenerator(object):
             # Add it as a method to the class
             func_map = self.classes[classname].methods
             func = func_map.setdefault(name, FuncInfo(classname, name, cname, isconstructor, namespace_str, is_static))
-            func.add_variant(decl, isphantom)
+            func.add_variant(decl, self.classes, isphantom)
 
             # Add it as global function
             g_name = "_".join(classes+[name])
@@ -429,10 +429,10 @@ class BeamWrapperGenerator(object):
             g_wname = "_".join(w_classes+[name])
             func_map = self.namespaces.setdefault(namespace_str, Namespace()).funcs
             func = func_map.setdefault(g_name, FuncInfo("", g_name, cname, isconstructor, namespace_str, False))
-            func.add_variant(decl, isphantom)
+            func.add_variant(decl, self.classes, isphantom)
             if g_wname != g_name:  # TODO OpenCV 5.0
                 wfunc = func_map.setdefault(g_wname, FuncInfo("", g_wname, cname, isconstructor, namespace_str, False))
-                wfunc.add_variant(decl, isphantom)
+                wfunc.add_variant(decl, self.classes, isphantom)
         else:
             if classname and not isconstructor:
                 if not isphantom:
@@ -442,7 +442,7 @@ class BeamWrapperGenerator(object):
                 func_map = self.namespaces.setdefault(namespace_str, Namespace()).funcs
 
             func = func_map.setdefault(name, FuncInfo(classname, name, cname, isconstructor, namespace_str, is_static))
-            func.add_variant(decl, isphantom)
+            func.add_variant(decl, self.classes, isphantom)
 
         if classname and isconstructor:
             self.classes[classname].constructor = func

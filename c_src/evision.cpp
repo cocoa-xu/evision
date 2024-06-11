@@ -444,6 +444,9 @@ static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Mat& m, const ArgInfo& in
             // probably yes so that the original matrix is not modified
             // because erlang/elixir users would expect that the original matrix to be unchanged
             in_res->val->copyTo(m);
+            if (in_res->val->channels() == 1) {
+
+            }
             return true;
         }
         return false;

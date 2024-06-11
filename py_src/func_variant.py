@@ -8,17 +8,73 @@ from arg_info import ArgInfo
 import re
 inline_docs_code_type_re = re.compile(r'@code{.(.*)}')
 
+def find_argument_class_info(argument_type, function_namespace,
+                             function_class_name, known_classes):
+    # type: (str, str, str, dict[str, ClassInfo]) -> ClassInfo | None
+    """Tries to find corresponding class info for the provided argument type
+
+    Args:
+        argument_type (str): Function argument type
+        function_namespace (str): Namespace of the function declaration
+        function_class_name (str): Name of the class if function is a method of class
+        known_classes (dict[str, ClassInfo]): Mapping between string class
+            identifier and ClassInfo struct.
+
+    Returns:
+        Optional[ClassInfo]: class info struct if the provided argument type
+            refers to a known C++ class, None otherwise.
+    """
+
+    possible_classes = tuple(filter(lambda cls: cls.endswith(argument_type), known_classes))
+    # If argument type is not a known class - just skip it
+    if not possible_classes:
+        return None
+    if len(possible_classes) == 1:
+        return known_classes[possible_classes[0]]
+
+    # If there is more than 1 matched class, try to select the most probable one
+    # Look for a matched class name in different scope, starting from the
+    # narrowest one
+
+    # First try to find argument inside class scope of the function (if any)
+    if function_class_name:
+        type_to_match = function_class_name + '_' + argument_type
+        if type_to_match in possible_classes:
+            return known_classes[type_to_match]
+    else:
+        type_to_match = argument_type
+
+    # Trying to find argument type in the namespace of the function
+    type_to_match = '{}_{}'.format(
+        function_namespace.lstrip('cv.').replace('.', '_'), type_to_match
+    )
+    if type_to_match in possible_classes:
+        return known_classes[type_to_match]
+
+    # Try to find argument name as is
+    if argument_type in possible_classes:
+        return known_classes[argument_type]
+
+    # NOTE: parser is broken - some classes might not be visible, depending on
+    # the order of parsed headers.
+    # print("[WARNING] Can't select an appropriate class for argument: '",
+    #       argument_type, "'. Possible matches: '", possible_classes, "'")
+    return None
+
 class FuncVariant(object):
-    def __init__(self, classname: str, name: str, decl: list, isconstructor: bool, isphantom: bool = False):
-        self.classname = classname
-        self.from_base = False
-        self.base_classname = None
+    def __init__(self, namespace: str, classname: str, name: str, decl: list, isconstructor: bool, known_classes, isphantom: bool = False):
         self.name = self.wname = name
         self.isconstructor = isconstructor
         self.isphantom = isphantom
+        
+        # ---- added in evision ----
         self.keyword_args = []
-
+        self.classname = classname
+        self.from_base = False
+        self.base_classname = None
         self.decl = decl
+        # ---- added in evision ----
+        
         self.docstring = decl[5]
 
         self.rettype = decl[4] or handle_ptr(decl[1])
@@ -26,8 +82,14 @@ class FuncVariant(object):
             self.rettype = ""
         self.args = []
         self.array_counters = {}
-        for a in decl[3]:
-            ainfo = ArgInfo(a)
+        for arg_decl in decl[3]:
+            assert len(arg_decl) == 4, \
+                'ArgInfo contract is violated. Arg declaration should contain:' \
+                '"arg_type", "name", "default_value", "modifiers". '\
+                'Got tuple: {}'.format(arg_decl)
+            
+            ainfo = ArgInfo(atype=arg_decl[0], name=arg_decl[1],
+                            default_value=arg_decl[2], modifiers=arg_decl[3])
             if ainfo.isarray and not ainfo.arraycvt:
                 c = ainfo.arraylen
                 c_arrlist = self.array_counters.get(c, [])
@@ -36,9 +98,9 @@ class FuncVariant(object):
                 else:
                     self.array_counters[c] = [ainfo.name]
             self.args.append(ainfo)
-        self.init_pyproto()
+        self.init_pyproto(namespace, classname, known_classes)
 
-    def init_pyproto(self):
+    def init_pyproto(self, namespace, classname, known_classes):
         # string representation of argument list, with '[', ']' symbols denoting optional arguments, e.g.
         # "src1, src2[, dst[, mask]]" for cv.add
         argstr = ""
@@ -58,25 +120,57 @@ class FuncVariant(object):
 
         # the list of output parameters. Also includes input/output parameters.
         outlist = []
-
+        
         firstoptarg = 1000000
-        argno = -1
-        for a in self.args:
-            argno += 1
+
+        # Check if there is params structure in arguments
+        arguments = []
+        for arg in self.args:
+            arg_class_info = find_argument_class_info(
+                arg.tp, namespace, classname, known_classes
+            )
+            # If argument refers to the 'named arguments' structure - instead of
+            # the argument put its properties
+            if arg_class_info is not None and arg_class_info.is_parameters:
+                for prop in arg_class_info.props:
+                    # Convert property to ArgIfno and mark that argument is
+                    # a part of the parameters structure:
+                    arguments.append(
+                        ArgInfo(prop.tp, prop.name, prop.default_value,
+                                enclosing_arg=arg)
+                    )
+            else:
+                arguments.append(arg)
+        # Prevent names duplication after named arguments are merged
+        # to the main arguments list
+        argument_names = tuple(arg.name for arg in arguments)
+        assert len(set(argument_names)) == len(argument_names), \
+            "Duplicate arguments with names '{}' in function '{}'. "\
+            "Please, check named arguments used in function interface".format(
+                argument_names, self.name
+            )
+
+        self.args = arguments
+        
+        for argno, a in enumerate(self.args):
             if a.name in self.array_counters:
                 continue
-            assert not a.tp in forbidden_arg_types(), 'Forbidden type "{}" for argument "{}" in "{}" ("{}")'.format(a.tp, a.name, self.name, self.classname)
+            assert not a.tp in forbidden_arg_types(), \
+                'Forbidden type "{}" for argument "{}" in "{}" ("{}")'.format(
+                    a.tp, a.name, self.name, self.classname
+                )
+
             if a.tp in ignored_arg_types():
                 continue
             if a.returnarg:
                 outlist.append((a.name, argno))
             if (not a.inputarg) and a.isbig():
-                outarr_list.append((a.name, argno, a.tp))
+                outarr_list.append((a.name, argno, a.tp)) # <- added type info here
                 continue
             if not a.inputarg:
                 continue
             if not a.defval:
-                arglist.append((a.name, argno, a.tp))
+                arglist.append((a.name, argno, a.tp)) # <- added type info here
             else:
                 firstoptarg = min(firstoptarg, len(arglist))
                 # if there are some array output parameters before the first default parameter, they
@@ -84,7 +178,7 @@ class FuncVariant(object):
                 if outarr_list:
                     arglist += outarr_list
                     outarr_list = []
-                arglist.append((a.name, argno, a.tp))
+                arglist.append((a.name, argno, a.tp)) # <- added type info here
 
         if outarr_list:
             firstoptarg = min(firstoptarg, len(arglist))
@@ -92,7 +186,7 @@ class FuncVariant(object):
         firstoptarg = min(firstoptarg, len(arglist))
 
         noptargs = len(arglist) - firstoptarg
-        argnamelist = [aname for aname, argno, argtype in arglist]
+        argnamelist = [self.args[argno].export_name for _, argno, _ in arglist]
         argstr = ", ".join(argnamelist[:firstoptarg])
         argstr = "[, ".join([argstr] + argnamelist[firstoptarg:])
         argstr += "]" * noptargs
@@ -116,9 +210,9 @@ class FuncVariant(object):
         self.py_prototype = "%s(%s) -> %s" % (self.wname, argstr, outstr)
         self.py_noptargs = noptargs
         self.py_arglist = arglist
-        for aname, argno, argtype in arglist:
+        for _, argno, _argtype in arglist:
             self.args[argno].py_inputarg = True
-        for aname, argno in outlist:
+        for _, argno in outlist:
             if argno >= 0:
                 self.args[argno].py_outputarg = True
         self.py_outlist = outlist
