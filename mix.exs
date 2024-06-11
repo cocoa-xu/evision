@@ -1246,7 +1246,7 @@ defmodule Evision.MixProject do
   end
 
   defp before_closing_body_tag(:html) do
-    ~s(
+    ~S(
     <script type="text/x-mathjax-config">
     MathJax.Hub.Config({
         tex2jax: {
