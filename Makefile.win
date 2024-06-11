@@ -179,9 +179,11 @@ $(HEADERS_TXT): $(CONFIGURATION_PRIVATE_HPP)
 		cmake --build . $(CMAKE_BUILD_PARAMETER) \
 	)
 	@ if "$(EVISION_DO_OPENCV_COMPILE)" == "true" ( \
-		cd "$(CMAKE_OPENCV_BUILD_DIR)" && cmake --install . --config "$(CMAKE_BUILD_TYPE)" && \
-		if "$(OPENCV_HEADERS_TXT)" NEQ "$(HEADERS_TXT)" ( \
-			powershell -command Copy-Item "$(OPENCV_HEADERS_TXT)" -Destination "$(HEADERS_TXT)" -force \
+	    if not exist "$(EVISION_SO)" ( \
+		    cd "$(CMAKE_OPENCV_BUILD_DIR)" && cmake --install . --config "$(CMAKE_BUILD_TYPE)" && \
+		    if "$(OPENCV_HEADERS_TXT)" NEQ "$(HEADERS_TXT)" ( \
+			    powershell -command Copy-Item "$(OPENCV_HEADERS_TXT)" -Destination "$(HEADERS_TXT)" -force \
+		    ) \
 		) \
 	) && \
 	powershell -command Copy-Item "$(HEADERS_TXT)" -Destination "$(C_SRC_HEADER_TXT)" -force
