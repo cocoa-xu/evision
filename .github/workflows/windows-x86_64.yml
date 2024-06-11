@@ -1,6 +1,7 @@
 name: windows-x86_64
 
 on:
+  workflow_dispatch:
   pull_request:
     paths-ignore:
       - 'assets/**'
@@ -146,3 +147,7 @@ jobs:
         shell: bash
         run: |
           mix test --include require_downloading --include require_ffmpeg --exclude may_crash
+
+      - name: Setup tmate session
+        if: always()
+        uses: mxschmitt/action-tmate@v3
