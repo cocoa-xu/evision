@@ -153,8 +153,7 @@ jobs:
         run: |
           export ROOT_DIR="$(pwd)"
           cd _build/${MIX_ENV}/lib/evision/priv
-          tar -czf evision-windows.tar.gz .
-          mv evision-windows.tar.gz ${ROOT_DIR} 
+          tar -czf "${ROOT_DIR}/evision-windows.tar.gz" .
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
