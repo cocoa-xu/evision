@@ -1202,7 +1202,7 @@ defmodule Evision.MixProject do
       {:progress_bar, "~> 2.0 or ~> 3.0", optional: true},
 
       # docs
-      {:ex_doc, "~> 0.30.3", only: :docs, runtime: false},
+      {:ex_doc, "~> 0.34.0", only: :docs, runtime: false},
 
       # test
       {:scidata, "~> 0.1", only: :test}
@@ -1238,7 +1238,7 @@ defmodule Evision.MixProject do
         "examples/ml-decision_tree_and_random_forest.livemd"
       ],
       before_closing_body_tag: &before_closing_body_tag/1,
-      groups_for_functions: [
+      groups_for_docs: [
         external: &(&1[:namespace] == :external),
         Enumerator: &(&1[:enum] == true)
       ]
