@@ -158,5 +158,5 @@ jobs:
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: evision-windows.zip
-          path: evision-windows.zip
+          name: evision-windows.tar.gz
+          path: evision-windows.tar.gz
