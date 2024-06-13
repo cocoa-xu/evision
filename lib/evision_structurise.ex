@@ -63,26 +63,21 @@ defmodule Evision.Internal.Structurise do
     atom
   end
 
-  # specialised for Nx.BinaryBackend
+  # specialised for Evision.Backend
   @spec from_struct(Nx.Tensor.t()) :: reference()
-  def from_struct(%Nx.Tensor{data: %Nx.BinaryBackend{}} = tensor) do
+  def from_struct(%Nx.Tensor{data: %Evision.Backend{ref: mat=%Evision.Mat{ref: ref}}}) do
+    ref
+  end
+
+  # for generic Nx.Tensor
+  @spec from_struct(Nx.Tensor.t()) :: reference()
+  def from_struct(%Nx.Tensor{} = tensor) do
     %{
       tensor
       | data: Nx.to_binary(tensor),
         type: to_compact_type(tensor.type),
         __struct__: :nx_tensor
     }
-  end
-
-  @spec from_struct(Nx.Tensor.t()) :: reference()
-  def from_struct(%Nx.Tensor{} = tensor) do
-    case Evision.Mat.from_nx(tensor) do
-      {:error, msg} ->
-        raise RuntimeError, msg
-
-      %Evision.Mat{ref: ref} ->
-        ref
-    end
   end
 
   @spec from_struct(%{ref: reference()}) :: reference()
