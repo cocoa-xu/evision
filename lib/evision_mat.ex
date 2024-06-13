@@ -113,11 +113,11 @@ defmodule Evision.Mat do
 
   @type enum :: integer()
   @doc enum: true
-  def cv_MAGIC_VAL, do: 1124007936
+  def cv_MAGIC_VAL, do: 1_124_007_936
   @doc enum: true
   def cv_AUTO_STEP, do: 0
   @doc enum: true
-  def cv_MAGIC_MASK, do: 4294901760
+  def cv_MAGIC_MASK, do: 4_294_901_760
   @doc enum: true
   def cv_TYPE_MASK, do: 4095
   @doc enum: true
@@ -859,7 +859,7 @@ defmodule Evision.Mat do
   end
 
   def to_pointer(img, opts) when is_list(opts) do
-    opts = Keyword.validate!(opts || [], [mode: :local])
+    opts = Keyword.validate!(opts || [], mode: :local)
     img = from_struct(img)
     :evision_nif.mat_to_pointer([img: img] ++ opts)
   end
@@ -1960,6 +1960,7 @@ defmodule Evision.Mat do
   @spec to_binary(maybe_mat_in(), non_neg_integer()) :: binary() | {:error, String.t()}
   def to_binary(mat, limit \\ 0) when is_integer(limit) and limit >= 0 do
     mat = from_struct(mat)
+
     case mat do
       %{__struct__: :nx_tensor, data: data} when is_binary(data) ->
         if limit == 0 do
@@ -1967,6 +1968,7 @@ defmodule Evision.Mat do
         else
           :binary.part(data, 0, limit)
         end
+
       _ ->
         :evision_nif.mat_to_binary(img: mat, limit: limit)
     end

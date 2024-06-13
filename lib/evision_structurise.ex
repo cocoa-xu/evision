@@ -58,6 +58,7 @@ defmodule Evision.Internal.Structurise do
   def to_compact_type({:f, 64}), do: :f64
   def to_compact_type({:c, 32}), do: :c32
   def to_compact_type({:c, 64}), do: :c64
+
   def to_compact_type(atom) when is_atom(atom) do
     atom
   end
@@ -65,7 +66,12 @@ defmodule Evision.Internal.Structurise do
   # specialised for Nx.BinaryBackend
   @spec from_struct(Nx.Tensor.t()) :: reference()
   def from_struct(%Nx.Tensor{data: %Nx.BinaryBackend{}} = tensor) do
-    %{tensor | data: Nx.to_binary(tensor), type: to_compact_type(tensor.type), __struct__: :nx_tensor}
+    %{
+      tensor
+      | data: Nx.to_binary(tensor),
+        type: to_compact_type(tensor.type),
+        __struct__: :nx_tensor
+    }
   end
 
   @spec from_struct(Nx.Tensor.t()) :: reference()
