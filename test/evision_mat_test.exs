@@ -4,6 +4,19 @@ defmodule Evision.Mat.Test do
   alias Evision.Mat
 
   @tag :nx
+  test "use Nx.tensor without calling last_dim_as_channel" do
+    v = Nx.broadcast(Nx.tensor(1.0, type: :f64), {120, 120, 3})
+
+    assert %Evision.Mat{
+             channels: 3,
+             dims: 2,
+             type: {:f, 64},
+             raw_type: 22,
+             shape: {120, 120, 3}
+           } = Evision.gaussianBlur(v, {31, 31}, 0)
+  end
+
+  @tag :nx
   test "load an image from file and convert to Nx.tensor" do
     %Mat{} = mat = Evision.imread(Path.join([__DIR__, "testdata", "test.png"]))
 
