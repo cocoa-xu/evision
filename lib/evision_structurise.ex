@@ -65,7 +65,7 @@ defmodule Evision.Internal.Structurise do
 
   # specialised for Evision.Backend
   @spec from_struct(Nx.Tensor.t()) :: reference()
-  def from_struct(%Nx.Tensor{data: %Evision.Backend{ref: mat=%Evision.Mat{ref: ref}}}) do
+  def from_struct(%Nx.Tensor{data: %Evision.Backend{ref: %Evision.Mat{ref: ref}}}) do
     ref
   end
 
