@@ -9,6 +9,7 @@
 
 ### Changes
 - General improvements to the typespecs. Enumerators now also have their own modules.
+- Experimental support for using Nx.tensor directly without calling helper functions like `Evision.Mat.from_nx/1`, `Evision.Mat.from_nx_2d/1` and `Evision.Mat.last_dim_as_channel/1` .
 
 ### Fixes
 - Fixed Erlang bindings when converting from Elixir structs to Erlang records and vice versa.
