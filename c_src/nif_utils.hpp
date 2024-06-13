@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 #include <cstdint>
+#include "evision_consts.h"
 
 namespace evision
 {
@@ -109,10 +110,7 @@ namespace evision
 
     ERL_NIF_TERM make(ErlNifEnv *env, bool var)
     {
-      if (var)
-        return atom(env, "true");
-
-      return atom(env, "false");
+        return var ? kAtomTrue : kAtomFalse;
     }
 
     ERL_NIF_TERM make(ErlNifEnv *env, long var)
@@ -262,21 +260,16 @@ namespace evision
 
     // Check if :nil
     int check_nil(ErlNifEnv *env, ERL_NIF_TERM term) {
-        std::string atom_str;
-        if (get_atom(env, term, atom_str) && atom_str == "nil") {
-            return true;
-        }
-        return false;
+      return enif_is_identical(term, kAtomNil);
     }
 
     // Boolean
 
     int get(ErlNifEnv *env, ERL_NIF_TERM term, bool *var)
     {
-      std::string bool_atom;
-      if (!get_atom(env, term, bool_atom))
+      if (!enif_is_atom(env, term))
         return 0;
-      *var = (bool_atom == "true");
+      *var = enif_is_identical(term, kAtomTrue);
       return 1;
     }
 

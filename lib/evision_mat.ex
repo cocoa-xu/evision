@@ -156,6 +156,10 @@ defmodule Evision.Mat do
     Evision.Internal.Structurise.from_struct(tensor)
   end
 
+  def from_struct(%{__struct__: :nx_tensor} = cast_tensor) do
+    cast_tensor
+  end
+
   def from_struct(ref) when is_reference(ref) do
     ref
   end
@@ -1956,7 +1960,16 @@ defmodule Evision.Mat do
   @spec to_binary(maybe_mat_in(), non_neg_integer()) :: binary() | {:error, String.t()}
   def to_binary(mat, limit \\ 0) when is_integer(limit) and limit >= 0 do
     mat = from_struct(mat)
-    :evision_nif.mat_to_binary(img: mat, limit: limit)
+    case mat do
+      %{__struct__: :nx_tensor, data: data} when is_binary(data) ->
+        if limit == 0 do
+          data
+        else
+          :binary.part(data, 0, limit)
+        end
+      _ ->
+        :evision_nif.mat_to_binary(img: mat, limit: limit)
+    end
   end
 
   @doc """

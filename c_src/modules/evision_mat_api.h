@@ -2,20 +2,21 @@
 #define EVISION_MAT_API_H
 
 #include <erl_nif.h>
+#include "../evision_consts.h"
 
 static ERL_NIF_TERM __evision_get_mat_type(ErlNifEnv *env, int type) {
     uint8_t depth = type & CV_MAT_DEPTH_MASK;
 
     switch ( depth ) {
-        case CV_8U:  return enif_make_tuple2(env, evision::nif::atom(env, "u"), enif_make_uint64(env, 8));
-        case CV_8S:  return enif_make_tuple2(env, evision::nif::atom(env, "s"), enif_make_uint64(env, 8));
-        case CV_16U: return enif_make_tuple2(env, evision::nif::atom(env, "u"), enif_make_uint64(env, 16));
-        case CV_16S: return enif_make_tuple2(env, evision::nif::atom(env, "s"), enif_make_uint64(env, 16));
-        case CV_32S: return enif_make_tuple2(env, evision::nif::atom(env, "s"), enif_make_uint64(env, 32));
-        case CV_32F: return enif_make_tuple2(env, evision::nif::atom(env, "f"), enif_make_uint64(env, 32));
-        case CV_64F: return enif_make_tuple2(env, evision::nif::atom(env, "f"), enif_make_uint64(env, 64));
-        case CV_16F: return enif_make_tuple2(env, evision::nif::atom(env, "f"), enif_make_uint64(env, 16));
-        default:     return enif_make_tuple2(env, evision::nif::atom(env, "user"), enif_make_uint64(env, depth));
+        case CV_8U:  return enif_make_tuple2(env, kAtomU, enif_make_uint64(env, 8));
+        case CV_8S:  return enif_make_tuple2(env, kAtomS, enif_make_uint64(env, 8));
+        case CV_16U: return enif_make_tuple2(env, kAtomU, enif_make_uint64(env, 16));
+        case CV_16S: return enif_make_tuple2(env, kAtomS, enif_make_uint64(env, 16));
+        case CV_32S: return enif_make_tuple2(env, kAtomS, enif_make_uint64(env, 32));
+        case CV_32F: return enif_make_tuple2(env, kAtomF, enif_make_uint64(env, 32));
+        case CV_64F: return enif_make_tuple2(env, kAtomF, enif_make_uint64(env, 64));
+        case CV_16F: return enif_make_tuple2(env, kAtomF, enif_make_uint64(env, 16));
+        default:     return enif_make_tuple2(env, kAtomUser, enif_make_uint64(env, depth));
     }
 }
 
@@ -59,39 +60,39 @@ static ERL_NIF_TERM _evision_make_mat_resource_into_map(ErlNifEnv *env, const cv
     ERL_NIF_TERM keys[num_items];
     ERL_NIF_TERM values[num_items];
 
-    keys[item_index] = evision::nif::atom(env, "channels");
+    keys[item_index] = kAtomChannels;
     values[item_index] = enif_make_int(env, m.channels());
     item_index++;
 
-    keys[item_index] = evision::nif::atom(env, "dims");
+    keys[item_index] = kAtomDims;
     values[item_index] = enif_make_int(env, m.dims);
     item_index++;
 
-    keys[item_index] = evision::nif::atom(env, "type");
+    keys[item_index] = kAtomType;
     values[item_index] = _evision_get_mat_type(env, m);
     item_index++;
 
-    keys[item_index] = evision::nif::atom(env, "raw_type");
+    keys[item_index] = kAtomRawType;
     values[item_index] = enif_make_int(env, m.type());
     item_index++;
 
-    keys[item_index] = evision::nif::atom(env, "shape");
+    keys[item_index] = kAtomShape;
     values[item_index] = _evision_get_mat_shape(env, m);
     item_index++;
 
-    keys[item_index] = evision::nif::atom(env, "ref");
+    keys[item_index] = kAtomRef;
     values[item_index] = res_term;
     item_index++;
 
-    keys[item_index] = evision::nif::atom(env, "class");
-    values[item_index] = evision::nif::atom(env, "Elixir.Evision.Mat");
+    keys[item_index] = kAtomClass;
+    values[item_index] = kAtomEvisionMatModule;
     item_index++;
 
     ERL_NIF_TERM map;
     if (enif_make_map_from_arrays(env, keys, values, item_index, &map)) {
         return map;
     } else {
-        return evision::nif::atom(env, "error when making map from arrays");
+        return evision::nif::error(env, "error when making map from arrays");
     }
 }
 
