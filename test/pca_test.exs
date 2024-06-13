@@ -13,25 +13,19 @@ defmodule Evision.PCA.Test do
 
     %Mat{} =
       src =
-      Evision.line(src, {px, py}, {qx, qy}, colour,
-        thickness: 1
-      )
+      Evision.line(src, {px, py}, {qx, qy}, colour, thickness: 1)
 
     px = trunc(qx + 9 * :math.cos(angle + :math.pi() / 4))
     py = trunc(qy + 9 * :math.sin(angle + :math.pi() / 4))
 
     %Mat{} =
       src =
-      Evision.line(src, {px, py}, {qx, qy}, colour,
-        thickness: 1
-      )
+      Evision.line(src, {px, py}, {qx, qy}, colour, thickness: 1)
 
     px = trunc(qx + 9 * :math.cos(angle - :math.pi() / 4))
     py = trunc(qy + 9 * :math.sin(angle - :math.pi() / 4))
 
-    Evision.line(src, {px, py}, {qx, qy}, colour,
-      thickness: 1
-    )
+    Evision.line(src, {px, py}, {qx, qy}, colour, thickness: 1)
   end
 
   @tag :nx

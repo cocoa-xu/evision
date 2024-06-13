@@ -38,6 +38,7 @@
 #include "opencv2/core/types_c.h"
 #include "erlcompat.hpp"
 #include "ArgInfo.hpp"
+#include "evision_consts.h"
 #include "modules/evision_mat_api.h"
 #include <map>
 
@@ -168,7 +169,7 @@ static inline
 ERL_NIF_TERM evision_get_kw(ErlNifEnv *env, const std::map<std::string, ERL_NIF_TERM>& erl_terms, const std::string& key) {
     auto iter = erl_terms.find(key);
     if (iter == erl_terms.end()) {
-        return evision::nif::atom(env, "nil");
+        return kAtomNil;
     }
     return iter->second;
 }
@@ -190,11 +191,11 @@ ERL_NIF_TERM evision_from_as_map(ErlNifEnv *env, const T& src, ERL_NIF_TERM res_
     ERL_NIF_TERM keys[num_items];
     ERL_NIF_TERM values[num_items];
 
-    keys[item_index] = evision::nif::atom(env, "ref");
+    keys[item_index] = kAtomRef;
     values[item_index] = res_term;
     item_index++;
 
-    keys[item_index] = evision::nif::atom(env, "class");
+    keys[item_index] = kAtomClass;
     values[item_index] = evision::nif::atom(env, class_name);
     item_index++;
 
@@ -216,31 +217,31 @@ ERL_NIF_TERM evision_from_as_map(ErlNifEnv *env, const cv::Ptr<cv::cuda::GpuMat>
     ERL_NIF_TERM keys[num_items];
     ERL_NIF_TERM values[num_items];
 
-    keys[item_index] = enif_make_atom(env, "ref");
+    keys[item_index] = kAtomRef;
     values[item_index] = res_term;
     item_index++;
 
-    keys[item_index] = enif_make_atom(env, "class");
+    keys[item_index] = kAtomClass;
     values[item_index] = enif_make_atom(env, class_name);
     item_index++;
 
-    keys[item_index] = enif_make_atom(env, "channels");
+    keys[item_index] = kAtomChannels;
     values[item_index] = enif_make_int(env, src->channels());
     item_index++;
 
-    keys[item_index] = enif_make_atom(env, "type");
+    keys[item_index] = kAtomType;
     values[item_index] = __evision_get_mat_type(env, src->type());
     item_index++;
 
-    keys[item_index] = enif_make_atom(env, "raw_type");
+    keys[item_index] = kAtomRawType;
     values[item_index] = enif_make_int(env, src->type());
     item_index++;
 
-    keys[item_index] = enif_make_atom(env, "elemSize");
+    keys[item_index] = kAtomElemSize;
     values[item_index] = enif_make_int(env, src->elemSize());
     item_index++;
 
-    keys[item_index] = enif_make_atom(env, "shape");
+    keys[item_index] = kAtomShape;
     ERL_NIF_TERM shape[3];
     shape[0] = enif_make_int(env, src->rows);
     shape[1] = enif_make_int(env, src->cols);
@@ -430,6 +431,33 @@ typedef std::vector<std::vector<KeyPoint> > vector_vector_KeyPoint;
 
 enum { ARG_NONE = 0, ARG_MAT = 1, ARG_SCALAR = 2 };
 
+static void * evision_cast(ErlNifBinary& bin, int cast_from, const std::vector<uint64_t> &sizes, const std::vector<uint64_t> &strides) {
+    uint64_t num_elems = 1;
+    for (size_t i = 0; i < sizes.size(); i++) {
+        num_elems *= sizes[i];
+    }
+    size_t buffer_size = num_elems * sizeof(int32_t);
+    int32_t * data = (int32_t *)enif_alloc(buffer_size);
+    if (!data) {
+        return nullptr;
+    }
+    
+    if (cast_from == 1) {
+        for (size_t i = 0; i < num_elems; i++) {
+            data[i] = ((int64_t *)bin.data)[i];
+        }
+    } else if (cast_from == 2) {
+        for (size_t i = 0; i < num_elems; i++) {
+            data[i] = ((uint64_t *)bin.data)[i];
+        }
+    } else if (cast_from == 3) {
+        for (size_t i = 0; i < num_elems; i++) {
+            data[i] = ((uint32_t *)bin.data)[i];
+        }
+    }
+    return data;
+}
+
 // special case, when the converter needs full ArgInfo structure
 static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Mat& m, const ArgInfo& info)
 {
@@ -438,7 +466,8 @@ static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Mat& m, const ArgInfo& in
     }
 
     evision_res<cv::Mat *> * in_res;
-    if( enif_get_resource(env, o, evision_res<cv::Mat *>::type, (void **)&in_res) ) {
+    if (enif_get_resource(env, o, evision_res<cv::Mat *>::type, (void **)&in_res))
+    {
         if (in_res->val) {
             // should we copy the matrix?
             // probably yes so that the original matrix is not modified
@@ -449,34 +478,294 @@ static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Mat& m, const ArgInfo& in
         return false;
     }
 
+    // Nx.tensor
+    if (enif_is_map(env, o))
+    {
+        // we have to do copy because the incoming binary data is from erlang/elixir (immutable)
+        bool needcopy = true, needcast = false;
+        ERL_NIF_TERM struct_name_term;
+        if (!enif_get_map_value(env, o, kAtomStructKey, &struct_name_term)) {
+            return false;
+        }
+        if (!enif_is_identical(struct_name_term, kAtomNxTensor)) {
+            return false;
+        }
+
+        ERL_NIF_TERM shape_term;
+        if (!enif_get_map_value(env, o, kAtomShape, &shape_term)) {
+            return false;
+        }
+        const ERL_NIF_TERM *shapes;
+        int ndims = 0;
+        if (!enif_get_tuple(env, shape_term, &ndims, &shapes)) {
+            return false;
+        }
+
+        ERL_NIF_TERM data_term;
+        if (!enif_get_map_value(env, o, kAtomData, &data_term)) {
+            return false;
+        }
+        ErlNifBinary data;
+        if (!enif_inspect_binary(env, data_term, &data)) {
+            return false;
+        }
+
+        // now we need to get its type
+        ERL_NIF_TERM type_term;
+        int type;
+        int cast_from = 0;
+        if (!enif_get_map_value(env, o, kAtomType, &type_term)) {
+            return false;
+        }
+        uint64_t originalElemSize;
+        if (enif_is_identical(type_term, kAtomU8)) {
+            type = CV_8U;
+            originalElemSize = 1;
+        }
+        else if (enif_is_identical(type_term, kAtomS8)) {
+            type = CV_8S;
+            originalElemSize = 1;
+        }
+        else if (enif_is_identical(type_term, kAtomU16)) {
+            type = CV_16U;
+            originalElemSize = 2;
+        }
+        else if (enif_is_identical(type_term, kAtomS16)) {
+            type = CV_16S;
+            originalElemSize = 2;
+        }
+        else if (enif_is_identical(type_term, kAtomS32)) {
+            type = CV_32S;
+            originalElemSize = 4;
+        }
+        else if (enif_is_identical(type_term, kAtomF16)) {
+            type = CV_16F;
+            originalElemSize = 2;
+        }
+        else if (enif_is_identical(type_term, kAtomF32)) {
+            type = CV_32F;
+            originalElemSize = 4;
+        }
+        else if (enif_is_identical(type_term, kAtomF64)) {
+            type = CV_64F;
+            originalElemSize = 8;
+        } else {
+            if (enif_is_identical(type_term, kAtomS64)) {
+                type = CV_32S;
+                originalElemSize = 8;
+                needcast = true;
+                cast_from = 1;
+            } else if (enif_is_identical(type_term, kAtomU64)) {
+                type = CV_32S;
+                originalElemSize = 8;
+                needcast = true;
+                cast_from = 2;
+            } else if (enif_is_identical(type_term, kAtomU32)) {
+                type = CV_32S;
+                originalElemSize = 4;
+                needcast = true;
+                cast_from = 3;
+            } else {
+                return false;
+            }
+        }
+
+#ifndef CV_MAX_DIM
+        const int CV_MAX_DIM = 32;
+#endif 
+
+        if (ndims > CV_MAX_DIM) {
+            return false;
+        }
+        size_t elemsize = CV_ELEM_SIZE1(type);
+        std::vector<uint64_t> _sizes(ndims);
+        for (int dim_i = 0; dim_i < ndims; dim_i++) {
+            ErlNifUInt64 u64;
+            ERL_NIF_TERM shape_i = shapes[dim_i];
+            if (enif_get_uint64(env, shape_i, &u64)) {
+                _sizes[dim_i] = u64;
+            } else {
+                return false;
+            }
+        }
+        std::vector<uint64_t> _strides(ndims);
+        _strides[ndims - 1] = originalElemSize;
+        for (int dim_i = ndims - 2; dim_i >= 0; dim_i--) {
+            _strides[dim_i] = _strides[dim_i + 1] * _sizes[dim_i + 1];
+        }
+
+        // ---- debug ----
+        // printf("Incoming ndarray '%s': ndims=%d  _sizes=[ ", info.name, ndims);
+        // for (int i = 0; i < ndims; i++) {
+        //     printf("%llu ", _sizes[i]);
+        // }
+        // printf("]  _strides=[ ");
+        // for (int i = 0; i < ndims; i++) {
+        //     printf("%llu ", _strides[i]);
+        // }
+        // printf("]\r\n");
+        // ---- debug ----
+
+        bool ismultichannel = ndims == 3 && _sizes[2] <= CV_CN_MAX;
+        // if (pyopencv_Mat_TypePtr && PyObject_TypeCheck(o, pyopencv_Mat_TypePtr))
+        // {
+        //     bool wrapChannels = false;
+        //     PyObject* pyobj_wrap_channels = PyObject_GetAttrString(o, "wrap_channels");
+        //     if (pyobj_wrap_channels)
+        //     {
+        //         if (!pyopencv_to_safe(pyobj_wrap_channels, wrapChannels, ArgInfo("cv.Mat.wrap_channels", 0)))
+        //         {
+        //             // TODO extra message
+        //             Py_DECREF(pyobj_wrap_channels);
+        //             return false;
+        //         }
+        //         Py_DECREF(pyobj_wrap_channels);
+        //     }
+        //     ismultichannel = wrapChannels && ndims >= 1;
+        // }
+
+        for (int i = ndims-1; i >= 0 && !needcopy; i--)
+        {
+            // these checks handle cases of
+            //  a) multi-dimensional (ndims > 2) arrays, as well as simpler 1- and 2-dimensional cases
+            //  b) transposed arrays, where _strides[] elements go in non-descending order
+            //  c) flipped arrays, where some of _strides[] elements are negative
+            // the _sizes[i] > 1 is needed to avoid spurious copies when NPY_RELAXED_STRIDES is set
+            if( (i == ndims-1 && _sizes[i] > 1 && (size_t)_strides[i] != elemsize) ||
+                (i < ndims-1 && _sizes[i] > 1 && _strides[i] < _strides[i+1]) )
+                needcopy = true;
+        }
+
+        if (ismultichannel)
+        {
+            int channels = ndims >= 1 ? (int)_sizes[ndims - 1] : 1;
+            if (channels > CV_CN_MAX)
+            {
+                failmsg(env, "%s unable to wrap channels, too high (%d > CV_CN_MAX=%d)", info.name, (int)channels, (int)CV_CN_MAX);
+                return false;
+            }
+            ndims--;
+            type |= CV_MAKETYPE(0, channels);
+
+            if (ndims >= 1 && _strides[ndims - 1] != elemsize*_sizes[ndims])
+                needcopy = true;
+
+            elemsize = CV_ELEM_SIZE(type);
+        }
+
+        void * mat_data = data.data;
+        bool enif_allocator = false;
+        if (needcast) {
+            // we always cast to int32_t
+            mat_data = evision_cast(data, cast_from, _sizes, _strides);
+            enif_allocator = true;
+
+            _strides[ndims - 1] = elemsize;
+            for (int dim_i = ndims - 2; dim_i >= 0; dim_i--) {
+                _strides[dim_i] = _strides[dim_i + 1] * _sizes[dim_i + 1];
+            }
+        }
+
+        int size[CV_MAX_DIM+1] = {};
+        size_t step[CV_MAX_DIM+1] = {};
+
+        // Normalize strides in case NPY_RELAXED_STRIDES is set
+        size_t default_step = elemsize;
+        for ( int i = ndims - 1; i >= 0; --i )
+        {
+            size[i] = (int)_sizes[i];
+            if ( size[i] > 1 )
+            {
+                step[i] = (size_t)_strides[i];
+                default_step = step[i] * size[i];
+            }
+            else
+            {
+                step[i] = default_step;
+                default_step *= size[i];
+            }
+        }
+
+        // // see https://github.com/opencv/opencv/issues/24057
+        // if ( ( info.arithm_op_src ) && ( ndims == 1 ) && ( size[0] <= 4 ) )
+        // {
+        //     const int sz  = size[0]; // Real Data Length(1, 2, 3 or 4)
+        //     const int sz2 = 4;       // Scalar has 4 elements.
+        //     m = Mat::zeros(sz2, 1, CV_64F);
+
+        //     const char *base_ptr = PyArray_BYTES(oarr);
+        //     for(int i = 0; i < sz; i++ )
+        //     {
+        //         PyObject* oi = PyArray_GETITEM(oarr, base_ptr + step[0] * i);
+        //         if( PyInt_Check(oi) )
+        //             m.at<double>(i) = (double)PyInt_AsLong(oi);
+        //         else if( PyFloat_Check(oi) )
+        //             m.at<double>(i) = (double)PyFloat_AsDouble(oi);
+        //         else
+        //         {
+        //             failmsg("%s has some non-numerical elements", info.name);
+        //             m.release();
+        //             return false;
+        //         }
+        //     }
+        //     return true;
+        // }
+
+        // handle degenerate case
+        // FIXIT: Don't force 1D for Scalars
+        if (ndims == 0) {
+            size[ndims] = 1;
+            step[ndims] = elemsize;
+            ndims++;
+        }
+
+        Mat casted(ndims, size, type, mat_data, step);
+        casted.copyTo(m);
+        if (enif_allocator) {
+            enif_free(mat_data);
+        }
+        return true;
+    }
+
     int i32;
-    if( enif_get_int(env, o, &i32) )
+    if (enif_get_int(env, o, &i32))
     {
         double v[] = {static_cast<double>(i32), 0., 0., 0.};
+        // todo: update gen2.py so we can know if it's arithm_op_src
+        // because for arithm_op_src, normally
+        // cv.XXX(x) means cv.XXX( (x, 0., 0., 0.) );
+        // However cv.add(mat,x) means cv::add(mat, (x,x,x,x) ). <- if arithm_op_src
         m = Mat(4, 1, CV_64F, v).clone();
         return true;
     }
+
     double f64;
-    if( enif_get_double(env, o, &f64) ) {
+    if (enif_get_double(env, o, &f64))
+    {
         double v[] = {f64, 0., 0., 0.};
         m = Mat(4, 1, CV_64F, v).clone();
         return true;
     }
-    if( enif_is_tuple(env, o) )
+
+    if (enif_is_tuple(env, o))
     {
         const ERL_NIF_TERM *terms;
         int sz = 0, i = 0;
         enif_get_tuple(env, o, &sz, &terms);
         m = Mat(sz, 1, CV_64F);
-        for( i = 0; i < sz; i++ )
+        for (i = 0; i < sz; i++)
         {
             int i32;
             double f64;
             ERL_NIF_TERM oi = terms[i];
-            if( enif_get_int(env, oi, &i32) )
+            if (enif_get_int(env, oi, &i32))
+            {
                 m.at<double>(i) = (double)(i32);
-            else if( enif_get_double(env, oi, &f64) )
+            }
+            else if (enif_get_double(env, oi, &f64))
+            {
                 m.at<double>(i) = (double)(f64);
+            }    
             else
             {
                 failmsg(env, "%s is not a numerical tuple", info.name);
@@ -822,7 +1111,7 @@ struct Evision_Converter< cv::Ptr<T> >
     static ERL_NIF_TERM from(ErlNifEnv *env, const cv::Ptr<T>& p)
     {
         if (!p) {
-            return evision::nif::atom(env, "nil");
+            return kAtomNil;
         }
 
         return evision_from(env, *p);
@@ -947,8 +1236,8 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const Scalar& src)
 template<>
 ERL_NIF_TERM evision_from(ErlNifEnv *env, const bool& value)
 {
-    if (value) return evision::nif::atom(env, "true");
-    return evision::nif::atom(env, "false");
+    if (value) return kAtomTrue;
+    return kAtomFalse;
 }
 
 template<>
@@ -1279,7 +1568,7 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const std::vector<char>& value)
         strncpy((char *)ptr, value.data(), len);
         return erl_string;
     } else {
-        return evision::nif::atom(env, "out of memory");
+        return kAtomOutOfMemory;
     }
 }
 
@@ -1293,7 +1582,7 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const String& value)
         strncpy((char *)ptr, value.c_str(), len);
         return erl_string;
     } else {
-        return evision::nif::atom(env, "out of memory");
+        return kAtomOutOfMemory;
     }
 }
 
@@ -1308,7 +1597,7 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const std::string& value)
         strncpy((char *)ptr, value.c_str(), len);
         return erl_string;
     } else {
-        return evision::nif::atom(env, "out of memory");
+        return kAtomOutOfMemory;
     }
 }
 #endif
@@ -1835,36 +2124,36 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const Moments& m)
     ERL_NIF_TERM ret = enif_make_new_map(env);
     ERL_NIF_TERM iter = ret;
     if (
-        enif_make_map_put(env, iter, evision::nif::atom(env, "m00"), evision_from(env, m.m00), &iter) &&
-        enif_make_map_put(env, iter, evision::nif::atom(env, "m10"), evision_from(env, m.m10), &iter) &&
-        enif_make_map_put(env, iter, evision::nif::atom(env, "m01"), evision_from(env, m.m01), &iter) &&
+        enif_make_map_put(env, iter, kAtomM00, evision_from(env, m.m00), &iter) &&
+        enif_make_map_put(env, iter, kAtomM10, evision_from(env, m.m10), &iter) &&
+        enif_make_map_put(env, iter, kAtomM01, evision_from(env, m.m01), &iter) &&
 
-        enif_make_map_put(env, iter, evision::nif::atom(env, "m20"), evision_from(env, m.m20), &iter) &&
-        enif_make_map_put(env, iter, evision::nif::atom(env, "m11"), evision_from(env, m.m11), &iter) &&
-        enif_make_map_put(env, iter, evision::nif::atom(env, "m02"), evision_from(env, m.m02), &iter) &&
+        enif_make_map_put(env, iter, kAtomM20, evision_from(env, m.m20), &iter) &&
+        enif_make_map_put(env, iter, kAtomM11, evision_from(env, m.m11), &iter) &&
+        enif_make_map_put(env, iter, kAtomM02, evision_from(env, m.m02), &iter) &&
 
-        enif_make_map_put(env, iter, evision::nif::atom(env, "m30"), evision_from(env, m.m30), &iter) &&
-        enif_make_map_put(env, iter, evision::nif::atom(env, "m21"), evision_from(env, m.m21), &iter) &&
-        enif_make_map_put(env, iter, evision::nif::atom(env, "m12"), evision_from(env, m.m12), &iter) &&
-        enif_make_map_put(env, iter, evision::nif::atom(env, "m03"), evision_from(env, m.m03), &iter) &&
+        enif_make_map_put(env, iter, kAtomM30, evision_from(env, m.m30), &iter) &&
+        enif_make_map_put(env, iter, kAtomM21, evision_from(env, m.m21), &iter) &&
+        enif_make_map_put(env, iter, kAtomM12, evision_from(env, m.m12), &iter) &&
+        enif_make_map_put(env, iter, kAtomM03, evision_from(env, m.m03), &iter) &&
 
-        enif_make_map_put(env, iter, evision::nif::atom(env, "mu20"), evision_from(env, m.mu20), &iter) &&
-        enif_make_map_put(env, iter, evision::nif::atom(env, "mu11"), evision_from(env, m.mu11), &iter) &&
-        enif_make_map_put(env, iter, evision::nif::atom(env, "mu02"), evision_from(env, m.mu02), &iter) &&
+        enif_make_map_put(env, iter, kAtomMu20, evision_from(env, m.mu20), &iter) &&
+        enif_make_map_put(env, iter, kAtomMu11, evision_from(env, m.mu11), &iter) &&
+        enif_make_map_put(env, iter, kAtomMu02, evision_from(env, m.mu02), &iter) &&
 
-        enif_make_map_put(env, iter, evision::nif::atom(env, "mu30"), evision_from(env, m.mu30), &iter) &&
-        enif_make_map_put(env, iter, evision::nif::atom(env, "mu21"), evision_from(env, m.mu21), &iter) &&
-        enif_make_map_put(env, iter, evision::nif::atom(env, "mu12"), evision_from(env, m.mu12), &iter) &&
-        enif_make_map_put(env, iter, evision::nif::atom(env, "mu03"), evision_from(env, m.mu03), &iter) &&
+        enif_make_map_put(env, iter, kAtomMu30, evision_from(env, m.mu30), &iter) &&
+        enif_make_map_put(env, iter, kAtomMu21, evision_from(env, m.mu21), &iter) &&
+        enif_make_map_put(env, iter, kAtomMu12, evision_from(env, m.mu12), &iter) &&
+        enif_make_map_put(env, iter, kAtomMu03, evision_from(env, m.mu03), &iter) &&
 
-        enif_make_map_put(env, iter, evision::nif::atom(env, "nu20"), evision_from(env, m.nu20), &iter) &&
-        enif_make_map_put(env, iter, evision::nif::atom(env, "nu11"), evision_from(env, m.nu11), &iter) &&
-        enif_make_map_put(env, iter, evision::nif::atom(env, "nu02"), evision_from(env, m.nu02), &iter) &&
+        enif_make_map_put(env, iter, kAtomNu20, evision_from(env, m.nu20), &iter) &&
+        enif_make_map_put(env, iter, kAtomNu11, evision_from(env, m.nu11), &iter) &&
+        enif_make_map_put(env, iter, kAtomNu02, evision_from(env, m.nu02), &iter) &&
 
-        enif_make_map_put(env, iter, evision::nif::atom(env, "nu30"), evision_from(env, m.nu30), &iter) &&
-        enif_make_map_put(env, iter, evision::nif::atom(env, "nu21"), evision_from(env, m.nu21), &iter) &&
-        enif_make_map_put(env, iter, evision::nif::atom(env, "nu12"), evision_from(env, m.nu12), &iter) &&
-        enif_make_map_put(env, iter, evision::nif::atom(env, "nu03"), evision_from(env, m.nu03), &iter)
+        enif_make_map_put(env, iter, kAtomNu30, evision_from(env, m.nu30), &iter) &&
+        enif_make_map_put(env, iter, kAtomNu21, evision_from(env, m.nu21), &iter) &&
+        enif_make_map_put(env, iter, kAtomNu12, evision_from(env, m.nu12), &iter) &&
+        enif_make_map_put(env, iter, kAtomNu03, evision_from(env, m.nu03), &iter)
     ) {
         return ret;
     } else {
@@ -2300,8 +2589,8 @@ template<> inline ERL_NIF_TERM evision_from_generic_vec(ErlNifEnv *env, const st
     for (size_t i = 0; i < n; i++)
     {
         bool elem = value[i];
-        if (elem) arr[i] = evision::nif::atom(env, "true");
-        else arr[i] = evision::nif::atom(env, "false");
+        if (elem) arr[i] = kAtomTrue;
+        else arr[i] = kAtomFalse;
     }
     ERL_NIF_TERM ret = enif_make_list_from_array(env, arr, n);
     free(arr);
@@ -2686,6 +2975,65 @@ on_load(ErlNifEnv* env, void**, ERL_NIF_TERM)
     rt = enif_open_resource_type(env, "evision", "Evision.Mat.t", destruct_Mat, ERL_NIF_RT_CREATE, NULL);
     if (!rt) return -1;
     evision_res<cv::Mat *>::type = rt;
+
+    kAtomNil = evision::nif::atom(env, "nil");
+    kAtomTrue = evision::nif::atom(env, "true");
+    kAtomFalse = evision::nif::atom(env, "false");
+    kAtomOutOfMemory = evision::nif::atom(env, "out_of_memory");
+    kAtomRef = evision::nif::atom(env, "ref");
+    kAtomClass = evision::nif::atom(env, "class");
+    kAtomDims = evision::nif::atom(env, "dims");
+    kAtomChannels = evision::nif::atom(env, "channels");
+    kAtomType = evision::nif::atom(env, "type");
+    kAtomData = evision::nif::atom(env, "data");
+    kAtomRawType = evision::nif::atom(env, "raw_type");
+    kAtomElemSize = evision::nif::atom(env, "elemSize");
+    kAtomShape = evision::nif::atom(env, "shape");
+    kAtomStructKey = evision::nif::atom(env, "__struct__");
+    kAtomNxTensorModule = evision::nif::atom(env, "Elixir.Nx.Tensor");
+    kAtomNxTensor = evision::nif::atom(env, "nx_tensor");
+    kAtomEvisionMatModule = evision::nif::atom(env, "Elixir.Evision.Mat");
+
+    kAtomU = evision::nif::atom(env, "u");
+    kAtomS = evision::nif::atom(env, "s");
+    kAtomF = evision::nif::atom(env, "f");
+    kAtomU8 = evision::nif::atom(env, "u8");
+    kAtomS8 = evision::nif::atom(env, "s8");
+    kAtomU16 = evision::nif::atom(env, "u16");
+    kAtomS16 = evision::nif::atom(env, "s16");
+    kAtomU32 = evision::nif::atom(env, "u32");
+    kAtomS32 = evision::nif::atom(env, "s32");
+    kAtomU64 = evision::nif::atom(env, "u64");
+    kAtomS64 = evision::nif::atom(env, "s64");
+    kAtomF16 = evision::nif::atom(env, "f16");
+    kAtomF32 = evision::nif::atom(env, "f32");
+    kAtomF64 = evision::nif::atom(env, "f64");
+    kAtomUser = evision::nif::atom(env, "user");
+
+    kAtomM00 = evision::nif::atom(env, "m00");
+    kAtomM01 = evision::nif::atom(env, "m01");
+    kAtomM10 = evision::nif::atom(env, "m10");
+    kAtomM20 = evision::nif::atom(env, "m20");
+    kAtomM11 = evision::nif::atom(env, "m11");
+    kAtomM02 = evision::nif::atom(env, "m02");
+    kAtomM30 = evision::nif::atom(env, "m30");
+    kAtomM21 = evision::nif::atom(env, "m21");
+    kAtomM12 = evision::nif::atom(env, "m12");
+    kAtomM03 = evision::nif::atom(env, "m03");
+    kAtomMu20 = evision::nif::atom(env, "mu20");
+    kAtomMu11 = evision::nif::atom(env, "mu11");
+    kAtomMu02 = evision::nif::atom(env, "mu02");
+    kAtomMu30 = evision::nif::atom(env, "mu30");
+    kAtomMu21 = evision::nif::atom(env, "mu21");
+    kAtomMu12 = evision::nif::atom(env, "mu12");
+    kAtomMu03 = evision::nif::atom(env, "mu03");
+    kAtomNu20 = evision::nif::atom(env, "nu20");
+    kAtomNu11 = evision::nif::atom(env, "nu11");
+    kAtomNu02 = evision::nif::atom(env, "nu02");
+    kAtomNu30 = evision::nif::atom(env, "nu30");
+    kAtomNu21 = evision::nif::atom(env, "nu21");
+    kAtomNu12 = evision::nif::atom(env, "nu12");
+    kAtomNu03 = evision::nif::atom(env, "nu03");
     return 0;
 }
 

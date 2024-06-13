@@ -46,15 +46,38 @@ defmodule Evision.Internal.Structurise do
 
   def to_struct_ok(pass_through), do: {:ok, pass_through}
 
+  def to_compact_type({:u, 8}), do: :u8
+  def to_compact_type({:u, 16}), do: :u16
+  def to_compact_type({:u, 32}), do: :u32
+  def to_compact_type({:u, 64}), do: :u64
+  def to_compact_type({:s, 8}), do: :s8
+  def to_compact_type({:s, 16}), do: :s16
+  def to_compact_type({:s, 32}), do: :s32
+  def to_compact_type({:s, 64}), do: :s64
+  def to_compact_type({:f, 32}), do: :f32
+  def to_compact_type({:f, 64}), do: :f64
+  def to_compact_type({:c, 32}), do: :c32
+  def to_compact_type({:c, 64}), do: :c64
+
+  def to_compact_type(atom) when is_atom(atom) do
+    atom
+  end
+
+  # specialised for Evision.Backend
+  @spec from_struct(Nx.Tensor.t()) :: reference()
+  def from_struct(%Nx.Tensor{data: %Evision.Backend{ref: %Evision.Mat{ref: ref}}}) do
+    ref
+  end
+
+  # for generic Nx.Tensor
   @spec from_struct(Nx.Tensor.t()) :: reference()
   def from_struct(%Nx.Tensor{} = tensor) do
-    case Evision.Mat.from_nx(tensor) do
-      {:error, msg} ->
-        raise RuntimeError, msg
-
-      %Evision.Mat{ref: ref} ->
-        ref
-    end
+    %{
+      tensor
+      | data: Nx.to_binary(tensor),
+        type: to_compact_type(tensor.type),
+        __struct__: :nx_tensor
+    }
   end
 
   @spec from_struct(%{ref: reference()}) :: reference()

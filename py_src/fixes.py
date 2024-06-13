@@ -180,7 +180,7 @@ def evision_elixir_module_fixes():
     case bboxes.shape do
       {_, 4} ->
         positional = [
-          bboxes: Evision.Mat.to_binary(Evision.Internal.Structurise.from_struct(bboxes)),
+          bboxes: Evision.Mat.to_binary(bboxes),
           scores: Evision.Internal.Structurise.from_struct(scores),
           score_threshold: Evision.Internal.Structurise.from_struct(score_threshold),
           nms_threshold: Evision.Internal.Structurise.from_struct(nms_threshold)
@@ -257,7 +257,7 @@ def evision_elixir_module_fixes():
             raise "Invalid struct, expecting Nx.Tensor or Evision.Mat"
         end
         positional = [
-          bboxes: Evision.Mat.to_binary(Evision.Internal.Structurise.from_struct(bboxes)),
+          bboxes: Evision.Mat.to_binary(bboxes),
           scores: Evision.Internal.Structurise.from_struct(scores),
           score_threshold: Evision.Internal.Structurise.from_struct(score_threshold),
           nms_threshold: Evision.Internal.Structurise.from_struct(nms_threshold)
@@ -341,7 +341,7 @@ def evision_elixir_module_fixes():
               raise "Invalid struct, expecting Nx.Tensor or Evision.Mat"
         end
         positional = [
-          bboxes: Evision.Mat.to_binary(Evision.Internal.Structurise.from_struct(bboxes)),
+          bboxes: Evision.Mat.to_binary(bboxes),
           scores: Evision.Internal.Structurise.from_struct(scores),
           class_ids: Evision.Internal.Structurise.from_struct(class_ids),
           score_threshold: Evision.Internal.Structurise.from_struct(score_threshold),
@@ -424,7 +424,7 @@ def evision_elixir_module_fixes():
               raise "Invalid struct, expecting Nx.Tensor or Evision.Mat"
         end
         positional = [
-          bboxes: Evision.Mat.to_binary(Evision.Internal.Structurise.from_struct(bboxes)),
+          bboxes: Evision.Mat.to_binary(bboxes),
           scores: Evision.Internal.Structurise.from_struct(scores),
           class_ids: Evision.Internal.Structurise.from_struct(class_ids),
           score_threshold: Evision.Internal.Structurise.from_struct(score_threshold),
@@ -515,7 +515,7 @@ def evision_elixir_module_fixes():
               raise "Invalid struct, expecting Nx.Tensor or Evision.Mat"
         end
         positional = [
-          bboxes: Evision.Mat.to_binary(Evision.Internal.Structurise.from_struct(bboxes)),
+          bboxes: Evision.Mat.to_binary(bboxes),
           scores: Evision.Internal.Structurise.from_struct(scores),
           score_threshold: Evision.Internal.Structurise.from_struct(score_threshold),
           nms_threshold: Evision.Internal.Structurise.from_struct(nms_threshold)
@@ -603,7 +603,7 @@ def evision_elixir_module_fixes():
               raise "Invalid struct, expecting Nx.Tensor or Evision.Mat"
         end
         positional = [
-          bboxes: Evision.Mat.to_binary(Evision.Internal.Structurise.from_struct(bboxes)),
+          bboxes: Evision.Mat.to_binary(bboxes),
           scores: Evision.Internal.Structurise.from_struct(scores),
           score_threshold: Evision.Internal.Structurise.from_struct(score_threshold),
           nms_threshold: Evision.Internal.Structurise.from_struct(nms_threshold)
