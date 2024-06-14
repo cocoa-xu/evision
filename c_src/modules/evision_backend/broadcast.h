@@ -58,7 +58,7 @@ static void broadcast(
 }
 
 // @evision c: mat_broadcast_to, evision_cv_mat_broadcast_to, 1
-// @evision nif: def mat_broadcast_to(_opts \\ []), do: :erlang.nif_error(:undef)
+// @evision nif: def mat_broadcast_to(_opts \\ []), do: :erlang.nif_error(:undefinedined)
 static ERL_NIF_TERM evision_cv_mat_broadcast_to(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;

@@ -5,7 +5,7 @@
 #include "../../ArgInfo.hpp"
 
 // @evision c: mat_sign, evision_cv_mat_sign, 1
-// @evision nif: def mat_sign(_opts \\ []), do: :erlang.nif_error(:undef)
+// @evision nif: def mat_sign(_opts \\ []), do: :erlang.nif_error(:undefinedined)
 static ERL_NIF_TERM evision_cv_mat_sign(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;

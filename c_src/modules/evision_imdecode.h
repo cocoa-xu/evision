@@ -11,7 +11,7 @@
 using namespace evision::nif;
 
 // @evision c: imdecode,evision_cv_imdecode,1
-// @evision nif: def imdecode(_opts \\ []), do: :erlang.nif_error(:undef)
+// @evision nif: def imdecode(_opts \\ []), do: :erlang.nif_error(:undefinedined)
 static ERL_NIF_TERM evision_cv_imdecode(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
     using namespace cv;

@@ -5,7 +5,7 @@
 #include "../../ArgInfo.hpp"
 
 // @evision c: mat_subtract, evision_cv_mat_subtract, 1
-// @evision nif: def mat_subtract(_opts \\ []), do: :erlang.nif_error(:undef)
+// @evision nif: def mat_subtract(_opts \\ []), do: :erlang.nif_error(:undefinedined)
 static ERL_NIF_TERM evision_cv_mat_subtract(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;
@@ -34,7 +34,7 @@ static ERL_NIF_TERM evision_cv_mat_subtract(ErlNifEnv *env, int argc, const ERL_
 }
 
 // @evision c: mat_subtract_typed,evision_cv_mat_subtract_typed,1
-// @evision nif: def mat_subtract_typed(_opts \\ []), do: :erlang.nif_error(:undef)
+// @evision nif: def mat_subtract_typed(_opts \\ []), do: :erlang.nif_error(:undefinedined)
 static ERL_NIF_TERM evision_cv_mat_subtract_typed(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;

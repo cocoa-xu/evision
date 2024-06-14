@@ -193,7 +193,7 @@ void *evision_main_loop(void * _unused)
 }
 
 // @evision c: imshow,evision_cv_imshow,1
-// @evision nif: def imshow(_opts \\ []), do: :erlang.nif_error(:undef)
+// @evision nif: def imshow(_opts \\ []), do: :erlang.nif_error(:undefinedined)
 static ERL_NIF_TERM evision_cv_imshow(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
     using namespace cv;
@@ -288,7 +288,7 @@ static ERL_NIF_TERM evision_cv_imshow(ErlNifEnv *env, int argc, const ERL_NIF_TE
 }
 
 // @evision c: waitKey,evision_cv_waitKey,1
-// @evision nif: def waitKey(_opts \\ []), do: :erlang.nif_error(:undef)
+// @evision nif: def waitKey(_opts \\ []), do: :erlang.nif_error(:undefinedined)
 static ERL_NIF_TERM evision_cv_waitKey(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
     using namespace cv;
@@ -319,7 +319,7 @@ static ERL_NIF_TERM evision_cv_waitKey(ErlNifEnv *env, int argc, const ERL_NIF_T
 }
 
 // @evision c: destroyWindow,evision_cv_destroyWindow,1
-// @evision nif: def destroyWindow(_opts \\ []), do: :erlang.nif_error(:undef)
+// @evision nif: def destroyWindow(_opts \\ []), do: :erlang.nif_error(:undefinedined)
 static ERL_NIF_TERM evision_cv_destroyWindow(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
     using namespace cv;
@@ -352,7 +352,7 @@ static ERL_NIF_TERM evision_cv_destroyWindow(ErlNifEnv *env, int argc, const ERL
 }
 
 // @evision c: destroyAllWindows,evision_cv_destroyAllWindows,0
-// @evision nif: def destroyAllWindows(), do: :erlang.nif_error(:undef)
+// @evision nif: def destroyAllWindows(), do: :erlang.nif_error(:undefinedined)
 static ERL_NIF_TERM evision_cv_destroyAllWindows(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
     struct destroy_all_windows_cmd * cmd = new destroy_all_windows_cmd;

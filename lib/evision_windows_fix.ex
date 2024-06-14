@@ -16,7 +16,7 @@ defmodule :evision_windows_fix do
   def run_once do
     case :os.type() do
       {:win32, _} ->
-        :erlang.nif_error(:undef)
+        :erlang.nif_error(:undefined)
 
       _ ->
         :ok

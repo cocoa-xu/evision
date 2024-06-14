@@ -21,7 +21,7 @@
 using namespace evision::nif;
 
 // @evision c: mat_empty,evision_cv_mat_empty,0
-// @evision nif: def mat_empty(), do: :erlang.nif_error(:undef)
+// @evision nif: def mat_empty(), do: :erlang.nif_error(:undefinedined)
 static ERL_NIF_TERM evision_cv_mat_empty(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     evision_res<cv::Mat *> * res;
     if (alloc_resource(&res)) {
@@ -37,7 +37,7 @@ static ERL_NIF_TERM evision_cv_mat_empty(ErlNifEnv *env, int argc, const ERL_NIF
 }
 
 // @evision c: mat_to_pointer,evision_cv_mat_to_pointer,1
-// @evision nif: def mat_to_pointer(_opts \\ []), do: :erlang.nif_error(:undef)
+// @evision nif: def mat_to_pointer(_opts \\ []), do: :erlang.nif_error(:undefinedined)
 static ERL_NIF_TERM evision_cv_mat_to_pointer(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;
@@ -76,7 +76,7 @@ static ERL_NIF_TERM evision_cv_mat_to_pointer(ErlNifEnv *env, int argc, const ER
 }
 
 // @evision c: mat_type,evision_cv_mat_type,1
-// @evision nif: def mat_type(_opts \\ []), do: :erlang.nif_error(:undef)
+// @evision nif: def mat_type(_opts \\ []), do: :erlang.nif_error(:undefinedined)
 static ERL_NIF_TERM evision_cv_mat_type(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;
@@ -97,7 +97,7 @@ static ERL_NIF_TERM evision_cv_mat_type(ErlNifEnv *env, int argc, const ERL_NIF_
 }
 
 // @evision c: mat_as_type,evision_cv_mat_as_type,1
-// @evision nif: def mat_as_type(_opts \\ []), do: :erlang.nif_error(:undef)
+// @evision nif: def mat_as_type(_opts \\ []), do: :erlang.nif_error(:undefinedined)
 static ERL_NIF_TERM evision_cv_mat_as_type(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;
@@ -129,7 +129,7 @@ static ERL_NIF_TERM evision_cv_mat_as_type(ErlNifEnv *env, int argc, const ERL_N
 }
 
 // @evision c: mat_shape,evision_cv_mat_shape,1
-// @evision nif: def mat_shape(_opts \\ []), do: :erlang.nif_error(:undef)
+// @evision nif: def mat_shape(_opts \\ []), do: :erlang.nif_error(:undefinedined)
 static ERL_NIF_TERM evision_cv_mat_shape(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;
@@ -152,7 +152,7 @@ static ERL_NIF_TERM evision_cv_mat_shape(ErlNifEnv *env, int argc, const ERL_NIF
 }
 
 // @evision c: mat_roi,evision_cv_mat_roi,1
-// @evision nif: def mat_roi(_opts \\ []), do: :erlang.nif_error(:undef)
+// @evision nif: def mat_roi(_opts \\ []), do: :erlang.nif_error(:undefinedined)
 static ERL_NIF_TERM evision_cv_mat_roi(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;
@@ -292,7 +292,7 @@ void mat_update_roi(cv::Mat& matrix, cv::Mat& patch,
 }
 
 // @evision c: mat_update_roi,evision_cv_mat_update_roi,1
-// @evision nif: def mat_update_roi(_opts \\ []), do: :erlang.nif_error(:undef)
+// @evision nif: def mat_update_roi(_opts \\ []), do: :erlang.nif_error(:undefinedined)
 static ERL_NIF_TERM evision_cv_mat_update_roi(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;
@@ -342,7 +342,7 @@ static ERL_NIF_TERM evision_cv_mat_update_roi(ErlNifEnv *env, int argc, const ER
 }
 
 // @evision c: mat_clone,evision_cv_mat_clone,1
-// @evision nif: def mat_clone(_opts \\ []), do: :erlang.nif_error(:undef)
+// @evision nif: def mat_clone(_opts \\ []), do: :erlang.nif_error(:undefinedined)
 static ERL_NIF_TERM evision_cv_mat_clone(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;
@@ -365,7 +365,7 @@ static ERL_NIF_TERM evision_cv_mat_clone(ErlNifEnv *env, int argc, const ERL_NIF
 }
 
 // @evision c: mat_zeros, evision_cv_mat_zeros, 1
-// @evision nif: def mat_zeros(_opts \\ []), do: :erlang.nif_error(:undef)
+// @evision nif: def mat_zeros(_opts \\ []), do: :erlang.nif_error(:undefinedined)
 static ERL_NIF_TERM evision_cv_mat_zeros(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;
@@ -393,7 +393,7 @@ static ERL_NIF_TERM evision_cv_mat_zeros(ErlNifEnv *env, int argc, const ERL_NIF
 }
 
 // @evision c: mat_ones, evision_cv_mat_ones, 1
-// @evision nif: def mat_ones(_opts \\ []), do: :erlang.nif_error(:undef)
+// @evision nif: def mat_ones(_opts \\ []), do: :erlang.nif_error(:undefinedined)
 static ERL_NIF_TERM evision_cv_mat_ones(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;
@@ -421,7 +421,7 @@ static ERL_NIF_TERM evision_cv_mat_ones(ErlNifEnv *env, int argc, const ERL_NIF_
 }
 
 // @evision c: mat_arange, evision_cv_mat_arange, 1
-// @evision nif: def mat_arange(_opts \\ []), do: :erlang.nif_error(:undef)
+// @evision nif: def mat_arange(_opts \\ []), do: :erlang.nif_error(:undefinedined)
 static ERL_NIF_TERM evision_cv_mat_arange(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;
@@ -466,7 +466,7 @@ static ERL_NIF_TERM evision_cv_mat_arange(ErlNifEnv *env, int argc, const ERL_NI
 }
 
 // @evision c: mat_full, evision_cv_mat_full, 1
-// @evision nif: def mat_full(_opts \\ []), do: :erlang.nif_error(:undef)
+// @evision nif: def mat_full(_opts \\ []), do: :erlang.nif_error(:undefinedined)
 static ERL_NIF_TERM evision_cv_mat_full(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;
@@ -499,7 +499,7 @@ static ERL_NIF_TERM evision_cv_mat_full(ErlNifEnv *env, int argc, const ERL_NIF_
 }
 
 // @evision c: mat_at, evision_cv_mat_at, 1
-// @evision nif: def mat_at(_opts \\ []), do: :erlang.nif_error(:undef)
+// @evision nif: def mat_at(_opts \\ []), do: :erlang.nif_error(:undefinedined)
 static ERL_NIF_TERM evision_cv_mat_at(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;
@@ -571,7 +571,7 @@ static ERL_NIF_TERM evision_cv_mat_at(ErlNifEnv *env, int argc, const ERL_NIF_TE
 }
 
 // @evision c: mat_set_to, evision_cv_mat_set_to, 1
-// @evision nif: def mat_set_to(_opts \\ []), do: :erlang.nif_error(:undef)
+// @evision nif: def mat_set_to(_opts \\ []), do: :erlang.nif_error(:undefinedined)
 static ERL_NIF_TERM evision_cv_mat_set_to(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;
@@ -597,7 +597,7 @@ static ERL_NIF_TERM evision_cv_mat_set_to(ErlNifEnv *env, int argc, const ERL_NI
 }
 
 // @evision c: mat_dot, evision_cv_mat_dot, 1
-// @evision nif: def mat_dot(_opts \\ []), do: :erlang.nif_error(:undef)
+// @evision nif: def mat_dot(_opts \\ []), do: :erlang.nif_error(:undefinedined)
 static ERL_NIF_TERM evision_cv_mat_dot(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;
@@ -620,7 +620,7 @@ static ERL_NIF_TERM evision_cv_mat_dot(ErlNifEnv *env, int argc, const ERL_NIF_T
 }
 
 // @evision c: mat_channels, evision_cv_mat_channels, 1
-// @evision nif: def mat_channels(_opts \\ []), do: :erlang.nif_error(:undef)
+// @evision nif: def mat_channels(_opts \\ []), do: :erlang.nif_error(:undefinedined)
 static ERL_NIF_TERM evision_cv_mat_channels(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;
@@ -642,7 +642,7 @@ static ERL_NIF_TERM evision_cv_mat_channels(ErlNifEnv *env, int argc, const ERL_
 }
 
 // @evision c: mat_depth, evision_cv_mat_depth, 1
-// @evision nif: def mat_depth(_opts \\ []), do: :erlang.nif_error(:undef)
+// @evision nif: def mat_depth(_opts \\ []), do: :erlang.nif_error(:undefinedined)
 static ERL_NIF_TERM evision_cv_mat_depth(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;
@@ -664,7 +664,7 @@ static ERL_NIF_TERM evision_cv_mat_depth(ErlNifEnv *env, int argc, const ERL_NIF
 }
 
 // @evision c: mat_isSubmatrix, evision_cv_mat_isSubmatrix, 1
-// @evision nif: def mat_isSubmatrix(_opts \\ []), do: :erlang.nif_error(:undef)
+// @evision nif: def mat_isSubmatrix(_opts \\ []), do: :erlang.nif_error(:undefinedined)
 static ERL_NIF_TERM evision_cv_mat_isSubmatrix(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;
@@ -690,7 +690,7 @@ static ERL_NIF_TERM evision_cv_mat_isSubmatrix(ErlNifEnv *env, int argc, const E
 }
 
 // @evision c: mat_isContinuous, evision_cv_mat_isContinuous, 1
-// @evision nif: def mat_isContinuous(_opts \\ []), do: :erlang.nif_error(:undef)
+// @evision nif: def mat_isContinuous(_opts \\ []), do: :erlang.nif_error(:undefinedined)
 static ERL_NIF_TERM evision_cv_mat_isContinuous(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;
@@ -716,7 +716,7 @@ static ERL_NIF_TERM evision_cv_mat_isContinuous(ErlNifEnv *env, int argc, const 
 }
 
 // @evision c: mat_total, evision_cv_mat_total, 1
-// @evision nif: def mat_total(_opts \\ []), do: :erlang.nif_error(:undef)
+// @evision nif: def mat_total(_opts \\ []), do: :erlang.nif_error(:undefinedined)
 static ERL_NIF_TERM evision_cv_mat_total(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;
@@ -748,7 +748,7 @@ static ERL_NIF_TERM evision_cv_mat_total(ErlNifEnv *env, int argc, const ERL_NIF
 }
 
 // @evision c: mat_elemSize, evision_cv_mat_elemSize, 1
-// @evision nif: def mat_elemSize(_opts \\ []), do: :erlang.nif_error(:undef)
+// @evision nif: def mat_elemSize(_opts \\ []), do: :erlang.nif_error(:undefinedined)
 static ERL_NIF_TERM evision_cv_mat_elemSize(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;
@@ -769,7 +769,7 @@ static ERL_NIF_TERM evision_cv_mat_elemSize(ErlNifEnv *env, int argc, const ERL_
 }
 
 // @evision c: mat_elemSize1, evision_cv_mat_elemSize1, 1
-// @evision nif: def mat_elemSize1(_opts \\ []), do: :erlang.nif_error(:undef)
+// @evision nif: def mat_elemSize1(_opts \\ []), do: :erlang.nif_error(:undefinedined)
 static ERL_NIF_TERM evision_cv_mat_elemSize1(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;
@@ -790,7 +790,7 @@ static ERL_NIF_TERM evision_cv_mat_elemSize1(ErlNifEnv *env, int argc, const ERL
 }
 
 // @evision c: mat_raw_type, evision_cv_mat_raw_type, 1
-// @evision nif: def mat_raw_type(_opts \\ []), do: :erlang.nif_error(:undef)
+// @evision nif: def mat_raw_type(_opts \\ []), do: :erlang.nif_error(:undefinedined)
 static ERL_NIF_TERM evision_cv_mat_raw_type(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;
@@ -811,7 +811,7 @@ static ERL_NIF_TERM evision_cv_mat_raw_type(ErlNifEnv *env, int argc, const ERL_
 }
 
 // @evision c: mat_dims, evision_cv_mat_dims, 1
-// @evision nif: def mat_dims(_opts \\ []), do: :erlang.nif_error(:undef)
+// @evision nif: def mat_dims(_opts \\ []), do: :erlang.nif_error(:undefinedined)
 static ERL_NIF_TERM evision_cv_mat_dims(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;
@@ -832,7 +832,7 @@ static ERL_NIF_TERM evision_cv_mat_dims(ErlNifEnv *env, int argc, const ERL_NIF_
 }
 
 // @evision c: mat_size, evision_cv_mat_size, 1
-// @evision nif: def mat_size(_opts \\ []), do: :erlang.nif_error(:undef)
+// @evision nif: def mat_size(_opts \\ []), do: :erlang.nif_error(:undefinedined)
 static ERL_NIF_TERM evision_cv_mat_size(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;
@@ -856,7 +856,7 @@ static ERL_NIF_TERM evision_cv_mat_size(ErlNifEnv *env, int argc, const ERL_NIF_
 }
 
 // @evision c: mat_as_shape, evision_cv_mat_as_shape, 1
-// @evision nif: def mat_as_shape(_opts \\ []), do: :erlang.nif_error(:undef)
+// @evision nif: def mat_as_shape(_opts \\ []), do: :erlang.nif_error(:undefinedined)
 static ERL_NIF_TERM evision_cv_mat_as_shape(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;
@@ -880,7 +880,7 @@ static ERL_NIF_TERM evision_cv_mat_as_shape(ErlNifEnv *env, int argc, const ERL_
 }
 
 // @evision c: mat_last_dim_as_channel, evision_cv_mat_last_dim_as_channel, 1
-// @evision nif: def mat_last_dim_as_channel(_opts \\ []), do: :erlang.nif_error(:undef)
+// @evision nif: def mat_last_dim_as_channel(_opts \\ []), do: :erlang.nif_error(:undefinedined)
 static ERL_NIF_TERM evision_cv_mat_last_dim_as_channel(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;

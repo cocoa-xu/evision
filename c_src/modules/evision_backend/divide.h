@@ -5,7 +5,7 @@
 #include "../../ArgInfo.hpp"
 
 // @evision c: mat_divide, evision_cv_mat_divide, 1
-// @evision nif: def mat_divide(_opts \\ []), do: :erlang.nif_error(:undef)
+// @evision nif: def mat_divide(_opts \\ []), do: :erlang.nif_error(:undefinedined)
 static ERL_NIF_TERM evision_cv_mat_divide(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;
@@ -34,7 +34,7 @@ static ERL_NIF_TERM evision_cv_mat_divide(ErlNifEnv *env, int argc, const ERL_NI
 }
 
 // @evision c: mat_divide_typed, evision_cv_mat_divide_typed, 1
-// @evision nif: def mat_divide_typed(_opts \\ []), do: :erlang.nif_error(:undef)
+// @evision nif: def mat_divide_typed(_opts \\ []), do: :erlang.nif_error(:undefinedined)
 static ERL_NIF_TERM evision_cv_mat_divide_typed(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;

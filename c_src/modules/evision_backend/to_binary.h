@@ -5,7 +5,7 @@
 #include "../../ArgInfo.hpp"
 
 // @evision c: mat_to_binary,evision_cv_mat_to_binary,1
-// @evision nif: def mat_to_binary(_opts \\ []), do: :erlang.nif_error(:undef)
+// @evision nif: def mat_to_binary(_opts \\ []), do: :erlang.nif_error(:undefinedined)
 static ERL_NIF_TERM evision_cv_mat_to_binary(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;

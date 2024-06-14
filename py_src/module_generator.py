@@ -261,7 +261,7 @@ class ModuleGenerator(object):
             "elixir": {
                 "getter_template": ET.elixir_property_getter,
                 "nif_args": '_self',
-                "nif_template": Template('  def ${nif_name}(${nif_args}), do: :erlang.nif_error(:undef)\n'),
+                "nif_template": Template('  def ${nif_name}(${nif_args}), do: :erlang.nif_error(:undefined)\n'),
                 "self_spec": self_spec_in["elixir"],
                 'prop_spec': prop_spec_out["elixir"]
             },
@@ -301,7 +301,7 @@ class ModuleGenerator(object):
                 "elixir": {
                     "setter_template": ET.elixir_property_setter,
                     "nif_args": '_self, _prop',
-                    "nif_template": Template('  def ${nif_name}(${nif_args}), do: :erlang.nif_error(:undef)\n'),
+                    "nif_template": Template('  def ${nif_name}(${nif_args}), do: :erlang.nif_error(:undefined)\n'),
                     "self_spec_in": self_spec_in["elixir"],
                     "self_spec_out": self_spec_out["elixir"],
                     'prop_spec': prop_spec_in["elixir"]
@@ -373,7 +373,7 @@ class ModuleGenerator(object):
         function_templates = {
             "elixir": {
                 "nif_args": '_opts \\\\ []',
-                "nif_template": Template('  def ${nif_name}(${nif_args}), do: :erlang.nif_error(:undef)\n'),
+                "nif_template": Template('  def ${nif_name}(${nif_args}), do: :erlang.nif_error(:undefined)\n'),
             },
             "erlang": {
                 "nif_args": '_opts',
