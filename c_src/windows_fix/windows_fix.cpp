@@ -172,6 +172,18 @@ static ERL_NIF_TERM evision_windows_fix_run_once(ErlNifEnv* env, int argc, const
                     return ret_term;
                 }
             }
+        } else {
+#ifdef EVISION_ENABLE_CUDA
+            printf("Evision is compiled with CUDA support, but CUDA runtime directory is not set.\r\nPlease set EVISION_CUDA_RUNTIME_DIR environment variable to the directory containing CUDA runtime DLLs.\r\n\r\n");
+            printf("  If you're using cmd.exe, the command should be something like:\r\n\r\n");
+            printf("    set EVISION_CUDA_RUNTIME_DIR=C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v12.1\\bin\r\n\r\n");
+            printf("  Please replace the path with the actual path to CUDA runtime DLLs on your system.\r\n");
+            printf("  Also, please DO NOT QUOTE even if there are spaces in the path.\r\n\r\n");
+            printf("  If you're using PowerShell, the command should be something like:\r\n\r\n");
+            printf("    $Env:EVISION_CUDA_RUNTIME_DIR=\"C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v12.1\\bin\"\r\n\r\n");
+            printf("  Please replace the path with the actual path to CUDA runtime DLLs on your system.\r\n");
+            printf("  However, please DO ADD QUOTE if there are spaces in the path.\r\n\r\n");
+#endif
         }
         cuda_path_updated = true;
     }

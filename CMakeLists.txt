@@ -146,6 +146,9 @@ if(WIN32)
     add_library(windows_fix SHARED
         "${C_SRC}/windows_fix/windows_fix.cpp"
     )
+    if(EVISION_ENABLE_CUDA)
+        target_compile_definitions(windows_fix PRIVATE EVISION_ENABLE_CUDA)
+    endif()
     install(
         TARGETS windows_fix
         RUNTIME DESTINATION "${PRIV_DIR}"
