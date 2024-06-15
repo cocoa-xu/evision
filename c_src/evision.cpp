@@ -1255,8 +1255,9 @@ static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Scalar& s, const ArgInfo&
         return info.has_default || info.outputarg;
     }
 
-    double dval;
-    int ival;
+    double f64;
+    ErlNifSInt64 i64;
+    ErlNifUInt64 u64;
 
     if (enif_is_tuple(env, o)) {
         int n = 0;
@@ -1268,51 +1269,33 @@ static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Scalar& s, const ArgInfo&
         }
 
         for (int i = 0; i < n; i++) {
-            if (enif_get_double(env, terms[i], &dval)) {
-                s[i] = dval;
-            } else if (enif_get_int(env, terms[i], &ival)){
-                s[i] = (double)ival;
+            if (enif_get_double(env, terms[i], &f64)) {
+                s[i] = f64;
+            } else if (enif_get_int64(env, terms[i], (ErlNifSInt64 *)&i64)) {
+                s[i] = i64;
+            } else if (enif_get_uint64(env, terms[i], (ErlNifUInt64 *)&u64)) {
+                s[i] = u64;
             } else {
                 failmsg(env, "Scalar value for argument '%s' is not numeric", info.name);
                 return false;
             }
         }
         return true;
-    } else if (enif_is_list(env, o)) {
-        unsigned n = 0;
-        enif_get_list_length(env, o, &n);
-        if (n > 4) {
-            failmsg(env, "Scalar value for argument '%s' is longer than 4", info.name);
-            return false;
-        }
-
-        ERL_NIF_TERM head, tail, obj = o;
-        size_t i = 0;
-        while (i < n) {
-            if (enif_get_list_cell(env, obj, &head, &tail)) {
-                if (enif_get_double(env, head, &dval)) {
-                    s[i] = dval;
-                } else if (enif_get_int(env, head, &ival)){
-                    s[i] = (double)ival;
-                } else {
-                    failmsg(env, "Scalar value for argument '%s' is not numeric", info.name);
-                    return false;
-                }
-                obj = tail;
-                i++;
-            } else {
-                return false;
-            }
-        }
-    } else {
-        if (enif_get_double(env, o, &dval)) {
-            s[0] = dval;
-        } else if (enif_get_int(env, o, &ival)){
-            s[0] = (double)ival;
+    } else if (enif_is_number(env, o)) {
+        if (enif_get_double(env, o, &f64)) {
+            s[0] = f64;
+        } else if (enif_get_int64(env, o, (ErlNifSInt64 *)&i64)) {
+            s[0] = i64;
+        } else if (enif_get_uint64(env, o, (ErlNifUInt64 *)&u64)) {
+            s[0] = u64;
         } else {
-            failmsg(env, "Scalar value for argument '%s' is not numeric", info.name);
+            failmsg(env, "Scalar value for argument '%s' cannot fit in a double value", info.name);
             return false;
         }
+        return true;
+    } else {
+        failmsg(env, "Scalar value for argument '%s' is not numeric", info.name);
+        return false;
     }
 
     return true;
