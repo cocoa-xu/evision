@@ -869,7 +869,7 @@ static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Mat& m, const ArgInfo& in
                 return false;
             }
         }
-        for (i = sz; i < 4; i++) {
+        for (i = sz; i < sz2; i++) {
             m.at<double>(i) = 0.0;
         }
         return true;
