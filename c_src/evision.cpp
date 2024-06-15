@@ -848,7 +848,7 @@ static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Mat& m, const ArgInfo& in
         int sz = 0, i = 0;
         enif_get_tuple(env, o, &sz, &terms);
         const int sz2 = info.arithm_op_src ? std::max(4, sz) : sz;
-        m = Mat(sz, 1, CV_64F);
+        m = Mat(sz2, 1, CV_64F);
         for (i = 0; i < sz; i++)
         {
             int i32;
