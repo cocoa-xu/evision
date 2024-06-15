@@ -869,6 +869,9 @@ static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Mat& m, const ArgInfo& in
                 return false;
             }
         }
+        for (i = sz; i < 4; i++) {
+            m.at<double>(i) = 0.0;
+        }
         return true;
     }
 
@@ -1280,6 +1283,9 @@ static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Scalar& s, const ArgInfo&
                 return false;
             }
         }
+        for (int i = n; i < 4; i++) {
+            s[i] = 0;
+        }
         return true;
     } else if (enif_is_number(env, o)) {
         if (enif_get_double(env, o, &f64)) {
@@ -1291,6 +1297,9 @@ static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Scalar& s, const ArgInfo&
         } else {
             failmsg(env, "Scalar value for argument '%s' cannot fit in a double value", info.name);
             return false;
+        }
+        for (int i = 1; i < 4; i++) {
+            s[i] = 0;
         }
         return true;
     } else {
