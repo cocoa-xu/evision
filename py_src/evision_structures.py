@@ -57,10 +57,12 @@ videocapture_struct_elixir = '  @typedoc """\n' + \
     }
   end
 
+  @doc false
   def to_struct({:ok, cap = %{:class => Evision.VideoCapture}}) do
     {:ok, to_struct(cap)}
   end
 
+  @doc false
   def to_struct(pass_through) do
     Evision.Internal.Structurise.to_struct(pass_through)
   end
@@ -155,10 +157,12 @@ gpumat_struct_elixir = '  @typedoc """\n' + \
     }
   end
 
+  @doc false
   def to_struct({:ok, mat = %{:class => Evision.CUDA.GpuMat}}) do
     {:ok, to_struct(mat)}
   end
 
+  @doc false
   def to_struct(pass_through) do
     Evision.Internal.Structurise.to_struct(pass_through)
   end
@@ -221,16 +225,19 @@ generic_struct_template_elixir = Template(
     {:ok, %T{ref: ref}}
   end
 
+  @doc false
   def to_struct(%{class: ${atom_elixir_module_name}, ref: ref}) do
     %T{
       ref: ref
     }
   end
 
+  @doc false
   def to_struct(ret) do
     Evision.Internal.Structurise.to_struct(ret)
   end
   
+  @doc false
   def from_struct(%T{ref: ref}) do
     ref
   end
