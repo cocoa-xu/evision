@@ -54,6 +54,7 @@ defmodule Evision.Internal.Structurise do
   def to_compact_type({:s, 16}), do: :s16
   def to_compact_type({:s, 32}), do: :s32
   def to_compact_type({:s, 64}), do: :s64
+  def to_compact_type({:f, 16}), do: :f16
   def to_compact_type({:f, 32}), do: :f32
   def to_compact_type({:f, 64}), do: :f64
   def to_compact_type({:c, 32}), do: :c32

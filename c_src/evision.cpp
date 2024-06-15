@@ -431,6 +431,39 @@ typedef std::vector<std::vector<KeyPoint> > vector_vector_KeyPoint;
 
 enum { ARG_NONE = 0, ARG_MAT = 1, ARG_SCALAR = 2 };
 
+template <typename From, typename To>
+static inline auto _do_cast_type(const From * ptr) -> To {
+    return static_cast<To>(ptr[0]);
+}
+
+template <typename To>
+auto _do_cast_f16(uint16_t value) -> To {
+    // _do_cast_f16 only means to cast from half-precision float to float
+    // it should always be encoded in little-endian format
+    int n = 1;
+    if(*(char *)&n == 1) {
+        value = (value >> 8) | (value << 8);
+    }
+
+	uint32_t sn = (uint32_t)((value >> 15) & 0x1);
+	uint32_t exp = (value >> 10) & 0x1f;
+	uint32_t res = exp + 127 - 15;
+	uint32_t fc = value & 0x3ff;
+	
+	if (exp == 0) {
+		res = 0;
+	} else if (exp == 0x1f) {
+		res = 0xff;
+	}
+	
+	union {
+		float f;
+		uint32_t b;
+	} u;
+	u.b = (uint32_t)(sn << 31) | (uint32_t)(res << 23) | (uint32_t)(fc << 13);
+	return static_cast<To>(u.f);
+}
+
 static void * evision_cast(ErlNifBinary& bin, int cast_from, const std::vector<uint64_t> &sizes, const std::vector<uint64_t> &strides) {
     uint64_t num_elems = 1;
     for (size_t i = 0; i < sizes.size(); i++) {
@@ -497,8 +530,15 @@ static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Mat& m, const ArgInfo& in
         }
         const ERL_NIF_TERM *shapes;
         int ndims = 0;
+        int is_number = 0;
+        // iex> Nx.tensor(1, type: :u8).shape
+        // {} <- ndims == 0, so it is a number
         if (!enif_get_tuple(env, shape_term, &ndims, &shapes)) {
             return false;
+        }
+        if (ndims == 0) {
+            is_number = 1;
+            ndims = 1;
         }
 
         ERL_NIF_TERM data_term;
@@ -514,55 +554,61 @@ static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Mat& m, const ArgInfo& in
         ERL_NIF_TERM type_term;
         int type;
         int cast_from = 0;
+        // nx_tensor_type is only used when
+        // ( info.arithm_op_src ) && ( ndims == 1 ) && ( size[0] <= 4 )
+        int nx_tensor_type;
         if (!enif_get_map_value(env, o, kAtomType, &type_term)) {
             return false;
         }
         uint64_t originalElemSize;
         if (enif_is_identical(type_term, kAtomU8)) {
-            type = CV_8U;
+            nx_tensor_type = type = CV_8U;
             originalElemSize = 1;
         }
         else if (enif_is_identical(type_term, kAtomS8)) {
-            type = CV_8S;
+            nx_tensor_type = type = CV_8S;
             originalElemSize = 1;
         }
         else if (enif_is_identical(type_term, kAtomU16)) {
-            type = CV_16U;
+            nx_tensor_type = type = CV_16U;
             originalElemSize = 2;
         }
         else if (enif_is_identical(type_term, kAtomS16)) {
-            type = CV_16S;
+            nx_tensor_type = type = CV_16S;
             originalElemSize = 2;
         }
         else if (enif_is_identical(type_term, kAtomS32)) {
-            type = CV_32S;
+            nx_tensor_type = type = CV_32S;
             originalElemSize = 4;
         }
         else if (enif_is_identical(type_term, kAtomF16)) {
-            type = CV_16F;
+            nx_tensor_type = type = CV_16F;
             originalElemSize = 2;
         }
         else if (enif_is_identical(type_term, kAtomF32)) {
-            type = CV_32F;
+            nx_tensor_type = type = CV_32F;
             originalElemSize = 4;
         }
         else if (enif_is_identical(type_term, kAtomF64)) {
-            type = CV_64F;
+            nx_tensor_type = type = CV_64F;
             originalElemSize = 8;
         } else {
             if (enif_is_identical(type_term, kAtomS64)) {
                 type = CV_32S;
                 originalElemSize = 8;
+                nx_tensor_type = INT32_MAX;
                 needcast = true;
                 cast_from = 1;
             } else if (enif_is_identical(type_term, kAtomU64)) {
                 type = CV_32S;
                 originalElemSize = 8;
+                nx_tensor_type = INT32_MAX - 1;
                 needcast = true;
                 cast_from = 2;
             } else if (enif_is_identical(type_term, kAtomU32)) {
                 type = CV_32S;
                 originalElemSize = 4;
+                nx_tensor_type = INT32_MAX - 2;
                 needcast = true;
                 cast_from = 3;
             } else {
@@ -579,19 +625,26 @@ static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Mat& m, const ArgInfo& in
         }
         size_t elemsize = CV_ELEM_SIZE1(type);
         std::vector<uint64_t> _sizes(ndims);
-        for (int dim_i = 0; dim_i < ndims; dim_i++) {
-            ErlNifUInt64 u64;
-            ERL_NIF_TERM shape_i = shapes[dim_i];
-            if (enif_get_uint64(env, shape_i, &u64)) {
-                _sizes[dim_i] = u64;
-            } else {
-                return false;
+        if (is_number) {
+            _sizes[0] = 1;
+        } else {
+            for (int dim_i = 0; dim_i < ndims; dim_i++) {
+                ErlNifUInt64 u64;
+                ERL_NIF_TERM shape_i = shapes[dim_i];
+                if (enif_get_uint64(env, shape_i, &u64)) {
+                    _sizes[dim_i] = u64;
+                } else {
+                    return false;
+                }
             }
         }
+        
         std::vector<uint64_t> _strides(ndims);
         _strides[ndims - 1] = originalElemSize;
-        for (int dim_i = ndims - 2; dim_i >= 0; dim_i--) {
-            _strides[dim_i] = _strides[dim_i + 1] * _sizes[dim_i + 1];
+        if (is_number == 0) {
+            for (int dim_i = ndims - 2; dim_i >= 0; dim_i--) {
+                _strides[dim_i] = _strides[dim_i + 1] * _sizes[dim_i + 1];
+            }
         }
 
         // ---- debug ----
@@ -686,30 +739,59 @@ static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Mat& m, const ArgInfo& in
             }
         }
 
-        // // see https://github.com/opencv/opencv/issues/24057
-        // if ( ( info.arithm_op_src ) && ( ndims == 1 ) && ( size[0] <= 4 ) )
-        // {
-        //     const int sz  = size[0]; // Real Data Length(1, 2, 3 or 4)
-        //     const int sz2 = 4;       // Scalar has 4 elements.
-        //     m = Mat::zeros(sz2, 1, CV_64F);
+        // see https://github.com/opencv/opencv/issues/24057
+        // e.g., Nx.tensor([1,2,3,4]), Nx.tensor(1)
+        if ( ( info.arithm_op_src ) && ( ndims == 1 ) && ( size[0] <= 4 ) )
+        {
+            const int sz  = size[0]; // Real Data Length(1, 2, 3 or 4)
+            const int sz2 = 4;       // Scalar has 4 elements.
+            m = Mat::zeros(sz2, 1, CV_64F);
 
-        //     const char *base_ptr = PyArray_BYTES(oarr);
-        //     for(int i = 0; i < sz; i++ )
-        //     {
-        //         PyObject* oi = PyArray_GETITEM(oarr, base_ptr + step[0] * i);
-        //         if( PyInt_Check(oi) )
-        //             m.at<double>(i) = (double)PyInt_AsLong(oi);
-        //         else if( PyFloat_Check(oi) )
-        //             m.at<double>(i) = (double)PyFloat_AsDouble(oi);
-        //         else
-        //         {
-        //             failmsg("%s has some non-numerical elements", info.name);
-        //             m.release();
-        //             return false;
-        //         }
-        //     }
-        //     return true;
-        // }
+            const char *base_ptr = (const char *)data.data;
+            for(int i = 0; i < sz; i++ )
+            {
+                const void * oi = static_cast<const void *>(base_ptr + step[0] * i);
+                switch (nx_tensor_type)
+                {
+                case CV_8S:
+                    m.at<double>(i) = _do_cast_type<int8_t, double>((const int8_t *)oi);
+                    break;
+                case CV_8U:
+                    m.at<double>(i) = _do_cast_type<uint8_t, double>((const uint8_t *)oi);
+                    break;
+                case CV_16S:
+                    m.at<double>(i) = _do_cast_type<int16_t, double>((const int16_t *)oi);
+                    break;
+                case CV_16U:
+                    m.at<double>(i) = _do_cast_type<uint16_t, double>((const uint16_t *)oi);
+                    break;
+                case CV_16F:
+                    m.at<double>(i) = _do_cast_f16<double>(*(const uint16_t *)oi);
+                    break;
+                case CV_32S:
+                    m.at<double>(i) = _do_cast_type<int32_t, double>((const int32_t *)oi);
+                    break;
+                case CV_32F:
+                    m.at<double>(i) = _do_cast_type<float, double>((const float *)oi);
+                    break;
+                case CV_64F:
+                    m.at<double>(i) = _do_cast_type<double, double>((const double *)oi);
+                    break;
+                case INT32_MAX:
+                    m.at<double>(i) = _do_cast_type<int64_t, double>((const int64_t *)oi);
+                    break;
+                case INT32_MAX - 1:
+                    m.at<double>(i) = _do_cast_type<uint64_t, double>((const uint64_t *)oi);
+                    break;
+                case INT32_MAX - 2:
+                    m.at<double>(i) = _do_cast_type<uint32_t, double>((const uint32_t *)oi);
+                    break;
+                default:
+                    break;
+                }
+            }
+            return true;
+        }
 
         // handle degenerate case
         // FIXIT: Don't force 1D for Scalars
@@ -731,10 +813,12 @@ static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Mat& m, const ArgInfo& in
     if (enif_get_int(env, o, &i32))
     {
         double v[] = {static_cast<double>(i32), 0., 0., 0.};
-        // todo: update gen2.py so we can know if it's arithm_op_src
-        // because for arithm_op_src, normally
-        // cv.XXX(x) means cv.XXX( (x, 0., 0., 0.) );
-        // However cv.add(mat,x) means cv::add(mat, (x,x,x,x) ). <- if arithm_op_src
+        if (info.arithm_op_src)
+        {
+            // Normally cv.XXX(x) means cv.XXX( (x, 0., 0., 0.) );
+            // However  cv.add(mat,x) means cv::add(mat, (x,x,x,x) ).
+            v[1] = v[2] = v[3] = v[0];
+        }
         m = Mat(4, 1, CV_64F, v).clone();
         return true;
     }
@@ -743,6 +827,12 @@ static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Mat& m, const ArgInfo& in
     if (enif_get_double(env, o, &f64))
     {
         double v[] = {f64, 0., 0., 0.};
+        if (info.arithm_op_src)
+        {
+            // Normally cv.XXX(x) means cv.XXX( (x, 0., 0., 0.) );
+            // However  cv.add(mat,x) means cv::add(mat, (x,x,x,x) ).
+            v[1] = v[2] = v[3] = v[0];
+        }
         m = Mat(4, 1, CV_64F, v).clone();
         return true;
     }
@@ -752,6 +842,7 @@ static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Mat& m, const ArgInfo& in
         const ERL_NIF_TERM *terms;
         int sz = 0, i = 0;
         enif_get_tuple(env, o, &sz, &terms);
+        const int sz2 = info.arithm_op_src ? std::max(4, sz) : sz;
         m = Mat(sz, 1, CV_64F);
         for (i = 0; i < sz; i++)
         {

@@ -10,6 +10,17 @@
 ### Changes
 - General improvements to the typespecs. Enumerators now also have their own modules.
 - Experimental support for using Nx.tensor directly without calling helper functions like `Evision.Mat.from_nx/1`, `Evision.Mat.from_nx_2d/1` and `Evision.Mat.last_dim_as_channel/1` .
+- Support `/AOS` (arithmetic op src) marks in OpenCV source code.
+
+  This should make evision's behaviour in line with OpenCV (C++ and Python).
+
+  For example, in `Evision.add/2`, the expected behaviour should be different when src1/src2 are single number and they are tuple/array.
+
+  `add(src, X)` where `X` is a number (or `Nx.tensor(X)`), it means `add(src, {X,X,X,X})`
+
+  while `add(src, {X})` (or `add(src, Nx.tensor([X]))`) means `add(src, {X,0,0,0})`.
+- Allow a single number to be passed as `Evision.Mat.maybe_mat_in()`.
+- Allow a n-tuple (containing n numbers) to be passed as `Evision.Mat.maybe_mat_in()`.
 
 ### Fixes
 - Fixed Erlang bindings when converting from Elixir structs to Erlang records and vice versa.

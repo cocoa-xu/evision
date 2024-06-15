@@ -1740,7 +1740,7 @@ def map_argtype_to_guard_elixir(argname, argtype, classname: Optional[str] = Non
         if struct_name == 'Evision.Feature2D':
             return f''
         if struct_name == 'Evision.Mat':
-            return f'(is_struct({argname}, Evision.Mat) or is_struct({argname}, Nx.Tensor))'
+            return f'(is_struct({argname}, Evision.Mat) or is_struct({argname}, Nx.Tensor) or is_number({argname}) or is_tuple({argname}))'
         else:
             return f'is_struct({argname}, {struct_name})'
     elif 'Volume' == argtype:

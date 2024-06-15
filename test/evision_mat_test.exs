@@ -4,6 +4,36 @@ defmodule Evision.Mat.Test do
   alias Evision.Mat
 
   @tag :nx
+  test "arithmetic op src should behave the same as in C++/Python" do
+    shape = {3, 4, 3}
+    mat = Evision.Mat.zeros(shape, :u8)
+    zeros = Nx.tensor(0, type: :u8) |> Nx.broadcast(shape)
+    assert 1 == Nx.to_number(Nx.all_close(
+      zeros,
+      Evision.Mat.to_nx(mat, {Nx.BinaryBackend, []})
+    ))
+
+    expected_results = Nx.tensor(1, type: :u8) |> Nx.broadcast(shape)
+    result = Evision.add(mat, Nx.tensor([1], type: :u8))
+    assert 1 == Nx.to_number(Nx.all_close(
+      expected_results,
+      Evision.Mat.to_nx(result, {Nx.BinaryBackend, []})
+    ))
+
+    result = Evision.add(mat, Nx.tensor(1, type: :u8))
+    assert 1 == Nx.to_number(Nx.all_close(
+      expected_results,
+      Evision.Mat.to_nx(result, {Nx.BinaryBackend, []})
+    ))
+
+    result = Evision.add(mat, 1)
+    assert 1 == Nx.to_number(Nx.all_close(
+      expected_results,
+      Evision.Mat.to_nx(result, {Nx.BinaryBackend, []})
+    ))
+  end
+
+  @tag :nx
   test "use Nx.tensor without calling last_dim_as_channel" do
     v = Nx.broadcast(Nx.tensor(1.0, type: :f64), {120, 120, 3})
 
