@@ -1,7 +1,7 @@
 # Changelog
 
-## main
-[Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.2.1) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.2.1)
+## v0.2.2 (2024-06-15)
+[Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.2.2) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.2.2)
 
 ### Added
 - Experimental support for CUDA shared memory via `Evision.CUDA.GpuMat.to_pointer/{1,2}`.
