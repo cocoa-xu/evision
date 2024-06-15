@@ -3,47 +3,136 @@ defmodule Evision.Mat.Test do
 
   alias Evision.Mat
 
-  @tag :nx
-  test "arithmetic op src should behave the same as in C++/Python" do
-    shape = {3, 4, 3}
-    mat = Evision.Mat.zeros(shape, :u8)
-    zeros = Nx.tensor(0, type: :u8) |> Nx.broadcast(shape)
-    assert 1 == Nx.to_number(Nx.all_close(
-      zeros,
-      Evision.Mat.to_nx(mat, {Nx.BinaryBackend, []})
-    ))
+  describe "arithmetic ops" do
+    @tag :nx
+    test "arithmetic op src should behave the same as in C++/Python" do
+      shape = {3, 4, 3}
+      mat = Evision.Mat.zeros(shape, :u8)
+      zeros = Nx.tensor(0, type: :u8) |> Nx.broadcast(shape)
+      assert 1 == Nx.to_number(Nx.all_close(
+        zeros,
+        Evision.Mat.to_nx(mat, {Nx.BinaryBackend, []})
+      ))
 
-    expected_results = Nx.tensor(1, type: :u8) |> Nx.broadcast(shape)
-    result = Evision.add(mat, Nx.tensor([1], type: :u8))
-    assert 1 == Nx.to_number(Nx.all_close(
-      expected_results,
-      Evision.Mat.to_nx(result, {Nx.BinaryBackend, []})
-    ))
+      expected_results = Nx.tensor(1, type: :u8) |> Nx.broadcast(shape)
+      result = Evision.add(mat, Nx.tensor([1], type: :u8))
+      assert 1 == Nx.to_number(Nx.all_close(
+        expected_results,
+        Evision.Mat.to_nx(result, {Nx.BinaryBackend, []})
+      ))
 
-    result = Evision.add(mat, Nx.tensor(1, type: :u8))
-    assert 1 == Nx.to_number(Nx.all_close(
-      expected_results,
-      Evision.Mat.to_nx(result, {Nx.BinaryBackend, []})
-    ))
+      result = Evision.add(mat, Nx.tensor(1, type: :u8))
+      assert 1 == Nx.to_number(Nx.all_close(
+        expected_results,
+        Evision.Mat.to_nx(result, {Nx.BinaryBackend, []})
+      ))
 
-    result = Evision.add(mat, 1)
-    assert 1 == Nx.to_number(Nx.all_close(
-      expected_results,
-      Evision.Mat.to_nx(result, {Nx.BinaryBackend, []})
-    ))
-  end
+      result = Evision.add(mat, 1)
+      assert 1 == Nx.to_number(Nx.all_close(
+        expected_results,
+        Evision.Mat.to_nx(result, {Nx.BinaryBackend, []})
+      ))
+    end
 
-  @tag :nx
-  test "arithmetic op src with :f16" do
-    mat_val = 1
-    tensor_val = 0.3456
-    result = Evision.add(mat_val, Nx.tensor(tensor_val, type: :f16))
+    @tag :nx
+    test "arithmetic op src with :f16" do
+      mat_val = 1
+      tensor_val = 0.3456
+      result = Evision.add(mat_val, Nx.tensor(tensor_val, type: :f16))
 
-    expected_results = Nx.tensor(mat_val + tensor_val, type: :f16)
-    assert 1 == Nx.to_number(Nx.all_close(
-      expected_results,
-      Evision.Mat.to_nx(result, {Nx.BinaryBackend, []})
-    ))
+      expected_results = Nx.tensor(mat_val + tensor_val, type: :f16)
+      assert 1 == Nx.to_number(Nx.all_close(
+        expected_results,
+        Evision.Mat.to_nx(result, {Nx.BinaryBackend, []})
+      ))
+    end
+
+    @tag :nx
+    test "arithmetic op src, int + int" do
+      # >>> cv2.add(1, 1)
+      # array([[2.],
+      #       [2.],
+      #       [2.],
+      #       [2.]])
+      mat_val = 1
+      result = Evision.add(mat_val, mat_val)
+
+      expected_results = Nx.tensor([[2], [2], [2], [2]], type: :f64)
+      assert 1 == Nx.to_number(Nx.all_close(
+        expected_results,
+        Evision.Mat.to_nx(result, {Nx.BinaryBackend, []})
+      ))
+    end
+
+    @tag :nx
+    test "arithmetic op src, int + tuple" do
+      # >>> cv2.add(1, (1, 2.2, 3.3))
+      # array([[2.],
+      #        [3.2],
+      #        [4.3],
+      #        [1.]])
+      mat_val = 1
+      result = Evision.add(mat_val, {1, 2.2, 3.3})
+
+      expected_results = Nx.tensor([[2.0], [3.2], [4.3], [1]], type: :f64)
+      assert 1 == Nx.to_number(Nx.all_close(
+        expected_results,
+        Evision.Mat.to_nx(result, {Nx.BinaryBackend, []})
+      ))
+    end
+
+    @tag :nx
+    test "arithmetic op src, 3-tuples + 3-tuples" do
+      # >>> cv2.add((1,2,3), (4,5,6))
+      # array([[5.],
+      #        [7.],
+      #        [9.0],
+      #        [0.]])
+      result = Evision.add({1,2,3}, {4,5,6})
+
+      expected_results = Nx.tensor([[5], [7], [9], [0]], type: :f64)
+      assert 1 == Nx.to_number(Nx.all_close(
+        expected_results,
+        Evision.Mat.to_nx(result, {Nx.BinaryBackend, []})
+      ))
+    end
+
+    @tag :nx
+    test "arithmetic op src, 3-tuple + 4-tuple" do
+      # >>> import cv2
+      # >>> import numpy as np
+      # >>> cv2.add((1,2,3), (1,2,3,4))
+      # array([[2.],
+      #        [4.],
+      #        [6.],
+      #        [4.]])
+      result = Evision.add({1,2,3}, {1,2,3,4})
+
+      expected_results = Nx.tensor([[2], [4], [6], [4]], type: :f64)
+      assert 1 == Nx.to_number(Nx.all_close(
+        expected_results,
+        Evision.Mat.to_nx(result, {Nx.BinaryBackend, []})
+      ))
+    end
+
+    @tag :nx
+    test "arithmetic op src, 3-tuple + 5-tuple" do
+      # >>> import cv2
+      # >>> import numpy as np
+      # >>> cv2.add((1,2,3), (4,5,6,7,8))
+      # array([[5.],
+      #        [6.],
+      #        [7.],
+      #        [8.]
+      #        [9.]])
+      result = Evision.add({1,2,3}, {4,5,6,7,8})
+
+      expected_results = Nx.tensor([[5], [6], [7], [8], [9]], type: :f64)
+      assert 1 == Nx.to_number(Nx.all_close(
+        expected_results,
+        Evision.Mat.to_nx(result, {Nx.BinaryBackend, []})
+      ))
+    end
   end
 
   @tag :nx
