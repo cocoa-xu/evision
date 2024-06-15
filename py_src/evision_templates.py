@@ -341,7 +341,7 @@ gen_template_check_self = Template("""
 gen_template_safe_check_self = Template("""
     ERL_NIF_TERM self = argv[0];
     ${cname} self1;
-    const ArgInfo selfArg("self", false);
+    const ArgInfo selfArg("self", 0);
     if (!evision_to_safe(env, self, self1, selfArg)) {
         return failmsgp(env, "cannot get `${cname}` from `self`: mismatched type or invalid resource?");
     }
@@ -432,7 +432,7 @@ template<> bool evision_to(ErlNifEnv *env, ERL_NIF_TERM src, ${cname}& dst, cons
 gen_template_set_prop_from_map = Template("""
     if( enif_get_map_value(env, src, evision::nif::atom(env, "$propname"), &tmp) )
     {
-        ok = evision_to_safe(env, tmp, dst.$propname, ArgInfo("$propname", false));
+        ok = evision_to_safe(env, tmp, dst.$propname, ArgInfo("$propname", 0));
         if(!ok) return false;
     }""")
 
@@ -502,7 +502,7 @@ static ERL_NIF_TERM evision_${name}_set_${member}(ErlNifEnv *env, int argc, cons
         return failmsgp(env, "cannot get `${storage_name}` from `self`: mismatched type or invalid resource?");
     }
 
-    if (evision_to_safe(env, argv[1], self_ptr->${member}, ArgInfo("${member}", false))) {
+    if (evision_to_safe(env, argv[1], self_ptr->${member}, ArgInfo("${member}", 0))) {
         bool success;
         return evision_from_as_map<${storage_name}>(env, *self_ptr, self, "Elixir.Evision.${elixir_module_name}", success);
     }
@@ -526,7 +526,7 @@ static ERL_NIF_TERM evision_${name}_set_${member}(ErlNifEnv *env, int argc, cons
     std::map<std::string, ERL_NIF_TERM> erl_terms;
     evision::nif::parse_arg(env, 1, argv, erl_terms);
 
-    if (evision_to_safe(env, evision_get_kw(env, erl_terms, "${member}"), _self_${access}${member}, ArgInfo("${member}", false))) {
+    if (evision_to_safe(env, evision_get_kw(env, erl_terms, "${member}"), _self_${access}${member}, ArgInfo("${member}", 0))) {
         bool success;
         return evision_from_as_map<${storage_name}>(env, _self_, self, "Elixir.Evision.${elixir_module_name}", success);
     }
@@ -549,7 +549,7 @@ static ERL_NIF_TERM evision_${name}_set_${member}(ErlNifEnv *env, int argc, cons
         return failmsgp(env, "Incorrect type of object (must be '${name}' or its derivative)");
     }
 
-    if (evision_to_safe(env, argv[1], _self_algo_${access}${member}, ArgInfo("${member}", false))) {
+    if (evision_to_safe(env, argv[1], _self_algo_${access}${member}, ArgInfo("${member}", 0))) {
         bool success;
         return evision_from_as_map<${storage_name}>(env, *self_ptr, self, "Elixir.Evision.${elixir_module_name}", success);
     }
