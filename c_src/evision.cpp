@@ -790,6 +790,11 @@ static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Mat& m, const ArgInfo& in
                     break;
                 }
             }
+            if (info.arithm_op_src && is_number) {
+                // Normally cv.XXX(x) means cv.XXX( (x, 0., 0., 0.) );
+                // However  cv.add(mat,x) means cv::add(mat, (x,x,x,x) ).
+                m.at<double>(1) = m.at<double>(2) = m.at<double>(3) = m.at<double>(0);
+            }
             return true;
         }
 
