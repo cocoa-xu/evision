@@ -81,11 +81,13 @@ class ArgInfo(object):
                            "vector_GpuMat", "vector_cuda_GpuMat",
                            "UMat", "vector_UMat"] # or self.tp.startswith("vector")
 
-    def crepr(self):
+    def crepr(self, overwrite_defval=None):
         # has_default = 0
         # if (defval is not None and len(defval) > 0) or self.defval == self.tp + "()":
         #     has_default = 1
         has_default = self.defval == self.tp + "()"
+        if overwrite_defval is not None and len(overwrite_defval) > 0:
+            has_default = 1
         arg  = 0x01 if self.outputarg else 0x0
         arg += 0x02 if self.arithm_op_src_arg else 0x0
         arg += 0x04 if self.pathlike else 0x0
