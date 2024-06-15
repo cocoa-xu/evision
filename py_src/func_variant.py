@@ -401,7 +401,8 @@ class FuncVariant(object):
                     argtype1 = map_argtype_in_docs('elixir', argtype) #, classname=self.classname)
                     if argtype1.startswith("Evision."):
                         if not argtype1.endswith(".t()"):
-                            argtype1 = f"{argtype1}.t()"
+                            if (argtype1[9] <= 'Z' and argtype1[9] >= 'A'):
+                                argtype1 = f"{argtype1}.t()"
                     normalized_arg_name = map_argname('elixir', arg_name)
                     normalized_arg_name = normalized_arg_name.replace(":", "")
                     if parameter_info.get(normalized_arg_name, None) is None:
@@ -422,7 +423,8 @@ class FuncVariant(object):
                     argtype1 = map_argtype_in_docs('elixir', argtype)# , classname=self.classname)
                     if argtype1.startswith("Evision."):
                         if not argtype1.endswith(".t()"):
-                            argtype1 = f"{argtype1}.t()"
+                            if (argtype1[9] <= 'Z' and argtype1[9] >= 'A'):
+                                argtype1 = f"{argtype1}.t()"
                     normalized_arg_name = map_argname('elixir', arg_name)
                     normalized_arg_name = normalized_arg_name.replace(":", "")
                     if parameter_info.get(normalized_arg_name, None) is None:
