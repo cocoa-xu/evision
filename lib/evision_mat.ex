@@ -155,16 +155,25 @@ defmodule Evision.Mat do
     ref
   end
 
+  @doc false
   def from_struct(%Nx.Tensor{} = tensor) do
     Evision.Internal.Structurise.from_struct(tensor)
   end
 
+  @doc false
   def from_struct(%{__struct__: :nx_tensor} = cast_tensor) do
     cast_tensor
   end
 
+  @doc false
   def from_struct(ref) when is_reference(ref) do
     ref
+  end
+
+  defimpl Nx.LazyContainer do
+    def traverse(%Evision.Mat{type: type, shape: shape} = mat, acc, fun) do
+      fun.(Nx.template(shape, type), fn -> Evision.Mat.to_nx(mat) end, acc)
+    end
   end
 
   @doc false
