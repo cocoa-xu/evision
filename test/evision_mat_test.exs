@@ -34,6 +34,19 @@ defmodule Evision.Mat.Test do
   end
 
   @tag :nx
+  test "arithmetic op src with :f16" do
+    mat_val = 1
+    tensor_val = 0.3456
+    result = Evision.add(mat_val, Nx.tensor(tensor_val, type: :f16))
+
+    expected_results = Nx.tensor(mat_val + tensor_val, type: :f16)
+    assert 1 == Nx.to_number(Nx.all_close(
+      expected_results,
+      Evision.Mat.to_nx(result, {Nx.BinaryBackend, []})
+    ))
+  end
+
+  @tag :nx
   test "use Nx.tensor without calling last_dim_as_channel" do
     v = Nx.broadcast(Nx.tensor(1.0, type: :f64), {120, 120, 3})
 
