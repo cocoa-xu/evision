@@ -441,7 +441,7 @@ auto _do_cast_f16(uint16_t value) -> To {
     // _do_cast_f16 only means to cast from half-precision float to float
     // it should always be encoded in little-endian format
     int n = 1;
-    if(*(char *)&n == 1) {
+    if(*(char *)&n != 1) {
         value = (value >> 8) | (value << 8);
     }
 
