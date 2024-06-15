@@ -5,16 +5,16 @@
 def evision_elixir_fixes(): 
     return [
         """
-    @spec imdecode(binary(), integer()) :: Evision.Mat.maybe_mat_out()
-    def imdecode(buf, flags) when is_integer(flags)
-    do
-        positional = [
-            buf: buf,
-            flags: flags
-        ]
-        :evision_nif.imdecode(positional)
-        |> Evision.Internal.Structurise.to_struct()
-    end
+  @spec imdecode(binary(), integer()) :: Evision.Mat.maybe_mat_out()
+  def imdecode(buf, flags) when is_integer(flags)
+  do
+      positional = [
+          buf: buf,
+          flags: flags
+      ]
+      :evision_nif.imdecode(positional)
+      |> Evision.Internal.Structurise.to_struct()
+  end
 """
     ]
 
