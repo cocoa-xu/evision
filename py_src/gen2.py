@@ -90,6 +90,17 @@ class BeamWrapperGenerator(object):
         self.evision_elixir.write('  import Kernel, except: [apply: 2, apply: 3, min: 2, max: 2]\n\n')
         self.evision_elixir.write('  @doc false\n')
         self.evision_elixir.write('  def to_struct(any), do: Evision.Internal.Structurise.to_struct(any)\n\n')
+        self.evision_elixir.write(
+'''
+  @typedoc """
+  Scalars are n-element tuples, where n can be 1, 2, 3, or 4.
+
+  When passing a single number `X` as a scalar, it will be converted to `{X, 0, 0, 0}`.
+
+  When passing a tuple with more than 4 elements, it will raise an error.
+  """
+  @type scalar :: number() | {number()} | {number(), number()} | {number(), number(), number()} | {number(), number(), number(), number()}
+''')
 
         self.evision_constant_elixir.write('defmodule Evision.Constant do\n')
         self.evision_constant_elixir.write('  import Bitwise\n')

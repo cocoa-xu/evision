@@ -21,8 +21,8 @@ static ERL_NIF_TERM evision_cv_videoCapture_waitAny(ErlNifEnv *env, int argc, co
     int64 timeoutNs=0;
     bool retval;
 
-    if( evision_to_safe(env, evision_get_kw(env, erl_terms, "streams"), ptr_streams, ArgInfo("streams", 0, 0)) && 
-        evision_to_safe(env, evision_get_kw(env, erl_terms, "timeoutNs"), timeoutNs, ArgInfo("timeoutNs", 0, 1)) )
+    if( evision_to_safe(env, evision_get_kw(env, erl_terms, "streams"), ptr_streams, ArgInfo("streams", 0)) && 
+        evision_to_safe(env, evision_get_kw(env, erl_terms, "timeoutNs"), timeoutNs, ArgInfo("timeoutNs", 0x8)) )
     {
         int error_flag = false;
         size_t n = ptr_streams.size();

@@ -10,15 +10,18 @@ inline_docs_code_type_re = re.compile(r'@code{.(.*)}')
 
 class FuncVariant(object):
     def __init__(self, classname: str, name: str, decl: list, isconstructor: bool, isphantom: bool = False):
-        self.classname = classname
-        self.from_base = False
-        self.base_classname = None
         self.name = self.wname = name
         self.isconstructor = isconstructor
         self.isphantom = isphantom
+        
+        # ---- added in evision start ----
         self.keyword_args = []
-
+        self.classname = classname
+        self.from_base = False
+        self.base_classname = None
         self.decl = decl
+        # ---- added in evision end ----
+        
         self.docstring = decl[5]
 
         self.rettype = decl[4] or handle_ptr(decl[1])
@@ -26,8 +29,14 @@ class FuncVariant(object):
             self.rettype = ""
         self.args = []
         self.array_counters = {}
-        for a in decl[3]:
-            ainfo = ArgInfo(a)
+        for arg_decl in decl[3]:
+            assert len(arg_decl) == 4, \
+                'ArgInfo contract is violated. Arg declaration should contain:' \
+                '"arg_type", "name", "default_value", "modifiers". '\
+                'Got tuple: {}'.format(arg_decl)
+
+            ainfo = ArgInfo(atype=arg_decl[0], name=arg_decl[1],
+                            default_value=arg_decl[2], modifiers=arg_decl[3])
             if ainfo.isarray and not ainfo.arraycvt:
                 c = ainfo.arraylen
                 c_arrlist = self.array_counters.get(c, [])
@@ -392,7 +401,8 @@ class FuncVariant(object):
                     argtype1 = map_argtype_in_docs('elixir', argtype) #, classname=self.classname)
                     if argtype1.startswith("Evision."):
                         if not argtype1.endswith(".t()"):
-                            argtype1 = f"{argtype1}.t()"
+                            if (argtype1[9] <= 'Z' and argtype1[9] >= 'A'):
+                                argtype1 = f"{argtype1}.t()"
                     normalized_arg_name = map_argname('elixir', arg_name)
                     normalized_arg_name = normalized_arg_name.replace(":", "")
                     if parameter_info.get(normalized_arg_name, None) is None:
@@ -413,7 +423,8 @@ class FuncVariant(object):
                     argtype1 = map_argtype_in_docs('elixir', argtype)# , classname=self.classname)
                     if argtype1.startswith("Evision."):
                         if not argtype1.endswith(".t()"):
-                            argtype1 = f"{argtype1}.t()"
+                            if (argtype1[9] <= 'Z' and argtype1[9] >= 'A'):
+                                argtype1 = f"{argtype1}.t()"
                     normalized_arg_name = map_argname('elixir', arg_name)
                     normalized_arg_name = normalized_arg_name.replace(":", "")
                     if parameter_info.get(normalized_arg_name, None) is None:

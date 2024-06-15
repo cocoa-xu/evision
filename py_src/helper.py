@@ -332,6 +332,8 @@ def map_argtype_to_type(argtype: str, classname: Optional[str] = None):
         return 'l'
     elif is_tuple_type(argtype):
         return 'T'
+    elif argtype in ['Scalar', 'cv::Scalar']:
+        return 'T'
     else:
         if is_struct(argtype, classname=classname):
             if argtype == 'UMat':
@@ -395,7 +397,7 @@ def is_basic_types(argtype: str):
     if argtype.startswith("vector<"):
         argtype = argtype[len("vector<"):-1]
         return is_basic_types(argtype)
-    return argtype in ['bool', 'float', 'double', 'string', 'void*', 'String', 'c_string'] or \
+    return argtype in ['bool', 'float', 'double', 'string', 'void*', 'String', 'c_string', 'Scalar', 'cv::Scalar'] or \
         is_int_type(argtype) or is_tuple_type(argtype) or is_enum_type(argtype, classname=None, decl=None)
 
 def is_int_type(argtype):
@@ -511,8 +513,6 @@ def is_tuple_type(argtype):
         'Point3f',
         'Point3d',
         'Size',
-        'Scalar',
-        'cv::Scalar',
     ]
     return argtype in tuple_types
 
@@ -1283,7 +1283,10 @@ def map_argtype_in_docs_elixir(kind: str, argtype: str, classname: str) -> str:
         'Mat': 'Evision.Mat',
         'std::string': 'String',
         'cv::String': 'String',
-        'RotatedRect': '{centre={x, y}, size={s1, s2}, angle}'
+        'RotatedRect': '{centre={x, y}, size={s1, s2}, angle}',
+        'Scalar': 'Evision.scalar()',
+        'cv::Scalar': 'Evision.scalar()',
+        'int': 'integer()',
     }
     mapped_type = mapping.get(argtype, None)
     if mapped_type is None:
@@ -1315,7 +1318,8 @@ def map_argtype_in_docs_erlang(kind: str, argtype: str, classname: str) -> str:
         'Mat': '#evision_mat{}',
         'std::string': 'binary()',
         'cv::String': 'binary()',
-        'RotatedRect': '{centre={x, y}, size={s1, s2}, angle}'
+        'RotatedRect': '{centre={x, y}, size={s1, s2}, angle}',
+        'int': 'integer()',
     }
     mapped_type = mapping.get(argtype, None)
     if mapped_type is None:
@@ -1356,7 +1360,6 @@ manual_type_spec_map_common = {
     'Size2i': '{number(), number()}',
     'Size2f': '{number(), number()}',
     'Size2d': '{number(), number()}',
-    'Scalar': '{number()} | {number(), number()} | {number(), number(), number()} | {number(), number(), number(), number()}',
     'cv::Point': '{number(), number()}',
     'Point': '{number(), number()}',
     'Point2i': '{integer(), integer()}',
@@ -1379,7 +1382,8 @@ manual_type_spec_elixir = {
     'CameraParams': 'Evision.Detail.CameraParams.t()',
     'KeyPoint': 'Evision.KeyPoint.t()',
     'ParamGrid': 'Evision.ML.ParamGrid.t()',
-    'Layer': 'Evision.DNN.Layer.t()'
+    'Layer': 'Evision.DNN.Layer.t()',
+    'Scalar': 'Evision.scalar()',
 }
 
 manual_type_spec_erlang = {
@@ -1391,7 +1395,8 @@ manual_type_spec_erlang = {
     'CameraParams': '#evision_detail_cameraparams{}',
     'KeyPoint': '#evision_keypoint{}',
     'ParamGrid': '#evision_ml_paramgrid{}',
-    'Layer': '#evision_dnn_layer{}'
+    'Layer': '#evision_dnn_layer{}',
+    'Scalar': 'number() | {number()} | {number(), number()} | {number(), number(), number()} | {number(), number(), number(), number()}',
 }
 
 def map_argtype_in_spec(kind: str, classname: str, argtype: str, is_in: bool, decl: list) -> str:
@@ -1733,6 +1738,8 @@ def map_argtype_to_guard_elixir(argname, argtype, classname: Optional[str] = Non
         return f'(is_tuple({argname}) or {argname} == :all)'
     elif is_tuple_type(argtype):
         return f'is_tuple({argname})'
+    elif argtype in ['Scalar', 'cv::Scalar']:
+        return f'(is_number({argname}) or is_tuple({argname}))'
     elif argtype == 'IndexParams' or argtype == 'SearchParams' or argtype == 'Moments':
         return f'is_map({argname})'
     elif is_struct(argtype, classname=classname):
@@ -1740,7 +1747,7 @@ def map_argtype_to_guard_elixir(argname, argtype, classname: Optional[str] = Non
         if struct_name == 'Evision.Feature2D':
             return f''
         if struct_name == 'Evision.Mat':
-            return f'(is_struct({argname}, Evision.Mat) or is_struct({argname}, Nx.Tensor))'
+            return f'(is_struct({argname}, Evision.Mat) or is_struct({argname}, Nx.Tensor) or is_number({argname}) or is_tuple({argname}))'
         else:
             return f'is_struct({argname}, {struct_name})'
     elif 'Volume' == argtype:
@@ -1773,6 +1780,8 @@ def map_argtype_to_guard_erlang(argname, argtype, classname: Optional[str] = Non
         return f'(is_tuple({argname}) or {argname} == all)'
     elif is_tuple_type(argtype):
         return f'is_tuple({argname})'
+    elif argtype in ['Scalar', 'cv::Scalar']:
+        return f'(is_number({argname}) or is_tuple({argname}))'
     elif argtype == 'IndexParams' or argtype == 'SearchParams' or argtype == 'Moments':
         return f'is_map({argname})'
     elif is_struct(argtype, classname=classname):

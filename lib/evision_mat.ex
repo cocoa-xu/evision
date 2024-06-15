@@ -97,19 +97,22 @@ defmodule Evision.Mat do
   @type maybe_mat_out :: Evision.Mat.t() | {:error, String.t()}
 
   @typedoc """
-  Input argument, `Evision.Mat`, `Nx.Tensor` or `#reference`.
+  Input argument, `Evision.Mat`, `Nx.Tensor`, `#reference`, or a single number, or a n-tuple of n numbers.
 
   - `Evision.Mat`, recommended to use.
-  - `Nx.Tensor`
+  - `Nx.Tensor`, recommended to use.
 
     Accepting this type so that it's easier to interact with a `Nx.Tensor`.
+
+  - `number()`.
+  - `tuple()`, should be a n-tuple of n numbers.
 
   - `reference()`, not recommended.
 
     Only some internal functions will pass the raw reference variables around.
 
   """
-  @type maybe_mat_in :: reference() | Evision.Mat.t() | Nx.Tensor.t()
+  @type maybe_mat_in :: reference() | Evision.Mat.t() | Nx.Tensor.t() | number() | tuple()
 
   @type enum :: integer()
   @doc enum: true
