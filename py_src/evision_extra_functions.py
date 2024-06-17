@@ -64,7 +64,54 @@ gpumat_to_pointer_elixir = '''  @doc """
   """
   @spec from_pointer(list(integer()), atom() | {atom(), integer()}, tuple()) :: Evision.CUDA.GpuMat.t() | {:error, String.t()}
   def from_pointer(device_pointer, dtype, shape) when is_list(device_pointer) and is_tuple(shape) do
-    :evision_nif.cuda_cuda_GpuMat_from_pointer([device_pointer: device_pointer, dtype: compact_type(dtype), shape: shape])
+    positional = [
+      device_pointer: device_pointer,
+      dtype: compact_type(dtype),
+      shape: shape
+    ]
+    :evision_nif.cuda_cuda_GpuMat_from_pointer(positional)
+    |> to_struct()
+  end
+
+  @doc """
+  Create CUDA GpuMat from a shared CUDA device pointer
+  
+  ##### Positional Arguments
+
+  - **device_pointer**, `list(integer())`.
+  
+    This can be either a local pointer or an IPC pointer.
+    
+    However, please note that IPC pointers have to be generated from 
+    another OS process (Erlang process doesn't count).
+  
+  - **dtype**, `tuple() | atom()`
+  
+    Data type.
+    
+  - **shape**, `tuple()`
+  
+    The shape of the shared image. It's expected to be either
+    
+    - `{height, width, channels}`, for any 2D image that has 1 or multiple channels
+    - `{height, width}`, for any 1-channel 2D image
+    - `{rows}`
+    
+  ##### Keyword Arguments
+
+  - **device_id**, `non_neg_integer`. 
+  
+    GPU Device ID, default to `0`.
+  """
+  @spec from_pointer(list(integer()), atom() | {atom(), integer()}, tuple(), [device_id: non_neg_integer()]) :: Evision.CUDA.GpuMat.t() | {:error, String.t()}
+  def from_pointer(device_pointer, dtype, shape, opts) when is_list(device_pointer) and is_tuple(shape) and is_list(opts) do
+    opts = Keyword.validate!(opts || [], [device_id: 0])
+    positional = [
+      device_pointer: device_pointer,
+      dtype: compact_type(dtype),
+      shape: shape
+    ]
+    :evision_nif.cuda_cuda_GpuMat_from_pointer(positional ++ Evision.Internal.Structurise.from_struct(opts))
     |> to_struct()
   end
 '''

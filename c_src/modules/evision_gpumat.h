@@ -72,11 +72,12 @@ static ERL_NIF_TERM evision_cv_cuda_cuda_GpuMat_from_pointer(ErlNifEnv *env, int
         std::vector<int64_t> device_pointer;
         std::vector<int64_t> shape;
         std::string dtype;
+        int device_id = 0;
 
-        if (!evision_to_safe(env, evision_get_kw(env, erl_terms, "device_pointer"), device_pointer, ArgInfo("device_pointer", 1))) {
+        if (!evision_to_safe(env, evision_get_kw(env, erl_terms, "device_pointer"), device_pointer, ArgInfo("device_pointer", 0))) {
             return enif_make_badarg(env);
         }
-        if (!evision_to_safe(env, evision_get_kw(env, erl_terms, "dtype"), dtype, ArgInfo("dtype", 1))) {
+        if (!evision_to_safe(env, evision_get_kw(env, erl_terms, "dtype"), dtype, ArgInfo("dtype", 0))) {
             return enif_make_badarg(env);
         }
         if (!evision::nif::get_tuple(env, evision_get_kw(env, erl_terms, "shape"), shape)) {
@@ -85,6 +86,7 @@ static ERL_NIF_TERM evision_cv_cuda_cuda_GpuMat_from_pointer(ErlNifEnv *env, int
         if (shape.size() > 3 || shape.size() == 0) {
             return evision::nif::error(env, "GpuMat expects shape to be 1 <= tuple_size(shape) <= 3");
         }
+        evision_to_safe(env, evision_get_kw(env, erl_terms, "device_id"), device_id, ArgInfo("device_id", 0x8));
 
         int height;
         int width = 1;
@@ -111,7 +113,7 @@ static ERL_NIF_TERM evision_cv_cuda_cuda_GpuMat_from_pointer(ErlNifEnv *env, int
                 bytePtr[i] = device_pointer[i];
             }
         } else {
-            auto result = get_pointer_for_ipc_handle(device_pointer);
+            auto result = get_pointer_for_ipc_handle(device_pointer, device_id);
             if (result.second) {
                 return evision::nif::error(env, "Unable to get pointer for IPC handle.");
             }
