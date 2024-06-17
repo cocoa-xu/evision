@@ -5,11 +5,21 @@
 
 gpumat_to_pointer_elixir = '''  @doc """
   Get raw pointers
+  
+  ##### Positional Arguments
+
+  - **self**. `Evision.CUDA.GpuMat.t()`
+  
+  ##### Keyword Arguments
+
+  - **mode**, either `:local` or `:cuda_ipc`
   """
+  @spec to_pointer(Evision.CUDA.GpuMat.t()) :: {:ok, list(integer())} | {:error, String.t()}
   def to_pointer(%{ref: ref}) do
     :evision_nif.cuda_cuda_GpuMat_to_pointer(img: ref, mode: :local)
   end
 
+  @spec to_pointer(Evision.CUDA.GpuMat.t(), [mode: :local | :cuda_ipc]) :: {:ok, list(integer())} | {:error, String.t()}
   def to_pointer(%{ref: ref}, opts) when is_list(opts) do
     opts = Keyword.validate!(opts || [], [mode: :local])
     :evision_nif.cuda_cuda_GpuMat_to_pointer([img: ref] ++ opts)
@@ -30,6 +40,27 @@ gpumat_to_pointer_elixir = '''  @doc """
 
   @doc """
   Create CUDA GpuMat from a shared CUDA device pointer
+  
+  ##### Positional Arguments
+
+  - **device_pointer**, `list(integer())`.
+  
+    This can be either a local pointer or an IPC pointer.
+    
+    However, please note that IPC pointers have to be generated from 
+    another OS process (Erlang process doesn't count).
+  
+  - **dtype**, `tuple() | atom()`
+  
+    Data type.
+    
+  - **shape**, `tuple()`
+  
+    The shape of the shared image. It's expected to be either
+    
+    - `{height, width, channels}`, for any 2D image that has 1 or multiple channels
+    - `{height, width}`, for any 1-channel 2D image
+    - `{rows}`
   """
   @spec from_pointer(list(integer()), atom() | {atom(), integer()}, tuple()) :: Evision.CUDA.GpuMat.t() | {:error, String.t()}
   def from_pointer(device_pointer, dtype, shape) when is_list(device_pointer) and is_tuple(shape) do
