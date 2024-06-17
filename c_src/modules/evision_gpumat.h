@@ -113,7 +113,7 @@ static ERL_NIF_TERM evision_cv_cuda_cuda_GpuMat_from_pointer(ErlNifEnv *env, int
         } else {
             auto result = get_pointer_for_ipc_handle(pointer_vec);
             if (result.second) {
-                return exla::nif::error(env, "Unable to get pointer for IPC handle.");
+                return evision::nif::error(env, "Unable to get pointer for IPC handle.");
             }
             ptr = result.first;
         }
