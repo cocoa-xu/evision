@@ -1,5 +1,6 @@
 #ifndef EVISION_MAT_UTILS_HPP
 #define EVISION_MAT_UTILS_HPP
+#pragma once
 
 int get_binary_type(const std::string& t, int l, int n, int& type) {
     if (t == "u") {
@@ -30,12 +31,65 @@ int get_binary_type(const std::string& t, int l, int n, int& type) {
             return true;
         }
     } else if (t == "f") {
+        if (l == 16) {
+            if (n != 0) type = CV_16FC(n);
+            else type = CV_16F;
+            return true;
+        }
         if (l == 32) {
             if (n != 0) type = CV_32FC(n);
             else type = CV_32F;
             return true;
         }
         if (l == 64) {
+            if (n != 0) type = CV_64FC(n);
+            else type = CV_64F;
+            return true;
+        }
+    }
+    return false;
+}
+
+int get_compact_type(const std::string& compact, int n, int& type) {
+    if (compact[0] == 'u') {
+        if (compact == "u8") {
+            if (n != 0) type = CV_8UC(n);
+            else type = CV_8U;
+            return true;
+        }
+        if (compact == "u16") {
+            if (n != 0) type = CV_16UC(n);
+            else type = CV_16U;
+            return true;
+        }
+    } else if (compact[0] == 's') {
+        if (compact == "s8") {
+            if (n != 0) type = CV_8SC(n);
+            else type = CV_8S;
+            return true;
+        }
+        if (compact == "s16") {
+            if (n != 0) type = CV_16SC(n);
+            else type = CV_16S;
+            return true;
+        }
+        if (compact == "s32") {
+            if (n != 0) type = CV_32SC(n);
+            else type = CV_32S;
+            return true;
+        }
+    } else if (compact[0] == 'f') {
+        if (compact == "f16") {
+            if (n != 0) type = CV_16FC(n);
+            else type = CV_16F;
+            return true;
+        }
+        if (compact == "f32") {
+            if (n != 0) type = CV_32FC(n);
+            else type = CV_32F;
+            return true;
+        }
+        if (compact == "f64") {
             if (n != 0) type = CV_64FC(n);
             else type = CV_64F;
             return true;
