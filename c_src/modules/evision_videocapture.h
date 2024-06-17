@@ -6,7 +6,7 @@
 #define EVISION_VIDEOCAPTURE_H
 
 // @evision c: videoCapture_waitAny,evision_cv_videoCapture_waitAny,1
-// @evision nif: def videoCapture_waitAny(_opts \\ []), do: :erlang.nif_error(:undefinedined)
+// @evision nif: def videoCapture_waitAny(_opts \\ []), do: :erlang.nif_error(:undefined)
 static ERL_NIF_TERM evision_cv_videoCapture_waitAny(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
     using namespace cv;

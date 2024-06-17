@@ -5,7 +5,7 @@
 #include "../../ArgInfo.hpp"
 
 // @evision c: mat_multiply, evision_cv_mat_multiply, 1
-// @evision nif: def mat_multiply(_opts \\ []), do: :erlang.nif_error(:undefinedined)
+// @evision nif: def mat_multiply(_opts \\ []), do: :erlang.nif_error(:undefined)
 static ERL_NIF_TERM evision_cv_mat_multiply(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;
@@ -34,7 +34,7 @@ static ERL_NIF_TERM evision_cv_mat_multiply(ErlNifEnv *env, int argc, const ERL_
 }
 
 // @evision c: mat_multiply_typed,evision_cv_mat_multiply_typed,1
-// @evision nif: def mat_multiply_typed(_opts \\ []), do: :erlang.nif_error(:undefinedined)
+// @evision nif: def mat_multiply_typed(_opts \\ []), do: :erlang.nif_error(:undefined)
 static ERL_NIF_TERM evision_cv_mat_multiply_typed(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;

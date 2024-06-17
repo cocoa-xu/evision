@@ -5,7 +5,7 @@
 #include "../../ArgInfo.hpp"
 
 // @evision c: mat_logical_xor, evision_cv_mat_logical_xor, 1
-// @evision nif: def mat_logical_xor(_opts \\ []), do: :erlang.nif_error(:undefinedined)
+// @evision nif: def mat_logical_xor(_opts \\ []), do: :erlang.nif_error(:undefined)
 static ERL_NIF_TERM evision_cv_mat_logical_xor(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;

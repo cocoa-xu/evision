@@ -6,7 +6,7 @@
 #include "../evision_mat_utils.hpp"
 
 // @evision c: mat_from_binary,evision_cv_mat_from_binary,1
-// @evision nif: def mat_from_binary(_opts \\ []), do: :erlang.nif_error(:undefinedined)
+// @evision nif: def mat_from_binary(_opts \\ []), do: :erlang.nif_error(:undefined)
 static ERL_NIF_TERM evision_cv_mat_from_binary(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;
@@ -75,7 +75,7 @@ static ERL_NIF_TERM evision_cv_mat_from_binary(ErlNifEnv *env, int argc, const E
 }
 
 // @evision c: mat_from_binary_by_shape,evision_cv_mat_from_binary_by_shape,1
-// @evision nif: def mat_from_binary_by_shape(_opts \\ []), do: :erlang.nif_error(:undefinedined)
+// @evision nif: def mat_from_binary_by_shape(_opts \\ []), do: :erlang.nif_error(:undefined)
 static ERL_NIF_TERM evision_cv_mat_from_binary_by_shape(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     using namespace cv;
     ERL_NIF_TERM error_term = 0;
