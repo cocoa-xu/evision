@@ -111,7 +111,7 @@ static ERL_NIF_TERM evision_cv_cuda_cuda_GpuMat_from_pointer(ErlNifEnv *env, int
                 bytePtr[i] = device_pointer[i];
             }
         } else {
-            auto result = get_pointer_for_ipc_handle(pointer_vec);
+            auto result = get_pointer_for_ipc_handle(device_pointer);
             if (result.second) {
                 return evision::nif::error(env, "Unable to get pointer for IPC handle.");
             }
