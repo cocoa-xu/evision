@@ -434,6 +434,7 @@ class ModuleGenerator(object):
             # i.e., function variant that has the most number of constraints will be the first element in the list
             func_guards_len_desc = list(reversed(argsort([len(g) for g in func_guards[kind]])))
             more_than_one_variant = len(func_guards_len_desc) > 1
+            named_args_generated = False
             # start from the variant with the most number of constraints/guards
             for i in func_guards_len_desc:
                 # generated binding code will be written to this variable
@@ -826,6 +827,33 @@ class ModuleGenerator(object):
                             typed_function += f'pub fn {self.to_gleam_func_name(module_func_name)}{func_name_with_arity}(self: self, {", ".join([f"{self.to_gleam_arg_name(func_variant.py_arglist[i][0])}: any{i}" for i in range(func_arity - 1)])}) -> any\n\n'
                     else:
                         typed_function += f'pub fn {self.to_gleam_func_name(module_func_name)}{func_name_with_arity}({", ".join([f"{self.to_gleam_arg_name(func_variant.py_arglist[i][0])}: any{i}" for i in range(func_arity)])}) -> any\n\n'
+                    
+                    if not named_args_generated:
+                        # lastly, generate one that uses named args
+                        named_args_generated = True
+                        named_args_code = StringIO()
+                        if kind == 'elixir':
+                            named_args_code.write(f'  @spec {module_func_name}(Keyword.t()) :: any() | {{:error, String.t()}}\n'
+                                f'  def {module_func_name}([{{arg, _}} | _] = named_args) when is_atom(arg) do\n'
+                                 '    Enum.map(named_args, fn {named_arg, value} -> {named_arg, Evision.Internal.Structurise.from_struct(value)} end)\n'
+                                f'    |> :evision_nif.{nif_name}()\n'
+                                 '    |> to_struct()\n'
+                                 '  end\n')
+                            self.add_function(kind, module_func_name, 1,
+                                guards_count=99,
+                                generated_code=named_args_code.getvalue()
+                            )
+                        elif kind in ['erlang', 'gleam']:
+                            named_args_code.write(
+                                f'{module_func_name}([{{ArgName, _}} | _] = NamedArgs) when is_atom(ArgName) ->\n'
+                                 '  NamedArgs_ = lists:foldl(fun({Arg, Value}, Acc) -> [{Arg, evision_internal_structurise:from_struct(Value)} | Acc] end, [], NamedArgs),\n'
+                                f'  Ret = evision_nif:{nif_name}(NamedArgs_),\n'
+                                "  to_struct(Ret).\n\n"
+                            )
+                            self.add_function(kind, module_func_name, 1,
+                                guards_count=99,
+                                generated_code=named_args_code.getvalue()
+                            )
                     self.add_function(kind, module_func_name, func_arity, guards_count=len(func_guard), generated_code=function_code.getvalue(), typed_function=typed_function)
 
     def to_gleam_func_name(self, module_func_name: str):
