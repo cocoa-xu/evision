@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.2.4 (2024-06-20)
+[Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.2.4) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.2.4)
+
+### Changes
+- Allow users to use named arguments.
+
 ## v0.2.3 (2024-06-17)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.2.3) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.2.3)
 
