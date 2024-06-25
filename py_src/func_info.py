@@ -539,3 +539,10 @@ class FuncInfo(object):
                 py_signatures.append(s)
 
         return code
+    
+    def get_all_named_args(self):
+        all_args = set()
+        for v in self.variants:
+            for a in v.args:
+                all_args.add(a.name)
+        return list(all_args)

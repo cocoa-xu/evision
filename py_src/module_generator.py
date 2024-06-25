@@ -833,8 +833,13 @@ class ModuleGenerator(object):
                         named_args_generated = True
                         named_args_code = StringIO()
                         if kind == 'elixir':
+                            all_named_args = func.get_all_named_args()
+                            keyword_validate = ''
+                            if len(all_named_args) > 0:
+                                keyword_validate = ",".join([f':{arg}' for arg in all_named_args])
+                                keyword_validate = f'\n    named_args = Keyword.validate!(named_args, [{keyword_validate}])'
                             named_args_code.write(f'  @spec {module_func_name}(Keyword.t()) :: any() | {{:error, String.t()}}\n'
-                                f'  def {module_func_name}([{{arg, _}} | _] = named_args) when is_atom(arg) do\n'
+                                f'  def {module_func_name}([{{arg, _}} | _] = named_args) when is_atom(arg) do{keyword_validate}\n'
                                  '    Enum.map(named_args, fn {named_arg, value} -> {named_arg, Evision.Internal.Structurise.from_struct(value)} end)\n'
                                 f'    |> :evision_nif.{nif_name}()\n'
                                  '    |> to_struct()\n'

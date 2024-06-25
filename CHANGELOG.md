@@ -1,5 +1,33 @@
 # Changelog
 
+## main
+[Browse the Repository](https://github.com/cocoa-xu/evision)
+
+### Changes
+- Validate possible keyword arguments for functions that accept named arguments.
+
+    ```elixir
+    iex> img = Evision.imread("test/testdata/dog.jpg")
+
+    # valid keyword argument
+    iex> Evision.applyColorMap(src: img, colormap: Evision.Constant.cv_COLORMAP_AUTUMN)
+    %Evision.Mat{
+      channels: 3,
+      dims: 2,
+      type: {:u, 8},
+      raw_type: 16,
+      shape: {576, 768, 3},
+      ref: #Reference<0.97833242.1116078104.245977>
+    }
+    
+    # list all possible keyword arguments if the user provides any invalid ones
+    iex> Evision.applyColorMap(src: img, colorMap: Evision.Constant.cv_COLORMAP_AUTUMN)
+    ** (ArgumentError) unknown keys [:colorMap] in [src: %Evision.Mat{channels: 3, dims: 2, type: {:u, 8}, raw_type: 16, shape: {576, 768, 3}, ref: #Reference<0.97833242.1116078110.246705>}, colorMap: 0], the allowed keys are: [:dst, :colormap, :userColor, :src]
+        (elixir 1.18.0-dev) lib/keyword.ex:362: Keyword.validate!/2
+        (evision 0.2.4) lib/generated/evision.ex:4603: Evision.applyColorMap/1
+        iex:4: (file)
+    ```
+
 ## v0.2.4 (2024-06-20)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.2.4) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.2.4)
 
