@@ -26,7 +26,11 @@ static ERL_NIF_TERM evision_cv_cuda_cuda_GpuMat_to_pointer(ErlNifEnv *env, int a
         Ptr<cv::cuda::GpuMat> * self1 = 0;
         if (evision_cuda_GpuMat_getp(env, self, self1)) {
             Ptr<cv::cuda::GpuMat> _self_ = *(self1);
-            ERL_NIF_TERM out_term;
+            if (_self_->isContinuous() == false) {
+                return evision::nif::error(env, "GpuMat must be continuous");
+            }
+
+            ERL_NIF_TERM out_term{};
             std::uintptr_t ptr = (std::uintptr_t)_self_->cudaPtr();
             if (pointer_kind == "local") {
                 ERL_NIF_TERM ptr_term = enif_make_ulong(env, ptr);
@@ -44,6 +48,9 @@ static ERL_NIF_TERM evision_cv_cuda_cuda_GpuMat_to_pointer(ErlNifEnv *env, int a
                     handle_bin.data[i] = pointer_vec[i];
                 }
                 out_term = enif_make_binary(env, &handle_bin);
+            }
+            else {
+                return evision::nif::error(env, "mode must be either 'local', 'cuda_ipc' or 'host_ipc'");
             }
             return evision::nif::ok(env, out_term);
         }
