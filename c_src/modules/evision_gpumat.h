@@ -26,31 +26,26 @@ static ERL_NIF_TERM evision_cv_cuda_cuda_GpuMat_to_pointer(ErlNifEnv *env, int a
         Ptr<cv::cuda::GpuMat> * self1 = 0;
         if (evision_cuda_GpuMat_getp(env, self, self1)) {
             Ptr<cv::cuda::GpuMat> _self_ = *(self1);
-            std::vector<unsigned char> pointer_vec;
+            ERL_NIF_TERM out_term;
             std::uintptr_t ptr = (std::uintptr_t)_self_->cudaPtr();
             if (pointer_kind == "local") {
-                unsigned char* bytePtr = reinterpret_cast<unsigned char*>(&ptr);
-                for (size_t i = 0; i < sizeof(void*); i++) {
-                    pointer_vec.push_back(bytePtr[i]);
-                }
+                ERL_NIF_TERM ptr_term = enif_make_ulong(env, ptr);
             }
             else if (pointer_kind == "cuda_ipc") {
                 auto result = get_cuda_ipc_handle(ptr);
                 if (result.second) {
                     return evision::nif::error(env, "Unable to get cuda IPC handle");
                 }
-                pointer_vec = result.first;
-            }
-            if (pointer_vec.size() == 0) {
-                return enif_make_badarg(env);
-            }
-            std::vector<ERL_NIF_TERM> handle_list(pointer_vec.size());
-            for (uint64_t i = 0; i < pointer_vec.size(); i++) {
-                handle_list[i] = enif_make_uint(env, pointer_vec[i]);
-            }
+                auto pointer_vec = result.first;
 
-            ERL_NIF_TERM handle_list_term = enif_make_list_from_array(env, handle_list.data(), pointer_vec.size());
-            return evision::nif::ok(env, handle_list_term);
+                ErlNifBinary handle_bin;
+                enif_alloc_binary(pointer_vec.size(), &handle_bin);
+                for (int i = 0; i < pointer_vec.size(); i++) {
+                    handle_bin.data[i] = pointer_vec[i];
+                }
+                out_term = enif_make_binary(env, &handle_bin);
+            }
+            return evision::nif::ok(env, out_term);
         }
     }
 
@@ -69,14 +64,26 @@ static ERL_NIF_TERM evision_cv_cuda_cuda_GpuMat_from_pointer(ErlNifEnv *env, int
     evision::nif::parse_arg(env, nif_opts_index, argv, erl_terms);
 
     {
-        std::vector<int64_t> device_pointer;
+        // 0: local, 1: cuda_ipc, 2: host_ipc
+        int pointer_kind = -1; 
+        void* ptr = nullptr;
+        unsigned long local_pointer = 0;
+        ErlNifBinary cuda_ipc_handle{};
+
         std::vector<int64_t> shape;
         std::string dtype;
         int device_id = 0;
 
-        if (!evision_to_safe(env, evision_get_kw(env, erl_terms, "device_pointer"), device_pointer, ArgInfo("device_pointer", 0))) {
-            return enif_make_badarg(env);
+        ERL_NIF_TERM device_pointer = evision_get_kw(env, erl_terms, "device_pointer");
+        if (enif_get_ulong(env, device_pointer, &local_pointer)) {
+            pointer_kind = 0;
+            ptr = reinterpret_cast<void*>(local_pointer);
+        } else if (enif_inspect_binary(env, device_pointer, &cuda_ipc_handle)) {
+            pointer_kind = 1;
+        } else {
+            return evision::nif::error(env, "device_pointer must be an integer or a binary");
         }
+
         if (!evision_to_safe(env, evision_get_kw(env, erl_terms, "dtype"), dtype, ArgInfo("dtype", 0))) {
             return enif_make_badarg(env);
         }
@@ -106,14 +113,8 @@ static ERL_NIF_TERM evision_cv_cuda_cuda_GpuMat_from_pointer(ErlNifEnv *env, int
             return evision::nif::error(env, "unsupported type");
         }
 
-        void* ptr = nullptr;
-        if (device_pointer.size() == sizeof(void*)) {
-            unsigned char* bytePtr = reinterpret_cast<unsigned char*>(&ptr);
-            for (size_t i = 0; i < sizeof(void*); i++) {
-                bytePtr[i] = device_pointer[i];
-            }
-        } else {
-            auto result = get_pointer_for_ipc_handle(device_pointer, device_id);
+        if (pointer_kind == 1) {
+            auto result = get_pointer_for_ipc_handle(cuda_ipc_handle.data, cuda_ipc_handle.size, device_id);
             if (result.second) {
                 return evision::nif::error(env, "Unable to get pointer for IPC handle.");
             }
