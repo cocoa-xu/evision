@@ -32,8 +32,13 @@ static ERL_NIF_TERM evision_cv_cuda_cuda_GpuMat_to_pointer(ErlNifEnv *env, int a
 
             ERL_NIF_TERM out_term{};
             std::uintptr_t ptr = (std::uintptr_t)_self_->cudaPtr();
+            // OpenCV doesn't provide a way to get the actual device size of the GpuMat
+            // but it should be at least rows * cols * channels * elemSize
+            size_t size_in_bytes = _self_->rows * _self_->cols * _self_->channels() * _self_->elemSize();
+            ERL_NIF_TERM size_term = enif_make_ulong(env, size_in_bytes);
             if (pointer_kind == "local") {
                 ERL_NIF_TERM ptr_term = enif_make_ulong(env, ptr);
+                out_term = enif_make_tuple2(env, ptr_term, size_term);
             }
             else if (pointer_kind == "cuda_ipc") {
                 auto result = get_cuda_ipc_handle(ptr);
@@ -47,7 +52,34 @@ static ERL_NIF_TERM evision_cv_cuda_cuda_GpuMat_to_pointer(ErlNifEnv *env, int a
                 for (int i = 0; i < pointer_vec.size(); i++) {
                     handle_bin.data[i] = pointer_vec[i];
                 }
-                out_term = enif_make_binary(env, &handle_bin);
+                ERL_NIF_TERM handle_term = enif_make_binary(env, &handle_bin);
+                out_term = enif_make_tuple2(env, handle_term, size_term);
+            }
+            else if (pointer_kind == "host_ipc") {
+                std::ostringstream handle_name_stream;
+                handle_name_stream << "evision:ipc:" << size_in_bytes << ":" << ptr;
+                std::string handle_name = handle_name_stream.str();
+                int fd = get_ipc_handle((char*)handle_name.c_str(), device_size);
+
+                if (fd == -1) {
+                    return exla::nif::error(env, "Unable to get IPC handle");
+                }
+
+                void* ipc_ptr = open_ipc_handle(fd, device_size);
+                if (ipc_ptr == nullptr) {
+                    return exla::nif::error(env, "Unable to open IPC handle");
+                }
+
+                memcpy(ipc_ptr, (void*)ptr, device_size);
+
+                ErlNifBinary handle_name_bin;
+                enif_alloc_binary(handle_name.size(), &handle_name_bin);
+                for (int i = 0; i < handle_name.size(); i++) {
+                    handle_name_bin.data[i] = handle_name[i];
+                }
+                ERL_NIF_TERM handle_name_term = enif_make_binary(env, &handle_name_bin);
+                ERL_NIF_TERM fd_term = enif_make_int(env, fd);
+                out_term = enif_make_tuple3(env, handle_name_term, fd_term, size_term);
             }
             else {
                 return evision::nif::error(env, "mode must be either 'local', 'cuda_ipc' or 'host_ipc'");

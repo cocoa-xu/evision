@@ -12,19 +12,50 @@ gpumat_to_pointer_elixir = '''  @doc """
   
   ##### Keyword Arguments
 
-  - **mode**, either `:local` or `:cuda_ipc`
+  - **mode**, one of `:local`, `:cuda_ipc`.
+  
+    - `:local`: Get a local CUDA pointer that can be used within current OS process.
+    - `:cuda_ipc`: Get a CUDA IPC pointer that can be used across OS processes.
+  
+    Default to `:local`.
   """
-  @spec to_pointer(Evision.CUDA.GpuMat.t()) :: {:ok, list(integer())} | {:error, String.t()}
+  @spec to_pointer(Evision.CUDA.GpuMat.t()) :: {:ok, %Evision.CUDA.GpuMat.Handle{}} | {:error, String.t()}
   def to_pointer(%{ref: ref}) do
-    :evision_nif.cuda_cuda_GpuMat_to_pointer(img: ref, mode: :local)
+    with {:ok, {handle, device_size}} <- :evision_nif.cuda_cuda_GpuMat_to_pointer(img: ref, mode: :local) do
+      {:ok, %Evision.CUDA.GpuMat.Handle{
+        type: :local,
+        handle: handle,
+        size: device_size,
+        device_id: nil
+      }}
+    end
   end
 
   @spec to_pointer(Evision.CUDA.GpuMat.t(), [mode: :local | :cuda_ipc]) :: {:ok, list(integer())} | {:error, String.t()}
-  def to_pointer(%{ref: ref}, opts) when is_list(opts) do
+  def to_pointer(%{ref: ref}, [mode: mode] = opts)
+  when is_list(opts) and mode in [:local, :cuda_ipc] do
     opts = Keyword.validate!(opts || [], [mode: :local])
-    :evision_nif.cuda_cuda_GpuMat_to_pointer([img: ref] ++ opts)
+    with {:ok, handle} <- :evision_nif.cuda_cuda_GpuMat_to_pointer([img: ref] ++ opts) do
+      mode = opts[:mode]
+      case {mode, handle} do
+        {:local, {handle, device_size}} -> 
+          {:ok, %Evision.CUDA.GpuMat.Handle{
+            type: :local,
+            handle: handle,
+            size: device_size,
+            device_id: nil
+          }}
+        {:cuda_ipc, {handle, device_size, device_id}} ->
+          {:ok, %Evision.CUDA.GpuMat.Handle{
+            type: :cuda_ipc,
+            handle: handle,
+            size: device_size,
+            device_id: device_id
+          }}
+      end
+    end
   end
-  
+
   defp compact_type(type) when is_atom(type), do: type
   defp compact_type({:s, 8}), do: :s8
   defp compact_type({:u, 8}), do: :u8
@@ -37,15 +68,30 @@ gpumat_to_pointer_elixir = '''  @doc """
   defp compact_type({:f, 16}), do: :f16
   defp compact_type({:f, 32}), do: :f32
   defp compact_type({:f, 64}), do: :f64
+  
+  defp dtype_byte_size(:s8), do: 1
+  defp dtype_byte_size(:u8), do: 1
+  defp dtype_byte_size(:s16), do: 2
+  defp dtype_byte_size(:u16), do: 2
+  defp dtype_byte_size(:s32), do: 4
+  defp dtype_byte_size(:u32), do: 4
+  defp dtype_byte_size(:s64), do: 8
+  defp dtype_byte_size(:u64), do: 8
+  defp dtype_byte_size(:f16), do: 2
+  defp dtype_byte_size(:f32), do: 4
+  defp dtype_byte_size(:f64), do: 8
+  defp dtype_byte_size(dtype) do
+    raise ArgumentError, "Unsupported data type: #{inspect(dtype)}"
+  end
 
   @doc """
   Create CUDA GpuMat from a shared CUDA device pointer
   
   ##### Positional Arguments
 
-  - **device_pointer**, `list(integer())`.
+  - **device_pointer**, `%Evision.CUDA.GpuMat.Handle{}`.
   
-    This can be either a local pointer or an IPC pointer.
+    This can be either a local pointer or a CUDA IPC pointer.
     
     However, please note that IPC pointers have to be generated from 
     another OS process (Erlang process doesn't count).
@@ -62,15 +108,22 @@ gpumat_to_pointer_elixir = '''  @doc """
     - `{height, width}`, for any 1-channel 2D image
     - `{rows}`
   """
-  @spec from_pointer(list(integer()), atom() | {atom(), integer()}, tuple()) :: Evision.CUDA.GpuMat.t() | {:error, String.t()}
-  def from_pointer(device_pointer, dtype, shape) when is_list(device_pointer) and is_tuple(shape) do
-    positional = [
-      device_pointer: device_pointer,
-      dtype: compact_type(dtype),
-      shape: shape
-    ]
-    :evision_nif.cuda_cuda_GpuMat_from_pointer(positional)
-    |> to_struct()
+  @spec from_pointer(%Evision.CUDA.GpuMat.Handle{}, atom() | {atom(), integer()}, tuple()) :: Evision.CUDA.GpuMat.t() | {:error, String.t()}
+  def from_pointer(%Evision.CUDA.GpuMat.Handle{type: kind, handle: handle, device_id: device_id, size: size}, dtype, shape) when is_tuple(shape) do
+    expected_size = Tuple.product(shape) * dtype_byte_size(dtype)
+    if size != expected_size do
+      {:error, "Size mismatch: expected #{expected_size}, got #{size}"}
+    else
+      positional = [
+        kind: kind,
+        handle: handle,
+        device_id: device_id,
+        dtype: compact_type(dtype),
+        shape: shape
+      ]
+      :evision_nif.cuda_cuda_GpuMat_from_pointer(positional)
+      |> to_struct()
+    end
   end
 
   @doc """
