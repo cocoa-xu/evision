@@ -2,7 +2,10 @@
 #define EVISION_OPENCV_GPUMAT_H
 
 #include <erl_nif.h>
+#include <sstream>
+#include <string>
 #include "evision_cuda.h"
+#include "evision_cuda_ipc.h"
 #include "../nif_utils.hpp"
 #include "evision_mat_utils.hpp"
 
@@ -56,21 +59,22 @@ static ERL_NIF_TERM evision_cv_cuda_cuda_GpuMat_to_pointer(ErlNifEnv *env, int a
                 out_term = enif_make_tuple2(env, handle_term, size_term);
             }
             else if (pointer_kind == "host_ipc") {
+#ifdef CUDA_HOST_IPC_ENABLED
                 std::ostringstream handle_name_stream;
                 handle_name_stream << "evision:ipc:" << size_in_bytes << ":" << ptr;
                 std::string handle_name = handle_name_stream.str();
-                int fd = get_ipc_handle((char*)handle_name.c_str(), device_size);
+                int fd = get_ipc_handle((char*)handle_name.c_str(), size_in_bytes);
 
                 if (fd == -1) {
                     return exla::nif::error(env, "Unable to get IPC handle");
                 }
 
-                void* ipc_ptr = open_ipc_handle(fd, device_size);
+                void* ipc_ptr = open_ipc_handle(fd, size_in_bytes);
                 if (ipc_ptr == nullptr) {
                     return exla::nif::error(env, "Unable to open IPC handle");
                 }
 
-                memcpy(ipc_ptr, (void*)ptr, device_size);
+                memcpy(ipc_ptr, (void*)ptr, size_in_bytes);
 
                 ErlNifBinary handle_name_bin;
                 enif_alloc_binary(handle_name.size(), &handle_name_bin);
@@ -80,9 +84,16 @@ static ERL_NIF_TERM evision_cv_cuda_cuda_GpuMat_to_pointer(ErlNifEnv *env, int a
                 ERL_NIF_TERM handle_name_term = enif_make_binary(env, &handle_name_bin);
                 ERL_NIF_TERM fd_term = enif_make_int(env, fd);
                 out_term = enif_make_tuple3(env, handle_name_term, fd_term, size_term);
+#else
+                return evision::nif::error(env, "mode = :host_ipc is not supported on this system.");
+#endif
             }
             else {
+#ifdef CUDA_HOST_IPC_ENABLED
                 return evision::nif::error(env, "mode must be either 'local', 'cuda_ipc' or 'host_ipc'");
+#else
+                return evision::nif::error(env, "mode must be either 'local' or 'cuda_ipc'");
+#endif
             }
             return evision::nif::ok(env, out_term);
         }
@@ -104,25 +115,20 @@ static ERL_NIF_TERM evision_cv_cuda_cuda_GpuMat_from_pointer(ErlNifEnv *env, int
 
     {
         // 0: local, 1: cuda_ipc, 2: host_ipc
-        int pointer_kind = -1; 
+        std::string pointer_kind;
         void* ptr = nullptr;
         unsigned long local_pointer = 0;
         ErlNifBinary cuda_ipc_handle{};
+        int fd = -1;
+        std::string memname;
 
         std::vector<int64_t> shape;
         std::string dtype;
         int device_id = 0;
 
-        ERL_NIF_TERM device_pointer = evision_get_kw(env, erl_terms, "device_pointer");
-        if (enif_get_ulong(env, device_pointer, &local_pointer)) {
-            pointer_kind = 0;
-            ptr = reinterpret_cast<void*>(local_pointer);
-        } else if (enif_inspect_binary(env, device_pointer, &cuda_ipc_handle)) {
-            pointer_kind = 1;
-        } else {
-            return evision::nif::error(env, "device_pointer must be an integer or a binary");
+        if (!evision_to_safe(env, evision_get_kw(env, erl_terms, "kind"), pointer_kind, ArgInfo("kind", 0))) {
+            return enif_make_badarg(env);
         }
-
         if (!evision_to_safe(env, evision_get_kw(env, erl_terms, "dtype"), dtype, ArgInfo("dtype", 0))) {
             return enif_make_badarg(env);
         }
@@ -133,7 +139,6 @@ static ERL_NIF_TERM evision_cv_cuda_cuda_GpuMat_from_pointer(ErlNifEnv *env, int
             return evision::nif::error(env, "GpuMat expects shape to be 1 <= tuple_size(shape) <= 3");
         }
         evision_to_safe(env, evision_get_kw(env, erl_terms, "device_id"), device_id, ArgInfo("device_id", 0x8));
-
         int height;
         int width = 1;
         int cn = 1;
@@ -151,14 +156,37 @@ static ERL_NIF_TERM evision_cv_cuda_cuda_GpuMat_from_pointer(ErlNifEnv *env, int
         if (!get_compact_type(dtype, cn, type)) {
             return evision::nif::error(env, "unsupported type");
         }
-
-        if (pointer_kind == 1) {
+        
+        ERL_NIF_TERM handle = evision_get_kw(env, erl_terms, "handle");
+        int tuple_arity = 0;
+        const ERL_NIF_TERM* host_ipc_tuple = nullptr;
+        if (pointer_kind == "local" && enif_get_ulong(env, handle, &local_pointer)) {
+            ptr = reinterpret_cast<void*>(local_pointer);
+        } else if (pointer_kind == "cuda_ipc" && enif_inspect_binary(env, handle, &cuda_ipc_handle)) {
             auto result = get_pointer_for_ipc_handle(cuda_ipc_handle.data, cuda_ipc_handle.size, device_id);
             if (result.second) {
                 return evision::nif::error(env, "Unable to get pointer for IPC handle.");
             }
             ptr = result.first;
+        } 
+        else if (pointer_kind == "host_ipc" && enif_get_tuple(env, handle, &tuple_arity, &host_ipc_tuple) && tuple_arity == 2) {
+#ifdef CUDA_HOST_IPC_ENABLED
+            if (evision::nif::get(env, host_ipc_tuple[0], &fd) && fd != -1 && evision_nif::get(env, host_ipc_tuple[1], memname)) {
+                return evision::nif::error(env, "Unable to get IPC handle.");
+            }
+            ptr = open_ipc_handle(fd, device_size);
+            if (ptr == nullptr) {
+                return evision::nif::error(env, "Unable to get pointer for IPC handle.");
+            }
+            // todo: close IPC handle
+#else
+            return evision::nif::error(env, "mode = :host_ipc is not supported on this system.");
+#endif
         }
+        else {
+            return evision::nif::error(env, "device_pointer must be an integer or a binary");
+        }
+
         if (ptr == nullptr) {
             return evision::nif::error(env, "device_pointer is nullptr");
         }

@@ -16,6 +16,7 @@ gpumat_to_pointer_elixir = '''  @doc """
   
     - `:local`: Get a local CUDA pointer that can be used within current OS process.
     - `:cuda_ipc`: Get a CUDA IPC pointer that can be used across OS processes.
+    - `:host_ipc`: Get an OS IPC pointer that can be used across OS processes.
   
     Default to `:local`.
   """
@@ -31,7 +32,7 @@ gpumat_to_pointer_elixir = '''  @doc """
     end
   end
 
-  @spec to_pointer(Evision.CUDA.GpuMat.t(), [mode: :local | :cuda_ipc]) :: {:ok, list(integer())} | {:error, String.t()}
+  @spec to_pointer(Evision.CUDA.GpuMat.t(), [mode: :local | :cuda_ipc | :host_ipc]) :: {:ok, %Evision.CUDA.GpuMat.Handle{}} | {:error, String.t()}
   def to_pointer(%{ref: ref}, [mode: mode] = opts)
   when is_list(opts) and mode in [:local, :cuda_ipc] do
     opts = Keyword.validate!(opts || [], [mode: :local])
@@ -51,6 +52,13 @@ gpumat_to_pointer_elixir = '''  @doc """
             handle: handle,
             size: device_size,
             device_id: device_id
+          }}
+        {:host_ipc, {name, fd, size}} ->
+          {:ok, %Evision.CUDA.GpuMat.Handle{
+            type: :host_ipc,
+            handle: {fd, name},
+            size: size,
+            device_id: nil
           }}
       end
     end
@@ -89,9 +97,9 @@ gpumat_to_pointer_elixir = '''  @doc """
   
   ##### Positional Arguments
 
-  - **device_pointer**, `%Evision.CUDA.GpuMat.Handle{}`.
+  - **handle**, `%Evision.CUDA.GpuMat.Handle{}`.
   
-    This can be either a local pointer or a CUDA IPC pointer.
+    This can be either a local pointer, a CUDA IPC pointer or a host IPC handle.
     
     However, please note that IPC pointers have to be generated from 
     another OS process (Erlang process doesn't count).

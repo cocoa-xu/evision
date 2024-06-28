@@ -1,3 +1,5 @@
+#ifndef EVISION_CUDA_H
+#define EVISION_CUDA_H
 #pragma once
 
 #include <cstdint>
@@ -5,3 +7,5 @@
 
 std::pair<std::vector<unsigned char>, int> get_cuda_ipc_handle(std::uintptr_t);
 std::pair<void*, int> get_pointer_for_ipc_handle(uint8_t*, size_t, int);
+
+#endif  // EVISION_CUDA_H
