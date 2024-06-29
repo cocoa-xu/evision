@@ -40,7 +40,13 @@ static ERL_NIF_TERM evision_cv_cuda_cuda_GpuMat_to_pointer(ErlNifEnv *env, int a
             ERL_NIF_TERM type_term = __evision_get_mat_type(env, _self_->type());
             if (pointer_kind == "local") {
                 ERL_NIF_TERM ptr_term = enif_make_ulong(env, ptr);
-                out_term = enif_make_tuple6(env, ptr_term, step_term, rows_term, cols_term, channels_term, type_term);
+                int did = 0;
+                auto device_id = get_gpumat_device_id((void *)ptr);
+                if (device_id) {
+                    did = device_id.value();
+                }
+                ERL_NIF_TERM device_id_term = enif_make_ulong(env, ptr);
+                out_term = enif_make_tuple7(env, ptr_term, step_term, rows_term, cols_term, channels_term, type_term, device_id_term);
             }
             else if (pointer_kind == "cuda_ipc") {
                 auto result = get_cuda_ipc_handle(ptr);

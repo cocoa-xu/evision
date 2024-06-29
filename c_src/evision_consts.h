@@ -27,6 +27,10 @@ static ERL_NIF_TERM kAtomData;
 static ERL_NIF_TERM kAtomRawType;
 // elemSize
 static ERL_NIF_TERM kAtomElemSize;
+// step
+static ERL_NIF_TERM kAtomStep;
+// device_id
+static ERL_NIF_TERM kAtomDeviceID;
 // shape
 static ERL_NIF_TERM kAtomShape;
 // __struct__

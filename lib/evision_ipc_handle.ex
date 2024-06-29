@@ -16,9 +16,10 @@ defmodule Evision.IPCHandle.Local do
   - `:cols`, the number of columns.
   - `:channels`, the number of channels.
   - `:type`, the data type.
+  - `:device_id` is the CUDA device ID that the memory is allocated on.
   """
 
-  defstruct [:handle, :step, :rows, :cols, :channels, :type]
+  defstruct [:handle, :step, :rows, :cols, :channels, :type, :device_id]
   alias __MODULE__, as: T
 
   defimpl Inspect do
@@ -72,6 +73,7 @@ defmodule Evision.IPCHandle.Local do
       cols = to_algebra("cols", handle.cols, opts)
       channels = to_algebra("channels", handle.channels, opts)
       type = to_algebra("type", handle.type, opts)
+      device_id = to_algebra("device_id", handle.device_id, opts)
       force_unfit(
         concat([
           color("%Evision.IPCHandle.Local{", :map, opts),
@@ -82,7 +84,8 @@ defmodule Evision.IPCHandle.Local do
             rows, sep, line(),
             cols, sep, line(),
             channels, sep, line(),
-            type, sep
+            type, sep, line(),
+            device_id
           ]), 2),
           line(),
           color("}", :map, opts)
