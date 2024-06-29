@@ -123,19 +123,36 @@ gpumat_to_pointer_elixir = '''  @doc """
   
   def from_pointer(%Evision.IPCHandle.Local{}=handle, opts) when is_list(opts) do
     shape = opts[:shape]
-    do_from_pointer(:local, handle.handle, handle.step, handle.rows, handle.cols, handle.type, shape: shape)
+    do_from_pointer(:local,
+      handle.handle,
+      handle.step,
+      handle.rows,
+      handle.cols, 
+      handle.channels,
+      handle.type,
+      shape: shape
+    )
   end
   
   def from_pointer(%Evision.IPCHandle.CUDA{}=handle, opts) when is_list(opts) do
     shape = opts[:shape]
-    do_from_pointer(:cuda_ipc, handle.handle, handle.step, handle.rows, handle.cols, handle.type, shape: shape, device_id: handle.device_id)
+    do_from_pointer(:cuda_ipc, 
+      handle.handle, 
+      handle.step, 
+      handle.rows, 
+      handle.cols, 
+      handle.channels,
+      handle.type,
+      shape: shape,
+      device_id: handle.device_id
+    )
   end
 
   def from_pointer(%Evision.IPCHandle.Host{}, opts) when is_list(opts) do
     raise ArgumentError, "Host IPC handle is not supported for reading yet."
   end
 
-  defp do_from_pointer(kind, handle, step, rows, cols, dtype, opts \\\\ []) when is_tuple(shape) do
+  defp do_from_pointer(kind, handle, step, rows, cols, channels, dtype, opts \\\\ []) when is_tuple(shape) do
     shape = {rows, cols, channels}
     opts = Keyword.validate!(opts, [device_id: 0, shape: shape])
     expected_step_size = cols * dtype_byte_size(dtype)
@@ -145,11 +162,9 @@ gpumat_to_pointer_elixir = '''  @doc """
       positional = [
         kind: kind,
         dtype: compact_type(dtype),
-        shape: shape,
-        device_id: device_id,
         handle: handle
       ]
-      :evision_nif.cuda_cuda_GpuMat_from_pointer(positional)
+      :evision_nif.cuda_cuda_GpuMat_from_pointer(positional ++ opts)
       |> to_struct()
     end
   end
