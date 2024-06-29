@@ -19,6 +19,77 @@ defmodule Evision.IPCHandle.Local do
   """
 
   defstruct [:handle, :step, :rows, :cols, :channels, :type]
+  alias __MODULE__, as: T
+
+  defimpl Inspect do
+    import Inspect.Algebra
+
+    defp pointer_bytes(addr) when addr > 0xffffffff do
+      4
+    end
+    defp pointer_bytes(_) do
+      8
+    end
+
+    defp to_algebra(name, val, opts) when is_binary(name) and is_number(val) do
+      concat([
+        color("#{name}: ", :atom, opts),
+        color("#{val}", :number, opts)
+      ])
+    end
+
+    defp to_algebra(name, {type, value}, opts) when is_binary(name) and is_atom(type) and is_integer(value) do
+      concat([
+        color("#{name}: ", :atom, opts),
+        color("{", :list, opts),
+        color(":#{type}", :atom, opts),
+        color(", ", :list, opts),
+        color("#{value}", :number, opts),
+        color("}", :list, opts),
+      ])
+    end
+
+    defp to_algebra(name, val, opts) when is_binary(name) and is_atom(val) do
+      concat([
+        color("#{name}: ", :atom, opts),
+        color(":#{val}", :atom, opts),
+      ])
+    end
+
+    def inspect(%T{}=handle, opts) do
+      sep = color(",", :list, opts)
+      handle_address = concat([
+        color("handle: ", :atom, opts),
+        color("0x" <>
+          String.pad_leading(
+            String.downcase(Integer.to_string(handle.handle, 16)),
+            pointer_bytes(handle.handle) * 2,
+            "0"
+          ),:number, opts)
+      ])
+      step = to_algebra("step", handle.step, opts)
+      rows = to_algebra("rows", handle.rows, opts)
+      cols = to_algebra("cols", handle.cols, opts)
+      channels = to_algebra("channels", handle.channels, opts)
+      type = to_algebra("type", handle.type, opts)
+      force_unfit(
+        concat([
+          color("%Evision.IPCHandle.Local{", :map, opts),
+          nest(concat([
+            line(),
+            handle_address, sep, line(),
+            step, sep, line(),
+            rows, sep, line(),
+            cols, sep, line(),
+            channels, sep, line(),
+            type, sep
+          ]), 2),
+          line(),
+          color("}", :map, opts)
+        ])
+      )
+    end
+  end
 end
 
 defmodule Evision.IPCHandle.CUDA do
