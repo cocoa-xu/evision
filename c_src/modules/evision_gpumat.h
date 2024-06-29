@@ -121,6 +121,7 @@ static ERL_NIF_TERM evision_cv_cuda_cuda_GpuMat_from_pointer(ErlNifEnv *env, int
         ErlNifBinary cuda_ipc_handle{};
         int fd = -1;
         std::string memname;
+        size_t device_size = 0;
 
         std::vector<int64_t> shape;
         std::string dtype;
@@ -137,6 +138,9 @@ static ERL_NIF_TERM evision_cv_cuda_cuda_GpuMat_from_pointer(ErlNifEnv *env, int
         }
         if (shape.size() > 3 || shape.size() == 0) {
             return evision::nif::error(env, "GpuMat expects shape to be 1 <= tuple_size(shape) <= 3");
+        }
+        if (!evision::nif::get(env, evision_get_kw(env, erl_terms, "size"), &device_size)) {
+            return evision::nif::error(env, "size must be an integer");
         }
         evision_to_safe(env, evision_get_kw(env, erl_terms, "device_id"), device_id, ArgInfo("device_id", 0x8));
         int height;

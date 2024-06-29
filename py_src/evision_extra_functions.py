@@ -127,7 +127,8 @@ gpumat_to_pointer_elixir = '''  @doc """
         handle: handle,
         device_id: device_id,
         dtype: compact_type(dtype),
-        shape: shape
+        shape: shape,
+        size: size
       ]
       :evision_nif.cuda_cuda_GpuMat_from_pointer(positional)
       |> to_struct()
