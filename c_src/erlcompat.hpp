@@ -141,6 +141,7 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const TYPE& src)                      
     }                                                                                                 \
     static void destruct_##NAME(ErlNifEnv *env, void *args)                                           \
     {                                                                                                 \
+        ((evision_res< STORAGE > *)args)->on_delete_callback();                                       \
         ((evision_res< STORAGE > *)args)->val.STORAGE::~SNAME();                                      \
     }
 

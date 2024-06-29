@@ -9,6 +9,7 @@
 #include <cmath>
 #include <erl_nif.h>
 #include <limits>
+#include <functional>
 
 #if defined(_MSC_VER) && (_MSC_VER > 1800)
 #pragma warning(pop)
@@ -49,6 +50,7 @@ using namespace cv;
 template<typename R>
 struct evision_res {
     R val;
+    std::function<void()> on_delete_callback = [](){};
     static ErlNifResourceType * type;
 };
 template<typename R> ErlNifResourceType * evision_res<R>::type = nullptr;
