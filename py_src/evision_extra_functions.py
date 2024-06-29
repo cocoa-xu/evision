@@ -117,15 +117,15 @@ gpumat_to_pointer_elixir = '''  @doc """
   
   def from_pointer(%Evision.IPCHandle.Local{}=handle, opts) when is_tuple(shape) and is_list(opts) do
     shape = opts[:shape]
-    from_pointer(:local, handle.handle, handle.step, handle.rows, handle.cols, handle.type, shape: shape)
+    do_from_pointer(:local, handle.handle, handle.step, handle.rows, handle.cols, handle.type, shape: shape)
   end
   
   def from_pointer(%Evision.IPCHandle.CUDA{}=handle, opts) when is_tuple(shape) and is_list(opts) do
     shape = opts[:shape]
-    from_pointer(:cuda_ipc, handle.handle, handle.step, handle.rows, handle.cols, handle.type, shape: shape, device_id: handle.device_id)
+    do_from_pointer(:cuda_ipc, handle.handle, handle.step, handle.rows, handle.cols, handle.type, shape: shape, device_id: handle.device_id)
   end
 
-  def from_pointer(kind, handle, step, rows, cols, dtype, opts \\ []) when is_tuple(shape) do
+  defp do_from_pointer(kind, handle, step, rows, cols, dtype, opts \\\\ []) when is_tuple(shape) do
     shape = {rows, cols, channels}
     opts = Keyword.validate!(opts, [device_id: 0, shape: shape])
     expected_step_size = cols * dtype_byte_size(dtype)
