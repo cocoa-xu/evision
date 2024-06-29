@@ -182,7 +182,6 @@ static ERL_NIF_TERM evision_cv_cuda_cuda_GpuMat_from_pointer(ErlNifEnv *env, int
             if (ptr == nullptr) {
                 return evision::nif::error(env, "Unable to get pointer for IPC handle.");
             }
-            // todo: close IPC handle
 #else
             return evision::nif::error(env, "mode = :host_ipc is not supported on this system.");
 #endif
@@ -203,6 +202,12 @@ static ERL_NIF_TERM evision_cv_cuda_cuda_GpuMat_from_pointer(ErlNifEnv *env, int
         if (!error_flag) {
             ERL_NIF_TERM ret = enif_make_resource(env, self);
             enif_release_resource(self);
+            if (pointer_kind == "host_ipc") {
+                // Close the IPC handle
+                self->on_delete_callback = [fd, memname, ptr, device_size]() {
+                    close_ipc_handle(fd, ptr, (char*)memname.c_str(), device_size);
+                };
+            }
             bool success;
             return evision_from_as_map<Ptr<cv::cuda::GpuMat>>(env, self->val, ret, "Elixir.Evision.CUDA.GpuMat", success);
         }
