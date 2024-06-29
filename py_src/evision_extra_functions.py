@@ -16,9 +16,9 @@ gpumat_to_pointer_elixir = '''  @doc """
   
     - `:local`: Get a local CUDA pointer that can be used within current OS process.
     - `:cuda_ipc`: Get a CUDA IPC pointer that can be used across OS processes.
-    - `:host_ipc`: Get an OS IPC pointer that can be used across OS processes.
+    - `:host_ipc`: Get a host IPC pointer that can be used across OS processes.
   
-    Default to `:local`.
+    Defaults to `:local`.
   """
   @spec to_pointer(Evision.CUDA.GpuMat.t()) :: {:ok, %Evision.IPCHandle.Local{}} | {:error, String.t()}
   def to_pointer(%{ref: ref}) do
@@ -34,9 +34,10 @@ gpumat_to_pointer_elixir = '''  @doc """
     end
   end
 
-  @spec to_pointer(Evision.CUDA.GpuMat.t(), [mode: :local | :cuda_ipc | :host_ipc]) :: {:ok, %Evision.IPCHandle.Local{} | %Evision.IPCHandle.CUDA{}} | {:error, String.t()}
+  @spec to_pointer(Evision.CUDA.GpuMat.t(), [mode: :local | :cuda_ipc | :host_ipc]) :: 
+    {:ok, %Evision.IPCHandle.Local{} | %Evision.IPCHandle.CUDA{} | %Evision.IPCHandle.Host{}} | {:error, String.t()}
   def to_pointer(%{ref: ref}, [mode: mode] = opts)
-  when is_list(opts) and mode in [:local, :cuda_ipc] do
+  when is_list(opts) and mode in [:local, :cuda_ipc, :host_ipc] do
     opts = Keyword.validate!(opts || [], [mode: :local])
     with {:ok, handle} <- :evision_nif.cuda_cuda_GpuMat_to_pointer([img: ref] ++ opts) do
       mode = opts[:mode]
@@ -60,12 +61,15 @@ gpumat_to_pointer_elixir = '''  @doc """
             type: type,
             device_id: device_id
           }}
-        {:host_ipc, {name, fd, size}} ->
-          {:ok, %Evision.CUDA.GpuMat.Handle{
-            type: :host_ipc,
-            handle: {fd, name},
+        {:host_ipc, {name, fd, size, rows, cols, channels, type}} ->
+          {:ok, %Evision.IPCHandle.Host{
+            name: name,
+            fd: fd,
             size: size,
-            device_id: nil
+            rows: rows,
+            cols: cols,
+            channels: channels,
+            type: type
           }}
       end
     end
@@ -117,14 +121,18 @@ gpumat_to_pointer_elixir = '''  @doc """
   @spec from_pointer(%Evision.IPCHandle.Local{} | %Evision.IPCHandle.CUDA{}, Keyword.t()) :: Evision.CUDA.GpuMat.t() | {:error, String.t()}
   def from_pointer(handle, opts \\\\ [])
   
-  def from_pointer(%Evision.IPCHandle.Local{}=handle, opts) when is_tuple(shape) and is_list(opts) do
+  def from_pointer(%Evision.IPCHandle.Local{}=handle, opts) when is_list(opts) do
     shape = opts[:shape]
     do_from_pointer(:local, handle.handle, handle.step, handle.rows, handle.cols, handle.type, shape: shape)
   end
   
-  def from_pointer(%Evision.IPCHandle.CUDA{}=handle, opts) when is_tuple(shape) and is_list(opts) do
+  def from_pointer(%Evision.IPCHandle.CUDA{}=handle, opts) when is_list(opts) do
     shape = opts[:shape]
     do_from_pointer(:cuda_ipc, handle.handle, handle.step, handle.rows, handle.cols, handle.type, shape: shape, device_id: handle.device_id)
+  end
+
+  def from_pointer(%Evision.IPCHandle.Host{}, opts) when is_list(opts) do
+    raise ArgumentError, "Host IPC handle is not supported for reading yet."
   end
 
   defp do_from_pointer(kind, handle, step, rows, cols, dtype, opts \\\\ []) when is_tuple(shape) do

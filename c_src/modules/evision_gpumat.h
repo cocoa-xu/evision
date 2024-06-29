@@ -97,7 +97,7 @@ static ERL_NIF_TERM evision_cv_cuda_cuda_GpuMat_to_pointer(ErlNifEnv *env, int a
                 }
                 ERL_NIF_TERM handle_name_term = enif_make_binary(env, &handle_name_bin);
                 ERL_NIF_TERM fd_term = enif_make_int(env, fd);
-                out_term = enif_make_tuple3(env, handle_name_term, fd_term, size_term);   
+                out_term = enif_make_tuple7(env, handle_name_term, fd_term, size_term, rows_term, cols_term, channels_term, type_term);   
 #else
                 return evision::nif::error(env, "mode = :host_ipc is not supported yet.");
 #endif
@@ -128,7 +128,6 @@ static ERL_NIF_TERM evision_cv_cuda_cuda_GpuMat_from_pointer(ErlNifEnv *env, int
     evision::nif::parse_arg(env, nif_opts_index, argv, erl_terms);
 
     {
-        // 0: local, 1: cuda_ipc, 2: host_ipc
         std::string pointer_kind;
         void* ptr = nullptr;
         unsigned long local_pointer = 0;

@@ -23,7 +23,7 @@ end
 
 defmodule Evision.IPCHandle.CUDA do
   @moduledoc """
-  Represents a CUDA IPC handle for sharing data allocated on the same CUDA device between different OS processes.
+  Represents a CUDA IPC handle for sharing data allocated on CUDA device between different OS processes.
 
   - `:handle`, a binary-encoded `cudaIpcMemHandle_t` that can be loaded
     at the native level via `memcpy` or similar functions.
@@ -41,4 +41,20 @@ defmodule Evision.IPCHandle.CUDA do
   """
 
   defstruct [:handle, :step, :rows, :cols, :channels, :type, :device_id]
+end
+
+defmodule Evision.IPCHandle.Host do
+  @moduledoc """
+  Represents a host IPC handle for sharing data allocated on the CUDA device between different OS processes.
+
+  - `:name` is the name of the shared memory object.
+  - `:fd` is the file descriptor of the shared memory object.
+  - `:size` is the size of the mapped shared memory in bytes.
+  - `:rows`, the number of rows.
+  - `:cols`, the number of columns.
+  - `:channels`, the number of channels.
+  - `:type`, the data type.
+  """
+
+  defstruct [:name, :fd, :size, :rows, :cols, :channels, :type]
 end
