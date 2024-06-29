@@ -9,29 +9,45 @@ defmodule Evision.Mat.Test do
       shape = {3, 4, 3}
       mat = Evision.Mat.zeros(shape, :u8)
       zeros = Nx.tensor(0, type: :u8) |> Nx.broadcast(shape)
-      assert 1 == Nx.to_number(Nx.all_close(
-        zeros,
-        Evision.Mat.to_nx(mat, {Nx.BinaryBackend, []})
-      ))
+
+      assert 1 ==
+               Nx.to_number(
+                 Nx.all_close(
+                   zeros,
+                   Evision.Mat.to_nx(mat, {Nx.BinaryBackend, []})
+                 )
+               )
 
       expected_results = Nx.tensor(1, type: :u8) |> Nx.broadcast(shape)
       result = Evision.add(mat, Nx.tensor([1], type: :u8))
-      assert 1 == Nx.to_number(Nx.all_close(
-        expected_results,
-        Evision.Mat.to_nx(result, {Nx.BinaryBackend, []})
-      ))
+
+      assert 1 ==
+               Nx.to_number(
+                 Nx.all_close(
+                   expected_results,
+                   Evision.Mat.to_nx(result, {Nx.BinaryBackend, []})
+                 )
+               )
 
       result = Evision.add(mat, Nx.tensor(1, type: :u8))
-      assert 1 == Nx.to_number(Nx.all_close(
-        expected_results,
-        Evision.Mat.to_nx(result, {Nx.BinaryBackend, []})
-      ))
+
+      assert 1 ==
+               Nx.to_number(
+                 Nx.all_close(
+                   expected_results,
+                   Evision.Mat.to_nx(result, {Nx.BinaryBackend, []})
+                 )
+               )
 
       result = Evision.add(mat, 1)
-      assert 1 == Nx.to_number(Nx.all_close(
-        expected_results,
-        Evision.Mat.to_nx(result, {Nx.BinaryBackend, []})
-      ))
+
+      assert 1 ==
+               Nx.to_number(
+                 Nx.all_close(
+                   expected_results,
+                   Evision.Mat.to_nx(result, {Nx.BinaryBackend, []})
+                 )
+               )
     end
 
     @tag :nx
@@ -41,10 +57,14 @@ defmodule Evision.Mat.Test do
       result = Evision.add(mat_val, Nx.tensor(tensor_val, type: :f16))
 
       expected_results = Nx.tensor(mat_val + tensor_val, type: :f16)
-      assert 1 == Nx.to_number(Nx.all_close(
-        expected_results,
-        Evision.Mat.to_nx(result, {Nx.BinaryBackend, []})
-      ))
+
+      assert 1 ==
+               Nx.to_number(
+                 Nx.all_close(
+                   expected_results,
+                   Evision.Mat.to_nx(result, {Nx.BinaryBackend, []})
+                 )
+               )
     end
 
     @tag :nx
@@ -58,10 +78,14 @@ defmodule Evision.Mat.Test do
       result = Evision.add(mat_val, mat_val)
 
       expected_results = Nx.tensor([[2], [2], [2], [2]], type: :f64)
-      assert 1 == Nx.to_number(Nx.all_close(
-        expected_results,
-        Evision.Mat.to_nx(result, {Nx.BinaryBackend, []})
-      ))
+
+      assert 1 ==
+               Nx.to_number(
+                 Nx.all_close(
+                   expected_results,
+                   Evision.Mat.to_nx(result, {Nx.BinaryBackend, []})
+                 )
+               )
     end
 
     @tag :nx
@@ -75,10 +99,14 @@ defmodule Evision.Mat.Test do
       result = Evision.add(mat_val, {1, 2.2, 3.3})
 
       expected_results = Nx.tensor([[2.0], [3.2], [4.3], [1]], type: :f64)
-      assert 1 == Nx.to_number(Nx.all_close(
-        expected_results,
-        Evision.Mat.to_nx(result, {Nx.BinaryBackend, []})
-      ))
+
+      assert 1 ==
+               Nx.to_number(
+                 Nx.all_close(
+                   expected_results,
+                   Evision.Mat.to_nx(result, {Nx.BinaryBackend, []})
+                 )
+               )
     end
 
     @tag :nx
@@ -88,13 +116,17 @@ defmodule Evision.Mat.Test do
       #        [7.],
       #        [9.0],
       #        [0.]])
-      result = Evision.add({1,2,3}, {4,5,6})
+      result = Evision.add({1, 2, 3}, {4, 5, 6})
 
       expected_results = Nx.tensor([[5], [7], [9], [0]], type: :f64)
-      assert 1 == Nx.to_number(Nx.all_close(
-        expected_results,
-        Evision.Mat.to_nx(result, {Nx.BinaryBackend, []})
-      ))
+
+      assert 1 ==
+               Nx.to_number(
+                 Nx.all_close(
+                   expected_results,
+                   Evision.Mat.to_nx(result, {Nx.BinaryBackend, []})
+                 )
+               )
     end
 
     @tag :nx
@@ -106,13 +138,17 @@ defmodule Evision.Mat.Test do
       #        [4.],
       #        [6.],
       #        [4.]])
-      result = Evision.add({1,2,3}, {1,2,3,4})
+      result = Evision.add({1, 2, 3}, {1, 2, 3, 4})
 
       expected_results = Nx.tensor([[2], [4], [6], [4]], type: :f64)
-      assert 1 == Nx.to_number(Nx.all_close(
-        expected_results,
-        Evision.Mat.to_nx(result, {Nx.BinaryBackend, []})
-      ))
+
+      assert 1 ==
+               Nx.to_number(
+                 Nx.all_close(
+                   expected_results,
+                   Evision.Mat.to_nx(result, {Nx.BinaryBackend, []})
+                 )
+               )
     end
 
     @tag :nx
@@ -125,13 +161,17 @@ defmodule Evision.Mat.Test do
       #        [7.],
       #        [8.]
       #        [9.]])
-      result = Evision.add({1,2,3}, {4,5,6,7,8})
+      result = Evision.add({1, 2, 3}, {4, 5, 6, 7, 8})
 
       expected_results = Nx.tensor([[5], [6], [7], [8], [9]], type: :f64)
-      assert 1 == Nx.to_number(Nx.all_close(
-        expected_results,
-        Evision.Mat.to_nx(result, {Nx.BinaryBackend, []})
-      ))
+
+      assert 1 ==
+               Nx.to_number(
+                 Nx.all_close(
+                   expected_results,
+                   Evision.Mat.to_nx(result, {Nx.BinaryBackend, []})
+                 )
+               )
     end
   end
 

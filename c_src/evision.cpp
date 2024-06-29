@@ -263,7 +263,7 @@ ERL_NIF_TERM evision_from_as_map(ErlNifEnv *env, const cv::Ptr<cv::cuda::GpuMat>
     auto device_id = get_gpumat_device_id(src->cudaPtr());
     keys[item_index] = kAtomDeviceID;
     if (device_id) {
-        values[item_index] = enif_make_int(env, device_id.value());
+        values[item_index] = enif_make_int64(env, device_id.value());
     } else {
         values[item_index] = kAtomNil;
     }

@@ -74,7 +74,7 @@ std::pair<void *, std::string> get_pointer_for_ipc_handle(uint8_t *handle_bin,
   return std::make_pair(ptr, "");
 }
 
-std::optional<int> get_gpumat_device_id(void * ptr) {
+std::optional<int64_t> get_gpumat_device_id(void * ptr) {
   if (ptr == nullptr) {
     return std::nullopt;
   }
@@ -101,7 +101,7 @@ std::pair<void *, std::string> get_pointer_for_ipc_handle(uint8_t *handle_bin,
   return std::make_pair(nullptr, "CUDA is not enabled in this build");
 }
 
-std::optional<int> get_gpumat_device_id(void * ptr) {
+std::optional<int64_t> get_gpumat_device_id(void * ptr) {
   (void)ptr;
   return std::nullopt;
 }
