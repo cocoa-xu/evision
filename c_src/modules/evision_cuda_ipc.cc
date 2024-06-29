@@ -1,4 +1,4 @@
-#include "ipc.h"
+#include "evision_cuda_ipc.h"
 
 #ifdef CUDA_HOST_IPC_ENABLED
 
