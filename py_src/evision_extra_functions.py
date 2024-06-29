@@ -20,19 +20,21 @@ gpumat_to_pointer_elixir = '''  @doc """
   
     Default to `:local`.
   """
-  @spec to_pointer(Evision.CUDA.GpuMat.t()) :: {:ok, %Evision.CUDA.GpuMat.Handle{}} | {:error, String.t()}
+  @spec to_pointer(Evision.CUDA.GpuMat.t()) :: {:ok, %Evision.IPCHandle.Local{}} | {:error, String.t()}
   def to_pointer(%{ref: ref}) do
-    with {:ok, {handle, device_size}} <- :evision_nif.cuda_cuda_GpuMat_to_pointer(img: ref, mode: :local) do
-      {:ok, %Evision.CUDA.GpuMat.Handle{
-        type: :local,
+    with {:ok, {handle, step, rows, cols, channels, type}} <- :evision_nif.cuda_cuda_GpuMat_to_pointer(img: ref, mode: :local) do
+      {:ok, %Evision.IPCHandle.Local{
         handle: handle,
-        size: device_size,
-        device_id: nil
+        step: step,
+        rows: rows,
+        cols: cols,
+        channels: channels,
+        type: type
       }}
     end
   end
 
-  @spec to_pointer(Evision.CUDA.GpuMat.t(), [mode: :local | :cuda_ipc | :host_ipc]) :: {:ok, %Evision.CUDA.GpuMat.Handle{}} | {:error, String.t()}
+  @spec to_pointer(Evision.CUDA.GpuMat.t(), [mode: :local | :cuda_ipc | :host_ipc]) :: {:ok, %Evision.IPCHandle.Local{} | %Evision.IPCHandle.CUDA{}} | {:error, String.t()}
   def to_pointer(%{ref: ref}, [mode: mode] = opts)
   when is_list(opts) and mode in [:local, :cuda_ipc] do
     opts = Keyword.validate!(opts || [], [mode: :local])
