@@ -113,7 +113,7 @@ gpumat_to_pointer_elixir = '''  @doc """
     - `{rows}`
   """
   @spec from_pointer(%Evision.IPCHandle.Local{} | %Evision.IPCHandle.CUDA{}, Keyword.t()) :: Evision.CUDA.GpuMat.t() | {:error, String.t()}
-  def from_pointer(handle, opts \\ [])
+  def from_pointer(handle, opts \\\\ [])
   
   def from_pointer(%Evision.IPCHandle.Local{}=handle, opts) when is_tuple(shape) and is_list(opts) do
     shape = opts[:shape]
