@@ -53,7 +53,7 @@ jobs:
         run: |
           apt-get update
           apt-get install -y build-essential automake autoconf pkg-config bc m4 unzip zip curl git libssl-dev gzip python3 ca-certificates \
-            locales curl wget cmake
+            locales curl wget cmake libeigen3-dev
           echo "${LANG} UTF-8" >> /etc/locale.gen
           locale-gen
           update-locale LANG=${LANG}

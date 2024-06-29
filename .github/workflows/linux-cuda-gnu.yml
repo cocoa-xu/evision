@@ -91,7 +91,7 @@ jobs:
         run: |
           apt-get update
           apt-get install -y build-essential automake autoconf pkg-config bc m4 unzip zip curl git libssl-dev gzip python3 ca-certificates \
-            libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libavresample-dev ffmpeg locales curl wget cmake
+            libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libavresample-dev libeigen3-dev ffmpeg locales curl wget cmake
           echo "${LANG} UTF-8" >> /etc/locale.gen
           locale-gen
           update-locale LANG=${LANG}

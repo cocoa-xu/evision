@@ -267,7 +267,7 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential automake autoconf pkg-config bc m4 unzip zip curl git libssl-dev gzip libncurses5-dev python3 ca-certificates
+          sudo apt-get install -y build-essential automake autoconf pkg-config bc m4 unzip zip curl git libssl-dev gzip libncurses5-dev python3 ca-certificates libeigen3-dev
 
       - name: Cache mix packages
         id: cache-mix-deps
