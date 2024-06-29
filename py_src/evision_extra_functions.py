@@ -152,7 +152,7 @@ gpumat_to_pointer_elixir = '''  @doc """
     raise ArgumentError, "Host IPC handle is not supported for reading yet."
   end
 
-  defp do_from_pointer(kind, handle, step, rows, cols, channels, dtype, opts \\\\ []) when is_tuple(shape) do
+  defp do_from_pointer(kind, handle, step, rows, cols, channels, dtype, opts \\\\ []) when is_list(opts) do
     shape = {rows, cols, channels}
     opts = Keyword.validate!(opts, [device_id: 0, shape: shape])
     expected_step_size = cols * dtype_byte_size(dtype)
