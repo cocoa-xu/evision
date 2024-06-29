@@ -66,6 +66,12 @@ namespace evision
                             reinterpret_cast<ErlNifSInt64 *>(var));
     }
 
+    int get(ErlNifEnv *env, ERL_NIF_TERM term, uint64_t *var)
+    {
+      return enif_get_uint64(env, term,
+                            reinterpret_cast<ErlNifUInt64 *>(var));
+    }
+
     int get(ErlNifEnv *env, ERL_NIF_TERM term, double *var)
     {
       return enif_get_double(env, term, var);

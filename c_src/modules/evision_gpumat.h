@@ -52,7 +52,7 @@ static ERL_NIF_TERM evision_cv_cuda_cuda_GpuMat_to_pointer(ErlNifEnv *env, int a
 
                 ErlNifBinary handle_bin;
                 enif_alloc_binary(pointer_vec.size(), &handle_bin);
-                for (int i = 0; i < pointer_vec.size(); i++) {
+                for (size_t i = 0; i < pointer_vec.size(); i++) {
                     handle_bin.data[i] = pointer_vec[i];
                 }
                 ERL_NIF_TERM handle_term = enif_make_binary(env, &handle_bin);
@@ -66,19 +66,19 @@ static ERL_NIF_TERM evision_cv_cuda_cuda_GpuMat_to_pointer(ErlNifEnv *env, int a
                 int fd = get_ipc_handle((char*)handle_name.c_str(), size_in_bytes);
 
                 if (fd == -1) {
-                    return exla::nif::error(env, "Unable to get IPC handle");
+                    return evision::nif::error(env, "Unable to get IPC handle");
                 }
 
                 void* ipc_ptr = open_ipc_handle(fd, size_in_bytes);
                 if (ipc_ptr == nullptr) {
-                    return exla::nif::error(env, "Unable to open IPC handle");
+                    return evision::nif::error(env, "Unable to open IPC handle");
                 }
 
                 memcpy(ipc_ptr, (void*)ptr, size_in_bytes);
 
                 ErlNifBinary handle_name_bin;
                 enif_alloc_binary(handle_name.size(), &handle_name_bin);
-                for (int i = 0; i < handle_name.size(); i++) {
+                for (size_t i = 0; i < handle_name.size(); i++) {
                     handle_name_bin.data[i] = handle_name[i];
                 }
                 ERL_NIF_TERM handle_name_term = enif_make_binary(env, &handle_name_bin);
@@ -121,7 +121,7 @@ static ERL_NIF_TERM evision_cv_cuda_cuda_GpuMat_from_pointer(ErlNifEnv *env, int
         ErlNifBinary cuda_ipc_handle{};
         int fd = -1;
         std::string memname;
-        size_t device_size = 0;
+        uint64_t device_size = 0;
 
         std::vector<int64_t> shape;
         std::string dtype;
@@ -175,7 +175,7 @@ static ERL_NIF_TERM evision_cv_cuda_cuda_GpuMat_from_pointer(ErlNifEnv *env, int
         } 
         else if (pointer_kind == "host_ipc" && enif_get_tuple(env, handle, &tuple_arity, &host_ipc_tuple) && tuple_arity == 2) {
 #ifdef CUDA_HOST_IPC_ENABLED
-            if (evision::nif::get(env, host_ipc_tuple[0], &fd) && fd != -1 && evision_nif::get(env, host_ipc_tuple[1], memname)) {
+            if (evision::nif::get(env, host_ipc_tuple[0], &fd) && fd != -1 && evision::nif::get(env, host_ipc_tuple[1], memname)) {
                 return evision::nif::error(env, "Unable to get IPC handle.");
             }
             ptr = open_ipc_handle(fd, device_size);
