@@ -14,7 +14,7 @@ export ERL_ROOTDIR=/work/cache/otp/usr/local/lib/erlang
 export CMAKE_OPENCV_OPTIONS="-D CMAKE_C_FLAGS=\"-static-libgcc -static-libstdc++\" -D CMAKE_CXX_FLAGS=\"-static-libgcc -static-libstdc++\""
 export CMAKE_EVISION_OPTIONS="-D CMAKE_C_FLAGS=\"-static-libgcc -static-libstdc++\" -D CMAKE_CXX_FLAGS=\"-static-libgcc -static-libstdc++\""
 
-yum install -y openssl-devel ncurses-devel perl-IPC-Cmd python3 && \
+yum install -y openssl-devel ncurses-devel perl-IPC-Cmd python3 eigen3 && \
     cd /work && \
     mix local.hex --force && \
     mix local.rebar --force && \
