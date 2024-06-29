@@ -118,6 +118,10 @@ gpumat_to_pointer_elixir = '''  @doc """
   """
   @spec from_pointer(%Evision.CUDA.GpuMat.Handle{}, atom() | {atom(), integer()}, tuple()) :: Evision.CUDA.GpuMat.t() | {:error, String.t()}
   def from_pointer(%Evision.CUDA.GpuMat.Handle{type: kind, handle: handle, device_id: device_id, size: size}, dtype, shape) when is_tuple(shape) do
+    from_pointer(kind, handle, device_id, size, dtype, shape)
+  end
+  
+  def from_pointer(kind, handle, device_id, size, dtype, shape) when is_tuple(shape) do
     expected_size = Tuple.product(shape) * dtype_byte_size(dtype)
     if size != expected_size do
       {:error, "Size mismatch: expected #{expected_size}, got #{size}"}
