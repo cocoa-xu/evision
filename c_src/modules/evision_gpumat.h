@@ -29,19 +29,13 @@ static ERL_NIF_TERM evision_cv_cuda_cuda_GpuMat_to_pointer(ErlNifEnv *env, int a
         Ptr<cv::cuda::GpuMat> * self1 = 0;
         if (evision_cuda_GpuMat_getp(env, self, self1)) {
             Ptr<cv::cuda::GpuMat> _self_ = *(self1);
-            if (_self_->isContinuous() == false) {
-                return evision::nif::error(env, "GpuMat must be continuous");
-            }
 
             ERL_NIF_TERM out_term{};
             std::uintptr_t ptr = (std::uintptr_t)_self_->cudaPtr();
-            // OpenCV doesn't provide a way to get the actual device size of the GpuMat
-            // but it should be at least rows * cols * channels * elemSize
-            size_t size_in_bytes = _self_->rows * _self_->cols * _self_->channels() * _self_->elemSize();
-            ERL_NIF_TERM size_term = enif_make_ulong(env, size_in_bytes);
+            ERL_NIF_TERM step_term = enif_make_ulong(env, _self_->step);
             if (pointer_kind == "local") {
                 ERL_NIF_TERM ptr_term = enif_make_ulong(env, ptr);
-                out_term = enif_make_tuple2(env, ptr_term, size_term);
+                out_term = enif_make_tuple2(env, ptr_term, step_term);
             }
             else if (pointer_kind == "cuda_ipc") {
                 auto result = get_cuda_ipc_handle(ptr);
@@ -56,25 +50,38 @@ static ERL_NIF_TERM evision_cv_cuda_cuda_GpuMat_to_pointer(ErlNifEnv *env, int a
                     handle_bin.data[i] = pointer_vec[i];
                 }
                 ERL_NIF_TERM handle_term = enif_make_binary(env, &handle_bin);
-                out_term = enif_make_tuple2(env, handle_term, size_term);
+                out_term = enif_make_tuple2(env, handle_term, step_term);
             }
             else if (pointer_kind == "host_ipc") {
 #ifdef CUDA_HOST_IPC_ENABLED
+                size_t host_size = _self_->rows * _self_->channels() * _self_->cols * _self_->elemSize();
+                ERL_NIF_TERM size_term = enif_make_ulong(env, host_size);
                 std::ostringstream handle_name_stream;
-                handle_name_stream << "evision:ipc:" << size_in_bytes << ":" << ptr;
+                handle_name_stream << "evision:ipc:" << host_size << ":" << ptr;
                 std::string handle_name = handle_name_stream.str();
-                int fd = get_ipc_handle((char*)handle_name.c_str(), size_in_bytes);
+                int fd = get_ipc_handle((char*)handle_name.c_str(), host_size);
 
                 if (fd == -1) {
                     return evision::nif::error(env, "Unable to get IPC handle");
                 }
 
-                void* ipc_ptr = open_ipc_handle(fd, size_in_bytes);
+                void* ipc_ptr = open_ipc_handle(fd, host_size);
                 if (ipc_ptr == nullptr) {
                     return evision::nif::error(env, "Unable to open IPC handle");
                 }
 
-                memcpy(ipc_ptr, (void*)ptr, size_in_bytes);
+                if (_self_->isContinuous()) {
+                    memcpy(ipc_ptr, (void*)ptr, host_size);
+                } else {
+                    uint8_t* from_ptr = (uint8_t*)ptr;
+                    uint8_t* to_ptr = (uint8_t*)ipc_ptr;
+
+                    // copy the data with correct step
+                    for (int i = 0; i < _self_->rows; i++) {
+                        auto offset = i * _self_->step;
+                        memcpy(to_ptr + offset, from_ptr + offset, _self_->cols * _self_->channels() * _self_->elemSize());
+                    }
+                }
 
                 ErlNifBinary handle_name_bin;
                 enif_alloc_binary(handle_name.size(), &handle_name_bin);
@@ -83,9 +90,9 @@ static ERL_NIF_TERM evision_cv_cuda_cuda_GpuMat_to_pointer(ErlNifEnv *env, int a
                 }
                 ERL_NIF_TERM handle_name_term = enif_make_binary(env, &handle_name_bin);
                 ERL_NIF_TERM fd_term = enif_make_int(env, fd);
-                out_term = enif_make_tuple3(env, handle_name_term, fd_term, size_term);
+                out_term = enif_make_tuple3(env, handle_name_term, fd_term, size_term);   
 #else
-                return evision::nif::error(env, "mode = :host_ipc is not supported on this system.");
+                return evision::nif::error(env, "mode = :host_ipc is not supported yet.");
 #endif
             }
             else {
@@ -174,24 +181,33 @@ static ERL_NIF_TERM evision_cv_cuda_cuda_GpuMat_from_pointer(ErlNifEnv *env, int
             ptr = result.first;
         } 
         else if (pointer_kind == "host_ipc" && enif_get_tuple(env, handle, &tuple_arity, &host_ipc_tuple) && tuple_arity == 2) {
-#ifdef CUDA_HOST_IPC_ENABLED
-            if (evision::nif::get(env, host_ipc_tuple[0], &fd) && fd != -1 && evision::nif::get(env, host_ipc_tuple[1], memname)) {
-                return evision::nif::error(env, "Unable to get IPC handle.");
-            }
-            ptr = open_ipc_handle(fd, device_size);
-            if (ptr == nullptr) {
-                return evision::nif::error(env, "Unable to get pointer for IPC handle.");
-            }
+            // todo: we can open and read from the shared memory here
+            // but how do we properly close it? --
+            //   it's okay when the user just use it as a view
+            //   then we can simply add a callback in `evision_res` to close the shared memory
+            //
+            // however, --
+            //   once the user calls functions that allocates memory inplace, 
+            //   (by inplace I mean the same GpuMat instance)
+            //   we need to make sure that the shared memory is properly closed
+#if 0 // defined(CUDA_HOST_IPC_ENABLED)
+            // if (evision::nif::get(env, host_ipc_tuple[0], &fd) && fd != -1 && evision::nif::get(env, host_ipc_tuple[1], memname)) {
+            //     return evision::nif::error(env, "Unable to get IPC handle.");
+            // }
+            // ptr = open_ipc_handle(fd, device_size);
+            // if (ptr == nullptr) {
+            //     return evision::nif::error(env, "Unable to get pointer for IPC handle.");
+            // }
 #else
             return evision::nif::error(env, "mode = :host_ipc is not supported on this system.");
 #endif
         }
         else {
-            return evision::nif::error(env, "device_pointer must be an integer or a binary");
+            return evision::nif::error(env, "Unable to get pointer for IPC handle.");
         }
 
         if (ptr == nullptr) {
-            return evision::nif::error(env, "device_pointer is nullptr");
+            return evision::nif::error(env, "IPC handle is nullptr");
         }
 
         evision_res<Ptr<cv::cuda::GpuMat>> * self = nullptr;
@@ -202,12 +218,12 @@ static ERL_NIF_TERM evision_cv_cuda_cuda_GpuMat_from_pointer(ErlNifEnv *env, int
         if (!error_flag) {
             ERL_NIF_TERM ret = enif_make_resource(env, self);
             enif_release_resource(self);
-            if (pointer_kind == "host_ipc") {
-                // Close the IPC handle
-                self->on_delete_callback = [fd, memname, ptr, device_size]() {
-                    close_ipc_handle(fd, ptr, (char*)memname.c_str(), device_size);
-                };
-            }
+            // if (pointer_kind == "host_ipc") {
+            //     // Close the IPC handle
+            //     self->on_delete_callback = [fd, memname, ptr, device_size]() {
+            //         close_ipc_handle(fd, ptr, (char*)memname.c_str(), device_size);
+            //     };
+            // }
             bool success;
             return evision_from_as_map<Ptr<cv::cuda::GpuMat>>(env, self->val, ret, "Elixir.Evision.CUDA.GpuMat", success);
         }

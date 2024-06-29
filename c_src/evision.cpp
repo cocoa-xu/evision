@@ -50,7 +50,6 @@ using namespace cv;
 template<typename R>
 struct evision_res {
     R val;
-    std::function<void()> on_delete_callback = [](){};
     static ErlNifResourceType * type;
 };
 template<typename R> ErlNifResourceType * evision_res<R>::type = nullptr;
