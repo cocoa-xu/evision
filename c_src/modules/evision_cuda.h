@@ -4,8 +4,10 @@
 
 #include <cstdint>
 #include <vector>
+#include <optional>
+#include <string>
 
-std::pair<std::vector<unsigned char>, int> get_cuda_ipc_handle(std::uintptr_t);
-std::pair<void*, int> get_pointer_for_ipc_handle(uint8_t*, size_t, int);
+std::optional<std::pair<std::vector<unsigned char>, int>> get_cuda_ipc_handle(std::uintptr_t ptr);
+std::pair<void *, std::string> get_pointer_for_ipc_handle(uint8_t*, size_t, int);
 
 #endif  // EVISION_CUDA_H

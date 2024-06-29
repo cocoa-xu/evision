@@ -39,18 +39,23 @@ gpumat_to_pointer_elixir = '''  @doc """
     with {:ok, handle} <- :evision_nif.cuda_cuda_GpuMat_to_pointer([img: ref] ++ opts) do
       mode = opts[:mode]
       case {mode, handle} do
-        {:local, {handle, device_size}} -> 
-          {:ok, %Evision.CUDA.GpuMat.Handle{
-            type: :local,
+        {:local, {handle, step, rows, cols, channels, type}} ->
+          {:ok, %Evision.IPCHandle.Local{
             handle: handle,
-            size: device_size,
-            device_id: nil
+            step: step,
+            rows: rows,
+            cols: cols,
+            channels: channels,
+            type: type
           }}
-        {:cuda_ipc, {handle, device_size, device_id}} ->
-          {:ok, %Evision.CUDA.GpuMat.Handle{
-            type: :cuda_ipc,
+        {:cuda_ipc, {handle, step, rows, cols, channels, type, device_id}} ->
+          {:ok, %Evision.IPCHandle.CUDA{
             handle: handle,
-            size: device_size,
+            step: step,
+            rows: rows,
+            cols: cols,
+            channels: channels,
+            type: type,
             device_id: device_id
           }}
         {:host_ipc, {name, fd, size}} ->
@@ -93,22 +98,13 @@ gpumat_to_pointer_elixir = '''  @doc """
   end
 
   @doc """
-  Create CUDA GpuMat from a shared CUDA device pointer
+  Create CUDA GpuMat from a shared CUDA device pointer with new shape
   
   ##### Positional Arguments
 
-  - **handle**, `%Evision.CUDA.GpuMat.Handle{}`.
-  
-    This can be either a local pointer, a CUDA IPC pointer or a host IPC handle.
-    
-    However, please note that IPC pointers have to be generated from 
-    another OS process (Erlang process doesn't count).
-  
-  - **dtype**, `tuple() | atom()`
-  
-    Data type.
-    
-  - **shape**, `tuple()`
+  - **handle**, either an `%Evision.IPCHandle.Local{}` or an `%Evision.IPCHandle.CUDA{}`.
+
+  - **new_shape**, `tuple()`
   
     The shape of the shared image. It's expected to be either
     
@@ -116,23 +112,32 @@ gpumat_to_pointer_elixir = '''  @doc """
     - `{height, width}`, for any 1-channel 2D image
     - `{rows}`
   """
-  @spec from_pointer(%Evision.CUDA.GpuMat.Handle{}, atom() | {atom(), integer()}, tuple()) :: Evision.CUDA.GpuMat.t() | {:error, String.t()}
-  def from_pointer(%Evision.CUDA.GpuMat.Handle{type: kind, handle: handle, device_id: device_id, size: size}, dtype, shape) when is_tuple(shape) do
-    from_pointer(kind, handle, device_id, size, dtype, shape)
+  @spec from_pointer(%Evision.IPCHandle.Local{} | %Evision.IPCHandle.CUDA{}, Keyword.t()) :: Evision.CUDA.GpuMat.t() | {:error, String.t()}
+  def from_pointer(handle, opts \\ [])
+  
+  def from_pointer(%Evision.IPCHandle.Local{}=handle, opts) when is_tuple(shape) and is_list(opts) do
+    shape = opts[:shape]
+    from_pointer(:local, handle.handle, handle.step, handle.rows, handle.cols, handle.type, shape: shape)
   end
   
-  def from_pointer(kind, handle, device_id, size, dtype, shape) when is_tuple(shape) do
-    expected_size = Tuple.product(shape) * dtype_byte_size(dtype)
-    if size != expected_size do
-      {:error, "Size mismatch: expected #{expected_size}, got #{size}"}
+  def from_pointer(%Evision.IPCHandle.CUDA{}=handle, opts) when is_tuple(shape) and is_list(opts) do
+    shape = opts[:shape]
+    from_pointer(:cuda_ipc, handle.handle, handle.step, handle.rows, handle.cols, handle.type, shape: shape, device_id: handle.device_id)
+  end
+
+  def from_pointer(kind, handle, step, rows, cols, dtype, opts \\ []) when is_tuple(shape) do
+    shape = {rows, cols, channels}
+    opts = Keyword.validate!(opts, [device_id: 0, shape: shape])
+    expected_step_size = cols * dtype_byte_size(dtype)
+    if expected_step_size > step do
+      {:error, "New step size is greater than original step size: new = #{expected_step_size}, original = #{step}"}
     else
       positional = [
         kind: kind,
-        handle: handle,
-        device_id: device_id,
         dtype: compact_type(dtype),
         shape: shape,
-        size: size
+        device_id: device_id,
+        handle: handle
       ]
       :evision_nif.cuda_cuda_GpuMat_from_pointer(positional)
       |> to_struct()

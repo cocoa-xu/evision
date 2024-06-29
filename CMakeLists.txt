@@ -118,7 +118,7 @@ install(
     RUNTIME DESTINATION "${PRIV_DIR}"
 )
 target_link_libraries(evision "${EVISION_LIBRARIES}")
-set_property(TARGET evision PROPERTY CXX_STANDARD 14)
+set_property(TARGET evision PROPERTY CXX_STANDARD 17)
 set_property(TARGET evision PROPERTY POSITION_INDEPENDENT_CODE ON)
 set_target_properties(evision PROPERTIES PREFIX "")
 if(NOT WIN32)

@@ -1,5 +1,6 @@
 #ifndef EVISION_MAT_API_H
 #define EVISION_MAT_API_H
+#pragma once
 
 #include <erl_nif.h>
 #include "../evision_consts.h"
