@@ -1,7 +1,7 @@
 # Changelog
 
-## main
-[Browse the Repository](https://github.com/cocoa-xu/evision)
+## v0.2.5 (2024-07-01)
+[Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.2.5) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.2.5)
 
 ### Changes
 - Validate possible keyword arguments for functions that accept named arguments.
@@ -27,6 +27,42 @@
         (evision 0.2.4) lib/generated/evision.ex:4603: Evision.applyColorMap/1
         iex:4: (file)
     ```
+
+- Generated typed enums for OpenCV's `cv::flann`.
+- 
+  This should include the following enums and place them in the corresponding modules.
+
+  - `flann_algorithm_t`
+  - `flann_centers_init_t`
+  - `flann_log_level_t`
+  - `flann_distance_t`
+  - `flann_datatype_t`
+
+  For example, `flann_algorithm_t` will be put in the `Evision.Flann.Algorithm` module:
+
+  ```elixir
+  defmodule Evision.Flann.Algorithm do
+    @type enum :: integer()
+    @doc enum: true
+    def cv_FLANN_INDEX_LINEAR, do: 0
+    @doc enum: true
+    def cv_FLANN_INDEX_KDTREE, do: 1
+    @doc enum: true
+    def cv_FLANN_INDEX_KMEANS, do: 2
+    @doc enum: true
+    def cv_FLANN_INDEX_COMPOSITE, do: 3
+    @doc enum: true
+    def cv_FLANN_INDEX_KDTREE_SINGLE, do: 4
+    @doc enum: true
+    def cv_FLANN_INDEX_HIERARCHICAL, do: 5
+    @doc enum: true
+    def cv_FLANN_INDEX_LSH, do: 6
+    @doc enum: true
+    def cv_FLANN_INDEX_SAVED, do: 254
+    @doc enum: true
+    def cv_FLANN_INDEX_AUTOTUNED, do: 255
+  end
+  ```
 
 ## v0.2.4 (2024-06-20)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.2.4) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.2.4)
