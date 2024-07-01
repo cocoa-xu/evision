@@ -23,6 +23,13 @@ jobs:
       matrix:
         include:
           - pair:
+              arch: x86_64-linux-gnu
+              cmake_toolchain_file: ""
+              c_compiler: gcc
+              cpp_compiler: g++
+              OTP_VERSION: "25"
+              NIF_VERSION: "2.16"
+          - pair:
               arch: i686-linux-gnu
               cmake_toolchain_file: cc_toolchain/i686-linux-gnu.cmake
               c_compiler: gcc-i686-linux-gnu
