@@ -2,17 +2,17 @@
 typedef cvflann::flann_distance_t cvflann_flann_distance_t;
 typedef cvflann::flann_algorithm_t cvflann_flann_algorithm_t;
 
-template<>
-ERL_NIF_TERM evision_from(ErlNifEnv *env, const cvflann_flann_algorithm_t& value)
-{
-    return enif_make_int(env, int(value));
-}
+// template<>
+// ERL_NIF_TERM evision_from(ErlNifEnv *env, const cvflann_flann_algorithm_t& value)
+// {
+//     return enif_make_int(env, int(value));
+// }
 
-template<>
-ERL_NIF_TERM evision_from(ErlNifEnv *env, const cvflann_flann_distance_t& value)
-{
-    return enif_make_int(env, int(value));
-}
+// template<>
+// ERL_NIF_TERM evision_from(ErlNifEnv *env, const cvflann_flann_distance_t& value)
+// {
+//     return enif_make_int(env, int(value));
+// }
 
 template<>
 bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, cv::flann::IndexParams& p, const ArgInfo& info)
@@ -77,12 +77,12 @@ bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, cv::flann::SearchParams & valu
     return evision_to<cv::flann::IndexParams>(env, obj, value, info);
 }
 
-template<>
-bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, cvflann::flann_distance_t& dist, const ArgInfo& info)
-{
-    int d = (int)dist;
-    bool ok = evision_to(env, o, d, info);
-    dist = (cvflann::flann_distance_t)d;
-    return ok;
-}
+// template<>
+// bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, cvflann::flann_distance_t& dist, const ArgInfo& info)
+// {
+//     int d = (int)dist;
+//     bool ok = evision_to(env, o, d, info);
+//     dist = (cvflann::flann_distance_t)d;
+//     return ok;
+// }
 #endif

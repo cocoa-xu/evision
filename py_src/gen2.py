@@ -179,6 +179,21 @@ class BeamWrapperGenerator(object):
 
     def add_const(self, name, decl, original_name=None):
         (module_name, erl_const_name) = name.split('.')[-2:]
+        
+        if original_name.startswith('cvflann.'):
+            original_name = original_name.replace('cvflann.', 'cv.flann.')
+            name = name.replace('cvflann.', 'cv.flann.')
+            
+            if original_name == 'cv.flann.flann_algorithm_t':
+                if not name.startswith('cv.flann.FLANN_INDEX_'):
+                    return
+            if original_name == 'cv.flann.flann_centers_init_t':
+                if not name.startswith('cv.flann.FLANN_CENTERS_'):
+                    return
+            if original_name == 'cv.flann.flann_distance_t':
+                if not name.startswith('cv.flann.FLANN_DIST_'):
+                    return
+
         if original_name is not None:
             if not original_name.startswith('cv.'):
                 print(f'warning: enum name {original_name} does not start with `cv.`')
@@ -232,6 +247,12 @@ class BeamWrapperGenerator(object):
                         'detail.WaveCorrectKind': 'Evision.Detail.WaveCorrectKind',
                         'fisheye': 'Evision.FishEye',
                         'ft': 'Evision.Ft',
+                        'flann': 'Evision.Flann',
+                        'flann.flann_algorithm_t': 'Evision.Flann.Algorithm',
+                        'flann.flann_centers_init_t': 'Evision.Flann.CentersInit',
+                        'flann.flann_log_level_t': 'Evision.Flann.LogLevel',
+                        'flann.flann_distance_t': 'Evision.Flann.Distance',
+                        'flann.flann_datatype_t': 'Evision.Flann.Datatype',
                         'kinfu.VolumeType': 'Evision.KinFu.VolumeType',
                         'mcc.TYPECHART': 'Evision.MCC.TYPECHART',
                         'ml.LogisticRegression.Methods': 'Evision.ML.LogisticRegression.Methods',
@@ -1212,8 +1233,15 @@ if __name__ == "__main__":
     gleam_dstdir = args.gleam_gen
 
     if len(args.headers) > 4:
+        srcfiles = []
         with open(args.headers, 'r') as f:
-            srcfiles = [l.strip() for l in f.readlines()]
+            for l in f.readlines():
+                l = l.strip()
+                srcfiles.append(l)
+                if l.endswith("modules/flann/include/opencv2/flann.hpp"):
+                    flann_defines = l.replace("modules/flann/include/opencv2/flann.hpp", "modules/flann/include/opencv2/flann/defines.h")
+                    if os.path.exists(flann_defines):
+                        srcfiles.append(flann_defines)
     lang = []
     if len(args.lang) >= 5:
         lang = list(set([l.lower().strip() for l in args.lang.split(",")]))
