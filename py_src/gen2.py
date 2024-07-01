@@ -179,10 +179,22 @@ class BeamWrapperGenerator(object):
 
     def add_const(self, name, decl, original_name=None):
         (module_name, erl_const_name) = name.split('.')[-2:]
+        
+        if original_name.startswith('cvflann.'):
+            original_name = original_name.replace('cvflann.', 'cv.flann.')
+            name = name.replace('cvflann.', 'cv.flann.')
+            
+            if original_name == 'cv.flann.flann_algorithm_t':
+                if not name.startswith('cv.flann.FLANN_INDEX_'):
+                    return
+            if original_name == 'cv.flann.flann_centers_init_t':
+                if not name.startswith('cv.flann.FLANN_CENTERS_'):
+                    return
+            if original_name == 'cv.flann.flann_distance_t':
+                if not name.startswith('cv.flann.FLANN_DIST_'):
+                    return
+
         if original_name is not None:
-            if original_name.startswith('cvflann.'):
-                original_name = original_name.replace('cvflann.', 'cv.flann.')
-                name = name.replace('cvflann.', 'cv.flann.')
             if not original_name.startswith('cv.'):
                 print(f'warning: enum name {original_name} does not start with `cv.`')
                 sys.exit(-1)
@@ -236,11 +248,11 @@ class BeamWrapperGenerator(object):
                         'fisheye': 'Evision.FishEye',
                         'ft': 'Evision.Ft',
                         'flann': 'Evision.Flann',
-                        'flann.flann_algorithm_t': 'Evision.Flann.FlannAlgorithm',
-                        'flann.flann_centers_init_t': 'Evision.Flann.FlannCentersInit',
-                        'flann.flann_log_level_t': 'Evision.Flann.FlannLogLevel',
-                        'flann.flann_distance_t': 'Evision.Flann.FlannDistance',
-                        'flann.flann_datatype_t': 'Evision.Flann.FlannDatatype',
+                        'flann.flann_algorithm_t': 'Evision.Flann.Algorithm',
+                        'flann.flann_centers_init_t': 'Evision.Flann.CentersInit',
+                        'flann.flann_log_level_t': 'Evision.Flann.LogLevel',
+                        'flann.flann_distance_t': 'Evision.Flann.Distance',
+                        'flann.flann_datatype_t': 'Evision.Flann.Datatype',
                         'kinfu.VolumeType': 'Evision.KinFu.VolumeType',
                         'mcc.TYPECHART': 'Evision.MCC.TYPECHART',
                         'ml.LogisticRegression.Methods': 'Evision.ML.LogisticRegression.Methods',
@@ -396,8 +408,6 @@ class BeamWrapperGenerator(object):
         const_decls = decl[3]
         for decl in const_decls:
             enum_name = decl[0].replace("const ", "").strip()
-            if 'kdtree' in enum_name.lower():
-                print(enum_name, decl)
             self.add_const(enum_name, decl, original_name=original_name)
 
     def add_func(self, decl):
@@ -796,8 +806,6 @@ class BeamWrapperGenerator(object):
         # step 1: scan the headers and build more descriptive maps of classes, consts, functions
         for hdr in srcfiles:
             decls = self.parser.parse(hdr)
-            if 'flann' in hdr:
-                print(hdr)
             if len(decls) == 0:
                 continue
 
