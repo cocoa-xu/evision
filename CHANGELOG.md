@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.2.6 (2024-07-03)
+[Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.2.6) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.2.6)
+
+### Breaking changes (compile-time and CUDA users only)
+- `EVISION_CUDA_VERSION`, now it should be the major version of CUDA, e.g., `12`.
+- `EVISION_CUDNN_VERSION`, it should be the major version of cuDNN, e.g., `9`.
+
+### Changes
+- Added precompiled version with CUDA 12.x and cudnn 9.x for aarch64-linux-gnu.
+
 ## v0.2.5 (2024-07-01)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.2.5) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.2.5)
 

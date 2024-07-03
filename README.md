@@ -149,7 +149,7 @@ export EVISION_CUDA_VERSION=11
 ## available ones are 
 ## 8, for CUDA 11.x or 12.x, built with CUDNN 8.9.7
 ## 9, for CUDA 11.x or 12.x, built with CUDNN 9.2.0
-export EVISION_CUDA_VERSION=11
+export EVISION_CUDNN_VERSION=9
 
 ## opencv_contrib modules is enabled by default
 export EVISION_ENABLE_CONTRIB=true
