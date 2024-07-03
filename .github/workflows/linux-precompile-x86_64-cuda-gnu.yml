@@ -88,6 +88,7 @@ jobs:
           if [ -d "$(pwd)/cudnn/lib64" ]; then
             cp -a cudnn/lib64/* /usr/local/cuda/lib64/
           fi
+          rm -rf cudnn
 
       - name: Cache mix packages
         id: cache-mix-deps

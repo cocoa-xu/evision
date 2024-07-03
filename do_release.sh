@@ -7,11 +7,12 @@ set -xe
 export MIX_ENV=docs
 export EVISION_PREFER_PRECOMPILED=true
 export EVISION_ENABLE_CUDA=true
-export EVISION_CUDA_VERSION=121
+export EVISION_CUDA_VERSION=12
+export EVISION_CUDNN_VERSION=9
 export NIF_VERSION=2.16
 export EVISION_VERSION="$(grep 'def version, do: "' mix.exs | grep -P -oh '(\d+).(\d+).(\d+)')"
 
-export TARBALL_FILENAME="evision-nif_${NIF_VERSION}-x86_64-linux-gnu-contrib-cuda${EVISION_CUDA_VERSION}-${EVISION_VERSION}"
+export TARBALL_FILENAME="evision-nif_${NIF_VERSION}-x86_64-linux-gnu-contrib-cuda${EVISION_CUDA_VERSION}-cudnn${EVISION_CUDNN_VERSION}-${EVISION_VERSION}"
 export TARBALL_NAME="${TARBALL_FILENAME}.tar.gz"
 curl -fSL "https://github.com/cocoa-xu/evision/releases/download/v${EVISION_VERSION}/${TARBALL_NAME}" -o "/tmp/${TARBALL_NAME}"
 export TARBALL_SHA256="$(sha256sum "/tmp/${TARBALL_NAME}" | cut -d ' ' -f 1)"
