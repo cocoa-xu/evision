@@ -511,6 +511,7 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
         _enable_contrib = false,
         _enable_cuda,
         _cuda_version,
+        _cudnn_version,
         with_ext
       ) do
     "evision-nif_#{nif_version}-#{target}-#{version}#{with_ext}"
