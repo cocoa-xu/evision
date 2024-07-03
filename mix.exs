@@ -500,6 +500,7 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
         enable_contrib,
         enable_cuda,
         cuda_version,
+        cudnn_version,
         with_ext \\ ""
       )
 
