@@ -38,6 +38,7 @@ jobs:
 
       - name: Mix compile (with contrib modules)
         run: |
+          ls -la
           cp -a .github/scripts/*.sh ./
           chmod +x *.sh
           ./script-to-build-gnu.sh "${{ matrix.pair.cuda_pin }}" "${{ matrix.pair.cuda_deb }}" "${{ matrix.pair.cuda_toolkit }}" "${{ matrix.pair.cuda_id }}" "${{ matrix.pair.cudnn_deb }}" "${{ matrix.pair.cudnn_package }}" "${{ matrix.pair.cudnn_id }}" "${{ env.OTP_VERSION }}" "${{ env.ELIXIR_VERSION }}" "${{ env.TRIPLET }}" "${GITHUB_REF}"
