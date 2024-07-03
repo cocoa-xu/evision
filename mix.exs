@@ -10,7 +10,6 @@ defmodule Evision.MixProject.Metadata do
     do: ["4.5.3", "4.5.4", "4.5.5", "4.6.0", "4.7.0", "4.8.0", "4.9.0", "4.10.0"]
 
   def default_cuda_version, do: {"12", "9"}
-  def all_cuda_version("aarch64-linux-gnu"), do: [{"12", "9"}]
   def all_cuda_version(_), do: [{"11", "8"}, {"11", "9"}, {"12", "8"}, {"12", "9"}]
 end
 
