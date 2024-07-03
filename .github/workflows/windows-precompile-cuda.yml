@@ -11,7 +11,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  windows-precompile-cuda11:
+  windows-precompile-cuda:
     runs-on: windows-2019
     env:
       MIX_ENV: prod
@@ -30,12 +30,51 @@ jobs:
       matrix:
         include:
           - pair:
-              cuda_ver: "11.8.0"
-              cuda_id: "118"
-              cudnn: "8.7.0"
               OTP_VERSION: "25"
               NIF_VERSION: "2.16"
+              # cuda 11.8.0
+              cuda_major: "11"
+              cuda_minor: "8"
+              cuda_patch: "0"
+              # cudnn 8.9.7
+              cudnn_major: "8"
+              cudnn_minor: "9"
+              cudnn_patch: "7"
+          - pair:
+              OTP_VERSION: "25"
+              NIF_VERSION: "2.16"
+              # cuda 11.8.0
+              cuda_major: "11"
+              cuda_minor: "8"
+              cuda_patch: "0"
+              # cudnn 9.2.0
+              cudnn_major: "9"
+              cudnn_minor: "2"
+              cudnn_patch: "0"
+          - pair:
+              OTP_VERSION: "25"
+              NIF_VERSION: "2.16"
+              # cuda 12.5.0
+              cuda_major: "12"
+              cuda_minor: "5"
+              cuda_patch: "0"
+              # cudnn 8.9.7
+              cudnn_major: "8"
+              cudnn_minor: "9"
+              cudnn_patch: "7"
+          - pair:
+              OTP_VERSION: "25"
+              NIF_VERSION: "2.16"
+              # cuda 12.5.0
+              cuda_major: "12"
+              cuda_minor: "5"
+              cuda_patch: "0"
+              # cudnn 9.2.0
+              cudnn_major: "9"
+              cudnn_minor: "2"
+              cudnn_patch: "0"
 
+    name: x86_64-windows-msvc-cuda${{ matrix.pair.cuda_major }}-cudnn${{ matrix.pair.cudnn_major }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -58,13 +97,12 @@ jobs:
           arch: x64
           vsversion: "2019"
 
-      - name: Install CUDA with cuDNN 8.7.0
-        uses: cocoa-xu/cuda-toolkit@v0.5.0
+      - name: Install CUDA with cudnn ${{ matrix.pair.cudnn_major }}
+        uses: cocoa-xu/cuda-toolkit@v0.6.0
         with:
-          cuda: ${{ matrix.pair.cuda_ver }}
-          cudnn: ${{ matrix.pair.cudnn }}
-          cudnn_url: ${{ secrets.CUDA_V870_WINDOWS_X86_64_CUDA11 }}
-      
+          cuda: ${{ matrix.pair.cuda_major }}.${{ matrix.pair.cuda_minor }}.${{ matrix.pair.cuda_patch }}
+          cudnn: ${{ matrix.pair.cudnn_major }}.${{ matrix.pair.cudnn_minor }}.${{ matrix.pair.cudnn_patch }}
+
       # check python version and their EOL
       # https://devguide.python.org/versions/
       - uses: actions/setup-python@v5
@@ -88,107 +126,7 @@ jobs:
         run: |
           export RUNNER_DIR=`pwd`
           cd C:/evision
-          export PKG_NAME=evision-nif_${{ matrix.pair.NIF_VERSION }}-x86_64-windows-msvc-contrib-cuda${{ matrix.pair.cuda_id }}-${GITHUB_REF##*/v}
-          mkdir -p "${PKG_NAME}"
-          export PRIV_DIR="$(pwd)/_build/${MIX_ENV}/lib/evision/priv"
-          export TMP_INCLUDE_DIR="$(pwd)/include"
-          mv "${PRIV_DIR}/include" "${TMP_INCLUDE_DIR}"
-          cp -a "${PRIV_DIR}" "${PKG_NAME}"
-          cp -a lib/generated "${PKG_NAME}/elixir_generated"
-          cp -a src/generated "${PKG_NAME}/erlang_generated"
-          tar -czf "${PKG_NAME}.tar.gz" "${PKG_NAME}"
-          rm -rf "${PKG_NAME}"
-          ls -lah "${PKG_NAME}.tar.gz"
-          mkdir -p "${RUNNER_DIR}/artifacts"
-          mv "${PKG_NAME}.tar.gz" "${RUNNER_DIR}/artifacts"
-          cd "${RUNNER_DIR}/artifacts"
-          sha256sum "${PKG_NAME}.tar.gz" | tee "${PKG_NAME}.tar.gz.sha256"
-          mv "${TMP_INCLUDE_DIR}" "${PRIV_DIR}/include"
-
-      - uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            artifacts/*.tar.gz
-            artifacts/*.sha256
-
-  windows-precompile-cuda12:
-    runs-on: windows-2019
-    env:
-      MIX_ENV: prod
-      OPENCV_VER: "4.10.0"
-      ELIXIR_VERSION: "1.16.0"
-      EVISION_PREFER_PRECOMPILED: "false"
-      EVISION_GENERATE_LANG: "erlang,elixir"
-      EVISION_ENABLE_CONTRIB: "true"
-      EVISION_ENABLE_CUDA: "true"
-      MAKE: "nmake"
-      MSBUILD_PLATFORM: x64
-      CMAKE_GENERATOR_TYPE: Ninja
-      EVISION_KEEP_OCV_BUILD_DIR: "false"
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - pair:
-              cuda_ver: "12.1.0"
-              cuda_id: "121"
-              cudnn: "8.9.0"
-              OTP_VERSION: "25"
-              NIF_VERSION: "2.16"
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Git Checkout
-        shell: bash
-        run: |
-          echo "$(pwd)"
-          cd ..
-          ls -lah
-          cp -rf evision /c/evision
-
-      - uses: erlef/setup-beam@v1
-        with:
-          otp-version: ${{ matrix.pair.OTP_VERSION }}
-          elixir-version: ${{ env.ELIXIR_VERSION }}
-
-      - uses: ilammy/msvc-dev-cmd@v1
-        with:
-          arch: x64
-          vsversion: "2019"
-
-      - name: Install CUDA with cuDNN 8.9.0
-        uses: cocoa-xu/cuda-toolkit@v0.5.0
-        with:
-          cuda: ${{ matrix.pair.cuda_ver }}
-          cudnn: ${{ matrix.pair.cudnn }}
-          cudnn_url: ${{ secrets.CUDA_V890_WINDOWS_X86_64_CUDA12 }}
-      
-      # check python version and their EOL
-      # https://devguide.python.org/versions/
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Get mix deps
-        shell: bash
-        run: |
-          cd C:/evision
-          mix deps.get
-
-      - name: Mix compile
-        shell: bash
-        run: |
-          cd C:/evision
-          mix compile
-
-      - name: Create precompiled library
-        shell: bash
-        run: |
-          export RUNNER_DIR=`pwd`
-          cd C:/evision
-          export PKG_NAME=evision-nif_${{ matrix.pair.NIF_VERSION }}-x86_64-windows-msvc-contrib-cuda${{ matrix.pair.cuda_id }}-${GITHUB_REF##*/v}
+          export PKG_NAME=evision-nif_${{ matrix.pair.NIF_VERSION }}-x86_64-windows-msvc-contrib-cuda${{ matrix.pair.cuda_major }}-cudnn${{ matrix.pair.cudnn_major }}-${GITHUB_REF##*/v}
           mkdir -p "${PKG_NAME}"
           export PRIV_DIR="$(pwd)/_build/${MIX_ENV}/lib/evision/priv"
           export TMP_INCLUDE_DIR="$(pwd)/include"

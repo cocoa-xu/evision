@@ -1,0 +1,139 @@
+name: linux-precompile-aarch64-cuda-gnu
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  aarch64-linux-gnu-cuda:
+    runs-on: ${{ matrix.pair.runner }}
+    env:
+      OPENCV_VER: "4.10.0"
+      MIX_ENV: prod
+      ELIXIR_VERSION: "1.16.1"
+      OTP_VERSION: "25.3.2.12"
+      NIF_VERSION: "2.16"
+      EVISION_PREFER_PRECOMPILED: "false"
+      EVISION_GENERATE_LANG: "erlang,elixir"
+      EVISION_ENABLE_CUDA: "true"
+      EVISION_ENABLE_CONTRIB: "true"
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - pair:
+              arch: aarch64-linux-gnu
+              cmake_toolchain_file: "cc_toolchain/aarch64-linux-gnu.cmake"
+              c_compiler: aarch64-linux-gnu-gcc
+              cpp_compiler: aarch64-linux-gnu-g++
+              runner: ubuntu-22.04
+              cuda_id: "12"
+              cudnn_id: "9"
+              cuda_local_installer: "https://developer.download.nvidia.com/compute/cuda/12.5.1/local_installers/cuda-repo-cross-aarch64-ubuntu2204-12-5-local_12.5.1-1_all.deb"
+              cudnn_local_installer: "https://developer.download.nvidia.com/compute/cudnn/9.2.0/local_installers/cudnn-local-repo-cross-aarch64-ubuntu2204-9.2.0_1.0-1_all.deb"
+
+    name: aarch64-linux-gnu-cuda${{ matrix.pair.cuda_id }}-cudnn${{ matrix.pair.cudnn_id }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - uses: erlef/setup-beam@v1
+        with:
+          otp-version: ${{ matrix.pair.OTP_VERSION }}
+          elixir-version: ${{ env.ELIXIR_VERSION }}
+
+      - name: Download CUDA and cudnn Installer for Linux Ubuntu aarch64-jetson
+        run: |
+          curl -fSL "${{ matrix.pair.cuda_local_installer }}" -o cuda-repo-cross-aarch64-all.deb
+          sudo dpkg -i cuda-repo-cross-aarch64-all.deb
+          sudo cp /var/cuda-repo-cross-aarch64*/cuda-*-keyring.gpg /usr/share/keyrings/
+          sudo apt-get update -q
+          sudo apt-get -y install cuda-cross-aarch64
+          sudo rm -rf cuda-repo-cross-aarch64-all.deb
+
+          curl -fSL "${{ matrix.pair.cudnn_local_installer }}" -o cudnn-local-repo-cross-aarch64-all.deb
+          sudo dpkg -i cudnn-local-repo-cross-aarch64-all.deb
+          sudo cp /var/cudnn-local-repo-cross-aarch64-*/cudnn-*-keyring.gpg /usr/share/keyrings/
+          sudo apt-get update -q
+          sudo apt-get -y install cudnn-cross-aarch64
+          sudo rm -rf cudnn-local-repo-cross-aarch64-all.deb
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y build-essential automake autoconf pkg-config bc m4 unzip zip curl git gzip python3 ca-certificates libncurses5-dev libssl-dev libeigen3-dev
+
+      - name: Cache mix packages
+        id: cache-mix-deps
+        uses: actions/cache@v4
+        with:
+          key: deps-${{ hashFiles('mix.lock') }}-${{ matrix.pair.OTP_VERSION }}-${{ env.ELIXIR_VERSION }}
+          path: |
+            ./deps
+
+      - name: Get mix deps
+        if: steps.cache-mix-deps.outputs.cache-hit != 'true'
+        run: |
+          mix deps.get
+
+      - name: Cache OpenCV source code
+        id: cache-opencv
+        uses: actions/cache@v4
+        with:
+          key: opencv-with-contrib-${{ env.OPENCV_VER }}
+          path: |
+            ./3rd_party
+
+      - name: Download OpenCV source code
+        if: steps.cache-opencv.outputs.cache-hit != 'true'
+        run: |
+          bash scripts/download_opencv.sh ${OPENCV_VER} 3rd_party/cache 3rd_party/opencv/
+          bash scripts/download_opencv_contrib.sh ${OPENCV_VER} 3rd_party/cache 3rd_party/opencv/
+
+      - name: Compile OpenCV (with contrib modules)
+        run: |
+          if [ "${{ matrix.pair.cmake_toolchain_file }}" != "" ]; then
+            export CMAKE_TOOLCHAIN_FILE="$(pwd)/${{ matrix.pair.cmake_toolchain_file }}"
+          fi
+          rm -rf "./_build/${{ env.MIX_ENV }}/lib/evision"
+          mix compile_opencv
+
+      - name: Mix compile (with contrib modules)
+        run: |
+          if [ "${{ matrix.pair.cmake_toolchain_file }}" != "" ]; then
+            export CMAKE_TOOLCHAIN_FILE="$(pwd)/${{ matrix.pair.cmake_toolchain_file }}"
+          fi
+          rm -f _build/${MIX_ENV}/lib/evision/priv/evision.so
+          rm -rf lib/generated && rm -rf src/generated
+          mkdir -p lib/generated && mkdir -p src/generated
+          mix compile
+
+      - name: Create precompiled library (with contrib modules)
+        run: |
+          export PKG_NAME=evision-nif_${{ matrix.pair.NIF_VERSION }}-${{ matrix.pair.arch }}-contrib-cuda${{ matrix.pair.cuda_id }}-cudnn${{ matrix.pair.cudnn_id }}-${GITHUB_REF##*/v}
+          mkdir -p "${PKG_NAME}"
+
+          export PRIV_DIR="$(pwd)/_build/${MIX_ENV}/lib/evision/priv"
+          mv "${PRIV_DIR}/include" /tmp/include
+          cp -a "${PRIV_DIR}" "${PKG_NAME}"
+          cp -a lib/generated "${PKG_NAME}/elixir_generated"
+          cp -a src/generated "${PKG_NAME}/erlang_generated"
+          tar -czf "${PKG_NAME}.tar.gz" "${PKG_NAME}"
+          rm -rf "${PKG_NAME}"
+          ls -lah "${PKG_NAME}.tar.gz"
+          mkdir -p artifacts
+          mv "${PKG_NAME}.tar.gz" artifacts
+          cd artifacts
+          sha256sum "${PKG_NAME}.tar.gz" | tee "${PKG_NAME}.tar.gz.sha256"
+          mv /tmp/include "${PRIV_DIR}/include"
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/*.tar.gz
+            artifacts/*.sha256

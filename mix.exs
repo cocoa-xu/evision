@@ -2,15 +2,16 @@ defmodule Evision.MixProject.Metadata do
   @moduledoc false
 
   def app, do: :evision
-  def version, do: "0.2.5"
+  def version, do: "0.2.6"
   def github_url, do: "https://github.com/cocoa-xu/evision"
   def opencv_version, do: "4.10.0"
   # only means compatible. need to write more tests
   def compatible_opencv_versions,
     do: ["4.5.3", "4.5.4", "4.5.5", "4.6.0", "4.7.0", "4.8.0", "4.9.0", "4.10.0"]
 
-  def default_cuda_version, do: "118"
-  def all_cuda_version, do: ["118", "121"]
+  def default_cuda_version, do: {"12", "9"}
+  def all_cuda_version("aarch64-linux-gnu"), do: [{"12", "9"}]
+  def all_cuda_version(_), do: [{"11", "8"}, {"11", "9"}, {"12", "8"}, {"12", "9"}]
 end
 
 defmodule Mix.Tasks.Compile.EvisionPrecompiled do
@@ -49,13 +50,13 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
     nif_version = get_compile_nif_version()
 
     Enum.reduce(@available_targets, [], fn target, acc ->
-      no_contrib = get_download_url(target, version, nif_version, false, false, "")
-      with_contrib = get_download_url(target, version, nif_version, true, false, "")
+      no_contrib = get_download_url(target, version, nif_version, false, false, "", "")
+      with_contrib = get_download_url(target, version, nif_version, true, false, "", "")
 
       with_cuda =
-        if target in ["x86_64-linux-gnu", "x86_64-windows-msvc"] do
-          Enum.map(Metadata.all_cuda_version(), fn cuda_ver ->
-            get_download_url(target, version, nif_version, true, true, cuda_ver)
+        if target in ["x86_64-linux-gnu", "aarch64-linux-gnu", "x86_64-windows-msvc"] do
+          Enum.map(Metadata.all_cuda_version(target), fn {cuda_ver, cudnn_version} ->
+            get_download_url(target, version, nif_version, true, true, cuda_ver, cudnn_version)
           end)
         else
           []
@@ -78,16 +79,20 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
 
     enable_cuda = System.get_env("EVISION_ENABLE_CUDA", "false") == "true"
 
-    cuda_version =
+    {cuda_version, cudnn_version} =
       if enable_cuda do
+        {defalt_cuda, default_cudnn} = Metadata.default_cuda_version()
         System.put_env("EVISION_ENABLE_CUDA", "true")
-        System.get_env("EVISION_CUDA_VERSION", Metadata.default_cuda_version())
+        {
+          System.get_env("EVISION_CUDA_VERSION", defalt_cuda),
+          System.get_env("EVISION_CUDNN_VERSION", default_cudnn)
+        }
       else
         System.put_env("EVISION_ENABLE_CUDA", "false")
-        ""
+        {"", ""}
       end
 
-    get_download_url(target, version, nif_version, enable_contrib, enable_cuda, cuda_version)
+    get_download_url(target, version, nif_version, enable_contrib, enable_cuda, cuda_version, cudnn_version)
   end
 
   def checksum_file(app \\ Mix.Project.config()[:app]) when is_atom(app) do
@@ -508,6 +513,7 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
         _enable_contrib = true,
         _enable_cuda = false,
         _cuda_version,
+        _cudnn_version,
         with_ext
       ) do
     "evision-nif_#{nif_version}-#{target}-contrib-#{version}#{with_ext}"
@@ -520,14 +526,15 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
         _enable_contrib = true,
         _enable_cuda = true,
         cuda_version,
+        cudnn_version,
         with_ext
       ) do
-    "evision-nif_#{nif_version}-#{target}-contrib-cuda#{cuda_version}-#{version}#{with_ext}"
+    "evision-nif_#{nif_version}-#{target}-contrib-cuda#{cuda_version}-cudnn#{cudnn_version}-#{version}#{with_ext}"
   end
 
-  def get_download_url(target, version, nif_version, enable_contrib, enable_cuda, cuda_version) do
+  def get_download_url(target, version, nif_version, enable_contrib, enable_cuda, cuda_version, cudnn_version) do
     tar_file =
-      filename(target, version, nif_version, enable_contrib, enable_cuda, cuda_version, ".tar.gz")
+      filename(target, version, nif_version, enable_contrib, enable_cuda, cuda_version, cudnn_version, ".tar.gz")
 
     "#{Metadata.github_url()}/releases/download/v#{version}/#{tar_file}"
   end
@@ -660,7 +667,8 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
               nif_version,
               enable_contrib,
               enable_cuda,
-              cuda_version
+              cuda_version,
+              cudnn_version
             )
 
           {:ok, _} = Application.ensure_all_started(:inets)

@@ -140,9 +140,17 @@ export EVISION_ENABLE_CUDA=true
 ## set a CUDA version that matches your local CUDA driver
 ## (this environment variable is only required for users who'd like to use precompiled binaries)
 ## available ones are 
-## 118, for CUDA 11.8+, built with CUDA 11.8.0
-## 121, for CUDA 12.1+, built with CUDA 12.1.0
-export EVISION_CUDA_VERSION=118
+## 11, for CUDA 11.x, built with CUDA 11.8.0
+## 12, for CUDA 12.x, built with CUDA 12.5.0
+export EVISION_CUDA_VERSION=11
+
+## set a CUDNN version that matches your local CUDNN shared library
+## (this environment variable is only required for users who'd like to use precompiled binaries)
+## available ones are 
+## 8, for CUDA 11.x or 12.x, built with CUDNN 8.9.7
+## 9, for CUDA 11.x or 12.x, built with CUDNN 9.2.0
+export EVISION_CUDA_VERSION=11
+
 ## opencv_contrib modules is enabled by default
 export EVISION_ENABLE_CONTRIB=true
 
