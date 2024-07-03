@@ -117,6 +117,17 @@ gpumat_struct_elixir = '  @typedoc """\n' + \
   - **elemSize**: `integer()`.
 
     Element size in bytes.
+    
+  - **step**: `integer()`.
+
+    Number of bytes between two consecutive rows.
+    
+    When there are no gaps between successive rows, the value of `step` 
+    is equal to the number of columns times the element size.
+    
+  - **device_id**: `integer() | nil`.
+  
+    `nil` if currently there's no GPU memory allocated for the GpuMat resource.
 
   - **ref**: `reference`.
 
@@ -131,10 +142,12 @@ gpumat_struct_elixir = '  @typedoc """\n' + \
     raw_type: integer(),
     shape: tuple(),
     elemSize: integer(),
+    step: integer(),
+    device_id: integer() | nil,
     ref: reference()
   }
-  @enforce_keys [:channels, :type, :raw_type, :shape, :elemSize, :ref]
-  defstruct [:channels, :type, :raw_type, :shape, :elemSize, :ref]
+  @enforce_keys [:channels, :type, :raw_type, :shape, :elemSize, :step, :device_id, :ref]
+  defstruct [:channels, :type, :raw_type, :shape, :elemSize, :step, :device_id, :ref]
   alias __MODULE__, as: T
 
   @doc false
@@ -144,6 +157,8 @@ gpumat_struct_elixir = '  @typedoc """\n' + \
         :type => type,
         :raw_type => raw_type,
         :shape => shape,
+        :step => step,
+        :device_id => device_id,
         :elemSize => elemSize,
         :ref => ref
       }) do
@@ -152,6 +167,8 @@ gpumat_struct_elixir = '  @typedoc """\n' + \
       type: type,
       raw_type: raw_type,
       shape: shape,
+      step: step,
+      device_id: device_id,
       elemSize: elemSize,
       ref: ref
     }
@@ -169,14 +186,16 @@ gpumat_struct_elixir = '  @typedoc """\n' + \
 """
 
 gpumat_struct_erlang = """
-to_struct(#{class := 'Elixir.Evision.CUDA.GpuMat', ref := Ref, channels := Channels, type := Type, raw_type := RawType, shape := Shape, elemSize := ElemSize}) ->
+to_struct(#{class := 'Elixir.Evision.CUDA.GpuMat', ref := Ref, channels := Channels, type := Type, raw_type := RawType, shape := Shape, step := Step, device_id := DeviceID, elemSize := ElemSize}) ->
   #evision_cuda_gpumat{
       channels = Channels,
       type = Type,
       raw_type = RawType,
       shape = Shape,
-      ref = Ref,
-      elemSize = ElemSize
+      elemSize = ElemSize,
+      step = Step,
+      device_id = DeviceID,
+      ref = Ref
   };
 to_struct(Any) ->
     evision_internal_structurise:to_struct(Any).
@@ -195,8 +214,10 @@ pub type GpuMat {
     dtype: DType,
     raw_type: Int,
     shape: List(Int),
-    ref: Reference,
     elem_size: Int,
+    step: Int,
+    device_id: Int,
+    ref: Reference
   )
 }
 

@@ -9,6 +9,7 @@
 #include <cmath>
 #include <erl_nif.h>
 #include <limits>
+#include <functional>
 
 #if defined(_MSC_VER) && (_MSC_VER > 1800)
 #pragma warning(pop)
@@ -39,8 +40,10 @@
 #include "erlcompat.hpp"
 #include "ArgInfo.hpp"
 #include "evision_consts.h"
+#include "modules/evision_cuda.h"
 #include "modules/evision_mat_api.h"
 #include <map>
+#include <optional>
 
 #include <type_traits>  // std::enable_if
 
@@ -211,11 +214,11 @@ ERL_NIF_TERM evision_from_as_map(ErlNifEnv *env, const T& src, ERL_NIF_TERM res_
 
 template<>
 ERL_NIF_TERM evision_from_as_map(ErlNifEnv *env, const cv::Ptr<cv::cuda::GpuMat>& src, ERL_NIF_TERM res_term, const char * class_name, bool& success) {
-    const size_t num_items = 7;
+    size_t max_num_items = 9;
     size_t item_index = 0;
 
-    ERL_NIF_TERM keys[num_items];
-    ERL_NIF_TERM values[num_items];
+    ERL_NIF_TERM keys[max_num_items];
+    ERL_NIF_TERM values[max_num_items];
 
     keys[item_index] = kAtomRef;
     values[item_index] = res_term;
@@ -241,6 +244,10 @@ ERL_NIF_TERM evision_from_as_map(ErlNifEnv *env, const cv::Ptr<cv::cuda::GpuMat>
     values[item_index] = enif_make_int(env, src->elemSize());
     item_index++;
 
+    keys[item_index] = kAtomStep;
+    values[item_index] = enif_make_int(env, src->step);
+    item_index++;
+
     keys[item_index] = kAtomShape;
     ERL_NIF_TERM shape[3];
     shape[0] = enif_make_int(env, src->rows);
@@ -251,6 +258,15 @@ ERL_NIF_TERM evision_from_as_map(ErlNifEnv *env, const cv::Ptr<cv::cuda::GpuMat>
 #else
     values[item_index] = enif_make_tuple_from_array(env, shape, 3);
 #endif
+    item_index++;
+
+    auto device_id = get_gpumat_device_id(src->cudaPtr());
+    keys[item_index] = kAtomDeviceID;
+    if (device_id) {
+        values[item_index] = enif_make_int64(env, device_id.value());
+    } else {
+        values[item_index] = kAtomNil;
+    }
     item_index++;
 
     ERL_NIF_TERM map;
@@ -3076,6 +3092,8 @@ on_load(ErlNifEnv* env, void**, ERL_NIF_TERM)
     kAtomData = evision::nif::atom(env, "data");
     kAtomRawType = evision::nif::atom(env, "raw_type");
     kAtomElemSize = evision::nif::atom(env, "elemSize");
+    kAtomStep = evision::nif::atom(env, "step");
+    kAtomDeviceID = evision::nif::atom(env, "device_id");
     kAtomShape = evision::nif::atom(env, "shape");
     kAtomStructKey = evision::nif::atom(env, "__struct__");
     kAtomNxTensorModule = evision::nif::atom(env, "Elixir.Nx.Tensor");
