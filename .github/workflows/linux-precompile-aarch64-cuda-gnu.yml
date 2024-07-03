@@ -22,7 +22,7 @@ jobs:
         include:
           - pair:
               arch: aarch64-linux-gnu
-              runner: self-hosted-aarch64-linux-gnu
+              runner: ubicloud-standard-4-arm
               cuda_id: "11"
               cudnn_id: "8"
               cuda_pin: "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/sbsa/cuda-ubuntu2004.pin"
@@ -32,7 +32,7 @@ jobs:
               cudnn_package: "libcudnn8-dev"
           - pair:
               arch: aarch64-linux-gnu
-              runner: ubicloud-standard-16-arm
+              runner: ubicloud-standard-4-arm
               cuda_id: "11"
               cudnn_id: "9"
               cuda_pin: "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/sbsa/cuda-ubuntu2004.pin"
@@ -52,7 +52,7 @@ jobs:
               cudnn_package: "libcudnn8-dev"
           - pair:
               arch: aarch64-linux-gnu
-              runner: ubicloud-standard-8-arm
+              runner: ubicloud-standard-4-arm
               cuda_id: "12"
               cudnn_id: "9"
               cuda_pin: "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/sbsa/cuda-ubuntu2004.pin"

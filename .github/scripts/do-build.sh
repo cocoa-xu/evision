@@ -15,8 +15,8 @@ TRIPLET=${10}
 GITHUB_REF=${11}
 
 export LANG=en_US.UTF-8 LANGUAGE=en_US:en LC_ALL=en_US.UTF-8 DEBIAN_FRONTEND=noninteractive
-apt-get update && \
-    apt-get install -y --no-install-recommends \
+DEBIAN_FRONTEND=noninteractive apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     build-essential gcc g++ make autoconf m4 libncurses5-dev libssl-dev \
     cmake make ninja-build git wget ca-certificates libtinfo5 \
     automake autoconf pkg-config bc unzip zip curl gzip python3 libeigen3-dev \
