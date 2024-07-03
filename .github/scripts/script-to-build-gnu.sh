@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 set -x
 
@@ -11,8 +11,8 @@ CUDNN_PACKAGE=$6
 CUDNN_ID=$7
 OTP_VERSION=$8
 ELIXIR_VERSION=$9
-TRIPLET=$10
-GITHUB_REF=$11
+TRIPLET=${10}
+GITHUB_REF=${11}
 IMAGE_NAME="ubuntu:20.04"
 
 sudo docker run --privileged --network=host --rm -v $(pwd):/work "${IMAGE_NAME}" \
