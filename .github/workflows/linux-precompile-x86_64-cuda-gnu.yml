@@ -78,6 +78,7 @@ jobs:
       - name: Download and install cudnn
         run: |
           curl -fSL "${{ matrix.cudnn_tarball }}" -o cudnn.tar.xz
+          mkdir -p cudnn
           tar -xvf cudnn.tar.xz -C cudnn --strip-components=1
           rm -f cudnn.tar.xz
           cp -a cudnn/include/* /usr/local/cuda/include/
