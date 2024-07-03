@@ -23,6 +23,36 @@ jobs:
           - pair:
               arch: aarch64-linux-gnu
               runner: self-hosted-aarch64-linux-gnu
+              cuda_id: "11"
+              cudnn_id: "8"
+              cuda_pin: "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/sbsa/cuda-ubuntu2004.pin"
+              cuda_deb: "https://developer.download.nvidia.com/compute/cuda/11.8.0/local_installers/cuda-repo-ubuntu2004-11-8-local_11.8.0-520.61.05-1_arm64.deb"
+              cuda_toolkit: "cuda"
+              cudnn_deb: "https://mirrors.uwucocoa.moe/cuda/cudnn-local-repo-ubuntu2004-8.9.7.29_1.0-1_arm64.deb"
+              cudnn_package: "libcudnn8-dev"
+          - pair:
+              arch: aarch64-linux-gnu
+              runner: self-hosted-aarch64-linux-gnu
+              cuda_id: "11"
+              cudnn_id: "9"
+              cuda_pin: "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/sbsa/cuda-ubuntu2004.pin"
+              cuda_deb: "https://developer.download.nvidia.com/compute/cuda/11.8.0/local_installers/cuda-repo-ubuntu2004-11-8-local_11.8.0-520.61.05-1_arm64.deb"
+              cuda_toolkit: "cuda"
+              cudnn_deb: "https://developer.download.nvidia.com/compute/cudnn/9.2.0/local_installers/cudnn-local-repo-ubuntu2004-9.2.0_1.0-1_arm64.deb"
+              cudnn_package: "cudnn-cuda-12"
+          - pair:
+              arch: aarch64-linux-gnu
+              runner: self-hosted-aarch64-linux-gnu
+              cuda_id: "12"
+              cudnn_id: "8"
+              cuda_pin: "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/sbsa/cuda-ubuntu2004.pin"
+              cuda_deb: "https://developer.download.nvidia.com/compute/cuda/12.5.1/local_installers/cuda-repo-ubuntu2004-12-5-local_12.5.1-555.42.06-1_arm64.deb"
+              cuda_toolkit: "cuda-toolkit-12-5"
+              cudnn_deb: "https://mirrors.uwucocoa.moe/cuda/cudnn-local-repo-ubuntu2004-8.9.7.29_1.0-1_arm64.deb"
+              cudnn_package: "libcudnn8-dev"
+          - pair:
+              arch: aarch64-linux-gnu
+              runner: self-hosted-aarch64-linux-gnu
               cuda_id: "12"
               cudnn_id: "9"
               cuda_pin: "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/sbsa/cuda-ubuntu2004.pin"
