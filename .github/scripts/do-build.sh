@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -xe
+
 CUDA_PIN=$1
 CUDA_DEB=$2
 CUDA_TOOLKIT=$3
@@ -48,7 +50,7 @@ export PATH="/usr/local/cuda/bin:${PATH}"
 
 mkdir -p ./cache/otp
 curl -fSL "https://github.com/cocoa-xu/otp-build/releases/download/v${OTP_VERSION}/otp-${TRIPLET}.tar.gz" -o "./cache/otp/otp-v${OTP_VERSION}-${TRIPLET}.tar.gz"
-export ROOT_DIR=$(pwd)
+export ROOT_DIR="$(pwd)"
 cd ./cache/otp
 tar -xzf "otp-v${OTP_VERSION}-${TRIPLET}.tar.gz"
 cd "${ROOT_DIR}"
