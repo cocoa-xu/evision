@@ -15,8 +15,8 @@ jobs:
     env:
       OPENCV_VER: "4.10.0"
       MIX_ENV: prod
-      ELIXIR_VERSION: "1.16.1"
-      OTP_VERSION: "25.3.2.12"
+      ELIXIR_VERSION: "1.16"
+      OTP_VERSION: "25"
       NIF_VERSION: "2.16"
       EVISION_PREFER_PRECOMPILED: "false"
       EVISION_GENERATE_LANG: "erlang,elixir"
@@ -44,7 +44,7 @@ jobs:
 
       - uses: erlef/setup-beam@v1
         with:
-          otp-version: ${{ matrix.pair.OTP_VERSION }}
+          otp-version: ${{ env.OTP_VERSION }}
           elixir-version: ${{ env.ELIXIR_VERSION }}
 
       - name: Download CUDA and cudnn Installer for Linux Ubuntu aarch64-jetson

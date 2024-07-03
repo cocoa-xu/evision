@@ -574,11 +574,11 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
     Path.join([build_path, "lib", "#{app}", "priv"])
   end
 
-  def prepare(target, os, version, nif_version, enable_contrib, enable_cuda, cuda_version) do
-    name = filename(target, version, nif_version, enable_contrib, enable_cuda, cuda_version)
+  def prepare(target, os, version, nif_version, enable_contrib, enable_cuda, cuda_version, cudnn_version) do
+    name = filename(target, version, nif_version, enable_contrib, enable_cuda, cuda_version, cudnn_version)
 
     filename =
-      filename(target, version, nif_version, enable_contrib, enable_cuda, cuda_version, ".tar.gz")
+      filename(target, version, nif_version, enable_contrib, enable_cuda, cuda_version, cudnn_version, ".tar.gz")
 
     cache_dir = cache_dir()
     cache_file = Path.join([cache_dir, filename])
@@ -814,8 +814,10 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
         nif_version = get_compile_nif_version()
         enable_contrib = System.get_env("EVISION_ENABLE_CONTRIB", "true") == "true"
         enable_cuda = System.get_env("EVISION_ENABLE_CUDA", "false") == "true"
-        cuda_version = System.get_env("EVISION_CUDA_VERSION", Metadata.default_cuda_version())
-        prepare(target, os, version, nif_version, enable_contrib, enable_cuda, cuda_version)
+        {default_cuda_version, default_cudnn_version} = Metadata.default_cuda_version()
+        cuda_version = System.get_env("EVISION_CUDA_VERSION", default_cuda_version)
+        cudnn_version = System.get_env("EVISION_CUDNN_VERSION", default_cudnn_version)
+        prepare(target, os, version, nif_version, enable_contrib, enable_cuda, cuda_version, cudnn_version)
       else
         _ ->
           raise RuntimeError, "Cannot use precompiled binaries."
