@@ -47,20 +47,20 @@ sudo rm -rf cudnn.deb
 export PATH="/usr/local/cuda/bin:${PATH}"
 
 mkdir -p ./cache/otp
-curl -fSL https://github.com/cocoa-xu/otp-build/releases/download/v${OTP_VERSION}/otp-${TRIPLET}.tar.gz -o ./cache/otp/otp-v${OTP_VERSION}-${TRIPLET}.tar.gz
+curl -fSL "https://github.com/cocoa-xu/otp-build/releases/download/v${OTP_VERSION}/otp-${TRIPLET}.tar.gz" -o "./cache/otp/otp-v${OTP_VERSION}-${TRIPLET}.tar.gz"
 export ROOT_DIR=$(pwd)
 cd ./cache/otp
-tar -xzf otp-v${OTP_VERSION}-${TRIPLET}.tar.gz
+tar -xzf "otp-v${OTP_VERSION}-${TRIPLET}.tar.gz"
 cd "${ROOT_DIR}"
 
 ELIXIR_VERSION="1.16.2"
-export PATH=$(pwd)/./cache/otp/usr/local/bin:$(pwd)/./cache/elixir/elixir-${ELIXIR_VERSION}/bin:${PATH}
-export ERL_ROOTDIR=$(pwd)/./cache/otp/usr/local/lib/erlang
+export PATH="$(pwd)/./cache/otp/usr/local/bin:$(pwd)/./cache/elixir/elixir-${ELIXIR_VERSION}/bin:${PATH}"
+export ERL_ROOTDIR="$(pwd)/./cache/otp/usr/local/lib/erlang"
 mkdir -p ./cache/elixir
-curl -fSL https://github.com/elixir-lang/elixir/archive/refs/tags/v${ELIXIR_VERSION}.tar.gz -o ./cache/elixir/elixir-${ELIXIR_VERSION}.tar.gz
+curl -fSL "https://github.com/elixir-lang/elixir/archive/refs/tags/v${ELIXIR_VERSION}.tar.gz" -o "./cache/elixir/elixir-${ELIXIR_VERSION}.tar.gz"
 cd ./cache/elixir
-tar -xzf elixir-${ELIXIR_VERSION}.tar.gz
-cd elixir-${ELIXIR_VERSION}
+tar -xzf "elixir-${ELIXIR_VERSION}.tar.gz"
+cd "elixir-${ELIXIR_VERSION}"
 make -j$(nproc) install
 
 cd "${ROOT_DIR}"
@@ -72,7 +72,7 @@ cd /work
 mix deps.get
 mix compile
 
-export PKG_NAME=evision-nif_${NIF_VERSION}-${TRIPLET}-contrib-cuda${CUDA_ID}-cudnn${CUDNN_ID}-${GITHUB_REF##*/v}
+export PKG_NAME="evision-nif_${NIF_VERSION}-${TRIPLET}-contrib-cuda${CUDA_ID}-cudnn${CUDNN_ID}-${GITHUB_REF##*/v}"
 mkdir -p "${PKG_NAME}"
 
 export PRIV_DIR="$(pwd)/_build/${MIX_ENV}/lib/evision/priv"
