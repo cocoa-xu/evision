@@ -214,7 +214,7 @@ ERL_NIF_TERM evision_from_as_map(ErlNifEnv *env, const T& src, ERL_NIF_TERM res_
 
 template<>
 ERL_NIF_TERM evision_from_as_map(ErlNifEnv *env, const cv::Ptr<cv::cuda::GpuMat>& src, ERL_NIF_TERM res_term, const char * class_name, bool& success) {
-    size_t max_num_items = 9;
+    const size_t max_num_items = 9;
     size_t item_index = 0;
 
     ERL_NIF_TERM keys[max_num_items];
