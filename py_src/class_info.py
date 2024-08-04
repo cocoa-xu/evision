@@ -340,10 +340,6 @@ class ClassInfo(object):
 
             evision_modules[elixir_module_name_underscore] = module_file_generator
 
-        # erl_type = 'CV_ERL_TYPE'
-        # if self.name in ['face_FaceRecognizer', 'face_BasicFaceRecognizer']:
-        #     erl_type = 'CV_ERL_TYPE_FACE_RECOGNIZER'
-        
         return "CV_ERL_TYPE({}, {}, {}, {}, {}, {}, {});\n".format(
             self.wname,
             self.name,
