@@ -1,7 +1,22 @@
 # Changelog
 
-## v0.2.6 (2024-07-03)
-[Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.2.6) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.2.6)
+## v0.2.8 (2024-08-04)
+[Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.2.8) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.2.8)
+
+### Fixes
+
+- Fixed inheritance issues for classes that have any of the following base classes:
+  - `cv::img_hash::ImgHashBase`
+  - `cv::legacy::Tracker`
+  - `cv::phase_unwrapping::PhaseUnwrapping`
+  - `cv::rapid::Tracker`
+  - `cv::reg::Map`
+  - `cv::reg::Mapper`
+  - `cv::structured_light::StructuredLightPattern`
+  - `BackgroundSubtractor`
+
+## v0.2.7 (2024-07-03)
+[Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.2.7) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.2.7)
 
 ### Breaking changes (compile-time and CUDA users only)
 - `EVISION_CUDA_VERSION`, now it should be the major version of CUDA, e.g., `12`.
