@@ -117,7 +117,7 @@ class ClassInfo(object):
                         base_class == "GraphicalCodeDetector"
                         or current_class.cname.startswith("cv::ml") 
                         or "Calibrate" in current_class.cname
-                        or "Calibrate" in current_class.cname
+                        or "FaceRecognizer" in current_class.cname
                         or (current_class.base is not None and "Feature2D" in current_class.base) 
                         or (current_class.base is not None and "Matcher" in current_class.base)
                         or (current_class.base is not None and "Algorithm" in current_class.base)
@@ -248,7 +248,8 @@ class ClassInfo(object):
                 and (
                         base_class == "GraphicalCodeDetector"
                         or current_class.cname.startswith("cv::ml") 
-                        or "Calibrate" in current_class.cname 
+                        or "Calibrate" in current_class.cname
+                        or "FaceRecognizer" in current_class.cname
                         or (current_class.base is not None and "Feature2D" in current_class.base) 
                         or (current_class.base is not None and "Matcher" in current_class.base)
                         or (current_class.base is not None and "Algorithm" in current_class.base)
