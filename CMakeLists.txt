@@ -156,7 +156,7 @@ if(WIN32)
         TARGETS windows_fix
         RUNTIME DESTINATION "${PRIV_DIR}"
     )
-    set_property(TARGET windows_fix PROPERTY CXX_STANDARD 14)
+    set_property(TARGET windows_fix PROPERTY CXX_STANDARD 17)
     set_property(TARGET windows_fix PROPERTY POSITION_INDEPENDENT_CODE ON)
     set_target_properties(windows_fix PROPERTIES PREFIX "")
     set_target_properties(windows_fix PROPERTIES
