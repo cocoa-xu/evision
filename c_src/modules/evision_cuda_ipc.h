@@ -1,5 +1,5 @@
 #ifndef EVISION_CUDA_IPC_H
-#define EVISION_CUDA_H
+#define EVISION_CUDA_IPC_H
 
 #pragma once
 
