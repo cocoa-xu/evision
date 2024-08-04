@@ -717,6 +717,7 @@ def is_struct(argtype: str, also_get: Optional[str] = None, classname: Optional[
         'Stream': 'Evision.CUDA.Stream',
         'CUDA.Stream': 'Evision.CUDA.Stream',
         'CUDA.SURFCUDA': 'Evision.CUDA.SURFCUDA',
+        'CUDA.BackgroundSubtractorMOG': 'Evision.CUDA.BackgroundSubtractorMOG',
         'TargetArchs': 'Evision.CUDA.TargetArchs',
         'cudacodec_VideoWriter': 'Evision.CUDACodec.VideoWriter',
         'DenseOpticalFlow': 'Evision.DenseOpticalFlow',
