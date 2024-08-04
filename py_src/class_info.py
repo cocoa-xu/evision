@@ -15,6 +15,20 @@ else:
     from cStringIO import StringIO
 
 
+base_classes_to_check = [
+    "GraphicalCodeDetector", 
+    "img_hash_ImgHashBase", 
+    "BackgroundSubtractor",
+    "legacy_Tracker",
+    "ml_StatModel",
+    "phase_unwrapping_PhaseUnwrapping",
+    "rapid_Tracker",
+    "reg_Map",
+    "reg_Mapper",
+    "structured_light_StructuredLightPattern",
+    "SparseOpticalFlow"
+]
+
 class ClassInfo(object):
     def __init__(self, name, decl=None, codegen=None):
         # Scope name can be a module or other class e.g. cv::SimpleBlobDetector::Params
@@ -114,10 +128,12 @@ class ClassInfo(object):
         while base_class is not None:
             if base_class \
                 and (
-                        base_class == "GraphicalCodeDetector"
+                        base_class in base_classes_to_check
                         or current_class.cname.startswith("cv::ml") 
                         or "Calibrate" in current_class.cname
                         or "FaceRecognizer" in current_class.cname
+                        or "Facemark" in current_class.cname
+                        or "Collector" in current_class.cname
                         or (current_class.base is not None and "Feature2D" in current_class.base) 
                         or (current_class.base is not None and "Matcher" in current_class.base)
                         or (current_class.base is not None and "Algorithm" in current_class.base)
@@ -246,10 +262,12 @@ class ClassInfo(object):
         while base_class is not None:
             if base_class \
                 and (
-                        base_class == "GraphicalCodeDetector"
-                        or current_class.cname.startswith("cv::ml") 
+                        base_class in base_classes_to_check
+                        or current_class.cname.startswith("cv::ml")
                         or "Calibrate" in current_class.cname
                         or "FaceRecognizer" in current_class.cname
+                        or "Facemark" in current_class.cname
+                        or "Collector" in current_class.cname
                         or (current_class.base is not None and "Feature2D" in current_class.base) 
                         or (current_class.base is not None and "Matcher" in current_class.base)
                         or (current_class.base is not None and "Algorithm" in current_class.base)
