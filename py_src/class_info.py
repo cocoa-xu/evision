@@ -117,7 +117,7 @@ class ClassInfo(object):
                         base_class == "GraphicalCodeDetector"
                         or current_class.cname.startswith("cv::ml") 
                         or "Calibrate" in current_class.cname
-                        or "Calibrate" in current_class.cname
+                        or "FaceRecognizer" in current_class.cname
                         or (current_class.base is not None and "Feature2D" in current_class.base) 
                         or (current_class.base is not None and "Matcher" in current_class.base)
                         or (current_class.base is not None and "Algorithm" in current_class.base)
@@ -248,7 +248,8 @@ class ClassInfo(object):
                 and (
                         base_class == "GraphicalCodeDetector"
                         or current_class.cname.startswith("cv::ml") 
-                        or "Calibrate" in current_class.cname 
+                        or "Calibrate" in current_class.cname
+                        or "FaceRecognizer" in current_class.cname
                         or (current_class.base is not None and "Feature2D" in current_class.base) 
                         or (current_class.base is not None and "Matcher" in current_class.base)
                         or (current_class.base is not None and "Algorithm" in current_class.base)
@@ -339,6 +340,10 @@ class ClassInfo(object):
 
             evision_modules[elixir_module_name_underscore] = module_file_generator
 
+        # erl_type = 'CV_ERL_TYPE'
+        # if self.name in ['face_FaceRecognizer', 'face_BasicFaceRecognizer']:
+        #     erl_type = 'CV_ERL_TYPE_FACE_RECOGNIZER'
+        
         return "CV_ERL_TYPE({}, {}, {}, {}, {}, {}, {});\n".format(
             self.wname,
             self.name,

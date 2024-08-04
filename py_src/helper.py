@@ -789,6 +789,8 @@ def is_struct(argtype: str, also_get: Optional[str] = None, classname: Optional[
         'Facemark': 'Evision.Face.Facemark',
         'Face.Facemark': 'Evision.Face.Facemark',
         'Face.FaceRecognizer': 'Evision.Face.FaceRecognizer',
+        'Face.EigenFaceRecognizer': 'Evision.Face.EigenFaceRecognizer',
+        'Face.FisherFaceRecognizer': 'Evision.Face.FisherFaceRecognizer',
         'Face.MACE': 'Evision.Face.MACE',
         'FaceDetectorYN': 'Evision.FaceDetectorYN',
         'FaceRecognizerSF': 'Evision.FaceRecognizerSF',
