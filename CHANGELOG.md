@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.2.9 (2024-08-17)
+[Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.2.9) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.2.9)
+
+### Fixes
+
+- Include the `c_src/evision_consts.h` in the package.
+
 ## v0.2.8 (2024-08-04)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.2.8) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.2.8)
 

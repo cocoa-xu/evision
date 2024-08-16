@@ -2,7 +2,7 @@ defmodule Evision.MixProject.Metadata do
   @moduledoc false
 
   def app, do: :evision
-  def version, do: "0.2.8"
+  def version, do: "0.2.9"
   def github_url, do: "https://github.com/cocoa-xu/evision"
   def opencv_version, do: "4.10.0"
   # only means compatible. need to write more tests
@@ -1383,36 +1383,39 @@ defmodule Evision.MixProject do
       files: ~w(
           c_src/evision_custom_headers
           c_src/modules
+          c_src/windows_fix
           c_src/ArgInfo.hpp
           c_src/erlcompat.hpp
-          c_src/evision.cpp
+          c_src/evision_consts.h
           c_src/evision_custom_headers.h
+          c_src/evision.cpp
           c_src/nif_utils.hpp
-          c_src/windows_fix
+          cc_toolchain
+          lib/assets
+          lib/evision
+          lib/mix
+          lib/smartcell
+          lib/zoo
+          lib/*.ex
+          patches
           py_src/*.py
           scripts
-          patches
-          cc_toolchain
-          Makefile
-          Makefile.win
-          CMakeLists.txt
-          lib/*.ex
-          lib/zoo
-          lib/evision
-          lib/smartcell
-          lib/assets
-          lib/mix
-          .formatter.exs
-          mix.exs
-          checksum.exs
-          checksum.erl
-          evision_precompiled.erl
           src/evision_mat.erl
           src/evision_highgui.erl
           src/evision_internal_structurise.erl
           src/evision.app.src
+          checksum.exs
+          checksum.erl
+          CMakeLists.txt
+          evision_precompiled.erl
+          Makefile
+          Makefile.win
+          .formatter.exs
+          mix.exs
           rebar.config
-          README* LICENSE* CHANGELOG*),
+          README*
+          LICENSE*
+          CHANGELOG*),
       licenses: ["Apache-2.0"],
       links: links()
     ]
