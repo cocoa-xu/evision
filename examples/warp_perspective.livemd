@@ -5,7 +5,7 @@ Mix.install(
   [
     {:evision, "~> 0.1.31"},
     {:kino, "~> 0.9.0"},
-    {:req, "~> 0.3.0"}
+    {:req, "~> 0.5"}
   ],
   system_env: [
     # optional, defaults to `true`
@@ -64,23 +64,25 @@ Let's prepare helper functions for preparing resources.
 
 ```elixir
 defmodule Helper do
-  def download!(url, overwrite \\ false) do
-    save_as = Path.join(System.tmp_dir!(), URI.encode_www_form(url))
-    unless File.exists?(save_as) || overwrite, do: Req.get!(url, output: save_as)
-    save_as
-  end
+  def download!(url, save_as, overwrite? \\ false) do
+    unless File.exists?(save_as) do
+      Req.get!(url, http_errors: :raise, into: File.stream!(save_as), cache: not overwrite?)
+    end
 
+    :ok
+  end
 end
 ```
 
 ## Read the Test Image
 
 ```elixir
-# Read the test image
-test_img_mat =
+test_image_source =
   "https://raw.githubusercontent.com/cocoa-xu/evision/main/test/testdata/warp_perspective.png"
-  |> Helper.download!()
-  |> Cv.imread()
+test_image_path = Path.join(__DIR__, Path.basename(test_image_source))
+Helper.download!(test_image_source, test_image_path)
+
+test_img_mat = Cv.imread(test_image_path)
 ```
 
 ## Function hypot: returns the Euclidean norm
