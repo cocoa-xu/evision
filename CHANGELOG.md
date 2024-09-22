@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.2.10 (2024-09-22)
+[Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.2.10) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.2.10)
+
+### Changes
+
+- Bump `req` to `0.5` and updated examples accordingly. Thanks @mnishiguchi for PR [#266](https://github.com/cocoa-xu/evision/pull/266)
+
 ## v0.2.9 (2024-08-17)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.2.9) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.2.9)
 
