@@ -6,7 +6,7 @@
 Mix.install([
   {:evision, "~> 0.2"},
   {:kino, "~> 0.7"},
-  {:req, "~> 0.3"},
+  {:req, "~> 0.5"},
   {:torchx, "~> 0.4"},
   {:nx, "~> 0.4"},
   {:scidata, "~> 0.1"},
@@ -30,11 +30,11 @@ Mix.install([
   # because cuda related modules come from the `opencv_contrib` repo
   {"EVISION_ENABLE_CUDA", false},
 
-  # required when 
+  # required when
   # - `EVISION_ENABLE_CUDA` is `true`
   # - and `EVISION_PREFER_PRECOMPILED` is `true`
   #
-  # set `EVISION_CUDA_VERSION` to the version that matches 
+  # set `EVISION_CUDA_VERSION` to the version that matches
   # your local CUDA runtime version
   #
   # current available versions are
@@ -42,7 +42,7 @@ Mix.install([
   # - 121
   {"EVISION_CUDA_VERSION", "118"},
 
-  # require for Windows users when 
+  # require for Windows users when
   # - `EVISION_ENABLE_CUDA` is `true`
   # set `EVISION_CUDA_RUNTIME_DIR` to the directory that contains
   # CUDA runtime libraries
@@ -68,7 +68,7 @@ The code of the neural network was taken from https://github.com/elixir-nx/axon/
 defmodule Helper do
   def download!(url, save_as, overwrite? \\ false) do
     unless File.exists?(save_as) do
-      Req.get!(url, http_errors: :raise, output: save_as, cache: not overwrite?)
+      Req.get!(url, http_errors: :raise, into: File.stream!(save_as), cache: not overwrite?)
     end
 
     :ok
@@ -199,7 +199,7 @@ Find 377 contour(s)
 
 ```elixir
 # and our assumptions are that
-#   1. the contour that contains the puzzle should be fairly large: 
+#   1. the contour that contains the puzzle should be fairly large:
 #      hence we are sorting them by their area in descending order
 contours =
   Enum.sort_by(contours, fn c ->
@@ -798,7 +798,7 @@ digits =
     y1 = step * y
 
     # remember that we return nil if extract_digit thinks there is no
-    # digits present in the cell 
+    # digits present in the cell
     current_cell = extract_digit.(puzzle_gray[[x1..(x1 + step), y1..(y1 + step)]])
 
     if current_cell do
