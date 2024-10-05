@@ -64,6 +64,9 @@ jobs:
       matrix:
         include:
           - pair:
+              target: rpi0_2
+              otp_version: "27"
+          - pair:
               target: rpi5
               otp_version: "27"
           - pair:
