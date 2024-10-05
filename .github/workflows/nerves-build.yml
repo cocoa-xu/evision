@@ -56,8 +56,8 @@ jobs:
       MIX_ENV: prod
       NERVES_PROJ_NAME: nerves_evision
       OPENCV_VER: "4.10.0"
-      NERVES_LIVEBOOK_VER: "v0.12.1"
-      ELIXIR_VERSION: "1.16.1"
+      NERVES_LIVEBOOK_VER: "v0.14.0"
+      ELIXIR_VERSION: "1.17.0"
       EVISION_PREFER_PRECOMPILED: "false"
 
     strategy:
@@ -65,43 +65,43 @@ jobs:
         include:
           - pair:
               target: rpi5
-              otp_version: "26"
+              otp_version: "27"
           - pair:
               target: rpi4
-              otp_version: "26"
+              otp_version: "27"
           - pair:
               target: rpi3a
-              otp_version: "26"
+              otp_version: "27"
           - pair:
               target: rpi3
-              otp_version: "26"
+              otp_version: "27"
           - pair:
               target: rpi2
-              otp_version: "26"
+              otp_version: "27"
           - pair:
               target: rpi0
-              otp_version: "26"
+              otp_version: "27"
           - pair:
               target: rpi
-              otp_version: "26"
+              otp_version: "27"
           - pair:
               target: bbb
-              otp_version: "26"
+              otp_version: "27"
           - pair:
               target: osd32mp1
-              otp_version: "26"
+              otp_version: "27"
           - pair:
               target: npi_imx6ull
-              otp_version: "26"
+              otp_version: "27"
           - pair:
               target: grisp2
-              otp_version: "26"
+              otp_version: "27"
           - pair:
               target: mangopi_mq_pro
-              otp_version: "26"
+              otp_version: "27"
           - pair:
               target: srhub
-              otp_version: "26"
+              otp_version: "27"
 
     steps:
       - name: Checkout
@@ -149,8 +149,8 @@ jobs:
       - name: Make a nerves project
         run: |
           mix archive.install hex nerves_bootstrap --force || true
-          wget -k https://github.com/fwup-home/fwup/releases/download/v1.10.1/fwup_1.10.1_amd64.deb -O ./fwup_1.10.1_amd64.deb
-          sudo dpkg -i ./fwup_1.10.1_amd64.deb
+          wget -k https://github.com/fwup-home/fwup/releases/download/v1.11.0/fwup_1.11.0_amd64.deb -O ./fwup_1.11.0_amd64.deb
+          sudo dpkg -i ./fwup_1.11.0_amd64.deb
           cd ../
           git clone https://github.com/livebook-dev/nerves_livebook.git
           cd nerves_livebook
@@ -161,7 +161,6 @@ jobs:
           echo '      {:evision, path: "../evision"},' >> mix.exs.tmp
           tail -n "+${LINE}" mix.exs >> mix.exs.tmp
           mv mix.exs.tmp mix.exs
-          sed -i 's/kino, "~> 0.7/kino, "~> 0.11/g' mix.exs
           cat mix.exs
           export MIX_TARGET=${{ matrix.pair.target }}
           mix deps.get
