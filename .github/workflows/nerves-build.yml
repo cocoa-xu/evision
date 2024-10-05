@@ -99,9 +99,6 @@ jobs:
           - pair:
               target: mangopi_mq_pro
               otp_version: "27"
-          - pair:
-              target: srhub
-              otp_version: "27"
 
     steps:
       - name: Checkout
