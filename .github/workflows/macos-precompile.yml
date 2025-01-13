@@ -22,7 +22,7 @@ jobs:
       matrix:
         include:
           - pair:
-              os: macos-12
+              os: macos-13
               arch: x86_64
               arch_name: x86_64
               NIF_VERSION: "2.16"
