@@ -51,7 +51,7 @@ concurrency:
 
 jobs:
   mix_test:
-    runs-on: macos-12
+    runs-on: macos-13
     env:
       OPENCV_VER: "4.10.0"
       MIX_ENV: "test"
@@ -66,14 +66,13 @@ jobs:
         run: |
           brew install autoconf coreutils curl git openssl wxwidgets asdf ffmpeg eigen
           brew link ffmpeg
-          asdf plugin add erlang https://github.com/asdf-vm/asdf-erlang.git
-          asdf plugin-add elixir https://github.com/asdf-vm/asdf-elixir.git
-          export KERL_CONFIGURE_OPTIONS="--disable-debug --without-javac"
-          asdf install erlang ${{ env.OTP_VERSION }}
-          asdf install elixir ${{ env.ELIXIR_VERSION }}
-          asdf global erlang ${{ env.OTP_VERSION }}
-          asdf global elixir ${{ env.ELIXIR_VERSION }}
-          source $(brew --prefix asdf)/libexec/asdf.sh
+          
+          export OTP_VERSION="${{ env.OTP_VERSION }}"
+          export OTP_MAIN_VER="${OTP_VERSION%%.*}"
+          curl -fsSO https://elixir-lang.org/install.sh
+          sh install.sh "elixir@${{ env.ELIXIR_VERSION }}" "otp@${{ env.OTP_VERSION }}"
+          
+          export PATH="$HOME/.elixir-install/installs/otp/${{ env.OTP_VERSION }}/bin:$HOME/.elixir-install/installs/elixir/${{ env.ELIXIR_VERSION }}-otp-${OTP_MAIN_VER}/bin:$PATH"
           mix local.hex --force
           mix local.rebar --force
 
@@ -88,7 +87,9 @@ jobs:
       - name: Get mix deps
         if: steps.cache-mix-deps.outputs.cache-hit != 'true'
         run: |
-          source $(brew --prefix asdf)/libexec/asdf.sh
+          export OTP_VERSION="${{ env.OTP_VERSION }}"
+          export OTP_MAIN_VER="${OTP_VERSION%%.*}"
+          export PATH="$HOME/.elixir-install/installs/otp/${{ env.OTP_VERSION }}/bin:$HOME/.elixir-install/installs/elixir/${{ env.ELIXIR_VERSION }}-otp-${OTP_MAIN_VER}/bin:$PATH"
           mix deps.get
 
       - name: Cache OpenCV source code
@@ -118,12 +119,16 @@ jobs:
       - name: Compile OpenCV
         if: steps.cache-mix-compile_opencv.outputs.cache-hit != 'true'
         run: |
-          source $(brew --prefix asdf)/libexec/asdf.sh
+          export OTP_VERSION="${{ env.OTP_VERSION }}"
+          export OTP_MAIN_VER="${OTP_VERSION%%.*}"
+          export PATH="$HOME/.elixir-install/installs/otp/${{ env.OTP_VERSION }}/bin:$HOME/.elixir-install/installs/elixir/${{ env.ELIXIR_VERSION }}-otp-${OTP_MAIN_VER}/bin:$PATH"
           mix compile_opencv
 
       - name: Mix Compile
         run: |
-          source $(brew --prefix asdf)/libexec/asdf.sh
+          export OTP_VERSION="${{ env.OTP_VERSION }}"
+          export OTP_MAIN_VER="${OTP_VERSION%%.*}"
+          export PATH="$HOME/.elixir-install/installs/otp/${{ env.OTP_VERSION }}/bin:$HOME/.elixir-install/installs/elixir/${{ env.ELIXIR_VERSION }}-otp-${OTP_MAIN_VER}/bin:$PATH"
 
           rm -f _build/test/lib/evision/priv/evision.so
 
@@ -134,7 +139,9 @@ jobs:
 
       - name: Compile once again but without optional deps
         run: |
-          source $(brew --prefix asdf)/libexec/asdf.sh
+          export OTP_VERSION="${{ env.OTP_VERSION }}"
+          export OTP_MAIN_VER="${OTP_VERSION%%.*}"
+          export PATH="$HOME/.elixir-install/installs/otp/${{ env.OTP_VERSION }}/bin:$HOME/.elixir-install/installs/elixir/${{ env.ELIXIR_VERSION }}-otp-${OTP_MAIN_VER}/bin:$PATH"
           mix compile --force --no-optional-deps
 
       - name: Cache testdata
@@ -153,5 +160,7 @@ jobs:
           # export ERL_BASE="$(dirname $(dirname $(which erl)))"
           # export BEAM_SMP="$(find "${ERL_BASE}" -name beam.smp)"
           # codesign -s - -f --entitlements tmp.entitlements "${BEAM_SMP}"
-          source $(brew --prefix asdf)/libexec/asdf.sh
+          export OTP_VERSION="${{ env.OTP_VERSION }}"
+          export OTP_MAIN_VER="${OTP_VERSION%%.*}"
+          export PATH="$HOME/.elixir-install/installs/otp/${{ env.OTP_VERSION }}/bin:$HOME/.elixir-install/installs/elixir/${{ env.ELIXIR_VERSION }}-otp-${OTP_MAIN_VER}/bin:$PATH"
           find ./test -name '*_test.exs' -exec bash -c "echo {} && mix test --include require_downloading --include require_ffmpeg {}" \;
