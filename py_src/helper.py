@@ -447,6 +447,7 @@ def is_enum_type(argtype, classname, decl, get_type: str=None):
         'NeighborSearchMethod': 'Evision.NeighborSearchMethod.enum()',
         'SamplingMethod': 'Evision.SamplingMethod.enum()',
         'ScoreMethod': 'Evision.ScoreMethod.enum()',
+        'AlgorithmHint': 'Evision.AlgorithmHint.enum()',
         'HOGDescriptor_HistogramNormType': 'Evision.HOGDescriptor.HistogramNormType.enum()',
         "VolumeType": 'Evision.KinFu.VolumeType.enum()',
         "kinfu_VolumeType": 'Evision.KinFu.VolumeType.enum()',
@@ -627,6 +628,7 @@ def is_struct(argtype: str, also_get: Optional[str] = None, classname: Optional[
         'Algorithm': 'Evision.Algorithm',
         'AlignExposures': 'Evision.AlignExposures',
         'AlignMTB': 'Evision.AlignMTB',
+        'Animation': 'Evision.Animation',
         'ArucoDetector': 'Evision.ArUco.ArucoDetector',
         'ArUco.ArucoDetector': 'Evision.ArUco.ArucoDetector',
         'ArUco.Board': 'Evision.ArUco.Board',
@@ -751,6 +753,7 @@ def is_struct(argtype: str, also_get: Optional[str] = None, classname: Optional[
         'ImgHash.AverageHash': 'Evision.ImgHash.AverageHash',
         'ImgHash.ColorMomentHash': 'Evision.ImgHash.ColorMomentHash',
         'ImgHash.PHash': 'Evision.ImgHash.PHash',
+        'IStreamReader': 'Evision.IStreamReader',
         'MatchesInfo': 'Evision.Detail.MatchesInfo',
         'MultiBandBlender': 'Evision.Detail.MultiBandBlender',
         'NoBundleAdjuster': 'Evision.Detail.NoBundleAdjuster',
@@ -1627,7 +1630,7 @@ def map_argtype_in_spec_erlang(classname: str, argtype: str, is_in: bool, decl: 
         return f'#{ty}' + '{}'
     else:
         print(f'warning: generate_spec: unknown argtype `{argtype}`, input_arg? {is_in}, class={classname}')
-        # raise RuntimeError("erlang spec")
+        raise RuntimeError("erlang spec")
         return 'term()'
 
 def map_argtype_in_spec_elixir(classname: str, argtype: str, is_in: bool, decl: list) -> str:
