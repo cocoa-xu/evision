@@ -27,6 +27,9 @@ class ErlEnumExpressionGenerator(ast.NodeVisitor):
             operand.visit(node.operand)
             self.expression = op.expression.format(operand.expression)
             self.expression_erlang = op.expression_erlang.format(operand.expression_erlang)
+        elif type(node) is ast.UAdd:
+            self.expression = '+{}'
+            self.expression_erlang = '+{}'
         elif type(node) is ast.USub:
             self.expression = '-{}'
             self.expression_erlang = '-{}'

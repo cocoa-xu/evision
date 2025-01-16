@@ -53,7 +53,7 @@ jobs:
   mix_test:
     runs-on: macos-13
     env:
-      OPENCV_VER: "4.10.0"
+      OPENCV_VER: "4.11.0"
       MIX_ENV: "test"
       EVISION_PREFER_PRECOMPILED: "false"
       FFMPEG_VER: "5"

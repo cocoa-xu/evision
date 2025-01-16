@@ -48,7 +48,7 @@ jobs:
       DEBIAN_FRONTEND: noninteractive
       # evision related env vars
       MIX_ENV: prod
-      OPENCV_VER: "4.10.0"
+      OPENCV_VER: "4.11.0"
       ELIXIR_VERSION: "1.15.2"
       OTP_VERSION: "25"
       NIF_VERSION: "2.16"

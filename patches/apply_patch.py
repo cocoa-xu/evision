@@ -32,7 +32,7 @@ def patch_imread(opencv_version: str, opencv_src_root: str):
                 
 
 def patch_fix_getLayerShapes(opencv_version: str, opencv_src_root: str):
-    if opencv_version not in ['4.5.4', '4.5.5', '4.6.0', '4.7.0', '4.8.0', '4.9.0', '4.10.0']:
+    if opencv_version not in ['4.5.4', '4.5.5', '4.6.0', '4.7.0', '4.8.0', '4.9.0', '4.10.0', '4.11.0']:
         print(f"warning: applying `patch_fix_getLayerShapes` to opencv version `{opencv_version}`")
 
     # modules/dnn/include/opencv2/dnn/dnn.hpp
@@ -135,6 +135,8 @@ def patch_python_bindings_generator(opencv_version: str, opencv_src_root: str):
             dst.write(fixed.getvalue())
 
 def patch_intrin_rvv(opencv_version: str, opencv_src_root: str):
+    if opencv_version in ['4.11.0']:
+        return
     if opencv_version not in ['4.9.0']:
         print(f"warning: skipped, applying `patch_intrin_rvv` to opencv version `{opencv_version}`")
     # modules/core/include/opencv2/core/hal/intrin_rvv.hpp

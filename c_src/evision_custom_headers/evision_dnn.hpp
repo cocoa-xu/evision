@@ -206,6 +206,38 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const dnn::LayerParams& lp)
 }
 
 template<>
+bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, dnn::LayerParams &lp, const ArgInfo& info)
+{
+    if (evision::nif::check_nil(env, obj)) {
+        return true; //Current state will be used
+    }
+
+    if (!enif_is_map(env, obj)) {
+        return false;
+    }
+    ERL_NIF_TERM key, value;
+    ErlNifMapIterator iter;
+    enif_map_iterator_create(env, obj, &iter, ERL_NIF_MAP_ITERATOR_FIRST);
+    while (enif_map_iterator_get_pair(env, &iter, &key, &value)) {
+        ErlNifBinary keyName;
+        if (!enif_inspect_binary(env, key, &keyName)) {
+            enif_map_iterator_destroy(env, &iter);
+            return false;
+        }
+        dnn::DictValue dv;
+        if (!evision_to(env, value, dv, info)) {
+            enif_map_iterator_destroy(env, &iter);
+            return false;
+        }
+        lp.set(std::string((char *)keyName.data, keyName.size), dv);
+        enif_map_iterator_next(env, &iter);
+    }
+    enif_map_iterator_destroy(env, &iter);
+    
+    return true;
+}
+
+template<>
 ERL_NIF_TERM evision_from(ErlNifEnv *env, const std::vector<dnn::Target> &t)
 {
     return evision_from(env, std::vector<int>(t.begin(), t.end()));

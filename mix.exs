@@ -4,10 +4,10 @@ defmodule Evision.MixProject.Metadata do
   def app, do: :evision
   def version, do: "0.2.10"
   def github_url, do: "https://github.com/cocoa-xu/evision"
-  def opencv_version, do: "4.10.0"
+  def opencv_version, do: "4.11.0"
   # only means compatible. need to write more tests
   def compatible_opencv_versions,
-    do: ["4.5.3", "4.5.4", "4.5.5", "4.6.0", "4.7.0", "4.8.0", "4.9.0", "4.10.0"]
+    do: ["4.5.3", "4.5.4", "4.5.5", "4.6.0", "4.7.0", "4.8.0", "4.9.0", "4.10.0", "4.11.0"]
 
   def default_cuda_version, do: {"12", "9"}
   def all_cuda_version(_), do: [{"11", "8"}, {"11", "9"}, {"12", "8"}, {"12", "9"}]
