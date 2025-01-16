@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.2.11 (2025-01-16)
+[Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.2.11) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.2.11)
+
+### Changes
+
+- Bump OpenCV to v4.11.0. Some APIs may have changed, please see OpenCV's release note for more information.
+
 ## v0.2.10 (2024-09-22)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.2.10) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.2.10)
 
