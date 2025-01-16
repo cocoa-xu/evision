@@ -675,7 +675,7 @@ static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Mat& m, const ArgInfo& in
         // printf("]\r\n");
         // ---- debug ----
 
-        bool ismultichannel = ndims == 3 && _sizes[2] <= CV_CN_MAX;
+        bool ismultichannel = ndims == 3 && _sizes[2] <= CV_CN_MAX && !info.nd_mat;
         // if (pyopencv_Mat_TypePtr && PyObject_TypeCheck(o, pyopencv_Mat_TypePtr))
         // {
         //     bool wrapChannels = false;
@@ -2314,34 +2314,48 @@ static bool evision_to_generic_vec(ErlNifEnv *env, ERL_NIF_TERM obj, std::vector
         return info.has_default || info.outputarg;
     }
 
-    if (!enif_is_list(env, obj))
-    {
-        failmsg(env, "Can't parse '%s'. Input argument is not a list", info.name);
-        return false;
-    }
-    unsigned n = 0;
-    enif_get_list_length(env, obj, &n);
-    value.resize(n);
-
-    std::vector<ERL_NIF_TERM> cells;
-    ERL_NIF_TERM head, tail, arr = obj;
-    for (size_t i = 0; i < n; i++) {
-        if (enif_get_list_cell(env, arr, &head, &tail)) {
-            arr = tail;
-            cells.push_back(head);
-        } else {
+    if (info.nd_mat && enif_is_list(env, obj)) {
+        /*
+            If obj is marked as nd mat and of array type, it is parsed to a single
+            mat in the target vector to avoid being split into multiple mats
+        */
+        value.resize(1);
+        if (!evision_to(env, obj, value.front(), info)) {
+            failmsg(env, "Can't parse '%s'. Array item has a wrong type", info.name);
             return false;
         }
-    }
-
-    for (size_t i = 0; i < n; i++)
-    {
-        if (!evision_to(env, cells[i], value[i], info))
+    } else {
+        // parse as sequence
+        if (!enif_is_list(env, obj))
         {
-            failmsg(env, "Can't parse '%s'. Sequence item with index %lu has a wrong type", info.name, i);
+            failmsg(env, "Can't parse '%s'. Input argument is not a list", info.name);
             return false;
         }
+        unsigned n = 0;
+        enif_get_list_length(env, obj, &n);
+        value.resize(n);
+
+        std::vector<ERL_NIF_TERM> cells;
+        ERL_NIF_TERM head, tail, arr = obj;
+        for (size_t i = 0; i < n; i++) {
+            if (enif_get_list_cell(env, arr, &head, &tail)) {
+                arr = tail;
+                cells.push_back(head);
+            } else {
+                return false;
+            }
+        }
+
+        for (size_t i = 0; i < n; i++)
+        {
+            if (!evision_to(env, cells[i], value[i], info))
+            {
+                failmsg(env, "Can't parse '%s'. Sequence item with index %lu has a wrong type", info.name, i);
+                return false;
+            }
+        }
     }
+    
     if (info.name != nullptr && strncmp(info.name, "netInputShape", 13) == 0) {
         return false;
     }
