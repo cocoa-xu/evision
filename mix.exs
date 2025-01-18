@@ -45,10 +45,21 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
     ["2.16", "2.17"]
   end
 
+  def available_targets do
+    opencv_version = System.get_env("OPENCV_VER", Metadata.opencv_version())
+    available_targets = @available_targets
+
+    if Enum.member?(["4.11.0"], opencv_version) do
+      available_targets -- ["ppc64le-linux-gnu"]
+    else
+      available_targets
+    end
+  end
+
   def available_nif_urls(_host_nif_version, version \\ Metadata.version()) do
     nif_version = get_compile_nif_version()
 
-    Enum.reduce(@available_targets, [], fn target, acc ->
+    Enum.reduce(available_targets(), [], fn target, acc ->
       no_contrib = get_download_url(target, version, nif_version, false, false, "", "")
       with_contrib = get_download_url(target, version, nif_version, true, false, "", "")
 
@@ -233,7 +244,7 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
   end
 
   def available_for_target?(target, log? \\ false) do
-    available_for_target? = Enum.member?(@available_targets, target)
+    available_for_target? = Enum.member?(available_targets(), target)
 
     if log? do
       if available_for_target? do

@@ -57,13 +57,13 @@ jobs:
               cpp_compiler: armv6-nerves-linux-gnueabihf-g++
               OTP_VERSION: "25"
               NIF_VERSION: "2.16"
-          - pair:
-              arch: ppc64le-linux-gnu
-              cmake_toolchain_file: cc_toolchain/ppc64le-linux-gnu.cmake
-              c_compiler: gcc-powerpc64le-linux-gnu
-              cpp_compiler: g++-powerpc64le-linux-gnu
-              OTP_VERSION: "25"
-              NIF_VERSION: "2.16"
+          # - pair:
+          #     arch: ppc64le-linux-gnu
+          #     cmake_toolchain_file: cc_toolchain/ppc64le-linux-gnu.cmake
+          #     c_compiler: gcc-powerpc64le-linux-gnu
+          #     cpp_compiler: g++-powerpc64le-linux-gnu
+          #     OTP_VERSION: "25"
+          #     NIF_VERSION: "2.16"
           - pair:
               arch: s390x-linux-gnu
               cmake_toolchain_file: cc_toolchain/s390x-linux-gnu.cmake
