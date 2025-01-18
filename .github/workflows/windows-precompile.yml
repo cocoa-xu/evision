@@ -24,12 +24,12 @@ jobs:
       matrix:
         include:
           - pair:
-            arch: x64
-            arch_name: x86_64
-            msbuild_platform: x64
-            vcvarsall: x64
-            OTP_VERSION: "25"
-            NIF_VERSION: "2.16"
+              arch: x64
+              arch_name: x86_64
+              msbuild_platform: x64
+              vcvarsall: x64
+              OTP_VERSION: "25"
+              NIF_VERSION: "2.16"
           # - pair:
           #     arch: arm64
           #     arch_name: aarch64
