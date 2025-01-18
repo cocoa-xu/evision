@@ -34,7 +34,6 @@ jobs:
           #     CMAKE_TOOLCHAIN_FILE: "cc_toolchain/aarch64-windows-msvc.cmake"
           - pair:
               arch: x64
-              arch: x64
               arch_name: x86_64
               msbuild_platform: x64
               vcvarsall: x64
