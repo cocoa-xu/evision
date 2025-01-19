@@ -50,7 +50,7 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
     available_targets = @available_targets
 
     if Enum.member?(["4.11.0"], opencv_version) do
-      available_targets -- ["ppc64le-linux-gnu"]
+      available_targets -- ["ppc64le-linux-gnu", "aarch64-windows-msvc"]
     else
       available_targets
     end
