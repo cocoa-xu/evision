@@ -89,7 +89,9 @@ jobs:
             echo "TRIPLET: ${TRIPLET}"
             echo "TAGGED_VERSION: ${TAGGED_VERSION}"
             echo "MIX_ENV: ${MIX_ENV}"
-            export PKG_NAME="evision-nif_${NIF_VERSION}-${TRIPLET}-${TAGGED_VERSION}"
+            echo "PKG_NAME: evision-nif_$NIF_VERSION-$TRIPLET-$TAGGED_VERSION"
+            echo "PKG_NAME: evision-nif_${NIF_VERSION}-${TRIPLET}-${TAGGED_VERSION}"
+            PKG_NAME="evision-nif_${NIF_VERSION}-${TRIPLET}-${TAGGED_VERSION}"
             echo "PKG_NAME: ${PKG_NAME}"
 
             mkdir -p "${PKG_NAME}"
