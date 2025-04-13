@@ -54,7 +54,7 @@ jobs:
           release: ${{ matrix.job.fullversion }}
           usesh: true
           prepare: |
-            pkg install -y gmake cmake llvm python3 git curl openssl ca_root_nss pkgconf ncurses unzip sudo
+            pkg install -y gmake cmake llvm python3 git curl openssl ca_root_nss pkgconf ncurses unzip sudo ccache openblas libva
 
           run: |
             export TRIPLET=x86_64-unknown-freebsd
