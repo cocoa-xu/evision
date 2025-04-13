@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       OTP_VERSION: "25.3.2.14"
-      NIF_VERSION: "1.16"
+      NIF_VERSION: "2.16"
       ELIXIR_VERSION: "1.17.3"
     strategy:
       matrix:
@@ -36,7 +36,7 @@ jobs:
         id: cache-otp
         uses: actions/cache@v4
         with:
-          key: otp-${{ env.OTP_VERSION }}-x86_64-unknown-freebsd${{ matrix.job.major }}
+          key: precompile-otp-${{ env.OTP_VERSION }}-x86_64-unknown-freebsd${{ matrix.job.major }}
           path: |
             ./otp-x86_64-unknown-freebsd${{ matrix.job.major }}.tar.gz
 
@@ -44,7 +44,6 @@ jobs:
         if: steps.cache-otp.outputs.cache-hit != 'true'
         run: |
           curl -fSL "https://github.com/cocoa-xu/otp-build/releases/download/v${{ env.OTP_VERSION }}/otp-x86_64-unknown-freebsd${{ matrix.job.major }}.tar.gz" -o "otp-x86_64-unknown-freebsd${{ matrix.job.major }}.tar.gz"
-          curl -fSL "https://github.com/cocoa-xu/otp-build/releases/download/v27.1.1/otp-x86_64-unknown-freebsd13.tar.gz" -o "otp-x86_64-unknown-freebsd13.tar.gz"
 
       - name: Compile in FreeBSD
         id: compile-freebsd
@@ -54,7 +53,7 @@ jobs:
           release: ${{ matrix.job.fullversion }}
           usesh: true
           prepare: |
-            pkg install -y gmake cmake llvm python3 git curl openssl ca_root_nss pkgconf ncurses unzip sudo ccache openblas libva
+            pkg install -y gmake cmake llvm python3 git curl openssl ca_root_nss pkgconf ncurses unzip sudo ccache openblas
 
           run: |
             export TRIPLET=x86_64-unknown-freebsd
