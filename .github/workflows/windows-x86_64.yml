@@ -19,6 +19,7 @@ on:
       - '.github/workflows/nerves-*.yml'
       - '.github/workflows/linux-*.yml'
       - '.github/workflows/macos-*.yml'
+      - '.github/workflows/freebsd-*.yml'
       - '.github/workflows/test-*.yml'
       - '.github/workflows/windows-precompile.yml'
       - '.github/*manylinux*.sh'

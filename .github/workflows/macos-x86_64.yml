@@ -18,6 +18,7 @@ on:
       - '.github/workflows/nerves-*.yml'
       - '.github/workflows/linux-*.yml'
       - '.github/workflows/windows-*.yml'
+      - '.github/workflows/freebsd-*'
       - '.github/workflows/test-*.yml'
       - '.github/workflows/macos-precompile.yml'
       - '.github/workflows/macos-apple-device-precompile.yml'

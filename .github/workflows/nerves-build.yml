@@ -19,6 +19,7 @@ on:
       - '.github/workflows/linux-*'
       - '.github/workflows/macos-*'
       - '.github/workflows/windows-*'
+      - '.github/workflows/freebsd-*'
       - '.github/workflows/test-*.yml'
       - '.github/*manylinux*.sh'
   push:
