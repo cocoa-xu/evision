@@ -86,7 +86,7 @@ jobs:
             rm -rf lib/generated && rm -rf src/generated
             
             mix compile
-            export PKG_NAME=evision-nif_${NIF_VERSION}-${TRIPLET}-${TAGGED_VERSION}
+            export PKG_NAME="evision-nif_${NIF_VERSION}-${TRIPLET}-${TAGGED_VERSION}"
             mkdir -p "${PKG_NAME}"
             export PRIV_DIR="${ROOT_DIR}/_build/${MIX_ENV}/lib/evision/priv"
             mv "${PRIV_DIR}/include" /tmp/include
@@ -102,15 +102,13 @@ jobs:
             sha256sum "${PKG_NAME}.tar.gz" | tee "${PKG_NAME}.tar.gz.sha256"
             mv /tmp/include "${PRIV_DIR}/include"
 
-            # ---------- compile OpenCV with contrib ----------
-
             export EVISION_ENABLE_CONTRIB=true
             rm -rf "${ROOT_DIR}/_build/${MIX_ENV}/lib/evision"
             rm -rf lib/generated && rm -rf src/generated
             mkdir -p lib/generated && mkdir -p src/generated
 
             mix compile
-            export PKG_NAME=evision-nif_${NIF_VERSION}-${TRIPLET}-contrib-${TAGGED_VERSION}
+            export PKG_NAME="evision-nif_${NIF_VERSION}-${TRIPLET}-contrib-${TAGGED_VERSION}"
             mkdir -p "${PKG_NAME}"
             export PRIV_DIR="${ROOT_DIR}/_build/${MIX_ENV}/lib/evision/priv"
             mv "${PRIV_DIR}/include" /tmp/include

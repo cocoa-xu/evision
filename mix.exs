@@ -34,6 +34,7 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
     "riscv64-linux-gnu",
     "riscv64-linux-musl",
     "i686-linux-gnu",
+    "x86_64-unknown-freebsd",
     "aarch64-windows-msvc",
     "x86_64-windows-msvc",
     "aarch64-apple-darwin-ios"
@@ -174,6 +175,9 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
           case abi do
             "darwin" <> _ ->
               "darwin"
+
+            "freebsd" <> _ ->
+              "freebsd"
 
             "win32" ->
               {compiler_id, _} = :erlang.system_info(:c_compiler_used)

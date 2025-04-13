@@ -14,7 +14,8 @@
 | Linux            | s390x          | gnu  |[![linux-precompile](https://github.com/cocoa-xu/evision/actions/workflows/linux-precompile-gnu.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/linux-precompile-gnu.yml) | Yes |
 | Linux            | riscv64        | gnu  |[![linux-precompile](https://github.com/cocoa-xu/evision/actions/workflows/linux-precompile-gnu.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/linux-precompile-gnu.yml) | Yes |
 | Linux            | riscv64        | musl |[![linux-precompile](https://github.com/cocoa-xu/evision/actions/workflows/linux-precompile-musl.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/linux-precompile-musl.yml) | Yes |
-| macOS 12 Monterey | x86_64        | darwin |[![CI](https://github.com/cocoa-xu/evision/actions/workflows/macos-x86_64.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/macos-x86_64.yml) | Yes |
+| FreeBSD          | x86_64         | freebsd |[![freebsd-precompile](https://github.com/cocoa-xu/evision/actions/workflows/freebsd-precompile-x86_64.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/freebsd-precompile-x86_64.yml) | Yes |
+| macOS 13 Ventura | x86_64        | darwin |[![CI](https://github.com/cocoa-xu/evision/actions/workflows/macos-x86_64.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/macos-x86_64.yml) | Yes |
 | macOS 14 Sonoma  | aarch64       | darwin |[![macos-precompile](https://github.com/cocoa-xu/evision/actions/workflows/macos-precompile.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/macos-precompile.yml) | Yes |
 | Windows 2022     | x86_64         | msvc |[![CI](https://github.com/cocoa-xu/evision/actions/workflows/windows-x86_64.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/windows-x86_64.yml) | Yes |
 | Windows 2022     | aarch64        | msvc |[![CI](https://github.com/cocoa-xu/evision/actions/workflows/windows-x86_64.yml/badge.svg)](https://github.com/cocoa-xu/evision/actions/workflows/windows-precompile.yml) | Yes |
@@ -68,6 +69,7 @@ target_abi = List.last(String.split(to_string(:erlang.system_info(:system_archit
 target_abi =
   case target_abi do
     "darwin" <> _ -> "darwin"
+    "freebsd" <> _ -> "freebsd"
     "win32" ->
       {compiler_id, _} = :erlang.system_info(:c_compiler_used)
       case compiler_id do
