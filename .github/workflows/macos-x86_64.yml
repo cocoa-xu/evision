@@ -42,6 +42,7 @@ on:
       - '.github/workflows/nerves-*.yml'
       - '.github/workflows/linux-*.yml'
       - '.github/workflows/windows-*.yml'
+      - '.github/workflows/freebsd-*.yml'
       - '.github/workflows/test-*.yml'
       - '.github/workflows/macos-precompile.yml'
       - '.github/*manylinux*.sh'
