@@ -1,0 +1,134 @@
+name: precompile-freebsd
+
+on:
+  push:
+    tags:
+      - "v*"
+      - "freebsd-*"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  freebsd:
+    runs-on: ubuntu-latest
+    env:
+      OTP_VERSION: "25.3.2.14"
+      NIF_VERSION: "1.16"
+      ELIXIR_VERSION: "1.17.3"
+    strategy:
+      matrix:
+        job:
+          - { fullversion: "13.5", major: "13" }
+      fail-fast: false
+
+    name: x86_64-unknown-freebsd
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Cache Precompiled OTP
+        id: cache-otp
+        uses: actions/cache@v4
+        with:
+          key: otp-${{ env.OTP_VERSION }}-x86_64-unknown-freebsd${{ matrix.job.major }}
+          path: |
+            ./otp-x86_64-unknown-freebsd${{ matrix.job.major }}.tar.gz
+
+      - name: Download Precompiled OTP
+        if: steps.cache-otp.outputs.cache-hit != 'true'
+        run: |
+          curl -fSL "https://github.com/cocoa-xu/otp-build/releases/download/v${{ env.OTP_VERSION }}/otp-x86_64-unknown-freebsd${{ matrix.job.major }}.tar.gz" -o "otp-x86_64-unknown-freebsd${{ matrix.job.major }}.tar.gz"
+          curl -fSL "https://github.com/cocoa-xu/otp-build/releases/download/v27.1.1/otp-x86_64-unknown-freebsd13.tar.gz" -o "otp-x86_64-unknown-freebsd13.tar.gz"
+
+      - name: Compile in FreeBSD
+        id: compile-freebsd
+        uses: vmactions/freebsd-vm@v1
+        with:
+          envs: "OTP_VERSION ELIXIR_VERSION NIF_VERSION"
+          release: ${{ matrix.job.fullversion }}
+          usesh: true
+          prepare: |
+            pkg install -y gmake llvm python3 git curl openssl ca_root_nss pkgconf ncurses unzip sudo
+
+          run: |
+            export TRIPLET=x86_64-unknown-freebsd
+            export ROOT_DIR="$(pwd)"
+            export EVISION_PREFER_PRECOMPILED="false"
+            export OTP_MAIN_VER="${OTP_VERSION%%.*}"
+            export MIX_ENV=prod
+
+            export TAGGED_VERSION="${GITHUB_REF##*/v}"
+            if [ "${GITHUB_REF}" = "${TAGGED_VERSION}" ]; then
+              export TAGGED_VERSION="freebsd"
+            fi
+
+            sudo tar -xzf "otp-x86_64-unknown-freebsd${{ matrix.job.major }}.tar.gz" -C /
+
+            mkdir -p "${ROOT_DIR}/elixir-${ELIXIR_VERSION}"
+            cd "${ROOT_DIR}/elixir-${ELIXIR_VERSION}"
+            curl -fSL "https://github.com/elixir-lang/elixir/releases/download/v${ELIXIR_VERSION}/elixir-otp-${OTP_MAIN_VER}.zip" -o "elixir-otp-${OTP_MAIN_VER}.zip"
+            unzip -q "elixir-otp-${OTP_MAIN_VER}.zip"
+            export PATH="$(pwd)/bin:${PATH}"
+            cd "${ROOT_DIR}"
+
+            mix local.hex --force
+            mix local.rebar --force
+
+            mix deps.get
+
+            export EVISION_ENABLE_CONTRIB=false
+            rm -rf lib/generated && rm -rf src/generated
+            
+            mix compile
+            export PKG_NAME=evision-nif_${NIF_VERSION}-${TRIPLET}-${TAGGED_VERSION}
+            mkdir -p "${PKG_NAME}"
+            export PRIV_DIR="${ROOT_DIR}/_build/${MIX_ENV}/lib/evision/priv"
+            mv "${PRIV_DIR}/include" /tmp/include
+            cp -a "${PRIV_DIR}" "${PKG_NAME}"
+            cp -a lib/generated "${PKG_NAME}/elixir_generated"
+            cp -a src/generated "${PKG_NAME}/erlang_generated"
+            tar -czf "${PKG_NAME}.tar.gz" "${PKG_NAME}"
+            rm -rf "${PKG_NAME}"
+            ls -lah "${PKG_NAME}.tar.gz"
+            mkdir -p artifacts
+            mv "${PKG_NAME}.tar.gz" artifacts
+            cd artifacts
+            sha256sum "${PKG_NAME}.tar.gz" | tee "${PKG_NAME}.tar.gz.sha256"
+            mv /tmp/include "${PRIV_DIR}/include"
+
+            # ---------- compile OpenCV with contrib ----------
+
+            export EVISION_ENABLE_CONTRIB=true
+            rm -rf "${ROOT_DIR}/_build/${MIX_ENV}/lib/evision"
+            rm -rf lib/generated && rm -rf src/generated
+            mkdir -p lib/generated && mkdir -p src/generated
+
+            mix compile
+            export PKG_NAME=evision-nif_${NIF_VERSION}-${TRIPLET}-contrib-${TAGGED_VERSION}
+            mkdir -p "${PKG_NAME}"
+            export PRIV_DIR="${ROOT_DIR}/_build/${MIX_ENV}/lib/evision/priv"
+            mv "${PRIV_DIR}/include" /tmp/include
+            cp -a "${PRIV_DIR}" "${PKG_NAME}"
+            cp -a lib/generated "${PKG_NAME}/elixir_generated"
+            cp -a src/generated "${PKG_NAME}/erlang_generated"
+            tar -czf "${PKG_NAME}.tar.gz" "${PKG_NAME}"
+            rm -rf "${PKG_NAME}"
+            ls -lah "${PKG_NAME}.tar.gz"
+            mkdir -p artifacts
+            mv "${PKG_NAME}.tar.gz" artifacts
+            cd artifacts
+            sha256sum "${PKG_NAME}.tar.gz" | tee "${PKG_NAME}.tar.gz.sha256"
+            mv /tmp/include "${PRIV_DIR}/include"
+
+      - uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/v') || startsWith(github.ref, 'refs/tags/freebsd-')
+        with:
+          files: |
+            artifacts/*.tar.gz
+            artifacts/*.sha256
