@@ -440,7 +440,7 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
   def preferred_eccs do
     # TLS curves: X25519, prime256v1, secp384r1
     preferred_eccs = [:secp256r1, :secp384r1]
-    :ssl.eccs() -- :ssl.eccs() -- preferred_eccs
+    :ssl.eccs() -- (:ssl.eccs() -- preferred_eccs)
   end
 
   def secure_ssl? do
@@ -1028,6 +1028,7 @@ defmodule Evision.MixProject do
   def make_executable() do
     case :os.type() do
       {:win32, _} -> "nmake"
+      {:unix, :freebsd} -> "gmake"
       _ -> "make"
     end
   end
