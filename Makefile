@@ -15,6 +15,10 @@ SCRIPTS = $(shell pwd)/scripts
 ifdef CMAKE_TOOLCHAIN_FILE
 	CMAKE_CONFIGURE_FLAGS=-D CMAKE_TOOLCHAIN_FILE="$(CMAKE_TOOLCHAIN_FILE)"
 endif
+SHELL_EXEC = $(shell which bash)
+ifeq ($(SHELL_EXEC),)
+	SHELL_EXEC = ${shell which sh}
+endif
 
 CMAKE_BUILD_TYPE ?= Release
 # OpenCV
@@ -150,7 +154,7 @@ download_opencv_contrib:
 			if [ ! -e "$(OPENCV_CONTRIB_DIR)/modules" ]; then \
 				if [ "$(OPENCV_CONTRIB_USE_GIT_HEAD)" = "false" ]; then \
 					echo "using opencv_contrib $(OPENCV_CONTRIB_VER)" ; \
-					bash scripts/download_opencv_contrib.sh $(OPENCV_CONTRIB_VER) "$(OPENCV_CACHE_DIR)" "$(OPENCV_ROOT_DIR)" ; \
+					${SHELL_EXEC} scripts/download_opencv_contrib.sh $(OPENCV_CONTRIB_VER) "$(OPENCV_CACHE_DIR)" "$(OPENCV_ROOT_DIR)" ; \
 				else \
 					rm -rf "$(OPENCV_CONTRIB_DIR)" ; \
 					git clone --branch=$(OPENCV_CONTRIB_USE_GIT_BRANCH) --depth=1 $(OPENCV_CONTRIB_GIT_REPO) "$(OPENCV_CONTRIB_DIR)" ; \
@@ -164,7 +168,7 @@ $(OPENCV_CONFIGURATION_PRIVATE_HPP): download_opencv_contrib
    		if [ ! -e "$(OPENCV_CONFIGURATION_PRIVATE_HPP)" ]; then \
 			if [ "$(OPENCV_USE_GIT_HEAD)" = "false" ]; then \
 				echo "using opencv $(OPENCV_VER)" ; \
-				bash $(SCRIPTS)/download_opencv.sh $(OPENCV_VER) "$(OPENCV_CACHE_DIR)" "$(OPENCV_ROOT_DIR)"; \
+				${SHELL_EXEC} $(SCRIPTS)/download_opencv.sh $(OPENCV_VER) "$(OPENCV_CACHE_DIR)" "$(OPENCV_ROOT_DIR)"; \
 			else \
 		  		rm -rf "$(OPENCV_DIR)" ; \
 				git clone --branch=$(OPENCV_USE_GIT_BRANCH) --depth=1 $(OPENCV_GIT_REPO) "$(OPENCV_DIR)" ; \
