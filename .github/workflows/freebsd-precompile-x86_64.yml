@@ -45,6 +45,10 @@ jobs:
         run: |
           curl -fSL "https://github.com/cocoa-xu/otp-build/releases/download/v${{ env.OTP_VERSION }}/otp-x86_64-unknown-freebsd${{ matrix.job.major }}.tar.gz" -o "otp-x86_64-unknown-freebsd${{ matrix.job.major }}.tar.gz"
 
+      - name: Copy build scripts
+        run: |
+          cp -f .github/scripts/script-to-build-freebsd.sh .
+
       - name: Compile in FreeBSD
         id: compile-freebsd
         uses: vmactions/freebsd-vm@v1
@@ -53,7 +57,7 @@ jobs:
           release: ${{ matrix.job.fullversion }}
           usesh: true
           prepare: |
-            pkg install -y gmake cmake llvm python3 git curl openssl ca_root_nss pkgconf ncurses unzip sudo ccache openblas
+            pkg install -y gmake cmake llvm python3 git curl openssl ca_root_nss pkgconf ncurses unzip sudo ccache openblas bash
 
           run: |
             export TRIPLET="x86_64-unknown-freebsd"
@@ -76,46 +80,17 @@ jobs:
             export PATH="$(pwd)/bin:${PATH}"
             cd "${ROOT_DIR}"
 
+            echo "mkdir -p artifacts"
+            mkdir -p artifacts
+
             mix local.hex --force
             mix local.rebar --force
 
             mix deps.get
+
             export EVISION_ENABLE_CONTRIB=false
-            rm -rf lib/generated && rm -rf src/generated
-            PKG_NAME='evision-nif_'"${NIF_VERSION}"'-'"${TRIPLET}"'-'"${TAGGED_VERSION}"
-            mkdir -p ${PKG_NAME}
-            mkdir -p ./_build/prod/lib/evision/priv/include
-            touch ./_build/prod/lib/evision/priv/a.so
-            mkdir -p lib/generated && mkdir -p src/generated
-            echo "PRIV_DIR: ${ROOT_DIR}/_build/prod/lib/evision/priv"
-            PRIV_DIR="./_build/prod/lib/evision/priv"
-            echo "PRIV_DIR: ./_build/prod/lib/evision/priv"
-            echo "mv"
-            mv "./_build/prod/lib/evision/priv/include" /tmp/include
-            echo "cp -a"
-            cp -a ./_build/prod/lib/evision/priv "${PKG_NAME}"
-            echo "cp -a lib/generated ${PKG_NAME}/elixir_generated"
-            cp -a lib/generated "${PKG_NAME}/elixir_generated"
-            echo "cp -a src/generated ${PKG_NAME}/erlang_generated"
-            cp -a src/generated "${PKG_NAME}/erlang_generated"
-            echo "tar -czf ${PKG_NAME}.tar.gz ${PKG_NAME}"
-            tar -czf "${PKG_NAME}.tar.gz" "${PKG_NAME}"
-            echo "rm -rf ${PKG_NAME}"
-            rm -rf "${PKG_NAME}"
-            echo "ls -lah ${PKG_NAME}.tar.gz"
-            ls -lah "${PKG_NAME}.tar.gz"
-            echo "mkdir -p artifacts"
-            mkdir -p artifacts
-            echo "mv ${PKG_NAME}.tar.gz artifacts"
-            mv "${PKG_NAME}.tar.gz" artifacts
-            echo "cd artifacts"
-            cd artifacts
-            echo "sha256sum"
-            sha256sum "${PKG_NAME}.tar.gz" | tee "${PKG_NAME}.tar.gz.sha256"
-            mv "${PKG_NAME}.tar.gz.sha256" ${ROOT_DIR}
-            mv "${PKG_NAME}.tar.gz" ${ROOT_DIR}
-            cd ${ROOT_DIR}
-            echo "ls -lah"
+            export PKG_NAME='evision-nif_'"${NIF_VERSION}"'-'"${TRIPLET}"'-'"${TAGGED_VERSION}"
+            bash ./script-to-build-freebsd.sh
             sleep 5
 
       - uses: softprops/action-gh-release@v2
