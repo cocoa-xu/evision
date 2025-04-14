@@ -43,6 +43,7 @@ on:
       - '.github/workflows/macos-*'
       - '.github/workflows/windows-*'
       - '.github/workflows/test-*.yml'
+      - '.github/workflows/freebsd-*.yml'
       - '.github/*manylinux*.sh'
   workflow_dispatch:
 

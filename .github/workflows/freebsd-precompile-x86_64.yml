@@ -86,12 +86,11 @@ jobs:
             
             mix compile
             PKG_NAME='evision-nif_'"${NIF_VERSION}"'-'"${TRIPLET}"'-'"${TAGGED_VERSION}"
-            echo "PKG_NAME: ${PKG_NAME}"
 
-            mkdir -p "${PKG_NAME}"
-            PRIV_DIR="${ROOT_DIR}"'/_build/'"${MIX_ENV}"'/lib/evision/priv'
+            PRIV_DIR="$ROOT_DIR"'/_build/'"$MIX_ENV"'/lib/evision/priv'
             echo "PRIV_DIR: ${PRIV_DIR}"
-            
+            mkdir -p $PKG_NAME
+
             echo "mv ${PRIV_DIR}/include /tmp/include"
             mv "${PRIV_DIR}/include" /tmp/include
             
