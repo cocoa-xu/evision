@@ -27,10 +27,11 @@ jobs:
     strategy:
       matrix:
         job:
-          - { fullversion: "13.5", major: "13", arch: "x86_64" }
+          - { fullversion: "13.5", major: "13", arch: "x86_64", contrib: "false" }
+          - { fullversion: "13.5", major: "13", arch: "x86_64", contrib: "true" }
       fail-fast: false
 
-    name: ${{ matrix.job.arch }}-unknown-freebsd
+    name: "${{ matrix.job.arch }}-unknown-freebsd / contrib ${{ matrix.job.contrib }}"
 
     steps:
       - name: Checkout
@@ -103,15 +104,13 @@ jobs:
 
             mix deps.get
 
-            export EVISION_ENABLE_CONTRIB=false
-            export PKG_NAME='evision-nif_'"${NIF_VERSION}"'-'"${TRIPLET}"'-'"${TAGGED_VERSION}"
+            export EVISION_ENABLE_CONTRIB=${{ matrix.job.contrib }}
+            if [ "${{ matrix.job.contrib }}" = "false" ]; then
+              export PKG_NAME='evision-nif_'"${NIF_VERSION}"'-'"${TRIPLET}"'-'"${TAGGED_VERSION}"
+            else
+              export PKG_NAME='evision-nif_'"${NIF_VERSION}"'-'"${TRIPLET}"'-contrib-'"${TAGGED_VERSION}"
+            fi
             cd "${ROOT_DIR}"
-            bash ./script-to-build-freebsd.sh
-
-            export EVISION_ENABLE_CONTRIB=true
-            export PKG_NAME='evision-nif_'"${NIF_VERSION}"'-'"${TRIPLET}"'-contrib-'"${TAGGED_VERSION}"
-            cd "${ROOT_DIR}"
-            rm -rf _build
             bash ./script-to-build-freebsd.sh
 
             rm -rf _build 3rd_party artifacts deps
