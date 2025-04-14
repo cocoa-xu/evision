@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.2.12 (2025-04-14)
+[Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.2.12) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.2.12)
+
+### Added
+
+- Precompiled binaries for `x86_64-unknown-freebsd`.
+
 ## v0.2.11 (2025-01-18)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.2.11) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.2.11)
 
