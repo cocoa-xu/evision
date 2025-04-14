@@ -56,11 +56,11 @@ jobs:
             pkg install -y gmake cmake llvm python3 git curl openssl ca_root_nss pkgconf ncurses unzip sudo ccache openblas
 
           run: |
-            export TRIPLET=x86_64-unknown-freebsd
+            export TRIPLET="x86_64-unknown-freebsd"
             export ROOT_DIR="$(pwd)"
             export EVISION_PREFER_PRECOMPILED="false"
             export OTP_MAIN_VER="${OTP_VERSION%%.*}"
-            export MIX_ENV=prod
+            export MIX_ENV="prod"
 
             export TAGGED_VERSION="${GITHUB_REF##*/v}"
             if [ "${GITHUB_REF}" = "${TAGGED_VERSION}" ]; then
@@ -84,18 +84,23 @@ jobs:
             export EVISION_ENABLE_CONTRIB=false
             rm -rf lib/generated && rm -rf src/generated
             
-            mix compile
+            # mix compile
             PKG_NAME='evision-nif_'"${NIF_VERSION}"'-'"${TRIPLET}"'-'"${TAGGED_VERSION}"
+            mkdir -p ${PKG_NAME}
 
-            PRIV_DIR="$ROOT_DIR"'/_build/'"$MIX_ENV"'/lib/evision/priv'
-            echo "PRIV_DIR: ${PRIV_DIR}"
-            mkdir -p $PKG_NAME
+            mkdir -p ./_build/prod/lib/evision/priv/include
+            touch ./_build/prod/lib/evision/priv/a.so
+            mkdir -p lib/generated && mkdir -p src/generated
 
-            echo "mv ${PRIV_DIR}/include /tmp/include"
-            mv "${PRIV_DIR}/include" /tmp/include
-            
-            echo "cp -a ${PRIV_DIR} ${PKG_NAME}"
-            cp -a "${PRIV_DIR}" "${PKG_NAME}"
+            echo "PRIV_DIR: ${ROOT_DIR}/_build/prod/lib/evision/priv"
+            PRIV_DIR="./_build/prod/lib/evision/priv"
+            echo "PRIV_DIR: ./_build/prod/lib/evision/priv"
+
+            echo "mv"
+            mv "./_build/prod/lib/evision/priv/include" /tmp/include
+
+            echo "cp -a"
+            cp -a ./_build/prod/lib/evision/priv "${PKG_NAME}"
 
             echo "cp -a lib/generated ${PKG_NAME}/elixir_generated"
             cp -a lib/generated "${PKG_NAME}/elixir_generated"
@@ -123,33 +128,18 @@ jobs:
 
             echo "sha256sum"
             sha256sum "${PKG_NAME}.tar.gz" | tee "${PKG_NAME}.tar.gz.sha256"
-            mv /tmp/include "${PRIV_DIR}/include"
 
-            export EVISION_ENABLE_CONTRIB=true
-            rm -rf "${ROOT_DIR}/_build/${MIX_ENV}/lib/evision"
-            rm -rf lib/generated && rm -rf src/generated
-            mkdir -p lib/generated && mkdir -p src/generated
+            mv "${PKG_NAME}.tar.gz.sha256" ${ROOT_DIR}
+            mv "${PKG_NAME}.tar.gz" ${ROOT_DIR}
 
-            mix compile
-            PKG_NAME='evision-nif_'"${NIF_VERSION}"'-'"${TRIPLET}"'-contrib-'"${TAGGED_VERSION}"
-            mkdir -p "${PKG_NAME}"
-            export PRIV_DIR="${ROOT_DIR}/_build/${MIX_ENV}/lib/evision/priv"
-            mv "${PRIV_DIR}/include" /tmp/include
-            cp -a "${PRIV_DIR}" "${PKG_NAME}"
-            cp -a lib/generated "${PKG_NAME}/elixir_generated"
-            cp -a src/generated "${PKG_NAME}/erlang_generated"
-            tar -czf "${PKG_NAME}.tar.gz" "${PKG_NAME}"
-            rm -rf "${PKG_NAME}"
-            ls -lah "${PKG_NAME}.tar.gz"
-            mkdir -p artifacts
-            mv "${PKG_NAME}.tar.gz" artifacts
-            cd artifacts
-            sha256sum "${PKG_NAME}.tar.gz" | tee "${PKG_NAME}.tar.gz.sha256"
-            mv /tmp/include "${PRIV_DIR}/include"
+            cd ${ROOT_DIR}
+            echo "ls -lah"
+
+            sleep 5
 
       - uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/v') || startsWith(github.ref, 'refs/tags/freebsd-')
         with:
           files: |
-            artifacts/*.tar.gz
-            artifacts/*.sha256
+            evision-nif_*.tar.gz
+            evision-nif_*.sha256
