@@ -111,7 +111,7 @@ jobs:
             export EVISION_ENABLE_CONTRIB=true
             export PKG_NAME='evision-nif_'"${NIF_VERSION}"'-'"${TRIPLET}"'-contrib-'"${TAGGED_VERSION}"
             cd "${ROOT_DIR}"
-            rm -rf "./_build/${MIX_ENV}/lib/evision"
+            rm -rf _build
             bash ./script-to-build-freebsd.sh
 
             rm -rf _build 3rd_party artifacts deps
