@@ -44,15 +44,15 @@ jobs:
 
       - name: Install Erlang and Elixir
         run: |
-          brew install autoconf coreutils curl git openssl asdf eigen
-          asdf plugin add erlang https://github.com/asdf-vm/asdf-erlang.git
-          asdf plugin-add elixir https://github.com/asdf-vm/asdf-elixir.git
-          export KERL_CONFIGURE_OPTIONS="--disable-debug --without-javac"
-          asdf install erlang ${{ matrix.pair.OTP_VERSION }}
-          asdf install elixir ${{ matrix.pair.ELIXIR_VERSION }}
-          asdf global erlang ${{ matrix.pair.OTP_VERSION }}
-          asdf global elixir ${{ matrix.pair.ELIXIR_VERSION }}
-          source $(brew --prefix asdf)/libexec/asdf.sh
+          brew install autoconf coreutils curl git openssl wxwidgets asdf ffmpeg eigen
+          brew link ffmpeg
+          
+          export OTP_VERSION="${{ matrix.pair.OTP_VERSION }}"
+          export OTP_MAIN_VER="${OTP_VERSION%%.*}"
+          curl -fsSO https://elixir-lang.org/install.sh
+          sh install.sh "elixir@${{ matrix.pair.ELIXIR_VERSION }}" "otp@${{ matrix.pair.OTP_VERSION }}"
+          
+          export PATH="$HOME/.elixir-install/installs/otp/${{ matrix.pair.OTP_VERSION }}/bin:$HOME/.elixir-install/installs/elixir/${{ matrix.pair.ELIXIR_VERSION }}-otp-${OTP_MAIN_VER}/bin:$PATH"
           mix local.hex --force
           mix local.rebar --force
 
@@ -67,7 +67,9 @@ jobs:
       - name: Get mix deps
         if: steps.cache-mix-deps.outputs.cache-hit != 'true'
         run: |
-          source $(brew --prefix asdf)/libexec/asdf.sh
+          export OTP_VERSION="${{ matrix.pair.OTP_VERSION }}"
+          export OTP_MAIN_VER="${OTP_VERSION%%.*}"
+          export PATH="$HOME/.elixir-install/installs/otp/${{ matrix.pair.OTP_VERSION }}/bin:$HOME/.elixir-install/installs/elixir/${{ matrix.pair.ELIXIR_VERSION }}-otp-${OTP_MAIN_VER}/bin:$PATH"
           mix deps.get
 
       - name: Cache OpenCV source code
@@ -86,7 +88,9 @@ jobs:
 
       - name: Compile OpenCV (without contrib modules)
         run: |
-          source $(brew --prefix asdf)/libexec/asdf.sh
+          export OTP_VERSION="${{ matrix.pair.OTP_VERSION }}"
+          export OTP_MAIN_VER="${OTP_VERSION%%.*}"
+          export PATH="$HOME/.elixir-install/installs/otp/${{ matrix.pair.OTP_VERSION }}/bin:$HOME/.elixir-install/installs/elixir/${{ matrix.pair.ELIXIR_VERSION }}-otp-${OTP_MAIN_VER}/bin:$PATH"
           export EVISION_ENABLE_CONTRIB=false
           export MIX_TARGET=${{ matrix.pair.mix_target }}
 
@@ -96,7 +100,9 @@ jobs:
 
       - name: Mix compile (without contrib modules)
         run: |
-          source $(brew --prefix asdf)/libexec/asdf.sh
+          export OTP_VERSION="${{ matrix.pair.OTP_VERSION }}"
+          export OTP_MAIN_VER="${OTP_VERSION%%.*}"
+          export PATH="$HOME/.elixir-install/installs/otp/${{ matrix.pair.OTP_VERSION }}/bin:$HOME/.elixir-install/installs/elixir/${{ matrix.pair.ELIXIR_VERSION }}-otp-${OTP_MAIN_VER}/bin:$PATH"
           export EVISION_ENABLE_CONTRIB=false
           export MIX_TARGET=${{ matrix.pair.mix_target }}
 
@@ -130,7 +136,9 @@ jobs:
 
       - name: Compile OpenCV (with contrib modules)
         run: |
-          source $(brew --prefix asdf)/libexec/asdf.sh
+          export OTP_VERSION="${{ matrix.pair.OTP_VERSION }}"
+          export OTP_MAIN_VER="${OTP_VERSION%%.*}"
+          export PATH="$HOME/.elixir-install/installs/otp/${{ matrix.pair.OTP_VERSION }}/bin:$HOME/.elixir-install/installs/elixir/${{ matrix.pair.ELIXIR_VERSION }}-otp-${OTP_MAIN_VER}/bin:$PATH"
           export EVISION_ENABLE_CONTRIB=true
           export MIX_TARGET=${{ matrix.pair.mix_target }}
 
@@ -140,7 +148,9 @@ jobs:
 
       - name: Mix compile (with contrib modules)
         run: |
-          source $(brew --prefix asdf)/libexec/asdf.sh
+          export OTP_VERSION="${{ matrix.pair.OTP_VERSION }}"
+          export OTP_MAIN_VER="${OTP_VERSION%%.*}"
+          export PATH="$HOME/.elixir-install/installs/otp/${{ matrix.pair.OTP_VERSION }}/bin:$HOME/.elixir-install/installs/elixir/${{ matrix.pair.ELIXIR_VERSION }}-otp-${OTP_MAIN_VER}/bin:$PATH"
           export EVISION_ENABLE_CONTRIB=true
           export MIX_TARGET=${{ matrix.pair.mix_target }}
 
