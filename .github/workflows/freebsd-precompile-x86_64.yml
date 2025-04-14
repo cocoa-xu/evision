@@ -1,10 +1,14 @@
 name: precompile-freebsd
 
 on:
+  workflow_dispatch:
+    inputs:
+      version:
+        required: true
   push:
     tags:
       - "v*"
-      - "freebsd-*"
+      - "freebsd-v*"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -23,10 +27,10 @@ jobs:
     strategy:
       matrix:
         job:
-          - { fullversion: "13.5", major: "13" }
+          - { fullversion: "13.5", major: "13", arch: "x86_64" }
       fail-fast: false
 
-    name: x86_64-unknown-freebsd
+    name: ${{ matrix.job.arch }}-unknown-freebsd
 
     steps:
       - name: Checkout
@@ -36,18 +40,33 @@ jobs:
         id: cache-otp
         uses: actions/cache@v4
         with:
-          key: precompile-otp-${{ env.OTP_VERSION }}-x86_64-unknown-freebsd${{ matrix.job.major }}
+          key: precompile-otp-${{ env.OTP_VERSION }}-${{ matrix.job.arch }}-unknown-freebsd${{ matrix.job.major }}
           path: |
-            ./otp-x86_64-unknown-freebsd${{ matrix.job.major }}.tar.gz
+            ./otp-${{ matrix.job.arch }}-unknown-freebsd${{ matrix.job.major }}.tar.gz
 
       - name: Download Precompiled OTP
         if: steps.cache-otp.outputs.cache-hit != 'true'
         run: |
-          curl -fSL "https://github.com/cocoa-xu/otp-build/releases/download/v${{ env.OTP_VERSION }}/otp-x86_64-unknown-freebsd${{ matrix.job.major }}.tar.gz" -o "otp-x86_64-unknown-freebsd${{ matrix.job.major }}.tar.gz"
+          curl -fSL "https://github.com/cocoa-xu/otp-build/releases/download/v${{ env.OTP_VERSION }}/otp-${{ matrix.job.arch }}-unknown-freebsd${{ matrix.job.major }}.tar.gz" -o "otp-${{ matrix.job.arch }}-unknown-freebsd${{ matrix.job.major }}.tar.gz"
 
       - name: Copy build scripts
         run: |
           cp -f .github/scripts/script-to-build-freebsd.sh .
+
+      - name: Get tagged version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            export INPUT_VERSION="${{ github.event.inputs.version }}"
+            export TAGGED_VERSION="${INPUT_VERSION##*v}"
+          else
+            export TAGGED_VERSION="${GITHUB_REF##*/v}"
+            if [ "${GITHUB_REF}" = "${TAGGED_VERSION}" ]; then
+              export TAGGED_VERSION="${GITHUB_REF##*/freebsd-}"
+              export TAGGED_VERSION="${TAGGED_VERSION##*v}"
+            fi
+          fi
+          echo "tag=${TAGGED_VERSION}" >> $GITHUB_OUTPUT
 
       - name: Compile in FreeBSD
         id: compile-freebsd
@@ -60,18 +79,14 @@ jobs:
             pkg install -y gmake cmake llvm python3 git curl openssl ca_root_nss pkgconf ncurses unzip sudo ccache openblas bash
 
           run: |
-            export TRIPLET="x86_64-unknown-freebsd"
+            export TRIPLET="${{ matrix.job.arch }}-unknown-freebsd"
             export ROOT_DIR="$(pwd)"
             export EVISION_PREFER_PRECOMPILED="false"
             export OTP_MAIN_VER="${OTP_VERSION%%.*}"
             export MIX_ENV="prod"
+            export TAGGED_VERSION="${{ steps.version.outputs.tag }}"
 
-            export TAGGED_VERSION="${GITHUB_REF##*/v}"
-            if [ "${GITHUB_REF}" = "${TAGGED_VERSION}" ]; then
-              export TAGGED_VERSION="freebsd"
-            fi
-
-            sudo tar -xzf "otp-x86_64-unknown-freebsd${{ matrix.job.major }}.tar.gz" -C /
+            sudo tar -xzf "otp-${{ matrix.job.arch }}-unknown-freebsd${{ matrix.job.major }}.tar.gz" -C /
 
             mkdir -p "${ROOT_DIR}/elixir-${ELIXIR_VERSION}"
             cd "${ROOT_DIR}/elixir-${ELIXIR_VERSION}"
@@ -91,11 +106,19 @@ jobs:
             export EVISION_ENABLE_CONTRIB=false
             export PKG_NAME='evision-nif_'"${NIF_VERSION}"'-'"${TRIPLET}"'-'"${TAGGED_VERSION}"
             bash ./script-to-build-freebsd.sh
-            sleep 5
+
+            export EVISION_ENABLE_CONTRIB=true
+            export PKG_NAME='evision-nif_'"${NIF_VERSION}"'-'"${TRIPLET}"'-contrib-'"${TAGGED_VERSION}"
+            bash ./script-to-build-freebsd.sh
+
+            rm -rf _build 3rd_party artifacts deps
+            rm -rf "${ROOT_DIR}/elixir-${ELIXIR_VERSION}"
+            rm -rf lib/generated src/generated
 
       - uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/v') || startsWith(github.ref, 'refs/tags/freebsd-')
         with:
+          tag_name: v${{ steps.version.outputs.tag }}
           files: |
             evision-nif_*.tar.gz
             evision-nif_*.sha256
