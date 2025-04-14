@@ -52,7 +52,7 @@ jobs:
 
       - name: Copy build scripts
         run: |
-          cp -f .github/scripts/script-to-build-freebsd.sh .
+          cp -f .github/scripts/script-to-build-freebsd.sh ./build.sh
 
       - name: Get tagged version
         id: version
@@ -110,8 +110,9 @@ jobs:
             else
               export PKG_NAME='evision-nif_'"${NIF_VERSION}"'-'"${TRIPLET}"'-contrib-'"${TAGGED_VERSION}"
             fi
+
             cd "${ROOT_DIR}"
-            bash ./script-to-build-freebsd.sh
+            bash ./build.sh
 
             rm -rf _build 3rd_party artifacts deps
             rm -rf "${ROOT_DIR}/elixir-${ELIXIR_VERSION}"
