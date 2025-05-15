@@ -227,7 +227,7 @@ jobs:
             artifacts/*.sha256
 
   zig_build:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     env:
       OPENCV_VER: "4.11.0"
       MIX_ENV: prod

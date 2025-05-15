@@ -67,7 +67,7 @@ concurrency:
 
 jobs:
   musl:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     container: alpine:latest
     env:
       MIX_ENV: test
@@ -164,7 +164,7 @@ jobs:
           mix test --include require_downloading
 
   gnu:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     env:
       MIX_ENV: test
       OPENCV_VER: "4.11.0"
