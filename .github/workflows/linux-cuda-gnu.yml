@@ -60,7 +60,7 @@ concurrency:
 jobs:
   x86_64-gnu-cuda:
     if: ${{ github.event_name == 'workflow_dispatch' || contains(github.event.pull_request.labels.*.name, 'cuda') }}
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
