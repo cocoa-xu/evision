@@ -67,7 +67,7 @@ concurrency:
 
 jobs:
   musl:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     container: alpine:latest
     env:
       MIX_ENV: test
@@ -164,8 +164,13 @@ jobs:
           mix test --include require_downloading
 
   gnu:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
+    container: ubuntu:20.04
     env:
+      LANG: en_US.UTF-8
+      LANGUAGE: en_US:en
+      LC_ALL: en_US.UTF-8
+      DEBIAN_FRONTEND: noninteractive
       MIX_ENV: test
       OPENCV_VER: "4.11.0"
       OTP_VERSION: "25.2"
@@ -184,7 +189,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential automake autoconf pkg-config bc m4 unzip zip curl git libssl-dev gzip python3 ca-certificates \
-            libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libswresample-dev ffmpeg libeigen3-dev
+            libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libavresample-dev ffmpeg libeigen3-dev
 
       - name: Cache mix packages
         id: cache-mix-deps

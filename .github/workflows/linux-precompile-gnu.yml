@@ -11,13 +11,18 @@ concurrency:
 
 jobs:
   mix_compile:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     env:
+      LANG: en_US.UTF-8
+      LANGUAGE: en_US:en
+      LC_ALL: en_US.UTF-8
+      DEBIAN_FRONTEND: noninteractive
       OPENCV_VER: "4.11.0"
       MIX_ENV: prod
       ELIXIR_VERSION: "1.16.1"
       EVISION_PREFER_PRECOMPILED: "false"
       EVISION_GENERATE_LANG: "erlang,elixir"
+    container: ubuntu:20.04
     strategy:
       fail-fast: false
       matrix:
