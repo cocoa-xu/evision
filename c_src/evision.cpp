@@ -946,7 +946,7 @@ template<>
 bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, cv::Ptr<cv::Feature2D> &feature, const ArgInfo& info)
 {
     if (evision::nif::check_nil(env, obj)) {
-        return false;
+        return info.has_default || info.outputarg;
     }
 
     {
@@ -1713,7 +1713,7 @@ bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, String &value, const ArgInfo& 
         if (strncmp(info.name, "nodeName", 8) == 0) {
             return true;
         }
-        return info.has_default;
+        return info.has_default || info.outputarg;
     }
 
     std::string str;
