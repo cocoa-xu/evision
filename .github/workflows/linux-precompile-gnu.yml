@@ -11,13 +11,19 @@ concurrency:
 
 jobs:
   mix_compile:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     env:
+      ImageOS: ubuntu20
+      LANG: en_US.UTF-8
+      LANGUAGE: en_US:en
+      LC_ALL: en_US.UTF-8
+      DEBIAN_FRONTEND: noninteractive
       OPENCV_VER: "4.11.0"
       MIX_ENV: prod
       ELIXIR_VERSION: "1.16.1"
       EVISION_PREFER_PRECOMPILED: "false"
       EVISION_GENERATE_LANG: "erlang,elixir"
+    container: ubuntu:20.04
     strategy:
       fail-fast: false
       matrix:
@@ -83,22 +89,23 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Install system dependencies
+        run: |
+          alias sudo=`which sudo`
+          $sudo apt-get update -q
+          $sudo apt-get install -y build-essential automake autoconf pkg-config bc m4 unzip zip curl git gzip python3 ca-certificates libncurses5-dev libssl-dev libeigen3-dev cmake
+          if [ "${{ matrix.pair.arch }}" = "armv6-linux-gnueabihf" ]; then
+            curl -fSL https://github.com/nerves-project/toolchains/releases/download/v13.2.0/nerves_toolchain_armv6_nerves_linux_gnueabihf-linux_x86_64-13.2.0-363664F.tar.xz -o nerves_toolchain_armv6_nerves_linux_gnueabihf-linux_x86_64-13.2.0-363664F.tar.xz
+            tar -xf nerves_toolchain_armv6_nerves_linux_gnueabihf-linux_x86_64-13.2.0-363664F.tar.xz
+            $sudo mv nerves_toolchain_armv6_nerves_linux_gnueabihf-linux_x86_64-13.2.0 /usr/local/bin/nerves_toolchain_armv6_nerves_linux_gnueabihf-linux_x86_64-13.2.0
+          else
+            $sudo apt-get install -y ${{ matrix.pair.c_compiler }} ${{ matrix.pair.cpp_compiler }}
+          fi
+
       - uses: erlef/setup-beam@v1
         with:
           otp-version: ${{ matrix.pair.OTP_VERSION }}
           elixir-version: ${{ env.ELIXIR_VERSION }}
-
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update -q
-          sudo apt-get install -y build-essential automake autoconf pkg-config bc m4 unzip zip curl git gzip python3 ca-certificates libncurses5-dev libssl-dev libeigen3-dev
-          if [ "${{ matrix.pair.arch }}" = "armv6-linux-gnueabihf" ]; then
-            curl -fSL https://github.com/nerves-project/toolchains/releases/download/v13.2.0/nerves_toolchain_armv6_nerves_linux_gnueabihf-linux_x86_64-13.2.0-363664F.tar.xz -o nerves_toolchain_armv6_nerves_linux_gnueabihf-linux_x86_64-13.2.0-363664F.tar.xz
-            tar -xf nerves_toolchain_armv6_nerves_linux_gnueabihf-linux_x86_64-13.2.0-363664F.tar.xz
-            sudo mv nerves_toolchain_armv6_nerves_linux_gnueabihf-linux_x86_64-13.2.0 /usr/local/bin/nerves_toolchain_armv6_nerves_linux_gnueabihf-linux_x86_64-13.2.0
-          else
-            sudo apt-get install -y ${{ matrix.pair.c_compiler }} ${{ matrix.pair.cpp_compiler }}   
-          fi
 
       - name: Cache mix packages
         id: cache-mix-deps
