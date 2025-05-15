@@ -181,17 +181,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: erlef/setup-beam@v1
-        with:
-          otp-version: ${{ env.OTP_VERSION }}
-          elixir-version: ${{ env.ELIXIR_VERSION }}
-
       - name: Install system dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential automake autoconf pkg-config bc m4 unzip zip curl git libssl-dev gzip python3 ca-certificates \
             libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libavresample-dev ffmpeg libeigen3-dev
 
+      - uses: erlef/setup-beam@v1
+        with:
+          otp-version: ${{ env.OTP_VERSION }}
+          elixir-version: ${{ env.ELIXIR_VERSION }}
+      
       - name: Cache mix packages
         id: cache-mix-deps
         uses: actions/cache@v4

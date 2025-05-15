@@ -89,11 +89,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - uses: erlef/setup-beam@v1
-        with:
-          otp-version: ${{ matrix.pair.OTP_VERSION }}
-          elixir-version: ${{ env.ELIXIR_VERSION }}
-
       - name: Install system dependencies
         run: |
           sudo apt-get update -q
@@ -105,6 +100,11 @@ jobs:
           else
             sudo apt-get install -y ${{ matrix.pair.c_compiler }} ${{ matrix.pair.cpp_compiler }}   
           fi
+
+      - uses: erlef/setup-beam@v1
+        with:
+          otp-version: ${{ matrix.pair.OTP_VERSION }}
+          elixir-version: ${{ env.ELIXIR_VERSION }}
 
       - name: Cache mix packages
         id: cache-mix-deps
