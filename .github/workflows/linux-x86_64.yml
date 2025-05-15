@@ -183,8 +183,9 @@ jobs:
 
       - name: Install system dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential automake autoconf pkg-config bc m4 unzip zip curl git libssl-dev gzip python3 ca-certificates \
+          alias sudo=`which sudo`
+          $sudo apt-get update
+          $sudo apt-get install -y build-essential automake autoconf pkg-config bc m4 unzip zip curl git libssl-dev gzip python3 ca-certificates \
             libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libavresample-dev ffmpeg libeigen3-dev
 
       - uses: erlef/setup-beam@v1
