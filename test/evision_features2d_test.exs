@@ -71,4 +71,21 @@ defmodule Evision.Features2D.Test do
       assert msg =~ "The function/feature is not implemented"
     end
   end
+
+  describe "allowing default values for features 2D" do
+    test "findCirclesGrid, colour image" do
+      img = Evision.imread(Path.join([__DIR__, "testdata", "test-circle-grid.jpg"]))
+      pattern_size = {12, 8}
+      corners = Evision.findCirclesGrid(img, pattern_size)
+      assert is_struct(corners, Evision.Mat)
+    end
+
+    test "findCirclesGrid, gray image" do
+      img = Evision.imread(Path.join([__DIR__, "testdata", "test-circle-grid.jpg"]))
+      gray = Evision.cvtColor(img, Evision.Constant.cv_COLOR_BGR2GRAY())
+      pattern_size = {12, 8}
+      corners = Evision.findCirclesGrid(gray, pattern_size)
+      assert is_struct(corners, Evision.Mat)
+    end
+  end
 end

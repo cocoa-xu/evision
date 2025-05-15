@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.2.13 (2025-05-15)
+[Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.2.13) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.2.13)
+
+### Fixed
+
+- Allowing Features2D parameters to be `nil` when they have default values or as output parameters.
+
 ## v0.2.12 (2025-04-14)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.2.12) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.2.12)
 
