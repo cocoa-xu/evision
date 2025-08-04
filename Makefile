@@ -192,6 +192,7 @@ $(HEADERS_TXT): $(CONFIGURATION_PRIVATE_HPP)
 			export XROS_DEPLOYMENT_TARGET=$(XROS_DEPLOYMENT_TARGET) ; \
 		fi && \
 		echo "CMAKE_OPTIONS: $(CMAKE_OPTIONS)" && \
+		cp -f "$(shell pwd)/cmake/OpenCVDetectCUDAUtils.cmake" "$(OPENCV_DIR)/cmake/OpenCVDetectCUDAUtils.cmake" && \
 		cmake -D CMAKE_BUILD_TYPE="$(CMAKE_BUILD_TYPE)" \
 			-D CMAKE_INSTALL_PREFIX="$(PRIV_DIR)" \
 			-D PYTHON3_EXECUTABLE="$(PYTHON3_EXECUTABLE)" \
