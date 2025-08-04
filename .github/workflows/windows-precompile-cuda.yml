@@ -95,7 +95,7 @@ jobs:
       - uses: ilammy/msvc-dev-cmd@v1
         with:
           arch: x64
-          vsversion: "2019"
+          vsversion: "2022"
 
       - name: Install CUDA with cudnn ${{ matrix.pair.cudnn_major }}
         uses: cocoa-xu/cuda-toolkit@v0.6.0

@@ -103,11 +103,11 @@ CMAKE_BUILD_TYPE=Release
 !IF "$(EVISION_ENABLE_CONTRIB)" == "true"
 CMAKE_WIN_FINAL_OPTIONS_DEFINITIVE_EDITION = $(CMAKE_WIN_FINAL_OPTIONS) -DOPENCV_EXTRA_MODULES_PATH="$(OPENCV_CONTRIB_DIR)\modules" -D BUILD_opencv_hdf=OFF -D BUILD_opencv_freetype=OFF
 C_SRC_HEADER_TXT="$(C_SRC)/headers-contrib.txt"
-HEADERS_TXT="$(CMAKE_OPENCV_BUILD_DIR)/modules/python_bindings_generator/headers-contrib.txt"
+HEADERS_TXT=$(CMAKE_OPENCV_BUILD_DIR)/modules/python_bindings_generator/headers-contrib.txt
 !ELSE
 CMAKE_WIN_FINAL_OPTIONS_DEFINITIVE_EDITION = $(CMAKE_WIN_FINAL_OPTIONS)
 C_SRC_HEADER_TXT="$(C_SRC)/headers.txt"
-HEADERS_TXT="$(CMAKE_OPENCV_BUILD_DIR)/modules/python_bindings_generator/headers.txt"
+HEADERS_TXT=$(CMAKE_OPENCV_BUILD_DIR)/modules/python_bindings_generator/headers.txt
 !ENDIF
 
 !IFDEF CMAKE_TOOLCHAIN_FILE
