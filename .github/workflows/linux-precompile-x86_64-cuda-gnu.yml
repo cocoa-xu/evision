@@ -57,6 +57,8 @@ jobs:
       EVISION_GENERATE_LANG: "erlang,elixir"
       EVISION_ENABLE_CUDA: "true"
       PKG_CONFIG_PATH: "/usr/lib/x86_64-linux-gnu/pkgconfig"
+      CUDA_ARCH_BIN: "50,52,60,61,70,72,75,80,86,89,90,100,101,120"
+      CUDA_ARCH_PTX: "50,52,60,61,70,72,75,80,86,89,90,100,101,120"
 
     steps:
       - name: Checkout

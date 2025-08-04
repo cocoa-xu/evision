@@ -16,6 +16,8 @@ jobs:
       OTP_VERSION: "25.3.2.12"
       ELIXIR_VERSION: "1.16.1"
       TRIPLET: "aarch64-linux-gnu"
+      CUDA_ARCH_BIN: "50,52,60,61,70,72,75,80,86,89,90,100,101,120"
+      CUDA_ARCH_PTX: "50,52,60,61,70,72,75,80,86,89,90,100,101,120"
     strategy:
       fail-fast: false
       matrix:
