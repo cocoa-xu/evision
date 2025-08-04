@@ -2,8 +2,8 @@
 MIX_APP_PATH=$(MAKEDIR)
 !ENDIF
 
-PRIV_DIR = $(MIX_APP_PATH)\priv
-EVISION_SO = $(PRIV_DIR)\evision.dll
+PRIV_DIR = $(MIX_APP_PATH)/priv
+EVISION_SO = $(PRIV_DIR)/evision.dll
 WINDOWS_FIX_SO = $(PRIV_DIR)\windows_fix.dll
 SRC = $(MAKEDIR)\src
 C_SRC = $(MAKEDIR)\c_src
@@ -39,7 +39,7 @@ OPENCV_ROOT_DIR = $(MAKEDIR)\3rd_party\opencv
 OPENCV_DIR = $(OPENCV_ROOT_DIR)\opencv-$(OPENCV_VER)
 OPENCV_CONTRIB_DIR = $(OPENCV_ROOT_DIR)\opencv_contrib-$(OPENCV_CONTRIB_VER)
 OPENCV_CONFIGURATION_PRIVATE_HPP = $(OPENCV_DIR)\modules\core\include\opencv2\core\utils\configuration.private.hpp
-CMAKE_OPENCV_BUILD_DIR = $(MIX_APP_PATH)\cmake_opencv_$(OPENCV_VER)
+CMAKE_OPENCV_BUILD_DIR = $(MIX_APP_PATH)/cmake_opencv_$(OPENCV_VER)
 !IFNDEF CMAKE_OPENCV_MODULE_SELECTION
 CMAKE_OPENCV_MODULE_SELECTION = -D BUILD_opencv_python2=OFF -D BUILD_opencv_python3=OFF -D BUILD_opencv_gapi=OFF
 !ENDIF
@@ -58,7 +58,7 @@ ENABLED_CV_MODULES = ""
 !ENDIF
 
 # evision
-OPENCV_HEADERS_TXT=$(CMAKE_OPENCV_BUILD_DIR)\modules\python_bindings_generator\headers.txt
+OPENCV_HEADERS_TXT=$(CMAKE_OPENCV_BUILD_DIR)/modules/python_bindings_generator/headers.txt
 CONFIGURATION_PRIVATE_HPP = $(C_SRC)\configuration.private.hpp
 GENERATED_ELIXIR_SRC_DIR = $(LIB_SRC)\generated
 GENERATED_ERLANG_SRC_DIR = $(SRC)\generated
@@ -102,12 +102,12 @@ CMAKE_BUILD_TYPE=Release
 
 !IF "$(EVISION_ENABLE_CONTRIB)" == "true"
 CMAKE_WIN_FINAL_OPTIONS_DEFINITIVE_EDITION = $(CMAKE_WIN_FINAL_OPTIONS) -DOPENCV_EXTRA_MODULES_PATH="$(OPENCV_CONTRIB_DIR)\modules" -D BUILD_opencv_hdf=OFF -D BUILD_opencv_freetype=OFF
-C_SRC_HEADER_TXT=$(C_SRC)\headers-contrib.txt
-HEADERS_TXT=$(CMAKE_OPENCV_BUILD_DIR)\modules\python_bindings_generator\headers-contrib.txt
+C_SRC_HEADER_TXT=$(C_SRC)/headers-contrib.txt
+HEADERS_TXT=$(CMAKE_OPENCV_BUILD_DIR)/modules/python_bindings_generator/headers-contrib.txt
 !ELSE
 CMAKE_WIN_FINAL_OPTIONS_DEFINITIVE_EDITION = $(CMAKE_WIN_FINAL_OPTIONS)
-C_SRC_HEADER_TXT=$(C_SRC)\headers.txt
-HEADERS_TXT=$(CMAKE_OPENCV_BUILD_DIR)\modules\python_bindings_generator\headers.txt
+C_SRC_HEADER_TXT=$(C_SRC)/headers.txt
+HEADERS_TXT=$(CMAKE_OPENCV_BUILD_DIR)/modules/python_bindings_generator/headers.txt
 !ENDIF
 
 !IFDEF CMAKE_TOOLCHAIN_FILE

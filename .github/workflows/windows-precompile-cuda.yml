@@ -48,17 +48,17 @@ jobs:
               cuda_major: "11"
               cuda_minor: "8"
               cuda_patch: "0"
-              # cudnn 9.2.0
+              # cudnn 9.10.2
               cudnn_major: "9"
-              cudnn_minor: "2"
-              cudnn_patch: "0"
+              cudnn_minor: "10"
+              cudnn_patch: "2"
           - pair:
               OTP_VERSION: "25"
               NIF_VERSION: "2.16"
-              # cuda 12.5.0
+              # cuda 12.9.1
               cuda_major: "12"
-              cuda_minor: "5"
-              cuda_patch: "0"
+              cuda_minor: "9"
+              cuda_patch: "1"
               # cudnn 8.9.7
               cudnn_major: "8"
               cudnn_minor: "9"
@@ -66,13 +66,13 @@ jobs:
           - pair:
               OTP_VERSION: "25"
               NIF_VERSION: "2.16"
-              # cuda 12.5.0
+              # cuda 12.9.1
               cuda_major: "12"
-              cuda_minor: "5"
-              cuda_patch: "0"
-              # cudnn 9.2.0
+              cuda_minor: "9"
+              cuda_patch: "1"
+              # cudnn 9.11.0
               cudnn_major: "9"
-              cudnn_minor: "2"
+              cudnn_minor: "11"
               cudnn_patch: "0"
 
     name: x86_64-windows-msvc-cuda${{ matrix.pair.cuda_major }}-cudnn${{ matrix.pair.cudnn_major }}
@@ -99,7 +99,7 @@ jobs:
           vsversion: "2022"
 
       - name: Install CUDA with cudnn ${{ matrix.pair.cudnn_major }}
-        uses: cocoa-xu/cuda-toolkit@v0.6.0
+        uses: cocoa-xu/cuda-toolkit@v0.7.0
         with:
           cuda: ${{ matrix.pair.cuda_major }}.${{ matrix.pair.cuda_minor }}.${{ matrix.pair.cuda_patch }}
           cudnn: ${{ matrix.pair.cudnn_major }}.${{ matrix.pair.cudnn_minor }}.${{ matrix.pair.cudnn_patch }}
