@@ -12,7 +12,7 @@ concurrency:
 
 jobs:
   windows-precompile-cuda:
-    runs-on: windows-2019
+    runs-on: windows-2022
     env:
       MIX_ENV: prod
       OPENCV_VER: "4.11.0"
