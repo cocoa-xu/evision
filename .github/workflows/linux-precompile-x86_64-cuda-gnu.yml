@@ -1,6 +1,7 @@
 name: linux-precompile-x86_64-cuda-gnu
 
 on:
+  workflow_dispatch:
   push:
     tags:
       - 'v*'
@@ -11,7 +12,7 @@ concurrency:
 
 jobs:
   x86_64-linux-gnu-cuda:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
@@ -20,22 +21,22 @@ jobs:
             cuda_ver: "11.8.0"
             cuda_id: "11"
             cudnn_id: "8"
-            cudnn_tarball: "https://developer.download.nvidia.com/compute/cudnn/redist/cudnn/linux-x86_64/cudnn-linux-x86_64-9.2.0.82_cuda11-archive.tar.xz"
-          - container: nvidia/cuda:12.5.0-devel-ubuntu20.04
-            cuda_ver: "12.5.0"
+            cudnn_tarball: "https://developer.download.nvidia.com/compute/cudnn/redist/cudnn/linux-x86_64/cudnn-linux-x86_64-8.9.7.29_cuda11-archive.tar.xz"
+          - container: nvidia/cuda:12.9.1-devel-ubuntu20.04
+            cuda_ver: "12.9.1"
             cuda_id: "12"
             cudnn_id: "8"
-            cudnn_tarball: "https://developer.download.nvidia.com/compute/cudnn/redist/cudnn/linux-x86_64/cudnn-linux-x86_64-9.2.0.82_cuda12-archive.tar.xz"
+            cudnn_tarball: "https://developer.download.nvidia.com/compute/cudnn/redist/cudnn/linux-x86_64/cudnn-linux-x86_64-8.9.7.29_cuda12-archive.tar.xz"
           - container: nvidia/cuda:11.8.0-devel-ubuntu20.04
             cuda_ver: "11.8.0"
             cuda_id: "11"
             cudnn_id: "9"
-            cudnn_tarball: "https://developer.download.nvidia.com/compute/cudnn/redist/cudnn/linux-x86_64/cudnn-linux-x86_64-9.2.0.82_cuda11-archive.tar.xz"
-          - container: nvidia/cuda:12.5.0-devel-ubuntu20.04
-            cuda_ver: "12.5.0"
+            cudnn_tarball: "https://developer.download.nvidia.com/compute/cudnn/redist/cudnn/linux-x86_64/cudnn-linux-x86_64-9.11.0.98_cuda11-archive.tar.xz"
+          - container: nvidia/cuda:12.9.1-devel-ubuntu20.04
+            cuda_ver: "12.9.1"
             cuda_id: "12"
             cudnn_id: "9"
-            cudnn_tarball: "https://developer.download.nvidia.com/compute/cudnn/redist/cudnn/linux-x86_64/cudnn-linux-x86_64-9.2.0.82_cuda12-archive.tar.xz"
+            cudnn_tarball: "https://developer.download.nvidia.com/compute/cudnn/redist/cudnn/linux-x86_64/cudnn-linux-x86_64-9.11.0.98_cuda12-archive.tar.xz"
 
     container: ${{ matrix.container }}
     env:
@@ -148,6 +149,7 @@ jobs:
 
       - name: Upload precompiled library
         uses: softprops/action-gh-release@v2
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
         with:
           files: |
             artifacts/*.tar.gz
