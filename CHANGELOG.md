@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.2.14 (2025-08-15)
+[Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.2.14) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.2.14)
+
+### Changes
+
+- Added support for newer generation of CUDA architectures, including `sm_100` and `sm_120`.
+
 ## v0.2.13 (2025-05-15)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.2.13) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.2.13)
 

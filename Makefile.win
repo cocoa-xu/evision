@@ -11,6 +11,7 @@ PY_SRC = $(MAKEDIR)\py_src
 LIB_SRC = $(MAKEDIR)\lib
 GLEAM_SRC = $(MAKEDIR)\gleam_src
 PATCHES_DIR = $(MAKEDIR)\patches
+CMAKE_DIR = $(MAKEDIR)\cmake
 !IFDEF CMAKE_TOOLCHAIN_FILE
 CMAKE_CONFIGURE_FLAGS=-D CMAKE_TOOLCHAIN_FILE="$(CMAKE_TOOLCHAIN_FILE)"
 !ENDIF
@@ -160,6 +161,7 @@ $(HEADERS_TXT): $(CONFIGURATION_PRIVATE_HPP)
 		python "$(PATCHES_DIR)\apply_patch.py" "$(OPENCV_DIR)" "$(OPENCV_VER)" \
 	)
 	@ if not exist "$(HEADERS_TXT)" if "$(EVISION_DO_OPENCV_COMPILE)" == "true" ( \
+		if not exist "$(OPENCV_DIR)\cmake\OpenCVDetectCUDAUtils.cmake" copy "$(CMAKE_DIR)\OpenCVDetectCUDAUtils.cmake" "$(OPENCV_DIR)\cmake\OpenCVDetectCUDAUtils.cmake" && \
 		cd "$(CMAKE_OPENCV_BUILD_DIR)" && \
 		cmake -D CMAKE_BUILD_TYPE="$(CMAKE_BUILD_TYPE)" \
 			-D CMAKE_INSTALL_PREFIX="$(PRIV_DIR)" \
