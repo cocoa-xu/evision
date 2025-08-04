@@ -184,13 +184,15 @@ $(HEADERS_TXT): $(CONFIGURATION_PRIVATE_HPP)
 	    if not exist "$(EVISION_SO)" ( \
 		    cd "$(CMAKE_OPENCV_BUILD_DIR)" && cmake --install . --config "$(CMAKE_BUILD_TYPE)" && \
 		    if "$(OPENCV_HEADERS_TXT)" NEQ "$(HEADERS_TXT)" ( \
-			    powershell -command Copy-Item "$(OPENCV_HEADERS_TXT)" -Destination "$(HEADERS_TXT)" -force \
+					powershell -command Remove-Item "$(HEADERS_TXT)" -Force -ErrorAction SilentlyContinue && \
+			    powershell -command Copy-Item "$(OPENCV_HEADERS_TXT)" -Destination "$(HEADERS_TXT)" -Force -ErrorAction SilentlyContinue \
 		    ) \
 		) \
 	) && \
-	powershell -command Copy-Item "$(HEADERS_TXT)" -Destination "$(C_SRC_HEADER_TXT)" -force
+	powershell -command Remove-Item "$(CMAKE_OPENCV_BUILD_DIR)\CMakeCache.txt" -Force -ErrorAction SilentlyContinue && \
+	powershell -command Copy-Item "$(HEADERS_TXT)" -Destination "$(C_SRC_HEADER_TXT)" -Force -ErrorAction SilentlyContinue
 	@ if "$(EVISION_KEEP_OCV_BUILD_DIR)" == "false" ( \
-		powershell -command Remove-Item "$(CMAKE_OPENCV_BUILD_DIR)" -Recurse -force \
+		powershell -command Remove-Item "$(CMAKE_OPENCV_BUILD_DIR)" -Recurse -Force -ErrorAction SilentlyContinue \
 	)
 !ENDIF
 
