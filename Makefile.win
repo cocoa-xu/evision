@@ -188,9 +188,9 @@ $(HEADERS_TXT): $(CONFIGURATION_PRIVATE_HPP)
 			    powershell -command Copy-Item "$(OPENCV_HEADERS_TXT)" -Destination "$(HEADERS_TXT)" -Force -ErrorAction SilentlyContinue \
 		    ) \
 		) \
-	) && \
-	powershell -command Remove-Item "$(CMAKE_OPENCV_BUILD_DIR)\CMakeCache.txt" -Force -ErrorAction SilentlyContinue && \
-	powershell -command Copy-Item "$(HEADERS_TXT)" -Destination "$(C_SRC_HEADER_TXT)" -Force -ErrorAction SilentlyContinue
+	)
+	@ powershell -command Remove-Item "$(CMAKE_OPENCV_BUILD_DIR)\CMakeCache.txt" -Force -ErrorAction SilentlyContinue
+	@ powershell -command Copy-Item "$(HEADERS_TXT)" -Destination "$(C_SRC_HEADER_TXT)" -Force -ErrorAction SilentlyContinue
 	@ if "$(EVISION_KEEP_OCV_BUILD_DIR)" == "false" ( \
 		powershell -command Remove-Item "$(CMAKE_OPENCV_BUILD_DIR)" -Recurse -Force -ErrorAction SilentlyContinue \
 	)
