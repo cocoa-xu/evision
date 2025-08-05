@@ -2,6 +2,10 @@ name: windows-precompile-cuda
 
 on:
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release'
+        required: true
   push:
     tags:
       - 'v*'
@@ -99,8 +103,9 @@ jobs:
           vsversion: "2022"
 
       - name: Install CUDA with cudnn ${{ matrix.pair.cudnn_major }}
-        uses: cocoa-xu/cuda-toolkit@v0.7.0
+        uses: cocoa-xu/cuda-toolkit@v0.7.1
         with:
+          mirror: "https://mirrors.uwucocoa.moe/nvidia"
           cuda: ${{ matrix.pair.cuda_major }}.${{ matrix.pair.cuda_minor }}.${{ matrix.pair.cuda_patch }}
           cudnn: ${{ matrix.pair.cudnn_major }}.${{ matrix.pair.cudnn_minor }}.${{ matrix.pair.cudnn_patch }}
 
@@ -123,11 +128,17 @@ jobs:
           mix compile
 
       - name: Create precompiled library
+        id: precompile
         shell: bash
         run: |
           export RUNNER_DIR=`pwd`
+          if [ "${{ github.event_name }}" = "push" ]; then
+            export VERSION=${GITHUB_REF##*/v}
+          else
+            export VERSION=${{ github.event.inputs.version }}
+          fi
           cd C:/evision
-          export PKG_NAME=evision-nif_${{ matrix.pair.NIF_VERSION }}-x86_64-windows-msvc-contrib-cuda${{ matrix.pair.cuda_major }}-cudnn${{ matrix.pair.cudnn_major }}-${GITHUB_REF##*/v}
+          export PKG_NAME=evision-nif_${{ matrix.pair.NIF_VERSION }}-x86_64-windows-msvc-contrib-cuda${{ matrix.pair.cuda_major }}-cudnn${{ matrix.pair.cudnn_major }}-${VERSION}
           mkdir -p "${PKG_NAME}"
           export PRIV_DIR="$(pwd)/_build/${MIX_ENV}/lib/evision/priv"
           export TMP_INCLUDE_DIR="$(pwd)/include"
@@ -144,9 +155,12 @@ jobs:
           sha256sum "${PKG_NAME}.tar.gz" | tee "${PKG_NAME}.tar.gz.sha256"
           mv "${TMP_INCLUDE_DIR}" "${PRIV_DIR}/include"
 
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+
       - uses: softprops/action-gh-release@v2
-        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
         with:
+          name: "v${{ steps.precompile.outputs.version }}"
+          tag_name: "v${{ steps.precompile.outputs.version }}"
           files: |
             artifacts/*.tar.gz
             artifacts/*.sha256
