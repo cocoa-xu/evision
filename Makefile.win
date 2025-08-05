@@ -184,7 +184,6 @@ $(HEADERS_TXT): $(CONFIGURATION_PRIVATE_HPP)
 	    if not exist "$(EVISION_SO)" ( \
 		    cd "$(CMAKE_OPENCV_BUILD_DIR)" && cmake --install . --config "$(CMAKE_BUILD_TYPE)" && \
 		    if "$(OPENCV_HEADERS_TXT)" NEQ "$(HEADERS_TXT)" ( \
-					powershell -command Remove-Item "$(HEADERS_TXT)" -Force -ErrorAction SilentlyContinue && \
 			    powershell -command Copy-Item "$(OPENCV_HEADERS_TXT)" -Destination "$(HEADERS_TXT)" -Force -ErrorAction SilentlyContinue \
 		    ) \
 		) \
