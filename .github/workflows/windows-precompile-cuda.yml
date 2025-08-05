@@ -106,6 +106,7 @@ jobs:
         uses: cocoa-xu/cuda-toolkit@v0.7.1
         with:
           mirror: "https://mirrors.uwucocoa.moe/nvidia"
+          use-github-cache: false
           cuda: ${{ matrix.pair.cuda_major }}.${{ matrix.pair.cuda_minor }}.${{ matrix.pair.cuda_patch }}
           cudnn: ${{ matrix.pair.cudnn_major }}.${{ matrix.pair.cudnn_minor }}.${{ matrix.pair.cudnn_patch }}
 
