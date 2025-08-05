@@ -47,7 +47,7 @@ jobs:
               cudnn_id: "8"
               cuda_pin: "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/sbsa/cuda-ubuntu2004.pin"
               cuda_deb: "https://developer.download.nvidia.com/compute/cuda/12.9.1/local_installers/cuda-repo-ubuntu2004-12-9-local_12.9.1-575.57.08-1_arm64.deb"
-              cuda_toolkit: "cuda-toolkit-12-5"
+              cuda_toolkit: "cuda-toolkit-12-9"
               cudnn_deb: "https://mirrors.uwucocoa.moe/cuda/cudnn-local-repo-ubuntu2004-8.9.7.29_1.0-1_arm64.deb"
               cudnn_package: "libcudnn8-dev"
           - pair:
@@ -57,7 +57,7 @@ jobs:
               cudnn_id: "9"
               cuda_pin: "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/sbsa/cuda-ubuntu2004.pin"
               cuda_deb: "https://developer.download.nvidia.com/compute/cuda/12.9.1/local_installers/cuda-repo-ubuntu2004-12-9-local_12.9.1-575.57.08-1_arm64.deb"
-              cuda_toolkit: "cuda-toolkit-12-5"
+              cuda_toolkit: "cuda-toolkit-12-9"
               cudnn_deb: "https://developer.download.nvidia.com/compute/cudnn/9.10.2/local_installers/cudnn-local-repo-ubuntu2004-9.10.2_1.0-1_arm64.deb"
               cudnn_package: "cudnn-cuda-12"
 
@@ -71,6 +71,7 @@ jobs:
           ls -la
           cp -a .github/scripts/*.sh ./
           chmod +x *.sh
+          mkdir -p artifacts
           ./script-to-build-gnu.sh "${{ matrix.pair.cuda_pin }}" "${{ matrix.pair.cuda_deb }}" "${{ matrix.pair.cuda_toolkit }}" "${{ matrix.pair.cuda_id }}" "${{ matrix.pair.cudnn_deb }}" "${{ matrix.pair.cudnn_package }}" "${{ matrix.pair.cudnn_id }}" "${{ env.OTP_VERSION }}" "${{ env.ELIXIR_VERSION }}" "${{ env.TRIPLET }}" "${GITHUB_REF}"
 
       - uses: softprops/action-gh-release@v2
