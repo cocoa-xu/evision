@@ -63,6 +63,7 @@ jobs:
       FFMPEG_VER: "5"
       OTP_VERSION: "25.3.2.2"
       ELIXIR_VERSION: "1.15.2"
+      CMAKE_VER: "3.18.6"
     steps:
       - uses: actions/checkout@v5
 
@@ -79,6 +80,10 @@ jobs:
           export PATH="$HOME/.elixir-install/installs/otp/${{ env.OTP_VERSION }}/bin:$HOME/.elixir-install/installs/elixir/${{ env.ELIXIR_VERSION }}-otp-${OTP_MAIN_VER}/bin:$PATH"
           mix local.hex --force
           mix local.rebar --force
+
+          asdf plugin add cmake
+          asdf install cmake "${{ env.CMAKE_VER }}"
+          asdf global cmake "${{ env.CMAKE_VER }}"
 
       - name: Cache mix packages
         id: cache-mix-deps
