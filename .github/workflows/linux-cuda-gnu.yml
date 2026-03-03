@@ -87,7 +87,7 @@ jobs:
       PKG_CONFIG_PATH: "/usr/lib/x86_64-linux-gnu/pkgconfig"
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Install system dependencies
         run: |

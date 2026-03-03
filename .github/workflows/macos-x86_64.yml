@@ -64,7 +64,7 @@ jobs:
       OTP_VERSION: "25.3.2.2"
       ELIXIR_VERSION: "1.15.2"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Install FFmpeg, Erlang and Elixir
         run: |

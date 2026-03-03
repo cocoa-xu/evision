@@ -77,7 +77,7 @@ jobs:
       EVISION_PREFER_PRECOMPILED: "false"
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Install system dependencies
         run: |
@@ -179,7 +179,7 @@ jobs:
       EVISION_PREFER_PRECOMPILED: "false"
       PKG_CONFIG_PATH: "/usr/lib/x86_64-linux-gnu/pkgconfig"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Install system dependencies
         run: |

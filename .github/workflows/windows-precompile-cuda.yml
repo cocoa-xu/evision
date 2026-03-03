@@ -82,7 +82,7 @@ jobs:
     name: x86_64-windows-msvc-cuda${{ matrix.pair.cuda_major }}-cudnn${{ matrix.pair.cudnn_major }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Git Checkout
         shell: bash

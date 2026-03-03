@@ -64,7 +64,7 @@ jobs:
     name: aarch64-linux-gnu-cuda${{ matrix.pair.cuda_id }}-cudnn${{ matrix.pair.cudnn_id }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Mix compile (with contrib modules)
         run: |
