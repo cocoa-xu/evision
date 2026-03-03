@@ -39,7 +39,7 @@ jobs:
 
       - name: Cache Precompiled OTP
         id: cache-otp
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           key: precompile-otp-${{ env.OTP_VERSION }}-${{ matrix.job.arch }}-unknown-freebsd${{ matrix.job.major }}
           path: |
