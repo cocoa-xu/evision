@@ -93,6 +93,8 @@ jobs:
 
       - name: Compile OpenCV (without contrib modules)
         run: |
+          cmake --version
+
           export OTP_VERSION="${{ matrix.pair.OTP_VERSION }}"
           export OTP_MAIN_VER="${OTP_VERSION%%.*}"
           export PATH="$HOME/.elixir-install/installs/otp/${{ matrix.pair.OTP_VERSION }}/bin:$HOME/.elixir-install/installs/elixir/${{ matrix.pair.ELIXIR_VERSION }}-otp-${OTP_MAIN_VER}/bin:$PATH"
