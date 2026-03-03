@@ -68,7 +68,7 @@ concurrency:
 jobs:
   musl:
     runs-on: ubuntu-latest
-    container: alpine:latest
+    container: alpine:3.18.12
     env:
       MIX_ENV: test
       OPENCV_VER: "4.11.0"
