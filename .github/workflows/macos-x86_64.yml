@@ -83,7 +83,7 @@ jobs:
 
           asdf plugin add cmake
           asdf install cmake "${{ env.CMAKE_VER }}"
-          asdf global cmake "${{ env.CMAKE_VER }}"
+          asdf set --home cmake "${{ env.CMAKE_VER }}"
 
       - name: Cache mix packages
         id: cache-mix-deps

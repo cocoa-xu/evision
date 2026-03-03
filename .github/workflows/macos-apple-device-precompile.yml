@@ -59,7 +59,7 @@ jobs:
 
           asdf plugin add cmake
           asdf install cmake "${{ matrix.pair.CMAKE_VER }}"
-          asdf global cmake "${{ matrix.pair.CMAKE_VER }}"
+          asdf set --home cmake "${{ matrix.pair.CMAKE_VER }}"
 
       - name: Cache mix packages
         id: cache-mix-deps
