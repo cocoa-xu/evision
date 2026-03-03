@@ -55,7 +55,7 @@ concurrency:
 
 jobs:
   mix_test:
-    runs-on: windows-latest
+    runs-on: windows-2022
     env:
       MIX_ENV: test
       OPENCV_VER: "4.11.0"

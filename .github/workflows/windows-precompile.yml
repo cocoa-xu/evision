@@ -12,7 +12,7 @@ concurrency:
 
 jobs:
   mix_compile:
-    runs-on: windows-latest
+    runs-on: windows-2022
     env:
       MIX_ENV: prod
       OPENCV_VER: "4.11.0"
