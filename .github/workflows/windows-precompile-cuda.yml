@@ -32,7 +32,7 @@ jobs:
       EVISION_KEEP_OCV_BUILD_DIR: "false"
       CMAKE_OPENCV_OPTIONS: >-
         -D CUDA_ARCH_BIN="5.0;5.2;6.0;6.1;7.0;7.5;8.0;8.6;8.9;9.0"
-        -D CUDA_NVCC_FLAGS="--expt-relaxed-constexpr"
+        -D CUDA_NVCC_FLAGS="--std=c++17 --expt-relaxed-constexpr --allow-unsupported-compiler"
     strategy:
       fail-fast: false
       matrix:
