@@ -30,6 +30,9 @@ jobs:
       MSBUILD_PLATFORM: x64
       CMAKE_GENERATOR_TYPE: Ninja
       EVISION_KEEP_OCV_BUILD_DIR: "false"
+      CMAKE_OPENCV_OPTIONS: >-
+        -D CUDA_ARCH_BIN="5.0;5.2;6.0;6.1;7.0;7.5;8.0;8.6;8.9;9.0"
+        -D CUDA_NVCC_FLAGS="--expt-relaxed-constexpr"
     strategy:
       fail-fast: false
       matrix:
