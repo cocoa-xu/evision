@@ -114,10 +114,6 @@ jobs:
             cd "${ROOT_DIR}"
             bash ./build.sh
 
-            rm -rf _build 3rd_party artifacts deps
-            rm -rf "${ROOT_DIR}/elixir-${ELIXIR_VERSION}"
-            rm -rf lib/generated src/generated
-
       - uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/v') || startsWith(github.ref, 'refs/tags/freebsd-')
         with:
