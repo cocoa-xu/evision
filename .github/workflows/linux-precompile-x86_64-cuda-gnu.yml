@@ -22,8 +22,8 @@ jobs:
             cuda_id: "11"
             cudnn_id: "8"
             cudnn_tarball: "https://developer.download.nvidia.com/compute/cudnn/redist/cudnn/linux-x86_64/cudnn-linux-x86_64-8.9.7.29_cuda11-archive.tar.xz"
-          - container: nvidia/cuda:12.9.1-devel-ubuntu20.04
-            cuda_ver: "12.9.1"
+          - container: nvidia/cuda:12.8.1-devel-ubuntu20.04
+            cuda_ver: "12.8.1"
             cuda_id: "12"
             cudnn_id: "8"
             cudnn_tarball: "https://developer.download.nvidia.com/compute/cudnn/redist/cudnn/linux-x86_64/cudnn-linux-x86_64-8.9.7.29_cuda12-archive.tar.xz"
@@ -32,8 +32,8 @@ jobs:
             cuda_id: "11"
             cudnn_id: "9"
             cudnn_tarball: "https://developer.download.nvidia.com/compute/cudnn/redist/cudnn/linux-x86_64/cudnn-linux-x86_64-9.10.2.21_cuda11-archive.tar.xz"
-          - container: nvidia/cuda:12.9.1-devel-ubuntu20.04
-            cuda_ver: "12.9.1"
+          - container: nvidia/cuda:12.8.1-devel-ubuntu20.04
+            cuda_ver: "12.8.1"
             cuda_id: "12"
             cudnn_id: "9"
             cudnn_tarball: "https://developer.download.nvidia.com/compute/cudnn/redist/cudnn/linux-x86_64/cudnn-linux-x86_64-9.11.0.98_cuda12-archive.tar.xz"
