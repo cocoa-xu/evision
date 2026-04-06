@@ -159,13 +159,34 @@ typedef double float64_t;
             dst.truncate(0)
             dst.write(fixed.getvalue())
 
+def patch_cmake_minimum_version(opencv_version: str, opencv_src_root: str):
+    # cmake/OpenCVGenPkgconfig.cmake uses cmake_minimum_required(VERSION 2.8.12.2)
+    # which fails with CMake 4.x that removed compat with < 3.5
+    pkgconfig_cmake = Path(opencv_src_root) / 'cmake' / 'OpenCVGenPkgconfig.cmake'
+    fixed = StringIO()
+    patched_1 = False
+    with open(pkgconfig_cmake, 'r') as source:
+        for line in source:
+            if not patched_1 and line.strip() == 'cmake_minimum_required(VERSION 2.8.12.2)':
+                fixed.write("cmake_minimum_required(VERSION 3.5) # patched\n")
+                patched_1 = True
+            else:
+                fixed.write(line)
+
+    if patched_1:
+        with open(pkgconfig_cmake, 'w') as dst:
+            dst.truncate(0)
+            dst.write(fixed.getvalue())
+
+
 patches = [
     patch_fix_getLayerShapes,
     patch_winograd,
     patch_rpath_linux,
     patch_python_bindings_generator,
     patch_intrin_rvv,
-    patch_imread
+    patch_imread,
+    patch_cmake_minimum_version
 ]
 
 
