@@ -1,6 +1,11 @@
 name: macos-precompile
 
 on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release'
+        required: true
   push:
     tags:
       - 'v*'
@@ -128,7 +133,12 @@ jobs:
 
       - name: Create precompiled library (without contrib modules)
         run: |
-          export PKG_NAME=evision-nif_${{ matrix.pair.NIF_VERSION }}-${{ matrix.pair.arch_name }}-apple-darwin-${GITHUB_REF##*/v}
+          if [ "${{ github.event_name }}" = "push" ]; then
+            export VERSION=${GITHUB_REF##*/v}
+          else
+            export VERSION=${{ github.event.inputs.version }}
+          fi
+          export PKG_NAME=evision-nif_${{ matrix.pair.NIF_VERSION }}-${{ matrix.pair.arch_name }}-apple-darwin-${VERSION}
           mkdir -p "${PKG_NAME}"
           export PRIV_DIR="$(pwd)/_build/${MIX_ENV}/lib/evision/priv"
           mv "${PRIV_DIR}/include" /tmp/include
@@ -179,8 +189,14 @@ jobs:
           mix compile
 
       - name: Create precompiled library (with contrib modules)
+        id: precompile
         run: |
-          export PKG_NAME=evision-nif_${{ matrix.pair.NIF_VERSION }}-${{ matrix.pair.arch_name }}-apple-darwin-contrib-${GITHUB_REF##*/v}
+          if [ "${{ github.event_name }}" = "push" ]; then
+            export VERSION=${GITHUB_REF##*/v}
+          else
+            export VERSION=${{ github.event.inputs.version }}
+          fi
+          export PKG_NAME=evision-nif_${{ matrix.pair.NIF_VERSION }}-${{ matrix.pair.arch_name }}-apple-darwin-contrib-${VERSION}
           mkdir -p "${PKG_NAME}"
           export PRIV_DIR="$(pwd)/_build/${MIX_ENV}/lib/evision/priv"
           mv "${PRIV_DIR}/include" /tmp/include
@@ -196,8 +212,12 @@ jobs:
           sha256sum "${PKG_NAME}.tar.gz" | tee "${PKG_NAME}.tar.gz.sha256"
           mv /tmp/include "${PRIV_DIR}/include"
 
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+
       - uses: softprops/action-gh-release@v2
         with:
+          name: "v${{ steps.precompile.outputs.version }}"
+          tag_name: "v${{ steps.precompile.outputs.version }}"
           files: |
             artifacts/*.tar.gz
             artifacts/*.sha256
