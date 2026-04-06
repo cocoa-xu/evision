@@ -144,44 +144,6 @@ jobs:
           sha256sum "${PKG_NAME}.tar.gz" | tee "${PKG_NAME}.tar.gz.sha256"
           mv /tmp/include "${PRIV_DIR}/include"
 
-      - name: Mix compile (without contrib modules) for Gleam (experimental)
-        run: |
-          export OTP_VERSION="${{ matrix.pair.OTP_VERSION }}"
-          export OTP_MAIN_VER="${OTP_VERSION%%.*}"
-          export PATH="$HOME/.elixir-install/installs/otp/${{ matrix.pair.OTP_VERSION }}/bin:$HOME/.elixir-install/installs/elixir/${{ matrix.pair.ELIXIR_VERSION }}-otp-${OTP_MAIN_VER}/bin:$PATH"
-          export EVISION_ENABLE_CONTRIB=false
-          export GLEAM_EVISION=true
-          export CMAKE_OPENCV_OPTIONS="-D WITH_FFMPEG=OFF"
-          if [ "${{ matrix.pair.arch }}" = "arm64" ]; then
-            export CMAKE_OPENCV_OPTIONS="${CMAKE_OPENCV_OPTIONS} -D WITH_IPP=OFF -D CMAKE_OSX_ARCHITECTURES=arm64"
-            export CMAKE_EVISION_OPTIONS="-D CMAKE_OSX_ARCHITECTURES=arm64"
-          fi
-          rm -f _build/${{ env.MIX_ENV }}/lib/evision/priv/evision.so
-
-          rm -rf lib/generated && rm -rf src/generated
-          mix compile
-          unset GLEAM_EVISION
-
-      - name: Create precompiled library (without contrib modules)
-        run: |
-          export PKG_NAME=gleam_evision-nif_${{ matrix.pair.NIF_VERSION }}-${{ matrix.pair.arch_name }}-apple-darwin-${GITHUB_REF##*/v}
-          mkdir -p "${PKG_NAME}"
-          export PRIV_DIR="$(pwd)/_build/${MIX_ENV}/lib/evision/priv"
-          mv "${PRIV_DIR}/include" /tmp/include
-          cp -a "${PRIV_DIR}" "${PKG_NAME}"
-          cp -a gleam_src "${PKG_NAME}/gleam_generated"
-          cp -a src/evision_highgui.erl "${PKG_NAME}/gleam_generated/"
-          cp -a src/evision_internal_structurise.erl "${PKG_NAME}/gleam_generated/"
-          cp -a src/evision_windows_fix.erl "${PKG_NAME}/gleam_generated/"
-          tar -czf "${PKG_NAME}.tar.gz" "${PKG_NAME}"
-          rm -rf "${PKG_NAME}"
-          ls -lah "${PKG_NAME}.tar.gz"
-          mkdir -p artifacts
-          mv "${PKG_NAME}.tar.gz" artifacts
-          cd artifacts
-          sha256sum "${PKG_NAME}.tar.gz" | tee "${PKG_NAME}.tar.gz.sha256"
-          mv /tmp/include "${PRIV_DIR}/include"
-
       - name: Compile OpenCV (with contrib modules)
         run: |
           export OTP_VERSION="${{ matrix.pair.OTP_VERSION }}"
@@ -225,43 +187,6 @@ jobs:
           cp -a "${PRIV_DIR}" "${PKG_NAME}"
           cp -a lib/generated "${PKG_NAME}/elixir_generated"
           cp -a src/generated "${PKG_NAME}/erlang_generated"
-          tar -czf "${PKG_NAME}.tar.gz" "${PKG_NAME}"
-          rm -rf "${PKG_NAME}"
-          ls -lah "${PKG_NAME}.tar.gz"
-          mkdir -p artifacts
-          mv "${PKG_NAME}.tar.gz" artifacts
-          cd artifacts
-          sha256sum "${PKG_NAME}.tar.gz" | tee "${PKG_NAME}.tar.gz.sha256"
-          mv /tmp/include "${PRIV_DIR}/include"
-
-      - name: Mix compile (with contrib modules) for Gleam (experimental)
-        run: |
-          export OTP_VERSION="${{ matrix.pair.OTP_VERSION }}"
-          export OTP_MAIN_VER="${OTP_VERSION%%.*}"
-          export PATH="$HOME/.elixir-install/installs/otp/${{ matrix.pair.OTP_VERSION }}/bin:$HOME/.elixir-install/installs/elixir/${{ matrix.pair.ELIXIR_VERSION }}-otp-${OTP_MAIN_VER}/bin:$PATH"
-          export EVISION_ENABLE_CONTRIB=true
-          export GLEAM_EVISION=true
-          export CMAKE_OPENCV_OPTIONS="-D WITH_FFMPEG=OFF"
-          if [ "${{ matrix.pair.arch }}" = "arm64" ]; then
-            export CMAKE_OPENCV_OPTIONS="${CMAKE_OPENCV_OPTIONS} -D WITH_IPP=OFF -D CMAKE_OSX_ARCHITECTURES=arm64"
-            export CMAKE_EVISION_OPTIONS="-D CMAKE_OSX_ARCHITECTURES=arm64"
-          fi
-          rm -f _build/${{ env.MIX_ENV }}/lib/evision/priv/evision.so
-
-          rm -rf lib/generated && rm -rf src/generated
-          mix compile
-
-      - name: Create precompiled library (with contrib modules)
-        run: |
-          export PKG_NAME=gleam_evision-nif_${{ matrix.pair.NIF_VERSION }}-${{ matrix.pair.arch_name }}-apple-darwin-contrib-${GITHUB_REF##*/v}
-          mkdir -p "${PKG_NAME}"
-          export PRIV_DIR="$(pwd)/_build/${MIX_ENV}/lib/evision/priv"
-          mv "${PRIV_DIR}/include" /tmp/include
-          cp -a "${PRIV_DIR}" "${PKG_NAME}"
-          cp -a gleam_src "${PKG_NAME}/gleam_generated"
-          cp -a src/evision_highgui.erl "${PKG_NAME}/gleam_generated/"
-          cp -a src/evision_internal_structurise.erl "${PKG_NAME}/gleam_generated/"
-          cp -a src/evision_windows_fix.erl "${PKG_NAME}/gleam_generated/"
           tar -czf "${PKG_NAME}.tar.gz" "${PKG_NAME}"
           rm -rf "${PKG_NAME}"
           ls -lah "${PKG_NAME}.tar.gz"

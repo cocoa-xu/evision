@@ -10,7 +10,17 @@ defmodule Evision.MixProject.Metadata do
     do: ["4.5.3", "4.5.4", "4.5.5", "4.6.0", "4.7.0", "4.8.0", "4.9.0", "4.10.0", "4.11.0"]
 
   def default_cuda_version, do: {"12", "9"}
-  def all_cuda_version(_), do: [{"11", "8"}, {"11", "9"}, {"12", "8"}, {"12", "9"}]
+
+  def all_cuda_version(target) do
+    cuda11 = [{"11", "8"}, {"11", "9"}]
+    cuda12 = [{"12", "8"}, {"12", "9"}]
+
+    if String.contains?("msvc", target) do
+      cuda12
+    else
+      cuda11 ++ cuda12
+    end
+  end
 end
 
 defmodule Mix.Tasks.Compile.EvisionPrecompiled do
@@ -501,6 +511,9 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
     case :httpc.request(:get, arg, http_options, opts) do
       {:ok, {{_, 200, _}, _, body}} ->
         {:ok, body}
+
+      {:ok, {{_, status_code, _}, _, body}} ->
+        raise RuntimeError, "Cannot download file from #{url}: #{status_code}."
 
       {:error, reason} ->
         raise RuntimeError, "Cannot download file from #{url}: #{reason}."

@@ -115,7 +115,6 @@ jobs:
             bash ./build.sh
 
       - uses: softprops/action-gh-release@v2
-        if: startsWith(github.ref, 'refs/tags/v') || startsWith(github.ref, 'refs/tags/freebsd-')
         with:
           tag_name: v${{ steps.version.outputs.tag }}
           files: |
