@@ -86,6 +86,7 @@ ExUnit.configure(
     # (could set up a virtual camera, but let's leave that for now)
     require_ffmpeg: true,
     require_cuda: true,
+    require_tesseract: true,
     dnn: !compiled_modules.dnn,
     ml: !compiled_modules.ml,
     photo: !compiled_modules.photo,

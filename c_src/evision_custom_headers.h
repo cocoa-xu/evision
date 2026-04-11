@@ -11,6 +11,7 @@
 #include "evision_custom_headers/evision_video.hpp"
 
 // opencv contrib
+#include "evision_custom_headers/evision_text.hpp"
 #include "evision_custom_headers/evision_barcode.hpp"
 #include "evision_custom_headers/evision_cchecker.hpp"
 #include "evision_custom_headers/evision_linemod.hpp"

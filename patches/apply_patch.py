@@ -159,6 +159,74 @@ typedef double float64_t;
             dst.truncate(0)
             dst.write(fixed.getvalue())
 
+def patch_ocr_tesseract_run_with_components(opencv_version: str, opencv_src_root: str):
+    """Add CV_WRAP runWithComponents() to OCRTesseract.
+
+    The existing CV_WRAP run() overloads only return a String.  The void run()
+    overloads that also return component_rects/texts/confidences are not
+    CV_WRAP-ped, so the Evision binding generator never sees them.
+
+    This patch adds a non-virtual inline runWithComponents() that delegates
+    to the virtual run() and is CV_WRAP-ped with CV_OUT params so the
+    binding generator exposes the bounding-box data to Elixir.
+    """
+    # contrib lives as a sibling: 3rd_party/opencv/opencv_contrib-{ver}/
+    opencv_root = Path(opencv_src_root).parent
+    contrib_root = opencv_root / f'opencv_contrib-{opencv_version}'
+    ocr_hpp = (
+        contrib_root / 'modules' / 'text' / 'include' / 'opencv2' / 'text' / 'ocr.hpp'
+    )
+    if not ocr_hpp.exists():
+        print(f"warning: {ocr_hpp} not found, skipping patch_ocr_tesseract_run_with_components")
+        return
+
+    anchor = '    CV_WRAP virtual void setWhiteList(const String& char_whitelist) = 0;'
+    insertion = '''\
+    /** @brief Recognize text and return per-component bounding boxes.
+
+    Unlike the run() overloads that return only a text string, this method
+    also outputs per-component Rects, text strings, and confidence values.
+
+    @param image Input image CV_8UC1 or CV_8UC3
+    @param output_text Output recognised text.
+    @param component_rects Output list of Rects for individual text elements.
+    @param component_texts Output list of text strings for individual text elements.
+    @param component_confidences Output list of confidence values.
+    @param component_level OCR_LEVEL_WORD (default) or OCR_LEVEL_TEXTLINE.
+    */
+    CV_WRAP void runWithComponents(InputArray image,
+                                   CV_OUT String& output_text,
+                                   CV_OUT std::vector<Rect>& component_rects,
+                                   CV_OUT std::vector<String>& component_texts,
+                                   CV_OUT std::vector<float>& component_confidences,
+                                   int component_level = 0);
+
+'''
+
+    # Idempotency: skip if already patched.
+    with open(ocr_hpp, 'r') as f:
+        if 'runWithComponents' in f.read():
+            print("[+] OCRTesseract already patched with runWithComponents()")
+            return
+
+    fixed = StringIO()
+    patched = False
+    with open(ocr_hpp, 'r') as source:
+        for line in source:
+            if not patched and line.rstrip() == anchor:
+                fixed.write(insertion)
+                patched = True
+            fixed.write(line)
+
+    if patched:
+        with open(ocr_hpp, 'w') as dst:
+            dst.truncate(0)
+            dst.write(fixed.getvalue())
+        print("[+] patched OCRTesseract with runWithComponents()")
+    else:
+        print(f"warning: anchor line not found in {ocr_hpp}, skipping patch")
+
+
 def patch_cmake_minimum_version(opencv_version: str, opencv_src_root: str):
     # cmake/OpenCVGenPkgconfig.cmake uses cmake_minimum_required(VERSION 2.8.12.2)
     # which fails with CMake 4.x that removed compat with < 3.5
@@ -186,7 +254,8 @@ patches = [
     patch_python_bindings_generator,
     patch_intrin_rvv,
     patch_imread,
-    patch_cmake_minimum_version
+    patch_cmake_minimum_version,
+    patch_ocr_tesseract_run_with_components
 ]
 
 
