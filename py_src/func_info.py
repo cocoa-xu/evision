@@ -312,10 +312,8 @@ class FuncInfo(object):
                         self_offset = 1
                     if a_index + self_offset < opt_arg_index:
                         erl_term = "argv[%d]" % (a_index + opt_arg_index,)
-                    if a.tp == 'char':
-                        code_cvt_list.append("convert_to_char(env, %s, &%s, %s)" % (erl_term, a.name, a.crepr(defval)))
-                    elif a.tp == 'c_string':
-                        code_cvt_list.append("convert_to_char(env, %s, &%s, %s)" % (erl_term, a.name, a.crepr(defval)))
+                    if a.tp in ('char', 'c_string'):
+                        code_cvt_list.append("convert_to_char(env, %s, %s_buf, %s)" % (erl_term, a.name, a.crepr(defval)))
                     elif a.tp == 'FileStorage':
                         code_cvt_list.append("evision_to_safe(env, %s, ptr_%s, %s)" % (erl_term, a.name, a.crepr(defval)))
                     elif underscore_type in all_classes and all_classes[underscore_type].issimple is False:
@@ -328,7 +326,9 @@ class FuncInfo(object):
 
                 all_cargs.append([arg_type_info, parse_name])
 
-                if defval and len(defval) > 0:
+                if a.tp in ('char', 'c_string'):
+                    code_decl += "    std::unique_ptr<std::string> %s_buf;\n" % (a.name,)
+                elif defval and len(defval) > 0:
                     if arg_type_info.atype == "QRCodeEncoder_Params":
                         code_decl += "    QRCodeEncoder::Params %s=%s;\n" % (a.name, defval)
                     elif arg_type_info.atype == "QRCodeDetectorAruco_Params":
@@ -361,7 +361,11 @@ class FuncInfo(object):
                 if a.isrvalueref:
                     a.name = 'std::move(' + a.name + ')'
 
-                if arg_type_info.is_enum:
+                if a.tp == 'c_string':
+                    code_args += f"({a.name}_buf ? (char*){a.name}_buf->c_str() : nullptr)"
+                elif a.tp == 'char':
+                    code_args += f"({a.name}_buf ? {a.name}_buf->at(0) : '\\0')"
+                elif arg_type_info.is_enum:
                     code_args += f"static_cast<{tp}>({a.name})"
                 else:
                     code_args += amp + a.name
