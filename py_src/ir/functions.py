@@ -7,6 +7,7 @@ from ir.variants import FuncVariant
 from format_strings import FormatStrings
 import evision_templates as ET
 from helper import *
+from emit.erlang.helpers import map_uppercase_to_erlang_name
 
 
 class FuncInfo(object):

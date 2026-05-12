@@ -6,6 +6,7 @@ from string import Template
 from ir.functions import FuncInfo
 from ir.props import ClassProp
 from helper import *
+from emit.erlang.helpers import map_uppercase_to_erlang_name
 import evision_templates as ET
 
 if sys.version_info[0] >= 3:
