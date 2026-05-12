@@ -15,9 +15,9 @@ import evision_templates as ET
 import evision_structures as ES
 import evision_extra_functions as EF
 from helper import *
-from namespace import Namespace
-from func_info import FuncInfo
-from class_info import ClassInfo
+from ir.namespaces import Namespace
+from ir.functions import FuncInfo
+from ir.classes import ClassInfo
 from module_generator import ModuleGenerator
 from fixes import evision_elixir_fixes, evision_erlang_fixes, evision_elixir_module_fixes, evision_erlang_module_fixes
 from config.modules import NAMESPACE_TO_ELIXIR_MODULE

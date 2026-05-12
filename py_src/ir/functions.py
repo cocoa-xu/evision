@@ -3,7 +3,7 @@
 
 import re
 from string import Template
-from func_variant import FuncVariant
+from ir.variants import FuncVariant
 from format_strings import FormatStrings
 import evision_templates as ET
 from helper import *

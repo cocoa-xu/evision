@@ -3,8 +3,8 @@
 
 import sys
 from string import Template
-from func_info import FuncInfo
-from class_prop import ClassProp
+from ir.functions import FuncInfo
+from ir.props import ClassProp
 from helper import *
 import evision_templates as ET
 

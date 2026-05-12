@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 
 from helper import normalize_class_name, get_elixir_module_name
-from class_prop import ClassProp
-from module_generator import ModuleGenerator
+from ir.props import ClassProp
+from module_generator import ModuleGenerator  # emit-side; ir/ will be decoupled in a later step
 from config.inheritance_policy import BASE_CLASSES_TO_CHECK as base_classes_to_check
 import evision_templates as ET
 import evision_structures as ES

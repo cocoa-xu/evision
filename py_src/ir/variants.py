@@ -4,7 +4,7 @@
 from io import StringIO
 from typing import Tuple
 from helper import handle_ptr, forbidden_arg_types, ignored_arg_types, map_argtype_to_guard, map_argname, map_argtype_to_type, handle_inline_math_escaping, map_argtype_in_docs, map_argtype_in_spec, is_struct
-from arg_info import ArgInfo
+from ir.args import ArgInfo
 import re
 inline_docs_code_type_re = re.compile(r'@code{.(.*)}')
 
