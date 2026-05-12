@@ -70,7 +70,7 @@ jobs:
     container: alpine:3.18.12
     env:
       MIX_ENV: test
-      OPENCV_VER: "4.11.0"
+      OPENCV_VER: "4.13.0"
       OTP_VERSION: "26.2.2"
       ELIXIR_VERSION: "1.16.1"
       EVISION_PREFER_PRECOMPILED: "false"
@@ -172,7 +172,7 @@ jobs:
       LC_ALL: en_US.UTF-8
       DEBIAN_FRONTEND: noninteractive
       MIX_ENV: test
-      OPENCV_VER: "4.11.0"
+      OPENCV_VER: "4.13.0"
       OTP_VERSION: "25.2"
       ELIXIR_VERSION: "1.14.3"
       EVISION_PREFER_PRECOMPILED: "false"
