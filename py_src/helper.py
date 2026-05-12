@@ -50,77 +50,48 @@ def argsort(seq):
     return [x for x,y in sorted(enumerate(seq), key = lambda x: x[1])]
 
 
+from config.c_types import (
+    FORBIDDEN_ARG_TYPES,
+    IGNORED_ARG_TYPES,
+    IO_BOUND_FUNCS,
+    NIF_PREFIX,
+    PASS_BY_VAL_TYPES,
+    RESERVED_KEYWORDS,
+    SPECIAL_HANDLING_FUNCS,
+    SPECIAL_HANDLING_FUNCS_ONLY_IN_BEAM,
+)
+
+
 def reserved_keywords():
-    # Set of reserved keywords for Erlang/Elixir. 
-    # Keywords that are reserved in C/C++ are excluded because they can not be
-    # used as variables identifiers
-    return [
-        "true", "false", "nil", "as", "def", "end",
-        "rescue", "defmodule",  "defmacro", "when", "in", "fn", "with",
-        "of"
-    ]
+    return RESERVED_KEYWORDS
 
 
 def forbidden_arg_types():
-    return ["void*"]
+    return FORBIDDEN_ARG_TYPES
 
 
 def ignored_arg_types():
-    return ["RNG*"]
+    return IGNORED_ARG_TYPES
 
 
 def io_bound_funcs():
-    return [
-        # read
-        'evision_cv_dnn_dnn_Net_readFromModelOptimizer_static',
-        'evision_cv_imread',
-        'evision_cv_imreadmulti',
-        'evision_cv_readOpticalFlow',
-        'evision_cv_dnn_Net_readFromModelOptimizer',
-        'evision_cv_dnn_readNet',
-        'evision_cv_dnn_readNetFromCaffe',
-        'evision_cv_dnn_readNetFromDarknet',
-        'evision_cv_dnn_readNetFromModelOptimizer',
-        'evision_cv_dnn_readNetFromONNX',
-        'evision_cv_dnn_readNetFromTensorflow',
-        'evision_cv_dnn_readNetFromTorch',
-        'evision_cv_dnn_readTensorFromONNX',
-        'evision_cv_dnn_readTorchBlob',
-        # write
-        'evision_cv_FileStorage_writeComment',
-        'evision_cv_imwrite',
-        'evision_cv_imwritemulti',
-        'evision_cv_writeOpticalFlow',
-        'evision_cv_dnn_writeTextGraph',
-    ]
+    return IO_BOUND_FUNCS
 
 
-def pass_by_val_types(): 
-    return ["Point*", "Point2f*", "Rect*", "String*", "double*", "float*", "int*"]
+def pass_by_val_types():
+    return PASS_BY_VAL_TYPES
 
 
 def evision_nif_prefix():
-    return 'evision_cv_'
+    return NIF_PREFIX
 
 
 def special_handling_funcs():
-    return [
-        "{}{}".format(evision_nif_prefix(), name) for name in [
-            'imshow',
-            'waitKey',
-            'destroyWindow',
-            'destroyAllWindows',
-            'imdecode',
-            'videoCapture_waitAny_static',
-            'videoCapture_waitAny']
-        ]
+    return SPECIAL_HANDLING_FUNCS
+
 
 def special_handling_funcs_only_in_beam():
-    return ["{}{}".format(evision_nif_prefix(), name) for name in [
-        'dnn_NMSBoxes',
-        'dnn_NMSBoxesBatched',
-        'dnn_softNMSBoxes'
-    ]]
+    return SPECIAL_HANDLING_FUNCS_ONLY_IN_BEAM
 
 def handle_inline_math_escaping(text, start_pos=0):
     inline_docs_inline_math_re = re.compile(r'(?:.*?)\\\\f[$\[](.*?)\\\\f[$\]]', re.MULTILINE|re.DOTALL)

@@ -4,6 +4,7 @@
 from helper import normalize_class_name, get_elixir_module_name
 from class_prop import ClassProp
 from module_generator import ModuleGenerator
+from config.inheritance_policy import BASE_CLASSES_TO_CHECK as base_classes_to_check
 import evision_templates as ET
 import evision_structures as ES
 import sys
@@ -13,21 +14,6 @@ if sys.version_info[0] >= 3:
     from io import StringIO
 else:
     from cStringIO import StringIO
-
-
-base_classes_to_check = [
-    "GraphicalCodeDetector", 
-    "img_hash_ImgHashBase", 
-    "BackgroundSubtractor",
-    "legacy_Tracker",
-    "ml_StatModel",
-    "phase_unwrapping_PhaseUnwrapping",
-    "rapid_Tracker",
-    "reg_Map",
-    "reg_Mapper",
-    "structured_light_StructuredLightPattern",
-    "SparseOpticalFlow"
-]
 
 class ClassInfo(object):
     def __init__(self, name, decl=None, codegen=None):
