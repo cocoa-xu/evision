@@ -28,7 +28,7 @@ STAGING="${EVISION_GOLDEN_STAGING:-.golden}"
 
 # Staging c_src mirrors in-tree c_src (modules/ feeds the // @evision scan).
 # Using rsync so subsequent runs only sync diffs.
-mkdir -p "$STAGING/c_src" "$STAGING/lib/generated" "$STAGING/src/generated" "$STAGING/gleam_src"
+mkdir -p "$STAGING/c_src" "$STAGING/lib/generated" "$STAGING/src/generated"
 rsync -a --delete c_src/ "$STAGING/c_src/"
 
 echo ">> running gen2.py (lang=$LANG_FLAG) -> $STAGING/"
@@ -36,7 +36,6 @@ python3 py_src/gen2.py \
   --c_src="$STAGING/c_src" \
   --elixir_gen="$STAGING/lib/generated" \
   --erlang_gen="$STAGING/src/generated" \
-  --gleam_gen="$STAGING/gleam_src" \
   --headers=c_src/headers-contrib.txt \
   --lang="$LANG_FLAG" \
   --modules="$MODULES"

@@ -10,7 +10,6 @@ SRC = $(shell pwd)/src
 C_SRC = $(shell pwd)/c_src
 PY_SRC = $(shell pwd)/py_src
 LIB_SRC = $(shell pwd)/lib
-GLEAM_SRC = $(shell pwd)/gleam_src
 SCRIPTS = $(shell pwd)/scripts
 ifdef CMAKE_TOOLCHAIN_FILE
 	CMAKE_CONFIGURE_FLAGS=-D CMAKE_TOOLCHAIN_FILE="$(CMAKE_TOOLCHAIN_FILE)"
@@ -119,7 +118,6 @@ OPENCV_HEADERS_TXT = $(CMAKE_OPENCV_BUILD_DIR)/modules/python_bindings_generator
 CONFIGURATION_PRIVATE_HPP = $(C_SRC)/configuration.private.hpp
 GENERATED_ELIXIR_SRC_DIR = $(LIB_SRC)/generated
 GENERATED_ERLANG_SRC_DIR = $(SRC)/generated
-GENERATED_GLEAM_SRC_DIR = $(GLEAM_SRC)
 CMAKE_EVISION_BUILD_DIR = $(MIX_APP_PATH)/cmake_evision
 CMAKE_EVISION_OPTIONS ?= ""
 ifeq ($(MIX_TARGET), ios)
@@ -142,7 +140,6 @@ ifeq ($(EVISION_COMPILE_WITH_REBAR), true)
 endif
 EVISION_PRECOMPILED_CACHE_DIR ?= $(shell pwd)/.cache
 EVISION_MAKE ?= make
-GLEAM_EVISION ?= false
 
 .DEFAULT_GLOBAL := build
 
@@ -256,7 +253,6 @@ $(EVISION_SO): $(C_SRC_HEADERS_TXT) $(OPENCV_CONFIG_CMAKE)
 			-D C_SRC="$(C_SRC)" \
 			-D GENERATED_ELIXIR_SRC_DIR="$(GENERATED_ELIXIR_SRC_DIR)" \
 			-D GENERATED_ERLANG_SRC_DIR="$(GENERATED_ERLANG_SRC_DIR)" \
-			-D GENERATED_GLEAM_SRC_DIR="$(GENERATED_GLEAM_SRC_DIR)" \
 			-D PY_SRC="$(PY_SRC)" \
 			-D SHELL_EXEC="$(SHELL_EXEC)" \
 			-D MIX_APP_PATH="$(MIX_APP_PATH)" \
@@ -266,7 +262,6 @@ $(EVISION_SO): $(C_SRC_HEADERS_TXT) $(OPENCV_CONFIG_CMAKE)
 			-D EVISION_GENERATE_LANG="$(EVISION_GENERATE_LANG)" \
 			-D EVISION_ENABLE_CONTRIB="$(EVISION_ENABLE_CONTRIB)" \
 			-D EVISION_ENABLE_CUDA="$(EVISION_ENABLE_CUDA)" \
-			-D GLEAM_EVISION="$(GLEAM_EVISION)" \
 			$(CMAKE_CONFIGURE_FLAGS) $(CMAKE_EVISION_OPTIONS) "$(shell pwd)" && \
 			make "-j$(DEFAULT_JOBS)" \
 			|| { echo "\033[0;31mincomplete build of OpenCV found in '$(CMAKE_OPENCV_BUILD_DIR)', please delete that directory and retry\033[0m" && exit 1 ; } ; } \

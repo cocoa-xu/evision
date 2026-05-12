@@ -299,7 +299,7 @@ class ClassInfo(object):
         return code
 
 
-    def gen_def(self, codegen, evision_modules, evision_erlang_hrl, evision_gleam_hrl):
+    def gen_def(self, codegen, evision_modules, evision_erlang_hrl):
         all_classes = codegen.classes
         baseptr = "NoBase"
         if self.base and self.base in all_classes:
@@ -340,18 +340,7 @@ class ClassInfo(object):
                     atom_erlang_module_name=atom_erlang_module_name
                 )
             )
-            module_file_generator.write_gleam(f'-module({atom_erlang_module_name.lower()}).\n-compile(nowarn_export_all).\n-compile([export_all]).\n-include("evision.hrl").\n\n')    
-            module_file_generator.write_gleam(
-                ES.generic_struct_template_erlang.substitute(
-                    atom_elixir_module_name="Elixir." + atom_elixir_module_name.replace('"', ''),
-                    atom_erlang_module_name=atom_erlang_module_name
-                )
-            )
             evision_erlang_hrl.write(
-                f"-record({atom_erlang_module_name}, "
-                "{ref}).\n"
-            )
-            evision_gleam_hrl.write(
                 f"-record({atom_erlang_module_name}, "
                 "{ref}).\n"
             )
