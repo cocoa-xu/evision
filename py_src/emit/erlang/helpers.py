@@ -170,7 +170,6 @@ def map_argtype_in_spec_erlang(classname: str, argtype: str, is_in: bool, decl: 
         return f'#{ty}' + '{}'
     else:
         print(f'warning: generate_spec: unknown argtype `{argtype}`, input_arg? {is_in}, class={classname}')
-        raise RuntimeError("erlang spec")
         return 'term()'
 
 
@@ -257,7 +256,8 @@ def map_uppercase_to_erlang_name(name):
         "GStreamingCompiled": "gStreamingCompiled",
 
         "EMDHistogramCostExtractor": "emdHistogramCostExtractor",
-        "QRCodeDetectorAruco": "qrCodeDetectorAruco"
+        "QRCodeDetectorAruco": "qrCodeDetectorAruco",
+        "IStreamReader": "iStreamReader",
     }
     if name[0:3] == 'cv_':
         name = name[3:]

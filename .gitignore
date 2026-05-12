@@ -14,6 +14,8 @@ erl_crash.dump
 /c_src/configuration.private.hpp
 /c_src/headers.txt
 /c_src/headers-contrib.txt
+/c_src/gen_python_config.json
+/c_src/gen_python_config-contrib.json
 .DS_Store
 .vscode/
 .idea/

@@ -636,10 +636,15 @@ class Pipeline(object):
         self.evision_nif.write(f'  def enabled_modules, do: :erlang.nif_error(:undefined)\n')
         self.evision_nif_erlang.write(f'enabled_modules() ->\n    not_loaded(?LINE).\n')
 
-    def gen(self, srcfiles, output_path, erl_output_path, erlang_output_path):
+    def gen(self, srcfiles, output_path, erl_output_path, erlang_output_path,
+            preprocessor_definitions=None):
         self.output_path = output_path
         self.clear()
-        self.parser = hdr_parser.CppHeaderParser(generate_umat_decls=True, generate_gpumat_decls=True)
+        self.parser = hdr_parser.CppHeaderParser(
+            generate_umat_decls=True,
+            generate_gpumat_decls=True,
+            preprocessor_definitions=preprocessor_definitions,
+        )
 
         self.evision_nif.write('defmodule :evision_nif do\n{}\n'.format(ET.gen_evision_nif_load_nif))
         self.evision_nif_erlang.write('-module(evision_nif).\n-compile(nowarn_export_all).\n-compile([export_all]).\n\n{}\n{}\n'.format(ET.gen_evision_nif_load_nif_erlang, ET.gen_cv_types_erlang))

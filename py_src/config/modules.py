@@ -141,4 +141,10 @@ NAMESPACE_TO_ELIXIR_MODULE = {
     'dnn.DataLayout': 'Evision.DNN.DataLayout',
     'dnn.ImagePaddingMode': 'Evision.DNN.ImagePaddingMode',
     'dnn.SoftNMSMethod': 'Evision.DNN.SoftNMSMethod',
+    # Exposed by upstream 4.13's preprocessor-aware hdr_parser; the older
+    # parser silently skipped these blocks.
+    'instr.TYPE': 'Evision.Instr.TYPE',
+    'instr.IMPL': 'Evision.Instr.IMPL',
+    'instr.FLAGS': 'Evision.Instr.FLAGS',
+    'utils.logging.LogLevel': 'Evision.Utils.Logging.LogLevel',
 }

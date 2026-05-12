@@ -23,13 +23,13 @@ CMAKE_BUILD_TYPE ?= Release
 # OpenCV
 OPENCV_USE_GIT_HEAD ?= false
 OPENCV_GIT_REPO ?= "https://github.com/opencv/opencv.git"
-OPENCV_VER ?= 4.11.0
+OPENCV_VER ?= 4.13.0
 ifneq ($(OPENCV_USE_GIT_HEAD), false)
 	OPENCV_VER=$(OPENCV_USE_GIT_BRANCH)
 endif
 OPENCV_CONTRIB_USE_GIT_HEAD ?= false
 OPENCV_CONTRIB_GIT_REPO ?= "https://github.com/opencv/opencv_contrib.git"
-OPENCV_CONTRIB_VER ?= 4.11.0
+OPENCV_CONTRIB_VER ?= 4.13.0
 ifneq ($(OPENCV_CONTRIB_USE_GIT_HEAD), false)
 	OPENCV_CONTRIB_VER=$(OPENCV_CONTRIB_USE_GIT_BRANCH)
 endif
@@ -59,11 +59,11 @@ ENABLED_CV_MODULES ?= ""
 EVISION_ENABLE_CONTRIB ?= true
 ifeq ($(EVISION_ENABLE_CONTRIB),true)
 	CMAKE_OPTIONS += -DOPENCV_EXTRA_MODULES_PATH="$(OPENCV_CONTRIB_DIR)/modules" -D BUILD_opencv_hdf=OFF -D BUILD_opencv_freetype=OFF -D BUILD_opencv_sfm=OFF
-	C_SRC_HEADERS_TXT = "$(C_SRC)/headers-contrib.txt"
-	HEADERS_TXT = $(CMAKE_OPENCV_BUILD_DIR)/modules/python_bindings_generator/headers-contrib.txt
+	C_SRC_HEADERS_TXT = "$(C_SRC)/gen_python_config-contrib.json"
+	HEADERS_TXT = $(CMAKE_OPENCV_BUILD_DIR)/modules/python_bindings_generator/gen_python_config-contrib.json
 else
-	C_SRC_HEADERS_TXT = "$(C_SRC)/headers.txt"
-	HEADERS_TXT = $(CMAKE_OPENCV_BUILD_DIR)/modules/python_bindings_generator/headers.txt
+	C_SRC_HEADERS_TXT = "$(C_SRC)/gen_python_config.json"
+	HEADERS_TXT = $(CMAKE_OPENCV_BUILD_DIR)/modules/python_bindings_generator/gen_python_config.json
 endif
 EVISION_ENABLE_CUDA ?= false
 # ------ options for opencv_contrib end ------
@@ -216,9 +216,7 @@ $(HEADERS_TXT): $(CONFIGURATION_PRIVATE_HPP)
 		else \
 			make -j$(DEFAULT_JOBS) ; \
 		fi && \
-		if [ "$(OPENCV_HEADERS_TXT)" != "$(HEADERS_TXT)" ]; then \
-			cp -f "$(OPENCV_HEADERS_TXT)" "$(HEADERS_TXT)" ; \
-		fi \
+		cp -f "$(CMAKE_OPENCV_BUILD_DIR)/modules/python_bindings_generator/gen_python_config.json" "$(HEADERS_TXT)" ; \
 	fi
 
 $(C_SRC_HEADERS_TXT): $(HEADERS_TXT)
