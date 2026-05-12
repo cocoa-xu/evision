@@ -173,6 +173,10 @@ def map_argtype_in_spec_elixir(classname: str, argtype: str, is_in: bool, decl: 
         return f'{struct_name}.t()'
     elif 'Volume' == argtype:
         return 'Evision.KinFu.Volume.t()'
+    elif argtype == 'NativeByteArray':
+        # cv::NativeByteArray (OpenCV 4.13+) returns raw bytes; the
+        # evision_objdetect.hpp converter emits it as a BEAM binary.
+        return 'binary()'
     else:
         # print(f'warning: generate_spec: unknown argtype `{argtype}`, input_arg? {is_in}, class={classname}')
         return 'term()'

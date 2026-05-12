@@ -300,6 +300,7 @@ STRUCT_TYPES = {
     'LargeKinfu': 'Evision.LargeKinfu',
     'LargeKinfu.LargeKinfu': 'Evision.LargeKinfu', # changed
     'legacy_Tracker': 'Evision.Legacy.MultiTracker',
+    'legacy_MultiTracker': 'Evision.Legacy.MultiTracker',
     'Legacy.MultiTracker': 'Evision.Legacy.MultiTracker',
     'Legacy.Tracker': 'Evision.Legacy.MultiTracker', # changed
     'BinaryDescriptor': 'Evision.LineDescriptor.BinaryDescriptor',
@@ -478,6 +479,7 @@ STRUCT_TYPES = {
     'EdgeDrawing': 'Evision.XImgProc.EdgeDrawing',
     'XImgProc.EdgeDrawing': 'Evision.XImgProc.EdgeDrawing',
     'EdgeDrawing_Params': 'Evision.XImgProc.EdgeDrawing.Params',
+    'XImgProc.EdgeDrawing.Params': 'Evision.XImgProc.EdgeDrawing.Params',
     'FastBilateralSolverFilter': 'Evision.XImgProc.FastBilateralSolverFilter',
     'XImgProc.FastBilateralSolverFilter': 'Evision.XImgProc.FastBilateralSolverFilter',
     'FastGlobalSmootherFilter': 'Evision.XImgProc.FastGlobalSmootherFilter',
