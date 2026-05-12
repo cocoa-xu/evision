@@ -4,7 +4,7 @@
 from helper import normalize_class_name, get_elixir_module_name
 from ir.props import ClassProp
 from module_generator import ModuleGenerator  # emit-side; ir/ will be decoupled in a later step
-from config.inheritance_policy import BASE_CLASSES_TO_CHECK as base_classes_to_check
+from ir.inheritance import flatten_methods
 import evision_templates as ET
 import evision_structures as ES
 import sys
@@ -107,32 +107,7 @@ class ClassInfo(object):
         sorted_props = [(p.name, p) for p in self.props]
         sorted_props.sort()
 
-        methods = self.methods.copy()
-
-        base_class = self.base
-        current_class = self
-        while base_class is not None:
-            if base_class \
-                and (
-                        base_class in base_classes_to_check
-                        or current_class.cname.startswith("cv::ml") 
-                        or "Calibrate" in current_class.cname
-                        or "FaceRecognizer" in current_class.cname
-                        or "Facemark" in current_class.cname
-                        or "Collector" in current_class.cname
-                        or (current_class.base is not None and "Feature2D" in current_class.base) 
-                        or (current_class.base is not None and "Matcher" in current_class.base)
-                        or (current_class.base is not None and "Algorithm" in current_class.base)
-                        or (current_class.base is not None and current_class.cname.startswith("cv::dnn"))
-                    ):
-                if base_class in codegen.classes and current_class.base is not None:
-                    base_class = codegen.classes[current_class.base]
-                    self._add_methods_from_class(base_class, methods)
-                    base_class, current_class = current_class.base, base_class
-                else:
-                    break
-            else:
-                break
+        methods = flatten_methods(self, codegen)
 
         sorted_methods = list(methods.items())
         sorted_methods.sort()
@@ -242,31 +217,7 @@ class ClassInfo(object):
         methods_code = StringIO()
         methods_inits = StringIO()
 
-        methods = self.methods.copy()
-        base_class = self.base
-        current_class = self
-        while base_class is not None:
-            if base_class \
-                and (
-                        base_class in base_classes_to_check
-                        or current_class.cname.startswith("cv::ml")
-                        or "Calibrate" in current_class.cname
-                        or "FaceRecognizer" in current_class.cname
-                        or "Facemark" in current_class.cname
-                        or "Collector" in current_class.cname
-                        or (current_class.base is not None and "Feature2D" in current_class.base) 
-                        or (current_class.base is not None and "Matcher" in current_class.base)
-                        or (current_class.base is not None and "Algorithm" in current_class.base)
-                        or (current_class.base is not None and current_class.cname.startswith("cv::dnn"))
-                    ):
-                if base_class in codegen.classes and current_class.base is not None:
-                    base_class = codegen.classes[current_class.base]
-                    self._add_methods_from_class(base_class, methods)
-                    base_class, current_class = current_class.base, base_class
-                else:
-                    break
-            else:
-                break
+        methods = flatten_methods(self, codegen)
 
         sorted_methods = list(methods.items())
         sorted_methods.sort()
