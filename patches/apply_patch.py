@@ -32,10 +32,9 @@ def patch_imread(opencv_version: str, opencv_src_root: str):
                 
 
 def patch_fix_getLayerShapes(opencv_version: str, opencv_src_root: str):
-    # Fixed upstream in 4.13.0: getLayerShapes is already CV_WRAP'd there.
-    if opencv_version in ['4.13.0']:
-        return
-    if opencv_version not in ['4.5.4', '4.5.5', '4.6.0', '4.7.0', '4.8.0', '4.9.0', '4.10.0', '4.11.0']:
+    # 4.13.0 still has `// FIXIT: CV_WRAP` next to these declarations, so the
+    # patch is still required for the binding generator to pick them up.
+    if opencv_version not in ['4.5.4', '4.5.5', '4.6.0', '4.7.0', '4.8.0', '4.9.0', '4.10.0', '4.11.0', '4.13.0']:
         print(f"warning: applying `patch_fix_getLayerShapes` to opencv version `{opencv_version}`")
 
     # modules/dnn/include/opencv2/dnn/dnn.hpp
