@@ -69,8 +69,8 @@ jobs:
 
       - name: Install FFmpeg, Erlang and Elixir
         run: |
-          brew install autoconf coreutils curl git openssl wxwidgets asdf ffmpeg eigen
-          brew link ffmpeg
+          brew install autoconf coreutils curl git openssl wxwidgets asdf ffmpeg@6 eigen
+          brew link ffmpeg@6
           
           export OTP_VERSION="${{ env.OTP_VERSION }}"
           export OTP_MAIN_VER="${OTP_VERSION%%.*}"

@@ -2,8 +2,9 @@
 # -*- coding: utf-8 -*-
 
 from helper import normalize_class_name, get_elixir_module_name
-from class_prop import ClassProp
-from module_generator import ModuleGenerator
+from ir.props import ClassProp
+from module_generator import ModuleGenerator  # emit-side; ir/ will be decoupled in a later step
+from ir.inheritance import flatten_methods
 import evision_templates as ET
 import evision_structures as ES
 import sys
@@ -13,21 +14,6 @@ if sys.version_info[0] >= 3:
     from io import StringIO
 else:
     from cStringIO import StringIO
-
-
-base_classes_to_check = [
-    "GraphicalCodeDetector", 
-    "img_hash_ImgHashBase", 
-    "BackgroundSubtractor",
-    "legacy_Tracker",
-    "ml_StatModel",
-    "phase_unwrapping_PhaseUnwrapping",
-    "rapid_Tracker",
-    "reg_Map",
-    "reg_Mapper",
-    "structured_light_StructuredLightPattern",
-    "SparseOpticalFlow"
-]
 
 class ClassInfo(object):
     def __init__(self, name, decl=None, codegen=None):
@@ -121,32 +107,7 @@ class ClassInfo(object):
         sorted_props = [(p.name, p) for p in self.props]
         sorted_props.sort()
 
-        methods = self.methods.copy()
-
-        base_class = self.base
-        current_class = self
-        while base_class is not None:
-            if base_class \
-                and (
-                        base_class in base_classes_to_check
-                        or current_class.cname.startswith("cv::ml") 
-                        or "Calibrate" in current_class.cname
-                        or "FaceRecognizer" in current_class.cname
-                        or "Facemark" in current_class.cname
-                        or "Collector" in current_class.cname
-                        or (current_class.base is not None and "Feature2D" in current_class.base) 
-                        or (current_class.base is not None and "Matcher" in current_class.base)
-                        or (current_class.base is not None and "Algorithm" in current_class.base)
-                        or (current_class.base is not None and current_class.cname.startswith("cv::dnn"))
-                    ):
-                if base_class in codegen.classes and current_class.base is not None:
-                    base_class = codegen.classes[current_class.base]
-                    self._add_methods_from_class(base_class, methods)
-                    base_class, current_class = current_class.base, base_class
-                else:
-                    break
-            else:
-                break
+        methods = flatten_methods(self, codegen)
 
         sorted_methods = list(methods.items())
         sorted_methods.sort()
@@ -256,31 +217,7 @@ class ClassInfo(object):
         methods_code = StringIO()
         methods_inits = StringIO()
 
-        methods = self.methods.copy()
-        base_class = self.base
-        current_class = self
-        while base_class is not None:
-            if base_class \
-                and (
-                        base_class in base_classes_to_check
-                        or current_class.cname.startswith("cv::ml")
-                        or "Calibrate" in current_class.cname
-                        or "FaceRecognizer" in current_class.cname
-                        or "Facemark" in current_class.cname
-                        or "Collector" in current_class.cname
-                        or (current_class.base is not None and "Feature2D" in current_class.base) 
-                        or (current_class.base is not None and "Matcher" in current_class.base)
-                        or (current_class.base is not None and "Algorithm" in current_class.base)
-                        or (current_class.base is not None and current_class.cname.startswith("cv::dnn"))
-                    ):
-                if base_class in codegen.classes and current_class.base is not None:
-                    base_class = codegen.classes[current_class.base]
-                    self._add_methods_from_class(base_class, methods)
-                    base_class, current_class = current_class.base, base_class
-                else:
-                    break
-            else:
-                break
+        methods = flatten_methods(self, codegen)
 
         sorted_methods = list(methods.items())
         sorted_methods.sort()
@@ -299,7 +236,7 @@ class ClassInfo(object):
         return code
 
 
-    def gen_def(self, codegen, evision_modules, evision_erlang_hrl, evision_gleam_hrl):
+    def gen_def(self, codegen, evision_modules, evision_erlang_hrl):
         all_classes = codegen.classes
         baseptr = "NoBase"
         if self.base and self.base in all_classes:
@@ -340,18 +277,7 @@ class ClassInfo(object):
                     atom_erlang_module_name=atom_erlang_module_name
                 )
             )
-            module_file_generator.write_gleam(f'-module({atom_erlang_module_name.lower()}).\n-compile(nowarn_export_all).\n-compile([export_all]).\n-include("evision.hrl").\n\n')    
-            module_file_generator.write_gleam(
-                ES.generic_struct_template_erlang.substitute(
-                    atom_elixir_module_name="Elixir." + atom_elixir_module_name.replace('"', ''),
-                    atom_erlang_module_name=atom_erlang_module_name
-                )
-            )
             evision_erlang_hrl.write(
-                f"-record({atom_erlang_module_name}, "
-                "{ref}).\n"
-            )
-            evision_gleam_hrl.write(
                 f"-record({atom_erlang_module_name}, "
                 "{ref}).\n"
             )

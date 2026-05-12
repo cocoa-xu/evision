@@ -80,21 +80,6 @@ from_struct(#evision_videocapture{ref = Ref}) ->
   Ref.
 """
 
-videocapture_gleam_typed = """
-import gleam/erlang.{type Reference}
-
-pub type VideoCapture {
-  VideoCapture(
-    fps: Float,
-    frame_count: Float,
-    frame_width: Float,
-    frame_height: Float,
-    is_opened: Bool,
-    ref: Reference,
-  )
-}
-"""
-
 gpumat_struct_elixir = '  @typedoc """\n' + \
 """  Type that represents an `Evision.CUDA.GpuMat` struct.
 
@@ -204,30 +189,6 @@ from_struct(#evision_cuda_gpumat{ref = Ref}) ->
   Ref.
 """
 
-gpumat_gleam_typed = """
-import evision/types.{type DType}
-import gleam/erlang.{type Reference}
-
-pub type GpuMat {
-  GpuMat(
-    channels: Int,
-    dtype: DType,
-    raw_type: Int,
-    shape: List(Int),
-    elem_size: Int,
-    step: Int,
-    device_id: Int,
-    ref: Reference
-  )
-}
-
-@external(erlang, "evision_cuda_gpumat", "to_pointer")
-pub fn to_pointer(mat: GpuMat) -> any
-
-@external(erlang, "evision_cuda_gpumat", "to_pointer")
-pub fn to_pointer_mode(mat: GpuMat, mode: mode) -> any
-"""
-
 generic_struct_template_elixir = Template(
   '  @typedoc """\n'
   '  Type that represents an `${elixir_module_name}` struct.\n\n'
@@ -281,14 +242,12 @@ from_struct(#${atom_erlang_module_name}{ref = Ref}) ->
 
 evision_structs = {
     "VideoCapture": {
-      "elixir": videocapture_struct_elixir, 
+      "elixir": videocapture_struct_elixir,
       "erlang": videocapture_struct_erlang,
-      "gleam": (videocapture_struct_erlang, videocapture_gleam_typed)
     },
     "CUDA.GpuMat": {
-      "elixir": gpumat_struct_elixir, 
+      "elixir": gpumat_struct_elixir,
       "erlang": gpumat_struct_erlang,
-      "gleam": (gpumat_struct_erlang, gpumat_gleam_typed)
     }
 }
 

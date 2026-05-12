@@ -10,7 +10,6 @@ on:
       - 'LICENSE*'
       - 'examples/**'
       - 'nerves/**'
-      - 'gleam_src/**'
       - 'Makefile'
       - 'cc_toolchain/**'
       - 'checksum.exs'

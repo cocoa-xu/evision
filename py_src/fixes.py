@@ -27,15 +27,8 @@ imdecode(Buf, Flags) ->
   evision_internal_structurise:to_struct(Ret).
 """
     ]
-def evision_erlang_fixes_gleam_typed():
-    return [
-        """
-@external(erlang, "evision", "imdecode")
-pub fn imdecode(buf: BitArray, flags: Int) -> Mat
-"""
-    ]
 
-def evision_elixir_module_fixes(): 
+def evision_elixir_module_fixes():
     return {
       "VideoCapture": [
         ("""
@@ -699,27 +692,4 @@ dnn_NMSBoxesBatched(_opts) ->
 dnn_softNMSBoxes(_opts) ->
   not_loaded(?LINE).
 """)
-    ]}
-
-def evision_gleam_module_fixes():
-    return {"DNN": [
-"""
-@external(erlang, "evision_dnn", "nmsBoxes")
-pub fn nms_boxes5(bboxes: boxes, scores: scores, score_threshold: score_threshold, nms_threshold: nms_threshold, options: options) -> any
-
-@external(erlang, "evision_dnn", "nmsBoxes")
-pub fn nms_boxes4(bboxes: boxes, scores: scores, score_threshold: score_threshold, nms_threshold: nms_threshold) -> any
-
-@external(erlang, "evision_dnn", "nmsBoxesBatched")
-pub fn nms_boxes_batched6(bboxes: boxes, scores: scores, class_ids: class_ids, score_threshold: score_threshold, nms_threshold: nms_threshold, options: options) -> any
-
-@external(erlang, "evision_dnn", "nmsBoxesBatched")
-pub fn nms_boxes_batched5(bboxes: boxes, scores: scores, class_ids: class_ids, score_threshold: score_threshold, nms_threshold: nms_threshold) -> any
-
-@external(erlang, "evision_dnn", "softNMSBoxes")
-pub fn soft_nms_boxes5(bboxes: boxes, scores: scores, score_threshold: score_threshold, nms_threshold: nms_threshold, options: options) -> any
-
-@external(erlang, "evision_dnn", "softNMSBoxes")
-pub fn soft_nms_boxes4(bboxes: boxes, scores: scores, score_threshold: score_threshold, nms_threshold: nms_threshold) -> any
-"""
     ]}

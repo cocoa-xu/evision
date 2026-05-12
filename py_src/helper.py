@@ -50,77 +50,57 @@ def argsort(seq):
     return [x for x,y in sorted(enumerate(seq), key = lambda x: x[1])]
 
 
+from config.c_types import (
+    FORBIDDEN_ARG_TYPES,
+    IGNORED_ARG_TYPES,
+    IO_BOUND_FUNCS,
+    NIF_PREFIX,
+    PASS_BY_VAL_TYPES,
+    RESERVED_KEYWORDS,
+    SPECIAL_HANDLING_FUNCS,
+    SPECIAL_HANDLING_FUNCS_ONLY_IN_BEAM,
+)
+from config.enum_types import ENUM_TYPES
+from config.struct_types import (
+    MODULE_NAME_MAP,
+    SPECIAL_STRUCTS,
+    STRICT_MATCH,
+    STRUCT_TYPES,
+)
+
+module_name_map = MODULE_NAME_MAP
+
+
 def reserved_keywords():
-    # Set of reserved keywords for Erlang/Elixir. 
-    # Keywords that are reserved in C/C++ are excluded because they can not be
-    # used as variables identifiers
-    return [
-        "true", "false", "nil", "as", "def", "end",
-        "rescue", "defmodule",  "defmacro", "when", "in", "fn", "with",
-        "of"
-    ]
+    return RESERVED_KEYWORDS
 
 
 def forbidden_arg_types():
-    return ["void*"]
+    return FORBIDDEN_ARG_TYPES
 
 
 def ignored_arg_types():
-    return ["RNG*"]
+    return IGNORED_ARG_TYPES
 
 
 def io_bound_funcs():
-    return [
-        # read
-        'evision_cv_dnn_dnn_Net_readFromModelOptimizer_static',
-        'evision_cv_imread',
-        'evision_cv_imreadmulti',
-        'evision_cv_readOpticalFlow',
-        'evision_cv_dnn_Net_readFromModelOptimizer',
-        'evision_cv_dnn_readNet',
-        'evision_cv_dnn_readNetFromCaffe',
-        'evision_cv_dnn_readNetFromDarknet',
-        'evision_cv_dnn_readNetFromModelOptimizer',
-        'evision_cv_dnn_readNetFromONNX',
-        'evision_cv_dnn_readNetFromTensorflow',
-        'evision_cv_dnn_readNetFromTorch',
-        'evision_cv_dnn_readTensorFromONNX',
-        'evision_cv_dnn_readTorchBlob',
-        # write
-        'evision_cv_FileStorage_writeComment',
-        'evision_cv_imwrite',
-        'evision_cv_imwritemulti',
-        'evision_cv_writeOpticalFlow',
-        'evision_cv_dnn_writeTextGraph',
-    ]
+    return IO_BOUND_FUNCS
 
 
-def pass_by_val_types(): 
-    return ["Point*", "Point2f*", "Rect*", "String*", "double*", "float*", "int*"]
+def pass_by_val_types():
+    return PASS_BY_VAL_TYPES
 
 
 def evision_nif_prefix():
-    return 'evision_cv_'
+    return NIF_PREFIX
 
 
 def special_handling_funcs():
-    return [
-        "{}{}".format(evision_nif_prefix(), name) for name in [
-            'imshow',
-            'waitKey',
-            'destroyWindow',
-            'destroyAllWindows',
-            'imdecode',
-            'videoCapture_waitAny_static',
-            'videoCapture_waitAny']
-        ]
+    return SPECIAL_HANDLING_FUNCS
+
 
 def special_handling_funcs_only_in_beam():
-    return ["{}{}".format(evision_nif_prefix(), name) for name in [
-        'dnn_NMSBoxes',
-        'dnn_NMSBoxesBatched',
-        'dnn_softNMSBoxes'
-    ]]
+    return SPECIAL_HANDLING_FUNCS_ONLY_IN_BEAM
 
 def handle_inline_math_escaping(text, start_pos=0):
     inline_docs_inline_math_re = re.compile(r'(?:.*?)\\\\f[$\[](.*?)\\\\f[$\]]', re.MULTILINE|re.DOTALL)
@@ -164,55 +144,6 @@ def handle_inline_math_escaping(text, start_pos=0):
             return text
     else:
         return text
-
-module_name_map = {
-    "aruco": "ArUco",
-    "barcode": "Barcode",
-    "bgsegm": "BgSegm",
-    "bioinspired": "Bioinspired",
-    "ccm": "CCM",
-    "cuda": "CUDA",
-    "cudacodec": "CUDACodec",
-    "colored_kinfu": "ColoredKinFu",
-    "detail": "Detail",
-    "dnn": "DNN",
-    "dnn_superres": "DNNSuperRes",
-    "DnnSuperResImpl": "DNNSuperResImpl",
-    "dynafu": "DynaFu",
-    "face": "Face",
-    "flann": "Flann",
-    "fisheye": "FishEye",
-    "hfs": "HFS",
-    "img_hash": "ImgHash",
-    "kinfu": "KinFu",
-    "large_kinfu": "LargeKinfu",
-    "legacy": "Legacy",
-    "linemod": "LineMod",
-    "line_descriptor": "LineDescriptor",
-    "mcc": "MCC",
-    "ml": "ML",
-    "optflow": "OptFlow",
-    "ocl": "OCL",
-    "plot": "Plot",
-    "phase_unwrapping": "PhaseUnwrapping",
-    "ppf_match_3d": "PPFMatch3D",
-    "quality": "Quality",
-    "rapid": "Rapid",
-    "reg": "Reg",
-    "rgbd": "RGBD",
-    "saliency": "Saliency",
-    "segmentation": "Segmentation",
-    "stereo": "Stereo",
-    "structured_light": "StructuredLight",
-    "text": "Text",
-    "utils": "Utils",
-    "utils_fs": "UtilsFS",
-    "videoio_registry": "VideoIORegistry",
-    "xfeatures2d": "XFeatures2D",
-    "ximgproc": "XImgProc",
-    "xphoto": "XPhoto",
-    "wechat_qrcode": "WeChatQRCode",
-}
 
 def make_elixir_module_names(module_name: Optional[str] = None, separated_ns: Optional[list] = None):
     global module_name_map
@@ -285,28 +216,14 @@ def get_module_func_name(module_func_name: str, is_ns: bool, full_qualified_name
 
 def when_guard(kind: str, func_guard_data: list):
     if kind == 'elixir':
+        from emit.elixir.helpers import when_guard_elixir
         return when_guard_elixir(func_guard_data)
     elif kind == 'erlang':
-        return when_guard_erlang(func_guard_data)
-    elif kind == 'gleam':
+        from emit.erlang.helpers import when_guard_erlang
         return when_guard_erlang(func_guard_data)
     else:
         print(f'warning: when_guard: unknown kind `{kind}`')
     return ' '
-
-def when_guard_elixir(func_guard_data: list):
-    when_guard = ' '
-    if len(func_guard_data) > 0:
-        when_guard = ' when '
-        when_guard += ' and '.join(func_guard_data) + '\n  '
-    return when_guard
-
-def when_guard_erlang(func_guard_data: list):
-    when_guard = ' '
-    if len(func_guard_data) > 0:
-        when_guard = ' when '
-        when_guard += ', '.join(func_guard_data)
-    return when_guard
 
 def map_argtype_to_type(argtype: str, classname: Optional[str] = None):
     if len(argtype) > 0 and argtype.startswith('Ptr<') and argtype.endswith('>'):
@@ -346,48 +263,21 @@ def map_argtype_to_type(argtype: str, classname: Optional[str] = None):
 
 def map_argname(kind, argname, **kwargs):
     if kind == 'elixir':
+        from emit.elixir.helpers import map_argname_elixir
         return map_argname_elixir(argname, **kwargs)
     elif kind == 'erlang':
-        return map_argname_erlang(argname, **kwargs)
-    elif kind == 'gleam':
+        from emit.erlang.helpers import map_argname_erlang
         return map_argname_erlang(argname, **kwargs)
     else:
         print(f'warning: map_argname: unknown kind `{kind}`')
 
 
-def map_argname_elixir(argname, ignore_upper_starting=False, argtype=None, from_struct=False):
-    argname_prefix_re = re.compile(r'^[_]*')
-    name = ""
-    if argname in reserved_keywords():
-        if argname == 'fn':
-            name = 'func'
-        elif argname == 'end':
-            name = 'end_arg'
-        else:
-            name = f'arg_{argname}'
-    else:
-        name = argname_prefix_re.sub('', argname)
-    if not ignore_upper_starting:
-        name = f"{name[0:1].lower()}{name[1:]}"
-    if from_struct and argtype is not None:
-        name = f"Evision.Internal.Structurise.from_struct({name})"
-    return name
-
-def map_argname_erlang(argname, argtype=None, from_struct=False):
-    argname_prefix_re = re.compile(r'^[_]*')
-    name = argname_prefix_re.sub('', argname)
-    name = f"{name[0:1].upper()}{name[1:]}"
-    if from_struct and argtype is not None:
-        name = f"evision_internal_structurise:from_struct({name})"
-    return name
-
-
 def map_argtype_to_guard(kind, argname, argtype, classname: Optional[str] = None):
     if kind == 'elixir':
+        from emit.elixir.helpers import map_argtype_to_guard_elixir
         return map_argtype_to_guard_elixir(argname, argtype, classname=classname)
     elif kind == 'erlang':
-        return map_argtype_to_guard_erlang(argname, argtype, classname=classname)
-    elif kind == 'gleam':
+        from emit.erlang.helpers import map_argtype_to_guard_erlang
         return map_argtype_to_guard_erlang(argname, argtype, classname=classname)
     else:
         print(f'warning: map_argtype_to_guard: unknown kind `{kind}`')
@@ -419,61 +309,7 @@ def is_int_type(argtype):
     return argtype in int_types
 
 def is_enum_type(argtype, classname, decl, get_type: str=None):
-    enum_types = {
-        'ORB_ScoreType': 'Evision.ORB.ScoreType.enum()',
-        'ORB::ScoreType': 'Evision.ORB.ScoreType.enum()',
-        'dnn_Backend': 'Evision.DNN.Backend.enum()',
-        'dnn_Target': 'Evision.DNN.Target.enum()',
-        'Target': 'Evision.DNN.Target.enum()',
-        'AKAZE_DescriptorType': 'Evision.AKAZE.DescriptorType.enum()',
-        'AKAZE::DescriptorType': 'Evision.AKAZE.DescriptorType.enum()',
-        'KAZE_DiffusivityType': 'Evision.KAZE.DiffusivityType.enum()',
-        'KAZE::DiffusivityType': 'Evision.KAZE.DiffusivityType.enum()',
-        'DescriptorMatcher_MatcherType': 'integer()',
-        'AgastFeatureDetector_DetectorType': 'Evision.AgastFeatureDetector.DetectorType.enum()',
-        'AgastFeatureDetector::DetectorType': 'Evision.AgastFeatureDetector.DetectorType.enum()',
-        'FastFeatureDetector_DetectorType': 'Evision.FastFeatureDetector.DetectorType.enum()',
-        'FastFeatureDetector::DetectorType': 'Evision.FastFeatureDetector.DetectorType.enum()',
-        'InterpolationFlags': 'Evision.InterpolationFlags.enum()',
-        'AccessFlag': 'Evision.AccessFlag.enum()',
-        'WaveCorrectKind': 'Evision.Detail.WaveCorrectKind.enum()',
-        'VideoCaptureAPIs': 'Evision.VideoCaptureAPIs.enum()',
-        'PolishingMethod': 'Evision.PolishingMethod.enum()',
-        'VideoCaptureAPIs': 'Evision.VideoCaptureAPIs.enum()',
-        'DeviceInfo::ComputeMode': 'Evision.CUDA.DeviceInfo.ComputeMode.enum()',
-        'CorrectionLevel': 'Evision.QRCodeEncoder.CorrectionLevel.enum()',
-        'EncodeMode': 'Evision.QRCodeEncoder.EncodeMode.enum()',
-        'LocalOptimMethod': 'Evision.LocalOptimMethod.enum()',
-        'NeighborSearchMethod': 'Evision.NeighborSearchMethod.enum()',
-        'SamplingMethod': 'Evision.SamplingMethod.enum()',
-        'ScoreMethod': 'Evision.ScoreMethod.enum()',
-        'AlgorithmHint': 'Evision.AlgorithmHint.enum()',
-        'HOGDescriptor_HistogramNormType': 'Evision.HOGDescriptor.HistogramNormType.enum()',
-        "VolumeType": 'Evision.KinFu.VolumeType.enum()',
-        "kinfu_VolumeType": 'Evision.KinFu.VolumeType.enum()',
-        "text_decoder_mode": 'Evision.Text.DecoderMode.enum()',
-        "cuda_ConnectedComponentsAlgorithmsTypes": 'Evision.ConnectedComponentsAlgorithmsTypes.enum()',
-        'CCM_TYPE': 'Evision.CCM.CCM_TYPE.enum()',
-        'COLOR_SPACE': 'Evision.CCM.COLOR_SPACE.enum()',
-        'CONST_COLOR': 'Evision.CCM.CONST_COLOR.enum()',
-        'DISTANCE_TYPE': 'Evision.CCM.DISTANCE_TYPE.enum()',
-        'INITIAL_METHOD_TYPE': 'Evision.CCM.INITIAL_METHOD_TYPE.enum()',
-        'LINEAR_TYPE': 'Evision.CCM.LINEAR_TYPE.enum()',
-        'InterpolationType': '(Evision.InterpolationFlags.enum() | Evision.InterpolationMasks.enum())',
-        'CornerRefineMethod': 'Evision.ArUco.CornerRefineMethod.enum()',
-        'PatternPositionType': 'Evision.ArUco.PatternPositionType.enum()',
-        'PredefinedDictionaryType': 'Evision.ArUco.PredefinedDictionaryType.enum()',
-        'DataLayout': 'Evision.DNN.DataLayout.enum()',
-        'ImagePaddingMode': 'Evision.DNN.ImagePaddingMode.enum()',
-        'TYPECHART': 'Evision.MCC.TYPECHART.enum()',
-        'SolverType': 'integer()',
-        'SupportRegionType': 'integer()',
-        'flann_distance_t': 'integer()',
-        'cvflann_flann_algorithm_t': 'integer()',
-        'cvflann::flann_algorithm_t': 'integer()',
-        'cvflann_flann_distance_t': 'integer()',
-        'cvflann::flann_distance_t': 'integer()',
-    }
+    enum_types = ENUM_TYPES
     if get_type is None:
         return argtype in enum_types
     elif get_type == 'elixir':
@@ -616,576 +452,9 @@ def get_elixir_module_name(cname, double_quote_if_has_dot=False):
 
 def is_struct(argtype: str, also_get: Optional[str] = None, classname: Optional[str] = None, decl: list=None):
     argtype = argtype.replace("std::", "").replace("cv::", "").replace("::", "_")
-    special_structs = {
-        # todo: UMat should be in its own module
-        'UMat': 'Evision.Mat'
-    }
-    struct_types = {
-        'AffineFeature': 'Evision.AffineFeature',
-        'AffineTransformer': 'Evision.AffineTransformer',
-        'AgastFeatureDetector': 'Evision.AgastFeatureDetector',
-        'AKAZE': 'Evision.AKAZE',
-        'Algorithm': 'Evision.Algorithm',
-        'AlignExposures': 'Evision.AlignExposures',
-        'AlignMTB': 'Evision.AlignMTB',
-        'Animation': 'Evision.Animation',
-        'ArucoDetector': 'Evision.ArUco.ArucoDetector',
-        'ArUco.ArucoDetector': 'Evision.ArUco.ArucoDetector',
-        'ArUco.Board': 'Evision.ArUco.Board',
-        'CharucoBoard': 'Evision.ArUco.CharucoBoard',
-        'ArUco.CharucoBoard': 'Evision.ArUco.CharucoBoard',
-        'ArUco.CharucoDetector': 'Evision.ArUco.CharucoDetector',
-        'ArUco.DetectorParameters': 'Evision.ArUco.DetectorParameters',
-        'ArUco.Dictionary': 'Evision.ArUco.Dictionary',
-        'ArUco.GridBoard': 'Evision.ArUco.GridBoard',
-        'ArUco.RefineParameters': 'Evision.ArUco.RefineParameters',
-        'AsyncArray': 'Evision.AsyncArray',
-        'BackgroundSubtractor': 'Evision.BackgroundSubtractor',
-        'BackgroundSubtractorKNN': 'Evision.BackgroundSubtractorKNN',
-        'BackgroundSubtractorMOG2': 'Evision.BackgroundSubtractorMOG2',
-        'Barcode.BarcodeDetector': 'Evision.Barcode.BarcodeDetector',
-        'BaseCascadeClassifier': 'Evision.BaseCascadeClassifier',
-        'BFMatcher': 'Evision.BFMatcher',
-        'BackgroundSubtractorCNT': 'Evision.BgSegm.BackgroundSubtractorCNT',
-        'BgSegm.BackgroundSubtractorCNT': 'Evision.BgSegm.BackgroundSubtractorCNT',
-        'BackgroundSubtractorGMG': 'Evision.BgSegm.BackgroundSubtractorGMG',
-        'BgSegm.BackgroundSubtractorGMG': 'Evision.BgSegm.BackgroundSubtractorGMG',
-        'BackgroundSubtractorGSOC': 'Evision.BgSegm.BackgroundSubtractorGSOC',
-        'BgSegm.BackgroundSubtractorGSOC': 'Evision.BgSegm.BackgroundSubtractorGSOC',
-        'BackgroundSubtractorLSBP': 'Evision.BgSegm.BackgroundSubtractorLSBP',
-        'BgSegm.BackgroundSubtractorLSBP': 'Evision.BgSegm.BackgroundSubtractorLSBP',
-        'BgSegm.BackgroundSubtractorMOG': 'Evision.BgSegm.BackgroundSubtractorMOG',
-        'BackgroundSubtractorMOG': 'Evision.BgSegm.BackgroundSubtractorMOG',
-        'SyntheticSequenceGenerator': 'Evision.BgSegm.SyntheticSequenceGenerator',
-        'BgSegm.SyntheticSequenceGenerator': 'Evision.BgSegm.SyntheticSequenceGenerator',
-        'Bioinspired.Retina': 'Evision.Bioinspired.Retina',
-        'Bioinspired.RetinaFastToneMapping': 'Evision.Bioinspired.RetinaFastToneMapping',
-        'Bioinspired.TransientAreasSegmentationModule': 'Evision.Bioinspired.TransientAreasSegmentationModule',
-        'BOWImgDescriptorExtractor': 'Evision.BOWImgDescriptorExtractor',
-        'BOWKMeansTrainer': 'Evision.BOWKMeansTrainer',
-        'BOWTrainer': 'Evision.BOWTrainer',
-        'BRISK': 'Evision.BRISK',
-        'CalibrateCRF': 'Evision.CalibrateCRF',
-        'CalibrateDebevec': 'Evision.CalibrateDebevec',
-        'CalibrateRobertson': 'Evision.CalibrateRobertson',
-        'CascadeClassifier': 'Evision.CascadeClassifier',
-        'CirclesGridFinderParameters': 'Evision.CirclesGridFinderParameters',
-        'CLAHE': 'Evision.CLAHE',
-        'ColoredKinFu': 'Evision.ColoredKinFu',
-        'ColoredKinFu.ColoredKinFu': 'Evision.ColoredKinFu', # changed
-        'ColoredKinFu.Params': 'Evision.ColoredKinFu.Params',
-        'cuda_BackgroundSubtractorMOG': 'Evision.CUDA.BackgroundSubtractorMOG',
-        'cuda_BackgroundSubtractorMOG2': 'Evision.CUDA.BackgroundSubtractorMOG2',
-        'BufferPool': 'Evision.CUDA.BufferPool',
-        'CUDA.BufferPool': 'Evision.CUDA.BufferPool',
-        'cuda_CascadeClassifier': 'Evision.CUDA.CascadeClassifier',
-        'cuda_CLAHE': 'Evision.CUDA.CLAHE',
-        'cuda_DescriptorMatcher': 'Evision.CUDA.DescriptorMatcher',
-        'DeviceInfo': 'Evision.CUDA.DeviceInfo',
-        'CUDA.DeviceInfo': 'Evision.CUDA.DeviceInfo',
-        'cuda_DisparityBilateralFilter': 'Evision.CUDA.DisparityBilateralFilter',
-        'Event': 'Evision.CUDA.Event',
-        'CUDA.Event': 'Evision.CUDA.Event',
-        'cuda_FastFeatureDetector': 'Evision.CUDA.FastFeatureDetector',
-        'GpuMat': 'Evision.CUDA.GpuMat',
-        'cuda_GpuMat': 'Evision.CUDA.GpuMat',
-        'CUDA.GpuMat': 'Evision.CUDA.GpuMat',
-        'HostMem': 'Evision.CUDA.HostMem',
-        'CUDA.HostMem': 'Evision.CUDA.HostMem',
-        'cuda_ORB': 'Evision.CUDA.ORB',
-        'cuda_StereoBeliefPropagation': 'Evision.CUDA.StereoBeliefPropagation',
-        'cuda_StereoBM': 'Evision.CUDA.StereoBM',
-        'cuda_StereoConstantSpaceBP': 'Evision.CUDA.StereoConstantSpaceBP',
-        'cuda_StereoSGM': 'Evision.CUDA.StereoSGM',
-        "CUDA.CannyEdgeDetector": "Evision.CUDA.CannyEdgeDetector",
-        'CUDA.CascadeClassifier': 'Evision.CUDA.CascadeClassifier',
-        'CUDA.Convolution': 'Evision.CUDA.Convolution',
-        'CUDA.CornernessCriteria': 'Evision.CUDA.CornernessCriteria',
-        'CUDA.CornersDetector': 'Evision.CUDA.CornersDetector',
-        'CUDA.DescriptorMatcher': 'Evision.CUDA.DescriptorMatcher',
-        'CUDA.DFT': 'Evision.CUDA.DFT',
-        'CUDA.DisparityBilateralFilter': 'Evision.CUDA.DisparityBilateralFilter',
-        'CUDA.FastFeatureDetector': 'Evision.CUDA.FastFeatureDetector',
-        'CUDA.Feature2DAsync': 'Evision.CUDA.Feature2DAsync',
-        'CUDA.Filter': 'Evision.CUDA.Filter',
-        'CUDA.HOG': 'Evision.CUDA.HOG',
-        'CUDA.HoughCirclesDetector': 'Evision.CUDA.HoughCirclesDetector',
-        'CUDA.HoughLinesDetector': 'Evision.CUDA.HoughLinesDetector',
-        'CUDA.HoughSegmentDetector': 'Evision.CUDA.HoughSegmentDetector',
-        'CUDA.LookUpTable': 'Evision.CUDA.LookUpTable',
-        'CUDA.ORB': 'Evision.CUDA.ORB',
-        'CUDA.StereoBeliefPropagation': 'Evision.CUDA.StereoBeliefPropagation',
-        "CUDA.TemplateMatching": "Evision.CUDA.TemplateMatching",
-        'Stream': 'Evision.CUDA.Stream',
-        'CUDA.Stream': 'Evision.CUDA.Stream',
-        'CUDA.SURFCUDA': 'Evision.CUDA.SURFCUDA',
-        'CUDA.BackgroundSubtractorMOG': 'Evision.CUDA.BackgroundSubtractorMOG',
-        'TargetArchs': 'Evision.CUDA.TargetArchs',
-        'cudacodec_VideoWriter': 'Evision.CUDACodec.VideoWriter',
-        'DenseOpticalFlow': 'Evision.DenseOpticalFlow',
-        'DescriptorMatcher': 'Evision.DescriptorMatcher',
-        'AffineBasedEstimator': 'Evision.Detail.AffineBasedEstimator',
-        'AffineBestOf2NearestMatcher': 'Evision.Detail.AffineBestOf2NearestMatcher',
-        'BestOf2NearestMatcher': 'Evision.Detail.BestOf2NearestMatcher',
-        'BestOf2NearestRangeMatcher': 'Evision.Detail.BestOf2NearestRangeMatcher',
-        'Blender': 'Evision.Detail.Blender',
-        'BlocksChannelsCompensator': 'Evision.Detail.BlocksChannelsCompensator',
-        'BlocksCompensator': 'Evision.Detail.BlocksCompensator',
-        'BlocksGainCompensator': 'Evision.Detail.BlocksGainCompensator',
-        'BundleAdjusterAffine': 'Evision.Detail.BundleAdjusterAffine',
-        'BundleAdjusterAffinePartial': 'Evision.Detail.BundleAdjusterAffinePartial',
-        'BundleAdjusterBase': 'Evision.Detail.BundleAdjusterBase',
-        'BundleAdjusterRay': 'Evision.Detail.BundleAdjusterRay',
-        'BundleAdjusterReproj': 'Evision.Detail.BundleAdjusterReproj',
-        'CameraParams': 'Evision.Detail.CameraParams',
-        'ChannelsCompensator': 'Evision.Detail.ChannelsCompensator',
-        'DpSeamFinder': 'Evision.Detail.DpSeamFinder',
-        'Estimator': 'Evision.Detail.Estimator',
-        'Detail.Estimator': 'Evision.Detail.Estimator',
-        'ExposureCompensator': 'Evision.Detail.ExposureCompensator',
-        'FeatherBlender': 'Evision.Detail.FeatherBlender',
-        'FeaturesMatcher': 'Evision.Detail.FeaturesMatcher',
-        'GainCompensator': 'Evision.Detail.GainCompensator',
-        'GraphCutSeamFinder': 'Evision.Detail.GraphCutSeamFinder',
-        'Detail.GraphCutSeamFinder': 'Evision.Detail.GraphCutSeamFinder',
-        'HomographyBasedEstimator': 'Evision.Detail.HomographyBasedEstimator',
-        'ImageFeatures': 'Evision.Detail.ImageFeatures',
-        'ImgHash.AverageHash': 'Evision.ImgHash.AverageHash',
-        'ImgHash.ColorMomentHash': 'Evision.ImgHash.ColorMomentHash',
-        'ImgHash.PHash': 'Evision.ImgHash.PHash',
-        'IStreamReader': 'Evision.IStreamReader',
-        'MatchesInfo': 'Evision.Detail.MatchesInfo',
-        'MultiBandBlender': 'Evision.Detail.MultiBandBlender',
-        'NoBundleAdjuster': 'Evision.Detail.NoBundleAdjuster',
-        'NoExposureCompensator': 'Evision.Detail.NoExposureCompensator',
-        'NoSeamFinder': 'Evision.Detail.NoSeamFinder',
-        'Detail.NoSeamFinder': 'Evision.Detail.NoSeamFinder',
-        'PairwiseSeamFinder': 'Evision.Detail.PairwiseSeamFinder',
-        'Detail.PairwiseSeamFinder': 'Evision.Detail.PairwiseSeamFinder',
-        'SeamFinder': 'Evision.Detail.SeamFinder',
-        'Detail.SeamFinder': 'Evision.Detail.SeamFinder',
-        'SphericalProjector': 'Evision.Detail.SphericalProjector',
-        'Timelapser': 'Evision.Detail.Timelapser',
-        'VoronoiSeamFinder': 'Evision.Detail.VoronoiSeamFinder',
-        'Detail.VoronoiSeamFinder': 'Evision.Detail.VoronoiSeamFinder',
-        'DISOpticalFlow': 'Evision.DISOpticalFlow',
-        'DMatch': 'Evision.DMatch',
-        'ClassificationModel': 'Evision.DNN.ClassificationModel',
-        'DNN.ClassificationModel': 'Evision.DNN.ClassificationModel',
-        'DetectionModel': 'Evision.DNN.DetectionModel',
-        'DNN.DetectionModel': 'Evision.DNN.DetectionModel',
-        'DictValue': 'Evision.DNN.DictValue',
-        'DNN.DictValue': 'Evision.DNN.DictValue',
-        'KeypointsModel': 'Evision.DNN.KeypointsModel',
-        'Layer': 'Evision.DNN.Layer',
-        'DNN.Layer': 'Evision.DNN.Layer',
-        'Model': 'Evision.DNN.Model',
-        'Net': 'Evision.DNN.Net',
-        'dnn_Net': 'Evision.DNN.Net',
-        'SegmentationModel': 'Evision.DNN.SegmentationModel',
-        'TextDetectionModel': 'Evision.DNN.TextDetectionModel',
-        'TextDetectionModel_DB': 'Evision.DNN.TextDetectionModelDB',
-        'DNN.TextDetectionModelDB': 'Evision.DNN.TextDetectionModelDB',
-        'TextDetectionModel_EAST': 'Evision.DNN.TextDetectionModelEAST',
-        'DNN.TextDetectionModelEAST': 'Evision.DNN.TextDetectionModelEAST',
-        'TextRecognitionModel': 'Evision.DNN.TextRecognitionModel',
-        'DnnSuperResImpl': 'Evision.DNNSuperRes.DNNSuperResImpl',
-        'DNNSuperRes.DNNSuperResImpl': 'Evision.DNNSuperRes.DNNSuperResImpl',
-        'EMDHistogramCostExtractor': 'Evision.EMDHistogramCostExtractor',
-        'Face.BIF': 'Evision.Face.BIF',
-        'Facemark': 'Evision.Face.Facemark',
-        'Face.Facemark': 'Evision.Face.Facemark',
-        'Face.FaceRecognizer': 'Evision.Face.FaceRecognizer',
-        'Face.EigenFaceRecognizer': 'Evision.Face.EigenFaceRecognizer',
-        'Face.FisherFaceRecognizer': 'Evision.Face.FisherFaceRecognizer',
-        'Face.MACE': 'Evision.Face.MACE',
-        'FaceDetectorYN': 'Evision.FaceDetectorYN',
-        'FaceRecognizerSF': 'Evision.FaceRecognizerSF',
-        'FarnebackOpticalFlow': 'Evision.FarnebackOpticalFlow',
-        'FastFeatureDetector': 'Evision.FastFeatureDetector',
-        'Face.FacemarkAAM': 'Evision.Face.FacemarkAAM',
-        'Face.FacemarkKazemi': 'Evision.Face.FacemarkKazemi',
-        'Face.FacemarkLBF': 'Evision.Face.FacemarkLBF',
-        'Face.FacemarkTrain': 'Evision.Face.FacemarkTrain',
-        'Feature2D': 'Evision.Feature2D',
-        'FileNode': 'Evision.FileNode',
-        'FileStorage': 'Evision.FileStorage',
-        'Index': 'Evision.Flann.Index',
-        'FlannBasedMatcher': 'Evision.FlannBasedMatcher',
-        'GeneralizedHough': 'Evision.GeneralizedHough',
-        'GeneralizedHoughBallard': 'Evision.GeneralizedHoughBallard',
-        'GeneralizedHoughGuil': 'Evision.GeneralizedHoughGuil',
-        'GFTTDetector': 'Evision.GFTTDetector',
-        'GraphicalCodeDetector': 'Evision.GraphicalCodeDetector',
-        'HausdorffDistanceExtractor': 'Evision.HausdorffDistanceExtractor',
-        'HFS.HfsSegment': 'Evision.HFS.HfsSegment',
-        'HistogramCostExtractor': 'Evision.HistogramCostExtractor',
-        'PhaseUnwrapping.HistogramPhaseUnwrapping': 'Evision.PhaseUnwrapping.HistogramPhaseUnwrapping',
-        'PhaseUnwrapping.HistogramPhaseUnwrapping_Params': 'Evision.PhaseUnwrapping.HistogramPhaseUnwrapping.Params',
-        'HistogramPhaseUnwrapping': 'Evision.PhaseUnwrapping.HistogramPhaseUnwrapping',
-        'HistogramPhaseUnwrapping_Params': 'Evision.PhaseUnwrapping.HistogramPhaseUnwrapping.Params',
-        'HOGDescriptor': 'Evision.HOGDescriptor',
-        'Legacy.TrackerBoosting': 'Evision.Legacy.TrackerBoosting',
-        'Legacy.TrackerKCF': 'Evision.Legacy.TrackerKCF',
-        'Legacy.TrackerMIL': 'Evision.Legacy.TrackerMIL',
-        'Legacy.TrackerMOSSE': 'Evision.Legacy.TrackerMOSSE',
-        'Legacy.TrackerMedianFlow': 'Evision.Legacy.TrackerMedianFlow',
-        'Legacy.TrackerTLD': 'Evision.Legacy.TrackerTLD',
-        'ImgHash.BlockMeanHash': 'Evision.ImgHash.BlockMeanHash',
-        'ColorMomentHash': 'Evision.ImgHash.ColorMomentHash',
-        'ImgHashBase': 'Evision.ImgHash.ImgHashBase',
-        'ImgHash.ImgHashBase': 'Evision.ImgHash.ImgHashBase',
-        'MarrHildrethHash': 'Evision.ImgHash.MarrHildrethHash',
-        'ImgHash.MarrHildrethHash': 'Evision.ImgHash.MarrHildrethHash',
-        'PHash': 'Evision.ImgHash.PHash',
-        'RadialVarianceHash': 'Evision.ImgHash.RadialVarianceHash',
-        'ImgHash.RadialVarianceHash': 'Evision.ImgHash.RadialVarianceHash',
-        'KalmanFilter': 'Evision.KalmanFilter',
-        'KAZE': 'Evision.KAZE',
-        'KeyPoint': 'Evision.KeyPoint',
-        'LargeKinfu': 'Evision.LargeKinfu',
-        'LargeKinfu.LargeKinfu': 'Evision.LargeKinfu', # changed
-        'legacy_Tracker': 'Evision.Legacy.MultiTracker',
-        'Legacy.MultiTracker': 'Evision.Legacy.MultiTracker',
-        'Legacy.Tracker': 'Evision.Legacy.MultiTracker', # changed
-        'BinaryDescriptor': 'Evision.LineDescriptor.BinaryDescriptor',
-        'LineDescriptor.BinaryDescriptor': 'Evision.LineDescriptor.BinaryDescriptor',
-        'BinaryDescriptorMatcher': 'Evision.LineDescriptor.BinaryDescriptorMatcher',
-        'LineDescriptor.BinaryDescriptorMatcher': 'Evision.LineDescriptor.BinaryDescriptorMatcher',
-        'KeyLine': 'Evision.LineDescriptor.KeyLine',
-        'LineDescriptor.KeyLine': 'Evision.LineDescriptor.KeyLine',
-        'LSDDetectorWithParams': 'Evision.LineDescriptor.LSDDetector',
-        'LSDDetector': 'Evision.LineDescriptor.LSDDetector',
-        'LineDescriptor.LSDDetector': 'Evision.LineDescriptor.LSDDetector',
-        'LineDescriptor.LSDDetector': 'Evision.LineDescriptor.LSDDetector',
-        'LSDParam': 'Evision.LineDescriptor.LSDParam',
-        'linemod_Detector': 'Evision.LineMod.Detector',
-        'Template': 'Evision.LineMod.Template',
-        'LineSegmentDetector': 'Evision.LineSegmentDetector',
-        'Mat': 'Evision.Mat',
-        'Matx33f': 'Evision.Mat',
-        'Matx33d': 'Evision.Mat',
-        'Matx44f': 'Evision.Mat',
-        'Matx44d': 'Evision.Mat',
-        'mcc_CChecker': 'Evision.MCC.CCheckerDetector',
-        'MCC.CCheckerDetector': 'Evision.MCC.CCheckerDetector',
-        'MergeDebevec': 'Evision.MergeDebevec',
-        'MergeExposures': 'Evision.MergeExposures',
-        'MergeMertens': 'Evision.MergeMertens',
-        'MergeRobertson': 'Evision.MergeRobertson',
-        'ANN_MLP': 'Evision.ML.ANNMLP',
-        'ML.ANNMLP': 'Evision.ML.ANNMLP',
-        'ML.ANNMLP': 'Evision.ML.ANNMLP',
-        'Boost': 'Evision.ML.Boost',
-        'ML.Boost': 'Evision.ML.Boost',
-        'DTrees': 'Evision.ML.DTrees',
-        'ML.DTrees': 'Evision.ML.DTrees',
-        'EM': 'Evision.ML.EM',
-        'ML.EM': 'Evision.ML.EM',
-        'KNearest': 'Evision.ML.KNearest',
-        'ML.KNearest': 'Evision.ML.KNearest',
-        'LogisticRegression': 'Evision.ML.LogisticRegression',
-        'ML.LogisticRegression': 'Evision.ML.LogisticRegression',
-        'NormalBayesClassifier': 'Evision.ML.NormalBayesClassifier',
-        'ML.NormalBayesClassifier': 'Evision.ML.NormalBayesClassifier',
-        'ParamGrid': 'Evision.ML.ParamGrid',
-        'RTrees': 'Evision.ML.RTrees',
-        'ML.RTrees': 'Evision.ML.RTrees',
-        'StatModel': 'Evision.ML.StatModel',
-        'ML.StatModel': 'Evision.ML.StatModel',
-        'SVM': 'Evision.ML.SVM',
-        'ML.SVM': 'Evision.ML.SVM',
-        'SVMSGD': 'Evision.ML.SVMSGD',
-        'ML.SVMSGD': 'Evision.ML.SVMSGD',
-        'TrainData': 'Evision.ML.TrainData',
-        'MSER': 'Evision.MSER',
-        'NormHistogramCostExtractor': 'Evision.NormHistogramCostExtractor',
-        'Device': 'Evision.OCL.Device',
-        'ORB': 'Evision.ORB',
-        'PhaseUnwrapping.PhaseUnwrapping': 'Evision.PhaseUnwrapping.PhaseUnwrapping',
-        'Plot.Plot2d': 'Evision.Plot.Plot2d',
-        'PPFMatch3D.ICP': 'Evision.PPFMatch3D.ICP',
-        'Pose3DPtr': 'Evision.PPFMatch3D.Pose3D',
-        'Pose3D': 'Evision.PPFMatch3D.Pose3D',
-        'PPFMatch3D.Pose3D': 'Evision.PPFMatch3D.Pose3D',
-        'PPF3DDetector': 'Evision.PPFMatch3D.PPF3DDetector',
-        'PPFMatch3D.PPF3DDetector': 'Evision.PPFMatch3D.PPF3DDetector',
-        'PyRotationWarper': 'Evision.PyRotationWarper',
-        'QRCodeDetector': 'Evision.QRCodeDetector',
-        'QRCodeDetectorAruco': 'Evision.QRCodeDetectorAruco',
-        'QRCodeEncoder': 'Evision.QRCodeEncoder',
-        'QRCodeEncoder_Params': 'Evision.QRCodeEncoder.Params',
-        'Quality.QualityBase': 'Evision.Quality.QualityBase',
-        'Rapid.Tracker': 'Evision.Rapid.Tracker',
-        'RGBD.DepthCleaner': 'Evision.RGBD.DepthCleaner',
-        'RGBD.Odometry': 'Evision.RGBD.Odometry',
-        'RGBD.RgbdNormals': 'Evision.RGBD.RgbdNormals',
-        'RGBD.RgbdPlane': 'Evision.RGBD.RgbdPlane',
-        'RotatedRect': 'Evision.RotatedRect',
-        'Saliency.Saliency': 'Evision.Saliency', # changed
-        'IntelligentScissorsMB': 'Evision.Segmentation.IntelligentScissorsMB',
-        'ShapeContextDistanceExtractor': 'Evision.ShapeContextDistanceExtractor',
-        'ShapeDistanceExtractor': 'Evision.ShapeDistanceExtractor',
-        'ShapeTransformer': 'Evision.ShapeTransformer',
-        'SIFT': 'Evision.SIFT',
-        'SimpleBlobDetector': 'Evision.SimpleBlobDetector',
-        'SimpleBlobDetector_Params': 'Evision.SimpleBlobDetector.Params',
-        'SparseOpticalFlow': 'Evision.SparseOpticalFlow',
-        'SparsePyrLKOpticalFlow': 'Evision.SparsePyrLKOpticalFlow',
-        'StereoBM': 'Evision.StereoBM',
-        'StereoMatcher': 'Evision.StereoMatcher',
-        'StereoSGBM': 'Evision.StereoSGBM',
-        'Stereo.MatchQuasiDense': 'Evision.Stereo.MatchQuasiDense',
-        'Stereo.QuasiDenseStereo': 'Evision.Stereo.QuasiDenseStereo',
-        'Stitcher': 'Evision.Stitcher',
-        'GrayCodePattern': 'Evision.StructuredLight.GrayCodePattern',
-        'StructuredLight.GrayCodePattern': 'Evision.StructuredLight.GrayCodePattern',
-        'SinusoidalPattern': 'Evision.StructuredLight.SinusoidalPattern',
-        'StructuredLight.SinusoidalPattern': 'Evision.StructuredLight.SinusoidalPattern',
-        'SinusoidalPattern_Params': 'Evision.StructuredLight.SinusoidalPattern.Params',
-        'StructuredLightPattern': 'Evision.StructuredLight.StructuredLightPattern',
-        'StructuredLight.StructuredLightPattern': 'Evision.StructuredLight.StructuredLightPattern',
-        'StructuredLight.StructuredLightPattern': 'Evision.StructuredLight.StructuredLightPattern',
-        'Subdiv2D': 'Evision.Subdiv2D',
-        'ERFilter': 'Evision.Text.ERFilter',
-        'Text.ERFilter': 'Evision.Text.ERFilter',
-        'ERFilter_Callback': 'Evision.Text.ERFilter.Callback',
-        'OCRBeamSearchDecoder_ClassifierCallback': 'Evision.Text.OCRBeamSearchDecoder.ClassifierCallback',
-        'OCRHMMDecoder_ClassifierCallback': 'Evision.Text.OCRHMMDecoder.ClassifierCallback',
-        'Text.OCRBeamSearchDecoder': 'Evision.Text.OCRBeamSearchDecoder',
-        'Text.OCRHMMDecoder': 'Evision.Text.OCRHMMDecoder',
-        'Text.OCRTesseract': 'Evision.Text.OCRTesseract',
-        'Text.TextDetector': 'Evision.Text.TextDetector',
-        'TextDetectorCNN': 'Evision.Text.TextDetectorCNN',
-        'Text.TextDetectorCNN': 'Evision.Text.TextDetectorCNN',
-        'ThinPlateSplineShapeTransformer': 'Evision.ThinPlateSplineShapeTransformer',
-        'TickMeter': 'Evision.TickMeter',
-        'Tonemap': 'Evision.Tonemap',
-        'TonemapDrago': 'Evision.TonemapDrago',
-        'TonemapMantiuk': 'Evision.TonemapMantiuk',
-        'TonemapReinhard': 'Evision.TonemapReinhard',
-        'Tracker': 'Evision.Tracker',
-        'TrackerCSRT': 'Evision.TrackerCSRT',
-        'TrackerCSRT_Params': 'Evision.TrackerCSRT.Params',
-        'TrackerDaSiamRPN': 'Evision.TrackerDaSiamRPN',
-        'TrackerDaSiamRPN_Params': 'Evision.TrackerDaSiamRPN.Params',
-        'TrackerGOTURN': 'Evision.TrackerGOTURN',
-        'TrackerGOTURN_Params': 'Evision.TrackerGOTURN.Params',
-        'TrackerKCF': 'Evision.TrackerKCF',
-        'TrackerKCF_Params': 'Evision.TrackerKCF.Params',
-        'TrackerMIL': 'Evision.TrackerMIL',
-        'TrackerMIL_Params': 'Evision.TrackerMIL.Params',
-        'TrackerNano': 'Evision.TrackerNano',
-        'TrackerNano_Params': 'Evision.TrackerNano.Params',
-        'TrackerVit': 'Evision.TrackerVit',
-        'TrackerVit_Params': 'Evision.TrackerVit.Params',
-        'UsacParams': 'Evision.UsacParams',
-        'Rapid.GOSTracker': 'Evision.Rapid.GOSTracker',
-        'Rapid.OLSTracker': 'Evision.Rapid.OLSTracker',
-        'Rapid.Rapid': 'Evision.Rapid.Rapid',
-        'OriginalClassName': 'Evision.Utils.Nested.OriginalClassName',
-        'Utils.Nested.OriginalClassName': 'Evision.Utils.Nested.OriginalClassName',
-        'OriginalClassName_Params': 'Evision.Utils.Nested.OriginalClassName.Params',
-        'VariationalRefinement': 'Evision.VariationalRefinement',
-        'VideoCapture': 'Evision.VideoCapture',
-        'VideoWriter': 'Evision.VideoWriter',
-        'WeChatQRCode': 'Evision.WeChatQRCode.WeChatQRCode',
-        'WeChatQRCode.WeChatQRCode': 'Evision.WeChatQRCode.WeChatQRCode',
-        'XFeatures2D.AffineFeature2D': 'Evision.XFeatures2D.AffineFeature2D',
-        'XFeatures2D.BEBLID': 'Evision.XFeatures2D.BEBLID',
-        'XFeatures2D.BoostDesc': 'Evision.XFeatures2D.BoostDesc',
-        'XFeatures2D.BriefDescriptorExtractor': 'Evision.XFeatures2D.BriefDescriptorExtractor',
-        'XFeatures2D.DAISY': 'Evision.XFeatures2D.DAISY',
-        'XFeatures2D.FREAK': 'Evision.XFeatures2D.FREAK',
-        'XFeatures2D.HarrisLaplaceFeatureDetector': 'Evision.XFeatures2D.HarrisLaplaceFeatureDetector',
-        'XFeatures2D.LATCH': 'Evision.XFeatures2D.LATCH',
-        'XFeatures2D.LUCID': 'Evision.XFeatures2D.LUCID',
-        'XFeatures2D.MSDDetector': 'Evision.XFeatures2D.MSDDetector',
-        'XFeatures2D.PCTSignatures': 'Evision.XFeatures2D.PCTSignatures',
-        'XFeatures2D.PCTSignaturesSQFD': 'Evision.XFeatures2D.PCTSignaturesSQFD',
-        'XFeatures2D.StarDetector': 'Evision.XFeatures2D.StarDetector',
-        'XFeatures2D.SURF': 'Evision.XFeatures2D.SURF',
-        'XFeatures2D.TBMR': 'Evision.XFeatures2D.TBMR',
-        'XFeatures2D.TEBLID': 'Evision.XFeatures2D.TEBLID',
-        'XFeatures2D.VGG': 'Evision.XFeatures2D.VGG',
-        'AdaptiveManifoldFilter': 'Evision.XImgProc.AdaptiveManifoldFilter',
-        'XImgProc.AdaptiveManifoldFilter': 'Evision.XImgProc.AdaptiveManifoldFilter',
-        'ContourFitting': 'Evision.XImgProc.ContourFitting',
-        'XImgProc.ContourFitting': 'Evision.XImgProc.ContourFitting',
-        'XImgProc.DisparityFilter': 'Evision.XImgProc.DisparityFilter',
-        'DisparityWLSFilter': 'Evision.XImgProc.DisparityWLSFilter',
-        'XImgProc.DisparityWLSFilter': 'Evision.XImgProc.DisparityWLSFilter',
-        'DTFilter': 'Evision.XImgProc.DTFilter',
-        'XImgProc.DTFilter': 'Evision.XImgProc.DTFilter',
-        'EdgeAwareInterpolator': 'Evision.XImgProc.EdgeAwareInterpolator',
-        'XImgProc.EdgeAwareInterpolator': 'Evision.XImgProc.EdgeAwareInterpolator',
-        'EdgeBoxes': 'Evision.XImgProc.EdgeBoxes',
-        'XImgProc.EdgeBoxes': 'Evision.XImgProc.EdgeBoxes',
-        'EdgeDrawing': 'Evision.XImgProc.EdgeDrawing',
-        'XImgProc.EdgeDrawing': 'Evision.XImgProc.EdgeDrawing',
-        'EdgeDrawing_Params': 'Evision.XImgProc.EdgeDrawing.Params',
-        'FastBilateralSolverFilter': 'Evision.XImgProc.FastBilateralSolverFilter',
-        'XImgProc.FastBilateralSolverFilter': 'Evision.XImgProc.FastBilateralSolverFilter',
-        'FastGlobalSmootherFilter': 'Evision.XImgProc.FastGlobalSmootherFilter',
-        'XImgProc.FastGlobalSmootherFilter': 'Evision.XImgProc.FastGlobalSmootherFilter',
-        'FastLineDetector': 'Evision.XImgProc.FastLineDetector',
-        'XImgProc.FastLineDetector': 'Evision.XImgProc.FastLineDetector',
-        'GraphSegmentation': 'Evision.XImgProc.GraphSegmentation',
-        'XImgProc.GraphSegmentation': 'Evision.XImgProc.GraphSegmentation',
-        'XImgProc.GraphSegmentation': 'Evision.XImgProc.GraphSegmentation',
-        'GuidedFilter': 'Evision.XImgProc.GuidedFilter',
-        'XImgProc.GuidedFilter': 'Evision.XImgProc.GuidedFilter',
-        'RFFeatureGetter': 'Evision.XImgProc.RFFeatureGetter',
-        'XImgProc.RFFeatureGetter': 'Evision.XImgProc.RFFeatureGetter',
-        'RICInterpolator': 'Evision.XImgProc.RICInterpolator',
-        'XImgProc.RICInterpolator': 'Evision.XImgProc.RICInterpolator',
-        'XImgProc.RidgeDetectionFilter': 'Evision.XImgProc.RidgeDetectionFilter',
-        'ScanSegment': 'Evision.XImgProc.ScanSegment',
-        'XImgProc.ScanSegment': 'Evision.XImgProc.ScanSegment',
-        'XImgProc.Segmentation.SelectiveSearchSegmentation': 'Evision.XImgProc.Segmentation.SelectiveSearchSegmentation',
-        'XImgProc.Segmentation.SelectiveSearchSegmentation': 'Evision.XImgProc.Segmentation.SelectiveSearchSegmentation',
-        'SelectiveSearchSegmentation': 'Evision.XImgProc.SelectiveSearchSegmentation',
-        'SelectiveSearchSegmentationStrategy': 'Evision.XImgProc.SelectiveSearchSegmentationStrategy',
-        'XImgProc.SelectiveSearchSegmentationStrategy': 'Evision.XImgProc.SelectiveSearchSegmentationStrategy',
-        'XImgProc.SelectiveSearchSegmentationStrategy': 'Evision.XImgProc.SelectiveSearchSegmentationStrategy',
-        'SelectiveSearchSegmentationStrategyColor': 'Evision.XImgProc.SelectiveSearchSegmentationStrategyColor',
-        'SelectiveSearchSegmentationStrategyFill': 'Evision.XImgProc.SelectiveSearchSegmentationStrategyFill',
-        'SelectiveSearchSegmentationStrategyMultiple': 'Evision.XImgProc.SelectiveSearchSegmentationStrategyMultiple',
-        'XImgProc.SelectiveSearchSegmentationStrategyMultiple': 'Evision.XImgProc.SelectiveSearchSegmentationStrategyMultiple',
-        'SelectiveSearchSegmentationStrategySize': 'Evision.XImgProc.SelectiveSearchSegmentationStrategySize',
-        'SelectiveSearchSegmentationStrategyTexture': 'Evision.XImgProc.SelectiveSearchSegmentationStrategyTexture',
-        'XImgProc.SparseMatchInterpolator': 'Evision.XImgProc.SparseMatchInterpolator',
-        'StructuredEdgeDetection': 'Evision.XImgProc.StructuredEdgeDetection',
-        'XImgProc.StructuredEdgeDetection': 'Evision.XImgProc.StructuredEdgeDetection',
-        'SuperpixelLSC': 'Evision.XImgProc.SuperpixelLSC',
-        'XImgProc.SuperpixelLSC': 'Evision.XImgProc.SuperpixelLSC',
-        'SuperpixelSEEDS': 'Evision.XImgProc.SuperpixelSEEDS',
-        'XImgProc.SuperpixelSEEDS': 'Evision.XImgProc.SuperpixelSEEDS',
-        'SuperpixelSLIC': 'Evision.XImgProc.SuperpixelSLIC',
-        'XImgProc.SuperpixelSLIC': 'Evision.XImgProc.SuperpixelSLIC',
-        'GrayworldWB': 'Evision.XPhoto.GrayworldWB',
-        'XPhoto.GrayworldWB': 'Evision.XPhoto.GrayworldWB',
-        'LearningBasedWB': 'Evision.XPhoto.LearningBasedWB',
-        'XPhoto.LearningBasedWB': 'Evision.XPhoto.LearningBasedWB',
-        'SimpleWB': 'Evision.XPhoto.SimpleWB',
-        'XPhoto.SimpleWB': 'Evision.XPhoto.SimpleWB',
-        'TonemapDurand': 'Evision.XPhoto.TonemapDurand',
-        'XPhoto.TonemapDurand': 'Evision.XPhoto.TonemapDurand',
-        'XPhoto.WhiteBalancer': 'Evision.XPhoto.WhiteBalancer',
-        'DNN.Image2BlobParams': 'Evision.DNN.Image2BlobParams',
-        'DNN.KeypointsModel': 'Evision.DNN.KeypointsModel',
-        'DNN.KeypointsModel': 'Evision.DNN.KeypointsModel',
-        'DNN.Model': 'Evision.DNN.Model',
-        'DNN.Net': 'Evision.DNN.Net',
-        'DNN.SegmentationModel': 'Evision.DNN.SegmentationModel',
-        'DNN.TextDetectionModel': 'Evision.DNN.TextDetectionModel',
-        'DNN.TextRecognitionModel': 'Evision.DNN.TextRecognitionModel',
-        'DNN.TextRecognitionModel': 'Evision.DNN.TextRecognitionModel',
-        'Detail.AffineBestOf2NearestMatcher': 'Evision.Detail.AffineBestOf2NearestMatcher',
-        'Detail.AffineBestOf2NearestMatcher': 'Evision.Detail.AffineBestOf2NearestMatcher',
-        'Detail.BestOf2NearestMatcher': 'Evision.Detail.BestOf2NearestMatcher',
-        'Detail.BestOf2NearestMatcher': 'Evision.Detail.BestOf2NearestMatcher',
-        'Detail.BestOf2NearestRangeMatcher': 'Evision.Detail.BestOf2NearestRangeMatcher',
-        'Detail.BestOf2NearestRangeMatcher': 'Evision.Detail.BestOf2NearestRangeMatcher',
-        'Detail.Blender': 'Evision.Detail.Blender',
-        'Detail.BlocksCompensator': 'Evision.Detail.BlocksCompensator',
-        'Detail.BlocksGainCompensator': 'Evision.Detail.BlocksGainCompensator',
-        'Detail.BundleAdjusterBase': 'Evision.Detail.BundleAdjusterBase',
-        'Detail.CameraParams': 'Evision.Detail.CameraParams',
-        'Detail.ChannelsCompensator': 'Evision.Detail.ChannelsCompensator',
-        'Detail.DpSeamFinder': 'Evision.Detail.DpSeamFinder',
-        'Detail.ExposureCompensator': 'Evision.Detail.ExposureCompensator',
-        'Detail.FeatherBlender': 'Evision.Detail.FeatherBlender',
-        'Detail.FeaturesMatcher': 'Evision.Detail.FeaturesMatcher',
-        'Detail.GainCompensator': 'Evision.Detail.GainCompensator',
-        'Detail.ImageFeatures': 'Evision.Detail.ImageFeatures',
-        'Detail.MatchesInfo': 'Evision.Detail.MatchesInfo',
-        'Detail.MultiBandBlender': 'Evision.Detail.MultiBandBlender',
-        'Detail.NoExposureCompensator': 'Evision.Detail.NoExposureCompensator',
-        'Detail.SphericalProjector': 'Evision.Detail.SphericalProjector',
-        'Detail.Timelapser': 'Evision.Detail.Timelapser',
-        'DynaFu.DynaFu': 'Evision.DynaFu',
-        'Face.BasicFaceRecognizer': 'Evision.Face.BasicFaceRecognizer',
-        'Face.LBPHFaceRecognizer': 'Evision.Face.LBPHFaceRecognizer',
-        'Face.StandardCollector': 'Evision.Face.StandardCollector',
-        'KinFu.KinFu': 'Evision.KinFu',
-        'KinFu.Params': 'Evision.KinFu.Params',
-        'Legacy.TrackerCSRT': 'Evision.Legacy.TrackerCSRT',
-        'LineMod.Detector': 'Evision.LineMod.Detector',
-        'LineMod.Modality': 'Evision.LineMod.Modality',
-        'LineMod.QuantizedPyramid': 'Evision.LineMod.QuantizedPyramid',
-        'ML.TrainData': 'Evision.ML.TrainData',
-        'OCL.Device': 'Evision.OCL.Device',
-        'Quality.QualityBRISQUE': 'Evision.Quality.QualityBRISQUE',
-        'Quality.QualityGMSD': 'Evision.Quality.QualityGMSD',
-        'Quality.QualityMSE': 'Evision.Quality.QualityMSE',
-        'Quality.QualityPSNR': 'Evision.Quality.QualityPSNR',
-        'Quality.QualitySSIM': 'Evision.Quality.QualitySSIM',
-        'RGBD.FastICPOdometry': 'Evision.RGBD.FastICPOdometry',
-        'RGBD.ICPOdometry': 'Evision.RGBD.ICPOdometry',
-        'RGBD.OdometryFrame': 'Evision.RGBD.OdometryFrame',
-        'RGBD.RgbdFrame': 'Evision.RGBD.RgbdFrame',
-        'RGBD.RgbdICPOdometry': 'Evision.RGBD.RgbdICPOdometry',
-        'RGBD.RgbdOdometry': 'Evision.RGBD.RgbdOdometry',
-        'Reg.Map': 'Evision.Reg.Map',
-        'Reg.MapAffine': 'Evision.Reg.MapAffine',
-        'Reg.MapProjec': 'Evision.Reg.MapProjec',
-        'Reg.MapShift': 'Evision.Reg.MapShift',
-        'Reg.Mapper': 'Evision.Reg.Mapper',
-        'Reg.MapperGradAffine': 'Evision.Reg.MapperGradAffine',
-        'Reg.MapperGradEuclid': 'Evision.Reg.MapperGradEuclid',
-        'Reg.MapperGradProj': 'Evision.Reg.MapperGradProj',
-        'Reg.MapperGradShift': 'Evision.Reg.MapperGradShift',
-        'Reg.MapperGradSimilar': 'Evision.Reg.MapperGradSimilar',
-        'Reg.MapperPyramid': 'Evision.Reg.MapperPyramid',
-        'Saliency.MotionSaliencyBinWangApr2014': 'Evision.Saliency.MotionSaliencyBinWangApr2014',
-        'Saliency.ObjectnessBING': 'Evision.Saliency.ObjectnessBING',
-        'Saliency.StaticSaliency': 'Evision.Saliency.StaticSaliency',
-        'Saliency.StaticSaliencyFineGrained': 'Evision.Saliency.StaticSaliencyFineGrained',
-        'Saliency.StaticSaliencySpectralResidual': 'Evision.Saliency.StaticSaliencySpectralResidual',
-        'CCM.ColorCorrectionModel': 'Evision.CCM.ColorCorrectionModel',
-        'Flann.Index': 'Evision.Flann.Index',
-        'MCC.CChecker': 'Evision.MCC.CChecker',
-        'MCC.CCheckerDraw': 'Evision.MCC.CCheckerDraw',
-        'Segmentation.IntelligentScissorsMB': 'Evision.Segmentation.IntelligentScissorsMB',
-    }
-
-    # argtype => classname => module name
-    strict_match = {
-        "Board": {"aruco_Board": "Evision.ArUco.Board"},
-        "DetectorParameters": {"aruco_DetectorParameters": "Evision.ArUco.DetectorParameters"},
-        "AverageHash": {"img_hash_AverageHash": "Evision.ImgHash.AverageHash"},
-        "BlockMeanHash": {"img_hash_BlockMeanHash": "Evision.ImgHash.BlockMeanHash"},
-        "PhaseUnwrapping": {"phase_unwrapping_PhaseUnwrapping": "Evision.PhaseUnwrapping.PhaseUnwrapping"},
-        "MACE": {"face_MACE": "Evision.Face.MACE"},
-        "ml_SVM": {"quality_QualityBRISQUE": "Evision.ML.SVM"},
-        "legacy_TrackerBoosting": {"legacy_TrackerBoosting": "Evision.Legacy.TrackerBoosting"},
-        "legacy_TrackerCSRT": {"legacy_TrackerCSRT": "Evision.Legacy.TrackerCSRT"},
-        "legacy_TrackerKCF": {"legacy_TrackerKCF": "Evision.Legacy.TrackerKCF"},
-        "legacy_TrackerMIL": {"legacy_TrackerMIL": "Evision.Legacy.TrackerMIL"},
-        "legacy_TrackerMOSSE": {"legacy_TrackerMOSSE": "Evision.Legacy.TrackerMOSSE"},
-        "legacy_TrackerMedianFlow": {"legacy_TrackerMedianFlow": "Evision.Legacy.TrackerMedianFlow"},
-        "legacy_TrackerTLD": {"legacy_TrackerTLD": "Evision.Legacy.TrackerTLD"},
-        "CUDA": {"cuda_SURF_CUDA": "Evision.CUDA.SURFCUDA"},
-        "SURF_CUDA": {"cuda_SURF_CUDA": "Evision.CUDA.SURFCUDA"},
-        "Params": {
-            "large_kinfu_LargeKinfu": "Evision.LargeKinfu.Params",
-            "large_kinfu_Params": "Evision.LargeKinfu.Params",
-            "colored_kinfu_Params": "Evision.ColoredKinFu.Params",
-            "colored_kinfu_ColoredKinFu": "Evision.ColoredKinFu.Params",
-        },
-        "large_kinfu_Params": {"large_kinfu_Params": "Evision.LargeKinfu.Params"},
-        "colored_kinfu_Params": {
-            "colored_kinfu_Params": "Evision.ColoredKinFu.Params",
-        },
-        "kinfu_Params": {
-            "kinfu_Params": "Evision.KinFu.Params",
-            "dynafu_DynaFu": "Evision.KinFu.Params"
-        },
-        "ICP": {
-            "ppf_match_3d_ICP": "Evision.PPFMatch3D.ICP"
-        }
-    }
+    special_structs = SPECIAL_STRUCTS
+    struct_types = STRUCT_TYPES
+    strict_match = STRICT_MATCH
     second_ret = None
 
     argtype = argtype.strip()
@@ -1279,86 +548,13 @@ def is_struct(argtype: str, also_get: Optional[str] = None, classname: Optional[
 
 def map_argtype_in_docs(kind: str, argtype: str, classname: str="") -> str:
     if kind == 'elixir':
+        from emit.elixir.helpers import map_argtype_in_docs_elixir
         return map_argtype_in_docs_elixir(kind, argtype, classname)
     elif kind == 'erlang':
+        from emit.erlang.helpers import map_argtype_in_docs_erlang
         return map_argtype_in_docs_erlang(kind, argtype, classname)
     else:
         return ''
-
-def map_argtype_in_docs_elixir(kind: str, argtype: str, classname: str) -> str:
-    argtype = argtype.replace("std::", "").strip()
-    is_array = argtype.startswith('vector_') or argtype.startswith('vector<')
-    if is_array:
-        argtype_inner = argtype
-        if argtype.startswith('vector<'):
-            argtype_inner = argtype[len('vector<'):-1].strip()
-        else:    
-            argtype_inner = argtype[len('vector_'):].strip()
-        mapped_type = '[' + map_argtype_in_docs_elixir(kind, argtype_inner, classname) + ']'
-        return mapped_type
-    if argtype.startswith('Ptr<'):
-        if argtype == 'Ptr<char>' or argtype == 'Ptr<uchar>':
-            return 'binary()'
-        argtype = argtype[len('Ptr<'):-1].strip()
-    mapping = {
-        'UMat': 'Evision.Mat',
-        'Mat': 'Evision.Mat',
-        'std::string': 'String',
-        'cv::String': 'String',
-        'RotatedRect': '{centre={x, y}, size={s1, s2}, angle}',
-        'Scalar': 'Evision.scalar()',
-        'cv::Scalar': 'Evision.scalar()',
-        'int': 'integer()',
-    }
-    mapped_type = mapping.get(argtype, None)
-    if mapped_type is None:
-        if is_basic_types(argtype):
-            mapped_type = argtype
-        elif is_struct(argtype, classname=classname):
-            _, mapped_type = is_struct(argtype, also_get='struct_name', classname=classname)
-        else:
-            mapped_type = argtype
-    return mapped_type
-
-def map_argtype_in_docs_erlang(kind: str, argtype: str, classname: str) -> str:
-    argtype = argtype.replace("std::", "").strip()
-    is_array = argtype.startswith('vector_') or argtype.startswith('vector<')
-    if is_array:
-        argtype_inner = argtype
-        if argtype.startswith('vector<'):
-            argtype_inner = argtype[len('vector<'):-1].strip()
-        else:    
-            argtype_inner = argtype[len('vector_'):].strip()
-        mapped_type = '[' + map_argtype_in_docs_erlang(kind, argtype_inner, classname) + ']'
-        return mapped_type
-    if argtype.startswith('Ptr<'):
-        if argtype == 'Ptr<char>' or argtype == 'Ptr<uchar>':
-            return 'binary()'
-        argtype = argtype[len('Ptr<'):-1].strip()
-    mapping = {
-        'UMat': '#evision_mat{}',
-        'Mat': '#evision_mat{}',
-        'std::string': 'binary()',
-        'cv::String': 'binary()',
-        'RotatedRect': '{centre={x, y}, size={s1, s2}, angle}',
-        'int': 'integer()',
-    }
-    mapped_type = mapping.get(argtype, None)
-    if mapped_type is None:
-        if is_basic_types(argtype):
-            mapped_type = argtype
-            if mapped_type.startswith("evision_"):
-                mapped_type = f"#{mapped_type}" + "{}"
-        elif is_struct(argtype, classname=classname):
-            _, mapped_type = is_struct(argtype, 'struct_name', classname=classname)
-            mapped_type = mapped_type.replace(".", "_").lower()
-            if not mapped_type.startswith("evision_"):
-                mapped_type = f"#evision_{mapped_type}" + "{}"
-        else:
-            mapped_type = argtype
-            if mapped_type.startswith("evision_"):
-                mapped_type = f"#{mapped_type}" + "{}"
-    return mapped_type
 
 vec_out_types = {}
 vec_dt = ['i', 'f', 'd']
@@ -1423,462 +619,13 @@ manual_type_spec_erlang = {
 
 def map_argtype_in_spec(kind: str, classname: str, argtype: str, is_in: bool, decl: list) -> str:
     if kind == 'elixir':
+        from emit.elixir.helpers import map_argtype_in_spec_elixir
         return map_argtype_in_spec_elixir(classname, argtype, is_in, decl)
     elif kind == 'erlang':
+        from emit.erlang.helpers import map_argtype_in_spec_erlang
         return map_argtype_in_spec_erlang(classname, argtype, is_in, decl)
-    elif kind == 'gleam':
-        return map_argtype_in_spec_erlang(classname, argtype, is_in, decl)
-    else:
-        return ''
-    
-def add_to_import_list(import_list: dict, module_name: str, module_class: str):
-    if module_name not in import_list:
-        import_list[module_name] = set()
-    import_list[module_name].add(module_class)
-    
-def map_argtype_in_gleam_type(classname: str, argtype: str, is_in: bool, decl: list) -> str:
-    global vec_out_types
-    import_list = {}
-    argtype = argtype.strip()
-    if len(argtype) > 0 and argtype[-1] == '*':
-        if argtype == 'char*' or argtype == 'uchar*':
-            return 'BitArray'
-        argtype = argtype[:-1]
-    if argtype.startswith('Ptr<'):
-        if argtype == 'Ptr<char>' or argtype == 'Ptr<uchar>':
-            return 'BitArray'
-        argtype = argtype[len('Ptr<'):-1]
-
-    argtype = argtype.strip()
-    if argtype.startswith("cv::"):
-        argtype = argtype[4:]
-
-    if is_int_type(argtype) or is_enum_type(argtype, classname, decl):
-        return 'Int', import_list
-    elif argtype == 'bool':
-        return 'Bool', import_list
-    elif argtype == 'double' or argtype == 'float':
-        return 'Float', import_list
-    elif argtype in ['String', 'c_string', 'string', 'cv::String', 'std::string']:
-        return 'String', import_list
-    elif argtype in ['char', 'uchar']:
-        return 'Int', import_list
-    elif argtype == 'void':
-        add_to_import_list(import_list, 'evision/types', 'Void')
-        return 'Void', import_list
-    elif argtype in ['Mat', 'UMat', 'cv::Mat', 'cv::UMat']:
-        add_to_import_list(import_list, 'evision/mat', 'Mat')
-        return 'Mat', import_list
-    elif argtype in vec_out_types:
-        return vec_out_types[argtype]
-    elif argtype in evision_structrised_classes:
-        return f'Evision.{argtype}.t()'
-    elif argtype in ["FeatureDetector", "DescriptorExtractor"]:
-        return 'reference() | term()'
-    elif argtype in ['GpuMat::Allocator', 'GpuMat_Allocator']:
-        return 'reference()'
-    elif argtype == 'Status' and classname == 'Stitcher':
-        return 'integer()'
-    elif argtype == 'Device' and classname == 'ocl_Device':
-        return 'Evision.OCL.Device.t()'
-    elif argtype == 'Index' and classname == 'flann_Index':
-         return 'Evision.Flann.Index.t()'
-    elif argtype == 'TrackerVit':
-        return 'Evision.TrackerVit'
-    elif argtype == 'QRCodeDetectorAruco':
-        return 'Evision.QRCodeDetectorAruco'
-    elif argtype in ['QRCodeDetectorAruco_Params', 'QRCodeDetectorAruco::Params']:
-        return 'Evision.QRCodeDetectorAruco.Params'
-    elif argtype in ['aruco_DetectorParameters', 'aruco::DetectorParameters']:
-        return 'Evision.Aruco.DetectorParameters'
-    elif argtype == 'LayerId':
-        return 'term()'
-    elif argtype in manual_type_spec_elixir:
-        return manual_type_spec_elixir[argtype]
-    elif len(decl) > 0 and decl[0].startswith("cv.aruco.") and argtype in ['Board', 'Dictionary']:
-        if argtype == 'Board':
-            return 'Evision.ArUco.Board.t()'
-        elif argtype == 'Dictionary':
-            return 'Evision.ArUco.Dictionary.t()'
-    elif argtype.startswith('vector_'):
-        argtype_inner = argtype[len('vector_'):]
-        if argtype == 'vector_char' or argtype == 'vector_uchar':
-            return 'binary()'
-        spec_type = 'List(' + map_argtype_in_spec_elixir(classname, argtype_inner, is_in, decl) + ')'
-        return spec_type
-    elif argtype.startswith('std::vector<'):
-        if argtype == 'std::vector<char>' or argtype == 'std::vector<uchar>':
-            return 'BitArray()'
-        argtype_inner = argtype[len('std::vector<'):-1]
-        spec_type = 'List(' + map_argtype_in_spec_elixir(classname, argtype_inner, is_in, decl) + ')'
-        return spec_type
-    elif argtype.startswith('std::pair<'):
-        argtype_inner = ", ".join([map_argtype_in_spec_elixir(classname, a.strip(), is_in, decl) for a in argtype[len('std::pair<'):-1].split(",")])
-        spec_type = '{' + argtype_inner + '}'
-        return spec_type
-    elif is_struct(argtype, classname=classname, decl=decl):
-        _, struct_name = is_struct(argtype, also_get='struct_name', classname=classname, decl=decl)
-        return f'{struct_name}.t()'
-    elif 'Volume' == argtype:
-        return 'Evision.KinFu.Volume.t()'
-    else:
-        # print(f'warning: generate_spec: unknown argtype `{argtype}`, input_arg? {is_in}, class={classname}')
-        return 'Void'
-
-def map_argtype_in_spec_erlang(classname: str, argtype: str, is_in: bool, decl: list) -> str:
-    global vec_out_types
-    argtype = argtype.strip()
-    if len(argtype) > 0 and argtype[-1] == '*':
-        if argtype == 'char*' or argtype == 'uchar*':
-            return 'binary()'
-        argtype = argtype[:-1]
-    if argtype.startswith('Ptr<'):
-        if argtype == 'Ptr<char>' or argtype == 'Ptr<uchar>':
-            return 'binary()'
-        argtype = argtype[len('Ptr<'):-1]
-    if argtype.startswith('Ptr_'):
-        if argtype == 'Ptr_char' or argtype == 'Ptr_uchar':
-            return 'binary()'
-        argtype = argtype[len('Ptr_'):]
-
-    argtype = argtype.strip()
-    if argtype.startswith("cv::"):
-        argtype = argtype[4:]
-
-    if is_int_type(argtype) or is_enum_type(argtype, classname, decl):
-        return 'integer()'
-    elif argtype == 'bool':
-        return 'boolean()'
-    elif argtype == 'double':
-        return 'number()'
-    elif argtype == 'float':
-        return 'number()'
-    elif argtype in ['String', 'c_string', 'string', 'cv::String', 'std::string']:
-        return 'unicode:charlist()'
-    elif argtype in ['char', 'uchar']:
-        return 'char()'
-    elif argtype == 'void':
-        return 'ok'
-    elif argtype == 'Range':
-        return '{integer(), integer()} | all'
-    elif is_in and argtype in ['Mat', 'UMat', 'cv::Mat', 'cv::UMat']:
-        return '#evision_mat{}'
-    elif argtype == 'QRCodeDetectorAruco_Params':
-        return '#evision_qrcodedetectoraruco_params{}'
-    elif argtype in ['OCRBeamSearchDecoder::ClassifierCallback', 'OCRHMMDecoder::ClassifierCallback']:
-        return 'term()'
-    elif argtype == 'ERFilter::Callback':
-        return 'term()'
-    elif argtype == 'Modality':
-        return '#evision_linemod_modality{}'
-    elif argtype in vec_out_types:
-        return vec_out_types[argtype]
-    elif 'IndexParams' in argtype:
-        return 'map()'
-    elif argtype in ["FeatureDetector", "DescriptorExtractor"]:
-        return 'reference() | term()'
-    elif argtype in ['GpuMat::Allocator', 'GpuMat_Allocator']:
-        return 'reference()'
-    elif argtype == 'Status' and classname == 'Stitcher':
-        return 'integer()'
-    elif argtype == 'Device' and classname == 'ocl_Device':
-        return '#evision_ocl_device{}'
-    elif argtype == 'Index' and classname == 'flann_Index':
-         return '#evision_flann_index{}'
-    elif argtype == 'TrackerVit':
-        return '#evision_trackervit{}'
-    elif argtype == 'QRCodeDetectorAruco':
-        return '#evision_qrcodedetectoraruco{}'
-    elif argtype in ['aruco_DetectorParameters', 'aruco::DetectorParameters']:
-        return 'term()'
-    elif argtype == 'LayerId':
-        return 'term()'
-    elif argtype == 'GpuMat' or argtype == 'cuda::GpuMat':
-        return '#evision_cuda_gpumat{}'
-    elif argtype == 'SearchParams' or argtype == 'Moments':
-        return 'map()'
-    elif argtype in ['Board', 'Dictionary'] and len(decl) > 0 and decl[0].startswith("cv.aruco."):
-        return '#evision_aruco_board{}'
-    elif argtype in ['Board', 'Dictionary'] and len(decl) > 0 and decl[0].startswith("cv.aruco."):
-        return '#evision_aruco_board{}'
-    elif argtype in manual_type_spec_erlang:
-        return manual_type_spec_erlang[argtype]
-    elif argtype in evision_structrised_classes:
-        ty = argtype.replace('.', '_').lower()
-        return f'#evision_{ty}'+'{}'
-    elif argtype in ['Mat', 'cv::Mat', 'UMat', 'cv::UMat']:
-        return '#evision_mat{}'
-    elif argtype.startswith('vector_'):
-        argtype_inner = argtype[len('vector_'):]
-        if argtype == 'vector_char' or argtype == 'vector_uchar':
-            return 'binary()'
-        spec_type = 'list(' + map_argtype_in_spec_erlang(classname, argtype_inner, is_in, decl) + ')'
-        return spec_type
-    elif argtype.startswith('std::vector<'):
-        if argtype == 'std::vector<char>' or argtype == 'std::vector<uchar>':
-            return 'binary()'
-        argtype_inner = argtype[len('std::vector<'):-1]
-        spec_type = 'list(' + map_argtype_in_spec_erlang(classname, argtype_inner, is_in, decl) + ')'
-        return spec_type
-    elif argtype.startswith('std::pair<'):
-        argtype_inner = ", ".join([map_argtype_in_spec_erlang(classname, a.strip(), is_in, decl) for a in argtype[len('std::pair<'):-1].split(",")])
-        spec_type = '{' + argtype_inner + '}'
-        return spec_type
-    elif is_struct(argtype, classname=classname, decl=decl):
-        _, struct_name = is_struct(argtype, also_get='struct_name', classname=classname, decl=decl)
-        ty = struct_name.replace('.', '_').lower()
-        return f'#{ty}' + '{}'
-    else:
-        print(f'warning: generate_spec: unknown argtype `{argtype}`, input_arg? {is_in}, class={classname}')
-        raise RuntimeError("erlang spec")
-        return 'term()'
-
-def map_argtype_in_spec_elixir(classname: str, argtype: str, is_in: bool, decl: list) -> str:
-    global vec_out_types
-    argtype = argtype.strip()
-    if len(argtype) > 0 and argtype[-1] == '*':
-        if argtype == 'char*' or argtype == 'uchar*':
-            return 'binary()'
-        argtype = argtype[:-1]
-    if argtype.startswith('Ptr<'):
-        if argtype == 'Ptr<char>' or argtype == 'Ptr<uchar>':
-            return 'binary()'
-        argtype = argtype[len('Ptr<'):-1]
-
-    argtype = argtype.strip()
-    if argtype.startswith("cv::"):
-        argtype = argtype[4:]
-
-    if is_int_type(argtype):
-        return 'integer()'
-    elif is_enum_type(argtype, classname, decl):
-        return is_enum_type(argtype, classname, decl, get_type='elixir')
-    elif argtype == 'bool':
-        return 'boolean()'
-    elif argtype == 'double':
-        return 'number()'
-    elif argtype == 'float':
-        return 'number()'
-    elif argtype in ['String', 'c_string', 'string', 'cv::String', 'std::string']:
-        return 'binary()'
-    elif argtype in ['char', 'uchar']:
-        return 'char()'
-    elif argtype == 'void':
-        return ':ok'
-    elif argtype == 'Range':
-        return '{integer(), integer()} | :all'
-    elif is_in and argtype in ['Mat', 'UMat', 'cv::Mat', 'cv::UMat']:
-        return 'Evision.Mat.maybe_mat_in()'
-    elif argtype == 'QRCodeDetectorAruco_Params':
-        return 'Evision.QRCodeDetectorAruco.Params.t()'
-    elif argtype in ['OCRBeamSearchDecoder::ClassifierCallback', 'OCRHMMDecoder::ClassifierCallback']:
-        return 'term()'
-    elif argtype == 'ERFilter::Callback':
-        return 'term()'
-    elif 'IndexParams' in argtype:
-        return 'map()'
-    elif argtype == 'SearchParams' or argtype == 'Moments':
-        return 'map()'
-    elif argtype in vec_out_types:
-        return vec_out_types[argtype]
-    elif argtype in evision_structrised_classes:
-        return f'Evision.{argtype}.t()'
-    elif argtype in ['Mat', 'cv::Mat', 'UMat', 'cv::UMat']:
-        if is_in:
-            return 'Evision.Mat.maybe_mat_in()'
-        else:
-            return 'Evision.Mat.t()'
-    elif argtype in ["FeatureDetector", "DescriptorExtractor"]:
-        return 'reference() | term()'
-    elif argtype in ['GpuMat::Allocator', 'GpuMat_Allocator']:
-        return 'reference()'
-    elif argtype == 'Status' and classname == 'Stitcher':
-        return 'integer()'
-    elif argtype == 'Device' and classname == 'ocl_Device':
-        return 'Evision.OCL.Device.t()'
-    elif argtype == 'Index' and classname == 'flann_Index':
-         return 'Evision.Flann.Index.t()'
-    elif argtype == 'TrackerVit':
-        return 'Evision.TrackerVit'
-    elif argtype == 'QRCodeDetectorAruco':
-        return 'Evision.QRCodeDetectorAruco'
-    elif argtype in ['QRCodeDetectorAruco_Params', 'QRCodeDetectorAruco::Params']:
-        return 'Evision.QRCodeDetectorAruco.Params'
-    elif argtype in ['aruco_DetectorParameters', 'aruco::DetectorParameters']:
-        return 'Evision.Aruco.DetectorParameters'
-    elif argtype == 'LayerId':
-        return 'term()'
-    elif argtype in manual_type_spec_elixir:
-        return manual_type_spec_elixir[argtype]
-    elif len(decl) > 0 and decl[0].startswith("cv.aruco.") and argtype in ['Board', 'Dictionary']:
-        if argtype == 'Board':
-            return 'Evision.ArUco.Board.t()'
-        elif argtype == 'Dictionary':
-            return 'Evision.ArUco.Dictionary.t()'
-    elif argtype.startswith('vector_'):
-        argtype_inner = argtype[len('vector_'):]
-        if argtype == 'vector_char' or argtype == 'vector_uchar':
-            return 'binary()'
-        spec_type = 'list(' + map_argtype_in_spec_elixir(classname, argtype_inner, is_in, decl) + ')'
-        return spec_type
-    elif argtype.startswith('std::vector<'):
-        if argtype == 'std::vector<char>' or argtype == 'std::vector<uchar>':
-            return 'binary()'
-        argtype_inner = argtype[len('std::vector<'):-1]
-        spec_type = 'list(' + map_argtype_in_spec_elixir(classname, argtype_inner, is_in, decl) + ')'
-        return spec_type
-    elif argtype.startswith('std::pair<'):
-        argtype_inner = ", ".join([map_argtype_in_spec_elixir(classname, a.strip(), is_in, decl) for a in argtype[len('std::pair<'):-1].split(",")])
-        spec_type = '{' + argtype_inner + '}'
-        return spec_type
-    elif is_struct(argtype, classname=classname, decl=decl):
-        _, struct_name = is_struct(argtype, also_get='struct_name', classname=classname, decl=decl)
-        return f'{struct_name}.t()'
-    elif 'Volume' == argtype:
-        return 'Evision.KinFu.Volume.t()'
-    else:
-        # print(f'warning: generate_spec: unknown argtype `{argtype}`, input_arg? {is_in}, class={classname}')
-        return 'term()'
-
-def map_argtype_to_guard_elixir(argname, argtype, classname: Optional[str] = None):
-    if argtype == 'vector_char' or argtype == 'vector_uchar' or argtype == 'std::vector<char>' or argtype == 'std::vector<uchar>':
-        return f'is_binary({argname})'
-
-    if is_int_type(argtype) or is_enum_type(argtype, classname, None):
-        return f'is_integer({argname})'
-    elif argtype == 'bool':
-        return f'is_boolean({argname})'
-    elif argtype == 'double':
-        return f'is_number({argname})'
-    elif argtype == 'float':
-        return f'is_float({argname})'
-    elif argtype == 'String' or argtype == 'c_string' or argtype == 'string':
-        return f'is_binary({argname})'
-    elif argtype == 'char':
-        return f'(-128 <= {argname} and {argname} <= 127)'
-    elif argtype == 'Range':
-        return f'(is_tuple({argname}) or {argname} == :all)'
-    elif is_tuple_type(argtype):
-        return f'is_tuple({argname})'
-    elif argtype in ['Scalar', 'cv::Scalar']:
-        return f'(is_number({argname}) or is_tuple({argname}))'
-    elif argtype == 'IndexParams' or argtype == 'SearchParams' or argtype == 'Moments':
-        return f'is_map({argname})'
-    elif is_struct(argtype, classname=classname):
-        _, struct_name = is_struct(argtype, also_get='struct_name', classname=classname)
-        if struct_name == 'Evision.Feature2D':
-            return f''
-        if struct_name == 'Evision.Mat':
-            return f'(is_struct({argname}, Evision.Mat) or is_struct({argname}, Nx.Tensor) or is_number({argname}) or is_tuple({argname}))'
-        else:
-            return f'is_struct({argname}, {struct_name})'
-    elif 'Volume' == argtype:
-        return f'is_struct({argname}, Evision.KinFu.Volume)'
-    elif is_ref_or_struct(argtype):
-        return f'(is_reference({argname}) or is_struct({argname}))'
-    elif is_list_type(argtype):
-        return f'is_list({argname})'
     else:
         return ''
 
-
-def map_argtype_to_guard_erlang(argname, argtype, classname: Optional[str] = None):
-    if argtype == 'vector_char' or argtype == 'vector_uchar' or argtype == 'std::vector<char>' or argtype == 'std::vector<uchar>':
-        return f'is_binary({argname})'
-
-    if is_int_type(argtype) or is_enum_type(argtype, classname, None):
-        return f'is_integer({argname})'
-    elif argtype == 'bool':
-        return f'is_boolean({argname})'
-    elif argtype == 'double':
-        return f'is_number({argname})'
-    elif argtype == 'float':
-        return f'is_float({argname})'
-    elif argtype == 'String' or argtype == 'c_string' or argtype == 'string':
-        return f'(is_list({argname}) or is_binary({argname}))'
-    elif argtype == 'char':
-        return f'is_list({argname})'
-    elif argtype == 'Range':
-        return f'(is_tuple({argname}) or {argname} == all)'
-    elif is_tuple_type(argtype):
-        return f'is_tuple({argname})'
-    elif argtype in ['Scalar', 'cv::Scalar']:
-        return f'(is_number({argname}) or is_tuple({argname}))'
-    elif argtype == 'IndexParams' or argtype == 'SearchParams' or argtype == 'Moments':
-        return f'is_map({argname})'
-    elif is_struct(argtype, classname=classname):
-        _, struct_name = is_struct(argtype, also_get='struct_name', classname=classname)
-        struct_name = struct_name.replace(".", "_").lower()
-        if not struct_name.startswith("evision_"):
-            struct_name = f"evision_{struct_name}"
-        return f'(is_tuple({argname}) and (element(1, {argname}) == {struct_name}))'
-    elif is_ref_or_struct(argtype):
-        return f'is_reference({argname})'
-    elif is_list_type(argtype):
-        return f'is_list({argname})'
-    else:
-        return ''
-
-
-def map_uppercase_to_erlang_name(name):
-    namespace_map = {
-        "AKAZE": "akaze",
-        "BFMatcher": "bfMatcher",
-        "BOWImgDescriptorExtractor": "bowImgDescriptorExtractor",
-        "BOWKMeansTrainer": "bowKMeansTrainer",
-        "BOWTrainer": "bowTrainer",
-        "BRISK": "brisk",
-        "CLAHE": "clahe",
-        "DISOpticalFlow": "disOpticalFlow",
-        "DMatch": "dMatch",
-        "MSER": "mser",
-        "KAZE": "kaze",
-        "HOGDescriptor": "hogDescriptor",
-        "GFTTDetector": "gfttDetector",
-        "SIFT": "sift",
-        "ORB": "orb",
-        "QRCodeDetector": "qrCodeDetector",
-        "QRCodeEncoder": "qrCodeEncoder",
-        "UMat": "uMat",
-        "EMD": "emd",
-        "LUT": "lut",
-        "PCABackProject": "pcaBackProject",
-        "PCACompute": "pcaCompute",
-        "PCACompute2": "pcaCompute2",
-        "PCAProject": "pcaProject",
-        "PSNR": "psnr",
-        "RQDecomp3x3": "rqDecomp3x3",
-        "SVBackSubst": "svBackSubst",
-        "SVDecomp": "svdDecomp",
-        "GArrayT": "gArrayT",
-        "GCompileArg": "gCompileArg",
-        "GComputation": "gComputation",
-        "GFrame": "gFrame",
-        "GInferInputs": "gInferInputs",
-        "GInferListInputs": "gInferListInputs",
-        "GInferListOutputs": "gInferListOutputs",
-        "GInferOutputs": "gInferOutputs",
-        "GMat": "gMat",
-        "GMatDesc": "gMatDesc",
-        "GOpaqueT": "gOpaqueT",
-        "GScalar": "gScalar",
-        "GStreamingCompiled": "gStreamingCompiled",
-
-        "EMDHistogramCostExtractor": "emdHistogramCostExtractor",
-        "QRCodeDetectorAruco": "qrCodeDetectorAruco"
-    }
-    if name[0:3] == 'cv_':
-        name = name[3:]
-    name_parts = name.split('_')
-    if len(name_parts[0]) > 1:
-        if name_parts[0][0].isupper() and name_parts[0][1].islower():
-            name_parts[0] = name_parts[0][0].lower() + name_parts[0][1:]
-    name_parts[0] = namespace_map.get(name_parts[0], name_parts[0])
-    name = '_'.join(name_parts)
-    if not name[0].islower():
-        raise RuntimeError('The function %s is not started with lowercase name' % name)
-    return name
-
-
-def __LINE__(): 
+def __LINE__():
     return inspect.stack()[1].lineno

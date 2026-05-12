@@ -4,7 +4,7 @@
 from io import StringIO
 from typing import Tuple
 from helper import handle_ptr, forbidden_arg_types, ignored_arg_types, map_argtype_to_guard, map_argname, map_argtype_to_type, handle_inline_math_escaping, map_argtype_in_docs, map_argtype_in_spec, is_struct
-from arg_info import ArgInfo
+from ir.args import ArgInfo
 import re
 inline_docs_code_type_re = re.compile(r'@code{.(.*)}')
 
@@ -154,8 +154,6 @@ class FuncVariant(object):
         if kind == 'elixir':
             return self.inline_docs_elixir(is_instance_method, module_name)
         elif kind == 'erlang':
-            return self.inline_docs_erlang(is_instance_method, module_name)
-        elif kind == 'gleam':
             return self.inline_docs_erlang(is_instance_method, module_name)
         else:
             return ''
@@ -557,8 +555,6 @@ class FuncVariant(object):
             return self.generate_spec_elixir(module_func_name, is_instance_method, include_opts, module_name)
         elif kind == 'erlang':
             return self.generate_spec_erlang(module_func_name, is_instance_method, include_opts, module_name)
-        elif kind == 'gleam':
-            return self.generate_spec_erlang(module_func_name, is_instance_method, include_opts, module_name)
         else:
             return ''
 
@@ -752,8 +748,6 @@ class FuncVariant(object):
                 return self.opts_args_elixir(in_func_body=in_func_body)
             elif kind == 'erlang':
                 return self.opts_args_erlang(in_func_body=in_func_body)
-            elif kind == 'gleam':
-                return self.opts_args_erlang(in_func_body=in_func_body)
             else:
                 print(f'warning: opt_args: unknown kind `{kind}`')
                 return ''
@@ -783,8 +777,6 @@ class FuncVariant(object):
             return self.positional_args_elixir()
         elif kind == 'erlang':
             return self.positional_args_erlang()
-        elif kind == 'gleam':
-            return self.positional_args_gleam()
         else:
             print(f'warning: positional_args: unknown kind `{kind}`')
 
@@ -792,18 +784,12 @@ class FuncVariant(object):
         positional_var = 'positional'
         positional = '{} = [{}\n    ]'.format(positional_var, ",".join(['\n      {}: {}'.format(map_argname('elixir', arg_name), map_argname('elixir', arg_name, argtype=argtype, from_struct=True)) for (arg_name, _, argtype) in self.py_arglist[:self.pos_end]]))
         return positional, positional_var
-    
+
     def positional_args_erlang(self):
         # [{elixir_arg_atom, evision_internal_structurise:from_struct(ErlangVar)}, ...]
         positional_var = 'Positional'
         positional = '{} = [{}\n  ]'.format(positional_var, ",".join(['\n    {}, evision_internal_structurise:from_struct({}'.format('{' + map_argname('elixir', arg_name), map_argname('erlang', arg_name) + ')}') for (arg_name, _, argtype) in self.py_arglist[:self.pos_end]]))
         return positional, positional_var
-    
-    def positional_args_gleam(self):
-        positional_var = 'Positional'
-        positional = '{} = [{}\n  ]'.format(positional_var, ",".join(['\n    {}, evision_internal_structurise:from_struct({}'.format('{' + map_argname('elixir', arg_name), map_argname('erlang', arg_name) + ')}') for (arg_name, _, argtype) in self.py_arglist[:self.pos_end]]))
-        pos_typed = [(argname, argtype) for (argname, _, argtype) in self.py_arglist[:self.pos_end]]
-        return positional, positional_var, pos_typed
 
     def func_args(self, kind: str, instance_method: bool = False, in_func_body: bool = False):
         positional_args = self.py_arglist[:self.pos_end]
@@ -822,10 +808,6 @@ class FuncVariant(object):
                 if in_func_body:
                     self_arg = 'Evision.Internal.Structurise.from_struct(self)'
             elif kind == 'erlang':
-                self_arg = 'Self'
-                if in_func_body:
-                    self_arg = 'evision_internal_structurise:from_struct(Self)'
-            elif kind == 'gleam':
                 self_arg = 'Self'
                 if in_func_body:
                     self_arg = 'evision_internal_structurise:from_struct(Self)'
