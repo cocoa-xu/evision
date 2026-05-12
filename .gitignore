@@ -49,6 +49,11 @@ erl_crash.dump
 /examples/ssd_mobilenet_v2_coco_2018_03_29**
 /examples/test.png
 
+# misc
+lib-4.11.0
+src-4.11.0
+.golden/
+
 # nvcc
 c_src/modules/evision_cuda.o
 

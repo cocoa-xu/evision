@@ -541,8 +541,6 @@ class FuncInfo(object):
         return code
     
     def get_all_named_args(self):
-        all_args = set()
-        for v in self.variants:
-            for a in v.args:
-                all_args.add(a.name)
-        return list(all_args)
+        # Insertion-ordered dedup: set iteration order varies with PYTHONHASHSEED
+        # and would make generated kwarg-validation lists nondeterministic.
+        return list(dict.fromkeys(a.name for v in self.variants for a in v.args))
