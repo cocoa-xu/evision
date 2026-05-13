@@ -135,6 +135,10 @@ def map_argtype_in_spec_erlang(classname: str, argtype: str, is_in: bool, decl: 
         return 'term()'
     elif argtype == 'GpuMat' or argtype == 'cuda::GpuMat':
         return '#evision_cuda_gpumat{}'
+    elif argtype == 'NativeByteArray':
+        # cv::NativeByteArray (OpenCV 4.13+) returns raw bytes; the
+        # evision_objdetect.hpp converter emits it as a BEAM binary.
+        return 'binary()'
     elif argtype == 'SearchParams' or argtype == 'Moments':
         return 'map()'
     elif argtype in ['Board', 'Dictionary'] and len(decl) > 0 and decl[0].startswith("cv.aruco."):
@@ -170,7 +174,6 @@ def map_argtype_in_spec_erlang(classname: str, argtype: str, is_in: bool, decl: 
         return f'#{ty}' + '{}'
     else:
         print(f'warning: generate_spec: unknown argtype `{argtype}`, input_arg? {is_in}, class={classname}')
-        raise RuntimeError("erlang spec")
         return 'term()'
 
 
@@ -257,7 +260,8 @@ def map_uppercase_to_erlang_name(name):
         "GStreamingCompiled": "gStreamingCompiled",
 
         "EMDHistogramCostExtractor": "emdHistogramCostExtractor",
-        "QRCodeDetectorAruco": "qrCodeDetectorAruco"
+        "QRCodeDetectorAruco": "qrCodeDetectorAruco",
+        "IStreamReader": "iStreamReader",
     }
     if name[0:3] == 'cv_':
         name = name[3:]

@@ -63,6 +63,7 @@ MODULE_NAME_MAP = {
     "utils": "Utils",
     "utils_fs": "UtilsFS",
     "videoio_registry": "VideoIORegistry",
+    "videostab": "VideoStab",
     "xfeatures2d": "XFeatures2D",
     "ximgproc": "XImgProc",
     "xphoto": "XPhoto",
@@ -175,6 +176,20 @@ STRUCT_TYPES = {
     'CUDA.SURFCUDA': 'Evision.CUDA.SURFCUDA',
     'CUDA.BackgroundSubtractorMOG': 'Evision.CUDA.BackgroundSubtractorMOG',
     'TargetArchs': 'Evision.CUDA.TargetArchs',
+    # cudaoptflow (4.13+ contrib): generated module names drop underscores via
+    # pipeline.get_module_writer, so `NvidiaOpticalFlow_1_0` becomes
+    # `Evision.CUDA.NvidiaOpticalFlow10`.
+    'cuda_FarnebackOpticalFlow': 'Evision.CUDA.FarnebackOpticalFlow',
+    'cuda_SparsePyrLKOpticalFlow': 'Evision.CUDA.SparsePyrLKOpticalFlow',
+    'NvidiaOpticalFlow_1_0': 'Evision.CUDA.NvidiaOpticalFlow10',
+    'NvidiaOpticalFlow_2_0': 'Evision.CUDA.NvidiaOpticalFlow20',
+    'OpticalFlowDual_TVL1': 'Evision.CUDA.OpticalFlowDualTVL1',
+    'CUDA.DenseOpticalFlow': 'Evision.CUDA.DenseOpticalFlow',
+    'CUDA.SparseOpticalFlow': 'Evision.CUDA.SparseOpticalFlow',
+    'CUDA.NvidiaHWOpticalFlow': 'Evision.CUDA.NvidiaHWOpticalFlow',
+    'CUDA.NvidiaOpticalFlow10': 'Evision.CUDA.NvidiaOpticalFlow10',
+    'CUDA.NvidiaOpticalFlow20': 'Evision.CUDA.NvidiaOpticalFlow20',
+    'CUDA.OpticalFlowDualTVL1': 'Evision.CUDA.OpticalFlowDualTVL1',
     'cudacodec_VideoWriter': 'Evision.CUDACodec.VideoWriter',
     'DenseOpticalFlow': 'Evision.DenseOpticalFlow',
     'DescriptorMatcher': 'Evision.DescriptorMatcher',
@@ -300,6 +315,7 @@ STRUCT_TYPES = {
     'LargeKinfu': 'Evision.LargeKinfu',
     'LargeKinfu.LargeKinfu': 'Evision.LargeKinfu', # changed
     'legacy_Tracker': 'Evision.Legacy.MultiTracker',
+    'legacy_MultiTracker': 'Evision.Legacy.MultiTracker',
     'Legacy.MultiTracker': 'Evision.Legacy.MultiTracker',
     'Legacy.Tracker': 'Evision.Legacy.MultiTracker', # changed
     'BinaryDescriptor': 'Evision.LineDescriptor.BinaryDescriptor',
@@ -356,6 +372,8 @@ STRUCT_TYPES = {
     'NormHistogramCostExtractor': 'Evision.NormHistogramCostExtractor',
     'Device': 'Evision.OCL.Device',
     'ORB': 'Evision.ORB',
+    'OptFlow.GPCTree': 'Evision.OptFlow.GPCTree',
+    'OptFlow.SparseRLOFOpticalFlow': 'Evision.OptFlow.SparseRLOFOpticalFlow',
     'PhaseUnwrapping.PhaseUnwrapping': 'Evision.PhaseUnwrapping.PhaseUnwrapping',
     'Plot.Plot2d': 'Evision.Plot.Plot2d',
     'PPFMatch3D.ICP': 'Evision.PPFMatch3D.ICP',
@@ -478,6 +496,7 @@ STRUCT_TYPES = {
     'EdgeDrawing': 'Evision.XImgProc.EdgeDrawing',
     'XImgProc.EdgeDrawing': 'Evision.XImgProc.EdgeDrawing',
     'EdgeDrawing_Params': 'Evision.XImgProc.EdgeDrawing.Params',
+    'XImgProc.EdgeDrawing.Params': 'Evision.XImgProc.EdgeDrawing.Params',
     'FastBilateralSolverFilter': 'Evision.XImgProc.FastBilateralSolverFilter',
     'XImgProc.FastBilateralSolverFilter': 'Evision.XImgProc.FastBilateralSolverFilter',
     'FastGlobalSmootherFilter': 'Evision.XImgProc.FastGlobalSmootherFilter',

@@ -305,6 +305,9 @@ def is_int_type(argtype):
         'int',
         'size_t',
         'int64',
+        # OpenCV 4.13's IStreamReader takes signed `long long` offsets;
+        # BEAM `integer()` is arbitrary precision so mapping is safe.
+        'long long',
     ]
     return argtype in int_types
 

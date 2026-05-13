@@ -18,7 +18,7 @@ jobs:
       LANGUAGE: en_US:en
       LC_ALL: en_US.UTF-8
       DEBIAN_FRONTEND: noninteractive
-      OPENCV_VER: "4.11.0"
+      OPENCV_VER: "4.13.0"
       MIX_ENV: prod
       ELIXIR_VERSION: "1.16.1"
       EVISION_PREFER_PRECOMPILED: "false"

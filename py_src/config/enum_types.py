@@ -61,4 +61,13 @@ ENUM_TYPES = {
     'cvflann::flann_algorithm_t': 'integer()',
     'cvflann_flann_distance_t': 'integer()',
     'cvflann::flann_distance_t': 'integer()',
+    # Prefixed forms — the 4.13 hdr_parser exposes enum argtypes with
+    # their parent-namespace prefix; older 4.11 paths kept only the
+    # unprefixed name above.
+    'dnn_DataLayout': 'Evision.DNN.DataLayout.enum()',
+    'dnn_ImagePaddingMode': 'Evision.DNN.ImagePaddingMode.enum()',
+    'aruco_PatternPositionType': 'Evision.ArUco.PatternPositionType.enum()',
+    # New in OpenCV 4.13.
+    'GridType': 'Evision.CirclesGridFinderParameters.GridType.enum()',
+    'LogLevel': 'Evision.Utils.Logging.LogLevel.enum()',
 }
