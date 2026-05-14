@@ -119,7 +119,7 @@ jobs:
         id: cache-mix-compile_opencv
         uses: actions/cache@v5
         with:
-          key: compiled-with-ffmpeg${{ env.FFMPEG_VER }}-opencv-${{ env.OPENCV_VER }}-x86_64-apple-darwin-${{ hashFiles('Makefile') }}-${{ hashFiles('py_src/*.py') }}
+          key: compiled-with-ffmpeg${{ env.FFMPEG_VER }}-opencv-${{ env.OPENCV_VER }}-x86_64-apple-darwin-${{ hashFiles('Makefile') }}-${{ hashFiles('py_src/*.py') }}-${{ hashFiles('patches/**') }}
           path: |
             ./_build/${{ env.MIX_ENV }}/lib/evision
             ./c_src/headers.txt
