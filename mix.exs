@@ -512,7 +512,7 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
       {:ok, {{_, 200, _}, _, body}} ->
         {:ok, body}
 
-      {:ok, {{_, status_code, _}, _, body}} ->
+      {:ok, {{_, status_code, _}, _, _body}} ->
         raise RuntimeError, "Cannot download file from #{url}: #{status_code}."
 
       {:error, reason} ->
