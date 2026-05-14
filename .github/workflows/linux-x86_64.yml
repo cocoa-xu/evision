@@ -137,7 +137,9 @@ jobs:
             ./c_src/configuration.private.hpp
 
       - name: Compile OpenCV
-        if: steps.cache-mix-compile_opencv.outputs.cache-hit != 'true'
+        # Also run when the OpenCV source cache missed: a freshly downloaded
+        # source tree is unpatched, and this step is what applies the patches.
+        if: steps.cache-mix-compile_opencv.outputs.cache-hit != 'true' || steps.cache-opencv.outputs.cache-hit != 'true'
         run: |
           export PATH="${PATH}:${HOME}/.elixir/elixir-${ELIXIR_VERSION}/bin"
           mix compile_opencv
@@ -231,7 +233,9 @@ jobs:
             ./c_src/configuration.private.hpp
 
       - name: Compile OpenCV only
-        if: steps.cache-mix-compile_opencv.outputs.cache-hit != 'true'
+        # Also run when the OpenCV source cache missed: a freshly downloaded
+        # source tree is unpatched, and this step is what applies the patches.
+        if: steps.cache-mix-compile_opencv.outputs.cache-hit != 'true' || steps.cache-opencv.outputs.cache-hit != 'true'
         run: |
           mix compile_opencv
 
