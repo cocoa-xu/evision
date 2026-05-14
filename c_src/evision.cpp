@@ -10,6 +10,7 @@
 #include <erl_nif.h>
 #include <limits>
 #include <functional>
+#include <memory>
 
 #if defined(_MSC_VER) && (_MSC_VER > 1800)
 #pragma warning(pop)
@@ -3050,29 +3051,22 @@ static ERL_NIF_TERM evisionCreateButton(ErlNifEnv* env, int argc, const ERL_NIF_
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
-static int convert_to_char(ErlNifEnv *env, ERL_NIF_TERM o, char **dst, const ArgInfo& info)
+static int convert_to_char(ErlNifEnv *env, ERL_NIF_TERM o, std::unique_ptr<std::string>& buf, const ArgInfo& info)
 {
+    if (evision::nif::check_nil(env, o)) {
+        buf.reset();
+        return info.has_default || info.outputarg;
+    }
     std::string str;
     if (evision::nif::get(env, o, str))
     {
-        *dst = (char *)str.c_str();
+        buf.reset(new std::string(std::move(str)));
         return 1;
     }
-    (*dst) = 0;
+    buf.reset();
     return failmsg(env, "Expected single character string for argument '%s'", info.name);
 }
 
-static int convert_to_char(ErlNifEnv *env, ERL_NIF_TERM o, char *dst, const ArgInfo& info)
-{
-    int i32;
-    if (evision::nif::get(env, o, &i32))
-    {
-        *dst = (char)i32;
-        return 1;
-    }
-    (*dst) = 0;
-    return failmsg(env, "Expected a char [-128, 127] '%s'", info.name);
-}
 
 #include "evision_generated_enums.h"
 #define CV_ERL_TYPE(WNAME, NAME, STORAGE, SNAME, _1, _2, MODULE_NAME) CV_ERL_TYPE_DECLARE_DYNAMIC(WNAME, NAME, STORAGE, SNAME, MODULE_NAME)
