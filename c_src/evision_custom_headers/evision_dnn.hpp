@@ -1,5 +1,15 @@
 #ifdef HAVE_OPENCV_DNN
 typedef dnn::DictValue LayerId;
+// `dnn_Net` is referenced by generated wrappers across multiple modules
+// (e.g. cv::TrackerDaSiamRPN/GOTURN/Nano/Vit in main `video`, mcc::CChecker in
+// contrib `mcc`). Upstream OpenCV declares the typedef inside
+// opencv_contrib/modules/mcc/misc/python/pyopencv_cchecker.hpp — i.e. behind
+// both HAVE_OPENCV_DNN AND HAVE_OPENCV_MCC. That's safe upstream because the
+// shipped cv2 Python distribution always has MCC enabled, but evision builds
+// with `EVISION_ENABLE_CONTRIB=false` too, which leaves the typedef undeclared
+// while the (main-OpenCV) tracker wrappers that consume it remain. Move it
+// here so the guard matches when it's needed: whenever DNN is built.
+typedef dnn::Net dnn_Net;
 typedef std::vector<dnn::MatShape> vector_MatShape;
 typedef std::vector<std::vector<dnn::MatShape> > vector_vector_MatShape;
 

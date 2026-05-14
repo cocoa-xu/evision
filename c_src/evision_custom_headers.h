@@ -12,7 +12,6 @@
 #include "evision_custom_headers/evision_objdetect.hpp"
 
 // opencv contrib
-#include "evision_custom_headers/evision_aruco.hpp"
 #include "evision_custom_headers/evision_text.hpp"
 #include "evision_custom_headers/evision_barcode.hpp"
 #include "evision_custom_headers/evision_cchecker.hpp"
