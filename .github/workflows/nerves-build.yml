@@ -77,43 +77,43 @@ jobs:
         include:
           - pair:
               target: rpi0_2
-              otp_version: "27"
+              otp_version: "28"
           - pair:
               target: rpi5
-              otp_version: "27"
+              otp_version: "28"
           - pair:
               target: rpi4
-              otp_version: "27"
+              otp_version: "28"
           - pair:
               target: rpi3a
-              otp_version: "27"
+              otp_version: "28"
           - pair:
               target: rpi3
-              otp_version: "27"
+              otp_version: "28"
           - pair:
               target: rpi2
-              otp_version: "27"
+              otp_version: "28"
           - pair:
               target: rpi0
-              otp_version: "27"
+              otp_version: "28"
           - pair:
               target: rpi
-              otp_version: "27"
+              otp_version: "28"
           - pair:
               target: bbb
-              otp_version: "27"
+              otp_version: "28"
           - pair:
               target: osd32mp1
-              otp_version: "27"
+              otp_version: "28"
           - pair:
               target: npi_imx6ull
-              otp_version: "27"
+              otp_version: "28"
           - pair:
               target: grisp2
-              otp_version: "27"
+              otp_version: "28"
           - pair:
               target: mangopi_mq_pro
-              otp_version: "27"
+              otp_version: "28"
 
     steps:
       - name: Checkout
