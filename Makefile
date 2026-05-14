@@ -114,7 +114,9 @@ ifdef TARGET_GCC_FLAGS
 endif
 
 # evision
-OPENCV_HEADERS_TXT = $(CMAKE_OPENCV_BUILD_DIR)/modules/python_bindings_generator/headers.txt
+# OpenCV 4.13.0 produces one JSON config from CMake regardless of whether
+# contrib is enabled; the contrib variant just adds more entries.
+OPENCV_HEADERS_TXT = $(CMAKE_OPENCV_BUILD_DIR)/modules/python_bindings_generator/gen_python_config.json
 CONFIGURATION_PRIVATE_HPP = $(C_SRC)/configuration.private.hpp
 GENERATED_ELIXIR_SRC_DIR = $(LIB_SRC)/generated
 GENERATED_ERLANG_SRC_DIR = $(SRC)/generated
@@ -216,7 +218,9 @@ $(HEADERS_TXT): $(CONFIGURATION_PRIVATE_HPP)
 		else \
 			make -j$(DEFAULT_JOBS) ; \
 		fi && \
-		cp -f "$(CMAKE_OPENCV_BUILD_DIR)/modules/python_bindings_generator/gen_python_config.json" "$(HEADERS_TXT)" ; \
+		if [ "$(OPENCV_HEADERS_TXT)" != "$(HEADERS_TXT)" ]; then \
+			cp -f "$(OPENCV_HEADERS_TXT)" "$(HEADERS_TXT)" ; \
+		fi \
 	fi
 
 $(C_SRC_HEADERS_TXT): $(HEADERS_TXT)
