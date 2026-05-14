@@ -230,6 +230,19 @@ $(C_SRC_HEADERS_TXT): $(HEADERS_TXT)
 
 $(OPENCV_CONFIG_CMAKE):
 	@cd "$(CMAKE_OPENCV_BUILD_DIR)" && make install
+	@ if [ "$$(uname -s)" = "Darwin" ]; then \
+		echo "[+] post-install: relocating Homebrew-hardcoded dylib deps" ; \
+		for dylib in "$(PRIV_DIR)/lib/"libopencv_*.dylib; do \
+			[ -f "$$dylib" ] || continue ; \
+			otool -L "$$dylib" 2>/dev/null | awk '/\/opt\/homebrew\/opt\/(tesseract|leptonica)\// {print $$1}' \
+				| while read -r dep; do \
+					install_name_tool -change "$$dep" "@rpath/$$(basename "$$dep")" "$$dylib" 2>/dev/null || true ; \
+				done ; \
+			for rpath in /opt/homebrew/lib /usr/local/lib /opt/local/lib; do \
+				install_name_tool -add_rpath "$$rpath" "$$dylib" 2>/dev/null || true ; \
+			done ; \
+		done ; \
+	fi
 
 opencv: $(C_SRC_HEADERS_TXT)
 	@echo > /dev/null
