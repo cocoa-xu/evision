@@ -2,7 +2,7 @@ defmodule Evision.OCRTesseractTest do
   use ExUnit.Case
 
   @moduletag timeout: 120_000
-  @tag :require_tesseract
+  @moduletag :require_tesseract
 
   @test_image Path.join(__DIR__, "testdata/ocr_test.png")
 
