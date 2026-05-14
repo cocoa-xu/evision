@@ -2,6 +2,7 @@ name: nerves-build
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
     paths-ignore:
       - 'assets/**'
       - '*.md'
@@ -54,6 +55,14 @@ concurrency:
 
 jobs:
   mix_compile:
+    # nerves-build is heavy and rarely affected by most PRs, so it is
+    # skipped on PRs by default. Add the `nerves-build` label to a PR to
+    # run it. push/tag/workflow_dispatch events always run it.
+    # The `skip-ci` label skips it everywhere, like the other workflows.
+    if: >-
+      ${{ !contains(github.event.pull_request.labels.*.name, 'skip-ci')
+          && (github.event_name != 'pull_request'
+              || contains(github.event.pull_request.labels.*.name, 'nerves-build')) }}
     runs-on: ubuntu-22.04
     env:
       MIX_ENV: prod

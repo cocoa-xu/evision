@@ -3,7 +3,7 @@ name: linux-cuda
 on:
   workflow_dispatch:
   pull_request:
-    types: [ labeled, synchronize, opened, reopened ]
+    types: [opened, synchronize, reopened, labeled, unlabeled]
     paths-ignore:
       - 'assets/**'
       - '*.md'
@@ -58,7 +58,7 @@ concurrency:
 
 jobs:
   x86_64-gnu-cuda:
-    if: ${{ github.event_name == 'workflow_dispatch' || contains(github.event.pull_request.labels.*.name, 'cuda') }}
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'skip-ci') && (github.event_name == 'workflow_dispatch' || contains(github.event.pull_request.labels.*.name, 'cuda')) }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false

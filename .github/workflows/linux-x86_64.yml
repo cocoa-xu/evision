@@ -2,6 +2,7 @@ name: linux-x86_64
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
     paths-ignore:
       - 'assets/**'
       - '*.md'
@@ -66,6 +67,7 @@ concurrency:
 
 jobs:
   musl:
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'skip-ci') }}
     runs-on: ubuntu-latest
     container: alpine:3.18.12
     env:
@@ -163,6 +165,7 @@ jobs:
           mix test --include require_downloading
 
   gnu:
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'skip-ci') }}
     runs-on: ubuntu-latest
     container: ubuntu:20.04
     env:

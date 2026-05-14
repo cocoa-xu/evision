@@ -3,6 +3,7 @@ name: windows-x86_64
 on:
   workflow_dispatch:
   pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
     paths-ignore:
       - 'assets/**'
       - '*.md'
@@ -54,6 +55,7 @@ concurrency:
 
 jobs:
   mix_test:
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'skip-ci') }}
     runs-on: windows-2022
     env:
       MIX_ENV: test
