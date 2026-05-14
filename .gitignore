@@ -14,6 +14,8 @@ erl_crash.dump
 /c_src/configuration.private.hpp
 /c_src/headers.txt
 /c_src/headers-contrib.txt
+/c_src/gen_python_config.json
+/c_src/gen_python_config-contrib.json
 .DS_Store
 .vscode/
 .idea/
@@ -48,6 +50,11 @@ erl_crash.dump
 /examples/space_shuttle.jpg
 /examples/ssd_mobilenet_v2_coco_2018_03_29**
 /examples/test.png
+
+# misc
+lib-4.11.0
+src-4.11.0
+.golden/
 
 # nvcc
 c_src/modules/evision_cuda.o

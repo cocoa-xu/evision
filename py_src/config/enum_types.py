@@ -1,0 +1,73 @@
+"""Hand-curated mappings from OpenCV enum names to their Evision typespec
+representations. Consumed by `helper.is_enum_type`.
+
+Values are emitted into `@spec` lines and `@type` annotations on the
+Elixir side, so they must be valid Elixir typespec fragments. Most map
+to a generated `Evision.X.Y.enum()` macro; some legacy types map to
+`integer()` because they predate the typed-enum machinery.
+"""
+
+ENUM_TYPES = {
+    'ORB_ScoreType': 'Evision.ORB.ScoreType.enum()',
+    'ORB::ScoreType': 'Evision.ORB.ScoreType.enum()',
+    'dnn_Backend': 'Evision.DNN.Backend.enum()',
+    'dnn_Target': 'Evision.DNN.Target.enum()',
+    'Target': 'Evision.DNN.Target.enum()',
+    'AKAZE_DescriptorType': 'Evision.AKAZE.DescriptorType.enum()',
+    'AKAZE::DescriptorType': 'Evision.AKAZE.DescriptorType.enum()',
+    'KAZE_DiffusivityType': 'Evision.KAZE.DiffusivityType.enum()',
+    'KAZE::DiffusivityType': 'Evision.KAZE.DiffusivityType.enum()',
+    'DescriptorMatcher_MatcherType': 'integer()',
+    'AgastFeatureDetector_DetectorType': 'Evision.AgastFeatureDetector.DetectorType.enum()',
+    'AgastFeatureDetector::DetectorType': 'Evision.AgastFeatureDetector.DetectorType.enum()',
+    'FastFeatureDetector_DetectorType': 'Evision.FastFeatureDetector.DetectorType.enum()',
+    'FastFeatureDetector::DetectorType': 'Evision.FastFeatureDetector.DetectorType.enum()',
+    'InterpolationFlags': 'Evision.InterpolationFlags.enum()',
+    'AccessFlag': 'Evision.AccessFlag.enum()',
+    'WaveCorrectKind': 'Evision.Detail.WaveCorrectKind.enum()',
+    'VideoCaptureAPIs': 'Evision.VideoCaptureAPIs.enum()',
+    'PolishingMethod': 'Evision.PolishingMethod.enum()',
+    'VideoCaptureAPIs': 'Evision.VideoCaptureAPIs.enum()',
+    'DeviceInfo::ComputeMode': 'Evision.CUDA.DeviceInfo.ComputeMode.enum()',
+    'CorrectionLevel': 'Evision.QRCodeEncoder.CorrectionLevel.enum()',
+    'EncodeMode': 'Evision.QRCodeEncoder.EncodeMode.enum()',
+    'LocalOptimMethod': 'Evision.LocalOptimMethod.enum()',
+    'NeighborSearchMethod': 'Evision.NeighborSearchMethod.enum()',
+    'SamplingMethod': 'Evision.SamplingMethod.enum()',
+    'ScoreMethod': 'Evision.ScoreMethod.enum()',
+    'AlgorithmHint': 'Evision.AlgorithmHint.enum()',
+    'HOGDescriptor_HistogramNormType': 'Evision.HOGDescriptor.HistogramNormType.enum()',
+    "VolumeType": 'Evision.KinFu.VolumeType.enum()',
+    "kinfu_VolumeType": 'Evision.KinFu.VolumeType.enum()',
+    "text_decoder_mode": 'Evision.Text.DecoderMode.enum()',
+    "cuda_ConnectedComponentsAlgorithmsTypes": 'Evision.ConnectedComponentsAlgorithmsTypes.enum()',
+    'CCM_TYPE': 'Evision.CCM.CCM_TYPE.enum()',
+    'COLOR_SPACE': 'Evision.CCM.COLOR_SPACE.enum()',
+    'CONST_COLOR': 'Evision.CCM.CONST_COLOR.enum()',
+    'DISTANCE_TYPE': 'Evision.CCM.DISTANCE_TYPE.enum()',
+    'INITIAL_METHOD_TYPE': 'Evision.CCM.INITIAL_METHOD_TYPE.enum()',
+    'LINEAR_TYPE': 'Evision.CCM.LINEAR_TYPE.enum()',
+    'InterpolationType': '(Evision.InterpolationFlags.enum() | Evision.InterpolationMasks.enum())',
+    'CornerRefineMethod': 'Evision.ArUco.CornerRefineMethod.enum()',
+    'PatternPositionType': 'Evision.ArUco.PatternPositionType.enum()',
+    'PredefinedDictionaryType': 'Evision.ArUco.PredefinedDictionaryType.enum()',
+    'DataLayout': 'Evision.DNN.DataLayout.enum()',
+    'ImagePaddingMode': 'Evision.DNN.ImagePaddingMode.enum()',
+    'TYPECHART': 'Evision.MCC.TYPECHART.enum()',
+    'SolverType': 'integer()',
+    'SupportRegionType': 'integer()',
+    'flann_distance_t': 'integer()',
+    'cvflann_flann_algorithm_t': 'integer()',
+    'cvflann::flann_algorithm_t': 'integer()',
+    'cvflann_flann_distance_t': 'integer()',
+    'cvflann::flann_distance_t': 'integer()',
+    # Prefixed forms — the 4.13 hdr_parser exposes enum argtypes with
+    # their parent-namespace prefix; older 4.11 paths kept only the
+    # unprefixed name above.
+    'dnn_DataLayout': 'Evision.DNN.DataLayout.enum()',
+    'dnn_ImagePaddingMode': 'Evision.DNN.ImagePaddingMode.enum()',
+    'aruco_PatternPositionType': 'Evision.ArUco.PatternPositionType.enum()',
+    # New in OpenCV 4.13.
+    'GridType': 'Evision.CirclesGridFinderParameters.GridType.enum()',
+    'LogLevel': 'Evision.Utils.Logging.LogLevel.enum()',
+}

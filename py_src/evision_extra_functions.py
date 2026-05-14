@@ -226,9 +226,8 @@ from_pointer(DevicePointer, DataType, Shape) when is_list(DevicePointer) ->
 
 extra_functions = {
     "CUDA.GpuMat": {
-      "elixir": gpumat_to_pointer_elixir, 
+      "elixir": gpumat_to_pointer_elixir,
       "erlang": gpumat_to_pointer_erlang,
-      "gleam": gpumat_to_pointer_erlang
     }
 }
 

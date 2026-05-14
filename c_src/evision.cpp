@@ -1475,6 +1475,37 @@ bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, unsigned long long & value, co
     return true;
 }
 
+// Mirrors the `long long` ↔ `int64` SFINAE specialisation added in
+// upstream OpenCV 4.13's cv2_convert.hpp. Needed where `long long` is a
+// distinct type from `int64` (32-bit platforms, and some 64-bit ABIs).
+// New 4.13 APIs such as cv::IStreamReader take signed `long long` offsets.
+template<typename T>
+struct Evision_Converter<
+    T,
+    typename std::enable_if< std::is_same<long long, T>::value
+                          && !std::is_same<long long, int64>::value >::type>
+{
+    static inline ERL_NIF_TERM from(ErlNifEnv *env, const long long& value)
+    {
+        return enif_make_int64(env, (ErlNifSInt64)value);
+    }
+
+    static inline bool to(ErlNifEnv *env, ERL_NIF_TERM obj, long long& value, const ArgInfo& info)
+    {
+        if (evision::nif::check_nil(env, obj)) {
+            return info.has_default || info.outputarg;
+        }
+        ErlNifSInt64 i64;
+        if (enif_get_int64(env, obj, &i64))
+        {
+            value = (long long)i64;
+            return true;
+        }
+        failmsg(env, "Argument '%s' is required to be an integer", info.name);
+        return false;
+    }
+};
+
 template<>
 bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, int64_t& value, const ArgInfo& info)
 {

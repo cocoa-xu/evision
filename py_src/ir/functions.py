@@ -3,10 +3,11 @@
 
 import re
 from string import Template
-from func_variant import FuncVariant
+from ir.variants import FuncVariant
 from format_strings import FormatStrings
 import evision_templates as ET
 from helper import *
+from emit.erlang.helpers import map_uppercase_to_erlang_name
 
 
 class FuncInfo(object):
@@ -125,10 +126,6 @@ class FuncInfo(object):
         return f"{name[0:1].lower()}{name[1:]}"
 
     def map_erlang_argname(self, argname):
-        name = self.argname_prefix_re.sub('', argname)
-        return f"{name[0:1].upper()}{name[1:]}"
-
-    def map_gleam_argname(self, argname):
         name = self.argname_prefix_re.sub('', argname)
         return f"{name[0:1].upper()}{name[1:]}"
 
@@ -545,8 +542,6 @@ class FuncInfo(object):
         return code
     
     def get_all_named_args(self):
-        all_args = set()
-        for v in self.variants:
-            for a in v.args:
-                all_args.add(a.name)
-        return list(all_args)
+        # Insertion-ordered dedup: set iteration order varies with PYTHONHASHSEED
+        # and would make generated kwarg-validation lists nondeterministic.
+        return list(dict.fromkeys(a.name for v in self.variants for a in v.args))

@@ -79,8 +79,15 @@ class ErlEnumExpressionGenerator(ast.NodeVisitor):
                 elif node.id == 'CV_SUBMAT_FLAG':
                     self.skip_this = True
                 else:
-                    print(type(node), node.id, "not handled yet")                    
+                    print(type(node), node.id, "not handled yet")
                     sys.exit(1)
+            elif node.id == 'INT_MAX':
+                # OpenCV 4.13 introduces enum sentinels like
+                # `ENUM_LOG_LEVEL_FORCE_INT = INT_MAX` that force the
+                # enum to int width. INT_MAX is a C++ macro the parser
+                # doesn't know about — emit its numeric value directly.
+                self.expression = '2147483647'
+                self.expression_erlang = '2147483647'
             else:
                 self.expression = f'cv_{node.id}()'
                 self.expression_erlang = f'cv_{node.id}()'

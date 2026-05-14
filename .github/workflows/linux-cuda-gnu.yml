@@ -11,7 +11,6 @@ on:
       - 'LICENSE*'
       - 'examples/**'
       - 'nerves/**'
-      - 'gleam_src/**'
       - 'Makefile.win'
       - 'cc_toolchain/**'
       - 'checksum.exs'
@@ -79,7 +78,7 @@ jobs:
       DEBIAN_FRONTEND: noninteractive
       # evision related env vars
       MIX_ENV: test
-      OPENCV_VER: "4.11.0"
+      OPENCV_VER: "4.13.0"
       OTP_VERSION: "25.3"
       ELIXIR_VERSION: "1.16.1"
       EVISION_PREFER_PRECOMPILED: "false"

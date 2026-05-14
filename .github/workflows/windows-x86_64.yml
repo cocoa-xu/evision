@@ -10,7 +10,6 @@ on:
       - 'LICENSE*'
       - 'examples/**'
       - 'nerves/**'
-      - 'gleam_src/**'
       - 'Makefile'
       - 'cc_toolchain/**'
       - 'checksum.exs'
@@ -58,7 +57,7 @@ jobs:
     runs-on: windows-2022
     env:
       MIX_ENV: test
-      OPENCV_VER: "4.11.0"
+      OPENCV_VER: "4.13.0"
       OTP_VERSION: "26"
       ELIXIR_VERSION: "1.16.3"
       EVISION_PREFER_PRECOMPILED: "false"
@@ -112,7 +111,8 @@ jobs:
           key: compiled-opencv-${{ env.OPENCV_VER }}-x86_64-windows-msvc-${{ hashFiles('Makefile.win') }}-${{ hashFiles('py_src/*.py') }}
           path: |
             ./_build/${{ env.MIX_ENV }}/lib/evision
-            ./c_src/headers.txt
+            ./c_src/gen_python_config.json
+            ./c_src/gen_python_config-contrib.json
             ./c_src/configuration.private.hpp
 
       - name: Compile OpenCV

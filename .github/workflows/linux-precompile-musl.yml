@@ -15,7 +15,7 @@ jobs:
     container: alpine:3.18.12
     env:
       MIX_ENV: prod
-      OPENCV_VER: "4.11.0"
+      OPENCV_VER: "4.13.0"
       EVISION_PREFER_PRECOMPILED: "false"
       EVISION_GENERATE_LANG: "erlang,elixir"
     strategy:
@@ -169,7 +169,7 @@ jobs:
   zig_build:
     runs-on: ubuntu-22.04
     env:
-      OPENCV_VER: "4.11.0"
+      OPENCV_VER: "4.13.0"
       MIX_ENV: prod
       ZIG_VERSION: "0.8.0"
       EVISION_PREFER_PRECOMPILED: "false"
