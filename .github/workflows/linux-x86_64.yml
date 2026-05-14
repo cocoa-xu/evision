@@ -136,10 +136,16 @@ jobs:
             ./c_src/headers.txt
             ./c_src/configuration.private.hpp
 
+      - name: Apply OpenCV patches
+        # apply_patch.py is idempotent; run it unconditionally so the OpenCV
+        # source tree is always patched before the build. The Makefile-driven
+        # patch step is gated behind build stamps that the compiled-opencv
+        # cache restores, so it cannot be relied on.
+        shell: bash
+        run: python3 patches/apply_patch.py "$(pwd)/3rd_party/opencv/opencv-${OPENCV_VER}" "${OPENCV_VER}"
+
       - name: Compile OpenCV
-        # Also run when the OpenCV source cache missed: a freshly downloaded
-        # source tree is unpatched, and this step is what applies the patches.
-        if: steps.cache-mix-compile_opencv.outputs.cache-hit != 'true' || steps.cache-opencv.outputs.cache-hit != 'true'
+        if: steps.cache-mix-compile_opencv.outputs.cache-hit != 'true'
         run: |
           export PATH="${PATH}:${HOME}/.elixir/elixir-${ELIXIR_VERSION}/bin"
           mix compile_opencv
@@ -232,10 +238,16 @@ jobs:
             ./c_src/headers.txt
             ./c_src/configuration.private.hpp
 
+      - name: Apply OpenCV patches
+        # apply_patch.py is idempotent; run it unconditionally so the OpenCV
+        # source tree is always patched before the build. The Makefile-driven
+        # patch step is gated behind build stamps that the compiled-opencv
+        # cache restores, so it cannot be relied on.
+        shell: bash
+        run: python3 patches/apply_patch.py "$(pwd)/3rd_party/opencv/opencv-${OPENCV_VER}" "${OPENCV_VER}"
+
       - name: Compile OpenCV only
-        # Also run when the OpenCV source cache missed: a freshly downloaded
-        # source tree is unpatched, and this step is what applies the patches.
-        if: steps.cache-mix-compile_opencv.outputs.cache-hit != 'true' || steps.cache-opencv.outputs.cache-hit != 'true'
+        if: steps.cache-mix-compile_opencv.outputs.cache-hit != 'true'
         run: |
           mix compile_opencv
 
