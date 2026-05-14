@@ -2,6 +2,17 @@
 
 #include "opencv2/objdetect.hpp"
 
+// `vector_Dictionary` is the alias the generated wrapper uses for
+// `std::vector<cv::aruco::Dictionary>`. cv::aruco::Dictionary lives in the
+// main `objdetect` module (since 4.11), and ArucoDetector — which consumes
+// the vector overloads — is also in main `objdetect`. Upstream OpenCV
+// declares this typedef in cv2.cpp under `#ifdef HAVE_OPENCV_OBJDETECT`;
+// match that guard here so the typedef is available even when
+// `EVISION_ENABLE_CONTRIB=false` (HAVE_OPENCV_ARUCO undefined). Previously
+// it lived in evision_aruco.hpp under HAVE_OPENCV_ARUCO and broke
+// non-contrib builds.
+typedef std::vector<aruco::Dictionary> vector_Dictionary;
+
 // NativeByteArray models OpenCV's NativeByteArray (defined in upstream
 // pyopencv_objdetect.hpp) — a thin wrapper around std::string used by
 // QRCodeDetector::detectAndDecodeBytes (new in OpenCV 4.13.0) to return

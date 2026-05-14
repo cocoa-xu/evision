@@ -18,7 +18,6 @@ struct evisionVecConverter<Ptr<cv::mcc::CChecker>>
     }
 };
 typedef std::vector<cv::Ptr<cv::mcc::CChecker>> vector_Ptr_CChecker;
-typedef dnn::Net dnn_Net;
 
 #endif  // HAVE_OPENCV_MCC
 #endif  // HAVE_OPENCV_DNN
