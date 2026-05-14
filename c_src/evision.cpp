@@ -3057,6 +3057,17 @@ static int convert_to_char(ErlNifEnv *env, ERL_NIF_TERM o, std::unique_ptr<std::
         buf.reset();
         return info.has_default || info.outputarg;
     }
+    // This converter backs both `char` and `c_string` argument types:
+    //   - `char` args (e.g. VideoWriter.fourcc's c1..c4) arrive as an
+    //     integer char code; store it as a one-character std::string so
+    //     the `char` call site can do buf->at(0).
+    //   - `c_string` args arrive as a string/binary; store it verbatim.
+    int i32;
+    if (evision::nif::get(env, o, &i32))
+    {
+        buf.reset(new std::string(1, static_cast<char>(i32)));
+        return 1;
+    }
     std::string str;
     if (evision::nif::get(env, o, str))
     {
@@ -3064,7 +3075,7 @@ static int convert_to_char(ErlNifEnv *env, ERL_NIF_TERM o, std::unique_ptr<std::
         return 1;
     }
     buf.reset();
-    return failmsg(env, "Expected single character string for argument '%s'", info.name);
+    return failmsg(env, "Expected an integer char code or a string for argument '%s'", info.name);
 }
 
 
