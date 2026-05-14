@@ -43,6 +43,18 @@ The following environment variables can be set based on your needs.
 
 (Note that precompiled binaries do not use FFmpeg. If you'd like to use FFmpeg, please compile from source (please see instructions in the next section) and set corresponding environment variables. We're considering this option at the moment.)
 
+#### macOS: install Tesseract
+
+The precompiled macOS binaries link against [Tesseract](https://github.com/tesseract-ocr/tesseract) (and its dependency Leptonica) for OpenCV's `text`/OCR module. Tesseract is **not bundled** with the precompiled tarball, so it must be present on your system or `evision.so` will fail to load with a `Library not loaded: ...libtesseract.5.dylib` error — even if you never call any OCR functions, because dyld resolves the dependency graph eagerly at load time.
+
+Install with Homebrew:
+
+```sh
+brew install tesseract
+```
+
+evision searches `/opt/homebrew/lib`, `/usr/local/lib`, and `/opt/local/lib` for the Tesseract dylib at load time, so Homebrew (both Apple Silicon and Intel) and MacPorts work out of the box. For Nix or other custom prefixes, set `DYLD_LIBRARY_PATH` to the directory containing `libtesseract.5.dylib` before starting your application. See [#287](https://github.com/cocoa-xu/evision/issues/287) for details.
+
 <details>
 
 <summary>Advanced Options</summary>
