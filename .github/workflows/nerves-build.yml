@@ -68,8 +68,8 @@ jobs:
       MIX_ENV: prod
       NERVES_PROJ_NAME: nerves_evision
       OPENCV_VER: "4.13.0"
-      NERVES_LIVEBOOK_VER: "v0.14.0"
-      ELIXIR_VERSION: "1.17.0"
+      NERVES_LIVEBOOK_VER: "v0.19.0"
+      ELIXIR_VERSION: "1.18.0"
       EVISION_PREFER_PRECOMPILED: "false"
 
     strategy:
@@ -161,8 +161,8 @@ jobs:
       - name: Make a nerves project
         run: |
           mix archive.install hex nerves_bootstrap --force || true
-          wget -k https://github.com/fwup-home/fwup/releases/download/v1.11.0/fwup_1.11.0_amd64.deb -O ./fwup_1.11.0_amd64.deb
-          sudo dpkg -i ./fwup_1.11.0_amd64.deb
+          wget -k https://github.com/fwup-home/fwup/releases/download/v1.16.0/fwup_1.16.0_amd64.deb -O ./fwup_1.16.0_amd64.deb
+          sudo dpkg -i ./fwup_1.16.0_amd64.deb
           cd ../
           git clone https://github.com/livebook-dev/nerves_livebook.git
           cd nerves_livebook
