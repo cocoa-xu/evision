@@ -80,7 +80,7 @@ jobs:
         id: cache-mix-compile_opencv
         uses: actions/cache@v5
         with:
-          key: precompiled-opencv-${{ env.OPENCV_VER }}-${{ runner.os }}-x86_64-linux-musl-${{ hashFiles('cc_toolchain/**') }}-${{ hashFiles('Makefile') }}-${{ hashFiles('py_src/*.py') }}
+          key: precompiled-opencv-${{ env.OPENCV_VER }}-${{ runner.os }}-x86_64-linux-musl-${{ hashFiles('cc_toolchain/**') }}-${{ hashFiles('Makefile') }}-${{ hashFiles('py_src/*.py') }}-${{ hashFiles('patches/**') }}
           path: |
             ./_build/${{ env.MIX_ENV }}/lib/evision
             ./c_src/headers.txt
@@ -240,7 +240,7 @@ jobs:
         id: cache-mix-compile_opencv
         uses: actions/cache@v5
         with:
-          key: precompiled-opencv-${{ env.OPENCV_VER }}-${{ matrix.pair.arch }}-${{ hashFiles('cc_toolchain/*linux-musl.cmake') }}-${{ hashFiles('cc_toolchain/zig.toolchain.cmake') }}-${{ hashFiles('Makefile') }}-${{ hashFiles('py_src/*.py') }}
+          key: precompiled-opencv-${{ env.OPENCV_VER }}-${{ matrix.pair.arch }}-${{ hashFiles('cc_toolchain/*linux-musl.cmake') }}-${{ hashFiles('cc_toolchain/zig.toolchain.cmake') }}-${{ hashFiles('Makefile') }}-${{ hashFiles('py_src/*.py') }}-${{ hashFiles('patches/**') }}
           path: |
             ./_build/${{ env.MIX_ENV }}/lib/evision
             ./c_src/headers.txt

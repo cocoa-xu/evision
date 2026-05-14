@@ -108,7 +108,7 @@ jobs:
         id: cache-mix-compile
         uses: actions/cache@v5
         with:
-          key: compiled-opencv-${{ env.OPENCV_VER }}-x86_64-windows-msvc-${{ hashFiles('Makefile.win') }}-${{ hashFiles('py_src/*.py') }}
+          key: compiled-opencv-${{ env.OPENCV_VER }}-x86_64-windows-msvc-${{ hashFiles('Makefile.win') }}-${{ hashFiles('py_src/*.py') }}-${{ hashFiles('patches/**') }}
           path: |
             ./_build/${{ env.MIX_ENV }}/lib/evision
             ./c_src/gen_python_config.json
