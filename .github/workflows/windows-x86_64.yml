@@ -96,7 +96,7 @@ jobs:
         id: cache-opencv
         uses: actions/cache@v5
         with:
-          key: opencv-${{ env.OPENCV_VER }}
+          key: opencv-${{ env.OPENCV_VER }}-${{ hashFiles('patches/**') }}
           path: |
             ./3rd_party
 
@@ -105,6 +105,7 @@ jobs:
         shell: bash
         run: |
           bash scripts/download_opencv.sh ${OPENCV_VER} 3rd_party/cache 3rd_party/opencv/
+          bash scripts/download_opencv_contrib.sh ${OPENCV_VER} 3rd_party/cache 3rd_party/opencv/
 
       - name: Cache compiled OpenCV
         id: cache-mix-compile
@@ -116,6 +117,14 @@ jobs:
             ./c_src/gen_python_config.json
             ./c_src/gen_python_config-contrib.json
             ./c_src/configuration.private.hpp
+
+      - name: Apply OpenCV patches
+        # apply_patch.py is idempotent; run it unconditionally so the OpenCV
+        # source tree is always patched before the build. The Makefile-driven
+        # patch step is gated behind build stamps that the compiled-opencv
+        # cache restores, so it cannot be relied on.
+        shell: bash
+        run: python3 patches/apply_patch.py "$(pwd)/3rd_party/opencv/opencv-${OPENCV_VER}" "${OPENCV_VER}"
 
       - name: Compile OpenCV
         if: steps.cache-mix-compile.outputs.cache-hit != 'true'
