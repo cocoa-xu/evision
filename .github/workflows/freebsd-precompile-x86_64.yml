@@ -112,7 +112,7 @@ jobs:
             fi
 
             cd "${ROOT_DIR}"
-            true;true &&
+            true;true&&\
             bash ./build.sh
 
       - uses: softprops/action-gh-release@v2
