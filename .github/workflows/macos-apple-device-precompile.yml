@@ -1,9 +1,6 @@
 name: apple-device-precompile
 
 on:
-  push:
-    tags:
-      - 'v*'
   workflow_dispatch:
     inputs:
       release_version:
