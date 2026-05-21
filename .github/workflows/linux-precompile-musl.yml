@@ -1,6 +1,10 @@
 name: linux-precompile-musl
 
 on:
+  workflow_dispatch:
+    inputs:
+      version:
+        required: true
   push:
     tags:
       - 'v*'
@@ -8,6 +12,9 @@ on:
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+
+permissions:
+  contents: write
 
 jobs:
   alpine:
@@ -29,6 +36,17 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+
+      - name: Get tagged version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            export INPUT_VERSION="${{ github.event.inputs.version }}"
+            export TAGGED_VERSION="${INPUT_VERSION##*v}"
+          else
+            export TAGGED_VERSION="${GITHUB_REF##*/v}"
+          fi
+          echo "tag=${TAGGED_VERSION}" >> $GITHUB_OUTPUT
 
       - name: Install system dependencies
         run: |
@@ -107,7 +125,7 @@ jobs:
 
       - name: Create precompiled library (without contrib modules)
         run: |
-          export PKG_NAME=evision-nif_${{ matrix.pair.NIF_VERSION }}-x86_64-linux-musl-${GITHUB_REF##*/v}
+          export PKG_NAME=evision-nif_${{ matrix.pair.NIF_VERSION }}-x86_64-linux-musl-${{ steps.version.outputs.tag }}
           mkdir -p "${PKG_NAME}"
           export PRIV_DIR="$(pwd)/_build/${MIX_ENV}/lib/evision/priv"
           mv "${PRIV_DIR}/include" /tmp/include
@@ -144,7 +162,7 @@ jobs:
 
       - name: Create precompiled library (with contrib modules)
         run: |
-          export PKG_NAME=evision-nif_${{ matrix.pair.NIF_VERSION }}-x86_64-linux-musl-contrib-${GITHUB_REF##*/v}
+          export PKG_NAME=evision-nif_${{ matrix.pair.NIF_VERSION }}-x86_64-linux-musl-contrib-${{ steps.version.outputs.tag }}
           mkdir -p "${PKG_NAME}"
           export PRIV_DIR="$(pwd)/_build/${MIX_ENV}/lib/evision/priv"
           mv "${PRIV_DIR}/include" /tmp/include
@@ -162,6 +180,7 @@ jobs:
 
       - uses: softprops/action-gh-release@v2
         with:
+          tag_name: v${{ steps.version.outputs.tag }}
           files: |
             artifacts/*.tar.gz
             artifacts/*.sha256
@@ -192,6 +211,17 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+
+      - name: Get tagged version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            export INPUT_VERSION="${{ github.event.inputs.version }}"
+            export TAGGED_VERSION="${INPUT_VERSION##*v}"
+          else
+            export TAGGED_VERSION="${GITHUB_REF##*/v}"
+          fi
+          echo "tag=${TAGGED_VERSION}" >> $GITHUB_OUTPUT
 
       - name: Install OTP and Elixir
         uses: erlef/setup-beam@v1
@@ -273,7 +303,7 @@ jobs:
 
       - name: Create precompiled library (without contrib modules)
         run: |
-          export PKG_NAME=evision-nif_${{ matrix.pair.NIF_VERSION }}-${{ matrix.pair.arch }}-${GITHUB_REF##*/v}
+          export PKG_NAME=evision-nif_${{ matrix.pair.NIF_VERSION }}-${{ matrix.pair.arch }}-${{ steps.version.outputs.tag }}
           mkdir -p "${PKG_NAME}"
           export PRIV_DIR="$(pwd)/_build/${MIX_ENV}/lib/evision/priv"
           mv "${PRIV_DIR}/include" /tmp/include
@@ -316,7 +346,7 @@ jobs:
 
       - name: Create precompiled library (with contrib modules)
         run: |
-          export PKG_NAME=evision-nif_${{ matrix.pair.NIF_VERSION }}-${{ matrix.pair.arch }}-contrib-${GITHUB_REF##*/v}
+          export PKG_NAME=evision-nif_${{ matrix.pair.NIF_VERSION }}-${{ matrix.pair.arch }}-contrib-${{ steps.version.outputs.tag }}
           mkdir -p "${PKG_NAME}"
           export PRIV_DIR="$(pwd)/_build/${MIX_ENV}/lib/evision/priv"
           mv "${PRIV_DIR}/include" /tmp/include
@@ -334,6 +364,7 @@ jobs:
 
       - uses: softprops/action-gh-release@v2
         with:
+          tag_name: v${{ steps.version.outputs.tag }}
           files: |
             artifacts/*.tar.gz
             artifacts/*.sha256
