@@ -519,10 +519,21 @@ static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Mat& m, const ArgInfo& in
     if (enif_get_resource(env, o, evision_res<cv::Mat *>::type, (void **)&in_res))
     {
         if (in_res->val) {
-            // should we copy the matrix?
-            // probably yes so that the original matrix is not modified
-            // because erlang/elixir users would expect that the original matrix to be unchanged
-            in_res->val->copyTo(m);
+            // By default the source matrix is deep-copied, so the caller's
+            // (immutable) matrix is never modified -- even if this NIF writes
+            // to the argument in place.
+            //
+            // `input_only` is set only by generated bindings, where the matrix
+            // is passed to OpenCV as a const InputArray and never written. For
+            // those we can share the data through a refcounted shallow copy and
+            // skip the deep copy. The `in_buf` check keeps zero-copy
+            // (binary-backed) matrices on the deep-copy path: their data is
+            // owned by an Erlang binary, so a shared view could outlive it.
+            if (info.input_only && in_res->in_buf == nullptr) {
+                m = *in_res->val;
+            } else {
+                in_res->val->copyTo(m);
+            }
             return true;
         }
         return false;
