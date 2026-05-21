@@ -47,18 +47,26 @@ if __name__ == "__main__":
             # etc.
             with open(args.headers, 'r') as f:
                 cfg = json.load(f)
-            srcfiles = cfg['headers']
+            srcfiles = list(cfg['headers'])
             preprocessor_definitions = cfg.get('preprocessor_definitions', {})
         else:
             srcfiles = []
             with open(args.headers, 'r') as f:
                 for l in f.readlines():
-                    l = l.strip()
-                    srcfiles.append(l)
-                    if l.endswith("modules/flann/include/opencv2/flann.hpp"):
-                        flann_defines = l.replace("modules/flann/include/opencv2/flann.hpp", "modules/flann/include/opencv2/flann/defines.h")
-                        if os.path.exists(flann_defines):
-                            srcfiles.append(flann_defines)
+                    srcfiles.append(l.strip())
+
+        # OpenCV's header list omits modules/flann/include/opencv2/flann/defines.h,
+        # but the cvflann enums (flann_algorithm_t, flann_distance_t,
+        # flann_centers_init_t) live there. pipeline.add_const() relies on
+        # them to emit Evision.Flann.Algorithm, Evision.Flann.CentersInit,
+        # and friends, so inject the file explicitly when flann.hpp is in
+        # the list.
+        for l in list(srcfiles):
+            if l.endswith("modules/flann/include/opencv2/flann.hpp"):
+                flann_defines = l.replace("modules/flann/include/opencv2/flann.hpp", "modules/flann/include/opencv2/flann/defines.h")
+                if os.path.exists(flann_defines) and flann_defines not in srcfiles:
+                    srcfiles.append(flann_defines)
+                break
     lang = []
     if len(args.lang) >= 5:
         lang = list(set([l.lower().strip() for l in args.lang.split(",")]))
