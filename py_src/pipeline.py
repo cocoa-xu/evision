@@ -41,15 +41,6 @@ from fixes import (
 from config.modules import NAMESPACE_TO_ELIXIR_MODULE
 
 
-# Enum types whose evision_to/evision_from converters are hand-written in
-# evision_custom_headers/. The generator must not emit CV_ERL_*_ENUM for these,
-# or the translation unit gets two definitions of the same converter.
-HAND_WRITTEN_ENUM_CONVERTERS = (
-    "cvflann_flann_algorithm_t",
-    "cvflann_flann_distance_t",
-)
-
-
 if sys.version_info[0] >= 3:
     from io import StringIO
 else:
@@ -419,13 +410,6 @@ class Pipeline(object):
 
         wname = normalize_class_name(enum_name)
         cname = enum_name.replace(".", "::")
-
-        # These enum types already have hand-written evision_to/evision_from
-        # specialisations in evision_custom_headers/evision_flann.hpp. OpenCV
-        # 4.13 started exposing them to the header parser, so emitting
-        # CV_ERL_*_ENUM for them here too would be a redefinition.
-        if wname in HAND_WRITTEN_ENUM_CONVERTERS:
-            return
 
         code = ""
         if re.sub(r"^cv\.", "", enum_name) != wname:
