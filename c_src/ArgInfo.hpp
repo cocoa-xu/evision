@@ -9,6 +9,7 @@ private:
     static const uint32_t arg_pathlike_flag      = 0x4;
     static const uint32_t arg_nd_mat_flag        = 0x8;
     static const uint32_t arg_has_default_flag   = 0x10;
+    static const uint32_t arg_input_only_flag    = 0x20;
 
 public:
     const char* name;
@@ -17,6 +18,11 @@ public:
     bool pathlike;
     bool nd_mat;
     bool has_default; // <- added in evision
+    // Pure read-only input. Set only by generated bindings, where the source
+    // matrix is guaranteed to be handed to OpenCV as a const InputArray. It
+    // lets converters share the source buffer instead of deep-copying it.
+    // Hand-written modules leave this unset and keep the safe copying default.
+    bool input_only;  // <- added in evision
     // more fields may be added if necessary
 
     ArgInfo(const char* name_, uint32_t arg_) :
@@ -25,7 +31,8 @@ public:
         arithm_op_src((arg_ & arg_arithm_op_src_flag) != 0),
         pathlike((arg_ & arg_pathlike_flag) != 0),
         nd_mat((arg_ & arg_nd_mat_flag) != 0),
-        has_default((arg_ & arg_has_default_flag) != 0) {}
+        has_default((arg_ & arg_has_default_flag) != 0),
+        input_only((arg_ & arg_input_only_flag) != 0) {}
 
 private:
     ArgInfo(const ArgInfo&) = delete;

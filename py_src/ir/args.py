@@ -97,4 +97,7 @@ class ArgInfo(object):
         arg += 0x04 if self.pathlike else 0x0
         arg += 0x08 if self.nd_mat else 0x0
         arg += 0x10 if has_default else 0x0
+        # Pure read-only input: handed to OpenCV as a const InputArray, so the
+        # converter may share the source buffer instead of deep-copying it.
+        arg += 0x20 if not self.outputarg else 0x0
         return "ArgInfo(\"%s\", %d)" % (self.name, arg)

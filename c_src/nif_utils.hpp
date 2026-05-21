@@ -32,7 +32,7 @@ namespace evision
       unsigned char * ptr;
       size_t len = strlen(msg);
       if ((ptr = enif_make_new_binary(env, len, &reason)) != nullptr) {
-          strcpy((char *)ptr, msg);
+          memcpy(ptr, msg, len);
           return enif_make_tuple2(env, atom_error, reason);
       } else {
           ERL_NIF_TERM msg_term = enif_make_string(env, msg, ERL_NIF_LATIN1);
