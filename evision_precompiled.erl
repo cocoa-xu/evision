@@ -7,6 +7,7 @@
 -define(EVISION_SO_FILE, "priv/evision.so").
 -define(EVISION_DLL_FILE, "priv/evision.dll").
 -define(ERLANG_GENERATED_SOURCE_DIR, "src/generated").
+-define(PRECOMPILED_LOCK_STALE_SECONDS, 3600).
 
 -include_lib("kernel/include/file.hrl").
 
@@ -187,6 +188,38 @@ cache_path(Filename, ChecksumAlgo, GetChecksumIfExists) ->
             {FullPath, nil, nil}
     end.
 
+precompiled_lock_dir(CacheDir) ->
+    filename:join([CacheDir, "evision-precompiled.lock"]).
+
+stale_precompiled_lock(LockDir) ->
+    case file:read_file_info(LockDir) of
+        {ok, #file_info{mtime = MTime}} ->
+            Now = calendar:datetime_to_gregorian_seconds(calendar:local_time()),
+            Modified = calendar:datetime_to_gregorian_seconds(MTime),
+            Now - Modified > ?PRECOMPILED_LOCK_STALE_SECONDS;
+        _ ->
+            false
+    end.
+
+with_precompiled_lock(LockDir, Fun) ->
+    case file:make_dir(LockDir) of
+        ok ->
+            try Fun()
+            after file:del_dir_r(LockDir)
+            end;
+        {error, eexist} ->
+            case stale_precompiled_lock(LockDir) of
+                true ->
+                    file:del_dir_r(LockDir);
+                false ->
+                    timer:sleep(1000)
+            end,
+            with_precompiled_lock(LockDir, Fun);
+        {error, Reason} ->
+            io:fwrite("[ERROR] Failed to acquire precompiled install lock ~s: ~p~n", [LockDir, Reason]),
+            exit(failed)
+    end.
+
 download_precompiled_binary(URL, CacheTo, ChecksumAlgo) ->
     case do_download(URL) of
         {ok, Body} ->
@@ -365,56 +398,67 @@ install_precompiled_binary_if_available() ->
         false ->
             case is_precompiled_binary_available() of
                 {true, Name, TarballFilename, TarballURL, ExpectedAlgo, ExpectedChecksum} ->
-                    case download(TarballURL, TarballFilename, ExpectedAlgo, ExpectedChecksum, false) of
-                        {_, _, nil} ->
-                            exit(failed);
-                        {TarballFileFullPath, _, ExpectedChecksum} ->
-                            file:del_dir_r("tmp_priv"),
-                            Status = 
-                                case erl_tar:extract(TarballFileFullPath, [compressed, {cwd, "tmp_priv"}]) of
-                                    ok ->
-                                        file:del_dir_r(?ERLANG_GENERATED_SOURCE_DIR),
-                                        file:del_dir_r("priv"),
-                                        TmpSrc = filename:join(["tmp_priv", Name, "erlang_generated"]),
-                                        TmpPriv = filename:join(["tmp_priv", Name, "priv"]),
-                                        io:fwrite("[INFO] Moving generated Erlang binding files: ~p => ~p~n", [TmpSrc, ?ERLANG_GENERATED_SOURCE_DIR]),
-                                        SrcRenameOk = file:rename(TmpSrc, ?ERLANG_GENERATED_SOURCE_DIR),
-                                        case SrcRenameOk of
-                                            {error, SrcError} ->
-                                                io:fwrite("[ERROR] Failed to move generated Erlang binding files: ~p~n", [SrcError]);
-                                            _ ->
-                                                ok
-                                        end,
-                                        io:fwrite("[INFO] Moving priv directory: ~p => ~p~n", [TmpSrc, "priv"]),
-                                        PrivRenameOk = file:rename(TmpPriv, "priv"),
-                                        case PrivRenameOk of
-                                            {error, PrivError} ->
-                                                io:fwrite("[ERROR] Failed to move priv directory: ~p~n", [PrivError]);
-                                            _ ->
-                                                ok
-                                        end,
-                                        case {SrcRenameOk, PrivRenameOk} of
-                                            {ok, ok} ->
-                                                ok;
-                                            _ ->
-                                                failed
-                                        end;
-                                    Error ->
-                                        io:fwrite("[ERROR] Failed to unarchive tarball file: ~s, error: ~p~n", [TarballFileFullPath, Error]),
-                                        failed
-                                end,
-                            file:del_dir_r("tmp_priv"),
-                            case Status of 
-                                failed ->
-                                    exit(failed);
-                                _ ->
-                                    ok
-                            end
-                    end;
+                    {CacheDir, _} = get_cached_path(TarballFilename),
+                    with_precompiled_lock(precompiled_lock_dir(CacheDir), fun() ->
+                        install_precompiled_binary_if_needed(Name, TarballFilename, TarballURL, ExpectedAlgo, ExpectedChecksum)
+                    end);
                 What ->
                     io:fwrite("[INFO] Cannot find precompiled binary: ~p~n", [What]),
                     exit(failed)
             end;
         true ->
             ok
+    end.
+
+install_precompiled_binary_if_needed(Name, TarballFilename, TarballURL, ExpectedAlgo, ExpectedChecksum) ->
+    case is_already_installed() of
+        true ->
+            ok;
+        false ->
+            case download(TarballURL, TarballFilename, ExpectedAlgo, ExpectedChecksum, false) of
+                {_, _, nil} ->
+                    exit(failed);
+                {TarballFileFullPath, _, ExpectedChecksum} ->
+                    file:del_dir_r("tmp_priv"),
+                    Status =
+                        case erl_tar:extract(TarballFileFullPath, [compressed, {cwd, "tmp_priv"}]) of
+                            ok ->
+                                file:del_dir_r(?ERLANG_GENERATED_SOURCE_DIR),
+                                file:del_dir_r("priv"),
+                                TmpSrc = filename:join(["tmp_priv", Name, "erlang_generated"]),
+                                TmpPriv = filename:join(["tmp_priv", Name, "priv"]),
+                                io:fwrite("[INFO] Moving generated Erlang binding files: ~p => ~p~n", [TmpSrc, ?ERLANG_GENERATED_SOURCE_DIR]),
+                                SrcRenameOk = file:rename(TmpSrc, ?ERLANG_GENERATED_SOURCE_DIR),
+                                case SrcRenameOk of
+                                    {error, SrcError} ->
+                                        io:fwrite("[ERROR] Failed to move generated Erlang binding files: ~p~n", [SrcError]);
+                                    _ ->
+                                        ok
+                                end,
+                                io:fwrite("[INFO] Moving priv directory: ~p => ~p~n", [TmpPriv, "priv"]),
+                                PrivRenameOk = file:rename(TmpPriv, "priv"),
+                                case PrivRenameOk of
+                                    {error, PrivError} ->
+                                        io:fwrite("[ERROR] Failed to move priv directory: ~p~n", [PrivError]);
+                                    _ ->
+                                        ok
+                                end,
+                                case {SrcRenameOk, PrivRenameOk} of
+                                    {ok, ok} ->
+                                        ok;
+                                    _ ->
+                                        failed
+                                end;
+                            Error ->
+                                io:fwrite("[ERROR] Failed to unarchive tarball file: ~s, error: ~p~n", [TarballFileFullPath, Error]),
+                                failed
+                        end,
+                    file:del_dir_r("tmp_priv"),
+                    case Status of
+                        failed ->
+                            exit(failed);
+                        _ ->
+                            ok
+                    end
+            end
     end.
