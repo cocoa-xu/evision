@@ -36,7 +36,7 @@ static ERL_NIF_TERM evision_cv_mat_from_binary(ErlNifEnv *env, int argc, const E
                 // validate binary data
                 int type = 0;
                 if (!get_binary_type(t, l, img_channels, type)) return evision::nif::error(env, "not implemented for the given type");
-                size_t declared_size = img_rows * img_cols * img_channels * (l/8);
+                size_t declared_size = (size_t)img_rows * img_cols * img_channels * (l / 8);
                 if (declared_size != data.size) return evision::nif::error(env, "size mismatch");
 
                 evision_res<cv::Mat *> * res;

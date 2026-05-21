@@ -22,7 +22,7 @@ ERL_NIF_TERM atom(ErlNifEnv *env, const char *msg) {
 ERL_NIF_TERM error(ErlNifEnv *env, const char *msg) {
     ERL_NIF_TERM error_atom = atom(env, "error");
     ERL_NIF_TERM msg_term = enif_make_string(env, msg, ERL_NIF_LATIN1);
-    return enif_make_tuple2(env, atom, msg_term);
+    return enif_make_tuple2(env, error_atom, msg_term);
 }
 
 ERL_NIF_TERM ok(ErlNifEnv *env) {

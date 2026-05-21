@@ -99,7 +99,7 @@ template<>                                                                      
 bool evision_to(ErlNifEnv *env, ERL_NIF_TERM dst, TYPE& src, const ArgInfo& info)                     \
 {                                                                                                     \
     int i32;                                                                                          \
-    if (!evision::nif::get(env, dst, &i32)) {                                                         \
+    if (evision::nif::get(env, dst, &i32)) {                                                          \
         src = static_cast<TYPE>(i32);                                                                 \
         return true;                                                                                  \
     } else {                                                                                          \
