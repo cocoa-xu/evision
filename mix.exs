@@ -7,7 +7,18 @@ defmodule Evision.MixProject.Metadata do
   def opencv_version, do: "4.13.0"
   # only means compatible. need to write more tests
   def compatible_opencv_versions,
-    do: ["4.5.3", "4.5.4", "4.5.5", "4.6.0", "4.7.0", "4.8.0", "4.9.0", "4.10.0", "4.11.0", "4.13.0"]
+    do: [
+      "4.5.3",
+      "4.5.4",
+      "4.5.5",
+      "4.6.0",
+      "4.7.0",
+      "4.8.0",
+      "4.9.0",
+      "4.10.0",
+      "4.11.0",
+      "4.13.0"
+    ]
 
   def default_cuda_version, do: {"12", "9"}
 
@@ -29,6 +40,8 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
   use Mix.Task
   require Logger
   alias Evision.MixProject.Metadata
+
+  @precompiled_lock_stale_seconds 3600
 
   @available_targets [
     "aarch64-apple-darwin",
@@ -604,6 +617,44 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
     cache_dir
   end
 
+  defp precompiled_lock_dir(cache_dir) do
+    Path.join(cache_dir, "evision-precompiled.lock")
+  end
+
+  defp with_precompiled_lock(lock_dir, fun) do
+    case File.mkdir(lock_dir) do
+      :ok ->
+        try do
+          fun.()
+        after
+          File.rm_rf(lock_dir)
+        end
+
+      {:error, :eexist} ->
+        if stale_precompiled_lock?(lock_dir) do
+          File.rm_rf(lock_dir)
+        else
+          Process.sleep(1000)
+        end
+
+        with_precompiled_lock(lock_dir, fun)
+
+      {:error, reason} ->
+        raise RuntimeError,
+              "Failed to acquire precompiled install lock #{lock_dir}: #{inspect(reason)}"
+    end
+  end
+
+  defp stale_precompiled_lock?(lock_dir) do
+    with {:ok, %File.Stat{mtime: mtime}} <- File.stat(lock_dir) do
+      now = :calendar.datetime_to_gregorian_seconds(:calendar.local_time())
+      modified = :calendar.datetime_to_gregorian_seconds(mtime)
+      now - modified > @precompiled_lock_stale_seconds
+    else
+      _ -> false
+    end
+  end
+
   @checksum_algo :sha256
   def checksum_algo, do: @checksum_algo
 
@@ -685,109 +736,111 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
     evision_so_file = Path.join([app_priv(), evision_so_file])
     windows_fix_so_file = Path.join([app_priv(), windows_fix_so_file])
 
-    # first we check if we already have the NIF file
-    # if not, then we defintely need to copy it (and other files) from somewhere
-    needs_copy = !File.exists?(evision_so_file) or !File.exists?(windows_fix_so_file)
+    with_precompiled_lock(precompiled_lock_dir(cache_dir), fn ->
+      # first we check if we already have the NIF file
+      # if not, then we defintely need to copy it (and other files) from somewhere
+      needs_copy = !File.exists?(evision_so_file) or !File.exists?(windows_fix_so_file)
 
-    if needs_copy do
-      # to copy the nif file and other files
-      # we first check if they are cached in the cache dir
-      if !File.dir?(unarchive_dest_dir) do
-        # if `unarchive_dest_dir` does not exists
-        # then perhaps we need to extract these files from the precompiled binary tarball
-        #
-        # to extract files from the tarball
-        # we check if the tarball is cached in the cache dir
-        {needs_download, needs_unarchive} =
-          if File.exists?(cache_file) do
-            # and it has to be a regular file
-            if File.regular?(cache_file) do
-              # of course we have to compute its checksum
-              {:ok, algo, cache_file_checksum} = checksum(cache_file)
+      if needs_copy do
+        # to copy the nif file and other files
+        # we first check if they are cached in the cache dir
+        if !File.dir?(unarchive_dest_dir) do
+          # if `unarchive_dest_dir` does not exists
+          # then perhaps we need to extract these files from the precompiled binary tarball
+          #
+          # to extract files from the tarball
+          # we check if the tarball is cached in the cache dir
+          {needs_download, needs_unarchive} =
+            if File.exists?(cache_file) do
+              # and it has to be a regular file
+              if File.regular?(cache_file) do
+                # of course we have to compute its checksum
+                {:ok, algo, cache_file_checksum} = checksum(cache_file)
 
-              Logger.info(
-                "Precompiled binary tarball cached at #{cache_file}, #{algo}=#{cache_file_checksum}"
-              )
-
-              # and verify the checksum in the map
-              {checksum_matched?, algo_in_map, checksum_in_map} =
-                verify_checksum(cache_file, algo, cache_file_checksum)
-
-              if checksum_matched? do
-                # if these checksum matches
-                # we can extract files from the tarball
-                {false, true}
-              else
-                Logger.error(
-                  "Checksum mismatched: #{cache_file}[#{algo}=#{cache_file_checksum}], expected:[#{algo_in_map}=#{checksum_in_map}]"
+                Logger.info(
+                  "Precompiled binary tarball cached at #{cache_file}, #{algo}=#{cache_file_checksum}"
                 )
 
-                Logger.warning("Will delete cached tarball #{cache_file} and re-download")
-                # otherwise we delete the cached file and download it again
+                # and verify the checksum in the map
+                {checksum_matched?, algo_in_map, checksum_in_map} =
+                  verify_checksum(cache_file, algo, cache_file_checksum)
+
+                if checksum_matched? do
+                  # if these checksum matches
+                  # we can extract files from the tarball
+                  {false, true}
+                else
+                  Logger.error(
+                    "Checksum mismatched: #{cache_file}[#{algo}=#{cache_file_checksum}], expected:[#{algo_in_map}=#{checksum_in_map}]"
+                  )
+
+                  Logger.warning("Will delete cached tarball #{cache_file} and re-download")
+                  # otherwise we delete the cached file and download it again
+                  {true, true}
+                end
+              else
+                # not a regular file
+                # remove it and download again
+                File.rm_rf!(cache_file)
+
+                Logger.warning(
+                  "Cached file at #{cache_file} is not a regular file, will delete it and re-download"
+                )
+
                 {true, true}
               end
             else
-              # not a regular file
-              # remove it and download again
-              File.rm_rf!(cache_file)
-
-              Logger.warning(
-                "Cached file at #{cache_file} is not a regular file, will delete it and re-download"
-              )
-
               {true, true}
             end
-          else
-            {true, true}
-          end
 
-        if needs_download do
-          download_url =
-            get_download_url(
-              target,
-              version,
-              nif_version,
-              enable_contrib,
-              enable_cuda,
-              cuda_version,
-              cudnn_version
+          if needs_download do
+            download_url =
+              get_download_url(
+                target,
+                version,
+                nif_version,
+                enable_contrib,
+                enable_cuda,
+                cuda_version,
+                cudnn_version
+              )
+
+            {:ok, _} = Application.ensure_all_started(:inets)
+            {:ok, _} = Application.ensure_all_started(:ssl)
+
+            # of course we have to verify its checksum too
+            {:ok, algo, checksum} = download!(download_url, cache_file, true)
+
+            Logger.info(
+              "Precompiled binary tarball downloaded and saved to #{cache_file}, #{algo}=#{checksum}"
             )
 
-          {:ok, _} = Application.ensure_all_started(:inets)
-          {:ok, _} = Application.ensure_all_started(:ssl)
+            {checksum_matched?, algo_in_map, checksum_in_map} =
+              verify_checksum(cache_file, algo, checksum)
 
-          # of course we have to verify its checksum too
-          {:ok, algo, checksum} = download!(download_url, cache_file, true)
+            if !checksum_matched? do
+              msg =
+                "Checksum mismatched: downloaded file: #{cache_file}[#{algo}=#{checksum}], expected:[#{algo_in_map}=#{checksum_in_map}]"
 
-          Logger.info(
-            "Precompiled binary tarball downloaded and saved to #{cache_file}, #{algo}=#{checksum}"
-          )
+              Logger.error(msg)
+              raise RuntimeError, msg
+            end
+          end
 
-          {checksum_matched?, algo_in_map, checksum_in_map} =
-            verify_checksum(cache_file, algo, checksum)
-
-          if !checksum_matched? do
-            msg =
-              "Checksum mismatched: downloaded file: #{cache_file}[#{algo}=#{checksum}], expected:[#{algo_in_map}=#{checksum_in_map}]"
-
-            Logger.error(msg)
-            raise RuntimeError, msg
+          if needs_unarchive do
+            File.rm_rf!(unarchive_dest_dir)
+            unarchive!(cache_file, cache_dir)
           end
         end
 
-        if needs_unarchive do
-          File.rm_rf!(unarchive_dest_dir)
-          unarchive!(cache_file, cache_dir)
-        end
+        # if `unarchive_dest_dir` exists and is a directory
+        # then we can simply copy they to the expected locations
+
+        deploy_from_dir!(cached_priv_dir, cached_elixir_dir)
+      else
+        :ok
       end
-
-      # if `unarchive_dest_dir` exists and is a directory
-      # then we can simply copy they to the expected locations
-
-      deploy_from_dir!(cached_priv_dir, cached_elixir_dir)
-    else
-      :ok
-    end
+    end)
   end
 
   def verify_checksum(cache_file, algo, cache_file_checksum) do
