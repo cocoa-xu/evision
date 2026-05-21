@@ -214,22 +214,6 @@ Some [examples](https://github.com/cocoa-xu/evision/tree/main/examples) are avai
 
 This project uses and modifies `gen2.py` and `hdr_parser.py` from the `python` module in the [OpenCV repo](https://github.com/opencv/opencv) so that they output header files that can be used in Elixir bindings. 
 
-We hope this project can largely reduce the work of manually porting OpenCV functions/modules to Elixir.
-
-Compatible OpenCV versions:
-- 4.5.3
-- 4.5.4
-- 4.5.5
-- 4.6.0
-- 4.7.0
-- 4.8.0
-- 4.9.0
-- 4.10.0
-- 4.11.0
-
-by compatible, it means these versions can compile successfully, and I tested a small range of functions. Tons of tests
-should be written, and then we can have a list for tested OpenCV versions.
-
 ## Docs
 Online docs for the latest released version is available on Hex.pm, [https://hexdocs.pm/evision/](https://hexdocs.pm/evision/).
 
