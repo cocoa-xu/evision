@@ -52,15 +52,12 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
     "x86_64-linux-musl",
     "armv7l-linux-gnueabihf",
     "armv6-linux-gnueabihf",
-    "ppc64le-linux-gnu",
     "s390x-linux-gnu",
     "riscv64-linux-gnu",
     "riscv64-linux-musl",
     "i686-linux-gnu",
     "x86_64-unknown-freebsd",
-    "aarch64-windows-msvc",
-    "x86_64-windows-msvc",
-    "aarch64-apple-darwin-ios"
+    "x86_64-windows-msvc"
   ]
 
   @compile_nif_version "2.16"
