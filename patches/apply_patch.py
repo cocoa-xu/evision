@@ -165,6 +165,42 @@ typedef double float64_t;
             dst.truncate(0)
             dst.write(fixed.getvalue())
 
+
+def patch_carotene_vround(opencv_version: str, opencv_src_root: str):
+    """Gate carotene's ARMv8 round-to-nearest intrinsics on __aarch64__.
+
+    OpenCV's carotene HAL (hal/carotene/src/vround_helper.hpp) guards the
+    vcvtn* intrinsics with `__ARM_ARCH >= 8`. On 32-bit ARMv8 targets such as
+    Nerves rpi3/rpi3a/rpi0_2 (Cortex-A53 built for armv7hf) `__ARM_ARCH` is 8,
+    but GCC's AArch32 arm_neon.h does not provide vcvtn* at all, so the HAL
+    fails to compile. Restrict the fast path to AArch64; AArch32 keeps the
+    portable rounding fallback already present in the file.
+    """
+    vround_hpp = (
+        Path(opencv_src_root) / 'hal' / 'carotene' / 'src' / 'vround_helper.hpp'
+    )
+    if not vround_hpp.exists():
+        print(f"warning: {vround_hpp} not found, skipping patch_carotene_vround")
+        return
+
+    original = '#if defined(__ARM_ARCH) && (__ARM_ARCH >= 8)'
+    fixed = StringIO()
+    patched = 0
+    with open(vround_hpp, 'r') as source:
+        for line in source:
+            if line.strip() == original:
+                fixed.write('#if defined(__aarch64__) // patched\n')
+                patched += 1
+            else:
+                fixed.write(line)
+
+    if patched:
+        with open(vround_hpp, 'w') as dst:
+            dst.truncate(0)
+            dst.write(fixed.getvalue())
+        print(f"[+] patched carotene vround_helper.hpp ({patched} guards)")
+
+
 def patch_ocr_tesseract_run_with_components(opencv_version: str, opencv_src_root: str):
     """Add CV_WRAP runWithComponents() to OCRTesseract.
 
@@ -259,6 +295,7 @@ patches = [
     patch_rpath_linux,
     patch_python_bindings_generator,
     patch_intrin_rvv,
+    patch_carotene_vround,
     patch_imread,
     patch_cmake_minimum_version,
     patch_ocr_tesseract_run_with_components
