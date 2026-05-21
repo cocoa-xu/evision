@@ -55,9 +55,9 @@ defmodule Evision.Flann.Test do
   end
 
   describe "FlannBasedMatcher accepts the restored constants" do
-    test "create/1 with KDTREE index_params (the user-reported reproducer)" do
+    test "constructor with KDTREE indexParams (the user-reported reproducer)" do
       matcher =
-        Evision.FlannBasedMatcher.create(
+        Evision.FlannBasedMatcher.flannBasedMatcher(
           indexParams: %{
             "algorithm" => Evision.Flann.Algorithm.cv_FLANN_INDEX_KDTREE(),
             "trees" => 5

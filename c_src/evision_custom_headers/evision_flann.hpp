@@ -1,18 +1,14 @@
 #ifdef HAVE_OPENCV_FLANN
-typedef cvflann::flann_distance_t cvflann_flann_distance_t;
-typedef cvflann::flann_algorithm_t cvflann_flann_algorithm_t;
-
-template<>
-ERL_NIF_TERM evision_from(ErlNifEnv *env, const cvflann_flann_algorithm_t& value)
-{
-    return enif_make_int(env, int(value));
-}
-
-template<>
-ERL_NIF_TERM evision_from(ErlNifEnv *env, const cvflann_flann_distance_t& value)
-{
-    return enif_make_int(env, int(value));
-}
+// Note: evision_from/evision_to for cvflann::flann_algorithm_t and
+// cvflann::flann_distance_t used to live here because gen2.py was not
+// parsing modules/flann/include/opencv2/flann/defines.h, so the enums
+// (and their CV_ERL_FROM_ENUM / CV_ERL_TO_ENUM converters) never made
+// it into evision_generated_enums.h. That gap was fixed; the generated
+// enums.h now declares those converters, so re-defining them here was
+// a redefinition error. The IndexParams/SearchParams marshallers below
+// remain hand-written — they map an Elixir map to cv::flann::IndexParams
+// via setBool/setInt/setDouble/setString, which the binding generator
+// cannot produce on its own.
 
 template<>
 bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, cv::flann::IndexParams& p, const ArgInfo& info)
@@ -75,23 +71,5 @@ template<>
 bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, cv::flann::SearchParams & value, const ArgInfo& info)
 {
     return evision_to<cv::flann::IndexParams>(env, obj, value, info);
-}
-
-template<>
-bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, cvflann::flann_distance_t& dist, const ArgInfo& info)
-{
-    int d = (int)dist;
-    bool ok = evision_to(env, o, d, info);
-    dist = (cvflann::flann_distance_t)d;
-    return ok;
-}
-
-template<>
-bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, cvflann::flann_algorithm_t& alg, const ArgInfo& info)
-{
-    int d = (int)alg;
-    bool ok = evision_to(env, o, d, info);
-    alg = (cvflann::flann_algorithm_t)d;
-    return ok;
 }
 #endif
