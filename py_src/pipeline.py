@@ -23,6 +23,7 @@ from pathlib import Path
 from shutil import rmtree
 
 import hdr_parser
+import doxygen_groups
 import evision_templates as ET
 import evision_structures as ES
 import evision_extra_functions as EF
@@ -645,6 +646,13 @@ class Pipeline(object):
             generate_gpumat_decls=True,
             preprocessor_definitions=preprocessor_definitions,
         )
+
+        # Carry OpenCV's `@defgroup`/`@addtogroup` taxonomy into the generated
+        # `Evision` module via `@doc group:`. Surfacing 1400+ root-level
+        # functions without grouping is unnavigable; ExDoc reads this metadata
+        # via `groups_for_docs` in mix.exs.
+        self.doc_group_titles, self.doc_func_groups = doxygen_groups.scan(srcfiles)
+        self.evision_ex.set_doc_groups(self.doc_func_groups, self.doc_group_titles)
 
         self.evision_nif.write('defmodule :evision_nif do\n{}\n'.format(ET.gen_evision_nif_load_nif))
         self.evision_nif_erlang.write('-module(evision_nif).\n-compile(nowarn_export_all).\n-compile([export_all]).\n\n{}\n{}\n'.format(ET.gen_evision_nif_load_nif_erlang, ET.gen_cv_types_erlang))

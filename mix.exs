@@ -1372,10 +1372,110 @@ defmodule Evision.MixProject do
       groups_for_extras: groups_for_extras(),
       groups_for_modules: groups_for_modules(),
       nest_modules_by_prefix: nest_modules_by_prefix(),
-      groups_for_docs: [
-        external: &(&1[:namespace] == :external),
-        Enumerator: &(&1[:enum] == true)
-      ]
+      groups_for_docs: groups_for_docs()
+    ]
+  end
+
+  # Categories that ExDoc applies to functions inside a module. The generator
+  # emits `@doc group: "<OpenCV @defgroup title>"` for cv:: namespace
+  # functions (the ~1400 that land in the root `Evision` module) so that the
+  # function list mirrors OpenCV's docs taxonomy rather than appearing as one
+  # flat brick. Entries here pull in everything OpenCV's headers tag plus the
+  # binding-only `external`/`Enumerator` buckets.
+  defp groups_for_docs do
+    [
+      external: &(&1[:namespace] == :external),
+      Enumerator: &(&1[:enum] == true)
+    ] ++ for title <- opencv_doc_group_titles(), do: {String.to_atom(title), &doc_in_group?(&1, title)}
+  end
+
+  defp doc_in_group?(metadata, title), do: metadata[:group] == title
+
+  defp opencv_doc_group_titles do
+    [
+      "Operations on arrays",
+      "Basic structures",
+      "Asynchronous API",
+      "XML/YAML/JSON Persistence",
+      "Clustering",
+      "Utility and system functions and macros",
+      "Logging facilities",
+      "OpenGL interoperability",
+      "Optimization Algorithms",
+      "OpenCL support",
+      "Hardware Acceleration Layer",
+      "Parallel Processing",
+      "Parallel backends API",
+      "Quaternion",
+      "Image Filtering",
+      "Geometric Image Transformations",
+      "Miscellaneous Image Transformations",
+      "Drawing Functions",
+      "Color Space Conversions",
+      "ColorMaps in OpenCV",
+      "Planar Subdivision",
+      "Histograms",
+      "Structural Analysis and Shape Descriptors",
+      "Motion Analysis and Object Tracking",
+      "Feature Detection",
+      "Object Detection",
+      "Image Segmentation",
+      "Image file reading and writing",
+      "High-level GUI",
+      "Qt New Functions",
+      "Video I/O",
+      "Query I/O API backends registry",
+      "Camera Calibration",
+      "Fisheye camera model",
+      "3D vision functionality",
+      "Stereo Correspondence",
+      "Drawing Function of Keypoints and Matches",
+      "Object Tracking",
+      "Legacy Tracking API",
+      "Optical Flow Algorithms",
+      "Deep Neural Network module",
+      "HDR imaging",
+      "Inpainting",
+      "Denoising",
+      "Seamless Cloning",
+      "Non-Photorealistic Rendering",
+      "Contrast Preserving Decolorization",
+      "Images stitching",
+      "Features Finding and Images Matching",
+      "Rotation Estimation",
+      "Autocalibration",
+      "Image Blenders",
+      "Additional photo processing algorithms",
+      "Extended Image Processing",
+      "Fourier descriptors",
+      "Structured forests for fast edge detection",
+      "Superpixels",
+      "EdgeDrawing",
+      "Fast line detector",
+      "Experimental 2D Features Matching Algorithm",
+      "Binary descriptors for lines extracted from an image",
+      "ArUco markers and boards detection for robust camera pose estimation",
+      "Improved Background-Foreground Segmentation Methods",
+      "Face Analysis",
+      "Image segmentation",
+      "Scene Text Detection",
+      "Scene Text Recognition",
+      "Shape Distance and Matching",
+      "Surface Matching",
+      "silhouette based 3D object tracking",
+      "Alpha Matting",
+      "Custom Calibration Pattern for 3D reconstruction",
+      "RGB-Depth Processing",
+      "Module-wrapper for FastCV hardware accelerated functions",
+      "Signal Processing",
+      "Math with F0-transform support",
+      "Math with F1-transform support",
+      "Fuzzy image processing",
+      "The module brings implementations of different image hashing algorithms.",
+      "The module brings implementations of intensity transformation algorithms to adjust image contrast.",
+      "Common functions and classes",
+      "Hierarchical Data Format version 5",
+      "Drawing UTF-8 strings with freetype/harfbuzz"
     ]
   end
 
