@@ -55,6 +55,14 @@ brew install tesseract
 
 evision searches `/opt/homebrew/lib`, `/usr/local/lib`, and `/opt/local/lib` for the Tesseract dylib at load time, so Homebrew (both Apple Silicon and Intel) and MacPorts work out of the box. For Nix or other custom prefixes, set `DYLD_LIBRARY_PATH` to the directory containing `libtesseract.5.dylib` before starting your application. See [#287](https://github.com/cocoa-xu/evision/issues/287) for details.
 
+#### FreeBSD: install OpenBLAS
+
+The precompiled FreeBSD binaries link against OpenBLAS (a transitive dependency of OpenCV's `calib3d` module) and it is **not bundled** with the tarball. Without it, `evision.so` fails to load at on_load with `Shared object "libopenblas.so.0" not found, required by "libopencv_calib3d.so"`.
+
+```sh
+pkg install openblas
+```
+
 <details>
 
 <summary>Advanced Options</summary>
