@@ -1480,6 +1480,7 @@ defmodule Evision.MixProject do
           c_src/evision.cpp
           c_src/nif_utils.hpp
           cc_toolchain
+          cmake
           lib/assets
           lib/evision
           lib/mix
