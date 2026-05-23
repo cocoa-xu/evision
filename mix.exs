@@ -1367,30 +1367,11 @@ defmodule Evision.MixProject do
       main: "Evision",
       source_ref: "v#{Metadata.version()}",
       source_url: @source_url,
-      extras: [
-        "CHANGELOG.md",
-        "Cheatsheet.cheatmd",
-        "README.md",
-        # Evision
-        "examples/getting_started.livemd",
-        "examples/qrcode.livemd",
-        "examples/warp_perspective.livemd",
-        "examples/warp_polar.livemd",
-        "examples/find_and_draw_contours.livemd",
-        "examples/stitching.livemd",
-        "examples/pca.livemd",
-        "examples/photo-hdr.livemd",
-        "examples/sudoku.livemd",
-        "examples/cifar10.livemd",
-        # Evision.DNN
-        "examples/dnn-googlenet.livemd",
-        "examples/dnn-detection-model.livemd",
-        "examples/densenet121_benchmark.livemd",
-        # Evision.ML
-        "examples/ml-svm.livemd",
-        "examples/ml-decision_tree_and_random_forest.livemd"
-      ],
+      extras: extras(),
       before_closing_body_tag: &before_closing_body_tag/1,
+      groups_for_extras: groups_for_extras(),
+      groups_for_modules: groups_for_modules(),
+      nest_modules_by_prefix: nest_modules_by_prefix(),
       groups_for_docs: [
         external: &(&1[:namespace] == :external),
         Enumerator: &(&1[:enum] == true)
@@ -1398,44 +1379,336 @@ defmodule Evision.MixProject do
     ]
   end
 
+  defp extras do
+    [
+      "README.md",
+      "CHANGELOG.md",
+      "Cheatsheet.cheatmd",
+      "examples/getting_started.livemd",
+      "examples/qrcode.livemd",
+      "examples/warp_perspective.livemd",
+      "examples/warp_polar.livemd",
+      "examples/find_and_draw_contours.livemd",
+      "examples/stitching.livemd",
+      "examples/pca.livemd",
+      "examples/photo-hdr.livemd",
+      "examples/sudoku.livemd",
+      "examples/cifar10.livemd",
+      "examples/dnn-googlenet.livemd",
+      "examples/dnn-detection-model.livemd",
+      "examples/densenet121_benchmark.livemd",
+      "examples/ml-svm.livemd",
+      "examples/ml-decision_tree_and_random_forest.livemd"
+    ]
+  end
+
+  defp groups_for_extras do
+    [
+      Introduction: ["Cheatsheet.cheatmd", "CHANGELOG.md"],
+      "Examples: Getting Started": ["examples/getting_started.livemd"],
+      "Examples: Image Processing": [
+        "examples/qrcode.livemd",
+        "examples/warp_perspective.livemd",
+        "examples/warp_polar.livemd",
+        "examples/find_and_draw_contours.livemd",
+        "examples/stitching.livemd",
+        "examples/pca.livemd",
+        "examples/photo-hdr.livemd",
+        "examples/sudoku.livemd"
+      ],
+      "Examples: Deep Neural Networks": [
+        "examples/cifar10.livemd",
+        "examples/dnn-googlenet.livemd",
+        "examples/dnn-detection-model.livemd",
+        "examples/densenet121_benchmark.livemd"
+      ],
+      "Examples: Machine Learning": [
+        "examples/ml-svm.livemd",
+        "examples/ml-decision_tree_and_random_forest.livemd"
+      ]
+    ]
+  end
+
+  # OpenCV's high-level module taxonomy mapped onto the Elixir module names
+  # emitted by py_src. Order matters: ExDoc walks the list top-down and a
+  # module ends up in the first group whose pattern it matches, so put more
+  # specific patterns above broader ones.
+  defp groups_for_modules do
+    [
+      "Core Functionality": [
+        Evision.Constant,
+        Evision.Backend,
+        ~r/^Evision\.(Mat|SparseMat|UMat|UMatData|UMatUsageFlags)(\..*)?$/,
+        ~r/^Evision\.(AsyncArray|Algorithm|AlgorithmHint|RotatedRect|KeyPoint|DMatch|RNG|TickMeter|Subdiv2D|IStreamReader)$/,
+        ~r/^Evision\.(TermCriteria|PCA|SVD|FileNode|FileStorage|Param|Parallel|Samples|Animation)(\..*)?$/,
+        ~r/^Evision\.(Error|Instr|QuatAssumeType|QuatEnum)(\..*)?$/,
+        ~r/^Evision\.(Utils|UtilsFS|Utilslogging|Ipp|Signal|AccessFlag)(\..*)?$/,
+        ~r/^Evision\.Formatter\..+$/
+      ],
+      "Image Processing": [
+        ~r/^Evision\.(CLAHE|GeneralizedHough|GeneralizedHoughBallard|GeneralizedHoughGuil|LineSegmentDetector|IntelligentScissorsMB)$/
+      ],
+      "Image File I/O": [
+        ~r/^Evision\.(Imread|Imwrite)[A-Z].*$/,
+        Evision.ImageMetadataType
+      ],
+      "Video I/O": [
+        ~r/^Evision\.Video(Capture|Writer|IORegistry|Acceleration)[A-Z]*.*$/
+      ],
+      "High-level GUI": [
+        Evision.HighGui,
+        Evision.Wx,
+        ~r/^Evision\.(Window|MouseEvent|Qt)[A-Z].*$/,
+        ~r/^Evision\.(MarkerTypes|HersheyFonts|LineTypes|DrawMatchesFlags)$/
+      ],
+      "Video Analysis": [
+        ~r/^Evision\.(KalmanFilter|BackgroundSubtractor.*|VariationalRefinement)$/,
+        ~r/^Evision\.(DenseOpticalFlow|DISOpticalFlow|FarnebackOpticalFlow|SparseOpticalFlow|SparsePyrLKOpticalFlow)$/
+      ],
+      "Camera Calibration & 3D Reconstruction": [
+        ~r/^Evision\.(FishEye|Omnidir|StereoBM|StereoSGBM|StereoMatcher)$/,
+        ~r/^Evision\.(CirclesGridFinderParameters|UsacParams|SolveLPResult|SolvePnPMethod|HandEyeCalibrationMethod|RobotWorldHandEyeCalibrationMethod|LocalOptimMethod|SamplingMethod|NeighborSearchMethod|ScoreMethod|PolishingMethod)(\..*)?$/
+      ],
+      "Stereo Correspondence": [
+        ~r/^Evision\.Stereo(\..*)?$/
+      ],
+      "2D Features Framework": [
+        ~r/^Evision\.(AKAZE|AffineFeature|AgastFeatureDetector|AffineTransformer|BRISK|BFMatcher|FastFeatureDetector|Feature2D|FlannBasedMatcher|GFTTDetector|KAZE|MSER|ORB|SIFT|SimpleBlobDetector)(\..*)?$/,
+        ~r/^Evision\.BOW[A-Z].*$/,
+        ~r/^Evision\.DescriptorMatcher(\..*)?$/
+      ],
+      "Object Detection": [
+        ~r/^Evision\.(CascadeClassifier|BaseCascadeClassifier|HOGDescriptor|FaceDetectorYN|GraphicalCodeDetector)(\..*)?$/,
+        ~r/^Evision\.(QRCodeDetector|QRCodeDetectorAruco|QRCodeEncoder|Barcode)(\..*)?$/
+      ],
+      "Computational Photography (HDR)": [
+        ~r/^Evision\.(Tonemap|TonemapDrago|TonemapMantiuk|TonemapReinhard)$/,
+        ~r/^Evision\.(CalibrateCRF|CalibrateDebevec|CalibrateRobertson)$/,
+        ~r/^Evision\.(MergeDebevec|MergeExposures|MergeMertens|MergeRobertson)$/,
+        ~r/^Evision\.(AlignExposures|AlignMTB|SeamlessCloneFlags|Alphamat)$/
+      ],
+      "Shape Matching": [
+        ~r/^Evision\.(ShapeContextDistanceExtractor|ShapeDistanceExtractor|ShapeTransformer|ShapeMatchModes|ThinPlateSplineShapeTransformer|HausdorffDistanceExtractor)$/,
+        ~r/^Evision\.(ChiHistogramCostExtractor|NormHistogramCostExtractor|EMDHistogramCostExtractor|EMDL1HistogramCostExtractor|HistogramCostExtractor)$/
+      ],
+      "Image Stitching": [
+        ~r/^Evision\.(Stitcher|PyRotationWarper|WarperCreator)(\..*)?$/,
+        ~r/^Evision\.Detail(\..*)?$/
+      ],
+      "Machine Learning (ML)": [
+        ~r/^Evision\.ML(\..*)?$/
+      ],
+      "Deep Neural Networks (DNN)": [
+        ~r/^Evision\.DNN(\..*)?$/
+      ],
+      "DNN Super-Resolution": [
+        ~r/^Evision\.DNNSuperRes(\..*)?$/
+      ],
+      "Clustering & Search (FLANN)": [
+        ~r/^Evision\.Flann(\..*)?$/
+      ],
+      "CUDA Acceleration": [
+        ~r/^Evision\.CUDA(\..*)?$/
+      ],
+      "OpenCL Acceleration": [
+        ~r/^Evision\.OCL(\..*)?$/
+      ],
+      "OpenGL Interop": [
+        ~r/^Evision\.OGL(\..*)?$/
+      ],
+      "Object Tracking": [
+        ~r/^Evision\.(Tracker|TrackerCSRT|TrackerDaSiamRPN|TrackerGOTURN|TrackerKCF|TrackerMIL|TrackerNano|TrackerVit)(\..*)?$/,
+        ~r/^Evision\.Legacy(\..*)?$/
+      ],
+      "3D Volumetric Reconstruction (KinFu)": [
+        ~r/^Evision\.(KinFu|LargeKinfu|ColoredKinFu|DynaFu)(\..*)?$/
+      ],
+      "ArUco Markers": [
+        ~r/^Evision\.ArUco(\..*)?$/
+      ],
+      "Background Segmentation (bgsegm)": [
+        ~r/^Evision\.BgSegm(\..*)?$/
+      ],
+      "Bio-Inspired Vision": [
+        ~r/^Evision\.Bioinspired(\..*)?$/
+      ],
+      "Color Correction Model (CCM)": [
+        ~r/^Evision\.CCM(\..*)?$/
+      ],
+      "Face Analysis": [
+        ~r/^Evision\.(Face|FaceRecognizerSF)(\..*)?$/
+      ],
+      "Fuzzy Image Processing": [
+        ~r/^Evision\.Ft(\..*)?$/
+      ],
+      "Hierarchical Feature Selection (HFS)": [
+        ~r/^Evision\.HFS(\..*)?$/
+      ],
+      "Image Hashing": [
+        ~r/^Evision\.ImgHash(\..*)?$/
+      ],
+      "Intensity Transformations": [
+        ~r/^Evision\.Intensitytransform(\..*)?$/
+      ],
+      "Line Descriptors": [
+        ~r/^Evision\.LineDescriptor(\..*)?$/
+      ],
+      LineMod: [
+        ~r/^Evision\.LineMod(\..*)?$/
+      ],
+      "Macbeth Chart (MCC)": [
+        ~r/^Evision\.MCC(\..*)?$/
+      ],
+      "Multi-Camera Calibration": [
+        ~r/^Evision\.MultiCalib(\..*)?$/
+      ],
+      "Phase Unwrapping": [
+        ~r/^Evision\.PhaseUnwrapping(\..*)?$/
+      ],
+      "2D Plotting": [
+        ~r/^Evision\.Plot(\..*)?$/
+      ],
+      "Surface Matching (PPF Match 3D)": [
+        ~r/^Evision\.PPFMatch3D(\..*)?$/
+      ],
+      "Image Quality Analysis": [
+        ~r/^Evision\.Quality(\..*)?$/
+      ],
+      "RAPID 3D Tracking": [
+        ~r/^Evision\.Rapid(\..*)?$/
+      ],
+      "Image Registration": [
+        ~r/^Evision\.Reg(\..*)?$/
+      ],
+      "RGB-Depth Processing": [
+        ~r/^Evision\.RGBD(\..*)?$/
+      ],
+      Saliency: [
+        ~r/^Evision\.Saliency(\..*)?$/
+      ],
+      "Image Segmentation": [
+        ~r/^Evision\.Segmentation(\..*)?$/
+      ],
+      "Structured Light": [
+        ~r/^Evision\.StructuredLight(\..*)?$/
+      ],
+      "Text Detection & Recognition": [
+        ~r/^Evision\.Text(\..*)?$/
+      ],
+      "WeChat QR Code": [
+        ~r/^Evision\.WeChatQRCode(\..*)?$/
+      ],
+      "Extra 2D Features (xfeatures2d)": [
+        ~r/^Evision\.XFeatures2D(\..*)?$/
+      ],
+      "Extended Image Processing (ximgproc)": [
+        ~r/^Evision\.XImgProc(\..*)?$/
+      ],
+      "Extra Photo (xphoto)": [
+        ~r/^Evision\.XPhoto(\..*)?$/
+      ],
+      "Model Zoo": [
+        ~r/^Evision\.Zoo(\..*)?$/
+      ],
+      "Livebook Smart Cells": [
+        ~r/^Evision\.SmartCell(\..*)?$/
+      ],
+      "IPC Handles": [
+        ~r/^Evision\.IPCHandle(\..*)?$/
+      ],
+      "Enums & Flags": [
+        ~r/^Evision\..*(Flags|Types|Modes|Codes|Masks|Methods|Classes|Shapes|Mode|Filter)$/
+      ]
+    ]
+  end
+
+  # Fold deeply-nested generated namespaces under a single prefix in the
+  # sidebar. `Evision.DNN.Net` shows as `Net` under the `Evision.DNN` heading,
+  # etc.
+  defp nest_modules_by_prefix do
+    [
+      Evision.ArUco,
+      Evision.BgSegm,
+      Evision.Bioinspired,
+      Evision.CCM,
+      Evision.ColoredKinFu,
+      Evision.CUDA,
+      Evision.Detail,
+      Evision.DNN,
+      Evision.DNNSuperRes,
+      Evision.DynaFu,
+      Evision.Face,
+      Evision.Flann,
+      Evision.HFS,
+      Evision.ImgHash,
+      Evision.IPCHandle,
+      Evision.KinFu,
+      Evision.LargeKinfu,
+      Evision.Legacy,
+      Evision.LineDescriptor,
+      Evision.LineMod,
+      Evision.MCC,
+      Evision.ML,
+      Evision.MultiCalib,
+      Evision.OCL,
+      Evision.OGL,
+      Evision.PhaseUnwrapping,
+      Evision.Plot,
+      Evision.PPFMatch3D,
+      Evision.Quality,
+      Evision.Rapid,
+      Evision.Reg,
+      Evision.RGBD,
+      Evision.Saliency,
+      Evision.Segmentation,
+      Evision.SmartCell,
+      Evision.Stereo,
+      Evision.Stitcher,
+      Evision.StructuredLight,
+      Evision.Text,
+      Evision.Utils,
+      Evision.WeChatQRCode,
+      Evision.XFeatures2D,
+      Evision.XImgProc,
+      Evision.XPhoto,
+      Evision.Zoo
+    ]
+  end
+
   defp before_closing_body_tag(:html) do
-    ~S'
-    <script type="text/x-mathjax-config">
-    MathJax.Hub.Config({
-        tex2jax: {
-            inlineMath: [["\\f$", "\\f$"]],
-            displayMath: [["\\f[", "\\f]"]],
-            skipTags: ["script", "noscript", "style", "textarea"],
-            processEnvironments: false
+    """
+    <script>
+      window.MathJax = {
+        tex: {
+          inlineMath: [["\\\\f$", "\\\\f$"]],
+          displayMath: [["\\\\f[", "\\\\f]"]],
+          processEnvironments: false,
+          macros: {
+            matTT: ["\\\\[ \\\\left|\\\\begin{array}{ccc} #1 & #2 & #3\\\\\\\\ #4 & #5 & #6\\\\\\\\ #7 & #8 & #9 \\\\end{array}\\\\right| \\\\]", 9],
+            fork: ["\\\\left\\\\{ \\\\begin{array}{l l} #1 & \\\\mbox{#2}\\\\\\\\ #3 & \\\\mbox{#4}\\\\\\\\ \\\\end{array} \\\\right.", 4],
+            forkthree: ["\\\\left\\\\{ \\\\begin{array}{l l} #1 & \\\\mbox{#2}\\\\\\\\ #3 & \\\\mbox{#4}\\\\\\\\ #5 & \\\\mbox{#6}\\\\\\\\ \\\\end{array} \\\\right.", 6],
+            forkfour: ["\\\\left\\\\{ \\\\begin{array}{l l} #1 & \\\\mbox{#2}\\\\\\\\ #3 & \\\\mbox{#4}\\\\\\\\ #5 & \\\\mbox{#6}\\\\\\\\ #7 & \\\\mbox{#8}\\\\\\\\ \\\\end{array} \\\\right.", 8],
+            vecthree: ["\\\\begin{bmatrix} #1\\\\\\\\ #2\\\\\\\\ #3 \\\\end{bmatrix}", 3],
+            vecthreethree: ["\\\\begin{bmatrix} #1 & #2 & #3\\\\\\\\ #4 & #5 & #6\\\\\\\\ #7 & #8 & #9 \\\\end{bmatrix}", 9],
+            cameramatrix: ["#1 = \\\\begin{bmatrix} f_x & 0 & c_x\\\\\\\\ 0 & f_y & c_y\\\\\\\\ 0 & 0 & 1 \\\\end{bmatrix}", 1],
+            distcoeffs: ["(k_1, k_2, p_1, p_2[, k_3[, k_4, k_5, k_6 [, s_1, s_2, s_3, s_4[, \\\\tau_x, \\\\tau_y]]]]) \\\\text{ of 4, 5, 8, 12 or 14 elements}"],
+            distcoeffsfisheye: ["(k_1, k_2, k_3, k_4)"],
+            hdotsfor: ["\\\\dots", 1],
+            mathbbm: ["\\\\mathbb{#1}", 1],
+            bordermatrix: ["\\\\matrix{#1}", 1]
+          }
         },
-        extensions: ["tex2jax.js", "TeX/AMSmath.js", "TeX/AMSsymbols.js"],
-        jax: ["input/TeX", "output/HTML-CSS"],
-    });
-    //<![CDATA[
-    MathJax.Hub.Config(
-    {
-        TeX: {
-            Macros: {
-                matTT: ["\\[ \\left|\\begin{array}{ccc} #1 & #2 & #3\\\\ #4 & #5 & #6\\\\ #7 & #8 & #9 \\end{array}\\right| \\]", 9],
-                fork: ["\\left\\{ \\begin{array}{l l} #1 & \\mbox{#2}\\\\ #3 & \\mbox{#4}\\\\ \\end{array} \\right.", 4],
-                forkthree: ["\\left\\{ \\begin{array}{l l} #1 & \\mbox{#2}\\\\ #3 & \\mbox{#4}\\\\ #5 & \\mbox{#6}\\\\ \\end{array} \\right.", 6],
-                forkfour: ["\\left\\{ \\begin{array}{l l} #1 & \\mbox{#2}\\\\ #3 & \\mbox{#4}\\\\ #5 & \\mbox{#6}\\\\ #7 & \\mbox{#8}\\\\ \\end{array} \\right.", 8],
-                vecthree: ["\\begin{bmatrix} #1\\\\ #2\\\\ #3 \\end{bmatrix}", 3],
-                vecthreethree: ["\\begin{bmatrix} #1 & #2 & #3\\\\ #4 & #5 & #6\\\\ #7 & #8 & #9 \\end{bmatrix}", 9],
-                cameramatrix: ["#1 = \\begin{bmatrix} f_x & 0 & c_x\\\\ 0 & f_y & c_y\\\\ 0 & 0 & 1 \\end{bmatrix}", 1],
-                distcoeffs: ["(k_1, k_2, p_1, p_2[, k_3[, k_4, k_5, k_6 [, s_1, s_2, s_3, s_4[, \\tau_x, \\tau_y]]]]) \\text{ of 4, 5, 8, 12 or 14 elements}"],
-                distcoeffsfisheye: ["(k_1, k_2, k_3, k_4)"],
-                hdotsfor: ["\\dots", 1],
-                mathbbm: ["\\mathbb{#1}", 1],
-                bordermatrix: ["\\matrix{#1}", 1]
-            }
-        }
-    }
-    );
-    //]]>
+        options: {
+          skipHtmlTags: ["script", "noscript", "style", "textarea", "pre", "code"],
+          ignoreHtmlClass: "tex2jax_ignore",
+          processHtmlClass: "tex2jax_process"
+        },
+        svg: { fontCache: "global" },
+        startup: { typeset: true }
+      };
     </script>
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js"></script>
-    '
+    <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+    """
   end
 
   defp before_closing_body_tag(_), do: ""
