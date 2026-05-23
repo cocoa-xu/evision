@@ -231,7 +231,10 @@ init() ->
         Dir ->
             filename:join(Dir, ?LIBNAME)
     end,
-    evision_windows_fix:run_once(),
+    case os:type() of
+        {win32, _} -> evision_windows_fix:run_once();
+        _ -> ok
+    end,
     erlang:load_nif(SoName, 0).
 
 not_loaded(Line) ->
