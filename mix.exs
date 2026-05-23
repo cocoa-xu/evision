@@ -227,6 +227,16 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
             arch
           end
 
+        # FreeBSD's system_architecture is `arch-vendor-osversion` (e.g. amd64-portbld-freebsd13.5),
+        # but the 3-tuple parser above puts the vendor in the `os` slot. Canonical precompiled
+        # names use `unknown` as the vendor and normalize arch to LLVM-style.
+        {arch, os} =
+          if abi == "freebsd" do
+            {if(arch == "amd64", do: "x86_64", else: arch), "unknown"}
+          else
+            {arch, os}
+          end
+
         abi = System.get_env("TARGET_ABI", abi)
         os = System.get_env("TARGET_OS", os)
 
@@ -1843,6 +1853,7 @@ defmodule Evision.MixProject do
           c_src/evision.cpp
           c_src/nif_utils.hpp
           cc_toolchain
+          cmake
           lib/assets
           lib/evision
           lib/mix
