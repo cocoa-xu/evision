@@ -8,6 +8,7 @@ from ir.props import ClassProp
 from helper import *
 from emit.erlang.helpers import map_uppercase_to_erlang_name
 import evision_templates as ET
+import doxygen_groups
 
 if sys.version_info[0] >= 3:
     from io import StringIO
@@ -69,6 +70,17 @@ class ModuleGenerator(object):
 
         self.erlang_ended = False
 
+        # Function-name -> OpenCV `@defgroup` id; titles[id] -> human label.
+        # Populated by `set_doc_groups()` only for modules where the binding
+        # should carry ExDoc `@doc group:` annotations (currently the root
+        # `Evision` module).
+        self.doc_func_groups = {}
+        self.doc_group_titles = {}
+
+    def set_doc_groups(self, func_to_group, group_titles):
+        self.doc_func_groups = func_to_group or {}
+        self.doc_group_titles = group_titles or {}
+
     def get_erl_nif_func_entry(self):
         return self.erl_nif_func_entry.getvalue()
 
@@ -101,8 +113,15 @@ class ModuleGenerator(object):
 
     def end_elixir(self):
         for function_name, function in self.function['elixir'].items():
+            seen_group = False
             for arity, functions in function.items():
                 docs_mfa = self.inline_docs['elixir'].get(function_name, {}).get(arity, [])
+                if not seen_group and self.doc_func_groups:
+                    group_id = doxygen_groups.lookup(self.doc_func_groups, function_name)
+                    if group_id:
+                        title = doxygen_groups.title_for(self.doc_group_titles, group_id)
+                        self.write_elixir(f'\n  @doc group: {_elixir_string(title)}\n')
+                        seen_group = True
                 if len(docs_mfa) > 0:
                     if len(docs_mfa) == 1:
                         self.write_elixir('\n  @doc """\n')
@@ -750,3 +769,9 @@ class ModuleGenerator(object):
         for function_name, function in self.function[kind].items():
             for function_arity, _function_code in function.items():
                 print(f"M={self.module_name}, F={function_name}, A={function_arity}")
+
+
+
+def _elixir_string(value):
+    """Quote a Python string into an Elixir-safe literal."""
+    return '"' + value.replace('\\', '\\\\').replace('"', '\\"') + '"'
