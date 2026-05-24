@@ -1,5 +1,45 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- `Evision.Mat.clip/3`: upper bound no longer collapses to the lower bound (typo where both branches compared against `lower`).
+- `Evision.Mat.dot/2`: now actually computes a dot product. The previous implementation called `cv::Mat::cross` despite being named `dot`, so it only worked for 3-element vectors and returned a `Mat`. See **Breaking changes** below.
+- `Evision.Mat.arange/4,5`: range count is now computed with ceiling division, so the final stepped value is included when the interval is not evenly divisible (e.g. `arange(0, 5, 2)` now returns `[0, 2, 4]` instead of `[0, 2]`). `step == 0` and direction mismatches are rejected explicitly.
+- `Evision.Mat.negate/1`, `Evision.Mat.ceil/1`, `Evision.Mat.floor/1`, `Evision.Mat.round/1`: now traverse every scalar in multi-channel matrices instead of only the first channel of each pixel.
+- `Evision.Mat.ceil/1`, `Evision.Mat.floor/1`, `Evision.Mat.round/1`: added support for `CV_16F` (half-precision float) inputs.
+- `Evision.Mat.at/2`: added bounds checking (was previously undefined behaviour past the end) and a clone-on-non-continuous fallback so the scalar index lands on the right element. `CV_16F` is now supported.
+- `Evision.Mat.from_binary_by_shape/3`: rejects binaries whose byte size does not match the declared shape (previously created a `Mat` that read past the binary).
+- `Evision.Mat.from_binary/5`: the declared `rows × cols × channels × bytes_per_element` is now computed with overflow checks.
+- `Evision.Mat.to_binary/1,2`:
+  - The `limit` parameter is now honored on the NIF path (was previously ignored).
+  - Non-continuous matrices are cloned before serialisation so the returned binary contains contiguous element data rather than the underlying buffer's interleaved padding.
+  - The `nx_tensor` branch in Elixir now interprets `limit` as the number of elements (multiplying by `elem_size`), matching the NIF path and the `Backend.inspect/2` caller.
+- `Evision.Mat.to_batched/3` (3-arg): now works on multi-channel matrices (previously the `shape(mat)` it derived internally always failed the size check). The 3-arg wrapper also no longer passes a tuple where a list is expected.
+- `Evision.Mat.to_batched/4` repeat mode: no longer reads past the source matrix when `batch_size × slice_size` exceeds the source size; the source is now safely repeated as many times as needed.
+- `Evision.Mat.update_roi/3`: the caller's `Mat` data is no longer mutated in place — `update_roi` always returns a new `Mat` and leaves the input untouched. Previously the underlying buffer was modified through the shared reference, silently mutating any other reference to the same `Mat`.
+- `Evision.Mat.transpose/3` with `as_shape:`: rejects `as_shape` whose total byte size does not match the source matrix, preventing out-of-bounds reads from `cv::transposeND`.
+- `Evision.Mat.expm1/1`: removed a dead/buggy fallback that called `cv::exp` a second time without exception protection after the wrapped call had already failed.
+- `Evision.Mat.last_dim_as_channel/1`: now uses `src.depth()` (instead of the full type) when re-tagging the channels and explicitly rejects channel counts outside `[1, CV_CN_MAX]`.
+- `Evision.CUDA.GpuMat.from_pointer/3`: the resource is now released on the error path (previously leaked) and the OOM path returns a proper error term.
+- `evision::nif::get_tuple` for `std::vector<int64_t>`: now reads each element as `int64_t` (was `int`), so large 64-bit values in tuples are no longer truncated/rejected.
+- `evision_highgui` thread initialisation: races between concurrent `start_native_gui` callers are now serialised behind an `EVISION_INITIATING` state, and `evision_main_loop` notifies all waiters (was `notify_one`, which could leave additional waiters stuck).
+- `alloc_resource` for `cv::Mat *`: explicitly initialises `tmp->val = nullptr` so a release before assignment does not free uninitialised memory.
+
+### Added
+
+- `Evision.Mat.matmul/2`: convenience wrapper around `cv::Mat::operator*` (matrix multiplication via `cv::gemm`). Both inputs must be 2-D and share a `CV_32F` or `CV_64F` depth. For element-wise dot-product semantics use `Evision.Mat.dot/2`.
+
+### Breaking changes
+
+- `Evision.Mat.dot/2` now returns a `number()` (the scalar dot product) instead of a `%Evision.Mat{}`. This matches the C++ `cv::Mat::dot` definition. The previous behaviour was a bug: the function was implemented with `cv::Mat::cross`, which only accepted 3-element vectors and returned a `Mat`. Callers who actually wanted matrix multiplication should switch to the new `Evision.Mat.matmul/2`.
+- `Evision.Mat.to_batched/4` (4-arg, explicit `as_shape`) now requires `as_shape` to include channels as a dimension for multi-channel matrices, and the resulting batches are single-channel `Mat`s with the channel axis at the end. Concretely:
+  - Old: `to_batched(cv_8uc3_mat, batch_size, {N, H, W}, ...)` → batches of `CV_8UC3` mats with shape `{batch_size, H, W}`.
+  - New: `to_batched(cv_8uc3_mat, batch_size, {N, H, W, 3}, ...)` → batches of `CV_8U` mats with shape `{batch_size, H, W, 3}`.
+  - The old `to_batched(cv_8uc3_mat, batch_size, {N, H, W}, ...)` call now returns `{:error, "to_batched failed: cannot treated matrix as the request shape"}`.
+  - `Evision.Backend` (Nx) workflows are **not affected**: tensors entering through `from_nx`/`from_binary` are always single-channel `Mat`s with the logical Nx shape, so the old and new size-checks evaluate identically.
+
 ## v0.2.14 (2025-08-15)
 [Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.2.14) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.2.14)
 
