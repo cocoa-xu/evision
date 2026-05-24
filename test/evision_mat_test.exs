@@ -212,6 +212,164 @@ defmodule Evision.Mat.Test do
       assert [batch] = Evision.Mat.to_batched(mat, 8, {2}, leftover: :repeat)
       assert Evision.Mat.to_binary(batch) == <<1, 2, 1, 2, 1, 2, 1, 2>>
     end
+
+    test "to_batched 4-arg requires multi-channel shape to include channels as a dim" do
+      # CV_8UC3 mat: 2 rows x 2 cols x 3 channels = 12 bytes
+      bin = <<1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12>>
+      mat = Evision.Mat.from_binary(bin, {:u, 8}, 2, 2, 3)
+
+      # Shape including channels works; output is single-channel with channels as last dim
+      assert [batch] = Evision.Mat.to_batched(mat, 2, {2, 2, 3}, leftover: :discard)
+      assert Evision.Mat.shape(batch) == {2, 2, 3}
+      assert Evision.Mat.channels(batch) == 1
+      assert Evision.Mat.to_binary(batch) == bin
+
+      # Shape WITHOUT channels is rejected — this is the breaking change vs. older versions
+      assert {:error, msg} = Evision.Mat.to_batched(mat, 2, {2, 2}, leftover: :discard)
+      assert msg =~ "shape"
+    end
+
+    test "to_batched 3-arg works on multi-channel Mat (previously errored)" do
+      bin = <<1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12>>
+      mat = Evision.Mat.from_binary(bin, {:u, 8}, 2, 2, 3)
+
+      assert [batch] = Evision.Mat.to_batched(mat, 2, leftover: :discard)
+      assert Evision.Mat.shape(batch) == {2, 2, 3}
+      assert Evision.Mat.channels(batch) == 1
+      assert Evision.Mat.to_binary(batch) == bin
+    end
+
+    test "update_roi does not mutate the caller's matrix" do
+      original_bin = <<1, 2, 3, 4, 5, 6, 7, 8, 9>>
+      mat = Evision.Mat.from_binary_by_shape(original_bin, {:u, 8}, {3, 3})
+      patch = Evision.Mat.from_binary_by_shape(<<0, 0>>, {:u, 8}, {1, 2})
+
+      updated = Evision.Mat.update_roi(mat, [{1, 2}, {0, 2}], patch)
+
+      assert Evision.Mat.to_binary(updated) == <<1, 2, 3, 0, 0, 6, 7, 8, 9>>
+      assert Evision.Mat.to_binary(mat) == original_bin
+    end
+
+    test "dot returns a scalar matching OpenCV Mat::dot semantics" do
+      a_bin = for x <- [1.0, 2.0, 3.0], into: <<>>, do: <<x::float-little-size(64)>>
+      b_bin = for x <- [4.0, 5.0, 6.0], into: <<>>, do: <<x::float-little-size(64)>>
+      a = Evision.Mat.from_binary_by_shape(a_bin, {:f, 64}, {3})
+      b = Evision.Mat.from_binary_by_shape(b_bin, {:f, 64}, {3})
+
+      assert Evision.Mat.dot(a, b) == 32.0
+    end
+
+    test "dot treats matrices as flat 1D vectors in row-major order" do
+      values = for v <- [1.0, 2.0, 3.0, 4.0], into: <<>>, do: <<v::float-little-size(64)>>
+      mat = Evision.Mat.from_binary_by_shape(values, {:f, 64}, {2, 2})
+
+      assert Evision.Mat.dot(mat, mat) == 1.0 + 4.0 + 9.0 + 16.0
+    end
+
+    test "matmul performs 2D matrix multiplication" do
+      a_bin = for v <- [1.0, 2.0, 3.0, 4.0], into: <<>>, do: <<v::float-little-size(64)>>
+      b_bin = for v <- [5.0, 6.0, 7.0, 8.0], into: <<>>, do: <<v::float-little-size(64)>>
+      a = Evision.Mat.from_binary_by_shape(a_bin, {:f, 64}, {2, 2})
+      b = Evision.Mat.from_binary_by_shape(b_bin, {:f, 64}, {2, 2})
+
+      product = Evision.Mat.matmul(a, b)
+      expected = for v <- [19.0, 22.0, 43.0, 50.0], into: <<>>, do: <<v::float-little-size(64)>>
+
+      assert Evision.Mat.to_binary(product) == expected
+      assert Evision.Mat.shape(product) == {2, 2}
+    end
+
+    test "matmul rejects shape mismatch" do
+      a_bin = for v <- [1.0, 2.0, 3.0, 4.0], into: <<>>, do: <<v::float-little-size(32)>>
+      b_bin = for v <- [1.0, 2.0, 3.0], into: <<>>, do: <<v::float-little-size(32)>>
+      a = Evision.Mat.from_binary_by_shape(a_bin, {:f, 32}, {2, 2})
+      b = Evision.Mat.from_binary_by_shape(b_bin, {:f, 32}, {3, 1})
+
+      assert {:error, _msg} = Evision.Mat.matmul(a, b)
+    end
+
+    test "transpose rejects as_shape whose byte size does not match the source" do
+      mat = Evision.Mat.from_binary_by_shape(<<1, 2, 3, 4>>, {:u, 8}, {4})
+
+      assert {:error, msg} = Evision.Mat.transpose(mat, [1, 0], as_shape: {2, 3})
+      assert msg =~ "as_shape"
+    end
+
+    test "at handles non-continuous matrices and returns the right scalar" do
+      bin = for v <- 1..16, into: <<>>, do: <<v::little-size(8)>>
+      mat = Evision.Mat.from_binary_by_shape(bin, {:u, 8}, {4, 4})
+
+      assert Evision.Mat.at(mat, 0) == 1
+      assert Evision.Mat.at(mat, 15) == 16
+      assert {:error, _} = Evision.Mat.at(mat, 16)
+    end
+
+    test "arange supports negative step" do
+      mat = Evision.Mat.arange(10, 0, -3, :s32)
+
+      expected =
+        for v <- [10, 7, 4, 1], into: <<>>, do: <<v::signed-little-size(32)>>
+
+      assert Evision.Mat.to_binary(mat) == expected
+    end
+
+    test "arange rejects inverted bounds for the given step direction" do
+      assert {:error, _} = Evision.Mat.arange(10, 0, 1, :s32)
+      assert {:error, _} = Evision.Mat.arange(0, 10, -1, :s32)
+    end
+
+    test "arange/4 rejects zero step at the Elixir guard" do
+      assert_raise FunctionClauseError, fn ->
+        Evision.Mat.arange(0, 10, 0, :s32)
+      end
+    end
+
+    test "ceil, floor, round all process every channel of multi-channel matrices" do
+      values = for v <- [0.4, 0.6, 1.4, 1.6, 2.4, 2.6], into: <<>>, do: <<v::float-little-size(32)>>
+      mat = Evision.Mat.from_binary(values, {:f, 32}, 1, 2, 3)
+
+      ceiled_bin = Evision.Mat.to_binary(Evision.Mat.ceil(mat))
+      floored_bin = Evision.Mat.to_binary(Evision.Mat.floor(mat))
+      rounded_bin = Evision.Mat.to_binary(Evision.Mat.round(mat))
+
+      expected_ceil =
+        for v <- [1.0, 1.0, 2.0, 2.0, 3.0, 3.0], into: <<>>, do: <<v::float-little-size(32)>>
+
+      expected_floor =
+        for v <- [0.0, 0.0, 1.0, 1.0, 2.0, 2.0], into: <<>>, do: <<v::float-little-size(32)>>
+
+      expected_round =
+        for v <- [0.0, 1.0, 1.0, 2.0, 2.0, 3.0], into: <<>>, do: <<v::float-little-size(32)>>
+
+      assert ceiled_bin == expected_ceil
+      assert floored_bin == expected_floor
+      assert rounded_bin == expected_round
+    end
+
+    test "negate flips every channel of multi-channel u8 matrices" do
+      mat = Evision.Mat.from_binary(<<1, 2, 3, 4, 5, 6>>, {:u, 8}, 1, 2, 3)
+
+      negated = Evision.Mat.negate(mat)
+
+      assert Evision.Mat.to_binary(negated) == <<255, 254, 253, 252, 251, 250>>
+    end
+
+    test "to_binary in element units stays consistent between Mat and nx_tensor paths" do
+      values = for v <- 1..4, into: <<>>, do: <<v::signed-little-size(32)>>
+      mat = Evision.Mat.from_binary_by_shape(values, {:s, 32}, {4})
+      expected_two_elements = for v <- [1, 2], into: <<>>, do: <<v::signed-little-size(32)>>
+
+      assert Evision.Mat.to_binary(mat, 2) == expected_two_elements
+
+      nx_tensor = %{
+        __struct__: :nx_tensor,
+        data: values,
+        type: :s32,
+        shape: {4}
+      }
+
+      assert Evision.Mat.to_binary(nx_tensor, 2) == expected_two_elements
+    end
   end
 
   @tag :nx
