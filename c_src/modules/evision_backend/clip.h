@@ -24,7 +24,7 @@ static ERL_NIF_TERM evision_cv_mat_clip(ErlNifEnv *env, int argc, const ERL_NIF_
             evision_to_safe(env, evision_get_kw(env, erl_terms, "upper"), upper, ArgInfo("upper", 0))) {
             ERRWRAP2(img.setTo(lower, img < lower), env, error_flag, error_term);
             if (!error_flag) {
-                ERRWRAP2(img.setTo(lower, img > lower), env, error_flag, error_term);
+                ERRWRAP2(img.setTo(upper, img > upper), env, error_flag, error_term);
                 if (!error_flag) {
                     return evision_from(env, img);
                 }

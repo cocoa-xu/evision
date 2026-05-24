@@ -84,6 +84,7 @@ int alloc_resource(evision_res<cv::Mat *> **res) {
     evision_res<cv::Mat *> * tmp = (evision_res<cv::Mat *> *)enif_alloc_resource(evision_res<cv::Mat *>::type, sizeof(evision_res<cv::Mat *>));
 
     if (tmp != nullptr) {
+        tmp->val = nullptr;
         tmp->in_buf = nullptr;
         tmp->in_ref = nullptr;
         tmp->in_unref = nullptr;

@@ -2,6 +2,7 @@
 #define EVISION_BACKEND_TO_BATCHED_LIST_H
 
 #include <erl_nif.h>
+#include <algorithm>
 #include "../../ArgInfo.hpp"
 
 // @evision c: mat_to_batched,evision_cv_mat_to_batched,1
@@ -25,11 +26,22 @@ static ERL_NIF_TERM evision_cv_mat_to_batched(ErlNifEnv *env, int argc, const ER
         if (leftover != "repeat" && leftover != "discard") {
             return evision::nif::error(env, "to_batched failed: invalid option value for leftover. Valid values are :repeat and :discard");
         }
+        if (as_shape.empty()) {
+            return evision::nif::error(env, "to_batched failed: invalid shape");
+        }
 
-        size_t mat_num_elem = img.total();
+        int mat_type = img.channels() == 1 ? img.type() : img.depth();
+        size_t elem_size = img.elemSize1();
+        size_t mat_num_elem = img.total() * img.channels();
         size_t as_shape_num_elem = 1;
         for (size_t i = 0; i < as_shape.size(); i++) {
+            if (as_shape[i] <= 0) {
+                return evision::nif::error(env, "to_batched failed: invalid shape");
+            }
             as_shape_num_elem *= as_shape[i];
+        }
+        if (batch_size == 0) {
+            return evision::nif::error(env, "to_batched failed: invalid batch size");
         }
         if (mat_num_elem != as_shape_num_elem) {
             return evision::nif::error(env, "to_batched failed: cannot treated matrix as the request shape");
@@ -37,7 +49,7 @@ static ERL_NIF_TERM evision_cv_mat_to_batched(ErlNifEnv *env, int argc, const ER
         
         uint64_t remainder = as_shape[0] % batch_size;
         uint64_t num_full_batches = as_shape[0] / batch_size;
-        uint64_t slice_size = as_shape_num_elem / as_shape[0] * img.elemSize();
+        uint64_t slice_size = as_shape_num_elem / as_shape[0] * elem_size;
         uint64_t batch_bytes = slice_size * batch_size;
 
         unsigned num_batches = (unsigned)num_full_batches;
@@ -48,6 +60,9 @@ static ERL_NIF_TERM evision_cv_mat_to_batched(ErlNifEnv *env, int argc, const ER
         }
 
         ERL_NIF_TERM * batches = (ERL_NIF_TERM * )enif_alloc(sizeof(ERL_NIF_TERM) * num_batches);
+        if (num_batches > 0 && batches == nullptr) {
+            return evision::nif::error(env, "to_batched failed: out of memory");
+        }
         char * data = (char *)img.data;
         // skip the first (batches)
         int ndims = (int)as_shape.size();
@@ -57,13 +72,17 @@ static ERL_NIF_TERM evision_cv_mat_to_batched(ErlNifEnv *env, int argc, const ER
         // deal with full batches
         char * offset_data = data;
         for (size_t i = 0; i < num_full_batches; i++) {
-            Mat mat = Mat(ndims, sizes, img.type(), offset_data);
+            Mat mat = Mat(ndims, sizes, mat_type, offset_data);
             batches[i] = evision_from(env, mat.clone());
             offset_data += batch_bytes;
         }
         // deal with leftover
         if (num_batches != num_full_batches) {
             char * last_batch_data = (char *)enif_alloc(batch_bytes);
+            if (last_batch_data == nullptr) {
+                enif_free(batches);
+                return evision::nif::error(env, "to_batched failed: out of memory");
+            }
 
             // copy leftover first
             uint64_t leftover_bytes = slice_size * remainder;
@@ -72,8 +91,15 @@ static ERL_NIF_TERM evision_cv_mat_to_batched(ErlNifEnv *env, int argc, const ER
             // repeat from the beginning
             uint64_t repeat_bytes = batch_bytes - leftover_bytes;
 
-            memcpy(last_batch_data + leftover_bytes, data, repeat_bytes);
-            Mat mat = Mat(ndims, sizes, img.type(), last_batch_data);
+            char *repeat_dst = last_batch_data + leftover_bytes;
+            uint64_t remaining = repeat_bytes;
+            while (remaining > 0) {
+                uint64_t copy_bytes = std::min<uint64_t>(remaining, as_shape_num_elem * elem_size);
+                memcpy(repeat_dst, data, copy_bytes);
+                repeat_dst += copy_bytes;
+                remaining -= copy_bytes;
+            }
+            Mat mat = Mat(ndims, sizes, mat_type, last_batch_data);
             batches[num_batches - 1] = evision_from(env, mat.clone());
             enif_free(last_batch_data);
         }

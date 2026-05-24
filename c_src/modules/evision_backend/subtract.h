@@ -55,8 +55,11 @@ static ERL_NIF_TERM evision_cv_mat_subtract_typed(ErlNifEnv *env, int argc, cons
             int type;
             if (!get_binary_type(t, l, 0, type)) return evision::nif::error(env, "not implemented for the given type");
             Mat ret;
-            cv::subtract(lhs, rhs, ret, cv::noArray(), type);
-            return evision_from(env, ret);
+            int error_flag = false;
+            ERRWRAP2(cv::subtract(lhs, rhs, ret, cv::noArray(), type), env, error_flag, error_term);
+            if (!error_flag) {
+                return evision_from(env, ret);
+            }
         }
     }
 

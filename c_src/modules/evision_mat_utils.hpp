@@ -2,7 +2,12 @@
 #define EVISION_MAT_UTILS_HPP
 #pragma once
 
+#include <string>
+
 int get_binary_type(const std::string& t, int l, int n, int& type) {
+    if (n < 0 || n > CV_CN_MAX) {
+        return false;
+    }
     if (t == "u") {
         if (l == 8) {
             if (n != 0) type = CV_8UC(n);
@@ -51,6 +56,9 @@ int get_binary_type(const std::string& t, int l, int n, int& type) {
 }
 
 int get_compact_type(const std::string& compact, int n, int& type) {
+    if (compact.empty() || n < 0 || n > CV_CN_MAX) {
+        return false;
+    }
     if (compact[0] == 'u') {
         if (compact == "u8") {
             if (n != 0) type = CV_8UC(n);

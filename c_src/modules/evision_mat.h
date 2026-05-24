@@ -263,34 +263,6 @@ static ERL_NIF_TERM evision_cv_mat_roi(ErlNifEnv *env, int argc, const ERL_NIF_T
     else return enif_make_badarg(env);
 }
 
-/// `matrix` and `patch` should be contiguous.
-void mat_update_roi(cv::Mat& matrix, cv::Mat& patch, 
-    std::vector<cv::Range>& ranges, size_t elem_size,
-    size_t step_size, size_t from_step_size,
-    int dim_index, size_t base_offset, size_t from_offset)
-{
-    if (dim_index >= matrix.size.dims()) return;
-
-    step_size /= matrix.size.p[dim_index];
-    from_step_size /= patch.size.p[dim_index];
-
-    auto& range = ranges[dim_index];
-
-    if (step_size == elem_size) {
-        uint8_t* data = matrix.data;
-        uint8_t* from = patch.data;
-        memcpy(
-            (uint64_t *)(((uint64_t)(uint64_t *)(data)) + base_offset + range.start * elem_size),
-            (uint64_t *)(((uint64_t)(uint64_t *)(from)) + from_offset),
-            elem_size * (range.end - range.start)
-        );
-    } else {
-        for (int pos = range.start, from_pos = 0; pos < range.end; pos++, from_pos++) {
-            mat_update_roi(matrix, patch, ranges, elem_size, step_size, from_step_size, dim_index + 1, base_offset + step_size * pos, from_offset + from_step_size * from_pos);
-        }
-    }
-}
-
 // @evision c: mat_update_roi,evision_cv_mat_update_roi,1
 // @evision nif: def mat_update_roi(_opts \\ []), do: :erlang.nif_error(:undefined)
 static ERL_NIF_TERM evision_cv_mat_update_roi(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
@@ -317,19 +289,33 @@ static ERL_NIF_TERM evision_cv_mat_update_roi(ErlNifEnv *env, int argc, const ER
         } else if (mat.dims != with_mat.dims) {
             error_flag = true;
             error_term = evision::nif::error(env, "Cannot update roi: dimension mismatch");
+        } else if ((int)ranges.size() != mat.dims) {
+            error_flag = true;
+            error_term = evision::nif::error(env, "Cannot update roi: range dimension mismatch");
         } else {
-            if (!mat.isContinuous()) mat = mat.clone();
-            if (!with_mat.isContinuous()) with_mat = with_mat.clone();
-            size_t step_size = mat.elemSize();
-            for (int i = 0; i < mat.size.dims(); i++) {
-                step_size *= mat.size.p[i];
+            for (int i = 0; i < mat.dims; i++) {
+                if (ranges[i] == cv::Range::all()) {
+                    ranges[i] = cv::Range(0, mat.size.p[i]);
+                }
+                if (ranges[i].start < 0 || ranges[i].end < ranges[i].start || ranges[i].end > mat.size.p[i]) {
+                    error_flag = true;
+                    error_term = evision::nif::error(env, "Cannot update roi: range out of bounds");
+                    break;
+                }
+                if (with_mat.size.p[i] != ranges[i].end - ranges[i].start) {
+                    error_flag = true;
+                    error_term = evision::nif::error(env, "Cannot update roi: patch shape mismatch");
+                    break;
+                }
             }
-            size_t from_step_size = mat.elemSize();
-            for (int i = 0; i < with_mat.size.dims(); i++) {
-                from_step_size *= with_mat.size.p[i];
+            if (!error_flag) {
+                mat = mat.clone();
+                Mat target;
+                ERRWRAP2(target = mat(ranges), env, error_flag, error_term);
+                if (!error_flag) {
+                    ERRWRAP2(with_mat.copyTo(target), env, error_flag, error_term);
+                }
             }
-            size_t elem_size = mat.elemSize();
-            mat_update_roi(mat, with_mat, ranges, elem_size, step_size, from_step_size, 0, 0, 0);
         }
 
         if (!error_flag) {
@@ -442,14 +428,22 @@ static ERL_NIF_TERM evision_cv_mat_arange(ErlNifEnv *env, int argc, const ERL_NI
             int type;
             if (!get_binary_type(t, l, 0, type)) return evision::nif::error(env, "not implemented for the given type");
 
-            int32_t count = (to - from) / step;
-            int dims[1] = {0};
-            dims[0] = (int)count;
-            if (count <= 0) return evision::nif::error(env, "invalid values for start/end/step");
+            if (step == 0) return evision::nif::error(env, "invalid values for start/end/step");
+            if ((step > 0 && from >= to) || (step < 0 && from <= to)) {
+                return evision::nif::error(env, "invalid values for start/end/step");
+            }
 
-            std::vector<int32_t> values(count);
+            int64_t distance = step > 0 ? (int64_t)to - from : (int64_t)from - to;
+            int64_t step_size = step > 0 ? step : -(int64_t)step;
+            int64_t count64 = (distance + step_size - 1) / step_size;
+            if (count64 <= 0 || count64 > std::numeric_limits<int>::max()) {
+                return evision::nif::error(env, "invalid values for start/end/step");
+            }
+
+            int dims[1] = {(int)count64};
+            std::vector<int32_t> values((size_t)count64);
             int32_t v = from;
-            for (int32_t i = 0; i < count; i++) {
+            for (int64_t i = 0; i < count64; i++) {
                 values[i] = v;
                 v += step;
             }
@@ -487,9 +481,7 @@ static ERL_NIF_TERM evision_cv_mat_full(ErlNifEnv *env, int argc, const ERL_NIF_
             int type;
             if (!get_binary_type(t, l, 0, type)) return evision::nif::error(env, "not implemented for the given type");
 
-            Mat out = Mat(Mat::ones(shape.size(), shape.data(), CV_64F) * number);
-            Mat ret;
-            out.convertTo(ret, type);
+            Mat ret((int)shape.size(), shape.data(), type, Scalar(number));
             return evision_from(env, ret);
         }
     }
@@ -513,6 +505,13 @@ static ERL_NIF_TERM evision_cv_mat_at(ErlNifEnv *env, int argc, const ERL_NIF_TE
 
         if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "pos"), pos, ArgInfo("img", 0))) {
+            size_t count = img.total() * img.channels();
+            if (pos >= count) {
+                return evision::nif::error(env, "index out of bounds");
+            }
+            if (!img.isContinuous()) {
+                img = img.clone();
+            }
 
             int type = img.type();
             uint8_t depth = type & CV_MAT_DEPTH_MASK;
@@ -540,6 +539,10 @@ static ERL_NIF_TERM evision_cv_mat_at(ErlNifEnv *env, int argc, const ERL_NIF_TE
                 }
                 case CV_32S: {
                     i32 = ((int32_t *)img.data)[pos]; type = 0;
+                    break;
+                }
+                case CV_16F: {
+                    f64 = _do_cast_f16<double>(((uint16_t *)img.data)[pos]); type = 1;
                     break;
                 }
 
@@ -610,8 +613,12 @@ static ERL_NIF_TERM evision_cv_mat_dot(ErlNifEnv *env, int argc, const ERL_NIF_T
 
         if (evision_to_safe(env, evision_get_kw(env, erl_terms, "a"), a, ArgInfo("a", 0)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "b"), b, ArgInfo("b", 0))) {
-            Mat out = a.cross(b);
-            return evision_from(env, out);
+            double out = 0;
+            int error_flag = false;
+            ERRWRAP2(out = a.dot(b), env, error_flag, error_term);
+            if (!error_flag) {
+                return evision_from(env, out);
+            }
         }
     }
 
@@ -904,7 +911,11 @@ static ERL_NIF_TERM evision_cv_mat_last_dim_as_channel(ErlNifEnv *env, int argc,
                 for (size_t i = 0; i < (size_t)(ndims - 1); i++) {
                     new_shape[i] = src.size.p[i];
                 }
-                int type = CV_MAKETYPE(src.type(), src.size.p[ndims - 1]);
+                int channels = src.size.p[ndims - 1];
+                if (channels <= 0 || channels > CV_CN_MAX) {
+                    return evision::nif::error(env, "invalid number of channels");
+                }
+                int type = CV_MAKETYPE(src.depth(), channels);
                 Mat ret = Mat(ndims - 1, new_shape.data(), type, src.data);
                 return evision_from(env, ret.clone());
             } else {
