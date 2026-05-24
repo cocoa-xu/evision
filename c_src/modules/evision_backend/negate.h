@@ -22,14 +22,14 @@ static ERL_NIF_TERM evision_cv_mat_negate(ErlNifEnv *env, int argc, const ERL_NI
 
             if (depth == CV_8U) {
                 auto ptr = img.ptr<uint8_t>();
-                size_t count = img.total();
+                size_t count = img.total() * img.channels();
                 for (size_t i = 0; i < count; ++i) {
                     ptr[i] = 0 - ptr[i];
                 }
                 return evision_from(env, img);
             } else if (depth == CV_16U) {
                 auto ptr = img.ptr<uint16_t>();
-                size_t count = img.total();
+                size_t count = img.total() * img.channels();
                 for (size_t i = 0; i < count; ++i) {
                     ptr[i] = 0 - ptr[i];
                 }

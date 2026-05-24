@@ -19,16 +19,26 @@ static ERL_NIF_TERM evision_cv_mat_round(ErlNifEnv *env, int argc, const ERL_NIF
         if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0))) {
             int type = img.type();
             uint8_t depth = type & CV_MAT_DEPTH_MASK;
-            if (depth == CV_32F) {
+            if (depth == CV_16F) {
+                Mat tmp;
+                img.convertTo(tmp, CV_MAKETYPE(CV_32F, img.channels()));
+                auto ptr = tmp.ptr<float>();
+                size_t count = tmp.total() * tmp.channels();
+                for (size_t i = 0; i < count; ++i) {
+                    ptr[i] = roundf(ptr[i]);
+                }
+                tmp.convertTo(img, type);
+                return evision_from(env, img);
+            } else if (depth == CV_32F) {
                 auto ptr = img.ptr<float>();
-                size_t count = img.total();
+                size_t count = img.total() * img.channels();
                 for (size_t i = 0; i < count; ++i) {
                     ptr[i] = roundf(ptr[i]);
                 }
                 return evision_from(env, img);
             } else if (depth == CV_64F) {
                 auto ptr = img.ptr<double>();
-                size_t count = img.total();
+                size_t count = img.total() * img.channels();
                 for (size_t i = 0; i < count; ++i) {
                     ptr[i] = round(ptr[i]);
                 }

@@ -54,6 +54,7 @@ std::mutex gMtx;
 std::condition_variable gCv;
 
 #define EVISION_NOT_INITIATED 100
+#define EVISION_INITIATING 150
 #define EVISION_INITIATED 200
 #define EVISION_EXITED 900
 #define EVISION_ERROR 1000
@@ -84,6 +85,18 @@ void *evision_main_loop(void * );
 
 int start_native_gui(ErlNifEnv *env)
 {
+    {
+        std::unique_lock<std::mutex> lock(gMtx);
+        if (evision_status == EVISION_INITIATED) {
+            return evision_status;
+        }
+        if (evision_status == EVISION_INITIATING) {
+            gCv.wait(lock, []{return evision_status != EVISION_INITIATING;});
+            return evision_status;
+        }
+        evision_status = EVISION_INITIATING;
+    }
+
     int res;
 #ifdef __APPLE__
     res = erl_drv_steal_main_thread((char *)"evision", &evision_thread, evision_main_loop, (void *)NULL, NULL);
@@ -93,15 +106,18 @@ int start_native_gui(ErlNifEnv *env)
     res = enif_thread_create((char *)"evision", &evision_thread, evision_main_loop, (void *)NULL, opts);
     enif_thread_opts_destroy(opts);
 #endif
-    {
+    if (res != 0) {
         std::unique_lock<std::mutex> lock(gMtx);
-        gCv.wait(lock, []{return evision_status != EVISION_NOT_INITIATED;});
+        evision_status = EVISION_ERROR;
+        lock.unlock();
+        gCv.notify_all();
+        return EVISION_ERROR;
     }
 
-    if (res == 0) {
+    {
+        std::unique_lock<std::mutex> lock(gMtx);
+        gCv.wait(lock, []{return evision_status != EVISION_INITIATING;});
         return evision_status;
-    } else {
-        return EVISION_ERROR;
     }
 }
 

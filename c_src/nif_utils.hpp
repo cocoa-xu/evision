@@ -291,7 +291,7 @@ namespace evision
 
       for (int i = 0; i < length; i++)
       {
-        int data;
+        int64_t data;
         if (!get(env, terms[i], &data))
           return 0;
         var.push_back(data);

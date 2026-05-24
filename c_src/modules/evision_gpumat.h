@@ -223,6 +223,9 @@ static ERL_NIF_TERM evision_cv_cuda_cuda_GpuMat_from_pointer(ErlNifEnv *env, int
         if (alloc_resource(&self)) {
             new (&(self->val)) Ptr<cv::cuda::GpuMat>(); // init Ptr with placement new
         }
+        if (self == nullptr) {
+            return evision::nif::error(env, "out of memory");
+        }
         if (self) ERRWRAP2(self->val.reset(new cv::cuda::GpuMat(height, width, type, ptr)), env, error_flag, error_term);
         if (!error_flag) {
             ERL_NIF_TERM ret = enif_make_resource(env, self);
@@ -230,6 +233,7 @@ static ERL_NIF_TERM evision_cv_cuda_cuda_GpuMat_from_pointer(ErlNifEnv *env, int
             bool success;
             return evision_from_as_map<Ptr<cv::cuda::GpuMat>>(env, self->val, ret, "Elixir.Evision.CUDA.GpuMat", success);
         }
+        enif_release_resource(self);
     }
 
     if (error_term != 0) return error_term;

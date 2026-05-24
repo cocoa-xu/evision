@@ -27,8 +27,6 @@ static ERL_NIF_TERM evision_cv_mat_expm1(ErlNifEnv *env, int argc, const ERL_NIF
                     return evision_from(env, ret);
                 }
             }
-            cv::exp(img, ret);
-            return evision_from(env, Mat(ret - 1));
         }
     }
 

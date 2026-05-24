@@ -55,8 +55,11 @@ static ERL_NIF_TERM evision_cv_mat_multiply_typed(ErlNifEnv *env, int argc, cons
             int type;
             if (!get_binary_type(t, l, 0, type)) return evision::nif::error(env, "not implemented for the given type");
             Mat ret;
-            cv::multiply(lhs, rhs, ret, 1, type);
-            return evision_from(env, ret);
+            int error_flag = false;
+            ERRWRAP2(cv::multiply(lhs, rhs, ret, 1, type), env, error_flag, error_term);
+            if (!error_flag) {
+                return evision_from(env, ret);
+            }
         }
     }
 
