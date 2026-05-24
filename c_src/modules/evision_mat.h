@@ -309,6 +309,7 @@ static ERL_NIF_TERM evision_cv_mat_update_roi(ErlNifEnv *env, int argc, const ER
                 }
             }
             if (!error_flag) {
+                mat = mat.clone();
                 Mat target;
                 ERRWRAP2(target = mat(ranges), env, error_flag, error_term);
                 if (!error_flag) {

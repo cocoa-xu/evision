@@ -1563,14 +1563,40 @@ defmodule Evision.Mat do
     |> Evision.Internal.Structurise.to_struct()
   end
 
+  @doc """
+  Compute the dot product of two matrices as scalars.
+
+  Matches OpenCV `cv::Mat::dot` semantics: the matrices are scanned in
+  row-major order, treated as 1-D vectors of the same length, and the sum
+  of element-wise products is returned as a `double`. For multi-channel
+  matrices the per-channel dot products are summed together.
+
+  Both matrices must have the same size and the same type.
+  """
   @doc namespace: :"cv.Mat"
-  @spec dot(maybe_mat_in(), maybe_mat_in()) :: maybe_mat_out()
+  @spec dot(maybe_mat_in(), maybe_mat_in()) :: number() | {:error, String.t()}
   def dot(mat_a, mat_b) do
     mat_a = from_struct(mat_a)
     mat_b = from_struct(mat_b)
 
     :evision_nif.mat_dot(a: mat_a, b: mat_b)
     |> Evision.Internal.Structurise.to_struct()
+  end
+
+  @doc """
+  Matrix multiplication of two 2-D matrices.
+
+  Wraps OpenCV's `cv::Mat::operator*` (which delegates to `cv::gemm`).
+  Both matrices must be 2-D and share a `CV_32F` or `CV_64F` depth. The
+  result has the same type as `mat_a`.
+  """
+  @doc namespace: :"cv.Mat"
+  @spec matmul(maybe_mat_in(), maybe_mat_in()) :: maybe_mat_out()
+  def matmul(mat_a, mat_b) do
+    case type(mat_a) do
+      {:error, msg} -> {:error, msg}
+      type -> matrix_multiply(mat_a, mat_b, type)
+    end
   end
 
   @doc namespace: :"cv.Mat"
@@ -1946,7 +1972,7 @@ defmodule Evision.Mat do
         :evision_nif.mat_to_batched(
           img: mat,
           batch_size: batch_size,
-          as_shape: as_shape,
+          as_shape: Tuple.to_list(as_shape),
           leftover: leftover
         )
         |> Evision.Internal.Structurise.to_struct()
@@ -1974,17 +2000,34 @@ defmodule Evision.Mat do
     mat = from_struct(mat)
 
     case mat do
-      %{__struct__: :nx_tensor, data: data} when is_binary(data) ->
+      %{__struct__: :nx_tensor, data: data, type: type} when is_binary(data) ->
         if limit == 0 do
           data
         else
-          :binary.part(data, 0, limit)
+          elem_size = compact_type_elem_size(type)
+          byte_limit = min(limit * elem_size, byte_size(data))
+          :binary.part(data, 0, byte_limit)
         end
 
       _ ->
         :evision_nif.mat_to_binary(img: mat, limit: limit)
     end
   end
+
+  defp compact_type_elem_size(:u8), do: 1
+  defp compact_type_elem_size(:s8), do: 1
+  defp compact_type_elem_size(:u16), do: 2
+  defp compact_type_elem_size(:s16), do: 2
+  defp compact_type_elem_size(:f16), do: 2
+  defp compact_type_elem_size(:u32), do: 4
+  defp compact_type_elem_size(:s32), do: 4
+  defp compact_type_elem_size(:f32), do: 4
+  defp compact_type_elem_size(:c32), do: 4
+  defp compact_type_elem_size(:u64), do: 8
+  defp compact_type_elem_size(:s64), do: 8
+  defp compact_type_elem_size(:f64), do: 8
+  defp compact_type_elem_size(:c64), do: 8
+  defp compact_type_elem_size({_, bits}) when is_integer(bits), do: div(bits, 8)
 
   @doc """
   Create Mat from binary (pixel) data

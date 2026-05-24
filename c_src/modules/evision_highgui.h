@@ -137,7 +137,7 @@ void *evision_main_loop(void * _unused)
         std::unique_lock<std::mutex> lk(gMtx);
         evision_status = EVISION_INITIATED;
     }
-    gCv.notify_one();
+    gCv.notify_all();
 
     int should_wait = true;
     while (should_wait) {

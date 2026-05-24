@@ -2,6 +2,7 @@
 #define EVISION_BACKEND_TRANSPOSE_H
 
 #include <erl_nif.h>
+#include <limits>
 #include "../../ArgInfo.hpp"
 
 // @evision c: mat_transpose,evision_cv_mat_transpose,1
@@ -35,6 +36,18 @@ static ERL_NIF_TERM evision_cv_mat_transpose(ErlNifEnv *env, int argc, const ERL
         int error_flag = false;
         cv::Mat ret;
         if (as_shaped) {
+            size_t expected_elems = 1;
+            for (int dim : as_shape) {
+                if ((size_t)dim > std::numeric_limits<size_t>::max() / expected_elems) {
+                    return evision::nif::error(env, "as_shape overflow");
+                }
+                expected_elems *= (size_t)dim;
+            }
+            size_t expected_bytes = expected_elems * (size_t)CV_ELEM_SIZE1(img.depth());
+            size_t actual_bytes = (size_t)img.total() * (size_t)img.elemSize();
+            if (expected_bytes != actual_bytes) {
+                return evision::nif::error(env, "as_shape byte size does not match source matrix");
+            }
             if (!img.isContinuous()) {
                 img = img.clone();
             }

@@ -226,7 +226,7 @@ static ERL_NIF_TERM evision_cv_cuda_cuda_GpuMat_from_pointer(ErlNifEnv *env, int
         if (self == nullptr) {
             return evision::nif::error(env, "out of memory");
         }
-        if (self) ERRWRAP2(self->val.reset(new cv::cuda::GpuMat(height, width, type, ptr)), env, error_flag, error_term);
+        ERRWRAP2(self->val.reset(new cv::cuda::GpuMat(height, width, type, ptr)), env, error_flag, error_term);
         if (!error_flag) {
             ERL_NIF_TERM ret = enif_make_resource(env, self);
             enif_release_resource(self);
