@@ -175,6 +175,45 @@ defmodule Evision.Mat.Test do
     end
   end
 
+  describe "native mat helper regressions" do
+    test "clip clamps values to both bounds" do
+      mat = Evision.Mat.from_binary_by_shape(<<0, 5, 10>>, {:u, 8}, {3})
+
+      clipped = Evision.Mat.clip(mat, 2, 6)
+
+      assert Evision.Mat.to_binary(clipped) == <<2, 5, 6>>
+    end
+
+    test "arange keeps the last stepped value when the interval is not evenly divisible" do
+      mat = Evision.Mat.arange(0, 5, 2, :s32)
+
+      expected =
+        for value <- [0, 2, 4], into: <<>> do
+          <<value::signed-little-size(32)>>
+        end
+
+      assert Evision.Mat.to_binary(mat) == expected
+    end
+
+    test "to_binary respects the element limit" do
+      mat = Evision.Mat.from_binary_by_shape(<<1, 2, 3, 4>>, {:u, 8}, {4})
+
+      assert Evision.Mat.to_binary(mat, 2) == <<1, 2>>
+    end
+
+    test "from_binary_by_shape rejects binaries smaller than the requested shape" do
+      assert {:error, "size mismatch"} =
+               Evision.Mat.from_binary_by_shape(<<1, 2>>, {:u, 8}, {2, 2})
+    end
+
+    test "to_batched repeat fills batches without reading past the source matrix" do
+      mat = Evision.Mat.from_binary_by_shape(<<1, 2>>, {:u, 8}, {2})
+
+      assert [batch] = Evision.Mat.to_batched(mat, 8, {2}, leftover: :repeat)
+      assert Evision.Mat.to_binary(batch) == <<1, 2, 1, 2, 1, 2, 1, 2>>
+    end
+  end
+
   @tag :nx
   test "use Nx.tensor without calling last_dim_as_channel" do
     v = Nx.broadcast(Nx.tensor(1.0, type: :f64), {120, 120, 3})
