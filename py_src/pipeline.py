@@ -27,6 +27,7 @@ import doxygen_groups
 import evision_templates as ET
 import evision_structures as ES
 import evision_extra_functions as EF
+import evision_js_attr
 from erl_enum_expression_generator import ErlEnumExpressionGenerator
 from helper import *
 from ir.namespaces import Namespace
@@ -961,6 +962,17 @@ class Pipeline(object):
             self.evision_elixir.write(self.evision_ex.get_generated_code('elixir'))
             self.save(erl_output_path, "evision.ex", self.evision_elixir)
 
+            # 'evision_js.ex' — opencv.js correspondence runtime (CCD-20)
+            entries_elixir = evision_js_attr.collect_runtime_entries(
+                [self.evision_ex] + list(self.evision_modules.values()),
+                'elixir',
+            )
+            self.save(
+                erl_output_path,
+                "evision_js.ex",
+                evision_js_attr.elixir_runtime_module(entries_elixir),
+            )
+
         if 'erlang' in self.langs:
             # 'evision_nif.erl'
             self.evision_nif_erlang.write(self.evision_ex.get_nif_declaration('erlang'))
@@ -978,6 +990,17 @@ class Pipeline(object):
 
             # 'evision.hrl'
             self.save(erlang_output_path, "evision.hrl", self.evision_erlang_hrl)
+
+            # 'evision_js.erl' — opencv.js correspondence runtime (CCD-20)
+            entries_erlang = evision_js_attr.collect_runtime_entries(
+                [self.evision_ex] + list(self.evision_modules.values()),
+                'erlang',
+            )
+            self.save(
+                erlang_output_path,
+                "evision_js.erl",
+                evision_js_attr.erlang_runtime_module(entries_erlang),
+            )
 
         self.code_ns_reg.write('\n};\n\n')
         self.save(output_path, "evision_generated_modules_content.h", self.code_ns_reg)

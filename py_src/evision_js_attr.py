@@ -18,7 +18,8 @@ See ``projects/evision/context/js-correspondence-tag.md`` in the
 
 from __future__ import annotations
 
-from typing import Dict, Optional, Tuple
+import sys
+from typing import Dict, Iterable, List, Optional, Tuple
 
 from opencv_js_whitelist import (
     ConfigNotFoundError,
@@ -26,9 +27,15 @@ from opencv_js_whitelist import (
     namespace_prefix_override,
 )
 
+if sys.version_info[0] >= 3:
+    from io import StringIO
+else:
+    from cStringIO import StringIO
+
 
 JsEntry = Dict[str, object]
 LookupKey = Tuple[Optional[str], str]
+RuntimeEntry = Dict[str, object]
 
 
 _INDEX: Optional[Dict[LookupKey, JsEntry]] = None
@@ -167,3 +174,168 @@ def _erlang_atom(name: str) -> str:
     # the first character of every emitted name (`map_argname_elixir`,
     # `get_module_func_name`), so this is always safe without quoting.
     return name
+
+
+# ----- Runtime module emission (Evision.JS / evision_js) ------------------
+
+
+def collect_runtime_entries(module_generators: Iterable, kind: str) -> List[RuntimeEntry]:
+    """Flatten ``js_attrs[kind]`` across every emitted ``ModuleGenerator``.
+
+    Each ``ModuleGenerator`` carries its own
+    ``js_attrs[kind] = {fun_name: {arity: js_entry}}``. The runtime module
+    needs a single flat list of entries keyed by
+    ``(module, fun, arity)`` — the Elixir module name is reconstructed
+    from the generator's ``module_name`` (the root ``Evision`` keeps that
+    bare name; everything else is prefixed with ``Evision.``).
+
+    Output is sorted by ``(module, fun, arity)`` so the generated source
+    is reproducible across runs.
+    """
+    out: List[RuntimeEntry] = []
+    for mg in module_generators:
+        mod_name = mg.module_name
+        full_module = mod_name if mod_name == "Evision" else f"Evision.{mod_name}"
+        kind_attrs = mg.js_attrs.get(kind) or {}
+        for fun_name, by_arity in kind_attrs.items():
+            for arity, js_entry in by_arity.items():
+                entry: RuntimeEntry = {
+                    "module": full_module,
+                    "fun": fun_name,
+                    "arity": arity,
+                    "js_kind": js_entry["js_kind"],
+                }
+                for optional_key in ("js_name", "js_class", "js_method"):
+                    if optional_key in js_entry:
+                        entry[optional_key] = js_entry[optional_key]
+                out.append(entry)
+    out.sort(key=lambda e: (e["module"], e["fun"], e["arity"]))
+    return out
+
+
+def elixir_runtime_module(entries_list: List[RuntimeEntry]) -> str:
+    """Render ``lib/generated/evision_js.ex`` from a flat entry list."""
+    out = StringIO()
+    out.write("defmodule Evision.JS do\n")
+    out.write('  @moduledoc """\n')
+    out.write("  Generated map of evision bindings to their opencv.js counterparts.\n")
+    out.write("\n")
+    out.write("  Each entry carries the Elixir `(module, fun, arity)` plus the\n")
+    out.write("  opencv.js call shape: `:js_kind` discriminates between\n")
+    out.write("  `:function`, `:method` and `:constructor`; `:js_name` is set\n")
+    out.write("  for free functions, `:js_class` for class methods and\n")
+    out.write("  constructors, and `:js_method` for methods only.\n")
+    out.write('  """\n\n')
+    out.write('  @typedoc "An opencv.js correspondence entry."\n')
+    out.write("  @type entry :: %{\n")
+    out.write("          required(:module) => module(),\n")
+    out.write("          required(:fun) => atom(),\n")
+    out.write("          required(:arity) => arity(),\n")
+    out.write("          required(:js_kind) => :function | :method | :constructor,\n")
+    out.write("          optional(:js_name) => String.t(),\n")
+    out.write("          optional(:js_class) => String.t(),\n")
+    out.write("          optional(:js_method) => String.t()\n")
+    out.write("        }\n\n")
+    if entries_list:
+        out.write("  @whitelist [\n")
+        for entry in entries_list:
+            out.write("    " + _elixir_entry_literal(entry) + ",\n")
+        out.write("  ]\n\n")
+    else:
+        out.write("  @whitelist []\n\n")
+    out.write("  @index Map.new(@whitelist, fn entry -> {{entry.module, entry.fun, entry.arity}, entry} end)\n\n")
+    out.write('  @doc "Every opencv.js correspondence entry emitted by evision\'s codegen."\n')
+    out.write("  @spec whitelist() :: [entry()]\n")
+    out.write("  def whitelist, do: @whitelist\n\n")
+    out.write('  @doc "Return `{:ok, entry}` for a known `(module, fun, arity)`; `:error` otherwise."\n')
+    out.write("  @spec lookup(module(), atom(), arity()) :: {:ok, entry()} | :error\n")
+    out.write("  def lookup(module, fun, arity), do: Map.fetch(@index, {module, fun, arity})\n\n")
+    out.write('  @doc "Whether the given `(module, fun, arity)` has an opencv.js counterpart."\n')
+    out.write("  @spec runnable?(module(), atom(), arity()) :: boolean()\n")
+    out.write("  def runnable?(module, fun, arity), do: Map.has_key?(@index, {module, fun, arity})\n")
+    out.write("end\n")
+    return out.getvalue()
+
+
+def erlang_runtime_module(entries_list: List[RuntimeEntry]) -> str:
+    """Render ``src/generated/evision_js.erl`` from a flat entry list.
+
+    ``fun`` is a reserved word in Erlang's expression / type-spec grammar,
+    so every map key referring to that field is quoted as ``'fun'``.
+    Inside ``-attribute(#{...}).`` declarations (CCD-19's ``-js(...)``) the
+    attribute parser is more permissive and bare ``fun`` works there — that
+    permissiveness does NOT extend to function bodies or ``-spec``s.
+    """
+    out = StringIO()
+    out.write("-module(evision_js).\n")
+    out.write("-compile(nowarn_export_all).\n")
+    out.write("-compile([export_all]).\n\n")
+    out.write("-type entry() :: #{\n")
+    out.write("    module := module(),\n")
+    out.write("    'fun' := atom(),\n")
+    out.write("    arity := arity(),\n")
+    out.write("    js_kind := function | method | constructor,\n")
+    out.write("    js_name => binary(),\n")
+    out.write("    js_class => binary(),\n")
+    out.write("    js_method => binary()\n")
+    out.write("}.\n\n")
+    out.write("-spec whitelist() -> [entry()].\n")
+    out.write("whitelist() ->\n")
+    if entries_list:
+        out.write("    [\n")
+        for i, entry in enumerate(entries_list):
+            sep = "," if i < len(entries_list) - 1 else ""
+            out.write(f"        {_erlang_entry_literal(entry)}{sep}\n")
+        out.write("    ].\n\n")
+    else:
+        out.write("    [].\n\n")
+    out.write("-spec lookup(module(), atom(), arity()) -> {ok, entry()} | error.\n")
+    out.write("lookup(Module, Fun, Arity) ->\n")
+    out.write("    maps:find({Module, Fun, Arity}, index()).\n\n")
+    out.write("-spec runnable(module(), atom(), arity()) -> boolean().\n")
+    out.write("runnable(Module, Fun, Arity) ->\n")
+    out.write("    maps:is_key({Module, Fun, Arity}, index()).\n\n")
+    out.write("index() ->\n")
+    if entries_list:
+        out.write("    #{\n")
+        for i, entry in enumerate(entries_list):
+            sep = "," if i < len(entries_list) - 1 else ""
+            out.write(f"        {_erlang_key(entry)} => {_erlang_entry_literal(entry)}{sep}\n")
+        out.write("    }.\n")
+    else:
+        out.write("    #{}.\n")
+    return out.getvalue()
+
+
+def _elixir_entry_literal(entry: RuntimeEntry) -> str:
+    fields = [
+        f"module: {entry['module']}",
+        f"fun: :{entry['fun']}",
+        f"arity: {entry['arity']}",
+        f"js_kind: :{entry['js_kind']}",
+    ]
+    for optional_key in ("js_name", "js_class", "js_method"):
+        if optional_key in entry:
+            fields.append(f'{optional_key}: "{entry[optional_key]}"')
+    return "%{" + ", ".join(fields) + "}"
+
+
+def _erlang_module_atom(elixir_module_name: str) -> str:
+    return f"'Elixir.{elixir_module_name}'"
+
+
+def _erlang_key(entry: RuntimeEntry) -> str:
+    return f"{{{_erlang_module_atom(str(entry['module']))}, {entry['fun']}, {entry['arity']}}}"
+
+
+def _erlang_entry_literal(entry: RuntimeEntry) -> str:
+    fields = [
+        f"module => {_erlang_module_atom(str(entry['module']))}",
+        f"'fun' => {entry['fun']}",
+        f"arity => {entry['arity']}",
+        f"js_kind => {entry['js_kind']}",
+    ]
+    for optional_key in ("js_name", "js_class", "js_method"):
+        if optional_key in entry:
+            fields.append(f'{optional_key} => <<"{entry[optional_key]}">>')
+    return "#{" + ", ".join(fields) + "}"
