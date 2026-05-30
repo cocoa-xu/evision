@@ -143,6 +143,8 @@ def elixir_attribute_line(entry: JsEntry, fun: str, arity: int) -> str:
         fields.append(f'js_class: "{entry["js_class"]}"')
     if "js_method" in entry:
         fields.append(f'js_method: "{entry["js_method"]}"')
+    if "arg_plan" in entry:
+        fields.append(f"arg_plan: {_elixir_arg_plan(entry['arg_plan'])}")
     return f"  @js %{{{', '.join(fields)}}}\n"
 
 
@@ -159,6 +161,8 @@ def erlang_attribute_line(entry: JsEntry, fun: str, arity: int) -> str:
         fields.append(f'js_class => <<"{entry["js_class"]}">>')
     if "js_method" in entry:
         fields.append(f'js_method => <<"{entry["js_method"]}">>')
+    if "arg_plan" in entry:
+        fields.append(f"arg_plan => {_erlang_arg_plan(entry['arg_plan'])}")
     return f"-js(#{{{', '.join(fields)}}}).\n"
 
 
@@ -174,6 +178,16 @@ def _erlang_atom(name: str) -> str:
     # the first character of every emitted name (`map_argname_elixir`,
     # `get_module_func_name`), so this is always safe without quoting.
     return name
+
+
+def _elixir_arg_plan(plan) -> str:
+    # opencv.js positional arg-plan as an Elixir atom list: [:in, :out, :in].
+    return "[" + ", ".join(f":{slot}" for slot in plan) + "]"
+
+
+def _erlang_arg_plan(plan) -> str:
+    # opencv.js positional arg-plan as an Erlang atom list: [in, out, in].
+    return "[" + ", ".join(plan) + "]"
 
 
 # ----- Runtime module emission (Evision.JS / evision_js) ------------------
@@ -205,7 +219,7 @@ def collect_runtime_entries(module_generators: Iterable, kind: str) -> List[Runt
                     "arity": arity,
                     "js_kind": js_entry["js_kind"],
                 }
-                for optional_key in ("js_name", "js_class", "js_method"):
+                for optional_key in ("js_name", "js_class", "js_method", "arg_plan"):
                     if optional_key in js_entry:
                         entry[optional_key] = js_entry[optional_key]
                 out.append(entry)
@@ -232,6 +246,7 @@ def elixir_runtime_module(entries_list: List[RuntimeEntry]) -> str:
     out.write("          required(:fun) => atom(),\n")
     out.write("          required(:arity) => arity(),\n")
     out.write("          required(:js_kind) => :function | :method | :constructor,\n")
+    out.write("          optional(:arg_plan) => [:in | :out],\n")
     out.write("          optional(:js_name) => String.t(),\n")
     out.write("          optional(:js_class) => String.t(),\n")
     out.write("          optional(:js_method) => String.t()\n")
@@ -275,6 +290,7 @@ def erlang_runtime_module(entries_list: List[RuntimeEntry]) -> str:
     out.write("    'fun' := atom(),\n")
     out.write("    arity := arity(),\n")
     out.write("    js_kind := function | method | constructor,\n")
+    out.write("    arg_plan => [in | out],\n")
     out.write("    js_name => binary(),\n")
     out.write("    js_class => binary(),\n")
     out.write("    js_method => binary()\n")
@@ -317,6 +333,8 @@ def _elixir_entry_literal(entry: RuntimeEntry) -> str:
     for optional_key in ("js_name", "js_class", "js_method"):
         if optional_key in entry:
             fields.append(f'{optional_key}: "{entry[optional_key]}"')
+    if "arg_plan" in entry:
+        fields.append(f"arg_plan: {_elixir_arg_plan(entry['arg_plan'])}")
     return "%{" + ", ".join(fields) + "}"
 
 
@@ -338,4 +356,6 @@ def _erlang_entry_literal(entry: RuntimeEntry) -> str:
     for optional_key in ("js_name", "js_class", "js_method"):
         if optional_key in entry:
             fields.append(f'{optional_key} => <<"{entry[optional_key]}">>')
+    if "arg_plan" in entry:
+        fields.append(f"arg_plan => {_erlang_arg_plan(entry['arg_plan'])}")
     return "#{" + ", ".join(fields) + "}"
