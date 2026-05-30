@@ -41,6 +41,9 @@ defmodule Evision.JSStripTest do
         assert %{js_kind: :function, js_name: "cv.Canny"} =
                  find_entry(entries, :canny, arity)
       end
+
+      # arg_plan (CCD-54) rides the same Attr chunk, so it survives stripping too.
+      assert %{arg_plan: [:in, :out, :in, :in]} = find_entry(entries, :canny, 3)
     end
 
     test "Evision.CascadeClassifier carries constructor + method entries" do

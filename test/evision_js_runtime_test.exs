@@ -30,6 +30,11 @@ defmodule Evision.JSRuntimeTest do
             refute Map.has_key?(entry, :js_method)
             refute Map.has_key?(entry, :js_name)
         end
+
+        if Map.has_key?(entry, :arg_plan) do
+          assert is_list(entry.arg_plan)
+          assert Enum.all?(entry.arg_plan, &(&1 in [:in, :out]))
+        end
       end
     end
 
@@ -99,6 +104,20 @@ defmodule Evision.JSRuntimeTest do
     test "returns :error when arity is wrong even if (module, fun) exists" do
       {:ok, _} = Evision.JS.lookup(Evision, :canny, 3)
       assert :error = Evision.JS.lookup(Evision, :canny, 99)
+    end
+
+    test "carries the opencv.js arg_plan where the layout is unambiguous (CCD-54)" do
+      assert {:ok, %{arg_plan: [:in, :out, :in]}} = Evision.JS.lookup(Evision, :cvtColor, 2)
+      assert {:ok, %{arg_plan: [:in, :out, :in, :in]}} = Evision.JS.lookup(Evision, :canny, 3)
+      assert {:ok, %{arg_plan: [:in, :in, :out]}} = Evision.JS.lookup(Evision, :add, 2)
+
+      assert {:ok, %{arg_plan: [:in, :out]}} =
+               Evision.JS.lookup(Evision.CascadeClassifier, :detectMultiScale, 2)
+    end
+
+    test "omits arg_plan for ambiguous same-arity overloads (canny/4)" do
+      assert {:ok, entry} = Evision.JS.lookup(Evision, :canny, 4)
+      refute Map.has_key?(entry, :arg_plan)
     end
   end
 

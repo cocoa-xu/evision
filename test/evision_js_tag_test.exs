@@ -57,6 +57,25 @@ defmodule Evision.JSTagTest do
       assert %{js_kind: :function, js_name: "cv.threshold"} =
                find_entry(entries, :threshold, 4)
     end
+
+    test "arg_plan records the opencv.js positional layout (CCD-54)", %{entries: entries} do
+      # opencv.js takes the dst OutputArray positionally; evision returns it.
+      # arg_plan records where dst sits so the workflow→opencv.js compiler can
+      # place the pre-allocated Mat. cvtColor(src, dst, code); add(s1, s2, dst).
+      assert %{arg_plan: [:in, :out, :in]} = find_entry(entries, :cvtColor, 2)
+      assert %{arg_plan: [:in, :out, :in, :in]} = find_entry(entries, :canny, 3)
+      assert %{arg_plan: [:in, :out, :in, :in]} = find_entry(entries, :gaussianBlur, 3)
+      assert %{arg_plan: [:in, :out, :in, :in, :in]} = find_entry(entries, :threshold, 4)
+      assert %{arg_plan: [:in, :out, :in]} = find_entry(entries, :blur, 2)
+      assert %{arg_plan: [:in, :in, :out]} = find_entry(entries, :add, 2)
+    end
+
+    test "ambiguous same-arity overloads carry no arg_plan (canny/4)", %{entries: entries} do
+      # canny/4 is produced by two C++ variants with different layouts
+      # (image, t1, t2, opts vs dx, dy, t1, t2), so the plan is omitted — the
+      # compiler hard-errors on such a node rather than guessing the overload.
+      refute Map.has_key?(find_entry(entries, :canny, 4), :arg_plan)
+    end
   end
 
   describe "class methods + constructor on Evision.CascadeClassifier" do
@@ -77,6 +96,12 @@ defmodule Evision.JSTagTest do
                js_class: "cv.CascadeClassifier",
                js_method: "detectMultiScale"
              } = find_entry(entries, :detectMultiScale, 2)
+    end
+
+    test "method arg_plan covers post-receiver args only (CCD-54)", %{entries: entries} do
+      # The receiver is the wire's `recv`; arg_plan describes only the args
+      # after it. detectMultiScale(self, image) → opencv.js (image, objects/dst).
+      assert %{arg_plan: [:in, :out]} = find_entry(entries, :detectMultiScale, 2)
     end
   end
 
@@ -140,7 +165,7 @@ defmodule Evision.JSTagTest do
                ~r/-js\(#\{fun => cascadeClassifier, arity => 0, js_kind => constructor, js_class => <<"cv\.CascadeClassifier">>\}\)\./
 
       assert source =~
-               ~r/-js\(#\{fun => detectMultiScale, arity => 2, js_kind => method, js_class => <<"cv\.CascadeClassifier">>, js_method => <<"detectMultiScale">>\}\)\./
+               ~r/-js\(#\{fun => detectMultiScale, arity => 2, js_kind => method, js_class => <<"cv\.CascadeClassifier">>, js_method => <<"detectMultiScale">>, arg_plan => \[in, out\]\}\)\./
     end
   end
 
