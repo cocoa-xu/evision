@@ -1870,15 +1870,15 @@ defmodule Evision.Mat do
     mat = Evision.Internal.Structurise.to_struct(arange)
 
     with %Evision.Mat{} <- mat,
-         ret = {length, _} <- Evision.Mat.shape(mat),
-         {:mat_shape_error, false, _} <- {:mat_shape_error, length == :error, ret} do
+         shape when is_tuple(shape) <- Evision.Mat.shape(mat) do
+      length = shape |> Tuple.to_list() |> Enum.reduce(1, &(&1 * &2))
       Evision.Mat.reshape(mat, {1, length})
     else
-      {:mat_shape_error, true, error} ->
-        error
-
       {:error, msg} ->
         {:error, msg}
+
+      other ->
+        other
     end
   end
 
