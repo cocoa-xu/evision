@@ -76,6 +76,28 @@ SPECIAL_STRUCTS = {
 }
 
 STRUCT_TYPES = {
+    # OpenCV 5.0: new classes + detectors moved to contrib xfeatures2d.
+    'ALIKED': 'Evision.ALIKED',
+    'ANNIndex': 'Evision.ANNIndex',
+    'CameraModel': 'Evision.CameraModel',
+    'DISK': 'Evision.DISK',
+    'ECCParameters': 'Evision.ECCParameters',
+    'FontFace': 'Evision.FontFace',
+    'LightGlueMatcher': 'Evision.LightGlueMatcher',
+    'MatShape': 'Evision.MatShape',
+    'MSTEdge': 'Evision.MSTEdge',
+    'Octree': 'Evision.Octree',
+    'Odometry': 'Evision.Odometry',
+    'OdometryFrame': 'Evision.OdometryFrame',
+    'OdometrySettings': 'Evision.OdometrySettings',
+    'RgbdNormals': 'Evision.RgbdNormals',
+    'TriangleRasterizeSettings': 'Evision.TriangleRasterizeSettings',
+    'Volume': 'Evision.Volume',
+    'VolumeSettings': 'Evision.VolumeSettings',
+    'XFeatures2D.AKAZE': 'Evision.XFeatures2D.AKAZE',
+    'XFeatures2D.AgastFeatureDetector': 'Evision.XFeatures2D.AgastFeatureDetector',
+    'XFeatures2D.BRISK': 'Evision.XFeatures2D.BRISK',
+    'XFeatures2D.KAZE': 'Evision.XFeatures2D.KAZE',
     'AffineFeature': 'Evision.AffineFeature',
     'AffineTransformer': 'Evision.AffineTransformer',
     'AgastFeatureDetector': 'Evision.AgastFeatureDetector',
@@ -625,6 +647,12 @@ STRUCT_TYPES = {
 
 # argtype -> classname -> module name
 STRICT_MATCH = {
+    # OpenCV 5.0: VolumeParams is ambiguous (kinfu vs large_kinfu); resolve the
+    # bare name by the referencing class.
+    "VolumeParams": {
+        "large_kinfu_VolumeParams": "Evision.LargeKinfu.VolumeParams",
+        "kinfu_VolumeParams": "Evision.KinFu.VolumeParams",
+    },
     "Board": {"aruco_Board": "Evision.ArUco.Board"},
     "DetectorParameters": {"aruco_DetectorParameters": "Evision.ArUco.DetectorParameters"},
     "AverageHash": {"img_hash_AverageHash": "Evision.ImgHash.AverageHash"},

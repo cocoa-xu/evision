@@ -8,6 +8,15 @@ to a generated `Evision.X.Y.enum()` macro; some legacy types map to
 """
 
 ENUM_TYPES = {
+    # OpenCV 5.0: new rgbd / 3d / geometry enums.
+    'OdometryType': 'Evision.OdometryType.enum()',
+    'OdometryAlgoType': 'Evision.OdometryAlgoType.enum()',
+    'OdometryFramePyramidType': 'Evision.OdometryFramePyramidType.enum()',
+    'TriangleCullingMode': 'Evision.TriangleCullingMode.enum()',
+    'TriangleGlCompatibleMode': 'Evision.TriangleGlCompatibleMode.enum()',
+    'TriangleShadingType': 'Evision.TriangleShadingType.enum()',
+    'MSTAlgorithm': 'Evision.MSTAlgorithm.enum()',
+    'RgbdNormals_RgbdNormalsMethod': 'Evision.RgbdNormals.RgbdNormalsMethod.enum()',
     'ORB_ScoreType': 'Evision.ORB.ScoreType.enum()',
     'ORB::ScoreType': 'Evision.ORB.ScoreType.enum()',
     'dnn_Backend': 'Evision.DNN.Backend.enum()',
