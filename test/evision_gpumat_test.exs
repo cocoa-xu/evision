@@ -18,7 +18,7 @@ else
         %GpuMat{
           channels: 3,
           type: {:u, 8},
-          raw_type: 16,
+          raw_type: 64,
           shape: {2, 3, 3},
           elemSize: 3
         } = gpumat
@@ -36,7 +36,7 @@ else
         %GpuMat{
           channels: 3,
           type: {:u, 8},
-          raw_type: 16,
+          raw_type: 64,
           shape: {2, 3, 3},
           elemSize: 3
         } = gpumat
@@ -50,7 +50,7 @@ else
         %GpuMat{
           channels: 3,
           type: {:u, 8},
-          raw_type: 16,
+          raw_type: 64,
           shape: {1000, 1200, 3},
           elemSize: 3
         } = gpumat

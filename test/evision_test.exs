@@ -246,7 +246,7 @@ defmodule Evision.Test do
       channels: 3,
       dims: 2,
       type: {:u, 8},
-      raw_type: 16,
+      raw_type: 64,
       shape: {1, 3, 3},
       ref: any_ref
     } = Evision.Mat.literal([[[1, 1, 1], [2, 2, 2], [3, 3, 3]]], :u8, as_2d: true)
@@ -257,7 +257,7 @@ defmodule Evision.Test do
       channels: 3,
       dims: 2,
       type: {:f, 32},
-      raw_type: 21,
+      raw_type: 69,
       shape: {1, 3, 3},
       ref: any_ref
     } = Evision.Mat.literal([[[1, 1, 1], [2, 2, 2], [3, 3, 3]]], :f32, as_2d: true)
@@ -279,7 +279,7 @@ defmodule Evision.Test do
       channels: 3,
       dims: 2,
       type: {:u, 8},
-      raw_type: 16,
+      raw_type: 64,
       shape: {200, 100, 3}
     } = Evision.Mat.roi(img, {10, 10, 100, 200})
 
@@ -288,7 +288,7 @@ defmodule Evision.Test do
       channels: 3,
       dims: 2,
       type: {:u, 8},
-      raw_type: 16,
+      raw_type: 64,
       shape: {90, 90, 3}
     } = Evision.Mat.roi(img, [{10, 100}, {10, 100}])
 
@@ -296,7 +296,7 @@ defmodule Evision.Test do
       channels: 3,
       dims: 2,
       type: {:u, 8},
-      raw_type: 16,
+      raw_type: 64,
       shape: {90, 300, 3}
     } = Evision.Mat.roi(img, [{10, 100}, :all])
   end
@@ -310,7 +310,7 @@ defmodule Evision.Test do
       channels: 3,
       dims: 2,
       type: {:u, 8},
-      raw_type: 16,
+      raw_type: 64,
       shape: {90, 180, 3}
     } = Evision.Mat.roi(img, {10, 100}, {20, 200})
 
@@ -318,7 +318,7 @@ defmodule Evision.Test do
       channels: 3,
       dims: 2,
       type: {:u, 8},
-      raw_type: 16,
+      raw_type: 64,
       shape: {300, 180, 3}
     } = Evision.Mat.roi(img, :all, {20, 200})
   end
