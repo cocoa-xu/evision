@@ -10,6 +10,7 @@
 #include "evision_custom_headers/evision_stitching.hpp"
 #include "evision_custom_headers/evision_video.hpp"
 #include "evision_custom_headers/evision_objdetect.hpp"
+#include "evision_custom_headers/evision_geometry.hpp"
 
 // opencv contrib
 #include "evision_custom_headers/evision_text.hpp"
