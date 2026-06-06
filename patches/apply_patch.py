@@ -59,34 +59,6 @@ def patch_fix_getLayerShapes(opencv_version: str, opencv_src_root: str):
             dst.write(fixed.getvalue())
 
 
-def patch_winograd(opencv_version: str, opencv_src_root: str):
-    if opencv_version not in ['4.7.0']:
-        return
-
-    # modules/dnn/src/layers/fast_convolution/fast_convolution.cpp
-    fast_convolution_cpp = Path(opencv_src_root) / 'modules' / 'dnn' / 'src' / 'layers' / 'fast_convolution' / 'fast_convolution.cpp'
-    fixed = StringIO()
-    patched_1 = False
-    with open(fast_convolution_cpp, 'r') as source:
-        for line in source:
-            if not patched_1 and line.strip() == 'Mat weightsMat = _weightsMat.getMat();':
-                fixed.write("""#if CV_TRY_AVX2
-    // Disabel Winograd when CV_TRY_AVX2 is true, but conv->useAVX2 is false.
-    if (conv->conv_type == _FX_CONV_TYPE_WINOGRAD3X3 && !conv->useAVX2)
-        conv->conv_type = _FX_CONV_TYPE_GENERIC;
-#endif
-
-    Mat weightsMat = _weightsMat.getMat(); // patched\n""")
-                patched_1 = True
-            else:
-                fixed.write(line)
-
-    if patched_1:
-        with open(fast_convolution_cpp, 'w') as dst:
-            dst.truncate(0)
-            dst.write(fixed.getvalue())
-
-
 def patch_rpath_linux(opencv_version: str, opencv_src_root: str):
     # CMakeLists.txt
     cmakelists_txt = Path(opencv_src_root) / 'CMakeLists.txt'
@@ -135,36 +107,6 @@ def patch_python_bindings_generator(opencv_version: str, opencv_src_root: str):
         with open(cmakelists_txt, 'w') as dst:
             dst.truncate(0)
             dst.write(fixed.getvalue())
-
-def patch_intrin_rvv(opencv_version: str, opencv_src_root: str):
-    if opencv_version in ['4.11.0']:
-        return
-    # 4.13.0 renamed intrin_rvv.hpp to intrin_rvv_scalable.hpp / intrin_rvv071.hpp;
-    # the patched file no longer exists, so skip.
-    if opencv_version in ['4.13.0']:
-        return
-    if opencv_version not in ['4.9.0']:
-        print(f"warning: skipped, applying `patch_intrin_rvv` to opencv version `{opencv_version}`")
-    # modules/core/include/opencv2/core/hal/intrin_rvv.hpp
-    intrin_rvv_hpp = Path(opencv_src_root) / 'modules' / 'core' / 'include' / 'opencv2' / 'core' / 'hal' / 'intrin_rvv.hpp'
-    fixed = StringIO()
-    patched_1 = False
-    with open(intrin_rvv_hpp, 'r') as source:
-        for line in source:
-            if not patched_1 and line.strip() == '#define OPENCV_HAL_INTRIN_RVV_HPP':
-                fixed.write("""#define OPENCV_HAL_INTRIN_RVV_HPP // patched
-typedef float float32_t;
-typedef double float64_t;
-""")
-                patched_1 = True
-            else:
-                fixed.write(line)
-
-    if patched_1:
-        with open(intrin_rvv_hpp, 'w') as dst:
-            dst.truncate(0)
-            dst.write(fixed.getvalue())
-
 
 def patch_carotene_vround(opencv_version: str, opencv_src_root: str):
     """Gate carotene's ARMv8 round-to-nearest intrinsics on __aarch64__.
@@ -291,10 +233,8 @@ def patch_cmake_minimum_version(opencv_version: str, opencv_src_root: str):
 
 patches = [
     patch_fix_getLayerShapes,
-    patch_winograd,
     patch_rpath_linux,
     patch_python_bindings_generator,
-    patch_intrin_rvv,
     patch_carotene_vround,
     patch_imread,
     patch_cmake_minimum_version,
