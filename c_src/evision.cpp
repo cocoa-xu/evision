@@ -37,6 +37,13 @@
 #include "opencv2/core/utils/tls.hpp"
 
 #include "evision_generated_include.h"
+
+// OpenCV 5.0 renamed the features2d module to features; keep the legacy macro
+// defined so the hand-written Feature2D converter and the module report compile.
+#if defined(HAVE_OPENCV_FEATURES) && !defined(HAVE_OPENCV_FEATURES2D)
+#define HAVE_OPENCV_FEATURES2D
+#endif
+
 #include "erlcompat.hpp"
 #include "ArgInfo.hpp"
 #include "evision_consts.h"
@@ -972,14 +979,16 @@ bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, cv::Ptr<cv::Feature2D> &featur
         return info.has_default || info.outputarg;
     }
 
+#ifdef HAVE_OPENCV_XFEATURES2D
     {
-        using source_type = evision_res<cv::Ptr<cv::AKAZE>>;
+        using source_type = evision_res<cv::Ptr<cv::xfeatures2d::AKAZE>>;
         source_type * in_res;
         if (enif_get_resource(env, obj, source_type::type, (void **)&in_res) ) {
             feature = in_res->val;
             return true;
         }
     }
+#endif
 
     {
         using source_type = evision_res<cv::Ptr<cv::AffineFeature>>;
@@ -990,23 +999,27 @@ bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, cv::Ptr<cv::Feature2D> &featur
         }
     }
 
+#ifdef HAVE_OPENCV_XFEATURES2D
     {
-        using source_type = evision_res<cv::Ptr<cv::AgastFeatureDetector>>;
+        using source_type = evision_res<cv::Ptr<cv::xfeatures2d::AgastFeatureDetector>>;
         source_type * in_res;
         if (enif_get_resource(env, obj, source_type::type, (void **)&in_res) ) {
             feature = in_res->val;
             return true;
         }
     }
+#endif
 
+#ifdef HAVE_OPENCV_XFEATURES2D
     {
-        using source_type = evision_res<cv::Ptr<cv::BRISK>>;
+        using source_type = evision_res<cv::Ptr<cv::xfeatures2d::BRISK>>;
         source_type * in_res;
         if (enif_get_resource(env, obj, source_type::type, (void **)&in_res) ) {
             feature = in_res->val;
             return true;
         }
     }
+#endif
 
     {
         using source_type = evision_res<cv::Ptr<cv::FastFeatureDetector>>;
@@ -1026,14 +1039,16 @@ bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, cv::Ptr<cv::Feature2D> &featur
         }
     }
 
+#ifdef HAVE_OPENCV_XFEATURES2D
     {
-        using source_type = evision_res<cv::Ptr<cv::KAZE>>;
+        using source_type = evision_res<cv::Ptr<cv::xfeatures2d::KAZE>>;
         source_type * in_res;
         if (enif_get_resource(env, obj, source_type::type, (void **)&in_res) ) {
             feature = in_res->val;
             return true;
         }
     }
+#endif
 
     {
         using source_type = evision_res<cv::Ptr<cv::MSER>>;
