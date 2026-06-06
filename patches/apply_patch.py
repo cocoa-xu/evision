@@ -211,6 +211,65 @@ def patch_ocr_tesseract_run_with_components(opencv_version: str, opencv_src_root
         print(f"warning: anchor line not found in {ocr_hpp}, skipping patch")
 
 
+def patch_mlas_skip_msvc(opencv_version: str, opencv_src_root: str):
+    """Skip the vendored MLAS subdirectory when building with MSVC.
+
+    MLAS ships GNU-style ``.S`` SGEMM kernels (AT&T syntax, ``-msse2`` /
+    ``-mavx`` style flags). On Windows + MSVC, ``check_language(ASM)`` finds
+    MASM (``ml64.exe``) and ``enable_language(ASM)`` succeeds, so the OBJECT
+    target gets created; CMake (CMP0091 NEW) then auto-applies
+    ``MSVC_RUNTIME_LIBRARY=MultiThreadedDLL`` to every language on the target
+    and configure dies with::
+
+        CMake Error in 3rdparty/mlas/CMakeLists.txt:
+          MSVC_RUNTIME_LIBRARY value 'MultiThreadedDLL' not known for this
+          ASM compiler.
+
+    Even if that propagation were silenced, the GNU-style ``.S`` files
+    couldn't be assembled with MASM/armasm. Reuse the file's existing
+    early-return pattern (``OPENCV_DNN_MLAS_SKIP_REASON`` + ``return()``)
+    so the DNN module falls back to its built-in SGEMM.
+    """
+    mlas_cmake = (
+        Path(opencv_src_root) / '3rdparty' / 'mlas' / 'CMakeLists.txt'
+    )
+    if not mlas_cmake.exists():
+        return
+
+    anchor = 'include(CheckLanguage)'
+    insertion = """\
+if(MSVC AND _MLAS_REQUIRES_ASM)
+  set(OPENCV_DNN_MLAS_SKIP_REASON
+    "MLAS .S kernels are GNU-style; MASM/armasm cannot assemble them"
+    CACHE INTERNAL "" FORCE)
+  message(STATUS "MLAS: skipped on MSVC (DNN will use its built-in SGEMM)")
+  return()
+endif()
+
+"""
+
+    with open(mlas_cmake, 'r') as f:
+        original = f.read()
+    if 'MLAS: skipped on MSVC' in original:
+        return
+
+    fixed = StringIO()
+    patched = False
+    for line in original.splitlines(keepends=True):
+        if not patched and line.strip() == anchor:
+            fixed.write(insertion)
+            patched = True
+        fixed.write(line)
+
+    if patched:
+        with open(mlas_cmake, 'w') as dst:
+            dst.truncate(0)
+            dst.write(fixed.getvalue())
+        print("[+] patched 3rdparty/mlas/CMakeLists.txt to skip MLAS on MSVC")
+    else:
+        print(f"warning: anchor not found in {mlas_cmake}, skipping patch_mlas_skip_msvc")
+
+
 def patch_cmake_minimum_version(opencv_version: str, opencv_src_root: str):
     # cmake/OpenCVGenPkgconfig.cmake uses cmake_minimum_required(VERSION 2.8.12.2)
     # which fails with CMake 4.x that removed compat with < 3.5
@@ -238,6 +297,7 @@ patches = [
     patch_carotene_vround,
     patch_imread,
     patch_cmake_minimum_version,
+    patch_mlas_skip_msvc,
     patch_ocr_tesseract_run_with_components
 ]
 
