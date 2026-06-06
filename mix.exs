@@ -1192,7 +1192,7 @@ defmodule Evision.MixProject do
       optflow: false,
       sfm: false,
       videostab: false,
-      xobjdetect: false
+      xobjdetect: true
     ],
     cuda: [
       cudaarithm: true,
