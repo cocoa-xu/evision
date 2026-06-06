@@ -2085,6 +2085,9 @@ defmodule Evision.Mat do
   defp check_unsupported_type({:s, 8} = type), do: type
   defp check_unsupported_type({:s, 16} = type), do: type
   defp check_unsupported_type({:s, 32} = type), do: type
+  defp check_unsupported_type({:s, 64} = type), do: type
+  defp check_unsupported_type({:u, 32} = type), do: type
+  defp check_unsupported_type({:u, 64} = type), do: type
   defp check_unsupported_type(:f32), do: {:f, 32}
   defp check_unsupported_type(:f64), do: {:f, 64}
   defp check_unsupported_type(:u8), do: {:u, 8}
@@ -2092,6 +2095,9 @@ defmodule Evision.Mat do
   defp check_unsupported_type(:s8), do: {:s, 8}
   defp check_unsupported_type(:s16), do: {:s, 16}
   defp check_unsupported_type(:s32), do: {:s, 32}
+  defp check_unsupported_type(:s64), do: {:s, 64}
+  defp check_unsupported_type(:u32), do: {:u, 32}
+  defp check_unsupported_type(:u64), do: {:u, 64}
 
   defp check_unsupported_type(type) do
     case type do

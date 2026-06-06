@@ -620,28 +620,20 @@ static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Mat& m, const ArgInfo& in
         else if (enif_is_identical(type_term, kAtomF64)) {
             nx_tensor_type = type = CV_64F;
             originalElemSize = 8;
+        }
+        else if (enif_is_identical(type_term, kAtomS64)) {
+            nx_tensor_type = type = CV_64S;
+            originalElemSize = 8;
+        }
+        else if (enif_is_identical(type_term, kAtomU32)) {
+            nx_tensor_type = type = CV_32U;
+            originalElemSize = 4;
+        }
+        else if (enif_is_identical(type_term, kAtomU64)) {
+            nx_tensor_type = type = CV_64U;
+            originalElemSize = 8;
         } else {
-            if (enif_is_identical(type_term, kAtomS64)) {
-                type = CV_32S;
-                originalElemSize = 8;
-                nx_tensor_type = INT32_MAX;
-                needcast = true;
-                cast_from = 1;
-            } else if (enif_is_identical(type_term, kAtomU64)) {
-                type = CV_32S;
-                originalElemSize = 8;
-                nx_tensor_type = INT32_MAX - 1;
-                needcast = true;
-                cast_from = 2;
-            } else if (enif_is_identical(type_term, kAtomU32)) {
-                type = CV_32S;
-                originalElemSize = 4;
-                nx_tensor_type = INT32_MAX - 2;
-                needcast = true;
-                cast_from = 3;
-            } else {
-                return false;
-            }
+            return false;
         }
 
 #ifndef CV_MAX_DIM
@@ -805,13 +797,13 @@ static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Mat& m, const ArgInfo& in
                 case CV_64F:
                     m.at<double>(i) = _do_cast_type<double, double>((const double *)oi);
                     break;
-                case INT32_MAX:
+                case CV_64S:
                     m.at<double>(i) = _do_cast_type<int64_t, double>((const int64_t *)oi);
                     break;
-                case INT32_MAX - 1:
+                case CV_64U:
                     m.at<double>(i) = _do_cast_type<uint64_t, double>((const uint64_t *)oi);
                     break;
-                case INT32_MAX - 2:
+                case CV_32U:
                     m.at<double>(i) = _do_cast_type<uint32_t, double>((const uint32_t *)oi);
                     break;
                 default:

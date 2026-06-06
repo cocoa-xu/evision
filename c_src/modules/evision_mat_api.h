@@ -17,6 +17,9 @@ static ERL_NIF_TERM __evision_get_mat_type(ErlNifEnv *env, int type) {
         case CV_32F: return enif_make_tuple2(env, kAtomF, enif_make_uint64(env, 32));
         case CV_64F: return enif_make_tuple2(env, kAtomF, enif_make_uint64(env, 64));
         case CV_16F: return enif_make_tuple2(env, kAtomF, enif_make_uint64(env, 16));
+        case CV_64S: return enif_make_tuple2(env, kAtomS, enif_make_uint64(env, 64));
+        case CV_32U: return enif_make_tuple2(env, kAtomU, enif_make_uint64(env, 32));
+        case CV_64U: return enif_make_tuple2(env, kAtomU, enif_make_uint64(env, 64));
         default:     return enif_make_tuple2(env, kAtomUser, enif_make_uint64(env, depth));
     }
 }
