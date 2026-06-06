@@ -19,7 +19,7 @@ jobs:
     runs-on: ${{ matrix.pair.os }}
     env:
       MIX_ENV: prod
-      OPENCV_VER: "4.13.0"
+      OPENCV_VER: "5.0.0"
       EVISION_PREFER_PRECOMPILED: "false"
       EVISION_GENERATE_LANG: "erlang,elixir"
     strategy:

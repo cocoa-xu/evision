@@ -59,7 +59,7 @@ jobs:
     runs-on: windows-2022
     env:
       MIX_ENV: test
-      OPENCV_VER: "4.13.0"
+      OPENCV_VER: "5.0.0"
       OTP_VERSION: "26"
       ELIXIR_VERSION: "1.16.3"
       EVISION_PREFER_PRECOMPILED: "false"
