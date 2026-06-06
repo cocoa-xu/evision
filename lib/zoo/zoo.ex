@@ -68,11 +68,6 @@ defmodule Evision.Zoo do
          quote do
            Evision.Constant.cv_DNN_BACKEND_CUDA()
          end},
-      "halide" =>
-        {Evision.Constant.cv_DNN_BACKEND_HALIDE(), "Halide",
-         quote do
-           Evision.Constant.cv_DNN_BACKEND_HALIDE()
-         end},
       "inference_engine" =>
         {Evision.Constant.cv_DNN_BACKEND_INFERENCE_ENGINE(), "Inference Engine",
          quote do
