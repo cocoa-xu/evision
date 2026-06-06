@@ -3,7 +3,7 @@ ifndef MIX_APP_PATH
 endif
 
 PRIV_DIR = $(MIX_APP_PATH)/priv
-OPENCV_CONFIG_CMAKE = $(PRIV_DIR)/lib/cmake/opencv4/OpenCVConfig.cmake
+OPENCV_CONFIG_CMAKE = $(PRIV_DIR)/lib/cmake/opencv5/OpenCVConfig.cmake
 EVISION_SO = $(PRIV_DIR)/evision.so
 WINDOWS_FIX_SO = $(PRIV_DIR)/windows_fix.so
 SRC = $(shell pwd)/src
