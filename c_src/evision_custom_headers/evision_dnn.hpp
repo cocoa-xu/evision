@@ -10,8 +10,8 @@ typedef dnn::DictValue LayerId;
 // while the (main-OpenCV) tracker wrappers that consume it remain. Move it
 // here so the guard matches when it's needed: whenever DNN is built.
 typedef dnn::Net dnn_Net;
-typedef std::vector<dnn::MatShape> vector_MatShape;
-typedef std::vector<std::vector<dnn::MatShape> > vector_vector_MatShape;
+typedef std::vector<cv::MatShape> vector_MatShape;
+typedef std::vector<std::vector<cv::MatShape> > vector_vector_MatShape;
 
 template<>
 bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, dnn::Net &net, const ArgInfo& info)

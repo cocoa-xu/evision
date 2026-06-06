@@ -37,7 +37,6 @@
 #include "opencv2/core/utils/tls.hpp"
 
 #include "evision_generated_include.h"
-#include "opencv2/core/types_c.h"
 #include "erlcompat.hpp"
 #include "ArgInfo.hpp"
 #include "evision_consts.h"
