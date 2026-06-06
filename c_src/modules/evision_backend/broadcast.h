@@ -81,8 +81,8 @@ static ERL_NIF_TERM evision_cv_mat_broadcast_to(ErlNifEnv *env, int argc, const 
             if (force_src_shape.size() > 0) {
                 diff_dims -= force_src_shape.size();
             } else {
-                diff_dims -= img.size.dims();
-                for (int i = 0; i < img.size.dims(); ++i) {
+                diff_dims -= img.size.dims;
+                for (int i = 0; i < img.size.dims; ++i) {
                     force_src_shape.push_back(img.size.p[i]);
                 }
             }
