@@ -454,6 +454,18 @@ static inline auto _do_cast_type(const From * ptr) -> To {
 }
 
 template <typename To>
+auto _do_cast_bf16(uint16_t value) -> To {
+    // bf16 is the high 16 bits of a 32-bit float; stored little-endian.
+    int n = 1;
+    if(*(char *)&n != 1) {
+        value = (value >> 8) | (value << 8);
+    }
+    union { uint32_t u; float f; } conv;
+    conv.u = ((uint32_t)value) << 16;
+    return (To)conv.f;
+}
+
+template <typename To>
 auto _do_cast_f16(uint16_t value) -> To {
     // _do_cast_f16 only means to cast from half-precision float to float
     // it should always be encoded in little-endian format
@@ -632,6 +644,10 @@ static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Mat& m, const ArgInfo& in
         else if (enif_is_identical(type_term, kAtomU64)) {
             nx_tensor_type = type = CV_64U;
             originalElemSize = 8;
+        }
+        else if (enif_is_identical(type_term, kAtomBF16)) {
+            nx_tensor_type = type = CV_16BF;
+            originalElemSize = 2;
         } else {
             return false;
         }
@@ -805,6 +821,9 @@ static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Mat& m, const ArgInfo& in
                     break;
                 case CV_32U:
                     m.at<double>(i) = _do_cast_type<uint32_t, double>((const uint32_t *)oi);
+                    break;
+                case CV_16BF:
+                    m.at<double>(i) = _do_cast_bf16<double>(*(const uint16_t *)oi);
                     break;
                 default:
                     break;
@@ -3165,6 +3184,8 @@ on_load(ErlNifEnv* env, void**, ERL_NIF_TERM)
     kAtomU64 = evision::nif::atom(env, "u64");
     kAtomS64 = evision::nif::atom(env, "s64");
     kAtomF16 = evision::nif::atom(env, "f16");
+    kAtomBF = evision::nif::atom(env, "bf");
+    kAtomBF16 = evision::nif::atom(env, "bf16");
     kAtomF32 = evision::nif::atom(env, "f32");
     kAtomF64 = evision::nif::atom(env, "f64");
     kAtomUser = evision::nif::atom(env, "user");

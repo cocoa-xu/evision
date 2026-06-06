@@ -66,6 +66,12 @@ int get_binary_type(const std::string& t, int l, int n, int& type) {
             else type = CV_64F;
             return true;
         }
+    } else if (t == "bf") {
+        if (l == 16) {
+            if (n != 0) type = CV_16BFC(n);
+            else type = CV_16BF;
+            return true;
+        }
     }
     return false;
 }
@@ -130,6 +136,12 @@ int get_compact_type(const std::string& compact, int n, int& type) {
         if (compact == "f64") {
             if (n != 0) type = CV_64FC(n);
             else type = CV_64F;
+            return true;
+        }
+    } else if (compact[0] == 'b') {
+        if (compact == "bf16") {
+            if (n != 0) type = CV_16BFC(n);
+            else type = CV_16BF;
             return true;
         }
     }

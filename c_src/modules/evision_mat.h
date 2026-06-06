@@ -518,6 +518,8 @@ static ERL_NIF_TERM evision_cv_mat_at(ErlNifEnv *env, int argc, const ERL_NIF_TE
 
             int i32;
             double f64;
+            int64_t i64;
+            uint64_t u64;
             type = -1;
 
             switch ( depth ) {
@@ -554,6 +556,22 @@ static ERL_NIF_TERM evision_cv_mat_at(ErlNifEnv *env, int argc, const ERL_NIF_TE
                     f64 = ((double *)img.data)[pos]; type = 1;
                     break;
                 }
+                case CV_16BF: {
+                    f64 = _do_cast_bf16<double>(((uint16_t *)img.data)[pos]); type = 1;
+                    break;
+                }
+                case CV_32U: {
+                    i64 = ((uint32_t *)img.data)[pos]; type = 2;
+                    break;
+                }
+                case CV_64S: {
+                    i64 = ((int64_t *)img.data)[pos]; type = 2;
+                    break;
+                }
+                case CV_64U: {
+                    u64 = ((uint64_t *)img.data)[pos]; type = 3;
+                    break;
+                }
             }
 
             ERL_NIF_TERM ret;
@@ -561,6 +579,10 @@ static ERL_NIF_TERM evision_cv_mat_at(ErlNifEnv *env, int argc, const ERL_NIF_TE
                 ret = enif_make_int(env, i32);
             } else if (type == 1) {
                 ret = enif_make_double(env, f64);
+            } else if (type == 2) {
+                ret = enif_make_int64(env, i64);
+            } else if (type == 3) {
+                ret = enif_make_uint64(env, u64);
             } else {
                 ret = evision::nif::error(env, "unknown data type");
             }

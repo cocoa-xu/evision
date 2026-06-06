@@ -25,4 +25,18 @@ defmodule Evision.NewTypesTest do
     assert Evision.Mat.type(mat) == {:u, 64}
     assert Evision.Mat.to_binary(mat) == bin
   end
+
+  test "bf16 round-trips through cv::Mat" do
+    # bf16 bit patterns for 1.0 (0x3F80) and 2.0 (0x4000)
+    bin = <<0x3F80::native-unsigned-16, 0x4000::native-unsigned-16>>
+    mat = Evision.Mat.from_binary_by_shape(bin, {:bf, 16}, {2})
+    assert Evision.Mat.type(mat) == {:bf, 16}
+    assert Evision.Mat.to_binary(mat) == bin
+  end
+
+  test "Mat.at returns full-width 64-bit values (no truncation)" do
+    big = 5_000_000_000
+    mat = Evision.Mat.from_binary_by_shape(<<big::native-signed-64>>, {:s, 64}, {1})
+    assert Evision.Mat.at(mat, 0) == big
+  end
 end
