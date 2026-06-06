@@ -2,8 +2,14 @@
 
 #include "opencv2/xfeatures2d.hpp"
 using cv::xfeatures2d::DAISY;
+using cv::xfeatures2d::AKAZE;
+using cv::xfeatures2d::KAZE;
+using cv::xfeatures2d::AgastFeatureDetector;
 
 typedef DAISY::NormalizationType DAISY_NormalizationType;
+typedef AKAZE::DescriptorType AKAZE_DescriptorType;
+typedef KAZE::DiffusivityType KAZE_DiffusivityType;
+typedef AgastFeatureDetector::DetectorType AgastFeatureDetector_DetectorType;
 
 // Compatibility
 // SIFT is moved to the main repository
