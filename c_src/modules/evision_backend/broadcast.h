@@ -1,59 +1,89 @@
 #ifndef EVISION_BACKEND_BROADCAST_H
 #define EVISION_BACKEND_BROADCAST_H
 
+#include <algorithm>
+#include <cstring>
+#include <vector>
 #include <erl_nif.h>
 #include "../../ArgInfo.hpp"
 
+static void repeat_bytes(uint8_t *dst, const uint8_t *src, size_t elem_size, size_t count)
+{
+    if (count == 0) return;
+    memcpy(dst, src, elem_size);
+    size_t copied = 1;
+    while (copied < count) {
+        size_t chunk = std::min(copied, count - copied);
+        memcpy(dst + copied * elem_size, dst, chunk * elem_size);
+        copied += chunk;
+    }
+}
+
+// Replicate img (interpreted as src_shape, already left-aligned with 1s to
+// to_shape's rank) into dst_data shaped as to_shape, following NumPy/Nx
+// broadcasting: a source dim of size 1 is stretched to the target size. Source
+// dims map to output coordinates with stride 0 where stretched; the contiguous
+// trailing run is copied as a block.
 static void broadcast(
-    Mat &img,
-    void *& dst_data,
-    void *& tmp_data,
-    std::vector<int>& src_shape,
-    std::vector<int>& to_shape,
+    const cv::Mat &img,
+    void *dst_data,
+    const std::vector<int>& src_shape,
+    const std::vector<int>& to_shape,
     size_t elem_size
 )
 {
-    size_t ndims = src_shape.size();
-    size_t subgroup_bytes = src_shape[ndims - 1] * elem_size;
-    size_t num_subgroups = 1;
-    for (size_t i = 0; i < ndims - 1; ++i) {
-        num_subgroups *= src_shape[i];
+    const size_t ndims = to_shape.size();
+
+    const uint8_t *src = (const uint8_t *)img.data;
+    cv::Mat tmp;
+    if (!img.isContinuous()) {
+        tmp = img.clone();
+        src = (const uint8_t *)tmp.data;
     }
 
-    if (img.isContinuous()) {
-        memcpy(dst_data, img.data, num_subgroups * subgroup_bytes);
-    } else {
-        Mat tmp = img.clone();
-        memcpy(dst_data, tmp.data, num_subgroups * subgroup_bytes);
+    uint8_t *dst = (uint8_t *)dst_data;
+
+    if (ndims == 0) {
+        memcpy(dst, src, elem_size);
+        return;
     }
 
-    for (int64_t dim = ndims - 1; dim >= 0; --dim) {
-        size_t elem_per_subgroup = src_shape[dim];
-        size_t elem_per_group = to_shape[dim];
-        size_t num_groups = num_subgroups / elem_per_subgroup;
-        if (num_subgroups == 1) {
-            num_groups = 1;
+    if (img.total() == 1) {
+        size_t count = 1;
+        for (size_t d = 0; d < ndims; ++d) count *= (size_t)to_shape[d];
+        repeat_bytes(dst, src, elem_size, count);
+        return;
+    }
+
+    // Row-major source strides (in elements); stretched dims get stride 0.
+    std::vector<size_t> src_strides(ndims, 0);
+    size_t stride = 1;
+    for (int64_t d = (int64_t)ndims - 1; d >= 0; --d) {
+        src_strides[d] = (src_shape[d] == 1) ? 0 : stride;
+        stride *= (size_t)src_shape[d];
+    }
+
+    const size_t last = (size_t)to_shape[ndims - 1];
+    const bool last_is_broadcast = src_shape[ndims - 1] == 1;
+    size_t outer = 1;
+    for (size_t d = 0; d + 1 < ndims; ++d) outer *= (size_t)to_shape[d];
+
+    std::vector<int> idx(ndims - 1, 0);
+    for (size_t o = 0; o < outer; ++o) {
+        size_t base = 0;
+        for (size_t d = 0; d + 1 < ndims; ++d) base += (size_t)idx[d] * src_strides[d];
+
+        uint8_t *drow = dst + o * last * elem_size;
+        if (!last_is_broadcast) {
+            memcpy(drow, src + base * elem_size, last * elem_size);
+        } else {
+            repeat_bytes(drow, src + base * elem_size, elem_size, last);
         }
-        size_t group_bytes = subgroup_bytes * num_subgroups / elem_per_group;
 
-        if (elem_per_subgroup == 1) {
-            size_t copy_times = elem_per_group;
-            group_bytes = subgroup_bytes * num_subgroups * copy_times / num_groups;
-
-            for (size_t subgroup = 0; subgroup < num_subgroups; ++subgroup) {
-                void * subgroup_start = (void *)((uint64_t)(uint64_t *)dst_data + subgroup_bytes * subgroup);
-                for (size_t i = 0; i < copy_times; ++i) {
-                    void * tmp_data_start = (void *)((uint64_t)(uint64_t *)tmp_data + subgroup_bytes * i + group_bytes * subgroup);
-                    memcpy(tmp_data_start, subgroup_start, subgroup_bytes);
-                }
-            }
-            std::swap(tmp_data, dst_data);
-            subgroup_bytes = group_bytes;
-        } else if (elem_per_subgroup == elem_per_group) {
-            subgroup_bytes = subgroup_bytes * num_subgroups / num_groups;
+        for (int64_t d = (int64_t)ndims - 2; d >= 0; --d) {
+            if (++idx[d] < to_shape[d]) break;
+            idx[d] = 0;
         }
-
-        num_subgroups = num_groups;
     }
 }
 
@@ -104,33 +134,14 @@ static ERL_NIF_TERM evision_cv_mat_broadcast_to(ErlNifEnv *env, int argc, const 
                 }
             }
 
-            // calculate number of elements in the new shape
             const size_t elem_size = img.elemSize();
-            size_t count_new_elem = 1;
-            for (int64_t i = 0; i < ndims; i++) {
-                count_new_elem *= to_shape[i];
-            }
-
-            // allocate memory
-            void * dst_data = (void *)enif_alloc(elem_size * count_new_elem);
-            if (dst_data == nullptr) {
-                return evision::nif::error(env, "cannot broadcast to specified shape, out of memory");
-            }
-            void * tmp_data = (void *)enif_alloc(elem_size * count_new_elem);
-            if (tmp_data == nullptr) {
-                enif_free((void *)dst_data);
-                dst_data = nullptr;
+            int type = img.type();
+            Mat result((int)ndims, to_shape.data(), type);
+            if (result.data == nullptr) {
                 return evision::nif::error(env, "cannot broadcast to specified shape, out of memory");
             }
 
-            // broadcast
-            broadcast(img, dst_data, tmp_data, src_shape, to_shape, elem_size);
-
-            int type = img.type() & CV_MAT_DEPTH_MASK;
-            Mat result = Mat((int)ndims, to_shape.data(), type, dst_data);
-            result = result.clone();
-            enif_free((void *)dst_data);
-            enif_free((void *)tmp_data);
+            broadcast(img, result.data, src_shape, to_shape, elem_size);
             return evision_from(env, result);
         }
     }

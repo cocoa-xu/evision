@@ -11,17 +11,19 @@
 
 // Elementwise binary ops without an OpenCV primitive (Nx.atan2 / pow / quotient /
 // remainder). op 0=atan2, 1=pow, 2=quotient, 3=remainder. l and r share the output
-// type and shape (broadcast + cast by the caller; f16/bf16 widened to f32).
+// type (cast by the caller; f16/bf16 widened to f32) and either the same shape or
+// one is a 1-element scalar, which is broadcast (stride 0) over the other.
 
 template <typename T>
 static void evision_binop_float(const cv::Mat &l, const cv::Mat &r, cv::Mat &dst, int op) {
     const T *lp = (const T *)l.data;
     const T *rp = (const T *)r.data;
     T *dp = (T *)dst.data;
-    size_t n = l.total();
+    size_t n = dst.total();
+    size_t ls = (l.total() == 1) ? 0 : 1, rs = (r.total() == 1) ? 0 : 1;
     evision_parallel_for((int64_t)n, (int64_t)n, EVISION_PARALLEL_SIMPLE_MIN_WORK, [&](int64_t begin, int64_t end) {
         for (int64_t i = begin; i < end; i++) {
-            T a = lp[(size_t)i], b = rp[(size_t)i];
+            T a = lp[(size_t)i * ls], b = rp[(size_t)i * rs];
             switch (op) {
                 case 0: dp[(size_t)i] = std::atan2(a, b); break;
                 case 1: dp[(size_t)i] = std::pow(a, b); break;
@@ -40,10 +42,11 @@ static void evision_binop_int(const cv::Mat &l, const cv::Mat &r, cv::Mat &dst, 
     const T *lp = (const T *)l.data;
     const T *rp = (const T *)r.data;
     T *dp = (T *)dst.data;
-    size_t n = l.total();
+    size_t n = dst.total();
+    size_t ls = (l.total() == 1) ? 0 : 1, rs = (r.total() == 1) ? 0 : 1;
     evision_parallel_for((int64_t)n, (int64_t)n, EVISION_PARALLEL_SIMPLE_MIN_WORK, [&](int64_t begin, int64_t end) {
         for (int64_t i = begin; i < end; i++) {
-            T a = lp[(size_t)i], b = rp[(size_t)i];
+            T a = lp[(size_t)i * ls], b = rp[(size_t)i * rs];
             switch (op) {
                 case 1: {
                     Acc base = (Acc)a, result = 1;
@@ -82,7 +85,7 @@ static ERL_NIF_TERM evision_cv_mat_binop(ErlNifEnv *env, int argc, const ERL_NIF
             evision_to_safe(env, evision_get_kw(env, erl_terms, "op"), op, ArgInfo("op", 0))) {
             Mat lc = l.isContinuous() ? l : l.clone();
             Mat rc = r.isContinuous() ? r : r.clone();
-            Mat dst = lc.clone();
+            Mat dst = (rc.total() > lc.total() ? rc : lc).clone();
             switch (dst.depth()) {
                 case CV_8U:  evision_binop_int<uint8_t, uint8_t>(lc, rc, dst, op); break;
                 case CV_8S:  evision_binop_int<int8_t, uint8_t>(lc, rc, dst, op); break;

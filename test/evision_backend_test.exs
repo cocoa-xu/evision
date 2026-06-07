@@ -365,6 +365,224 @@ defmodule Evision.Backend.Test do
     end
   end
 
+  describe "elementwise ops by a scalar operand" do
+    # add/subtract/multiply/divide route a 0-d operand through OpenCV's scalar
+    # fast-path (cast to f64, no full broadcast). The explicit output type keeps
+    # the result dtype correct even when the scalar promotes it.
+    test "add / subtract by integer and float scalars matches Nx.BinaryBackend" do
+      for t <- [Nx.tensor([1, 2, 3], type: :s32), Nx.tensor([1.0, 2.0, 3.0], type: :f32)],
+          s <- [2, -3, 0.5],
+          op <- [:add, :subtract] do
+        assert_close(apply(Nx, op, [ev(t), s]), apply(Nx, op, [t, s]))
+        assert_close(apply(Nx, op, [s, ev(t)]), apply(Nx, op, [s, t]))
+      end
+    end
+
+    # Regression: multiplying or dividing by an integer scalar used to raise
+    # "no function clause matching in Evision.Backend.to_nx/2". The per-element
+    # branch handed a 1x1 integer scalar Mat to cv::multiply, whose scalar
+    # fast-path rejects non-float scalars; casting the scalar to f64 first turns
+    # it into a supported array-op-scalar call.
+    test "integer-tensor multiply by an integer scalar matches Nx.BinaryBackend exactly" do
+      for t <- [Nx.tensor([1, 2, 3], type: :s32), Nx.tensor([4, 9, 12], type: :s64)],
+          s <- [2, -3, 0] do
+        assert_same(Nx.multiply(ev(t), s), Nx.multiply(t, s))
+        assert_same(Nx.multiply(s, ev(t)), Nx.multiply(s, t))
+      end
+    end
+
+    test "float-tensor multiply by integer and float scalars matches Nx.BinaryBackend" do
+      for t <- [Nx.tensor([1.0, 2.0, 3.0], type: :f32), Nx.tensor([[1.0, 2.0], [3.0, 4.0]], type: :f64)],
+          s <- [2, -3, 0.5, -1.5] do
+        assert_close(Nx.multiply(ev(t), s), Nx.multiply(t, s))
+        assert_close(Nx.multiply(s, ev(t)), Nx.multiply(s, t))
+      end
+    end
+
+    test "divide by integer and float scalars matches Nx.BinaryBackend" do
+      for t <- [Nx.tensor([4, 9, 12], type: :s32), Nx.tensor([1.0, 2.0, 3.0], type: :f32)],
+          s <- [2, -4, 0.5] do
+        assert_close(Nx.divide(ev(t), s), Nx.divide(t, s))
+        assert_close(Nx.divide(s, ev(t)), Nx.divide(s, t))
+      end
+    end
+
+    # min/max derive their dtype from the result, so a fractional scalar must
+    # promote the array (e.g. s32 min 2.5 -> f32); these guard that promotion.
+    test "min / max by integer and float scalars matches Nx.BinaryBackend" do
+      for t <- [Nx.tensor([1, 5, 3], type: :s32), Nx.tensor([1.0, 5.0, 3.0], type: :f32)],
+          s <- [2, -1, 2.5],
+          op <- [:min, :max] do
+        assert_close(apply(Nx, op, [ev(t), s]), apply(Nx, op, [t, s]))
+        assert_close(apply(Nx, op, [s, ev(t)]), apply(Nx, op, [s, t]))
+      end
+    end
+
+    # comparisons happen in the merged type, so a fractional scalar vs an integer
+    # array must not truncate (s32 == 2.5 is always false, not == 2).
+    test "comparisons by integer and float scalars match Nx.BinaryBackend" do
+      for t <- [Nx.tensor([1, 2, 3], type: :s32), Nx.tensor([1.0, 2.0, 3.0], type: :f32)],
+          s <- [2, 2.5, -1],
+          op <- [:equal, :not_equal, :greater, :less, :greater_equal, :less_equal] do
+        assert_same(apply(Nx, op, [ev(t), s]), apply(Nx, op, [t, s]))
+        assert_same(apply(Nx, op, [s, ev(t)]), apply(Nx, op, [s, t]))
+      end
+    end
+
+    # atan2/pow/quotient/remainder go through mat_binop, which broadcasts a
+    # 1-element operand (stride 0) rather than materializing it.
+    test "atan2 / pow / remainder by a float scalar match Nx.BinaryBackend" do
+      for t <- [Nx.tensor([1.0, 2.0, 3.0], type: :f32)],
+          s <- [2.0, 0.5],
+          op <- [:atan2, :pow, :remainder] do
+        assert_close(apply(Nx, op, [ev(t), s]), apply(Nx, op, [t, s]))
+        assert_close(apply(Nx, op, [s, ev(t)]), apply(Nx, op, [s, t]))
+      end
+    end
+
+    test "pow / quotient / remainder by an integer scalar match Nx.BinaryBackend exactly" do
+      for t <- [Nx.tensor([7, 8, 9], type: :s32)],
+          s <- [2, 3],
+          op <- [:pow, :quotient, :remainder] do
+        assert_same(apply(Nx, op, [ev(t), s]), apply(Nx, op, [t, s]))
+        assert_same(apply(Nx, op, [s, ev(t)]), apply(Nx, op, [s, t]))
+      end
+    end
+
+    test "left_shift / right_shift by a scalar match Nx.BinaryBackend" do
+      for t <- [Nx.tensor([1, 2, 3, 4], type: :s32)],
+          s <- [1, 2],
+          op <- [:left_shift, :right_shift] do
+        assert_same(apply(Nx, op, [ev(t), s]), apply(Nx, op, [t, s]))
+        assert_same(apply(Nx, op, [s, ev(t)]), apply(Nx, op, [s, t]))
+      end
+    end
+  end
+
+  describe "logical_and / or / xor (truthiness)" do
+    test "match Nx.BinaryBackend for non-boolean inputs" do
+      pairs = [
+        {Nx.tensor([2, 4, 6], type: :s32), Nx.tensor([1, 0, 1], type: :s32)},
+        {Nx.tensor([0, 1, 2], type: :s32), Nx.tensor([3, 0, 0], type: :s32)},
+        {Nx.tensor([0.0, 1.5, 0.0], type: :f32), Nx.tensor([2.0, 0.0, 0.0], type: :f32)}
+      ]
+
+      for {a, b} <- pairs, op <- [:logical_and, :logical_or, :logical_xor] do
+        assert_same(apply(Nx, op, [ev(a), ev(b)]), apply(Nx, op, [a, b]))
+      end
+    end
+
+    test "match Nx.BinaryBackend with scalar operands" do
+      for t <- [Nx.tensor([0, 2, 0, 5], type: :s32)],
+          s <- [0, 3],
+          op <- [:logical_and, :logical_or, :logical_xor] do
+        assert_same(apply(Nx, op, [ev(t), s]), apply(Nx, op, [t, s]))
+        assert_same(apply(Nx, op, [s, ev(t)]), apply(Nx, op, [s, t]))
+      end
+    end
+
+    test "broadcast non-scalar operands like Nx.BinaryBackend" do
+      a = Nx.tensor([[1], [0], [2]], type: :s32)
+      b = Nx.tensor([0, 1, 3], type: :s32)
+
+      for op <- [:logical_and, :logical_or, :logical_xor] do
+        assert_same(apply(Nx, op, [ev(a), ev(b)]), apply(Nx, op, [a, b]))
+      end
+    end
+  end
+
+  describe "elementwise broadcasting semantics" do
+    # Broadcast-compatible shape pairs (numpy/Nx rules): scalar, equal, dim-1
+    # stretch, and rank-differing combinations. Elementwise binary ops must
+    # broadcast both operands to the output shape exactly like Nx.BinaryBackend,
+    # since OpenCV arithmetic only supports same-size or array-op-scalar.
+    @broadcast_pairs [
+      {{}, {3}}, {{3}, {}},
+      {{3}, {3}},
+      {{1}, {3}}, {{3}, {1}},
+      {{2, 3}, {2, 3}},
+      {{2, 1}, {2, 3}}, {{1, 3}, {2, 3}},
+      {{2, 1}, {1, 3}},
+      {{3}, {2, 3}}, {{2, 3}, {3}},
+      {{1, 1}, {2, 3}},
+      {{2, 3, 4}, {3, 4}}, {{2, 1, 4}, {1, 3, 1}}
+    ]
+
+    # multiply is excluded: for two non-scalar operands Evision.Backend
+    # intentionally does matrix mult rather than elementwise.
+    @elementwise_ops [
+      :add, :subtract, :divide, :min, :max,
+      :equal, :not_equal, :greater, :less, :greater_equal, :less_equal
+    ]
+
+    test "OpenCV arithmetic itself does not broadcast" do
+      a = Evision.Backend.from_nx(ev(Nx.iota({2, 1}, type: :f32)))
+      b = Evision.Backend.from_nx(ev(Nx.iota({1, 3}, type: :f32)))
+      assert match?({:error, _}, Evision.Mat.add(a, b))
+    end
+
+    test "elementwise ops match Nx.BinaryBackend across broadcast-compatible shapes" do
+      gen = fn shape, off, dtype -> Nx.iota(shape, type: dtype) |> Nx.add(off + 1) end
+
+      failures =
+        for op <- @elementwise_ops, dtype <- [:f32, :s32], {sl, sr} <- @broadcast_pairs, reduce: [] do
+          acc ->
+            l = gen.(sl, 0, dtype)
+            r = gen.(sr, 7, dtype)
+            want = apply(Nx, op, [l, r])
+            label = "#{op} #{dtype} #{inspect(sl)} vs #{inspect(sr)}"
+
+            result =
+              try do
+                got = apply(Nx, op, [ev(l), ev(r)]) |> Nx.backend_copy(Nx.BinaryBackend)
+
+                cond do
+                  Nx.shape(got) != Nx.shape(want) -> {:shape, Nx.shape(got), Nx.shape(want)}
+                  Nx.type(got) != Nx.type(want) -> {:type, Nx.type(got), Nx.type(want)}
+                  Nx.to_number(Nx.all_close(got, want, atol: 1.0e-5, rtol: 1.0e-5)) != 1 -> :values
+                  true -> :ok
+                end
+              rescue
+                e -> {:raised, Exception.message(e) |> String.split("\n") |> hd()}
+              end
+
+            if result == :ok, do: acc, else: [{label, result} | acc]
+        end
+
+      assert failures == [], "broadcast mismatches:\n" <> Enum.map_join(Enum.reverse(failures), "\n", fn {l, r} -> "  #{l}: #{inspect(r)}" end)
+    end
+  end
+
+  describe "broadcast" do
+    @broadcast_to_cases [
+      {{1}, {3}}, {{3}, {3}},
+      {{1}, {2, 3}}, {{3}, {2, 3}},
+      {{1, 3}, {2, 3}}, {{2, 1}, {2, 3}}, {{1, 1}, {2, 3}}, {{2, 3}, {2, 3}},
+      {{4}, {2, 3, 4}}, {{3, 4}, {2, 3, 4}}, {{1}, {2, 3, 4}},
+      {{2, 1, 4}, {2, 3, 4}}, {{1, 3, 1}, {2, 3, 4}}, {{2, 3, 1}, {2, 3, 4}},
+      {{1, 1, 1}, {2, 3, 4}}, {{2, 3, 4}, {2, 3, 4}}
+    ]
+
+    test "matches Nx.BinaryBackend across ranks and dim-1 stretches for every dtype" do
+      for {from, to} <- @broadcast_to_cases, dtype <- [:f32, :f64, :s32, :s64, :u8] do
+        t = Nx.iota(from, type: dtype) |> Nx.add(1)
+        assert_same(Nx.broadcast(ev(t), to), Nx.broadcast(t, to))
+      end
+    end
+
+    test "matches Nx.BinaryBackend for explicit axes (including non-right-aligned)" do
+      v = Nx.tensor([1, 2, 3], type: :s32)
+      assert_same(Nx.broadcast(ev(v), {3, 2}, axes: [0]), Nx.broadcast(v, {3, 2}, axes: [0]))
+      assert_same(Nx.broadcast(ev(v), {2, 3}, axes: [1]), Nx.broadcast(v, {2, 3}, axes: [1]))
+
+      m = Nx.tensor([[1, 2], [3, 4]], type: :f32)
+
+      for axes <- [[0, 1], [0, 2], [1, 2]] do
+        assert_same(Nx.broadcast(ev(m), {2, 2, 2}, axes: axes), Nx.broadcast(m, {2, 2, 2}, axes: axes))
+      end
+    end
+  end
+
   describe "cumulative_sum / product / min / max" do
     test "match Nx.BinaryBackend exactly for integer dtypes across axes and :reverse" do
       tensors = [

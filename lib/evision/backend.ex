@@ -223,43 +223,20 @@ defmodule Evision.Backend do
 
   @impl true
   @spec broadcast(Nx.Tensor.t(), Nx.Tensor.t(), tuple, any) :: Nx.Tensor.t()
-  def broadcast(out, %T{} = t, shape, axes) do
-    {tensor, reshape} = maybe_reshape(t, shape, axes)
-    Evision.Mat.broadcast_to(tensor |> from_nx(), shape, reshape)
+  def broadcast(out, %T{shape: src_shape} = t, to_shape, axes) do
+    Evision.Mat.broadcast_to(from_nx(t), to_shape, force_src_shape(src_shape, to_shape, axes))
     |> reject_error()
     |> to_nx(out)
   end
 
-  defp maybe_reshape(%T{shape: {n}} = t, {n, _}, [0]) do
-    {Nx.reshape(t, {n, 1}), {n, 1}}
-  end
+  # Place each source dim onto the target axis Nx assigns it (other axes are 1),
+  # so the NIF stretches the size-1 axes. This mirrors Nx broadcasting for both
+  # the default right-aligned case and explicit `:axes`.
+  defp force_src_shape(src_shape, to_shape, axes) do
+    placed = Map.new(Enum.zip(Tuple.to_list(src_shape), axes), fn {dim, axis} -> {axis, dim} end)
 
-  defp maybe_reshape(%T{shape: shape} = t, to_shape, _axes) do
-    l_shape = Tuple.to_list(shape)
-    l_to_shape = Tuple.to_list(to_shape)
-
-    if length(l_shape) != length(l_to_shape) do
-      src_shape_axis = length(l_shape) - 1
-      {_src_shape_axis, force_shape} =
-        for axis <- Enum.to_list(length(l_to_shape)-1..0), reduce: {src_shape_axis, []} do
-          {src_shape_axis, acc} ->
-            if src_shape_axis == -1 do
-              {src_shape_axis, [1 | acc]}
-            else
-              case {elem(shape, src_shape_axis), elem(to_shape, axis)} do
-                {1, _d} ->
-                  {src_shape_axis - 1, [1 | acc]}
-                {d, d} ->
-                  {src_shape_axis - 1, [d | acc]}
-              end
-            end
-        end
-      force_shape = List.to_tuple(force_shape)
-
-      {Nx.reshape(t, force_shape), force_shape}
-    else
-      {t, shape}
-    end
+    for(axis <- 0..(tuple_size(to_shape) - 1)//1, do: Map.get(placed, axis, 1))
+    |> List.to_tuple()
   end
 
   @impl true
@@ -308,7 +285,7 @@ defmodule Evision.Backend do
   @impl true
   @spec add(Nx.Tensor.t(), Nx.Tensor.t(), Nx.Tensor.t()) :: Nx.Tensor.t()
   def add(%T{type: type, shape: out_shape}=out, l, r) do
-    {l, r} = enforce_same_shape(l, r, out_shape)
+    {l, r} = align_operands(l, r, out_shape)
     Evision.Mat.add(from_nx(l), from_nx(r), type)
     |> reject_error()
     |> to_nx(out)
@@ -317,7 +294,7 @@ defmodule Evision.Backend do
   @impl true
   @spec subtract(Nx.Tensor.t(), Nx.Tensor.t(), Nx.Tensor.t()) :: Nx.Tensor.t()
   def subtract(%T{type: type, shape: out_shape}=out, l, r) do
-    {l, r} = enforce_same_shape(l, r, out_shape)
+    {l, r} = align_operands(l, r, out_shape)
     Evision.Mat.subtract(from_nx(l), from_nx(r), type)
     |> reject_error()
     |> to_nx(out)
@@ -327,7 +304,7 @@ defmodule Evision.Backend do
   def multiply(%T{type: type}=out, %T{}=l, %T{}=r) do
     case check_mul_div_kind(l, r) do
       :per_element ->
-        Evision.Mat.multiply(from_nx(l), from_nx(r), type)
+        Evision.Mat.multiply(from_nx(float_scalar(l)), from_nx(float_scalar(r)), type)
 
       :matrix ->
         l = maybe_cast_type_for_matrix_mul_div(l)
@@ -335,6 +312,7 @@ defmodule Evision.Backend do
         Evision.Mat.matrix_multiply(l, r)
         |> Evision.Mat.as_type(type)
     end
+    |> reject_error()
     |> to_nx(out)
   end
 
@@ -342,7 +320,7 @@ defmodule Evision.Backend do
   def divide(%T{type: type, shape: shape}=out, l, r) do
     case check_mul_div_kind(l, r) do
       :per_element ->
-        Evision.Mat.divide(from_nx(l), from_nx(r), type)
+        Evision.Mat.divide(from_nx(float_scalar(l)), from_nx(float_scalar(r)), type)
 
       :matrix ->
         l = Nx.broadcast(l, shape)
@@ -351,6 +329,7 @@ defmodule Evision.Backend do
         r = maybe_cast_type_for_matrix_mul_div(r)
         Evision.Mat.divide(l, r, type)
     end
+    |> reject_error()
     |> to_nx(out)
   end
 
@@ -364,6 +343,29 @@ defmodule Evision.Backend do
     :matrix
   end
 
+  # OpenCV's arithmetic only treats a 1x1 operand as a scalar when it is f64 (an
+  # integer or f32 scalar is rejected, especially as the left operand), so cast a
+  # 0-d operand to f64 -- a single element -- instead of broadcasting it to a full
+  # array. Widening a float scalar is lossless and the other operand is untouched.
+  defp float_scalar(%T{shape: {}} = scalar), do: Nx.as_type(scalar, {:f, 64})
+  defp float_scalar(scalar), do: scalar
+
+  # For ops that pass an explicit output type to the NIF (add/subtract), a 0-d
+  # operand can go through OpenCV's scalar fast-path (float_scalar/1) instead of
+  # being broadcast to a full array; only genuinely different shapes need
+  # enforce_same_shape. The explicit output type keeps the f64 scalar from
+  # affecting the result dtype.
+  defp align_operands(%T{shape: {}} = l, r, _out_shape), do: {float_scalar(l), r}
+  defp align_operands(l, %T{shape: {}} = r, _out_shape), do: {l, float_scalar(r)}
+  defp align_operands(l, r, out_shape), do: enforce_same_shape(l, r, out_shape)
+
+  # For NIFs that broadcast a 1-element operand themselves (mat_binop, mat_shift),
+  # a 0-d operand is left untouched; two different non-scalar shapes still need a
+  # materialized broadcast.
+  defp same_shape_unless_scalar(%T{shape: {}} = l, r, _shape), do: {l, r}
+  defp same_shape_unless_scalar(l, %T{shape: {}} = r, _shape), do: {l, r}
+  defp same_shape_unless_scalar(l, r, shape), do: enforce_same_shape(l, r, shape)
+
   defp maybe_cast_type_for_matrix_mul_div(%T{type: {:f, _}}=tensor) do
     from_nx(tensor)
   end
@@ -371,24 +373,29 @@ defmodule Evision.Backend do
     Evision.Mat.as_type(from_nx(tensor), {:f, 64})
   end
 
-  @impl true
-  def min(%T{shape: out_shape}=out, l, r) do
-    shape =
-      case out_shape do
-        {} -> {1}
-        _ -> out_shape
-      end
-    l = Nx.broadcast(l, shape)
-    r = Nx.broadcast(r, shape)
-    {l, r} = enforce_same_type(l, r)
-    l = Evision.Mat.reshape(from_nx(l), shape)
-    r = Evision.Mat.reshape(from_nx(r), shape)
-    ret = Evision.min(l, r)
-    to_nx(ret, %T{out | type: Evision.Mat.type(ret)})
-  end
+  defp cast_mat(%T{type: type} = t, type), do: from_nx(t)
+  defp cast_mat(%T{} = t, type), do: Evision.Mat.as_type(from_nx(t), type)
 
   @impl true
-  def max(%T{shape: out_shape}=out, l, r) do
+  def min(%T{type: out_type}=out, %T{shape: {}}=l, r), do: min_max_scalar(out, out_type, r, l, &Evision.min/2)
+  def min(%T{type: out_type}=out, l, %T{shape: {}}=r), do: min_max_scalar(out, out_type, l, r, &Evision.min/2)
+  def min(%T{shape: out_shape}=out, l, r), do: min_max(out, out_shape, l, r, &Evision.min/2)
+
+  @impl true
+  def max(%T{type: out_type}=out, %T{shape: {}}=l, r), do: min_max_scalar(out, out_type, r, l, &Evision.max/2)
+  def max(%T{type: out_type}=out, l, %T{shape: {}}=r), do: min_max_scalar(out, out_type, l, r, &Evision.max/2)
+  def max(%T{shape: out_shape}=out, l, r), do: min_max(out, out_shape, l, r, &Evision.max/2)
+
+  # cv::min/max keep the array's dtype, so cast the array to the (already
+  # promoted) output type and feed the scalar through the cv::min(Mat, double)
+  # overload -- only the array's single pass, no full broadcast of the scalar.
+  defp min_max_scalar(out, out_type, array, scalar, fun) do
+    fun.(cast_mat(array, out_type), to_number(scalar))
+    |> reject_error()
+    |> to_nx(out)
+  end
+
+  defp min_max(out, out_shape, l, r, fun) do
     shape =
       case out_shape do
         {} -> {1}
@@ -399,8 +406,8 @@ defmodule Evision.Backend do
     {l, r} = enforce_same_type(l, r)
     l = Evision.Mat.reshape(from_nx(l), shape)
     r = Evision.Mat.reshape(from_nx(r), shape)
-    ret = Evision.max(l, r)
-    to_nx(ret, %T{out | type: Evision.Mat.type(ret)})
+    ret = fun.(l, r)
+    to_nx(ret, %{out | type: Evision.Mat.type(ret)})
   end
 
   defp enforce_same_type(%T{type: type}=a, %T{type: type}=b), do: {a, b}
@@ -521,64 +528,44 @@ defmodule Evision.Backend do
 
   @impl true
   @spec equal(Nx.Tensor.t(), Nx.Tensor.t(), Nx.Tensor.t()) :: Nx.Tensor.t()
-  def equal(%T{shape: out_shape} = out, l, r) do
-    {l, r} = enforce_same_shape(l, r, out_shape)
-    {l, r} = enforce_same_type(l, r)
-    from_nx(l)
-    |> Evision.Mat.cmp(from_nx(r), :eq)
-    |> reject_error()
-    |> to_nx(out)
-  end
+  def equal(%T{shape: out_shape} = out, l, r), do: cmp(out, out_shape, l, r, :eq)
 
   @impl true
   @spec not_equal(Nx.Tensor.t(), Nx.Tensor.t(), Nx.Tensor.t()) :: Nx.Tensor.t()
-  def not_equal(%T{shape: out_shape} = out, l, r) do
-    {l, r} = enforce_same_shape(l, r, out_shape)
-    {l, r} = enforce_same_type(l, r)
-    from_nx(l)
-    |> Evision.Mat.cmp(from_nx(r), :ne)
-    |> reject_error()
-    |> to_nx(out)
-  end
+  def not_equal(%T{shape: out_shape} = out, l, r), do: cmp(out, out_shape, l, r, :ne)
 
   @impl true
-  def greater(%T{shape: out_shape} = out, l, r) do
-    {l, r} = enforce_same_shape(l, r, out_shape)
-    {l, r} = enforce_same_type(l, r)
-    from_nx(l)
-    |> Evision.Mat.cmp(from_nx(r), :gt)
-    |> reject_error()
-    |> to_nx(out)
-  end
+  def greater(%T{shape: out_shape} = out, l, r), do: cmp(out, out_shape, l, r, :gt)
 
   @impl true
   @spec less(Nx.Tensor.t(), Nx.Tensor.t(), Nx.Tensor.t()) :: Nx.Tensor.t()
-  def less(%T{shape: out_shape} = out, l, r) do
-    {l, r} = enforce_same_shape(l, r, out_shape)
-    {l, r} = enforce_same_type(l, r)
-    from_nx(l)
-    |> Evision.Mat.cmp(from_nx(r), :lt)
-    |> reject_error()
-    |> to_nx(out)
-  end
+  def less(%T{shape: out_shape} = out, l, r), do: cmp(out, out_shape, l, r, :lt)
 
   @impl true
   @spec greater_equal(Nx.Tensor.t(), Nx.Tensor.t(), Nx.Tensor.t()) :: Nx.Tensor.t()
-  def greater_equal(%T{shape: out_shape} = out, l, r) do
+  def greater_equal(%T{shape: out_shape} = out, l, r), do: cmp(out, out_shape, l, r, :ge)
+
+  @impl true
+  def less_equal(%T{shape: out_shape} = out, l, r), do: cmp(out, out_shape, l, r, :le)
+
+  # cv::compare broadcasts a 1x1 mat on either side, so a 0-d operand is cast to
+  # the merged comparison type (a single element) and compared in place, in the
+  # original operand order, instead of being broadcast to a full array. The merged
+  # type is what Nx compares in, which keeps fractional-scalar results correct.
+  defp cmp(out, _out_shape, %T{shape: {}} = l, r, op), do: cmp_scalar(out, l, r, op)
+  defp cmp(out, _out_shape, l, %T{shape: {}} = r, op), do: cmp_scalar(out, l, r, op)
+  defp cmp(out, out_shape, l, r, op) do
     {l, r} = enforce_same_shape(l, r, out_shape)
     {l, r} = enforce_same_type(l, r)
-    from_nx(l)
-    |> Evision.Mat.cmp(from_nx(r), :ge)
+    Evision.Mat.cmp(from_nx(l), from_nx(r), op)
     |> reject_error()
     |> to_nx(out)
   end
 
-  @impl true
-  def less_equal(%T{shape: out_shape} = out, l, r) do
-    {l, r} = enforce_same_shape(l, r, out_shape)
-    {l, r} = enforce_same_type(l, r)
-    from_nx(l)
-    |> Evision.Mat.cmp(from_nx(r), :le)
+  defp cmp_scalar(out, %T{type: lt} = l, %T{type: rt} = r, op) do
+    merged = Nx.Type.merge(lt, rt)
+    Evision.Mat.cmp(cast_mat(l, merged), cast_mat(r, merged), op)
+    |> reject_error()
     |> to_nx(out)
   end
 
@@ -589,38 +576,21 @@ defmodule Evision.Backend do
     {to_nx(l_mat, %T{l | shape: out_shape}), to_nx(b_mat, %T{r | shape: out_shape})}
   end
 
+  # Nx logical ops are truthiness-based: reduce each operand to a 0/1 mask, then
+  # combine elementwise (min=and, max=or, not_equal=xor). Building on the masked
+  # ops keeps the result correct for any dtype (cv's bitwise `&`/`^` over the raw
+  # values are wrong, e.g. `2 and 1`) and inherits their broadcast + scalar paths.
   @impl true
   @spec logical_and(Nx.Tensor.t(), Nx.Tensor.t(), Nx.Tensor.t()) :: Nx.Tensor.t()
-  def logical_and(%T{shape: out_shape} = out, l, r) do
-    {l, r} = enforce_same_shape(l, r, out_shape)
-    {l, r} = enforce_same_type(l, r)
-    Evision.Mat.logical_and(from_nx(l), from_nx(r))
-    |> reject_error()
-    |> to_nx(out)
-    |> Nx.not_equal(0)
-  end
+  def logical_and(_out, l, r), do: Nx.min(Nx.not_equal(l, 0), Nx.not_equal(r, 0))
 
   @impl true
   @spec logical_or(Nx.Tensor.t(), Nx.Tensor.t(), Nx.Tensor.t()) :: Nx.Tensor.t()
-  def logical_or(%T{shape: out_shape} = out, l, r) do
-    {l, r} = enforce_same_shape(l, r, out_shape)
-    {l, r} = enforce_same_type(l, r)
-    Evision.Mat.logical_or(from_nx(l), from_nx(r))
-    |> reject_error()
-    |> to_nx(out)
-    |> Nx.not_equal(0)
-  end
+  def logical_or(_out, l, r), do: Nx.max(Nx.not_equal(l, 0), Nx.not_equal(r, 0))
 
   @impl true
   @spec logical_xor(Nx.Tensor.t(), Nx.Tensor.t(), Nx.Tensor.t()) :: Nx.Tensor.t()
-  def logical_xor(%T{shape: out_shape} =out, l, r) do
-    {l, r} = enforce_same_shape(l, r, out_shape)
-    {l, r} = enforce_same_type(l, r)
-    Evision.Mat.logical_xor(from_nx(l), from_nx(r))
-    |> reject_error()
-    |> to_nx(out)
-    |> Nx.not_equal(0)
-  end
+  def logical_xor(_out, l, r), do: Nx.not_equal(Nx.not_equal(l, 0), Nx.not_equal(r, 0))
 
   @impl true
   @spec abs(Nx.Tensor.t(), Nx.Tensor.t()) :: Nx.Tensor.t()
@@ -1109,7 +1079,7 @@ defmodule Evision.Backend do
 
   # l and r are broadcast to the output shape and cast to the (integer) output type.
   defp shift(%T{shape: shape, type: type} = out, l, r, op) do
-    {l, r} = enforce_same_shape(l, r, shape)
+    {l, r} = same_shape_unless_scalar(l, r, shape)
     lm = as_mat_type(from_nx(l), type)
     rm = as_mat_type(from_nx(r), type)
     Evision.Mat.shift(lm, rm, op) |> reject_error() |> to_nx(out)
@@ -1164,7 +1134,7 @@ defmodule Evision.Backend do
   # widened to f32 since the NIF covers only real C types), then narrow the result back.
   defp binary_math(%T{type: out_type, shape: shape} = out, l, r, op) do
     work_type = if out_type in @half_types, do: {:f, 32}, else: out_type
-    {l, r} = enforce_same_shape(l, r, shape)
+    {l, r} = same_shape_unless_scalar(l, r, shape)
     lm = as_mat_type(from_nx(l), work_type)
     rm = as_mat_type(from_nx(r), work_type)
 
