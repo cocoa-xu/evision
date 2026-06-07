@@ -747,6 +747,8 @@ defmodule Evision.Backend do
   # a custom NIF, and half floats are widened to f32 (lossless) so cv can handle them.
   @wide_int_types [{:u, 32}, {:s, 64}, {:u, 64}]
   @half_types [{:f, 16}, {:bf, 16}]
+  @float_sort_types [{:f, 32}, {:f, 64}]
+  @custom_sort_types @wide_int_types ++ @float_sort_types
 
   @impl true
   def sort(out, %T{shape: shape, type: type} = tensor, opts) do
@@ -771,14 +773,14 @@ defmodule Evision.Backend do
     |> to_nx(out)
   end
 
-  defp sort_values(m2d, type, descending?) when type in @wide_int_types do
+  defp sort_values(m2d, type, descending?) when type in @custom_sort_types do
     reject_error(Evision.Mat.sort_rows(m2d, descending?))
   end
 
   defp sort_values(m2d, type, descending?) when type in @half_types do
     m2d
     |> as_mat_type({:f, 32})
-    |> Evision.sort(sort_flags(descending?))
+    |> Evision.Mat.sort_rows(descending?)
     |> reject_error()
     |> as_mat_type(type)
   end
@@ -787,8 +789,15 @@ defmodule Evision.Backend do
     reject_error(Evision.sort(m2d, sort_flags(descending?)))
   end
 
-  defp sort_indices(m2d, type, descending?) when type in @wide_int_types do
+  defp sort_indices(m2d, type, descending?) when type in @custom_sort_types do
     reject_error(Evision.Mat.argsort_rows(m2d, descending?))
+  end
+
+  defp sort_indices(m2d, type, descending?) when type in @half_types do
+    m2d
+    |> as_mat_type({:f, 32})
+    |> Evision.Mat.argsort_rows(descending?)
+    |> reject_error()
   end
 
   # cv::sortIdx is stable ascending but not descending, so sort the order-reversing
@@ -1212,6 +1221,17 @@ defmodule Evision.Backend do
   end
 
   @impl true
+  def concatenate(%T{type: out_type, shape: shape} = out, tensors, 0) do
+    bin =
+      tensors
+      |> Enum.map(fn t -> t |> from_nx() |> as_mat_type(out_type) |> to_binary_mat!() end)
+      |> IO.iodata_to_binary()
+
+    Evision.Mat.from_binary_by_shape(bin, out_type, shape)
+    |> reject_error()
+    |> to_nx(out)
+  end
+
   def concatenate(%T{type: out_type, shape: shape} = out, tensors, axis) do
     rank = tuple_size(shape)
     base = Evision.Mat.full(shape, 0, out_type) |> reject_error() |> to_nx(out)
@@ -1658,7 +1678,14 @@ defmodule Evision.Backend do
     end
   end
 
-  defp to_binary_f64(mat), do: reject_error(Evision.Mat.to_binary(mat, 0))
+  defp to_binary_f64(mat), do: to_binary_mat!(mat)
+
+  defp to_binary_mat!(mat) do
+    case Evision.Mat.to_binary(mat, 0) do
+      {:error, msg} -> raise RuntimeError, msg
+      binary -> binary
+    end
+  end
 
   # Concatenate f64 mats (batch order) then reshape/cast to the output template.
   defp stack_f64(%T{type: out_type, shape: shape} = out, mats) do

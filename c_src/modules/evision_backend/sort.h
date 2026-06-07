@@ -2,15 +2,28 @@
 #define EVISION_BACKEND_SORT_H
 
 #include <algorithm>
+#include <cmath>
 #include <numeric>
+#include <type_traits>
 #include <erl_nif.h>
 #include "../../ArgInfo.hpp"
 #include "../evision_mat_utils.hpp"
 
-// Row-wise sort/argsort for the wide integer depths (CV_32U/CV_64S/CV_64U) that
-// cv::sort/cv::sortIdx do not support. Input is a 2D single-channel Mat; each row
-// is sorted independently. argsort uses a stable sort so ties keep ascending
-// index order, matching Nx (and Nx.BinaryBackend) for both directions.
+// Row-wise sort/argsort for depths that need custom handling. Floats use Nx's
+// NaN order: ascending puts NaNs last, descending puts them first.
+
+template <typename T>
+static inline bool evision_sort_before(T a, T b, bool descending) {
+    if constexpr (std::is_floating_point<T>::value) {
+        bool a_nan = std::isnan(a);
+        bool b_nan = std::isnan(b);
+        if (a_nan || b_nan) {
+            if (a_nan && b_nan) return false;
+            return descending ? a_nan : b_nan;
+        }
+    }
+    return descending ? (a > b) : (a < b);
+}
 
 template <typename T>
 static void evision_sort_rows(const cv::Mat &src, cv::Mat &dst, bool descending) {
@@ -18,8 +31,9 @@ static void evision_sort_rows(const cv::Mat &src, cv::Mat &dst, bool descending)
         const T *sp = src.ptr<T>(r);
         T *dp = dst.ptr<T>(r);
         std::copy(sp, sp + src.cols, dp);
-        if (descending) std::sort(dp, dp + src.cols, std::greater<T>());
-        else std::sort(dp, dp + src.cols, std::less<T>());
+        std::sort(dp, dp + src.cols, [descending](T a, T b) {
+            return evision_sort_before(a, b, descending);
+        });
     }
 }
 
@@ -29,10 +43,9 @@ static void evision_argsort_rows(const cv::Mat &src, cv::Mat &dst, bool descendi
         const T *sp = src.ptr<T>(r);
         int32_t *dp = dst.ptr<int32_t>(r);
         std::iota(dp, dp + src.cols, 0);
-        if (descending)
-            std::stable_sort(dp, dp + src.cols, [sp](int32_t a, int32_t b) { return sp[a] > sp[b]; });
-        else
-            std::stable_sort(dp, dp + src.cols, [sp](int32_t a, int32_t b) { return sp[a] < sp[b]; });
+        std::stable_sort(dp, dp + src.cols, [sp, descending](int32_t a, int32_t b) {
+            return evision_sort_before(sp[a], sp[b], descending);
+        });
     }
 }
 
@@ -56,6 +69,8 @@ static ERL_NIF_TERM evision_cv_mat_sort_rows(ErlNifEnv *env, int argc, const ERL
                 case CV_32U: evision_sort_rows<uint32_t>(src, dst, descending != 0); break;
                 case CV_64S: evision_sort_rows<int64_t>(src, dst, descending != 0); break;
                 case CV_64U: evision_sort_rows<uint64_t>(src, dst, descending != 0); break;
+                case CV_32F: evision_sort_rows<float>(src, dst, descending != 0); break;
+                case CV_64F: evision_sort_rows<double>(src, dst, descending != 0); break;
                 default: return evision::nif::error(env, "mat_sort_rows: unsupported depth");
             }
             return evision_from(env, dst);
@@ -85,6 +100,8 @@ static ERL_NIF_TERM evision_cv_mat_argsort_rows(ErlNifEnv *env, int argc, const 
                 case CV_32U: evision_argsort_rows<uint32_t>(src, dst, descending != 0); break;
                 case CV_64S: evision_argsort_rows<int64_t>(src, dst, descending != 0); break;
                 case CV_64U: evision_argsort_rows<uint64_t>(src, dst, descending != 0); break;
+                case CV_32F: evision_argsort_rows<float>(src, dst, descending != 0); break;
+                case CV_64F: evision_argsort_rows<double>(src, dst, descending != 0); break;
                 default: return evision::nif::error(env, "mat_argsort_rows: unsupported depth");
             }
             return evision_from(env, dst);

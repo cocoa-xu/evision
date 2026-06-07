@@ -1,6 +1,8 @@
 #ifndef EVISION_BACKEND_CUMULATIVE_H
 #define EVISION_BACKEND_CUMULATIVE_H
 
+#include <cmath>
+#include <type_traits>
 #include <erl_nif.h>
 #include "../../ArgInfo.hpp"
 #include "../evision_mat_utils.hpp"
@@ -10,6 +12,22 @@
 // shape and type as the 2D single-channel input, which the caller has already cast
 // to the output type; integer sum/product use an unsigned accumulator so wraparound
 // is well-defined (two's complement), matching Nx's modular semantics.
+template <typename T>
+static inline T evision_scan_min(T acc, T v) {
+    if constexpr (std::is_floating_point<T>::value) {
+        if (std::isnan(acc) || std::isnan(v)) return std::isnan(acc) ? acc : v;
+    }
+    return (v < acc) ? v : acc;
+}
+
+template <typename T>
+static inline T evision_scan_max(T acc, T v) {
+    if constexpr (std::is_floating_point<T>::value) {
+        if (std::isnan(acc) || std::isnan(v)) return std::isnan(acc) ? acc : v;
+    }
+    return (v > acc) ? v : acc;
+}
+
 template <typename T, typename Acc>
 static void evision_scan_rows(const cv::Mat &src, cv::Mat &dst, int op, bool reverse) {
     int cols = src.cols;
@@ -27,8 +45,8 @@ static void evision_scan_rows(const cv::Mat &src, cv::Mat &dst, int op, bool rev
             switch (op) {
                 case 0: running = (T)((Acc)running + (Acc)v); break;
                 case 1: running = (T)((Acc)running * (Acc)v); break;
-                case 2: running = (v < running) ? v : running; break;
-                case 3: running = (v > running) ? v : running; break;
+                case 2: running = evision_scan_min(running, v); break;
+                case 3: running = evision_scan_max(running, v); break;
             }
             dp[c] = running;
         }

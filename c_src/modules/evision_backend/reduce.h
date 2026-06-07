@@ -1,6 +1,8 @@
 #ifndef EVISION_BACKEND_REDUCE_H
 #define EVISION_BACKEND_REDUCE_H
 
+#include <cmath>
+#include <type_traits>
 #include <erl_nif.h>
 #include "../../ArgInfo.hpp"
 #include "../evision_mat_utils.hpp"
@@ -10,6 +12,22 @@
 // Mat already cast to the accumulator type (CV_64F / CV_64S / CV_64U) by the
 // caller, so integer promotion (s64/u64, modular) and f64 accumulation match Nx;
 // output is [rows, 1] of the same type.
+
+template <typename T>
+static inline T evision_reduce_max(T acc, T v) {
+    if constexpr (std::is_floating_point<T>::value) {
+        if (std::isnan(acc) || std::isnan(v)) return std::isnan(acc) ? acc : v;
+    }
+    return (v > acc) ? v : acc;
+}
+
+template <typename T>
+static inline T evision_reduce_min(T acc, T v) {
+    if constexpr (std::is_floating_point<T>::value) {
+        if (std::isnan(acc) || std::isnan(v)) return std::isnan(acc) ? acc : v;
+    }
+    return (v < acc) ? v : acc;
+}
 
 template <typename T>
 static void evision_reduce_rows(const cv::Mat &src, cv::Mat &dst, int op) {
@@ -27,8 +45,8 @@ static void evision_reduce_rows(const cv::Mat &src, cv::Mat &dst, int op) {
             switch (op) {
                 case 0: acc = (T)(acc + v); break;
                 case 1: acc = (T)(acc * v); break;
-                case 2: acc = (v > acc) ? v : acc; break;
-                case 3: acc = (v < acc) ? v : acc; break;
+                case 2: acc = evision_reduce_max(acc, v); break;
+                case 3: acc = evision_reduce_min(acc, v); break;
             }
         }
         dst.ptr<T>(r)[0] = acc;

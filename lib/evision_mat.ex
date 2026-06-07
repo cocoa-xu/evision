@@ -1225,7 +1225,7 @@ defmodule Evision.Mat do
   end
 
   @doc false
-  # Row-wise sort for wide-int depths (CV_32U/CV_64S/CV_64U) unsupported by cv::sort.
+  # Row-wise sort for depths that need custom handling (wide ints, float NaN order).
   def sort_rows(mat, descending?) do
     mat = from_struct(mat)
 
@@ -1234,7 +1234,7 @@ defmodule Evision.Mat do
   end
 
   @doc false
-  # Row-wise stable argsort for wide-int depths unsupported by cv::sortIdx.
+  # Row-wise stable argsort for depths that need custom handling.
   def argsort_rows(mat, descending?) do
     mat = from_struct(mat)
 

@@ -105,6 +105,18 @@ defmodule Evision.Backend.Test do
         assert_same(apply(Nx, fun, [ev(t), opts]), apply(Nx, fun, [t, opts]))
       end
     end
+
+    test "sort and argsort match Nx.BinaryBackend NaN ordering" do
+      for t <- [
+            Nx.tensor([1.0, :nan, 2.0, -1.0], type: :f32),
+            Nx.tensor([[1.0, :nan, 2.0], [:nan, -1.0, 0.0]], type: :f64),
+            Nx.tensor([1.0, :nan, 2.0, -1.0], type: :f16)
+          ],
+          fun <- [:sort, :argsort],
+          opts <- [[], [direction: :desc], [axis: max(Nx.rank(t) - 1, 0)]] do
+        assert_same(apply(Nx, fun, [ev(t), opts]), apply(Nx, fun, [t, opts]))
+      end
+    end
   end
 
   describe "sum/product" do
@@ -133,6 +145,14 @@ defmodule Evision.Backend.Test do
           fun <- [:sum, :product],
           opts <- [[], [axes: [0]], [axes: [1]], [axes: [1], keep_axes: true]] do
         assert_close(apply(Nx, fun, [ev(t), opts]), apply(Nx, fun, [t, opts]))
+      end
+    end
+
+    test "cumulative max/min propagate NaNs like Nx.BinaryBackend" do
+      t = Nx.tensor([1.0, :nan, 2.0], type: :f32)
+
+      for op <- [:cumulative_max, :cumulative_min], opts <- [[], [reverse: true]] do
+        assert_same(apply(Nx, op, [ev(t), opts]), apply(Nx, op, [t, opts]))
       end
     end
   end
@@ -343,6 +363,14 @@ defmodule Evision.Backend.Test do
       opts_list = [[], [axes: [0]], [axes: [1]], [axes: [1], keep_axes: true]]
 
       for op <- [:all, :any], t <- tensors, opts <- opts_list, axes_in_rank?(t, opts) do
+        assert_same(apply(Nx, op, [ev(t), opts]), apply(Nx, op, [t, opts]))
+      end
+    end
+
+    test "reduce_max/min propagate NaNs like Nx.BinaryBackend" do
+      t = Nx.tensor([[1.0, :nan, 2.0], [3.0, 4.0, 5.0]], type: :f32)
+
+      for op <- [:reduce_max, :reduce_min], opts <- [[], [axes: [1]], [axes: [1], keep_axes: true]] do
         assert_same(apply(Nx, op, [ev(t), opts]), apply(Nx, op, [t, opts]))
       end
     end
@@ -746,17 +774,20 @@ defmodule Evision.Backend.Test do
       tensors = [
         Nx.tensor([[12.0, -51.0, 4.0], [6.0, 167.0, -68.0], [-4.0, 24.0, -41.0]], type: :f64),
         # tall 3x2
-        Nx.tensor([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]], type: :f64)
+        Nx.tensor([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]], type: :f64),
+        # wide 2x3
+        Nx.tensor([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]], type: :f64)
       ]
 
       for a <- tensors do
         {m, n} = Nx.shape(a)
+        k = min(m, n)
 
         {q, r} = Nx.LinAlg.qr(ev(a), mode: :reduced)
-        assert {Nx.shape(q), Nx.shape(r)} == {{m, n}, {n, n}}
+        assert {Nx.shape(q), Nx.shape(r)} == {{m, k}, {k, n}}
         qb = b(q)
         close_at(Nx.dot(qb, b(r)), a, 1.0e-4)
-        close_at(Nx.dot(Nx.transpose(qb), qb), Nx.eye(n, type: :f64), 1.0e-4)
+        close_at(Nx.dot(Nx.transpose(qb), qb), Nx.eye(k, type: :f64), 1.0e-4)
 
         {q, r} = Nx.LinAlg.qr(ev(a), mode: :complete)
         assert {Nx.shape(q), Nx.shape(r)} == {{m, m}, {m, n}}
@@ -816,6 +847,14 @@ defmodule Evision.Backend.Test do
       for op <- [:window_sum, :window_max, :window_min, :window_product],
           o <- [[], [strides: [2, 1]], [padding: :same], [window_dilations: [1, 2]]] do
         assert_close(apply(Nx, op, [ev(t), {2, 2}, o]), apply(Nx, op, [t, {2, 2}, o]))
+      end
+    end
+
+    test "window max/min propagate NaNs like Nx.BinaryBackend" do
+      t = Nx.tensor([1.0, :nan, 2.0], type: :f32)
+
+      for op <- [:window_max, :window_min] do
+        assert_same(apply(Nx, op, [ev(t), {2}]), apply(Nx, op, [t, {2}]))
       end
     end
   end

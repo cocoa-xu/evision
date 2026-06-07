@@ -123,8 +123,8 @@ static ERL_NIF_TERM evision_cv_mat_lu(ErlNifEnv *env, int argc, const ERL_NIF_TE
     return enif_make_badarg(env);
 }
 
-// Householder QR returning {Q, R} with A = Q*R. reduced (complete=0): Q is m*n, R is n*n;
-// complete: Q is m*m, R is m*n. Requires m >= n.
+// Householder QR returning {Q, R} with A = Q*R. reduced (complete=0): Q is m*k, R is k*n;
+// complete: Q is m*m, R is m*n, where k = min(m, n).
 // @evision c: mat_qr, evision_cv_mat_qr, 1
 // @evision nif: def mat_qr(_opts \\ []), do: :erlang.nif_error(:undefined)
 static ERL_NIF_TERM evision_cv_mat_qr(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
@@ -142,16 +142,14 @@ static ERL_NIF_TERM evision_cv_mat_qr(ErlNifEnv *env, int argc, const ERL_NIF_TE
             evision_to_safe(env, evision_get_kw(env, erl_terms, "m"), m, ArgInfo("m", 0)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "n"), n, ArgInfo("n", 0)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "complete"), complete, ArgInfo("complete", 0))) {
-            if (m < n)
-                return evision::nif::error(env, "qr: tensor must have at least as many rows as columns");
-
             Mat R = a.clone();                 // m x n, mutated into the upper factor
             Mat Q = Mat::eye(m, m, CV_64F);     // accumulated orthogonal factor
             double *rp = (double *)R.data;
             double *qp = (double *)Q.data;
             std::vector<double> v((size_t)m);
+            int kmax = std::min(m, n);
 
-            for (int k = 0; k < n; k++) {
+            for (int k = 0; k < kmax; k++) {
                 double normx = 0.0;
                 for (int i = k; i < m; i++) normx += rp[i * n + k] * rp[i * n + k];
                 normx = std::sqrt(normx);
@@ -186,15 +184,15 @@ static ERL_NIF_TERM evision_cv_mat_qr(ErlNifEnv *env, int argc, const ERL_NIF_TE
                 return enif_make_tuple2(env, evision_from(env, Q), evision_from(env, R));
             }
 
-            // reduced: first n columns of Q (m x n), first n rows of R (n x n)
-            Mat Qr(m, n, CV_64F);
+            // reduced: first k columns of Q (m x k), first k rows of R (k x n)
+            Mat Qr(m, kmax, CV_64F);
             double *qrp = (double *)Qr.data;
             for (int i = 0; i < m; i++)
-                for (int j = 0; j < n; j++) qrp[i * n + j] = qp[i * m + j];
+                for (int j = 0; j < kmax; j++) qrp[i * kmax + j] = qp[i * m + j];
 
-            Mat Rr(n, n, CV_64F);
+            Mat Rr(kmax, n, CV_64F);
             double *rrp = (double *)Rr.data;
-            for (int i = 0; i < n; i++)
+            for (int i = 0; i < kmax; i++)
                 for (int j = 0; j < n; j++) rrp[i * n + j] = rp[i * n + j];
 
             return enif_make_tuple2(env, evision_from(env, Qr), evision_from(env, Rr));

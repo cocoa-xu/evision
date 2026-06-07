@@ -2,7 +2,9 @@
 #define EVISION_BACKEND_WINDOW_H
 
 #include <algorithm>
+#include <cmath>
 #include <limits>
+#include <type_traits>
 #include <vector>
 #include <erl_nif.h>
 #include "../../ArgInfo.hpp"
@@ -13,6 +15,22 @@
 // widened to f32 by the caller. Padding is not materialized: out-of-range source coords are
 // skipped, which equals folding the per-op identity (0 sum / 1 product / -inf max / +inf min)
 // that Nx pads with. op: 0 sum, 1 product, 2 max, 3 min.
+
+template <typename T>
+static inline T window_max_value(T acc, T v) {
+    if constexpr (std::is_floating_point<T>::value) {
+        if (std::isnan(acc) || std::isnan(v)) return std::isnan(acc) ? acc : v;
+    }
+    return (v > acc) ? v : acc;
+}
+
+template <typename T>
+static inline T window_min_value(T acc, T v) {
+    if constexpr (std::is_floating_point<T>::value) {
+        if (std::isnan(acc) || std::isnan(v)) return std::isnan(acc) ? acc : v;
+    }
+    return (v < acc) ? v : acc;
+}
 
 template <typename T>
 static T window_identity(int op) {
@@ -61,8 +79,8 @@ static void window_reduce_typed(const T *sp, T *dp, int r,
                 switch (op) {
                     case 0: av = (T)(av + x); break;
                     case 1: av = (T)(av * x); break;
-                    case 2: av = (x > av) ? x : av; break;
-                    case 3: av = (x < av) ? x : av; break;
+                    case 2: av = window_max_value(av, x); break;
+                    case 3: av = window_min_value(av, x); break;
                 }
             }
             for (int k = r - 1; k >= 0; k--) { if (++w_idx[(size_t)k] < win_dims[(size_t)k]) break; w_idx[(size_t)k] = 0; }
