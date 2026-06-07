@@ -89,6 +89,13 @@ version. Two headline changes land together:
   `vcvtmq_s32_f32` intrinsic under `#if __ARM_ARCH > 7`, which GCC's AArch32
   `arm_neon.h` does not provide; the fast path is now gated on `__aarch64__` so
   AArch32 keeps the portable floor fallback.
+- Building without contrib modules compiles again against OpenCV 5.0.0. The
+  hand-written `cv::stereo::MatchQuasiDense` vector converter was gated on
+  `HAVE_OPENCV_STEREO`, but in OpenCV 5.0 `stereo` is a new main module (so that
+  macro is always defined) while the quasi-dense stereo types moved to the
+  contrib `xstereo` module. The converter is now gated on `HAVE_OPENCV_XSTEREO`,
+  so a build without contrib modules no longer references the absent
+  `cv::stereo` namespace.
 
 ### Performance
 
