@@ -1406,6 +1406,26 @@ defmodule Evision.Mat do
   end
 
   @doc false
+  # N-d cross-correlation (Nx.conv) on canonical-layout f32/f64 inputs. `input` is
+  # [N, Cin, *sp], `kernel` [O, Cin/G, *sp]; the result is the canonical [N/Bg, O, *sp].
+  def conv(input, kernel, in_shape, k_shape, out_shape, strides, pad_lo, input_dilation, kernel_dilation, feature_groups, batch_groups) do
+    :evision_nif.mat_conv(
+      input: from_struct(input),
+      kernel: from_struct(kernel),
+      in_shape: in_shape,
+      k_shape: k_shape,
+      out_shape: out_shape,
+      strides: strides,
+      pad_lo: pad_lo,
+      input_dilation: input_dilation,
+      kernel_dilation: kernel_dilation,
+      feature_groups: feature_groups,
+      batch_groups: batch_groups
+    )
+    |> Evision.Internal.Structurise.to_struct()
+  end
+
+  @doc false
   # Per-element bit op preserving the integer type (Nx.count_leading_zeros /
   # population_count): op 0 = clz, 1 = popcount.
   def bit_unary(mat, op) do

@@ -1591,6 +1591,44 @@ defmodule Evision.Backend do
   defp norm_list(v, rank) when is_nil(v), do: List.duplicate(1, rank)
   defp norm_list(v, _rank) when is_list(v), do: v
 
+  ## Convolution
+
+  # N-d cross-correlation. The input/kernel/output permutations and the float cast are done
+  # here (via the implemented transpose/as_type), so the NIF only does the canonical-layout
+  # correlation; the result is permuted back to the output layout. f16/bf16 widen to f32.
+  @impl true
+  def conv(%T{type: out_type, shape: out_shape} = out, %T{shape: in_shape} = tensor, kernel, opts) do
+    work_type = if out_type in @half_types, do: {:f, 32}, else: out_type
+    op = opts[:output_permutation]
+    d = tuple_size(in_shape) - 2
+
+    in_t = tensor |> Nx.transpose(axes: opts[:input_permutation]) |> Nx.as_type(work_type)
+    k_t = kernel |> Nx.transpose(axes: opts[:kernel_permutation]) |> Nx.as_type(work_type)
+    canon_shape = op |> Enum.map(&elem(out_shape, &1)) |> List.to_tuple()
+
+    Evision.Mat.conv(
+      from_nx(in_t),
+      from_nx(k_t),
+      Tuple.to_list(in_t.shape),
+      Tuple.to_list(k_t.shape),
+      Tuple.to_list(canon_shape),
+      norm_list(opts[:strides], d),
+      Enum.map(opts[:padding], &elem(&1, 0)),
+      norm_list(opts[:input_dilation], d),
+      norm_list(opts[:kernel_dilation], d),
+      opts[:feature_group_size],
+      opts[:batch_group_size]
+    )
+    |> reject_error()
+    |> Evision.Mat.reshape(Tuple.to_list(canon_shape))
+    |> reject_error()
+    |> to_nx(%{out | shape: canon_shape, type: work_type})
+    |> Nx.transpose(axes: inverse_perm(op))
+    |> Nx.as_type(out_type)
+    |> from_nx()
+    |> to_nx(out)
+  end
+
   # {product of leading dims, second-last dim, last dim} for a batched matrix shape.
   defp mat_dims(shape) do
     [n, m | lead] = shape |> Tuple.to_list() |> Enum.reverse()

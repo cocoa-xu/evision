@@ -850,4 +850,49 @@ defmodule Evision.Backend.Test do
       end
     end
   end
+
+  describe "conv" do
+    test "matches Nx.BinaryBackend across strides, padding, dilations, groups, ranks" do
+      img = Nx.iota({1, 1, 4, 4}, type: :f32)
+      k11 = Nx.iota({1, 1, 2, 2}, type: :f32)
+      img2 = Nx.iota({2, 3, 5, 5}, type: :f32)
+      k2 = Nx.iota({4, 3, 2, 2}, type: :f32)
+      imgd = Nx.iota({1, 4, 5, 5}, type: :f32)
+      kd = Nx.iota({4, 1, 3, 3}, type: :f32)
+      img1 = Nx.iota({1, 2, 8}, type: :f32)
+      k1 = Nx.iota({3, 2, 3}, type: :f32)
+
+      cases = [
+        {img, k11, [strides: [1, 1]]},
+        {img, k11, [strides: [2, 2]]},
+        {img, k11, [padding: :same]},
+        {img, k11, [padding: [{1, 1}, {0, 1}]]},
+        {img, k11, [kernel_dilation: [2, 1]]},
+        {img, k11, [input_dilation: [2, 2]]},
+        {img2, k2, [strides: [2, 1]]},
+        {img2, k2, [padding: :same]},
+        # depthwise (feature groups)
+        {imgd, kd, [feature_group_size: 4]},
+        {img1, k1, [strides: [2]]},
+        {img1, k1, [padding: :same, kernel_dilation: [2]]}
+      ]
+
+      for {i, k, o} <- cases do
+        assert_close(Nx.conv(ev(i), ev(k), o), Nx.conv(i, k, o))
+      end
+    end
+
+    test "matches Nx.BinaryBackend with permutations and batch groups" do
+      # input given as NHWC, permuted to canonical NCHW
+      img = Nx.iota({1, 5, 5, 3}, type: :f32)
+      k = Nx.iota({4, 3, 2, 2}, type: :f32)
+      o = [input_permutation: [0, 3, 1, 2]]
+      assert_close(Nx.conv(ev(img), ev(k), o), Nx.conv(img, k, o))
+
+      bimg = Nx.iota({4, 2, 4, 4}, type: :f32)
+      bk = Nx.iota({2, 2, 2, 2}, type: :f32)
+      bo = [batch_group_size: 2]
+      assert_close(Nx.conv(ev(bimg), ev(bk), bo), Nx.conv(bimg, bk, bo))
+    end
+  end
 end
