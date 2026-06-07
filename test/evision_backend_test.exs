@@ -357,4 +357,21 @@ defmodule Evision.Backend.Test do
       end
     end
   end
+
+  describe "is_nan / is_infinity / logical_not" do
+    test "match Nx.BinaryBackend exactly across float (with nan/inf) and integer dtypes" do
+      tensors = [
+        Nx.tensor([1.0, 0.0, -2.5], type: :f32),
+        Nx.tensor([:nan, :infinity, :neg_infinity, 0.0, 3.0], type: :f32),
+        Nx.tensor([:nan, 1.0, :infinity], type: :f64),
+        Nx.tensor([0.0, :nan, 2.0], type: :f16),
+        Nx.tensor([0, 1, -2, 3]),
+        Nx.tensor([0, 5, 0], type: :u8)
+      ]
+
+      for op <- [:is_nan, :is_infinity, :logical_not], t <- tensors do
+        assert_same(apply(Nx, op, [ev(t)]), apply(Nx, op, [t]))
+      end
+    end
+  end
 end

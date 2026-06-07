@@ -1326,6 +1326,14 @@ defmodule Evision.Mat do
     |> Evision.Internal.Structurise.to_struct()
   end
 
+  @doc false
+  # Elementwise predicate -> u8 (Nx.is_nan/is_infinity/logical_not): op 0=is_nan,
+  # 1=is_infinity, 2=is_zero. `mat` must be a real C type (f16/bf16 widened first).
+  def predicate(mat, op) do
+    :evision_nif.mat_predicate(src: from_struct(mat), op: op)
+    |> Evision.Internal.Structurise.to_struct()
+  end
+
   @doc namespace: :"cv.Mat"
   @spec expm1(maybe_mat_in()) :: maybe_mat_out()
   def expm1(mat) do

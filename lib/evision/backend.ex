@@ -1033,6 +1033,34 @@ defmodule Evision.Backend do
     |> to_nx(out)
   end
 
+  ## Predicates
+
+  @pred_is_nan 0
+  @pred_is_infinity 1
+  @pred_is_zero 2
+
+  @impl true
+  def is_nan(out, tensor), do: predicate(out, tensor, @pred_is_nan)
+
+  @impl true
+  def is_infinity(out, tensor), do: predicate(out, tensor, @pred_is_infinity)
+
+  @impl true
+  def logical_not(out, tensor), do: predicate(out, tensor, @pred_is_zero)
+
+  # Elementwise predicate -> u8. f16/bf16 widen to f32 (the NIF covers only real C types).
+  defp predicate(%T{shape: out_shape} = out, %T{type: type} = tensor, op) do
+    mat = from_nx(tensor)
+    mat = if type in @half_types, do: as_mat_type(mat, {:f, 32}), else: mat
+
+    mat
+    |> Evision.Mat.predicate(op)
+    |> reject_error()
+    |> Evision.Mat.reshape(reduce_out_dims(out_shape))
+    |> reject_error()
+    |> to_nx(out)
+  end
+
   # Reduce `op` (0 sum, 1 product) over `opts[:axes]` (nil = all axes). Cast to the
   # accumulator type so integer promotion (s64/u64) and f64 float accumulation match
   # Nx, move the reduced axes to the end, flatten to [keep, reduce], reduce per row.

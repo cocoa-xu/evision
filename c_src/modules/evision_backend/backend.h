@@ -25,6 +25,7 @@
 #include "matrix_multiply.h"
 #include "multiply.h"
 #include "negate.h"
+#include "predicate.h"
 #include "reduce.h"
 #include "reshape.h"
 #include "round.h"
