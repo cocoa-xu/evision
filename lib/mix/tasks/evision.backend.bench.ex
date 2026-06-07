@@ -2,7 +2,7 @@ defmodule Mix.Tasks.Evision.Backend.Bench do
   @shortdoc "Benchmark Evision.Backend Nx operations"
 
   @moduledoc """
-  Benchmarks representative Evision.Backend Nx operations against Nx.BinaryBackend.
+  Benchmarks representative Evision.Backend Nx operations.
 
       mix evision.backend.bench
       mix evision.backend.bench --profile smoke --output /tmp/evision-backend.json
@@ -12,8 +12,8 @@ defmodule Mix.Tasks.Evision.Backend.Bench do
 
     * `--output` - JSON output path. Defaults to `benchmarks/evision_backend/latest.json`.
     * `--profile` - one of `smoke`, `default`, or `full`. Defaults to `default`.
-    * `--warmup` - warmup iterations per backend and case.
-    * `--iterations` - measured iterations per backend and case.
+    * `--warmup` - warmup iterations per case.
+    * `--iterations` - measured iterations per case.
     * `--only` - comma-separated case names or categories to run.
     * `--list` - print available benchmark cases and exit.
     * `--no-verify` - skip the correctness check before measuring.
@@ -83,6 +83,7 @@ defmodule Mix.Tasks.Evision.Backend.Bench do
     metadata = %{
       "elixir" => System.version(),
       "evision" => application_version(:evision),
+      "backend" => "Evision.Backend",
       "generated_at" => DateTime.utc_now() |> DateTime.truncate(:second) |> DateTime.to_iso8601(),
       "git_revision" => git_revision(),
       "iterations" => iterations,
@@ -114,19 +115,14 @@ defmodule Mix.Tasks.Evision.Backend.Bench do
       verify_case!(bench, bench.run.(evision_input), bench.run.(binary_input))
     end
 
-    binary_stats =
-      measure(fn -> bench.run.(binary_input) |> materialize() end, warmup, iterations)
-
     evision_stats =
       measure(fn -> bench.run.(evision_input) |> materialize() end, warmup, iterations)
 
     %{
-      "binary_backend" => binary_stats,
       "category" => bench.category,
       "details" => bench.details,
       "evision_backend" => evision_stats,
       "name" => bench.name,
-      "speedup_median" => ratio(binary_stats["median_us"], evision_stats["median_us"]),
       "verification" => if(verify?, do: "passed", else: "skipped")
     }
   end
@@ -485,13 +481,8 @@ defmodule Mix.Tasks.Evision.Backend.Bench do
 
   defp ns_to_us(ns), do: Float.round(ns / 1000.0, 3)
 
-  defp ratio(_left, right) when right == 0, do: nil
-  defp ratio(left, right), do: Float.round(left / right, 3)
-
   defp materialize(%Nx.Tensor{} = tensor) do
-    tensor
-    |> Nx.backend_copy(Nx.BinaryBackend)
-    |> Nx.to_binary()
+    Nx.to_binary(tensor)
   end
 
   defp materialize(tuple) when is_tuple(tuple) do
@@ -587,24 +578,28 @@ defmodule Mix.Tasks.Evision.Backend.Bench do
 
   defp print_summary(%{"results" => results}) do
     Mix.shell().info("")
-    Mix.shell().info("case,binary_median_us,evision_median_us,speedup")
+    Mix.shell().info("case,evision_median_us,evision_p95_us,evision_min_us,evision_mean_us")
 
     Enum.each(results, fn result ->
-      binary = result["binary_backend"]["median_us"]
-      evision = result["evision_backend"]["median_us"]
-      speedup = result["speedup_median"]
+      stats = result["evision_backend"]
 
       Mix.shell().info(
-        "#{result["name"]},#{format_float(binary)},#{format_float(evision)},#{format_speedup(speedup)}"
+        Enum.join(
+          [
+            result["name"],
+            format_float(stats["median_us"]),
+            format_float(stats["p95_us"]),
+            format_float(stats["min_us"]),
+            format_float(stats["mean_us"])
+          ],
+          ","
+        )
       )
     end)
   end
 
   defp format_float(value) when is_float(value), do: :erlang.float_to_binary(value, decimals: 3)
   defp format_float(value), do: to_string(value)
-
-  defp format_speedup(nil), do: "n/a"
-  defp format_speedup(value), do: "#{format_float(value)}x"
 
   defp shape_list(shape) when is_tuple(shape), do: Tuple.to_list(shape)
 
