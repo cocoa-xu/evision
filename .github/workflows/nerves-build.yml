@@ -173,6 +173,8 @@ jobs:
           echo '      {:evision, path: "../evision"},' >> mix.exs.tmp
           tail -n "+${LINE}" mix.exs >> mix.exs.tmp
           mv mix.exs.tmp mix.exs
+          # nerves_livebook pins an older nx than evision (dev) needs; force evision's version
+          sed -i -E 's/\{:nx, "~> [0-9.]+"\}/{:nx, "~> 0.12.1", override: true}/' mix.exs
           cat mix.exs
           export MIX_TARGET=${{ matrix.pair.target }}
           mix deps.get
@@ -180,6 +182,8 @@ jobs:
           mix deps.update kino
           cp -a ../evision/examples ./priv/evision_examples
           sed -i 's/"welcome.livemd"\,/"welcome.livemd"\, "evision_examples",/g' lib/nerves_livebook/application.ex
+          # keep a stray host PKG_CONFIG_PATH out of the nerves cross-build
+          unset PKG_CONFIG_PATH
           export MAKE_BUILD_FLAGS="-j$(nproc)"
           mix deps.compile
           export PRIV_DIR="_build/${MIX_TARGET}_${MIX_ENV}/lib/evision/priv"
