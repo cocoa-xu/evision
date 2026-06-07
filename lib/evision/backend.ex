@@ -327,7 +327,7 @@ defmodule Evision.Backend do
   def multiply(%T{type: type}=out, %T{}=l, %T{}=r) do
     case check_mul_div_kind(l, r) do
       :per_element ->
-        Evision.Mat.multiply(from_nx(l), from_nx(r), type)
+        Evision.Mat.multiply(from_nx(float_scalar(l)), from_nx(float_scalar(r)), type)
 
       :matrix ->
         l = maybe_cast_type_for_matrix_mul_div(l)
@@ -335,6 +335,7 @@ defmodule Evision.Backend do
         Evision.Mat.matrix_multiply(l, r)
         |> Evision.Mat.as_type(type)
     end
+    |> reject_error()
     |> to_nx(out)
   end
 
@@ -342,7 +343,7 @@ defmodule Evision.Backend do
   def divide(%T{type: type, shape: shape}=out, l, r) do
     case check_mul_div_kind(l, r) do
       :per_element ->
-        Evision.Mat.divide(from_nx(l), from_nx(r), type)
+        Evision.Mat.divide(from_nx(float_scalar(l)), from_nx(float_scalar(r)), type)
 
       :matrix ->
         l = Nx.broadcast(l, shape)
@@ -351,6 +352,7 @@ defmodule Evision.Backend do
         r = maybe_cast_type_for_matrix_mul_div(r)
         Evision.Mat.divide(l, r, type)
     end
+    |> reject_error()
     |> to_nx(out)
   end
 
@@ -363,6 +365,13 @@ defmodule Evision.Backend do
   defp check_mul_div_kind(_l, _r) do
     :matrix
   end
+
+  # OpenCV's arithmetic only treats a 1x1 operand as a scalar when it is f64 (an
+  # integer or f32 scalar is rejected, especially as the left operand), so cast a
+  # 0-d operand to f64 -- a single element -- instead of broadcasting it to a full
+  # array. Widening a float scalar is lossless and the other operand is untouched.
+  defp float_scalar(%T{shape: {}} = scalar), do: Nx.as_type(scalar, {:f, 64})
+  defp float_scalar(scalar), do: scalar
 
   defp maybe_cast_type_for_matrix_mul_div(%T{type: {:f, _}}=tensor) do
     from_nx(tensor)

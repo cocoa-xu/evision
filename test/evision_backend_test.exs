@@ -365,6 +365,37 @@ defmodule Evision.Backend.Test do
     end
   end
 
+  describe "multiply / divide by a scalar" do
+    # Regression: multiplying or dividing by an integer scalar used to raise
+    # "no function clause matching in Evision.Backend.to_nx/2". The per-element
+    # branch handed a 1x1 integer scalar Mat to cv::multiply, whose scalar
+    # fast-path rejects non-float scalars; broadcasting the scalar to the output
+    # shape first turns it into a supported array-op-array call.
+    test "integer-tensor multiply by an integer scalar matches Nx.BinaryBackend exactly" do
+      for t <- [Nx.tensor([1, 2, 3], type: :s32), Nx.tensor([4, 9, 12], type: :s64)],
+          s <- [2, -3, 0] do
+        assert_same(Nx.multiply(ev(t), s), Nx.multiply(t, s))
+        assert_same(Nx.multiply(s, ev(t)), Nx.multiply(s, t))
+      end
+    end
+
+    test "float-tensor multiply by integer and float scalars matches Nx.BinaryBackend" do
+      for t <- [Nx.tensor([1.0, 2.0, 3.0], type: :f32), Nx.tensor([[1.0, 2.0], [3.0, 4.0]], type: :f64)],
+          s <- [2, -3, 0.5, -1.5] do
+        assert_close(Nx.multiply(ev(t), s), Nx.multiply(t, s))
+        assert_close(Nx.multiply(s, ev(t)), Nx.multiply(s, t))
+      end
+    end
+
+    test "divide by integer and float scalars matches Nx.BinaryBackend" do
+      for t <- [Nx.tensor([4, 9, 12], type: :s32), Nx.tensor([1.0, 2.0, 3.0], type: :f32)],
+          s <- [2, -4, 0.5] do
+        assert_close(Nx.divide(ev(t), s), Nx.divide(t, s))
+        assert_close(Nx.divide(s, ev(t)), Nx.divide(s, t))
+      end
+    end
+  end
+
   describe "cumulative_sum / product / min / max" do
     test "match Nx.BinaryBackend exactly for integer dtypes across axes and :reverse" do
       tensors = [
