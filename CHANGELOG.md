@@ -1,26 +1,52 @@
 # Changelog
 
-## Unreleased (v1.0.0)
+## v1.0.0-rc.0 (2026-06-08)
 
-evision now targets **OpenCV 5.0.0**, released as the first major version.
-OpenCV 5.0 is a breaking upgrade (C++17, the legacy C API removed, modules
-reorganised, new core element types, and a rewritten DNN engine); see OpenCV's
-release notes for the upstream details.
+This is the first release candidate for evision **v1.0.0**, the first major
+version. Two headline changes land together:
+
+- evision now targets **OpenCV 5.0.0**. This is a breaking upgrade (C++17, the
+  legacy C API removed, modules reorganised, new core element types, and a
+  rewritten DNN engine); see OpenCV's release notes for the upstream details.
+- **`Evision.Backend` is now a working Nx backend**, implementing the majority
+  of the `Nx.Backend` behaviour with results verified against
+  `Nx.BinaryBackend`.
 
 ### Added
 
-- **`cv::Mat` as a complete Nx backend ([#48](https://github.com/cocoa-xu/evision/issues/48)).**
-  OpenCV 5.0's new native depths are mapped to Nx dtypes: `CV_64S` to `{:s, 64}`,
+- **`Evision.Backend` is now a working Nx backend
+  ([#48](https://github.com/cocoa-xu/evision/issues/48)).** 72 of the 85
+  `Nx.Backend` callbacks are implemented, each verified element-for-element
+  against `Nx.BinaryBackend` across dtypes, ranks, axes, and broadcasting, so
+  `cv::Mat` can back `Nx` tensors for most workflows. Newly implemented
+  callbacks include:
+  - Reductions: `sum`, `product`, `reduce_max`, `reduce_min`, `all`, `any`, and
+    `argmax`/`argmin` (backed by `cv::reduceArgMax`/`reduceArgMin`, with Nx
+    tie-break semantics).
+  - Cumulative ops: `cumulative_sum`, `cumulative_product`, `cumulative_min`,
+    `cumulative_max`.
+  - Sorting: `sort` and `argsort` along any axis, stable in both directions,
+    including the wide-integer depths (`u32`/`s64`/`u64`) that `cv::sort`
+    rejects.
+  - Indexing: `take`, `gather`, `indexed_add`, and `indexed_put`, with
+    Nx-compatible bounds checking.
+  - Elementwise unary math and `select`.
+  - `init/1` (required by the `Nx.Backend` behaviour since Nx 0.7) and scalar
+    (0-dimensional) tensors in `from_binary`.
+- OpenCV 5.0's new native depths are mapped to Nx dtypes: `CV_64S` to `{:s, 64}`,
   `CV_32U` to `{:u, 32}`, `CV_64U` to `{:u, 64}`, and `CV_16BF` to `{:bf, 16}`.
   64-bit values now round-trip through `cv::Mat` losslessly (the old s64-to-s32
   downcast that truncated values above 2^31 is gone), and `Evision.Mat.at/2`
   returns full-width 64-bit values.
 - Haar/HOG parity: `Evision.CascadeClassifier` and `Evision.HOGDescriptor` build
   again via the contrib `xobjdetect` module, where OpenCV 5.0 moved them.
+- `mix evision.backend.bench`, a benchmark task for the Evision backend with an
+  optional Torchx comparison.
 
 ### Changed
 
 - Uses OpenCV 5.0.0.
+- Requires Nx `~> 0.12.1`.
 - Module reorganisation follows OpenCV 5.0. Most classes keep their `Evision.*`
   names, but a few feature detectors moved to the contrib `xfeatures2d` module
   and are now under `Evision.XFeatures2D.*`: `AKAZE`, `KAZE`,
@@ -43,8 +69,41 @@ release notes for the upstream details.
 
 ### Fixed
 
+- `Evision.Backend` N-dimensional broadcasting now matches Nx semantics for
+  rank-differing and multi-axis broadcasts (e.g. `{3, 4}` to `{2, 3, 4}`,
+  `{2, 1, 4}` to `{2, 3, 4}`) and honours Nx's explicit `:axes`, so non
+  right-aligned broadcasts are correct. Previously every elementwise binary op
+  (`add`/`subtract`/`divide`/`min`/`max`/comparisons) could silently disagree
+  with `Nx.BinaryBackend`, and on AArch64 a divide-by-zero in the tiling path
+  returned garbage instead of trapping.
+- `Evision.Backend` `logical_and`/`logical_or`/`logical_xor` now use truthiness
+  semantics, so they are correct for non-boolean inputs (`logical_and(2, 1)` is
+  `1`, not `0`) and `logical_xor` no longer raises on non-`u8` types.
+- `Evision.Backend` integer scalar operands in `multiply`/`divide` no longer
+  raise a `to_nx/2` clause error (OpenCV only treats a 1x1 operand as a scalar
+  when it is `f64`).
 - Building from source no longer re-runs the OpenCV install on every
   `mix compile`; the cmake-config gate now matches OpenCV 5.0's install path.
+
+### Performance
+
+- `Evision.Backend` elementwise loops are parallelised with `cv::parallel_for_`,
+  with stripe counts sized to the thread pool rather than the range length (a
+  naive port dispatched one block per element and ran some ops slower in
+  parallel than serially). Read-only NIF inputs are marked `INPUT_ONLY` so a
+  cv-owned source `Mat` is shared instead of deep-copied; a no-op reshape of a
+  2 MB tensor drops from ~110us to ~3us.
+- Reductions read their input in its native dtype and promote per element to the
+  wide accumulator, dropping a separate cast pass, and a new leading-axis path
+  avoids transposing first: `reduce_max` over axis 0 of a 512x1024 tensor drops
+  from ~3.2ms to ~0.25ms.
+- Conv gains an im2row + GEMM fast path for the common 2-D case (single batch
+  group, no input dilation, `f32`/`f64`), reaching parity with the libtorch
+  backend; other shapes fall back to the general N-d kernel.
+- Scalar-operand elementwise ops (`add`/`subtract`/`multiply`/`divide`/`min`/
+  `max`/comparisons/`pow`/`atan2`/`quotient`/`remainder`/shifts) take a fast
+  path that casts the scalar to a single element instead of materialising a full
+  broadcast array: scalar `add` on a 2048x2048 tensor drops from ~20ms to ~1.6ms.
 
 Change logs for `v0.2.x` are in
 [CHANGELOG.v0.2.md](https://github.com/cocoa-xu/evision/blob/main/CHANGELOG.v0.2.md);
