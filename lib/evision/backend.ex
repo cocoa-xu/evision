@@ -847,6 +847,55 @@ defmodule Evision.Backend do
     |> Enum.map(&elem(&1, 1))
   end
 
+  ## Reductions
+
+  @impl true
+  def sum(out, tensor, opts), do: reduce_aggregate(out, tensor, opts, 0)
+
+  @impl true
+  def product(out, tensor, opts), do: reduce_aggregate(out, tensor, opts, 1)
+
+  # Reduce `op` (0 sum, 1 product) over `opts[:axes]` (nil = all axes). Cast to the
+  # accumulator type so integer promotion (s64/u64) and f64 float accumulation match
+  # Nx, move the reduced axes to the end, flatten to [keep, reduce], reduce per row.
+  defp reduce_aggregate(%T{type: out_type, shape: out_shape} = out, %T{shape: shape} = tensor, opts, op) do
+    rank = tuple_size(shape)
+    axes = all_axes(rank)
+    reduce_axes = Enum.sort(opts[:axes] || axes)
+    perm = (axes -- reduce_axes) ++ reduce_axes
+    keep_size = sizes_product(shape, axes -- reduce_axes)
+    reduce_size = sizes_product(shape, reduce_axes)
+
+    mat = as_mat_type(from_nx(tensor), accumulator_type(out_type))
+
+    transposed =
+      if perm == axes,
+        do: mat,
+        else: reject_error(Evision.Mat.transpose(mat, perm, as_shape: shape))
+
+    transposed
+    |> Evision.Mat.reshape([keep_size, reduce_size])
+    |> reject_error()
+    |> Evision.Mat.reduce_rows(op)
+    |> reject_error()
+    |> as_mat_type(out_type)
+    |> Evision.Mat.reshape(reduce_out_dims(out_shape))
+    |> reject_error()
+    |> to_nx(out)
+  end
+
+  defp all_axes(0), do: []
+  defp all_axes(rank), do: Enum.to_list(0..(rank - 1))
+
+  defp sizes_product(shape, axes), do: Enum.reduce(axes, 1, &(elem(shape, &1) * &2))
+
+  defp accumulator_type({:u, _}), do: {:u, 64}
+  defp accumulator_type({:s, _}), do: {:s, 64}
+  defp accumulator_type(_float), do: {:f, 64}
+
+  defp reduce_out_dims({}), do: [1]
+  defp reduce_out_dims(shape), do: Tuple.to_list(shape)
+
   @doc false
   def from_nx(%T{data: %EB{ref: mat_ref}}), do: mat_ref
   def from_nx(%T{} = tensor) do

@@ -1242,6 +1242,16 @@ defmodule Evision.Mat do
     |> Evision.Internal.Structurise.to_struct()
   end
 
+  @doc false
+  # Row-wise reduction (op 0 = sum, 1 = product) of an accumulator-typed mat
+  # (f64/s64/u64), accumulating left-to-right; returns a [rows, 1] mat.
+  def reduce_rows(mat, op) do
+    mat = from_struct(mat)
+
+    :evision_nif.mat_reduce(src: mat, op: op)
+    |> Evision.Internal.Structurise.to_struct()
+  end
+
   @doc namespace: :"cv.Mat"
   @spec expm1(maybe_mat_in()) :: maybe_mat_out()
   def expm1(mat) do

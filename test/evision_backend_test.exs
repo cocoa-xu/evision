@@ -13,6 +13,16 @@ defmodule Evision.Backend.Test do
     assert got_list == Nx.to_flat_list(want)
   end
 
+  # For float results, reduction order is implementation-defined; compare approximately.
+  defp assert_close(got, want) do
+    assert Nx.type(got) == Nx.type(want)
+    assert Nx.shape(got) == Nx.shape(want)
+    got_b = Nx.backend_copy(got, Nx.BinaryBackend)
+
+    assert Nx.to_number(Nx.all_close(got_b, want, atol: 1.0e-5, rtol: 1.0e-5)) == 1,
+           "got #{inspect(Nx.to_flat_list(got_b))} vs #{inspect(Nx.to_flat_list(want))}"
+  end
+
   defp axis_in_rank?(t, opts) do
     case opts[:axis] do
       nil -> true
@@ -70,6 +80,36 @@ defmodule Evision.Backend.Test do
 
       for t <- base ++ typed, fun <- [:sort, :argsort], opts <- opts_list, axis_in_rank?(t, opts) do
         assert_same(apply(Nx, fun, [ev(t), opts]), apply(Nx, fun, [t, opts]))
+      end
+    end
+  end
+
+  describe "sum/product" do
+    test "match Nx.BinaryBackend exactly across axes, keep_axes, and integer dtypes" do
+      tensors = for ty <- [:s32, :u8, :s64, :u64, :u32], do: Nx.tensor([[[1, 2], [3, 4]], [[5, 6], [7, 8]]], type: ty)
+
+      opts_list = [
+        [],
+        [axes: [0]],
+        [axes: [1]],
+        [axes: [2]],
+        [axes: [0, 2]],
+        [axes: [1], keep_axes: true],
+        [axes: [0, 1, 2]]
+      ]
+
+      for t <- tensors, fun <- [:sum, :product], opts <- opts_list do
+        assert_same(apply(Nx, fun, [ev(t), opts]), apply(Nx, fun, [t, opts]))
+      end
+    end
+
+    test "match Nx.BinaryBackend approximately for floats" do
+      t32 = Nx.tensor([[1.5, -2.0, 3.25], [0.5, 4.0, -1.0]], type: :f32)
+
+      for t <- [t32, Nx.as_type(t32, :f64)],
+          fun <- [:sum, :product],
+          opts <- [[], [axes: [0]], [axes: [1]], [axes: [1], keep_axes: true]] do
+        assert_close(apply(Nx, fun, [ev(t), opts]), apply(Nx, fun, [t, opts]))
       end
     end
   end
