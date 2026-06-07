@@ -143,6 +143,45 @@ def patch_carotene_vround(opencv_version: str, opencv_src_root: str):
         print(f"[+] patched carotene vround_helper.hpp ({patched} guards)")
 
 
+def patch_intrin_neon_v_floor(opencv_version: str, opencv_src_root: str):
+    """Gate v_floor's ARMv8 round-to-minus-infinity intrinsic on __aarch64__.
+
+    modules/core/include/opencv2/core/hal/intrin_neon.hpp implements
+    v_floor(v_float32x4) with `#if __ARM_ARCH > 7` -> vcvtmq_s32_f32, an
+    AArch64-only NEON intrinsic. On 32-bit ARMv8 targets such as Nerves
+    rpi3/rpi3a/rpi0_2 (Cortex-A53 built for armv7hf) __ARM_ARCH is 8, but GCC's
+    AArch32 arm_neon.h does not provide vcvtmq_s32_f32, so the core module
+    fails to compile. Restrict the fast path to AArch64; AArch32 keeps the
+    portable floor fallback already present in the #else branch.
+
+    Mirrors patch_carotene_vround for the universal-intrinsics NEON backend.
+    """
+    intrin_neon_hpp = (
+        Path(opencv_src_root) / 'modules' / 'core' / 'include' / 'opencv2'
+        / 'core' / 'hal' / 'intrin_neon.hpp'
+    )
+    if not intrin_neon_hpp.exists():
+        print(f"warning: {intrin_neon_hpp} not found, skipping patch_intrin_neon_v_floor")
+        return
+
+    original = '#if __ARM_ARCH > 7'
+    fixed = StringIO()
+    patched = 0
+    with open(intrin_neon_hpp, 'r') as source:
+        for line in source:
+            if line.strip() == original:
+                fixed.write('#if defined(__aarch64__) // patched\n')
+                patched += 1
+            else:
+                fixed.write(line)
+
+    if patched:
+        with open(intrin_neon_hpp, 'w') as dst:
+            dst.truncate(0)
+            dst.write(fixed.getvalue())
+        print(f"[+] patched intrin_neon.hpp v_floor guard ({patched})")
+
+
 def patch_ocr_tesseract_run_with_components(opencv_version: str, opencv_src_root: str):
     """Add CV_WRAP runWithComponents() to OCRTesseract.
 
@@ -295,6 +334,7 @@ patches = [
     patch_rpath_linux,
     patch_python_bindings_generator,
     patch_carotene_vround,
+    patch_intrin_neon_v_floor,
     patch_imread,
     patch_cmake_minimum_version,
     patch_mlas_skip_msvc,
