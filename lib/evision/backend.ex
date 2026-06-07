@@ -285,7 +285,7 @@ defmodule Evision.Backend do
   @impl true
   @spec add(Nx.Tensor.t(), Nx.Tensor.t(), Nx.Tensor.t()) :: Nx.Tensor.t()
   def add(%T{type: type, shape: out_shape}=out, l, r) do
-    {l, r} = enforce_same_shape(l, r, out_shape)
+    {l, r} = align_operands(l, r, out_shape)
     Evision.Mat.add(from_nx(l), from_nx(r), type)
     |> reject_error()
     |> to_nx(out)
@@ -294,7 +294,7 @@ defmodule Evision.Backend do
   @impl true
   @spec subtract(Nx.Tensor.t(), Nx.Tensor.t(), Nx.Tensor.t()) :: Nx.Tensor.t()
   def subtract(%T{type: type, shape: out_shape}=out, l, r) do
-    {l, r} = enforce_same_shape(l, r, out_shape)
+    {l, r} = align_operands(l, r, out_shape)
     Evision.Mat.subtract(from_nx(l), from_nx(r), type)
     |> reject_error()
     |> to_nx(out)
@@ -349,6 +349,15 @@ defmodule Evision.Backend do
   # array. Widening a float scalar is lossless and the other operand is untouched.
   defp float_scalar(%T{shape: {}} = scalar), do: Nx.as_type(scalar, {:f, 64})
   defp float_scalar(scalar), do: scalar
+
+  # For ops that pass an explicit output type to the NIF (add/subtract), a 0-d
+  # operand can go through OpenCV's scalar fast-path (float_scalar/1) instead of
+  # being broadcast to a full array; only genuinely different shapes need
+  # enforce_same_shape. The explicit output type keeps the f64 scalar from
+  # affecting the result dtype.
+  defp align_operands(%T{shape: {}} = l, r, _out_shape), do: {float_scalar(l), r}
+  defp align_operands(l, %T{shape: {}} = r, _out_shape), do: {l, float_scalar(r)}
+  defp align_operands(l, r, out_shape), do: enforce_same_shape(l, r, out_shape)
 
   defp maybe_cast_type_for_matrix_mul_div(%T{type: {:f, _}}=tensor) do
     from_nx(tensor)

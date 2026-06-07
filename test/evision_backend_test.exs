@@ -365,12 +365,24 @@ defmodule Evision.Backend.Test do
     end
   end
 
-  describe "multiply / divide by a scalar" do
+  describe "elementwise ops by a scalar operand" do
+    # add/subtract/multiply/divide route a 0-d operand through OpenCV's scalar
+    # fast-path (cast to f64, no full broadcast). The explicit output type keeps
+    # the result dtype correct even when the scalar promotes it.
+    test "add / subtract by integer and float scalars matches Nx.BinaryBackend" do
+      for t <- [Nx.tensor([1, 2, 3], type: :s32), Nx.tensor([1.0, 2.0, 3.0], type: :f32)],
+          s <- [2, -3, 0.5],
+          op <- [:add, :subtract] do
+        assert_close(apply(Nx, op, [ev(t), s]), apply(Nx, op, [t, s]))
+        assert_close(apply(Nx, op, [s, ev(t)]), apply(Nx, op, [s, t]))
+      end
+    end
+
     # Regression: multiplying or dividing by an integer scalar used to raise
     # "no function clause matching in Evision.Backend.to_nx/2". The per-element
     # branch handed a 1x1 integer scalar Mat to cv::multiply, whose scalar
-    # fast-path rejects non-float scalars; broadcasting the scalar to the output
-    # shape first turns it into a supported array-op-array call.
+    # fast-path rejects non-float scalars; casting the scalar to f64 first turns
+    # it into a supported array-op-scalar call.
     test "integer-tensor multiply by an integer scalar matches Nx.BinaryBackend exactly" do
       for t <- [Nx.tensor([1, 2, 3], type: :s32), Nx.tensor([4, 9, 12], type: :s64)],
           s <- [2, -3, 0] do
@@ -440,6 +452,7 @@ defmodule Evision.Backend.Test do
 
                 cond do
                   Nx.shape(got) != Nx.shape(want) -> {:shape, Nx.shape(got), Nx.shape(want)}
+                  Nx.type(got) != Nx.type(want) -> {:type, Nx.type(got), Nx.type(want)}
                   Nx.to_number(Nx.all_close(got, want, atol: 1.0e-5, rtol: 1.0e-5)) != 1 -> :values
                   true -> :ok
                 end
