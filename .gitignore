@@ -8,6 +8,7 @@ erl_crash.dump
 *.beam
 /config/*.secret.exs
 .elixir_ls/
+compile_commands.json
 /c_src/evision_generated_*
 /c_src/evision_signatures.json
 /c_src/evision_custom_headers.h
