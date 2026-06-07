@@ -1224,6 +1224,273 @@ defmodule Evision.Mat do
     |> Evision.Internal.Structurise.to_struct()
   end
 
+  @doc false
+  # Row-wise sort for depths that need custom handling (wide ints, float NaN order).
+  def sort_rows(mat, descending?) do
+    mat = from_struct(mat)
+
+    :evision_nif.mat_sort_rows(src: mat, descending: if(descending?, do: 1, else: 0))
+    |> Evision.Internal.Structurise.to_struct()
+  end
+
+  @doc false
+  # Row-wise stable argsort for depths that need custom handling.
+  def argsort_rows(mat, descending?) do
+    mat = from_struct(mat)
+
+    :evision_nif.mat_argsort_rows(src: mat, descending: if(descending?, do: 1, else: 0))
+    |> Evision.Internal.Structurise.to_struct()
+  end
+
+  @doc false
+  # Row-wise reduction (op 0=sum, 1=product, 2=max, 3=min) of an accumulator-typed
+  # mat (f64/s64/u64); returns a [rows, 1] mat.
+  def reduce_rows(mat, op) do
+    mat = from_struct(mat)
+
+    :evision_nif.mat_reduce(src: mat, op: op)
+    |> Evision.Internal.Structurise.to_struct()
+  end
+
+  @doc false
+  # Gather along one axis (Nx.take): copies inner blocks selected by int64 indices.
+  def take(mat, indices, outer, axis_dim, inner) do
+    :evision_nif.mat_take(
+      src: from_struct(mat),
+      indices: from_struct(indices),
+      outer: outer,
+      axis_dim: axis_dim,
+      inner: inner
+    )
+    |> Evision.Internal.Structurise.to_struct()
+  end
+
+  @doc false
+  # Gather over leading axes (Nx.gather): each int64 coordinate row over `dims`
+  # selects one inner block; type-agnostic byte copy.
+  def gather(mat, indices, dims, inner) do
+    :evision_nif.mat_gather(
+      src: from_struct(mat),
+      indices: from_struct(indices),
+      dims: from_struct(dims),
+      inner: inner
+    )
+    |> Evision.Internal.Structurise.to_struct()
+  end
+
+  @doc false
+  # Scatter into a copy of `mat` (Nx.indexed_put / indexed_add): each int64
+  # coordinate row over `dims` selects one inner block to overwrite (op 0) or
+  # accumulate (op 1). `mat`/`updates` must already be the output type.
+  def indexed(mat, indices, updates, dims, inner, op) do
+    :evision_nif.mat_indexed(
+      src: from_struct(mat),
+      indices: from_struct(indices),
+      updates: from_struct(updates),
+      dims: from_struct(dims),
+      inner: inner,
+      op: op
+    )
+    |> Evision.Internal.Structurise.to_struct()
+  end
+
+  @doc false
+  # Row-wise prefix scan (Nx.cumulative_*): op 0=sum 1=product 2=min 3=max,
+  # optionally reversed. `mat` is a 2D mat already cast to the output type.
+  def cumulative(mat, op, reverse?) do
+    :evision_nif.mat_cumulative(
+      src: from_struct(mat),
+      op: op,
+      reverse: if(reverse?, do: 1, else: 0)
+    )
+    |> Evision.Internal.Structurise.to_struct()
+  end
+
+  @doc false
+  # Element-wise unary float math (Nx trig/hyperbolic/erf/cbrt/log1p/rsqrt/sigmoid):
+  # op codes match Evision.Backend's @uop_* constants. `mat` must already be f32/f64.
+  def unary_math(mat, op) do
+    :evision_nif.mat_unary_math(src: from_struct(mat), op: op)
+    |> Evision.Internal.Structurise.to_struct()
+  end
+
+  @doc false
+  # Elementwise select (Nx.select): mask ? on_true : on_false. All three are the
+  # same shape; `mask` is u8 and `on_true`/`on_false` already the output type.
+  def select(mask, on_true, on_false) do
+    :evision_nif.mat_select(
+      mask: from_struct(mask),
+      on_true: from_struct(on_true),
+      on_false: from_struct(on_false)
+    )
+    |> Evision.Internal.Structurise.to_struct()
+  end
+
+  @doc false
+  # Elementwise predicate -> u8 (Nx.is_nan/is_infinity/logical_not): op 0=is_nan,
+  # 1=is_infinity, 2=is_zero. `mat` must be a real C type (f16/bf16 widened first).
+  def predicate(mat, op) do
+    :evision_nif.mat_predicate(src: from_struct(mat), op: op)
+    |> Evision.Internal.Structurise.to_struct()
+  end
+
+  @doc false
+  # Cholesky-Banachiewicz lower factor (Nx.LinAlg.cholesky); `mat` is n*n f64.
+  def cholesky(mat, n) do
+    :evision_nif.mat_cholesky(a: from_struct(mat), n: n)
+    |> Evision.Internal.Structurise.to_struct()
+  end
+
+  @doc false
+  # Partial-pivot LU returning {p, l, u} (Nx.LinAlg.lu); `mat` is n*n f64.
+  def lu(mat, n) do
+    :evision_nif.mat_lu(a: from_struct(mat), n: n)
+    |> Evision.Internal.Structurise.to_struct()
+  end
+
+  @doc false
+  # Householder QR returning {q, r} (Nx.LinAlg.qr); `mat` is m*n f64, complete is 0/1.
+  def qr(mat, m, n, complete) do
+    :evision_nif.mat_qr(a: from_struct(mat), m: m, n: n, complete: complete)
+    |> Evision.Internal.Structurise.to_struct()
+  end
+
+  @doc false
+  # Triangular system solve by substitution (Nx.LinAlg.triangular_solve); `a` is n*n f64,
+  # `b` a 2D f64 rhs, lower/left_side/transpose are 0/1.
+  def triangular_solve(a, b, n, lower, left_side, transpose) do
+    :evision_nif.mat_triangular_solve(
+      a: from_struct(a),
+      b: from_struct(b),
+      n: n,
+      lower: lower,
+      left_side: left_side,
+      transpose: transpose
+    )
+    |> Evision.Internal.Structurise.to_struct()
+  end
+
+  @doc false
+  # Sliding-window reduction (Nx.window_sum/max/min/product): op 0=sum 1=product 2=max 3=min.
+  # All dimension/stride/padding/dilation args are flat int lists; result preserves `mat`'s type.
+  def window_reduce(mat, in_dims, out_dims, win_dims, strides, pad_lo, dilations, op) do
+    :evision_nif.mat_window_reduce(
+      src: from_struct(mat),
+      in_dims: in_dims,
+      out_dims: out_dims,
+      win_dims: win_dims,
+      strides: strides,
+      pad_lo: pad_lo,
+      dilations: dilations,
+      op: op
+    )
+    |> Evision.Internal.Structurise.to_struct()
+  end
+
+  @doc false
+  # Select-and-scatter (Nx.window_scatter_max/min): op 0=max 1=min. `source` carries the
+  # per-window values (output type), `init` the fill scalar; result has `mat`'s shape/type.
+  def window_scatter(mat, source, init, in_dims, win_dims, strides, pad_lo, grid, op) do
+    :evision_nif.mat_window_scatter(
+      src: from_struct(mat),
+      source: from_struct(source),
+      init: init,
+      in_dims: in_dims,
+      win_dims: win_dims,
+      strides: strides,
+      pad_lo: pad_lo,
+      grid: grid,
+      op: op
+    )
+    |> Evision.Internal.Structurise.to_struct()
+  end
+
+  @doc false
+  # N-d cross-correlation (Nx.conv) on canonical-layout f32/f64 inputs. `input` is
+  # [N, Cin, *sp], `kernel` [O, Cin/G, *sp]; the result is the canonical [N/Bg, O, *sp].
+  def conv(input, kernel, in_shape, k_shape, out_shape, strides, pad_lo, input_dilation, kernel_dilation, feature_groups, batch_groups) do
+    :evision_nif.mat_conv(
+      input: from_struct(input),
+      kernel: from_struct(kernel),
+      in_shape: in_shape,
+      k_shape: k_shape,
+      out_shape: out_shape,
+      strides: strides,
+      pad_lo: pad_lo,
+      input_dilation: input_dilation,
+      kernel_dilation: kernel_dilation,
+      feature_groups: feature_groups,
+      batch_groups: batch_groups
+    )
+    |> Evision.Internal.Structurise.to_struct()
+  end
+
+  @doc false
+  # Per-element bit op preserving the integer type (Nx.count_leading_zeros /
+  # population_count): op 0 = clz, 1 = popcount.
+  def bit_unary(mat, op) do
+    :evision_nif.mat_bit_unary(src: from_struct(mat), op: op)
+    |> Evision.Internal.Structurise.to_struct()
+  end
+
+  @doc false
+  # Elementwise integer shift (Nx.left_shift/right_shift): op 0 = left, 1 = right.
+  # `l` and `r` share the output type and shape.
+  def shift(l, r, op) do
+    :evision_nif.mat_shift(l: from_struct(l), r: from_struct(r), op: op)
+    |> Evision.Internal.Structurise.to_struct()
+  end
+
+  @doc false
+  # Elementwise binary op with no cv primitive (Nx.atan2/pow/quotient/remainder):
+  # op 0=atan2, 1=pow, 2=quotient, 3=remainder. `l` and `r` share the output type.
+  def binop(l, r, op) do
+    :evision_nif.mat_binop(l: from_struct(l), r: from_struct(r), op: op)
+    |> Evision.Internal.Structurise.to_struct()
+  end
+
+  @doc false
+  # General strided copy (Nx.slice / reverse): out[i] = src[starts[k] + i_k*strides[k]]
+  # per axis (strides may be negative). Lists are per-axis; returns a flat [1, n] mat.
+  def strided_copy(mat, in_dims, out_dims, starts, strides) do
+    :evision_nif.mat_strided_copy(
+      src: from_struct(mat),
+      in_dims: in_dims,
+      out_dims: out_dims,
+      starts: starts,
+      strides: strides
+    )
+    |> Evision.Internal.Structurise.to_struct()
+  end
+
+  @doc false
+  # Scatter a dense block into a copy of `base` (Nx.put_slice; also concatenate's
+  # building block): writes each `slice` element at (starts[k] + j_k). Same type.
+  def put_slice(base, slice, base_dims, slice_dims, starts) do
+    :evision_nif.mat_put_slice(
+      base: from_struct(base),
+      slice: from_struct(slice),
+      base_dims: base_dims,
+      slice_dims: slice_dims,
+      starts: starts
+    )
+    |> Evision.Internal.Structurise.to_struct()
+  end
+
+  @doc false
+  # Per-element gather along one axis (Nx.take_along_axis): out has the indices' shape;
+  # each output replaces the `axis` coordinate with the int64 index. Returns [1, n].
+  def take_along_axis(mat, indices, in_dims, out_dims, axis) do
+    :evision_nif.mat_take_along_axis(
+      src: from_struct(mat),
+      indices: from_struct(indices),
+      in_dims: in_dims,
+      out_dims: out_dims,
+      axis: axis
+    )
+    |> Evision.Internal.Structurise.to_struct()
+  end
+
   @doc namespace: :"cv.Mat"
   @spec expm1(maybe_mat_in()) :: maybe_mat_out()
   def expm1(mat) do

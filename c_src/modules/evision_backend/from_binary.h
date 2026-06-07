@@ -16,10 +16,7 @@ static bool evision_checked_mul_size(size_t lhs, size_t rhs, size_t& out) {
 }
 
 static bool evision_shape_byte_size(const std::vector<int>& shape, size_t elem_size, size_t& byte_size) {
-    if (shape.empty()) {
-        return false;
-    }
-
+    // An empty shape is a scalar (0-dim Mat): the empty product is 1 element.
     size_t count = 1;
     for (int dim : shape) {
         if (dim <= 0) {
