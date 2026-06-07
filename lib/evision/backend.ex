@@ -1196,6 +1196,34 @@ defmodule Evision.Backend do
     |> to_nx(out)
   end
 
+  @impl true
+  def put_slice(%T{shape: shape} = out, tensor, start_indices, slice) do
+    starts = clamp_starts(start_indices, shape, Tuple.to_list(slice.shape))
+    do_put_slice(out, tensor, slice, starts)
+  end
+
+  defp do_put_slice(%T{type: out_type, shape: shape} = out, base, %T{shape: slice_shape} = slice, starts) do
+    base_mat = as_mat_type(from_nx(base), out_type)
+    slice_mat = as_mat_type(from_nx(slice), out_type)
+
+    Evision.Mat.put_slice(base_mat, slice_mat, Tuple.to_list(shape), Tuple.to_list(slice_shape), starts)
+    |> reject_error()
+    |> to_nx(out)
+  end
+
+  @impl true
+  def concatenate(%T{type: out_type, shape: shape} = out, tensors, axis) do
+    rank = tuple_size(shape)
+    base = Evision.Mat.full(shape, 0, out_type) |> reject_error() |> to_nx(out)
+
+    tensors
+    |> Enum.reduce({base, 0}, fn t, {acc, offset} ->
+      starts = List.duplicate(0, rank) |> List.replace_at(axis, offset)
+      {do_put_slice(out, acc, t, starts), offset + elem(t.shape, axis)}
+    end)
+    |> elem(0)
+  end
+
   # Reduce `op` (0 sum, 1 product) over `opts[:axes]` (nil = all axes). Cast to the
   # accumulator type so integer promotion (s64/u64) and f64 float accumulation match
   # Nx, move the reduced axes to the end, flatten to [keep, reduce], reduce per row.

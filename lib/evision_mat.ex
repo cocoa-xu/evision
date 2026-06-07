@@ -1372,6 +1372,20 @@ defmodule Evision.Mat do
     |> Evision.Internal.Structurise.to_struct()
   end
 
+  @doc false
+  # Scatter a dense block into a copy of `base` (Nx.put_slice; also concatenate's
+  # building block): writes each `slice` element at (starts[k] + j_k). Same type.
+  def put_slice(base, slice, base_dims, slice_dims, starts) do
+    :evision_nif.mat_put_slice(
+      base: from_struct(base),
+      slice: from_struct(slice),
+      base_dims: base_dims,
+      slice_dims: slice_dims,
+      starts: starts
+    )
+    |> Evision.Internal.Structurise.to_struct()
+  end
+
   @doc namespace: :"cv.Mat"
   @spec expm1(maybe_mat_in()) :: maybe_mat_out()
   def expm1(mat) do

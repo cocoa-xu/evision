@@ -507,4 +507,45 @@ defmodule Evision.Backend.Test do
       end
     end
   end
+
+  describe "put_slice / concatenate" do
+    test "put_slice matches across positions, clamping, ranks, dtypes" do
+      t = Nx.tensor([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
+
+      cases = [
+        {[0, 0], Nx.tensor([[10, 11], [12, 13]])},
+        {[1, 1], Nx.tensor([[0]])},
+        {[2, 2], Nx.tensor([[99, 99]])},
+        {[0, 0], Nx.tensor([[1, 1, 1]])}
+      ]
+
+      for {start, slice} <- cases do
+        assert_same(Nx.put_slice(ev(t), start, ev(slice)), Nx.put_slice(t, start, slice))
+      end
+
+      assert_same(
+        Nx.put_slice(ev(Nx.tensor([1.0, 2.0, 3.0, 4.0])), [1], ev(Nx.tensor([9.0, 9.0]))),
+        Nx.put_slice(Nx.tensor([1.0, 2.0, 3.0, 4.0]), [1], Nx.tensor([9.0, 9.0]))
+      )
+    end
+
+    test "concatenate matches across axes, arities, sizes, and dtypes" do
+      a = Nx.tensor([[1, 2], [3, 4]])
+      b = Nx.tensor([[5, 6], [7, 8]])
+      c = Nx.tensor([[9, 10], [11, 12]])
+
+      assert_same(Nx.concatenate([ev(a), ev(b)], axis: 0), Nx.concatenate([a, b], axis: 0))
+      assert_same(Nx.concatenate([ev(a), ev(b)], axis: 1), Nx.concatenate([a, b], axis: 1))
+      assert_same(Nx.concatenate([ev(a), ev(b), ev(c)], axis: 0), Nx.concatenate([a, b, c], axis: 0))
+
+      d = Nx.tensor([[1, 2, 3]])
+      e = Nx.tensor([[4, 5, 6], [7, 8, 9]])
+      assert_same(Nx.concatenate([ev(d), ev(e)], axis: 0), Nx.concatenate([d, e], axis: 0))
+
+      assert_same(
+        Nx.concatenate([ev(Nx.tensor([1, 2])), ev(Nx.tensor([3.0, 4.0]))]),
+        Nx.concatenate([Nx.tensor([1, 2]), Nx.tensor([3.0, 4.0])])
+      )
+    end
+  end
 end

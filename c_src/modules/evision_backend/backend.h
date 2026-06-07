@@ -28,6 +28,7 @@
 #include "multiply.h"
 #include "negate.h"
 #include "predicate.h"
+#include "put_slice.h"
 #include "reduce.h"
 #include "reshape.h"
 #include "round.h"
