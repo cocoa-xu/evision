@@ -1016,6 +1016,23 @@ defmodule Evision.Backend do
     mat |> Evision.Mat.sign() |> reject_error() |> Evision.Mat.abs() |> reject_error()
   end
 
+  @impl true
+  def select(%T{shape: shape, type: out_type} = out, pred, on_true, on_false) do
+    mask =
+      pred
+      |> Nx.broadcast(shape)
+      |> from_nx()
+      |> nonzero_mask()
+      |> as_mat_type({:u, 8})
+
+    t = on_true |> Nx.as_type(out_type) |> Nx.broadcast(shape) |> from_nx()
+    f = on_false |> Nx.as_type(out_type) |> Nx.broadcast(shape) |> from_nx()
+
+    Evision.Mat.select(mask, t, f)
+    |> reject_error()
+    |> to_nx(out)
+  end
+
   # Reduce `op` (0 sum, 1 product) over `opts[:axes]` (nil = all axes). Cast to the
   # accumulator type so integer promotion (s64/u64) and f64 float accumulation match
   # Nx, move the reduced axes to the end, flatten to [keep, reduce], reduce per row.

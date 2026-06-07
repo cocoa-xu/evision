@@ -331,4 +331,30 @@ defmodule Evision.Backend.Test do
       end
     end
   end
+
+  describe "select" do
+    test "match Nx.BinaryBackend exactly across shapes, broadcasting, and dtypes" do
+      cases = [
+        {Nx.tensor([1, 0, 1]), Nx.tensor([10, 20, 30]), Nx.tensor([-1, -2, -3])},
+        {Nx.tensor([[1, 0], [0, 1]]), Nx.tensor([[1, 2], [3, 4]]), Nx.tensor([[5, 6], [7, 8]])},
+        # scalar branches broadcast to the predicate shape
+        {Nx.tensor([1, 0, 2, 0]), Nx.tensor(7), Nx.tensor(9)},
+        # row broadcast of the branches
+        {Nx.tensor([[1, 0, 1], [0, 1, 0]]), Nx.tensor([[100, 200, 300]]), Nx.tensor([[1, 2, 3]])},
+        # float dtype
+        {Nx.tensor([1, 0, 1]), Nx.tensor([1.5, 2.5, 3.5], type: :f32),
+         Nx.tensor([0.0, 0.0, 0.0], type: :f32)},
+        # mixed dtype -> merged (f32) output
+        {Nx.tensor([0, 1, 0]), Nx.tensor([1, 2, 3], type: :s32),
+         Nx.tensor([1.5, 2.5, 3.5], type: :f32)},
+        # scalar predicate selects a whole branch
+        {Nx.tensor(1), Nx.tensor([1, 2, 3]), Nx.tensor([4, 5, 6])},
+        {Nx.tensor(0), Nx.tensor([1, 2, 3]), Nx.tensor([4, 5, 6])}
+      ]
+
+      for {p, a, b} <- cases do
+        assert_same(Nx.select(ev(p), ev(a), ev(b)), Nx.select(p, a, b))
+      end
+    end
+  end
 end

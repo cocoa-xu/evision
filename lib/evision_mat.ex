@@ -1314,6 +1314,18 @@ defmodule Evision.Mat do
     |> Evision.Internal.Structurise.to_struct()
   end
 
+  @doc false
+  # Elementwise select (Nx.select): mask ? on_true : on_false. All three are the
+  # same shape; `mask` is u8 and `on_true`/`on_false` already the output type.
+  def select(mask, on_true, on_false) do
+    :evision_nif.mat_select(
+      mask: from_struct(mask),
+      on_true: from_struct(on_true),
+      on_false: from_struct(on_false)
+    )
+    |> Evision.Internal.Structurise.to_struct()
+  end
+
   @doc namespace: :"cv.Mat"
   @spec expm1(maybe_mat_in()) :: maybe_mat_out()
   def expm1(mat) do

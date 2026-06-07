@@ -28,6 +28,7 @@
 #include "reduce.h"
 #include "reshape.h"
 #include "round.h"
+#include "select.h"
 #include "sign.h"
 #include "sort.h"
 #include "subtract.h"
