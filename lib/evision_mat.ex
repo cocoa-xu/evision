@@ -1243,8 +1243,8 @@ defmodule Evision.Mat do
   end
 
   @doc false
-  # Row-wise reduction (op 0 = sum, 1 = product) of an accumulator-typed mat
-  # (f64/s64/u64), accumulating left-to-right; returns a [rows, 1] mat.
+  # Row-wise reduction (op 0=sum, 1=product, 2=max, 3=min) of an accumulator-typed
+  # mat (f64/s64/u64); returns a [rows, 1] mat.
   def reduce_rows(mat, op) do
     mat = from_struct(mat)
 

@@ -30,6 +30,13 @@ defmodule Evision.Backend.Test do
     end
   end
 
+  defp axes_in_rank?(t, opts) do
+    case opts[:axes] do
+      nil -> true
+      axes -> Enum.all?(axes, &(&1 < Nx.rank(t)))
+    end
+  end
+
   describe "argmax/argmin (index family)" do
     test "match Nx.BinaryBackend across axes, ranks, tie-breaks, and dtypes" do
       tensors = [
@@ -283,6 +290,45 @@ defmodule Evision.Backend.Test do
       f16_t = Nx.tensor([0.5, 1.0, 2.0], type: :f16)
       assert_close(Nx.tanh(ev(f16_t)), Nx.tanh(f16_t))
       assert_close(Nx.sqrt(ev(f16_t)), Nx.sqrt(f16_t))
+    end
+  end
+
+  describe "reduce_max / reduce_min / all / any" do
+    test "reduce_max/min match Nx.BinaryBackend exactly across axes, keep_axes, and dtypes" do
+      tensors = [
+        Nx.tensor([3, 1, 2]),
+        Nx.tensor([[1, 5, 3], [9, 2, 8]]),
+        Nx.tensor([[[1, 2], [3, 4]], [[5, 6], [0, 7]]]),
+        Nx.tensor([[1.5, -2.0, 3.25], [0.0, 4.0, -1.0]], type: :f32),
+        Nx.tensor([[10, 20, 30], [40, 50, 60]], type: :u64)
+      ]
+
+      opts_list = [
+        [],
+        [axes: [0]],
+        [axes: [1]],
+        [axes: [0], keep_axes: true],
+        [axes: [1], keep_axes: true]
+      ]
+
+      for op <- [:reduce_max, :reduce_min], t <- tensors, opts <- opts_list, axes_in_rank?(t, opts) do
+        assert_same(apply(Nx, op, [ev(t), opts]), apply(Nx, op, [t, opts]))
+      end
+    end
+
+    test "all/any match Nx.BinaryBackend exactly across axes, keep_axes, and dtypes" do
+      tensors = [
+        Nx.tensor([1, 0, 2]),
+        Nx.tensor([[1, 0, 3], [4, 5, 6]]),
+        Nx.tensor([[0.0, 1.0], [2.0, 3.0]], type: :f32),
+        Nx.tensor([[1, 1], [1, 0]], type: :u8)
+      ]
+
+      opts_list = [[], [axes: [0]], [axes: [1]], [axes: [1], keep_axes: true]]
+
+      for op <- [:all, :any], t <- tensors, opts <- opts_list, axes_in_rank?(t, opts) do
+        assert_same(apply(Nx, op, [ev(t), opts]), apply(Nx, op, [t, opts]))
+      end
     end
   end
 end

@@ -983,11 +983,38 @@ defmodule Evision.Backend do
 
   ## Reductions
 
-  @impl true
-  def sum(out, tensor, opts), do: reduce_aggregate(out, tensor, opts, 0)
+  @reduce_sum 0
+  @reduce_product 1
+  @reduce_max 2
+  @reduce_min 3
 
   @impl true
-  def product(out, tensor, opts), do: reduce_aggregate(out, tensor, opts, 1)
+  def sum(out, tensor, opts), do: reduce_aggregate(out, tensor, opts, @reduce_sum)
+
+  @impl true
+  def product(out, tensor, opts), do: reduce_aggregate(out, tensor, opts, @reduce_product)
+
+  @impl true
+  def reduce_max(out, tensor, opts), do: reduce_aggregate(out, tensor, opts, @reduce_max)
+
+  @impl true
+  def reduce_min(out, tensor, opts), do: reduce_aggregate(out, tensor, opts, @reduce_min)
+
+  @impl true
+  def all(out, tensor, opts), do: bool_reduce(out, tensor, opts, @reduce_min)
+
+  @impl true
+  def any(out, tensor, opts), do: bool_reduce(out, tensor, opts, @reduce_max)
+
+  # all = every element nonzero (min over the {0,1} nonzero mask); any = some nonzero (max).
+  defp bool_reduce(out, %T{} = tensor, opts, op) do
+    mask = tensor |> from_nx() |> nonzero_mask()
+    reduce_aggregate(out, to_nx(mask, tensor), opts, op)
+  end
+
+  defp nonzero_mask(mat) do
+    mat |> Evision.Mat.sign() |> reject_error() |> Evision.Mat.abs() |> reject_error()
+  end
 
   # Reduce `op` (0 sum, 1 product) over `opts[:axes]` (nil = all axes). Cast to the
   # accumulator type so integer promotion (s64/u64) and f64 float accumulation match
