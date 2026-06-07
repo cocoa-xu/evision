@@ -1,10 +1,23 @@
 #ifndef EVISION_BACKEND_BROADCAST_H
 #define EVISION_BACKEND_BROADCAST_H
 
+#include <algorithm>
 #include <cstring>
 #include <vector>
 #include <erl_nif.h>
 #include "../../ArgInfo.hpp"
+
+static void repeat_bytes(uint8_t *dst, const uint8_t *src, size_t elem_size, size_t count)
+{
+    if (count == 0) return;
+    memcpy(dst, src, elem_size);
+    size_t copied = 1;
+    while (copied < count) {
+        size_t chunk = std::min(copied, count - copied);
+        memcpy(dst + copied * elem_size, dst, chunk * elem_size);
+        copied += chunk;
+    }
+}
 
 // Replicate img (interpreted as src_shape, already left-aligned with 1s to
 // to_shape's rank) into dst_data shaped as to_shape, following NumPy/Nx
@@ -35,6 +48,13 @@ static void broadcast(
         return;
     }
 
+    if (img.total() == 1) {
+        size_t count = 1;
+        for (size_t d = 0; d < ndims; ++d) count *= (size_t)to_shape[d];
+        repeat_bytes(dst, src, elem_size, count);
+        return;
+    }
+
     // Row-major source strides (in elements); stretched dims get stride 0.
     std::vector<size_t> src_strides(ndims, 0);
     size_t stride = 1;
@@ -57,8 +77,7 @@ static void broadcast(
         if (!last_is_broadcast) {
             memcpy(drow, src + base * elem_size, last * elem_size);
         } else {
-            const uint8_t *s = src + base * elem_size;
-            for (size_t i = 0; i < last; ++i) memcpy(drow + i * elem_size, s, elem_size);
+            repeat_bytes(drow, src + base * elem_size, elem_size, last);
         }
 
         for (int64_t d = (int64_t)ndims - 2; d >= 0; --d) {
@@ -115,26 +134,14 @@ static ERL_NIF_TERM evision_cv_mat_broadcast_to(ErlNifEnv *env, int argc, const 
                 }
             }
 
-            // calculate number of elements in the new shape
             const size_t elem_size = img.elemSize();
-            size_t count_new_elem = 1;
-            for (int64_t i = 0; i < ndims; i++) {
-                count_new_elem *= to_shape[i];
-            }
-
-            // allocate memory
-            void * dst_data = (void *)enif_alloc(elem_size * count_new_elem);
-            if (dst_data == nullptr) {
+            int type = img.type();
+            Mat result((int)ndims, to_shape.data(), type);
+            if (result.data == nullptr) {
                 return evision::nif::error(env, "cannot broadcast to specified shape, out of memory");
             }
 
-            // broadcast
-            broadcast(img, dst_data, src_shape, to_shape, elem_size);
-
-            int type = img.type() & CV_MAT_DEPTH_MASK;
-            Mat result = Mat((int)ndims, to_shape.data(), type, dst_data);
-            result = result.clone();
-            enif_free((void *)dst_data);
+            broadcast(img, result.data, src_shape, to_shape, elem_size);
             return evision_from(env, result);
         }
     }
