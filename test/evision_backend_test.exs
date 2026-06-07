@@ -467,4 +467,44 @@ defmodule Evision.Backend.Test do
       end
     end
   end
+
+  describe "slice / reverse" do
+    test "slice matches across starts, lengths, strides, ranks, dtypes" do
+      t = Nx.tensor([[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12]])
+
+      cases = [
+        {[0, 0], [2, 2], [1, 1]},
+        {[1, 1], [2, 2], [1, 1]},
+        {[0, 0], [3, 2], [1, 2]},
+        {[0, 1], [2, 2], [2, 1]},
+        {[1, 0], [1, 4], [1, 1]},
+        {[5, 5], [2, 2], [1, 1]}
+      ]
+
+      for {s, l, st} <- cases do
+        assert_same(Nx.slice(ev(t), s, l, strides: st), Nx.slice(t, s, l, strides: st))
+      end
+
+      t3 = Nx.iota({2, 3, 4}, type: :f32)
+      assert_same(
+        Nx.slice(ev(t3), [0, 1, 0], [2, 2, 4], strides: [1, 1, 2]),
+        Nx.slice(t3, [0, 1, 0], [2, 2, 4], strides: [1, 1, 2])
+      )
+    end
+
+    test "reverse matches across axes, ranks, and dtypes" do
+      cases = [
+        {Nx.tensor([1, 2, 3, 4]), [0]},
+        {Nx.tensor([[1, 2, 3], [4, 5, 6]]), [0]},
+        {Nx.tensor([[1, 2, 3], [4, 5, 6]]), [1]},
+        {Nx.tensor([[1, 2, 3], [4, 5, 6]]), [0, 1]},
+        {Nx.iota({2, 2, 2}, type: :f32), [0, 2]},
+        {Nx.iota({2, 3, 4}, type: :s32), [1]}
+      ]
+
+      for {t, axes} <- cases do
+        assert_same(Nx.reverse(ev(t), axes: axes), Nx.reverse(t, axes: axes))
+      end
+    end
+  end
 end

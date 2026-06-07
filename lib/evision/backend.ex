@@ -1152,6 +1152,50 @@ defmodule Evision.Backend do
     |> to_nx(out)
   end
 
+  ## Slicing
+
+  @impl true
+  def slice(%T{shape: out_shape} = out, %T{shape: shape} = tensor, start_indices, lengths, strides) do
+    starts = clamp_starts(start_indices, shape, lengths)
+
+    Evision.Mat.strided_copy(
+      from_nx(tensor),
+      Tuple.to_list(shape),
+      Tuple.to_list(out_shape),
+      starts,
+      strides
+    )
+    |> reject_error()
+    |> Evision.Mat.reshape(reduce_out_dims(out_shape))
+    |> reject_error()
+    |> to_nx(out)
+  end
+
+  defp clamp_starts(start_indices, shape, lengths) do
+    [Tuple.to_list(shape), start_indices, lengths]
+    |> Enum.zip_with(fn [dim, idx, len] -> min(max(to_number(idx), 0), dim - len) end)
+  end
+
+  @impl true
+  def reverse(%T{shape: shape} = out, tensor, axes) do
+    dims = Tuple.to_list(shape)
+    axset = MapSet.new(axes)
+
+    {starts, strides} =
+      tuple_size(shape)
+      |> all_axes()
+      |> Enum.map(fn k ->
+        if MapSet.member?(axset, k), do: {elem(shape, k) - 1, -1}, else: {0, 1}
+      end)
+      |> Enum.unzip()
+
+    Evision.Mat.strided_copy(from_nx(tensor), dims, dims, starts, strides)
+    |> reject_error()
+    |> Evision.Mat.reshape(reduce_out_dims(shape))
+    |> reject_error()
+    |> to_nx(out)
+  end
+
   # Reduce `op` (0 sum, 1 product) over `opts[:axes]` (nil = all axes). Cast to the
   # accumulator type so integer promotion (s64/u64) and f64 float accumulation match
   # Nx, move the reduced axes to the end, flatten to [keep, reduce], reduce per row.

@@ -35,6 +35,7 @@
 #include "shift.h"
 #include "sign.h"
 #include "sort.h"
+#include "strided_copy.h"
 #include "subtract.h"
 #include "take.h"
 #include "to_batched.h"

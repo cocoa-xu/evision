@@ -1358,6 +1358,20 @@ defmodule Evision.Mat do
     |> Evision.Internal.Structurise.to_struct()
   end
 
+  @doc false
+  # General strided copy (Nx.slice / reverse): out[i] = src[starts[k] + i_k*strides[k]]
+  # per axis (strides may be negative). Lists are per-axis; returns a flat [1, n] mat.
+  def strided_copy(mat, in_dims, out_dims, starts, strides) do
+    :evision_nif.mat_strided_copy(
+      src: from_struct(mat),
+      in_dims: in_dims,
+      out_dims: out_dims,
+      starts: starts,
+      strides: strides
+    )
+    |> Evision.Internal.Structurise.to_struct()
+  end
+
   @doc namespace: :"cv.Mat"
   @spec expm1(maybe_mat_in()) :: maybe_mat_out()
   def expm1(mat) do
