@@ -5,6 +5,7 @@
 #include <erl_nif.h>
 #include "../../ArgInfo.hpp"
 #include "../evision_mat_utils.hpp"
+#include "parallel.h"
 
 // N-d cross-correlation (Nx.conv) on already-permuted canonical layouts: input [N, Cin,
 // *spatial], kernel [O, Cin/G, *spatial], output [N/Bg, O, *spatial]. The caller does the
@@ -43,44 +44,53 @@ static void conv_typed(const T *I, const T *K, T *Out, int d,
     int64_t k_spatial = 1;
     for (int s = 0; s < d; s++) k_spatial *= k_shape[(size_t)(2 + s)];
 
-    std::vector<int> oidx((size_t)rank, 0), kp((size_t)d, 0);
-    for (int64_t flat = 0; flat < out_total; flat++) {
-        int bprime = oidx[0];
-        int o = oidx[1];
-        int fg = o / O_per_G;
-        int jchunk = o / O_per_Bg;
-        int n = bprime + jchunk * Nout;
-        int cbase = fg * Cin_pg;
-
-        T acc = (T)0;
-        for (int ic = 0; ic < Cin_pg; ic++) {
-            int64_t in_base = (int64_t)n * in_st[0] + (int64_t)(cbase + ic) * in_st[1];
-            int64_t k_base = (int64_t)o * k_st[0] + (int64_t)ic * k_st[1];
-            std::fill(kp.begin(), kp.end(), 0);
-
-            for (int64_t kq = 0; kq < k_spatial; kq++) {
-                bool valid = true;
-                int64_t in_off = in_base;
-                for (int s = 0; s < d; s++) {
-                    int64_t cd = (int64_t)oidx[(size_t)(2 + s)] * stride[(size_t)s] +
-                                 (int64_t)kp[(size_t)s] * k_dil[(size_t)s] - pad_lo[(size_t)s];
-                    if (cd < 0 || cd >= dilated_in[(size_t)s]) { valid = false; break; }
-                    if (in_dil[(size_t)s] != 1 && (cd % in_dil[(size_t)s]) != 0) { valid = false; break; }
-                    int64_t orig = (in_dil[(size_t)s] == 1) ? cd : cd / in_dil[(size_t)s];
-                    in_off += orig * in_st[(size_t)(2 + s)];
-                }
-                if (valid) {
-                    int64_t k_off = k_base;
-                    for (int s = 0; s < d; s++) k_off += (int64_t)kp[(size_t)s] * k_st[(size_t)(2 + s)];
-                    acc += I[in_off] * K[k_off];
-                }
-                for (int s = d - 1; s >= 0; s--) { if (++kp[(size_t)s] < k_shape[(size_t)(2 + s)]) break; kp[(size_t)s] = 0; }
-            }
+    int64_t work = out_total * Cin_pg * (k_spatial > 0 ? k_spatial : 1);
+    evision_parallel_for(out_total, work, EVISION_PARALLEL_CONV_MIN_WORK, [&](int64_t begin, int64_t end) {
+        std::vector<int> oidx((size_t)rank, 0), kp((size_t)d, 0);
+        int64_t q = begin;
+        for (int s = rank - 1; s >= 0; s--) {
+            oidx[(size_t)s] = (int)(q % out_shape[(size_t)s]);
+            q /= out_shape[(size_t)s];
         }
 
-        Out[flat] = acc;
-        for (int s = rank - 1; s >= 0; s--) { if (++oidx[(size_t)s] < out_shape[(size_t)s]) break; oidx[(size_t)s] = 0; }
-    }
+        for (int64_t flat = begin; flat < end; flat++) {
+            int bprime = oidx[0];
+            int o = oidx[1];
+            int fg = o / O_per_G;
+            int jchunk = o / O_per_Bg;
+            int n = bprime + jchunk * Nout;
+            int cbase = fg * Cin_pg;
+
+            T acc = (T)0;
+            for (int ic = 0; ic < Cin_pg; ic++) {
+                int64_t in_base = (int64_t)n * in_st[0] + (int64_t)(cbase + ic) * in_st[1];
+                int64_t k_base = (int64_t)o * k_st[0] + (int64_t)ic * k_st[1];
+                std::fill(kp.begin(), kp.end(), 0);
+
+                for (int64_t kq = 0; kq < k_spatial; kq++) {
+                    bool valid = true;
+                    int64_t in_off = in_base;
+                    for (int s = 0; s < d; s++) {
+                        int64_t cd = (int64_t)oidx[(size_t)(2 + s)] * stride[(size_t)s] +
+                                     (int64_t)kp[(size_t)s] * k_dil[(size_t)s] - pad_lo[(size_t)s];
+                        if (cd < 0 || cd >= dilated_in[(size_t)s]) { valid = false; break; }
+                        if (in_dil[(size_t)s] != 1 && (cd % in_dil[(size_t)s]) != 0) { valid = false; break; }
+                        int64_t orig = (in_dil[(size_t)s] == 1) ? cd : cd / in_dil[(size_t)s];
+                        in_off += orig * in_st[(size_t)(2 + s)];
+                    }
+                    if (valid) {
+                        int64_t k_off = k_base;
+                        for (int s = 0; s < d; s++) k_off += (int64_t)kp[(size_t)s] * k_st[(size_t)(2 + s)];
+                        acc += I[in_off] * K[k_off];
+                    }
+                    for (int s = d - 1; s >= 0; s--) { if (++kp[(size_t)s] < k_shape[(size_t)(2 + s)]) break; kp[(size_t)s] = 0; }
+                }
+            }
+
+            Out[flat] = acc;
+            for (int s = rank - 1; s >= 0; s--) { if (++oidx[(size_t)s] < out_shape[(size_t)s]) break; oidx[(size_t)s] = 0; }
+        }
+    });
 }
 
 // @evision c: mat_conv, evision_cv_mat_conv, 1

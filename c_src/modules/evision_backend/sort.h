@@ -8,6 +8,7 @@
 #include <erl_nif.h>
 #include "../../ArgInfo.hpp"
 #include "../evision_mat_utils.hpp"
+#include "parallel.h"
 
 // Row-wise sort/argsort for depths that need custom handling. Floats use Nx's
 // NaN order: ascending puts NaNs last, descending puts them first.
@@ -27,26 +28,30 @@ static inline bool evision_sort_before(T a, T b, bool descending) {
 
 template <typename T>
 static void evision_sort_rows(const cv::Mat &src, cv::Mat &dst, bool descending) {
-    for (int r = 0; r < src.rows; r++) {
-        const T *sp = src.ptr<T>(r);
-        T *dp = dst.ptr<T>(r);
-        std::copy(sp, sp + src.cols, dp);
-        std::sort(dp, dp + src.cols, [descending](T a, T b) {
-            return evision_sort_before(a, b, descending);
-        });
-    }
+    evision_parallel_for(src.rows, (int64_t)src.rows * src.cols, EVISION_PARALLEL_SIMPLE_MIN_WORK, [&](int64_t begin, int64_t end) {
+        for (int64_t row = begin; row < end; row++) {
+            const T *sp = src.ptr<T>((int)row);
+            T *dp = dst.ptr<T>((int)row);
+            std::copy(sp, sp + src.cols, dp);
+            std::sort(dp, dp + src.cols, [descending](T a, T b) {
+                return evision_sort_before(a, b, descending);
+            });
+        }
+    });
 }
 
 template <typename T>
 static void evision_argsort_rows(const cv::Mat &src, cv::Mat &dst, bool descending) {
-    for (int r = 0; r < src.rows; r++) {
-        const T *sp = src.ptr<T>(r);
-        int32_t *dp = dst.ptr<int32_t>(r);
-        std::iota(dp, dp + src.cols, 0);
-        std::stable_sort(dp, dp + src.cols, [sp, descending](int32_t a, int32_t b) {
-            return evision_sort_before(sp[a], sp[b], descending);
-        });
-    }
+    evision_parallel_for(src.rows, (int64_t)src.rows * src.cols, EVISION_PARALLEL_SIMPLE_MIN_WORK, [&](int64_t begin, int64_t end) {
+        for (int64_t row = begin; row < end; row++) {
+            const T *sp = src.ptr<T>((int)row);
+            int32_t *dp = dst.ptr<int32_t>((int)row);
+            std::iota(dp, dp + src.cols, 0);
+            std::stable_sort(dp, dp + src.cols, [sp, descending](int32_t a, int32_t b) {
+                return evision_sort_before(sp[a], sp[b], descending);
+            });
+        }
+    });
 }
 
 // @evision c: mat_sort_rows, evision_cv_mat_sort_rows, 1

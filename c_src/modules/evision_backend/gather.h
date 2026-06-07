@@ -1,11 +1,13 @@
 #ifndef EVISION_BACKEND_GATHER_H
 #define EVISION_BACKEND_GATHER_H
 
+#include <atomic>
 #include <cstring>
 #include <vector>
 #include <erl_nif.h>
 #include "../../ArgInfo.hpp"
 #include "../evision_mat_utils.hpp"
+#include "parallel.h"
 
 // Gather over the leading axes (Nx.gather). The tensor is pre-transposed so the
 // indexed axes lead; each consecutive `depth`-tuple in `indices` is a coordinate
@@ -56,18 +58,29 @@ static ERL_NIF_TERM evision_cv_mat_gather(ErlNifEnv *env, int argc, const ERL_NI
             Mat dst(1, (int)(num_gathers * inner), src.type());
             uchar *dp = dst.data;
 
-            for (int64_t g = 0; g < num_gathers; g++) {
-                int64_t offset = 0;
-                for (int64_t k = 0; k < depth; k++) {
-                    int64_t c = ip[g * depth + k];
-                    if (c < 0 || c >= dimp[(size_t)k])
-                        return evision::nif::error(env, "gather: index out of bounds");
-                    offset += c * mult[(size_t)k];
+            std::atomic<bool> bad_index(false);
+            int64_t work = num_gathers * (inner > 0 ? inner : 1);
+            evision_parallel_for(num_gathers, work, [&](int64_t begin, int64_t end) {
+                for (int64_t g = begin; g < end; g++) {
+                    int64_t offset = 0;
+                    for (int64_t k = 0; k < depth; k++) {
+                        int64_t c = ip[g * depth + k];
+                        if (c < 0 || c >= dimp[(size_t)k]) {
+                            bad_index.store(true, std::memory_order_relaxed);
+                            offset = -1;
+                            break;
+                        }
+                        offset += c * mult[(size_t)k];
+                    }
+                    if (offset >= 0) {
+                        std::memcpy(dp + (size_t)g * inner_bytes,
+                                    sp + (size_t)offset * elem_size,
+                                    inner_bytes);
+                    }
                 }
-                std::memcpy(dp + (size_t)g * inner_bytes,
-                            sp + (size_t)offset * elem_size,
-                            inner_bytes);
-            }
+            });
+            if (bad_index.load(std::memory_order_relaxed))
+                return evision::nif::error(env, "gather: index out of bounds");
             return evision_from(env, dst);
         }
     }

@@ -5,6 +5,7 @@
 #include <erl_nif.h>
 #include "../../ArgInfo.hpp"
 #include "../evision_mat_utils.hpp"
+#include "parallel.h"
 
 // Elementwise select (Nx.select): result = mask ? on_true : on_false. All three
 // have the same shape (broadcast by the caller); on_true/on_false are already the
@@ -34,10 +35,12 @@ static ERL_NIF_TERM evision_cv_mat_select(ErlNifEnv *env, int argc, const ERL_NI
             unsigned char *dp = dst.data;
             size_t elem_size = dst.elemSize();
             size_t n = dst.total();
-            for (size_t i = 0; i < n; i++) {
-                if (mp[i] == 0)
-                    std::memcpy(dp + i * elem_size, fp + i * elem_size, elem_size);
-            }
+            evision_parallel_for((int64_t)n, (int64_t)n, EVISION_PARALLEL_SIMPLE_MIN_WORK, [&](int64_t begin, int64_t end) {
+                for (int64_t i = begin; i < end; i++) {
+                    if (mp[(size_t)i] == 0)
+                        std::memcpy(dp + (size_t)i * elem_size, fp + (size_t)i * elem_size, elem_size);
+                }
+            });
             return evision_from(env, dst);
         }
     }

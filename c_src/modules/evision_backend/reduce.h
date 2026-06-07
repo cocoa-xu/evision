@@ -6,6 +6,7 @@
 #include <erl_nif.h>
 #include "../../ArgInfo.hpp"
 #include "../evision_mat_utils.hpp"
+#include "parallel.h"
 
 // Row-wise reduction: sum (op 0) / product (op 1) accumulate left-to-right, max
 // (op 2) / min (op 3) seed from the first element. Input is a 2D single-channel
@@ -31,26 +32,28 @@ static inline T evision_reduce_min(T acc, T v) {
 
 template <typename T>
 static void evision_reduce_rows(const cv::Mat &src, cv::Mat &dst, int op) {
-    for (int r = 0; r < src.rows; r++) {
-        const T *sp = src.ptr<T>(r);
-        T acc;
-        switch (op) {
-            case 1: acc = (T)1; break;
-            case 2: case 3: acc = sp[0]; break;
-            default: acc = (T)0; break;
-        }
-        int start = (op == 2 || op == 3) ? 1 : 0;
-        for (int c = start; c < src.cols; c++) {
-            T v = sp[c];
+    evision_parallel_for(src.rows, (int64_t)src.rows * src.cols, EVISION_PARALLEL_SIMPLE_MIN_WORK, [&](int64_t begin, int64_t end) {
+        for (int64_t row = begin; row < end; row++) {
+            const T *sp = src.ptr<T>((int)row);
+            T acc;
             switch (op) {
-                case 0: acc = (T)(acc + v); break;
-                case 1: acc = (T)(acc * v); break;
-                case 2: acc = evision_reduce_max(acc, v); break;
-                case 3: acc = evision_reduce_min(acc, v); break;
+                case 1: acc = (T)1; break;
+                case 2: case 3: acc = sp[0]; break;
+                default: acc = (T)0; break;
             }
+            int start = (op == 2 || op == 3) ? 1 : 0;
+            for (int c = start; c < src.cols; c++) {
+                T v = sp[c];
+                switch (op) {
+                    case 0: acc = (T)(acc + v); break;
+                    case 1: acc = (T)(acc * v); break;
+                    case 2: acc = evision_reduce_max(acc, v); break;
+                    case 3: acc = evision_reduce_min(acc, v); break;
+                }
+            }
+            dst.ptr<T>((int)row)[0] = acc;
         }
-        dst.ptr<T>(r)[0] = acc;
-    }
+    });
 }
 
 // @evision c: mat_reduce, evision_cv_mat_reduce, 1
