@@ -107,6 +107,12 @@ CMAKE_OPTIONS += $(CMAKE_OPENCV_IMG_CODER_SELECTION)
 endif
 # ------ Apple device specific options end ------
 
+# IPP ICV's safestring header declares a 3-arg memset_s that clashes with
+# FreeBSD libc's C11 4-arg memset_s; disable the optional IPP accelerator there.
+ifeq ($(shell uname -s),FreeBSD)
+	CMAKE_OPTIONS += -D WITH_IPP=OFF
+endif
+
 CMAKE_OPTIONS += $(CMAKE_CONFIGURE_FLAGS) $(CMAKE_OPENCV_OPTIONS)
 CMAKE_OPTIONS += -DCMAKE_POLICY_VERSION_MINIMUM=3.5
 ifdef TARGET_GCC_FLAGS
