@@ -84,6 +84,11 @@ version. Two headline changes land together:
   when it is `f64`).
 - Building from source no longer re-runs the OpenCV install on every
   `mix compile`; the cmake-config gate now matches OpenCV 5.0's install path.
+- 32-bit ARMv8 Nerves targets (rpi3/rpi3a/rpi0_2, Cortex-A53 built as armv7hf)
+  compile again. OpenCV 5.0.0's `v_floor` NEON fast path uses the AArch64-only
+  `vcvtmq_s32_f32` intrinsic under `#if __ARM_ARCH > 7`, which GCC's AArch32
+  `arm_neon.h` does not provide; the fast path is now gated on `__aarch64__` so
+  AArch32 keeps the portable floor fallback.
 
 ### Performance
 
