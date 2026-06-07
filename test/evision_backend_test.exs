@@ -406,6 +406,28 @@ defmodule Evision.Backend.Test do
         assert_close(Nx.divide(s, ev(t)), Nx.divide(s, t))
       end
     end
+
+    # min/max derive their dtype from the result, so a fractional scalar must
+    # promote the array (e.g. s32 min 2.5 -> f32); these guard that promotion.
+    test "min / max by integer and float scalars matches Nx.BinaryBackend" do
+      for t <- [Nx.tensor([1, 5, 3], type: :s32), Nx.tensor([1.0, 5.0, 3.0], type: :f32)],
+          s <- [2, -1, 2.5],
+          op <- [:min, :max] do
+        assert_close(apply(Nx, op, [ev(t), s]), apply(Nx, op, [t, s]))
+        assert_close(apply(Nx, op, [s, ev(t)]), apply(Nx, op, [s, t]))
+      end
+    end
+
+    # comparisons happen in the merged type, so a fractional scalar vs an integer
+    # array must not truncate (s32 == 2.5 is always false, not == 2).
+    test "comparisons by integer and float scalars match Nx.BinaryBackend" do
+      for t <- [Nx.tensor([1, 2, 3], type: :s32), Nx.tensor([1.0, 2.0, 3.0], type: :f32)],
+          s <- [2, 2.5, -1],
+          op <- [:equal, :not_equal, :greater, :less, :greater_equal, :less_equal] do
+        assert_same(apply(Nx, op, [ev(t), s]), apply(Nx, op, [t, s]))
+        assert_same(apply(Nx, op, [s, ev(t)]), apply(Nx, op, [s, t]))
+      end
+    end
   end
 
   describe "elementwise broadcasting semantics" do
@@ -427,7 +449,10 @@ defmodule Evision.Backend.Test do
 
     # multiply is excluded: for two non-scalar operands Evision.Backend
     # intentionally does matrix mult rather than elementwise.
-    @elementwise_ops [:add, :subtract, :divide, :min, :max, :equal, :greater, :less]
+    @elementwise_ops [
+      :add, :subtract, :divide, :min, :max,
+      :equal, :not_equal, :greater, :less, :greater_equal, :less_equal
+    ]
 
     test "OpenCV arithmetic itself does not broadcast" do
       a = Evision.Backend.from_nx(ev(Nx.iota({2, 1}, type: :f32)))

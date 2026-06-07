@@ -366,24 +366,29 @@ defmodule Evision.Backend do
     Evision.Mat.as_type(from_nx(tensor), {:f, 64})
   end
 
-  @impl true
-  def min(%T{shape: out_shape}=out, l, r) do
-    shape =
-      case out_shape do
-        {} -> {1}
-        _ -> out_shape
-      end
-    l = Nx.broadcast(l, shape)
-    r = Nx.broadcast(r, shape)
-    {l, r} = enforce_same_type(l, r)
-    l = Evision.Mat.reshape(from_nx(l), shape)
-    r = Evision.Mat.reshape(from_nx(r), shape)
-    ret = Evision.min(l, r)
-    to_nx(ret, %T{out | type: Evision.Mat.type(ret)})
-  end
+  defp cast_mat(%T{type: type} = t, type), do: from_nx(t)
+  defp cast_mat(%T{} = t, type), do: Evision.Mat.as_type(from_nx(t), type)
 
   @impl true
-  def max(%T{shape: out_shape}=out, l, r) do
+  def min(%T{type: out_type}=out, %T{shape: {}}=l, r), do: min_max_scalar(out, out_type, r, l, &Evision.min/2)
+  def min(%T{type: out_type}=out, l, %T{shape: {}}=r), do: min_max_scalar(out, out_type, l, r, &Evision.min/2)
+  def min(%T{shape: out_shape}=out, l, r), do: min_max(out, out_shape, l, r, &Evision.min/2)
+
+  @impl true
+  def max(%T{type: out_type}=out, %T{shape: {}}=l, r), do: min_max_scalar(out, out_type, r, l, &Evision.max/2)
+  def max(%T{type: out_type}=out, l, %T{shape: {}}=r), do: min_max_scalar(out, out_type, l, r, &Evision.max/2)
+  def max(%T{shape: out_shape}=out, l, r), do: min_max(out, out_shape, l, r, &Evision.max/2)
+
+  # cv::min/max keep the array's dtype, so cast the array to the (already
+  # promoted) output type and feed the scalar through the cv::min(Mat, double)
+  # overload -- only the array's single pass, no full broadcast of the scalar.
+  defp min_max_scalar(out, out_type, array, scalar, fun) do
+    fun.(cast_mat(array, out_type), to_number(scalar))
+    |> reject_error()
+    |> to_nx(out)
+  end
+
+  defp min_max(out, out_shape, l, r, fun) do
     shape =
       case out_shape do
         {} -> {1}
@@ -394,8 +399,8 @@ defmodule Evision.Backend do
     {l, r} = enforce_same_type(l, r)
     l = Evision.Mat.reshape(from_nx(l), shape)
     r = Evision.Mat.reshape(from_nx(r), shape)
-    ret = Evision.max(l, r)
-    to_nx(ret, %T{out | type: Evision.Mat.type(ret)})
+    ret = fun.(l, r)
+    to_nx(ret, %{out | type: Evision.Mat.type(ret)})
   end
 
   defp enforce_same_type(%T{type: type}=a, %T{type: type}=b), do: {a, b}
@@ -516,64 +521,44 @@ defmodule Evision.Backend do
 
   @impl true
   @spec equal(Nx.Tensor.t(), Nx.Tensor.t(), Nx.Tensor.t()) :: Nx.Tensor.t()
-  def equal(%T{shape: out_shape} = out, l, r) do
-    {l, r} = enforce_same_shape(l, r, out_shape)
-    {l, r} = enforce_same_type(l, r)
-    from_nx(l)
-    |> Evision.Mat.cmp(from_nx(r), :eq)
-    |> reject_error()
-    |> to_nx(out)
-  end
+  def equal(%T{shape: out_shape} = out, l, r), do: cmp(out, out_shape, l, r, :eq)
 
   @impl true
   @spec not_equal(Nx.Tensor.t(), Nx.Tensor.t(), Nx.Tensor.t()) :: Nx.Tensor.t()
-  def not_equal(%T{shape: out_shape} = out, l, r) do
-    {l, r} = enforce_same_shape(l, r, out_shape)
-    {l, r} = enforce_same_type(l, r)
-    from_nx(l)
-    |> Evision.Mat.cmp(from_nx(r), :ne)
-    |> reject_error()
-    |> to_nx(out)
-  end
+  def not_equal(%T{shape: out_shape} = out, l, r), do: cmp(out, out_shape, l, r, :ne)
 
   @impl true
-  def greater(%T{shape: out_shape} = out, l, r) do
-    {l, r} = enforce_same_shape(l, r, out_shape)
-    {l, r} = enforce_same_type(l, r)
-    from_nx(l)
-    |> Evision.Mat.cmp(from_nx(r), :gt)
-    |> reject_error()
-    |> to_nx(out)
-  end
+  def greater(%T{shape: out_shape} = out, l, r), do: cmp(out, out_shape, l, r, :gt)
 
   @impl true
   @spec less(Nx.Tensor.t(), Nx.Tensor.t(), Nx.Tensor.t()) :: Nx.Tensor.t()
-  def less(%T{shape: out_shape} = out, l, r) do
-    {l, r} = enforce_same_shape(l, r, out_shape)
-    {l, r} = enforce_same_type(l, r)
-    from_nx(l)
-    |> Evision.Mat.cmp(from_nx(r), :lt)
-    |> reject_error()
-    |> to_nx(out)
-  end
+  def less(%T{shape: out_shape} = out, l, r), do: cmp(out, out_shape, l, r, :lt)
 
   @impl true
   @spec greater_equal(Nx.Tensor.t(), Nx.Tensor.t(), Nx.Tensor.t()) :: Nx.Tensor.t()
-  def greater_equal(%T{shape: out_shape} = out, l, r) do
+  def greater_equal(%T{shape: out_shape} = out, l, r), do: cmp(out, out_shape, l, r, :ge)
+
+  @impl true
+  def less_equal(%T{shape: out_shape} = out, l, r), do: cmp(out, out_shape, l, r, :le)
+
+  # cv::compare broadcasts a 1x1 mat on either side, so a 0-d operand is cast to
+  # the merged comparison type (a single element) and compared in place, in the
+  # original operand order, instead of being broadcast to a full array. The merged
+  # type is what Nx compares in, which keeps fractional-scalar results correct.
+  defp cmp(out, _out_shape, %T{shape: {}} = l, r, op), do: cmp_scalar(out, l, r, op)
+  defp cmp(out, _out_shape, l, %T{shape: {}} = r, op), do: cmp_scalar(out, l, r, op)
+  defp cmp(out, out_shape, l, r, op) do
     {l, r} = enforce_same_shape(l, r, out_shape)
     {l, r} = enforce_same_type(l, r)
-    from_nx(l)
-    |> Evision.Mat.cmp(from_nx(r), :ge)
+    Evision.Mat.cmp(from_nx(l), from_nx(r), op)
     |> reject_error()
     |> to_nx(out)
   end
 
-  @impl true
-  def less_equal(%T{shape: out_shape} = out, l, r) do
-    {l, r} = enforce_same_shape(l, r, out_shape)
-    {l, r} = enforce_same_type(l, r)
-    from_nx(l)
-    |> Evision.Mat.cmp(from_nx(r), :le)
+  defp cmp_scalar(out, %T{type: lt} = l, %T{type: rt} = r, op) do
+    merged = Nx.Type.merge(lt, rt)
+    Evision.Mat.cmp(cast_mat(l, merged), cast_mat(r, merged), op)
+    |> reject_error()
     |> to_nx(out)
   end
 
