@@ -684,4 +684,108 @@ defmodule Evision.Backend.Test do
       end
     end
   end
+
+  describe "cholesky" do
+    test "lower factor matches reference and reconstructs A" do
+      tensors = [
+        Nx.tensor([[4.0, 0.0], [0.0, 9.0]], type: :f64),
+        Nx.tensor([[2.0, 1.0], [1.0, 2.0]], type: :f64),
+        Nx.tensor([[4.0, 2.0, -2.0], [2.0, 10.0, 2.0], [-2.0, 2.0, 5.0]], type: :f64)
+      ]
+
+      for a <- tensors do
+        l = Nx.LinAlg.cholesky(ev(a))
+        # the lower factor with positive diagonal is unique -> matches BinaryBackend
+        close_at(l, Nx.LinAlg.cholesky(a), 1.0e-4)
+        lb = b(l)
+        close_at(Nx.dot(lb, Nx.transpose(lb)), a, 1.0e-4)
+      end
+    end
+  end
+
+  describe "triangular_solve" do
+    test "matches Nx.BinaryBackend across lower/upper, vector/matrix rhs, and transpose" do
+      lower = Nx.tensor([[1.0, 0.0, 0.0], [2.0, 3.0, 0.0], [4.0, 5.0, 6.0]], type: :f64)
+      upper = Nx.tensor([[2.0, 1.0, 1.0], [0.0, 3.0, 2.0], [0.0, 0.0, 4.0]], type: :f64)
+      bvec = Nx.tensor([1.0, 2.0, 3.0], type: :f64)
+      bmat = Nx.tensor([[1.0, 4.0], [2.0, 5.0], [3.0, 6.0]], type: :f64)
+
+      cases = [
+        {lower, bvec, []},
+        {lower, bmat, []},
+        {upper, bvec, [lower: false]},
+        {upper, bmat, [lower: false]},
+        {lower, bvec, [transform_a: :transpose]},
+        {upper, bmat, [lower: false, transform_a: :transpose]}
+      ]
+
+      for {aa, bb, opts} <- cases do
+        close_at(
+          Nx.LinAlg.triangular_solve(ev(aa), ev(bb), opts),
+          Nx.LinAlg.triangular_solve(aa, bb, opts),
+          1.0e-4
+        )
+      end
+    end
+
+    test "left_side: false solves X*A = B" do
+      a = Nx.tensor([[1.0, 0.0], [2.0, 3.0]], type: :f64)
+      bb = Nx.tensor([[1.0, 2.0], [3.0, 4.0]], type: :f64)
+      opts = [left_side: false]
+
+      close_at(
+        Nx.LinAlg.triangular_solve(ev(a), ev(bb), opts),
+        Nx.LinAlg.triangular_solve(a, bb, opts),
+        1.0e-4
+      )
+    end
+  end
+
+  describe "qr" do
+    test "reduced and complete reconstruct A with orthonormal Q" do
+      tensors = [
+        Nx.tensor([[12.0, -51.0, 4.0], [6.0, 167.0, -68.0], [-4.0, 24.0, -41.0]], type: :f64),
+        # tall 3x2
+        Nx.tensor([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]], type: :f64)
+      ]
+
+      for a <- tensors do
+        {m, n} = Nx.shape(a)
+
+        {q, r} = Nx.LinAlg.qr(ev(a), mode: :reduced)
+        assert {Nx.shape(q), Nx.shape(r)} == {{m, n}, {n, n}}
+        qb = b(q)
+        close_at(Nx.dot(qb, b(r)), a, 1.0e-4)
+        close_at(Nx.dot(Nx.transpose(qb), qb), Nx.eye(n, type: :f64), 1.0e-4)
+
+        {q, r} = Nx.LinAlg.qr(ev(a), mode: :complete)
+        assert {Nx.shape(q), Nx.shape(r)} == {{m, m}, {m, n}}
+        qb = b(q)
+        close_at(Nx.dot(qb, b(r)), a, 1.0e-4)
+        close_at(Nx.dot(Nx.transpose(qb), qb), Nx.eye(m, type: :f64), 1.0e-4)
+      end
+    end
+  end
+
+  describe "lu" do
+    test "P*L*U reconstructs A; P keeps the input dtype" do
+      tensors = [
+        Nx.tensor([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0], [7.0, 8.0, 10.0]], type: :f64),
+        Nx.tensor([[2.0, 1.0], [1.0, 3.0]], type: :f64),
+        Nx.tensor([[4.0, 3.0], [6.0, 3.0]], type: :f64)
+      ]
+
+      for a <- tensors do
+        {p, l, u} = Nx.LinAlg.lu(ev(a))
+        close_at(Nx.dot(Nx.dot(b(p), b(l)), b(u)), a, 1.0e-4)
+      end
+
+      # integer input -> P keeps the input dtype (s64), L/U are float
+      ai = Nx.tensor([[1, 2, 3], [4, 5, 6], [7, 8, 10]])
+      {p, l, u} = Nx.LinAlg.lu(ev(ai))
+      assert Nx.type(p) == {:s, 64}
+      assert match?({:f, _}, Nx.type(l)) and match?({:f, _}, Nx.type(u))
+      close_at(Nx.dot(Nx.dot(b(p), b(l)), b(u)), Nx.as_type(ai, :f64), 1.0e-3)
+    end
+  end
 end

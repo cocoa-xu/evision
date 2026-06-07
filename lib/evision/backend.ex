@@ -1457,6 +1457,50 @@ defmodule Evision.Backend do
      stack_f64(vecs_out, Enum.map(results, &elem(&1, 1)))}
   end
 
+  @impl true
+  def cholesky(%T{shape: shape} = out, tensor) do
+    {_batch, n, _n} = mat_dims(shape)
+
+    split_2d(tensor, n, n)
+    |> Enum.map(&reject_error(Evision.Mat.cholesky(&1, n)))
+    |> then(&stack_f64(out, &1))
+  end
+
+  @impl true
+  def lu({p_out, l_out, u_out}, %T{shape: shape} = tensor, _opts) do
+    {_batch, n, _n} = mat_dims(shape)
+    results = split_2d(tensor, n, n) |> Enum.map(&reject_error_tuple(Evision.Mat.lu(&1, n)))
+
+    {stack_f64(p_out, Enum.map(results, &elem(&1, 0))),
+     stack_f64(l_out, Enum.map(results, &elem(&1, 1))),
+     stack_f64(u_out, Enum.map(results, &elem(&1, 2)))}
+  end
+
+  @impl true
+  def qr({q_out, r_out}, %T{shape: shape} = tensor, opts) do
+    {_batch, m, n} = mat_dims(shape)
+    complete = bool_int(opts[:mode] == :complete)
+    results = split_2d(tensor, m, n) |> Enum.map(&reject_error_tuple(Evision.Mat.qr(&1, m, n, complete)))
+
+    {stack_f64(q_out, Enum.map(results, &elem(&1, 0))),
+     stack_f64(r_out, Enum.map(results, &elem(&1, 1)))}
+  end
+
+  @impl true
+  def triangular_solve(out, %T{shape: a_shape} = a, %T{shape: b_shape} = b, opts) do
+    {batch, n, _n} = mat_dims(a_shape)
+    {b_trailing, vector?} = rhs_trailing(a_shape, b_shape)
+    lower = bool_int(opts[:lower])
+    left = bool_int(opts[:left_side])
+    trans = bool_int(opts[:transform_a] == :transpose)
+
+    Enum.zip_with(split_2d(a, n, n), split_into(b, batch, b_trailing), fn am, bm ->
+      bm = if vector?, do: reject_error(Evision.Mat.reshape(bm, [n, 1])), else: bm
+      reject_error(Evision.Mat.triangular_solve(am, bm, n, lower, left, trans))
+    end)
+    |> then(&stack_f64(out, &1))
+  end
+
   # {product of leading dims, second-last dim, last dim} for a batched matrix shape.
   defp mat_dims(shape) do
     [n, m | lead] = shape |> Tuple.to_list() |> Enum.reverse()
@@ -1497,6 +1541,12 @@ defmodule Evision.Backend do
     |> as_mat_type(out_type)
     |> to_nx(out)
   end
+
+  defp bool_int(true), do: 1
+  defp bool_int(_), do: 0
+
+  defp reject_error_tuple({:error, msg}), do: raise(RuntimeError, msg)
+  defp reject_error_tuple(tuple) when is_tuple(tuple), do: tuple
 
   @doc false
   def from_nx(%T{data: %EB{ref: mat_ref}}), do: mat_ref

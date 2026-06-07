@@ -1335,6 +1335,42 @@ defmodule Evision.Mat do
   end
 
   @doc false
+  # Cholesky-Banachiewicz lower factor (Nx.LinAlg.cholesky); `mat` is n*n f64.
+  def cholesky(mat, n) do
+    :evision_nif.mat_cholesky(a: from_struct(mat), n: n)
+    |> Evision.Internal.Structurise.to_struct()
+  end
+
+  @doc false
+  # Partial-pivot LU returning {p, l, u} (Nx.LinAlg.lu); `mat` is n*n f64.
+  def lu(mat, n) do
+    :evision_nif.mat_lu(a: from_struct(mat), n: n)
+    |> Evision.Internal.Structurise.to_struct()
+  end
+
+  @doc false
+  # Householder QR returning {q, r} (Nx.LinAlg.qr); `mat` is m*n f64, complete is 0/1.
+  def qr(mat, m, n, complete) do
+    :evision_nif.mat_qr(a: from_struct(mat), m: m, n: n, complete: complete)
+    |> Evision.Internal.Structurise.to_struct()
+  end
+
+  @doc false
+  # Triangular system solve by substitution (Nx.LinAlg.triangular_solve); `a` is n*n f64,
+  # `b` a 2D f64 rhs, lower/left_side/transpose are 0/1.
+  def triangular_solve(a, b, n, lower, left_side, transpose) do
+    :evision_nif.mat_triangular_solve(
+      a: from_struct(a),
+      b: from_struct(b),
+      n: n,
+      lower: lower,
+      left_side: left_side,
+      transpose: transpose
+    )
+    |> Evision.Internal.Structurise.to_struct()
+  end
+
+  @doc false
   # Per-element bit op preserving the integer type (Nx.count_leading_zeros /
   # population_count): op 0 = clz, 1 = popcount.
   def bit_unary(mat, op) do

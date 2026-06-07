@@ -21,6 +21,7 @@
 #include "from_binary.h"
 #include "gather.h"
 #include "indexed.h"
+#include "linalg.h"
 #include "logical_and.h"
 #include "logical_or.h"
 #include "logical_xor.h"
