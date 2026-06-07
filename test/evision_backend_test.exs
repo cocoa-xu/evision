@@ -396,6 +396,94 @@ defmodule Evision.Backend.Test do
     end
   end
 
+  describe "elementwise broadcasting semantics" do
+    # Broadcast-compatible shape pairs (numpy/Nx rules): scalar, equal, dim-1
+    # stretch, and rank-differing combinations. Elementwise binary ops must
+    # broadcast both operands to the output shape exactly like Nx.BinaryBackend,
+    # since OpenCV arithmetic only supports same-size or array-op-scalar.
+    @broadcast_pairs [
+      {{}, {3}}, {{3}, {}},
+      {{3}, {3}},
+      {{1}, {3}}, {{3}, {1}},
+      {{2, 3}, {2, 3}},
+      {{2, 1}, {2, 3}}, {{1, 3}, {2, 3}},
+      {{2, 1}, {1, 3}},
+      {{3}, {2, 3}}, {{2, 3}, {3}},
+      {{1, 1}, {2, 3}},
+      {{2, 3, 4}, {3, 4}}, {{2, 1, 4}, {1, 3, 1}}
+    ]
+
+    # multiply is excluded: for two non-scalar operands Evision.Backend
+    # intentionally does matrix mult rather than elementwise.
+    @elementwise_ops [:add, :subtract, :divide, :min, :max, :equal, :greater, :less]
+
+    test "OpenCV arithmetic itself does not broadcast" do
+      a = Evision.Backend.from_nx(ev(Nx.iota({2, 1}, type: :f32)))
+      b = Evision.Backend.from_nx(ev(Nx.iota({1, 3}, type: :f32)))
+      assert match?({:error, _}, Evision.Mat.add(a, b))
+    end
+
+    test "elementwise ops match Nx.BinaryBackend across broadcast-compatible shapes" do
+      gen = fn shape, off, dtype -> Nx.iota(shape, type: dtype) |> Nx.add(off + 1) end
+
+      failures =
+        for op <- @elementwise_ops, dtype <- [:f32, :s32], {sl, sr} <- @broadcast_pairs, reduce: [] do
+          acc ->
+            l = gen.(sl, 0, dtype)
+            r = gen.(sr, 7, dtype)
+            want = apply(Nx, op, [l, r])
+            label = "#{op} #{dtype} #{inspect(sl)} vs #{inspect(sr)}"
+
+            result =
+              try do
+                got = apply(Nx, op, [ev(l), ev(r)]) |> Nx.backend_copy(Nx.BinaryBackend)
+
+                cond do
+                  Nx.shape(got) != Nx.shape(want) -> {:shape, Nx.shape(got), Nx.shape(want)}
+                  Nx.to_number(Nx.all_close(got, want, atol: 1.0e-5, rtol: 1.0e-5)) != 1 -> :values
+                  true -> :ok
+                end
+              rescue
+                e -> {:raised, Exception.message(e) |> String.split("\n") |> hd()}
+              end
+
+            if result == :ok, do: acc, else: [{label, result} | acc]
+        end
+
+      assert failures == [], "broadcast mismatches:\n" <> Enum.map_join(Enum.reverse(failures), "\n", fn {l, r} -> "  #{l}: #{inspect(r)}" end)
+    end
+  end
+
+  describe "broadcast" do
+    @broadcast_to_cases [
+      {{1}, {3}}, {{3}, {3}},
+      {{1}, {2, 3}}, {{3}, {2, 3}},
+      {{1, 3}, {2, 3}}, {{2, 1}, {2, 3}}, {{1, 1}, {2, 3}}, {{2, 3}, {2, 3}},
+      {{4}, {2, 3, 4}}, {{3, 4}, {2, 3, 4}}, {{1}, {2, 3, 4}},
+      {{2, 1, 4}, {2, 3, 4}}, {{1, 3, 1}, {2, 3, 4}}, {{2, 3, 1}, {2, 3, 4}},
+      {{1, 1, 1}, {2, 3, 4}}, {{2, 3, 4}, {2, 3, 4}}
+    ]
+
+    test "matches Nx.BinaryBackend across ranks and dim-1 stretches for every dtype" do
+      for {from, to} <- @broadcast_to_cases, dtype <- [:f32, :f64, :s32, :s64, :u8] do
+        t = Nx.iota(from, type: dtype) |> Nx.add(1)
+        assert_same(Nx.broadcast(ev(t), to), Nx.broadcast(t, to))
+      end
+    end
+
+    test "matches Nx.BinaryBackend for explicit axes (including non-right-aligned)" do
+      v = Nx.tensor([1, 2, 3], type: :s32)
+      assert_same(Nx.broadcast(ev(v), {3, 2}, axes: [0]), Nx.broadcast(v, {3, 2}, axes: [0]))
+      assert_same(Nx.broadcast(ev(v), {2, 3}, axes: [1]), Nx.broadcast(v, {2, 3}, axes: [1]))
+
+      m = Nx.tensor([[1, 2], [3, 4]], type: :f32)
+
+      for axes <- [[0, 1], [0, 2], [1, 2]] do
+        assert_same(Nx.broadcast(ev(m), {2, 2, 2}, axes: axes), Nx.broadcast(m, {2, 2, 2}, axes: axes))
+      end
+    end
+  end
+
   describe "cumulative_sum / product / min / max" do
     test "match Nx.BinaryBackend exactly for integer dtypes across axes and :reverse" do
       tensors = [

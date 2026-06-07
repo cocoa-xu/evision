@@ -223,43 +223,20 @@ defmodule Evision.Backend do
 
   @impl true
   @spec broadcast(Nx.Tensor.t(), Nx.Tensor.t(), tuple, any) :: Nx.Tensor.t()
-  def broadcast(out, %T{} = t, shape, axes) do
-    {tensor, reshape} = maybe_reshape(t, shape, axes)
-    Evision.Mat.broadcast_to(tensor |> from_nx(), shape, reshape)
+  def broadcast(out, %T{shape: src_shape} = t, to_shape, axes) do
+    Evision.Mat.broadcast_to(from_nx(t), to_shape, force_src_shape(src_shape, to_shape, axes))
     |> reject_error()
     |> to_nx(out)
   end
 
-  defp maybe_reshape(%T{shape: {n}} = t, {n, _}, [0]) do
-    {Nx.reshape(t, {n, 1}), {n, 1}}
-  end
+  # Place each source dim onto the target axis Nx assigns it (other axes are 1),
+  # so the NIF stretches the size-1 axes. This mirrors Nx broadcasting for both
+  # the default right-aligned case and explicit `:axes`.
+  defp force_src_shape(src_shape, to_shape, axes) do
+    placed = Map.new(Enum.zip(Tuple.to_list(src_shape), axes), fn {dim, axis} -> {axis, dim} end)
 
-  defp maybe_reshape(%T{shape: shape} = t, to_shape, _axes) do
-    l_shape = Tuple.to_list(shape)
-    l_to_shape = Tuple.to_list(to_shape)
-
-    if length(l_shape) != length(l_to_shape) do
-      src_shape_axis = length(l_shape) - 1
-      {_src_shape_axis, force_shape} =
-        for axis <- Enum.to_list(length(l_to_shape)-1..0), reduce: {src_shape_axis, []} do
-          {src_shape_axis, acc} ->
-            if src_shape_axis == -1 do
-              {src_shape_axis, [1 | acc]}
-            else
-              case {elem(shape, src_shape_axis), elem(to_shape, axis)} do
-                {1, _d} ->
-                  {src_shape_axis - 1, [1 | acc]}
-                {d, d} ->
-                  {src_shape_axis - 1, [d | acc]}
-              end
-            end
-        end
-      force_shape = List.to_tuple(force_shape)
-
-      {Nx.reshape(t, force_shape), force_shape}
-    else
-      {t, shape}
-    end
+    for(axis <- 0..(tuple_size(to_shape) - 1)//1, do: Map.get(placed, axis, 1))
+    |> List.to_tuple()
   end
 
   @impl true
