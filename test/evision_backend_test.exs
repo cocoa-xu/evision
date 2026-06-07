@@ -113,4 +113,21 @@ defmodule Evision.Backend.Test do
       end
     end
   end
+
+  describe "take" do
+    test "matches Nx.BinaryBackend across axes, ranks, dtypes, and index shapes" do
+      tensors = [
+        Nx.tensor([10, 20, 30, 40]),
+        Nx.tensor([[1, 2, 3], [4, 5, 6]]),
+        Nx.tensor([[[1, 2], [3, 4]], [[5, 6], [7, 8]]], type: :s64),
+        Nx.tensor([[1.5, 2.5, 3.5], [4.5, 5.5, 6.5]], type: :f32)
+      ]
+
+      index_sets = [Nx.tensor([1, 0, 1]), Nx.tensor([[0, 1], [1, 0]])]
+
+      for t <- tensors, axis <- 0..(Nx.rank(t) - 1), idx <- index_sets do
+        assert_same(Nx.take(ev(t), ev(idx), axis: axis), Nx.take(t, idx, axis: axis))
+      end
+    end
+  end
 end

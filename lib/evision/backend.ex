@@ -896,6 +896,22 @@ defmodule Evision.Backend do
   defp reduce_out_dims({}), do: [1]
   defp reduce_out_dims(shape), do: Tuple.to_list(shape)
 
+  ## Indexing
+
+  @impl true
+  def take(%T{shape: out_shape} = out, %T{shape: shape} = tensor, indices, axis) do
+    dims = Tuple.to_list(shape)
+    outer = dims |> Enum.take(axis) |> Enum.product()
+    inner = dims |> Enum.drop(axis + 1) |> Enum.product()
+    idx = as_mat_type(from_nx(indices), {:s, 64})
+
+    Evision.Mat.take(from_nx(tensor), idx, outer, elem(shape, axis), inner)
+    |> reject_error()
+    |> Evision.Mat.reshape(reduce_out_dims(out_shape))
+    |> reject_error()
+    |> to_nx(out)
+  end
+
   @doc false
   def from_nx(%T{data: %EB{ref: mat_ref}}), do: mat_ref
   def from_nx(%T{} = tensor) do

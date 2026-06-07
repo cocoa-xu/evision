@@ -28,6 +28,7 @@
 #include "sign.h"
 #include "sort.h"
 #include "subtract.h"
+#include "take.h"
 #include "to_batched.h"
 #include "to_binary.h"
 #include "transpose.h"

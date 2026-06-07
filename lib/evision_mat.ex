@@ -1252,6 +1252,19 @@ defmodule Evision.Mat do
     |> Evision.Internal.Structurise.to_struct()
   end
 
+  @doc false
+  # Gather along one axis (Nx.take): copies inner blocks selected by int64 indices.
+  def take(mat, indices, outer, axis_dim, inner) do
+    :evision_nif.mat_take(
+      src: from_struct(mat),
+      indices: from_struct(indices),
+      outer: outer,
+      axis_dim: axis_dim,
+      inner: inner
+    )
+    |> Evision.Internal.Structurise.to_struct()
+  end
+
   @doc namespace: :"cv.Mat"
   @spec expm1(maybe_mat_in()) :: maybe_mat_out()
   def expm1(mat) do
