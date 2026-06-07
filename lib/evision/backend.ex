@@ -1092,6 +1092,33 @@ defmodule Evision.Backend do
     Evision.Mat.shift(lm, rm, op) |> reject_error() |> to_nx(out)
   end
 
+  ## All-close
+
+  # Replicates Nx's vectorized_all_close out of already-implemented ops (the optional
+  # fallback is shadowed by the catch-all, so it must be built here). Scalars go second
+  # in multiply (Evision's scalar-first multiply path rejects constants), and the
+  # `select(nan, 1, inf)` over {0,1} masks is written as logical_or.
+  @impl true
+  def all_close(_out, a, b, opts) do
+    atol = opts[:atol]
+    rtol = opts[:rtol]
+    finite = Nx.less_equal(Nx.abs(Nx.subtract(a, b)), Nx.add(Nx.multiply(Nx.abs(b), rtol), atol))
+
+    if Nx.Type.integer?(a.type) and Nx.Type.integer?(b.type) do
+      Nx.all(finite)
+    else
+      inf_entries =
+        Nx.select(Nx.logical_or(Nx.is_infinity(a), Nx.is_infinity(b)), Nx.equal(a, b), finite)
+
+      if opts[:equal_nan] do
+        nan_entries = Nx.logical_and(Nx.is_nan(a), Nx.is_nan(b))
+        Nx.all(Nx.logical_or(nan_entries, inf_entries))
+      else
+        Nx.all(inf_entries)
+      end
+    end
+  end
+
   # Reduce `op` (0 sum, 1 product) over `opts[:axes]` (nil = all axes). Cast to the
   # accumulator type so integer promotion (s64/u64) and f64 float accumulation match
   # Nx, move the reduced axes to the end, flatten to [keep, reduce], reduce per row.

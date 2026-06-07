@@ -403,4 +403,27 @@ defmodule Evision.Backend.Test do
       end
     end
   end
+
+  describe "all_close" do
+    test "match Nx.BinaryBackend across dtypes, tolerances, and inf/nan" do
+      cases = [
+        {Nx.tensor([1.0, 2.0, 3.0]), Nx.tensor([1.0, 2.0, 3.0]), []},
+        {Nx.tensor([1.0, 2.0, 3.0]), Nx.tensor([1.0, 2.0, 3.001]), []},
+        {Nx.tensor([1.0, 2.0]), Nx.tensor([1.05, 2.0]), [atol: 0.1]},
+        {Nx.tensor([1.0, 2.0]), Nx.tensor([1.5, 2.0]), [atol: 0.1]},
+        {Nx.tensor([[1.0, 2.0], [3.0, 4.0]]), Nx.tensor([[1.0, 2.0], [3.0, 4.0]]), []},
+        {Nx.tensor([1, 2, 3]), Nx.tensor([1, 2, 3]), []},
+        {Nx.tensor([1, 2, 3]), Nx.tensor([1, 2, 4]), []},
+        {Nx.tensor([:infinity, 1.0]), Nx.tensor([:infinity, 1.0]), []},
+        {Nx.tensor([:infinity, 1.0]), Nx.tensor([:neg_infinity, 1.0]), []},
+        {Nx.tensor([:nan, 1.0]), Nx.tensor([:nan, 1.0]), []},
+        {Nx.tensor([:nan, 1.0]), Nx.tensor([:nan, 1.0]), [equal_nan: true]},
+        {Nx.tensor([1.0, 2.0]), Nx.tensor([1.0, 2.5]), [rtol: 0.0, atol: 0.0]}
+      ]
+
+      for {a, b, opts} <- cases do
+        assert_same(Nx.all_close(ev(a), ev(b), opts), Nx.all_close(a, b, opts))
+      end
+    end
+  end
 end
