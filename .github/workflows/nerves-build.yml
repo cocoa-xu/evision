@@ -192,8 +192,6 @@ jobs:
           mix deps.update kino
           cp -a ../evision/examples ./priv/evision_examples
           sed -i 's/"welcome.livemd"\,/"welcome.livemd"\, "evision_examples",/g' lib/nerves_livebook/application.ex
-          # keep a stray host PKG_CONFIG_PATH out of the nerves cross-build
-          unset PKG_CONFIG_PATH
           export MAKE_BUILD_FLAGS="-j$(nproc)"
           mix deps.compile
           export PRIV_DIR="_build/${MIX_TARGET}_${MIX_ENV}/lib/evision/priv"
