@@ -3,6 +3,7 @@
 
 #include "abs.h"
 #include "add.h"
+#include "bit_unary.h"
 #include "bitwise_and.h"
 #include "bitwise_not.h"
 #include "bitwise_or.h"
@@ -30,6 +31,7 @@
 #include "reshape.h"
 #include "round.h"
 #include "select.h"
+#include "shift.h"
 #include "sign.h"
 #include "sort.h"
 #include "subtract.h"

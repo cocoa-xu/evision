@@ -374,4 +374,33 @@ defmodule Evision.Backend.Test do
       end
     end
   end
+
+  describe "count_leading_zeros / population_count / left_shift / right_shift" do
+    test "match Nx.BinaryBackend exactly across integer dtypes" do
+      unary_tensors = [
+        Nx.tensor([0, 1, 2, 255], type: :u8),
+        Nx.tensor([0, 1, -1, 127, -128], type: :s8),
+        Nx.tensor([1, 256, 65535], type: :u16),
+        Nx.tensor([0, 1, 2, 100], type: :s32),
+        Nx.tensor([1, 2, 3], type: :u64),
+        Nx.tensor([-1, -2], type: :s64)
+      ]
+
+      for op <- [:count_leading_zeros, :population_count], t <- unary_tensors do
+        assert_same(apply(Nx, op, [ev(t)]), apply(Nx, op, [t]))
+      end
+
+      shift_cases = [
+        {Nx.tensor([1, 2, 4], type: :u8), Nx.tensor([1, 2, 3], type: :u8)},
+        {Nx.tensor([255, 16, 1], type: :u8), Nx.tensor([1, 2, 4], type: :u8)},
+        {Nx.tensor([-8, -1, 16], type: :s32), Nx.tensor([1, 1, 2], type: :s32)},
+        {Nx.tensor([1, 2, 3], type: :s64), Nx.tensor([10, 20, 30], type: :s64)},
+        {Nx.tensor([100, 200], type: :u64), Nx.tensor([2, 3], type: :u64)}
+      ]
+
+      for op <- [:left_shift, :right_shift], {l, r} <- shift_cases do
+        assert_same(apply(Nx, op, [ev(l), ev(r)]), apply(Nx, op, [l, r]))
+      end
+    end
+  end
 end

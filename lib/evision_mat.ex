@@ -1334,6 +1334,22 @@ defmodule Evision.Mat do
     |> Evision.Internal.Structurise.to_struct()
   end
 
+  @doc false
+  # Per-element bit op preserving the integer type (Nx.count_leading_zeros /
+  # population_count): op 0 = clz, 1 = popcount.
+  def bit_unary(mat, op) do
+    :evision_nif.mat_bit_unary(src: from_struct(mat), op: op)
+    |> Evision.Internal.Structurise.to_struct()
+  end
+
+  @doc false
+  # Elementwise integer shift (Nx.left_shift/right_shift): op 0 = left, 1 = right.
+  # `l` and `r` share the output type and shape.
+  def shift(l, r, op) do
+    :evision_nif.mat_shift(l: from_struct(l), r: from_struct(r), op: op)
+    |> Evision.Internal.Structurise.to_struct()
+  end
+
   @doc namespace: :"cv.Mat"
   @spec expm1(maybe_mat_in()) :: maybe_mat_out()
   def expm1(mat) do

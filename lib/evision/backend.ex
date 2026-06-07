@@ -1061,6 +1061,37 @@ defmodule Evision.Backend do
     |> to_nx(out)
   end
 
+  ## Bitwise
+
+  @bit_clz 0
+  @bit_popcount 1
+  @shift_left 0
+  @shift_right 1
+
+  @impl true
+  def count_leading_zeros(out, tensor), do: bit_unary(out, tensor, @bit_clz)
+
+  @impl true
+  def population_count(out, tensor), do: bit_unary(out, tensor, @bit_popcount)
+
+  defp bit_unary(out, tensor, op) do
+    Evision.Mat.bit_unary(from_nx(tensor), op) |> reject_error() |> to_nx(out)
+  end
+
+  @impl true
+  def left_shift(out, l, r), do: shift(out, l, r, @shift_left)
+
+  @impl true
+  def right_shift(out, l, r), do: shift(out, l, r, @shift_right)
+
+  # l and r are broadcast to the output shape and cast to the (integer) output type.
+  defp shift(%T{shape: shape, type: type} = out, l, r, op) do
+    {l, r} = enforce_same_shape(l, r, shape)
+    lm = as_mat_type(from_nx(l), type)
+    rm = as_mat_type(from_nx(r), type)
+    Evision.Mat.shift(lm, rm, op) |> reject_error() |> to_nx(out)
+  end
+
   # Reduce `op` (0 sum, 1 product) over `opts[:axes]` (nil = all axes). Cast to the
   # accumulator type so integer promotion (s64/u64) and f64 float accumulation match
   # Nx, move the reduced axes to the end, flatten to [keep, reduce], reduce per row.
