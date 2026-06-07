@@ -6,6 +6,7 @@
 #include <erl_nif.h>
 #include "../../ArgInfo.hpp"
 #include "../evision_mat_utils.hpp"
+#include "parallel.h"
 
 // Elementwise integer shift (Nx.left_shift / right_shift). `l` and `r` share the
 // output type and shape. op 0 = left (<<), 1 = right (>>). Left shifts compute in
@@ -21,17 +22,19 @@ static void evision_shift(const cv::Mat &l, const cv::Mat &r, cv::Mat &dst, int 
     T *dp = (T *)dst.data;
     size_t n = l.total();
     uint64_t width = (uint64_t)(sizeof(T) * 8);
-    for (size_t i = 0; i < n; i++) {
-        T a = lp[i];
-        T b = rp[i];
-        if (op == 0) {
-            dp[i] = ((uint64_t)b >= width) ? (T)0 : (T)((U)a << b);
-        } else if ((uint64_t)b >= width) {
-            dp[i] = (std::is_signed<T>::value && a < 0) ? (T)(-1) : (T)0;
-        } else {
-            dp[i] = (T)(a >> b);
+    evision_parallel_for((int64_t)n, (int64_t)n, EVISION_PARALLEL_SIMPLE_MIN_WORK, [&](int64_t begin, int64_t end) {
+        for (int64_t i = begin; i < end; i++) {
+            T a = lp[(size_t)i];
+            T b = rp[(size_t)i];
+            if (op == 0) {
+                dp[(size_t)i] = ((uint64_t)b >= width) ? (T)0 : (T)((U)a << b);
+            } else if ((uint64_t)b >= width) {
+                dp[(size_t)i] = (std::is_signed<T>::value && a < 0) ? (T)(-1) : (T)0;
+            } else {
+                dp[(size_t)i] = (T)(a >> b);
+            }
         }
-    }
+    });
 }
 
 // @evision c: mat_shift, evision_cv_mat_shift, 1
@@ -47,8 +50,8 @@ static ERL_NIF_TERM evision_cv_mat_shift(ErlNifEnv *env, int argc, const ERL_NIF
         Mat l, r;
         int op = 0;
 
-        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "l"), l, ArgInfo("l", 0)) &&
-            evision_to_safe(env, evision_get_kw(env, erl_terms, "r"), r, ArgInfo("r", 0)) &&
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "l"), l, ArgInfo("l", ArgInfo::INPUT_ONLY)) &&
+            evision_to_safe(env, evision_get_kw(env, erl_terms, "r"), r, ArgInfo("r", ArgInfo::INPUT_ONLY)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "op"), op, ArgInfo("op", 0))) {
             Mat lc = l.isContinuous() ? l : l.clone();
             Mat rc = r.isContinuous() ? r : r.clone();

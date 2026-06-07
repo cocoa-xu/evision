@@ -7,6 +7,7 @@
 #include <erl_nif.h>
 #include "../../ArgInfo.hpp"
 #include "../evision_mat_utils.hpp"
+#include "parallel.h"
 
 // Elementwise binary ops without an OpenCV primitive (Nx.atan2 / pow / quotient /
 // remainder). op 0=atan2, 1=pow, 2=quotient, 3=remainder. l and r share the output
@@ -18,15 +19,17 @@ static void evision_binop_float(const cv::Mat &l, const cv::Mat &r, cv::Mat &dst
     const T *rp = (const T *)r.data;
     T *dp = (T *)dst.data;
     size_t n = l.total();
-    for (size_t i = 0; i < n; i++) {
-        T a = lp[i], b = rp[i];
-        switch (op) {
-            case 0: dp[i] = std::atan2(a, b); break;
-            case 1: dp[i] = std::pow(a, b); break;
-            case 3: dp[i] = std::fmod(a, b); break;
-            default: dp[i] = (T)0; break;
+    evision_parallel_for((int64_t)n, (int64_t)n, EVISION_PARALLEL_SIMPLE_MIN_WORK, [&](int64_t begin, int64_t end) {
+        for (int64_t i = begin; i < end; i++) {
+            T a = lp[(size_t)i], b = rp[(size_t)i];
+            switch (op) {
+                case 0: dp[(size_t)i] = std::atan2(a, b); break;
+                case 1: dp[(size_t)i] = std::pow(a, b); break;
+                case 3: dp[(size_t)i] = std::fmod(a, b); break;
+                default: dp[(size_t)i] = (T)0; break;
+            }
         }
-    }
+    });
 }
 
 // Integer pow is exponentiation-by-squaring in the unsigned counterpart, so it
@@ -38,25 +41,27 @@ static void evision_binop_int(const cv::Mat &l, const cv::Mat &r, cv::Mat &dst, 
     const T *rp = (const T *)r.data;
     T *dp = (T *)dst.data;
     size_t n = l.total();
-    for (size_t i = 0; i < n; i++) {
-        T a = lp[i], b = rp[i];
-        switch (op) {
-            case 1: {
-                Acc base = (Acc)a, result = 1;
-                T e = b;
-                while (e > 0) {
-                    if (e & 1) result = (Acc)(result * base);
-                    base = (Acc)(base * base);
-                    e >>= 1;
+    evision_parallel_for((int64_t)n, (int64_t)n, EVISION_PARALLEL_SIMPLE_MIN_WORK, [&](int64_t begin, int64_t end) {
+        for (int64_t i = begin; i < end; i++) {
+            T a = lp[(size_t)i], b = rp[(size_t)i];
+            switch (op) {
+                case 1: {
+                    Acc base = (Acc)a, result = 1;
+                    T e = b;
+                    while (e > 0) {
+                        if (e & 1) result = (Acc)(result * base);
+                        base = (Acc)(base * base);
+                        e >>= 1;
+                    }
+                    dp[(size_t)i] = (T)result;
+                    break;
                 }
-                dp[i] = (T)result;
-                break;
+                case 2: dp[(size_t)i] = (b == 0) ? (T)0 : (T)(a / b); break;
+                case 3: dp[(size_t)i] = (b == 0) ? (T)0 : (T)(a % b); break;
+                default: dp[(size_t)i] = (T)0; break;
             }
-            case 2: dp[i] = (b == 0) ? (T)0 : (T)(a / b); break;
-            case 3: dp[i] = (b == 0) ? (T)0 : (T)(a % b); break;
-            default: dp[i] = (T)0; break;
         }
-    }
+    });
 }
 
 // @evision c: mat_binop, evision_cv_mat_binop, 1
@@ -72,8 +77,8 @@ static ERL_NIF_TERM evision_cv_mat_binop(ErlNifEnv *env, int argc, const ERL_NIF
         Mat l, r;
         int op = 0;
 
-        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "l"), l, ArgInfo("l", 0)) &&
-            evision_to_safe(env, evision_get_kw(env, erl_terms, "r"), r, ArgInfo("r", 0)) &&
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "l"), l, ArgInfo("l", ArgInfo::INPUT_ONLY)) &&
+            evision_to_safe(env, evision_get_kw(env, erl_terms, "r"), r, ArgInfo("r", ArgInfo::INPUT_ONLY)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "op"), op, ArgInfo("op", 0))) {
             Mat lc = l.isContinuous() ? l : l.clone();
             Mat rc = r.isContinuous() ? r : r.clone();

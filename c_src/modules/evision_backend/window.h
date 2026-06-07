@@ -9,6 +9,7 @@
 #include <erl_nif.h>
 #include "../../ArgInfo.hpp"
 #include "../evision_mat_utils.hpp"
+#include "parallel.h"
 
 // Sliding-window ops (Nx.window_*). Windows preserve the input dtype (no accumulator
 // upcast, unlike reduce), so everything is templated over the element type T; f16/bf16 are
@@ -59,36 +60,78 @@ static void window_reduce_typed(const T *sp, T *dp, int r,
     for (int k = 0; k < r; k++) { out_total *= out_dims[(size_t)k]; win_total *= win_dims[(size_t)k]; }
 
     T init = window_identity<T>(op);
-    std::vector<int> op_idx((size_t)r, 0), w_idx((size_t)r, 0);
+    int64_t work = out_total * (win_total > 0 ? win_total : 1);
 
-    for (int64_t p = 0; p < out_total; p++) {
-        T av = init;
-        std::fill(w_idx.begin(), w_idx.end(), 0);
+    if (!evision_should_parallelize(out_total, work, EVISION_PARALLEL_NESTED_MIN_WORK)) {
+        std::vector<int> op_idx((size_t)r, 0), w_idx((size_t)r, 0);
+        for (int64_t p = 0; p < out_total; p++) {
+            T av = init;
+            std::fill(w_idx.begin(), w_idx.end(), 0);
 
-        for (int64_t wq = 0; wq < win_total; wq++) {
-            bool inrange = true;
-            int64_t soff = 0;
-            for (int k = 0; k < r; k++) {
-                int64_t s = (int64_t)op_idx[(size_t)k] * strides[(size_t)k] +
-                            (int64_t)w_idx[(size_t)k] * dil[(size_t)k] - pad_lo[(size_t)k];
-                if (s < 0 || s >= in_dims[(size_t)k]) { inrange = false; break; }
-                soff += s * in_stride[(size_t)k];
-            }
-            if (inrange) {
-                T x = sp[soff];
-                switch (op) {
-                    case 0: av = (T)(av + x); break;
-                    case 1: av = (T)(av * x); break;
-                    case 2: av = window_max_value(av, x); break;
-                    case 3: av = window_min_value(av, x); break;
+            for (int64_t wq = 0; wq < win_total; wq++) {
+                bool inrange = true;
+                int64_t soff = 0;
+                for (int k = 0; k < r; k++) {
+                    int64_t s = (int64_t)op_idx[(size_t)k] * strides[(size_t)k] +
+                                (int64_t)w_idx[(size_t)k] * dil[(size_t)k] - pad_lo[(size_t)k];
+                    if (s < 0 || s >= in_dims[(size_t)k]) { inrange = false; break; }
+                    soff += s * in_stride[(size_t)k];
                 }
+                if (inrange) {
+                    T x = sp[soff];
+                    switch (op) {
+                        case 0: av = (T)(av + x); break;
+                        case 1: av = (T)(av * x); break;
+                        case 2: av = window_max_value(av, x); break;
+                        case 3: av = window_min_value(av, x); break;
+                    }
+                }
+                for (int k = r - 1; k >= 0; k--) { if (++w_idx[(size_t)k] < win_dims[(size_t)k]) break; w_idx[(size_t)k] = 0; }
             }
-            for (int k = r - 1; k >= 0; k--) { if (++w_idx[(size_t)k] < win_dims[(size_t)k]) break; w_idx[(size_t)k] = 0; }
+
+            dp[p] = av;
+            for (int k = r - 1; k >= 0; k--) { if (++op_idx[(size_t)k] < out_dims[(size_t)k]) break; op_idx[(size_t)k] = 0; }
+        }
+        return;
+    }
+
+    evision_parallel_for(out_total, work, EVISION_PARALLEL_NESTED_MIN_WORK, [&](int64_t begin, int64_t end) {
+        std::vector<int> op_idx((size_t)r, 0), w_idx((size_t)r, 0);
+        int64_t q = begin;
+        for (int k = r - 1; k >= 0; k--) {
+            op_idx[(size_t)k] = (int)(q % out_dims[(size_t)k]);
+            q /= out_dims[(size_t)k];
         }
 
-        dp[p] = av;
-        for (int k = r - 1; k >= 0; k--) { if (++op_idx[(size_t)k] < out_dims[(size_t)k]) break; op_idx[(size_t)k] = 0; }
-    }
+        for (int64_t p = begin; p < end; p++) {
+            T av = init;
+            std::fill(w_idx.begin(), w_idx.end(), 0);
+
+            for (int64_t wq = 0; wq < win_total; wq++) {
+                bool inrange = true;
+                int64_t soff = 0;
+                for (int k = 0; k < r; k++) {
+                    int64_t s = (int64_t)op_idx[(size_t)k] * strides[(size_t)k] +
+                                (int64_t)w_idx[(size_t)k] * dil[(size_t)k] - pad_lo[(size_t)k];
+                    if (s < 0 || s >= in_dims[(size_t)k]) { inrange = false; break; }
+                    soff += s * in_stride[(size_t)k];
+                }
+                if (inrange) {
+                    T x = sp[soff];
+                    switch (op) {
+                        case 0: av = (T)(av + x); break;
+                        case 1: av = (T)(av * x); break;
+                        case 2: av = window_max_value(av, x); break;
+                        case 3: av = window_min_value(av, x); break;
+                    }
+                }
+                for (int k = r - 1; k >= 0; k--) { if (++w_idx[(size_t)k] < win_dims[(size_t)k]) break; w_idx[(size_t)k] = 0; }
+            }
+
+            dp[p] = av;
+            for (int k = r - 1; k >= 0; k--) { if (++op_idx[(size_t)k] < out_dims[(size_t)k]) break; op_idx[(size_t)k] = 0; }
+        }
+    });
 }
 
 #define EVISION_WINDOW_DISPATCH(FN, SRC, DST, ...)                              \
@@ -120,7 +163,7 @@ static ERL_NIF_TERM evision_cv_mat_window_reduce(ErlNifEnv *env, int argc, const
         std::vector<int> in_dims, out_dims, win_dims, strides, pad_lo, dil;
         int op = 0;
 
-        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "src"), src, ArgInfo("src", 0)) &&
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "src"), src, ArgInfo("src", ArgInfo::INPUT_ONLY)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "in_dims"), in_dims, ArgInfo("in_dims", 0)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "out_dims"), out_dims, ArgInfo("out_dims", 0)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "win_dims"), win_dims, ArgInfo("win_dims", 0)) &&
@@ -163,7 +206,9 @@ static void window_scatter_typed(const T *sp, const T *srcvals, T *dp, int r,
         grid_total *= grid[(size_t)k];
         win_total *= win_dims[(size_t)k];
     }
-    for (int64_t i = 0; i < in_total; i++) dp[i] = init;
+    evision_parallel_for(in_total, in_total, EVISION_PARALLEL_SIMPLE_MIN_WORK, [&](int64_t begin, int64_t end) {
+        for (int64_t i = begin; i < end; i++) dp[i] = init;
+    });
 
     std::vector<int> g_idx((size_t)r, 0), w_idx((size_t)r, 0);
     for (int64_t p = 0; p < grid_total; p++) {
@@ -212,8 +257,8 @@ static ERL_NIF_TERM evision_cv_mat_window_scatter(ErlNifEnv *env, int argc, cons
         double init = 0.0;
         int op = 0;
 
-        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "src"), src, ArgInfo("src", 0)) &&
-            evision_to_safe(env, evision_get_kw(env, erl_terms, "source"), source, ArgInfo("source", 0)) &&
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "src"), src, ArgInfo("src", ArgInfo::INPUT_ONLY)) &&
+            evision_to_safe(env, evision_get_kw(env, erl_terms, "source"), source, ArgInfo("source", ArgInfo::INPUT_ONLY)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "init"), init, ArgInfo("init", 0)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "in_dims"), in_dims, ArgInfo("in_dims", 0)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "win_dims"), win_dims, ArgInfo("win_dims", 0)) &&

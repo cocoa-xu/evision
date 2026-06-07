@@ -1243,12 +1243,19 @@ defmodule Evision.Mat do
   end
 
   @doc false
-  # Row-wise reduction (op 0=sum, 1=product, 2=max, 3=min) of an accumulator-typed
-  # mat (f64/s64/u64); returns a [rows, 1] mat.
+  # Reduction (op 0=sum, 1=product, 2=max, 3=min) of a native-dtype 2D mat over the
+  # trailing axis; returns a [rows, 1] mat. sum/product promote to the wide type
+  # (f64/s64/u64), max/min keep the input type.
   def reduce_rows(mat, op) do
-    mat = from_struct(mat)
+    :evision_nif.mat_reduce(src: from_struct(mat), op: op, axis: 1)
+    |> Evision.Internal.Structurise.to_struct()
+  end
 
-    :evision_nif.mat_reduce(src: mat, op: op)
+  @doc false
+  # Same as reduce_rows but over the leading axis; returns a [1, cols] mat. Lets the
+  # caller reduce leading axes without first transposing them to the end.
+  def reduce_cols(mat, op) do
+    :evision_nif.mat_reduce(src: from_struct(mat), op: op, axis: 0)
     |> Evision.Internal.Structurise.to_struct()
   end
 
@@ -1408,7 +1415,7 @@ defmodule Evision.Mat do
   @doc false
   # N-d cross-correlation (Nx.conv) on canonical-layout f32/f64 inputs. `input` is
   # [N, Cin, *sp], `kernel` [O, Cin/G, *sp]; the result is the canonical [N/Bg, O, *sp].
-  def conv(input, kernel, in_shape, k_shape, out_shape, strides, pad_lo, input_dilation, kernel_dilation, feature_groups, batch_groups) do
+  def conv(input, kernel, in_shape, k_shape, out_shape, strides, pad_lo, input_dilation, kernel_dilation, feature_groups, batch_groups, im2row_budget \\ 0) do
     :evision_nif.mat_conv(
       input: from_struct(input),
       kernel: from_struct(kernel),
@@ -1420,7 +1427,8 @@ defmodule Evision.Mat do
       input_dilation: input_dilation,
       kernel_dilation: kernel_dilation,
       feature_groups: feature_groups,
-      batch_groups: batch_groups
+      batch_groups: batch_groups,
+      im2row_budget: im2row_budget
     )
     |> Evision.Internal.Structurise.to_struct()
   end

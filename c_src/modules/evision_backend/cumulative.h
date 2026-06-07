@@ -6,6 +6,7 @@
 #include <erl_nif.h>
 #include "../../ArgInfo.hpp"
 #include "../evision_mat_utils.hpp"
+#include "parallel.h"
 
 // Row-wise prefix scan (Nx.cumulative_*): op 0=sum, 1=product, 2=min, 3=max,
 // accumulating left-to-right (or right-to-left when reverse). Output has the same
@@ -31,26 +32,28 @@ static inline T evision_scan_max(T acc, T v) {
 template <typename T, typename Acc>
 static void evision_scan_rows(const cv::Mat &src, cv::Mat &dst, int op, bool reverse) {
     int cols = src.cols;
-    for (int r = 0; r < src.rows; r++) {
-        const T *sp = src.ptr<T>(r);
-        T *dp = dst.ptr<T>(r);
-        if (cols == 0) continue;
-        int start = reverse ? cols - 1 : 0;
-        int step = reverse ? -1 : 1;
-        T running = sp[start];
-        dp[start] = running;
-        for (int k = 1; k < cols; k++) {
-            int c = start + step * k;
-            T v = sp[c];
-            switch (op) {
-                case 0: running = (T)((Acc)running + (Acc)v); break;
-                case 1: running = (T)((Acc)running * (Acc)v); break;
-                case 2: running = evision_scan_min(running, v); break;
-                case 3: running = evision_scan_max(running, v); break;
+    evision_parallel_for(src.rows, (int64_t)src.rows * cols, EVISION_PARALLEL_SIMPLE_MIN_WORK, [&](int64_t begin, int64_t end) {
+        for (int64_t row = begin; row < end; row++) {
+            const T *sp = src.ptr<T>((int)row);
+            T *dp = dst.ptr<T>((int)row);
+            if (cols == 0) continue;
+            int start = reverse ? cols - 1 : 0;
+            int step = reverse ? -1 : 1;
+            T running = sp[start];
+            dp[start] = running;
+            for (int k = 1; k < cols; k++) {
+                int c = start + step * k;
+                T v = sp[c];
+                switch (op) {
+                    case 0: running = (T)((Acc)running + (Acc)v); break;
+                    case 1: running = (T)((Acc)running * (Acc)v); break;
+                    case 2: running = evision_scan_min(running, v); break;
+                    case 3: running = evision_scan_max(running, v); break;
+                }
+                dp[c] = running;
             }
-            dp[c] = running;
         }
-    }
+    });
 }
 
 // @evision c: mat_cumulative, evision_cv_mat_cumulative, 1
@@ -66,7 +69,7 @@ static ERL_NIF_TERM evision_cv_mat_cumulative(ErlNifEnv *env, int argc, const ER
         Mat src;
         int op = 0, reverse = 0;
 
-        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "src"), src, ArgInfo("src", 0)) &&
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "src"), src, ArgInfo("src", ArgInfo::INPUT_ONLY)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "op"), op, ArgInfo("op", 0)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "reverse"), reverse, ArgInfo("reverse", 0))) {
             Mat dst(src.rows, src.cols, src.type());

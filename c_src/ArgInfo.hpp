@@ -18,12 +18,16 @@ public:
     bool pathlike;
     bool nd_mat;
     bool has_default; // <- added in evision
-    // Pure read-only input. Set only by generated bindings, where the source
-    // matrix is guaranteed to be handed to OpenCV as a const InputArray. It
-    // lets converters share the source buffer instead of deep-copying it.
-    // Hand-written modules leave this unset and keep the safe copying default.
+    // Pure read-only input. Set by generated bindings (const InputArray) and by
+    // hand-written modules that only read a source matrix (clone-then-work or
+    // write-a-fresh-dst). It lets converters share a cv-owned source buffer
+    // instead of deep-copying it; binary-backed sources still deep-copy (see the
+    // in_buf guard in evision_to), so sharing can never outlive an Erlang binary.
     bool input_only;  // <- added in evision
     // more fields may be added if necessary
+
+    // Flag value for hand-written modules: ArgInfo("src", ArgInfo::INPUT_ONLY).
+    static const uint32_t INPUT_ONLY = arg_input_only_flag;
 
     ArgInfo(const char* name_, uint32_t arg_) :
         name(name_),

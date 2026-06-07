@@ -5,6 +5,7 @@
 #include <erl_nif.h>
 #include "../../ArgInfo.hpp"
 #include "../evision_mat_utils.hpp"
+#include "parallel.h"
 
 // Elementwise predicate -> u8 {0,1} (Nx.is_nan / is_infinity / logical_not).
 // op 0 = is_nan, 1 = is_infinity, 2 = is_zero (logical_not). The nan/inf checks go
@@ -16,17 +17,19 @@ static void evision_predicate(const cv::Mat &src, cv::Mat &dst, int op) {
     const T *sp = (const T *)src.data;
     unsigned char *dp = dst.data;
     size_t n = src.total();
-    for (size_t i = 0; i < n; i++) {
-        T x = sp[i];
-        unsigned char r = 0;
-        switch (op) {
-            case 0: r = std::isnan((double)x) ? 1 : 0; break;
-            case 1: r = std::isinf((double)x) ? 1 : 0; break;
-            case 2: r = (x == (T)0) ? 1 : 0; break;
-            default: break;
+    evision_parallel_for((int64_t)n, (int64_t)n, EVISION_PARALLEL_SIMPLE_MIN_WORK, [&](int64_t begin, int64_t end) {
+        for (int64_t i = begin; i < end; i++) {
+            T x = sp[(size_t)i];
+            unsigned char r = 0;
+            switch (op) {
+                case 0: r = std::isnan((double)x) ? 1 : 0; break;
+                case 1: r = std::isinf((double)x) ? 1 : 0; break;
+                case 2: r = (x == (T)0) ? 1 : 0; break;
+                default: break;
+            }
+            dp[(size_t)i] = r;
         }
-        dp[i] = r;
-    }
+    });
 }
 
 // @evision c: mat_predicate, evision_cv_mat_predicate, 1
@@ -42,7 +45,7 @@ static ERL_NIF_TERM evision_cv_mat_predicate(ErlNifEnv *env, int argc, const ERL
         Mat src;
         int op = 0;
 
-        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "src"), src, ArgInfo("src", 0)) &&
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "src"), src, ArgInfo("src", ArgInfo::INPUT_ONLY)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "op"), op, ArgInfo("op", 0))) {
             Mat src_c = src.isContinuous() ? src : src.clone();
             Mat dst(1, (int)src_c.total(), CV_8U);

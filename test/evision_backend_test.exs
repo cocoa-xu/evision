@@ -53,6 +53,56 @@ defmodule Evision.Backend.Test do
     end
   end
 
+  describe "input immutability (shared-buffer safety)" do
+    # Read-only NIFs share a cv-owned source buffer instead of deep-copying it, so a
+    # reshape (or any internal pipeline that reshapes) can alias its input. These
+    # assert that operating on a derived tensor never writes back into the original.
+    for type <- [:f32, :s32] do
+      test "ops on a reshape do not mutate the original (#{type})" do
+        a = Nx.iota({32, 32}, type: unquote(type)) |> Nx.add(1) |> ev()
+        a0 = Nx.to_binary(a)
+
+        b = Nx.reshape(a, {1024})
+        b0 = Nx.to_binary(b)
+
+        _ = Nx.add(b, 7)
+        _ = Nx.negate(b)
+        _ = Nx.sum(b)
+        _ = Nx.sort(Nx.reshape(b, {32, 32}), axis: 1)
+
+        assert Nx.to_binary(a) == a0
+        assert Nx.to_binary(b) == b0
+      end
+
+      test "reduction/scan/sort pipelines leave their input intact (#{type})" do
+        a = Nx.iota({24, 48}, type: unquote(type)) |> Nx.add(1) |> ev()
+        a0 = Nx.to_binary(a)
+
+        _ = Nx.sum(a, axes: [1])
+        _ = Nx.reduce_max(a, axes: [0])
+        _ = Nx.cumulative_sum(a, axis: 1)
+        _ = Nx.sort(a, axis: 1)
+
+        assert Nx.to_binary(a) == a0
+      end
+    end
+
+    test "multiple live aliases stay independent under GC" do
+      a = Nx.iota({64, 64}, type: :f32) |> Nx.add(1.0) |> ev()
+      a0 = Nx.to_binary(a)
+
+      Enum.each(1..100, fn i ->
+        view = Nx.reshape(a, {4096})
+        _ = Nx.add(view, i * 1.0)
+        _ = Nx.sum(view)
+        if rem(i, 10) == 0, do: :erlang.garbage_collect()
+      end)
+
+      :erlang.garbage_collect()
+      assert Nx.to_binary(a) == a0
+    end
+  end
+
   describe "argmax/argmin (index family)" do
     test "match Nx.BinaryBackend across axes, ranks, tie-breaks, and dtypes" do
       tensors = [
@@ -117,6 +167,18 @@ defmodule Evision.Backend.Test do
         assert_same(apply(Nx, fun, [ev(t), opts]), apply(Nx, fun, [t, opts]))
       end
     end
+
+    test "match Nx.BinaryBackend for larger row-wise inputs" do
+      t =
+        Nx.iota({96, 512}, type: :s64)
+        |> Nx.multiply(17)
+        |> Nx.remainder(1009)
+        |> Nx.as_type(:f32)
+
+      for fun <- [:sort, :argsort], opts <- [[axis: 1], [axis: 1, direction: :desc]] do
+        assert_same(apply(Nx, fun, [ev(t), opts]), apply(Nx, fun, [t, opts]))
+      end
+    end
   end
 
   describe "sum/product" do
@@ -148,6 +210,16 @@ defmodule Evision.Backend.Test do
       end
     end
 
+    test "sum matches Nx.BinaryBackend for larger row-wise inputs" do
+      t =
+        Nx.iota({96, 512}, type: :f32)
+        |> Nx.multiply(0.25)
+        |> Nx.subtract(64.0)
+
+      close_at(Nx.sum(ev(t), axes: [1]), Nx.sum(t, axes: [1]), 1.0e-4)
+      close_at(Nx.sum(ev(t), axes: [0]), Nx.sum(t, axes: [0]), 1.0e-4)
+    end
+
     test "cumulative max/min propagate NaNs like Nx.BinaryBackend" do
       t = Nx.tensor([1.0, :nan, 2.0], type: :f32)
 
@@ -170,6 +242,22 @@ defmodule Evision.Backend.Test do
 
       for t <- tensors, axis <- 0..(Nx.rank(t) - 1), idx <- index_sets do
         assert_same(Nx.take(ev(t), ev(idx), axis: axis), Nx.take(t, idx, axis: axis))
+      end
+    end
+
+    test "matches Nx.BinaryBackend for larger copied blocks" do
+      t = Nx.iota({32, 64, 8}, type: :s32)
+      idx = Nx.remainder(Nx.iota({512}, type: :s64), 64)
+
+      assert_same(Nx.take(ev(t), ev(idx), axis: 1), Nx.take(t, idx, axis: 1))
+    end
+
+    test "raises on out-of-bounds indices" do
+      t = Nx.tensor([10, 20, 30])
+      idx = Nx.tensor([0, 3])
+
+      assert_raise RuntimeError, ~r/take: index out of bounds/, fn ->
+        Nx.take(ev(t), ev(idx), axis: 0)
       end
     end
   end
@@ -200,6 +288,23 @@ defmodule Evision.Backend.Test do
 
       for {t, idx, opts} <- cases do
         assert_same(Nx.gather(ev(t), ev(idx), opts), Nx.gather(t, idx, opts))
+      end
+    end
+
+    test "matches Nx.BinaryBackend for larger leading-axis gathers" do
+      t = Nx.iota({32, 32, 4}, type: :s32)
+      g = Nx.iota({8192}, type: :s64)
+      idx = Nx.stack([Nx.remainder(g, 32), Nx.remainder(Nx.quotient(g, 32), 32)], axis: 1)
+
+      assert_same(Nx.gather(ev(t), ev(idx), axes: [0, 1]), Nx.gather(t, idx, axes: [0, 1]))
+    end
+
+    test "raises on out-of-bounds coordinates" do
+      t = Nx.tensor([[1, 2], [3, 4]])
+      idx = Nx.tensor([[0, 0], [2, 1]])
+
+      assert_raise RuntimeError, ~r/gather: index out of bounds/, fn ->
+        Nx.gather(ev(t), ev(idx))
       end
     end
   end
@@ -291,6 +396,21 @@ defmodule Evision.Backend.Test do
         assert_close(apply(Nx, op, [ev(t), opts]), apply(Nx, op, [t, opts]))
       end
     end
+
+    test "match Nx.BinaryBackend for larger row-wise scans" do
+      t =
+        Nx.iota({96, 512}, type: :f32)
+        |> Nx.multiply(0.25)
+        |> Nx.subtract(64.0)
+
+      close_at(Nx.cumulative_sum(ev(t), axis: 1), Nx.cumulative_sum(t, axis: 1), 1.0e-3)
+
+      close_at(
+        Nx.cumulative_max(ev(t), axis: 0, reverse: true),
+        Nx.cumulative_max(t, axis: 0, reverse: true),
+        1.0e-5
+      )
+    end
   end
 
   describe "elementwise unary math" do
@@ -326,6 +446,14 @@ defmodule Evision.Backend.Test do
       f16_t = Nx.tensor([0.5, 1.0, 2.0], type: :f16)
       assert_close(Nx.tanh(ev(f16_t)), Nx.tanh(f16_t))
       assert_close(Nx.sqrt(ev(f16_t)), Nx.sqrt(f16_t))
+    end
+
+    test "match Nx.BinaryBackend for larger elementwise inputs" do
+      t =
+        Nx.iota({256, 256}, type: :f32)
+        |> Nx.divide(100.0)
+
+      assert_close(Nx.sin(ev(t)), Nx.sin(t))
     end
   end
 
@@ -371,6 +499,17 @@ defmodule Evision.Backend.Test do
       t = Nx.tensor([[1.0, :nan, 2.0], [3.0, 4.0, 5.0]], type: :f32)
 
       for op <- [:reduce_max, :reduce_min], opts <- [[], [axes: [1]], [axes: [1], keep_axes: true]] do
+        assert_same(apply(Nx, op, [ev(t), opts]), apply(Nx, op, [t, opts]))
+      end
+    end
+
+    test "reduce_max/min match Nx.BinaryBackend for larger row-wise inputs" do
+      t =
+        Nx.iota({96, 512}, type: :f32)
+        |> Nx.multiply(-3.0)
+        |> Nx.add(7.0)
+
+      for op <- [:reduce_max, :reduce_min], opts <- [[axes: [1]], [axes: [0]]] do
         assert_same(apply(Nx, op, [ev(t), opts]), apply(Nx, op, [t, opts]))
       end
     end
@@ -609,6 +748,31 @@ defmodule Evision.Backend.Test do
           Nx.take_along_axis(ev(tt), ev(idx), axis: axis),
           Nx.take_along_axis(tt, idx, axis: axis)
         )
+      end
+    end
+
+    test "take_along_axis matches Nx.BinaryBackend for larger axis choices" do
+      t = Nx.iota({64, 512}, type: :s32)
+      axis0_idx = Nx.remainder(Nx.iota({64, 512}, type: :s64), 64)
+      axis1_idx = Nx.remainder(Nx.iota({64, 512}, type: :s64), 512)
+
+      assert_same(
+        Nx.take_along_axis(ev(t), ev(axis0_idx), axis: 0),
+        Nx.take_along_axis(t, axis0_idx, axis: 0)
+      )
+
+      assert_same(
+        Nx.take_along_axis(ev(t), ev(axis1_idx), axis: 1),
+        Nx.take_along_axis(t, axis1_idx, axis: 1)
+      )
+    end
+
+    test "take_along_axis raises on out-of-bounds indices" do
+      t = Nx.tensor([[1, 2, 3], [4, 5, 6]])
+      idx = Nx.tensor([[0, 3, 1], [1, 0, 2]])
+
+      assert_raise RuntimeError, ~r/take_along_axis: index out of bounds/, fn ->
+        Nx.take_along_axis(ev(t), ev(idx), axis: 1)
       end
     end
 
@@ -857,6 +1021,17 @@ defmodule Evision.Backend.Test do
         assert_same(apply(Nx, op, [ev(t), {2}]), apply(Nx, op, [t, {2}]))
       end
     end
+
+    test "match Nx.BinaryBackend for larger padded windows" do
+      t =
+        Nx.iota({64, 64}, type: :f32)
+        |> Nx.divide(10.0)
+
+      opts = [padding: :same, window_dilations: [1, 2]]
+
+      close_at(Nx.window_sum(ev(t), {3, 3}, opts), Nx.window_sum(t, {3, 3}, opts), 1.0e-4)
+      assert_same(Nx.window_max(ev(t), {3, 3}, opts), Nx.window_max(t, {3, 3}, opts))
+    end
   end
 
   describe "window_scatter_max / window_scatter_min" do
@@ -932,6 +1107,47 @@ defmodule Evision.Backend.Test do
       bk = Nx.iota({2, 2, 2, 2}, type: :f32)
       bo = [batch_group_size: 2]
       assert_close(Nx.conv(ev(bimg), ev(bk), bo), Nx.conv(bimg, bk, bo))
+    end
+
+    test "matches Nx.BinaryBackend for larger grouped convolution" do
+      img =
+        Nx.iota({2, 4, 16, 16}, type: :f32)
+        |> Nx.divide(100.0)
+
+      kernel =
+        Nx.iota({4, 2, 3, 3}, type: :f32)
+        |> Nx.divide(50.0)
+
+      opts = [feature_group_size: 2, padding: :same, strides: [1, 2], kernel_dilation: [1, 2]]
+
+      assert_close(Nx.conv(ev(img), ev(kernel), opts), Nx.conv(img, kernel, opts))
+    end
+
+    test "im2row fast path tiles correctly across tile and batch boundaries" do
+      # A tiny memory budget forces the im2row path into many tiles (here ~1-4 output
+      # rows each), so tiles split mid-batch and the last tile is partial -- exercising
+      # the boundary arithmetic that a single-tile conv never hits. The override is
+      # process-local, so it never leaks into other (parallel) tests.
+      Process.put(:evision_conv_im2row_budget_bytes, 256)
+
+      img2 = Nx.iota({2, 3, 5, 5}, type: :f32)
+      k2 = Nx.iota({4, 3, 2, 2}, type: :f32)
+      imgd = Nx.iota({1, 4, 5, 5}, type: :f32)
+      kd = Nx.iota({4, 1, 3, 3}, type: :f32)
+      fimg = Nx.iota({2, 4, 16, 16}, type: :f32) |> Nx.divide(100.0)
+      fk = Nx.iota({4, 2, 3, 3}, type: :f32) |> Nx.divide(50.0)
+
+      cases = [
+        {img2, k2, [strides: [2, 1]]},
+        {img2, k2, [padding: :same]},
+        {img2, k2, [padding: :same, kernel_dilation: [2, 1]]},
+        {imgd, kd, [feature_group_size: 4]},
+        {fimg, fk, [feature_group_size: 2, padding: :same, strides: [1, 2], kernel_dilation: [1, 2]]}
+      ]
+
+      for {i, k, o} <- cases do
+        assert_close(Nx.conv(ev(i), ev(k), o), Nx.conv(i, k, o))
+      end
     end
   end
 end

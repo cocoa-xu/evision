@@ -1,16 +1,18 @@
 #ifndef EVISION_BACKEND_TAKE_ALONG_AXIS_H
 #define EVISION_BACKEND_TAKE_ALONG_AXIS_H
 
+#include <atomic>
 #include <cstring>
 #include <vector>
 #include <erl_nif.h>
 #include "../../ArgInfo.hpp"
 #include "../evision_mat_utils.hpp"
+#include "parallel.h"
 
 // Per-element gather along one axis (Nx.take_along_axis). out has the indices' shape;
 // out[j_0..j_{r-1}] = src[j with the `axis` coord replaced by indices[j]]. The non-axis
-// part of the input offset is tracked by an odometer (the axis stride is skipped), and
-// each element adds indices[p] * axis_stride. int64 indices, bounds-checked.
+// part of the input offset skips the axis stride, and each element adds
+// indices[p] * axis_stride. int64 indices, bounds-checked.
 // @evision c: mat_take_along_axis, evision_cv_mat_take_along_axis, 1
 // @evision nif: def mat_take_along_axis(_opts \\ []), do: :erlang.nif_error(:undefined)
 static ERL_NIF_TERM evision_cv_mat_take_along_axis(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
@@ -25,8 +27,8 @@ static ERL_NIF_TERM evision_cv_mat_take_along_axis(ErlNifEnv *env, int argc, con
         std::vector<int> in_dims, out_dims;
         int axis = 0;
 
-        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "src"), src, ArgInfo("src", 0)) &&
-            evision_to_safe(env, evision_get_kw(env, erl_terms, "indices"), indices, ArgInfo("indices", 0)) &&
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "src"), src, ArgInfo("src", ArgInfo::INPUT_ONLY)) &&
+            evision_to_safe(env, evision_get_kw(env, erl_terms, "indices"), indices, ArgInfo("indices", ArgInfo::INPUT_ONLY)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "in_dims"), in_dims, ArgInfo("in_dims", 0)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "out_dims"), out_dims, ArgInfo("out_dims", 0)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "axis"), axis, ArgInfo("axis", 0))) {
@@ -52,21 +54,27 @@ static ERL_NIF_TERM evision_cv_mat_take_along_axis(ErlNifEnv *env, int argc, con
             uchar *dp = dst.data;
 
             if (out_total > 0) {
-                std::vector<int64_t> idx((size_t)(r > 0 ? r : 1), 0);
-                int64_t base = 0;
-                for (int64_t p = 0; p < out_total; p++) {
-                    int64_t iv = ip[p];
-                    if (iv < 0 || iv >= axis_dim)
-                        return evision::nif::error(env, "take_along_axis: index out of bounds");
-                    std::memcpy(dp + (size_t)p * elem, sp + (size_t)(base + iv * axis_stride) * elem, elem);
-                    for (int k = r - 1; k >= 0; k--) {
-                        idx[(size_t)k]++;
-                        if (k != axis) base += in_stride[(size_t)k];
-                        if (idx[(size_t)k] < out_dims[(size_t)k]) break;
-                        idx[(size_t)k] = 0;
-                        if (k != axis) base -= (int64_t)out_dims[(size_t)k] * in_stride[(size_t)k];
+                std::atomic<bool> bad_index(false);
+                evision_parallel_for(out_total, out_total, EVISION_PARALLEL_SIMPLE_MIN_WORK, [&](int64_t begin, int64_t end) {
+                    for (int64_t p = begin; p < end; p++) {
+                        int64_t q = p;
+                        int64_t base = 0;
+                        for (int k = r - 1; k >= 0; k--) {
+                            int64_t coord = q % out_dims[(size_t)k];
+                            q /= out_dims[(size_t)k];
+                            if (k != axis) base += coord * in_stride[(size_t)k];
+                        }
+
+                        int64_t iv = ip[p];
+                        if (iv < 0 || iv >= axis_dim) {
+                            bad_index.store(true, std::memory_order_relaxed);
+                        } else {
+                            std::memcpy(dp + (size_t)p * elem, sp + (size_t)(base + iv * axis_stride) * elem, elem);
+                        }
                     }
-                }
+                });
+                if (bad_index.load(std::memory_order_relaxed))
+                    return evision::nif::error(env, "take_along_axis: index out of bounds");
             }
             return evision_from(env, dst);
         }
