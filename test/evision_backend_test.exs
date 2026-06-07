@@ -186,6 +186,12 @@ defmodule Evision.Backend.Test do
         u = Nx.tensor([1, 2, 3], type: type)
         assert_same(apply(Nx, op, [ev(t), ev(i), ev(u)]), apply(Nx, op, [t, i, u]))
       end
+
+      # Rank-1 index + scalar update shorthand (relies on scalar from_binary support).
+      assert_same(
+        Nx.indexed_put(ev(Nx.tensor([[1], [2]])), ev(Nx.tensor([1, 0])), ev(Nx.tensor(10))),
+        Nx.indexed_put(Nx.tensor([[1], [2]]), Nx.tensor([1, 0]), Nx.tensor(10))
+      )
     end
 
     test "match Nx.BinaryBackend approximately for float, half, and mixed dtypes" do
@@ -199,6 +205,14 @@ defmodule Evision.Backend.Test do
 
       for op <- [:indexed_add, :indexed_put], {t, i, u, o} <- cases do
         assert_close(apply(Nx, op, [ev(t), ev(i), ev(u), o]), apply(Nx, op, [t, i, u, o]))
+      end
+    end
+  end
+
+  describe "scalar (0-dim) tensors" do
+    test "round-trip through Evision.Backend.from_binary across dtypes" do
+      for t <- [Nx.tensor(10), Nx.tensor(-3, type: :s32), Nx.tensor(2.5, type: :f32), Nx.tensor(7, type: :u64)] do
+        assert_same(ev(t), t)
       end
     end
   end
