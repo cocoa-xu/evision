@@ -7,6 +7,7 @@ defmodule Mix.Tasks.Evision.Backend.Bench do
       mix evision.backend.bench
       mix evision.backend.bench --profile smoke --output /tmp/evision-backend.json
       mix evision.backend.bench --only conv,reduce --iterations 10 --warmup 3
+      ENABLE_TORCHX_FOR_BENCHMARKING=true mix evision.backend.bench --profile smoke
 
   Options:
 
@@ -19,12 +20,14 @@ defmodule Mix.Tasks.Evision.Backend.Bench do
     * `--no-verify` - skip the correctness check before measuring.
 
   Timings include output materialization to keep the measured work eager and comparable.
+  Set `ENABLE_TORCHX_FOR_BENCHMARKING=true` to include Torchx.Backend timings.
   """
 
   use Mix.Task
 
   @requirements ["app.start"]
   @default_output "benchmarks/evision_backend/latest.json"
+  @torchx_env "ENABLE_TORCHX_FOR_BENCHMARKING"
   @switches [
     output: :string,
     profile: :string,
@@ -55,6 +58,7 @@ defmodule Mix.Tasks.Evision.Backend.Bench do
     warmup = Keyword.get(opts, :warmup, config.warmup)
     iterations = Keyword.get(opts, :iterations, config.iterations)
     verify? = not Keyword.get(opts, :no_verify, false)
+    comparison_backend = comparison_backend()
 
     validate_count!("warmup", warmup, 0)
     validate_count!("iterations", iterations, 1)
@@ -71,7 +75,7 @@ defmodule Mix.Tasks.Evision.Backend.Bench do
     if Keyword.get(opts, :list, false) do
       list_cases(cases)
     else
-      report = run_suite(cases, profile, output, warmup, iterations, verify?)
+      report = run_suite(cases, profile, output, warmup, iterations, verify?, comparison_backend)
       File.mkdir_p!(Path.dirname(output))
       File.write!(output, [encode_json(report), "\n"])
       print_summary(report)
@@ -79,11 +83,13 @@ defmodule Mix.Tasks.Evision.Backend.Bench do
     end
   end
 
-  defp run_suite(cases, profile, output, warmup, iterations, verify?) do
+  defp run_suite(cases, profile, output, warmup, iterations, verify?, comparison_backend) do
     metadata = %{
+      "backend" => "Evision.Backend",
+      "comparison_backend" => comparison_backend_name(comparison_backend),
+      "comparison_env" => @torchx_env,
       "elixir" => System.version(),
       "evision" => application_version(:evision),
-      "backend" => "Evision.Backend",
       "generated_at" => DateTime.utc_now() |> DateTime.truncate(:second) |> DateTime.to_iso8601(),
       "git_revision" => git_revision(),
       "iterations" => iterations,
@@ -94,6 +100,8 @@ defmodule Mix.Tasks.Evision.Backend.Bench do
       "profile" => profile,
       "schedulers_online" => :erlang.system_info(:schedulers_online),
       "system_architecture" => :erlang.system_info(:system_architecture) |> to_string(),
+      "torchx" => if(comparison_backend, do: application_version(:torchx), else: nil),
+      "torchx_comparison_enabled" => comparison_backend != nil,
       "verified" => verify?,
       "warmup" => warmup
     }
@@ -101,30 +109,140 @@ defmodule Mix.Tasks.Evision.Backend.Bench do
     results =
       Enum.map(cases, fn bench ->
         Mix.shell().info("Running #{bench.name}")
-        run_case(bench, warmup, iterations, verify?)
+        run_case(bench, warmup, iterations, verify?, comparison_backend)
       end)
 
     %{"metadata" => metadata, "results" => results}
   end
 
-  defp run_case(bench, warmup, iterations, verify?) do
+  defp run_case(bench, warmup, iterations, verify?, comparison_backend) do
     binary_input = bench.input.()
     evision_input = map_tensors(binary_input, &Nx.backend_copy(&1, Evision.Backend))
+    expected = if verify?, do: bench.run.(binary_input)
 
     if verify? do
-      verify_case!(bench, bench.run.(evision_input), bench.run.(binary_input))
+      verify_case!("Evision.Backend", bench, bench.run.(evision_input), expected)
     end
 
     evision_stats =
       measure(fn -> bench.run.(evision_input) |> materialize() end, warmup, iterations)
 
-    %{
+    result = %{
       "category" => bench.category,
       "details" => bench.details,
       "evision_backend" => evision_stats,
       "name" => bench.name,
       "verification" => if(verify?, do: "passed", else: "skipped")
     }
+
+    case maybe_measure_comparison_backend(
+           comparison_backend,
+           bench,
+           binary_input,
+           expected,
+           warmup,
+           iterations,
+           verify?
+         ) do
+      nil ->
+        result
+
+      {:ok, torchx_stats} ->
+        result
+        |> Map.put("torchx_backend", torchx_stats)
+        |> Map.put(
+          "evision_to_torchx_median_ratio",
+          ratio(evision_stats["median_us"], torchx_stats["median_us"])
+        )
+
+      {:error, error} ->
+        Map.put(result, "torchx_backend", error)
+    end
+  end
+
+  defp comparison_backend do
+    if System.get_env(@torchx_env) == "true" do
+      ensure_torchx_backend!()
+    end
+  end
+
+  defp ensure_torchx_backend! do
+    unless Code.ensure_loaded?(Torchx.Backend) do
+      Mix.raise(
+        "Torchx benchmarking was requested, but Torchx.Backend is not available. " <>
+          "Run `#{@torchx_env}=true MIX_ENV=test mix deps.get` and retry."
+      )
+    end
+
+    case Application.ensure_all_started(:torchx) do
+      {:ok, _apps} ->
+        Torchx.Backend
+
+      {:error, reason} ->
+        Mix.raise(
+          "Torchx benchmarking was requested, but :torchx could not start: #{inspect(reason)}"
+        )
+    end
+  end
+
+  defp comparison_backend_name(nil), do: nil
+  defp comparison_backend_name(Torchx.Backend), do: "Torchx.Backend"
+
+  defp maybe_measure_comparison_backend(
+         nil,
+         _bench,
+         _binary_input,
+         _expected,
+         _warmup,
+         _iterations,
+         _verify?
+       ) do
+    nil
+  end
+
+  defp maybe_measure_comparison_backend(
+         backend,
+         bench,
+         binary_input,
+         expected,
+         warmup,
+         iterations,
+         verify?
+       ) do
+    try do
+      comparison_input = map_tensors(binary_input, &Nx.backend_copy(&1, backend))
+
+      if verify? do
+        verify_case!(
+          comparison_backend_name(backend),
+          bench,
+          bench.run.(comparison_input),
+          expected
+        )
+      end
+
+      stats =
+        measure(fn -> bench.run.(comparison_input) |> materialize() end, warmup, iterations)
+        |> Map.put("status", "ok")
+
+      {:ok, stats}
+    rescue
+      exception ->
+        {:error,
+         %{
+           "exception" => exception.__struct__ |> inspect(),
+           "message" => Exception.message(exception),
+           "status" => "error"
+         }}
+    catch
+      kind, reason ->
+        {:error,
+         %{
+           "exception" => to_string(kind),
+           "message" => inspect(reason),
+           "status" => "error"
+         }}
+    end
   end
 
   defp cases(profile) do
@@ -481,6 +599,9 @@ defmodule Mix.Tasks.Evision.Backend.Bench do
 
   defp ns_to_us(ns), do: Float.round(ns / 1000.0, 3)
 
+  defp ratio(_left, right) when right == 0, do: nil
+  defp ratio(left, right), do: Float.round(left / right, 3)
+
   defp materialize(%Nx.Tensor{} = tensor) do
     Nx.to_binary(tensor)
   end
@@ -494,10 +615,13 @@ defmodule Mix.Tasks.Evision.Backend.Bench do
   defp materialize(list) when is_list(list), do: Enum.map(list, &materialize/1)
   defp materialize(value), do: value
 
-  defp verify_case!(bench, got, expected) do
+  defp verify_case!(backend_name, bench, got, expected) do
     case compare(got, expected, Map.get(bench, :atol, 1.0e-4), Map.get(bench, :rtol, 1.0e-4)) do
-      :ok -> :ok
-      {:error, reason} -> Mix.raise("#{bench.name} verification failed: #{reason}")
+      :ok ->
+        :ok
+
+      {:error, reason} ->
+        Mix.raise("#{bench.name} #{backend_name} verification failed: #{reason}")
     end
   end
 
@@ -578,26 +702,69 @@ defmodule Mix.Tasks.Evision.Backend.Bench do
 
   defp print_summary(%{"results" => results}) do
     Mix.shell().info("")
-    Mix.shell().info("case,evision_median_us,evision_p95_us,evision_min_us,evision_mean_us")
+    compare_torchx? = Enum.any?(results, &Map.has_key?(&1, "torchx_backend"))
+
+    header = ["case", "evision_median_us", "evision_p95_us", "evision_min_us", "evision_mean_us"]
+
+    header =
+      if compare_torchx? do
+        header ++
+          [
+            "torchx_status",
+            "torchx_median_us",
+            "torchx_p95_us",
+            "torchx_min_us",
+            "torchx_mean_us",
+            "evision_to_torchx_median_ratio"
+          ]
+      else
+        header
+      end
+
+    Mix.shell().info(Enum.join(header, ","))
 
     Enum.each(results, fn result ->
       stats = result["evision_backend"]
 
-      Mix.shell().info(
-        Enum.join(
-          [
-            result["name"],
-            format_float(stats["median_us"]),
-            format_float(stats["p95_us"]),
-            format_float(stats["min_us"]),
-            format_float(stats["mean_us"])
-          ],
-          ","
-        )
-      )
+      row = [
+        result["name"],
+        format_float(stats["median_us"]),
+        format_float(stats["p95_us"]),
+        format_float(stats["min_us"]),
+        format_float(stats["mean_us"])
+      ]
+
+      row =
+        if compare_torchx? do
+          row ++ format_torchx_summary(result)
+        else
+          row
+        end
+
+      Mix.shell().info(Enum.join(row, ","))
     end)
   end
 
+  defp format_torchx_summary(%{"torchx_backend" => %{"status" => "ok"} = stats} = result) do
+    [
+      "ok",
+      format_float(stats["median_us"]),
+      format_float(stats["p95_us"]),
+      format_float(stats["min_us"]),
+      format_float(stats["mean_us"]),
+      format_float(result["evision_to_torchx_median_ratio"])
+    ]
+  end
+
+  defp format_torchx_summary(%{"torchx_backend" => %{"status" => "error"}}) do
+    ["error", "n/a", "n/a", "n/a", "n/a", "n/a"]
+  end
+
+  defp format_torchx_summary(_result) do
+    ["skipped", "n/a", "n/a", "n/a", "n/a", "n/a"]
+  end
+
+  defp format_float(nil), do: "n/a"
   defp format_float(value) when is_float(value), do: :erlang.float_to_binary(value, decimals: 3)
   defp format_float(value), do: to_string(value)
 

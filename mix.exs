@@ -1344,7 +1344,7 @@ defmodule Evision.MixProject do
       {:castore, "~> 0.1 or ~> 1.0"},
 
       # runtime
-      {:nx, "~> 0.6"},
+      {:nx, "~> 0.12.1"},
 
       # optional
       ## kino: for smart cells and better output in livebook
@@ -1357,7 +1357,15 @@ defmodule Evision.MixProject do
 
       # test
       {:scidata, "~> 0.1", only: :test}
-    ]
+    ] ++ torchx_benchmark_deps()
+  end
+
+  defp torchx_benchmark_deps do
+    if System.get_env("ENABLE_TORCHX_FOR_BENCHMARKING") == "true" do
+      [{:torchx, "~> 0.12.0", only: :test, optional: true}]
+    else
+      []
+    end
   end
 
   defp docs do

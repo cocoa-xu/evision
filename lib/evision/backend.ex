@@ -112,6 +112,25 @@ defmodule Evision.Backend do
   def init(opts), do: opts
 
   @impl true
+  def block(%Nx.Block.LogicalNot{}, out, [tensor], _fun), do: logical_not(out, tensor)
+  def block(%Nx.Block.AllClose{} = opts, out, [a, b], _fun), do: all_close(out, a, b, Map.from_struct(opts))
+  def block(%Nx.Block.CumulativeSum{} = opts, out, [tensor], _fun), do: cumulative_sum(out, tensor, Map.from_struct(opts))
+  def block(%Nx.Block.CumulativeProduct{} = opts, out, [tensor], _fun), do: cumulative_product(out, tensor, Map.from_struct(opts))
+  def block(%Nx.Block.CumulativeMin{} = opts, out, [tensor], _fun), do: cumulative_min(out, tensor, Map.from_struct(opts))
+  def block(%Nx.Block.CumulativeMax{} = opts, out, [tensor], _fun), do: cumulative_max(out, tensor, Map.from_struct(opts))
+  def block(%Nx.Block.Take{} = opts, out, [tensor, indices], _fun), do: take(out, tensor, indices, opts.axis)
+  def block(%Nx.Block.TakeAlongAxis{} = opts, out, [tensor, indices], _fun), do: take_along_axis(out, tensor, indices, opts.axis)
+  def block(%Nx.Block.TopK{} = opts, out, [tensor], _fun), do: top_k(out, tensor, Map.from_struct(opts))
+  def block(%Nx.Block.LinAlg.Cholesky{}, out, [tensor], _fun), do: cholesky(out, tensor)
+  def block(%Nx.Block.LinAlg.Solve{}, out, [a, b], _fun), do: solve(out, a, b)
+  def block(%Nx.Block.LinAlg.QR{} = opts, out, [tensor], _fun), do: qr(out, tensor, Map.from_struct(opts))
+  def block(%Nx.Block.LinAlg.Eigh{} = opts, out, [tensor], _fun), do: eigh(out, tensor, Map.from_struct(opts))
+  def block(%Nx.Block.LinAlg.SVD{} = opts, out, [tensor], _fun), do: svd(out, tensor, Map.from_struct(opts))
+  def block(%Nx.Block.LinAlg.LU{}, out, [tensor], _fun), do: lu(out, tensor, [])
+  def block(%Nx.Block.LinAlg.Determinant{}, out, [tensor], _fun), do: determinant(out, tensor)
+  def block(struct, _output, args, fun), do: apply(fun, [struct | args])
+
+  @impl true
   @spec backend_copy(Nx.Tensor.t(), atom, any) :: Nx.Tensor.t()
   def backend_copy(tensor, Nx.Tensor, opts) do
     backend_copy(tensor, Nx.BinaryBackend, opts)
@@ -863,16 +882,12 @@ defmodule Evision.Backend do
   @scan_min 2
   @scan_max 3
 
-  @impl true
   def cumulative_sum(out, tensor, opts), do: cumulative(out, tensor, opts, @scan_sum)
 
-  @impl true
   def cumulative_product(out, tensor, opts), do: cumulative(out, tensor, opts, @scan_product)
 
-  @impl true
   def cumulative_min(out, tensor, opts), do: cumulative(out, tensor, opts, @scan_min)
 
-  @impl true
   def cumulative_max(out, tensor, opts), do: cumulative(out, tensor, opts, @scan_max)
 
   # Prefix scan along `axis` (output keeps the input shape and type). Half floats
@@ -1054,7 +1069,6 @@ defmodule Evision.Backend do
   @impl true
   def is_infinity(out, tensor), do: predicate(out, tensor, @pred_is_infinity)
 
-  @impl true
   def logical_not(out, tensor), do: predicate(out, tensor, @pred_is_zero)
 
   # Elementwise predicate -> u8. f16/bf16 widen to f32 (the NIF covers only real C types).
@@ -1107,7 +1121,6 @@ defmodule Evision.Backend do
   # fallback is shadowed by the catch-all, so it must be built here). Scalars go second
   # in multiply (Evision's scalar-first multiply path rejects constants), and the
   # `select(nan, 1, inf)` over {0,1} masks is written as logical_or.
-  @impl true
   def all_close(_out, a, b, opts) do
     atol = opts[:atol]
     rtol = opts[:rtol]
@@ -1244,7 +1257,6 @@ defmodule Evision.Backend do
     |> elem(0)
   end
 
-  @impl true
   def take_along_axis(%T{shape: out_shape} = out, %T{shape: shape} = tensor, indices, axis) do
     idx = as_mat_type(from_nx(indices), {:s, 64})
 
@@ -1257,7 +1269,6 @@ defmodule Evision.Backend do
 
   # top_k is optional (the fallback is shadowed by the catch-all), so it is built here
   # from argsort + take_along_axis + slice along the last axis.
-  @impl true
   def top_k(_out, tensor, opts) do
     axis = Nx.rank(tensor) - 1
     indices = Nx.argsort(tensor, axis: axis, direction: :desc)
@@ -1310,7 +1321,6 @@ defmodule Evision.Backend do
 
   ## Indexing
 
-  @impl true
   def take(%T{shape: out_shape} = out, %T{shape: shape} = tensor, indices, axis) do
     dims = Tuple.to_list(shape)
     outer = dims |> Enum.take(axis) |> Enum.product()
@@ -1403,7 +1413,6 @@ defmodule Evision.Backend do
   # and triangular_solve have no cv factor extraction and go through custom NIFs. All ops
   # compute in f64 (cast back to out.type) and loop over the leading batch dims.
 
-  @impl true
   def determinant(%T{type: out_type, shape: out_shape} = out, %T{shape: shape} = tensor) do
     {_batch, n, _n} = mat_dims(shape)
 
@@ -1425,7 +1434,6 @@ defmodule Evision.Backend do
     end
   end
 
-  @impl true
   def solve(out, %T{shape: a_shape} = a, %T{shape: b_shape} = b) do
     {batch, n, _n} = mat_dims(a_shape)
     {b_trailing, vector?} = rhs_trailing(a_shape, b_shape)
@@ -1445,7 +1453,6 @@ defmodule Evision.Backend do
     end
   end
 
-  @impl true
   def svd({u_out, s_out, vt_out}, %T{shape: shape} = tensor, opts) do
     {_batch, m, n} = mat_dims(shape)
     flags = if opts[:full_matrices?], do: Evision.SVD.Flags.cv_FULL_UV(), else: 0
@@ -1461,7 +1468,6 @@ defmodule Evision.Backend do
      stack_f64(vt_out, Enum.map(results, &elem(&1, 2)))}
   end
 
-  @impl true
   def eigh({vals_out, vecs_out}, %T{shape: shape} = tensor, _opts) do
     {_batch, n, _n} = mat_dims(shape)
 
@@ -1477,7 +1483,6 @@ defmodule Evision.Backend do
      stack_f64(vecs_out, Enum.map(results, &elem(&1, 1)))}
   end
 
-  @impl true
   def cholesky(%T{shape: shape} = out, tensor) do
     {_batch, n, _n} = mat_dims(shape)
 
@@ -1486,7 +1491,6 @@ defmodule Evision.Backend do
     |> then(&stack_f64(out, &1))
   end
 
-  @impl true
   def lu({p_out, l_out, u_out}, %T{shape: shape} = tensor, _opts) do
     {_batch, n, _n} = mat_dims(shape)
     results = split_2d(tensor, n, n) |> Enum.map(&reject_error_tuple(Evision.Mat.lu(&1, n)))
@@ -1496,7 +1500,6 @@ defmodule Evision.Backend do
      stack_f64(u_out, Enum.map(results, &elem(&1, 2)))}
   end
 
-  @impl true
   def qr({q_out, r_out}, %T{shape: shape} = tensor, opts) do
     {_batch, m, n} = mat_dims(shape)
     complete = bool_int(opts[:mode] == :complete)
