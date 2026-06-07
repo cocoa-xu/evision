@@ -1371,6 +1371,41 @@ defmodule Evision.Mat do
   end
 
   @doc false
+  # Sliding-window reduction (Nx.window_sum/max/min/product): op 0=sum 1=product 2=max 3=min.
+  # All dimension/stride/padding/dilation args are flat int lists; result preserves `mat`'s type.
+  def window_reduce(mat, in_dims, out_dims, win_dims, strides, pad_lo, dilations, op) do
+    :evision_nif.mat_window_reduce(
+      src: from_struct(mat),
+      in_dims: in_dims,
+      out_dims: out_dims,
+      win_dims: win_dims,
+      strides: strides,
+      pad_lo: pad_lo,
+      dilations: dilations,
+      op: op
+    )
+    |> Evision.Internal.Structurise.to_struct()
+  end
+
+  @doc false
+  # Select-and-scatter (Nx.window_scatter_max/min): op 0=max 1=min. `source` carries the
+  # per-window values (output type), `init` the fill scalar; result has `mat`'s shape/type.
+  def window_scatter(mat, source, init, in_dims, win_dims, strides, pad_lo, grid, op) do
+    :evision_nif.mat_window_scatter(
+      src: from_struct(mat),
+      source: from_struct(source),
+      init: init,
+      in_dims: in_dims,
+      win_dims: win_dims,
+      strides: strides,
+      pad_lo: pad_lo,
+      grid: grid,
+      op: op
+    )
+    |> Evision.Internal.Structurise.to_struct()
+  end
+
+  @doc false
   # Per-element bit op preserving the integer type (Nx.count_leading_zeros /
   # population_count): op 0 = clz, 1 = popcount.
   def bit_unary(mat, op) do

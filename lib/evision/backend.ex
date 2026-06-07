@@ -1501,6 +1501,96 @@ defmodule Evision.Backend do
     |> then(&stack_f64(out, &1))
   end
 
+  ## Windowed (pooling) ops
+
+  @window_sum 0
+  @window_product 1
+  @window_max 2
+  @window_min 3
+
+  @impl true
+  def window_sum(out, tensor, window_dims, opts),
+    do: window_reduce_op(out, tensor, window_dims, opts, @window_sum)
+
+  @impl true
+  def window_product(out, tensor, window_dims, opts),
+    do: window_reduce_op(out, tensor, window_dims, opts, @window_product)
+
+  @impl true
+  def window_max(out, tensor, window_dims, opts),
+    do: window_reduce_op(out, tensor, window_dims, opts, @window_max)
+
+  @impl true
+  def window_min(out, tensor, window_dims, opts),
+    do: window_reduce_op(out, tensor, window_dims, opts, @window_min)
+
+  # Sliding-window reduction; output keeps the input type (f16/bf16 widened to f32). `out`
+  # already carries the pooled shape; padding/strides/dilations come normalized from Nx.
+  defp window_reduce_op(%T{type: out_type, shape: out_shape} = out, %T{shape: in_shape} = tensor, window_dims, opts, op) do
+    rank = tuple_size(in_shape)
+    work_type = if out_type in @half_types, do: {:f, 32}, else: out_type
+    pad_lo = Enum.map(opts[:padding], &elem(&1, 0))
+
+    from_nx(tensor)
+    |> as_mat_type(work_type)
+    |> Evision.Mat.window_reduce(
+      Tuple.to_list(in_shape),
+      Tuple.to_list(out_shape),
+      Tuple.to_list(window_dims),
+      norm_list(opts[:strides], rank),
+      pad_lo,
+      norm_list(opts[:window_dilations], rank),
+      op
+    )
+    |> reject_error()
+    |> maybe_narrow(work_type, out_type)
+    |> Evision.Mat.reshape(reduce_out_dims(out_shape))
+    |> reject_error()
+    |> to_nx(out)
+  end
+
+  @window_scatter_max 0
+  @window_scatter_min 1
+
+  @impl true
+  def window_scatter_max(out, tensor, source, init_value, window_dims, opts),
+    do: window_scatter(out, tensor, source, init_value, window_dims, opts, @window_scatter_max)
+
+  @impl true
+  def window_scatter_min(out, tensor, source, init_value, window_dims, opts),
+    do: window_scatter(out, tensor, source, init_value, window_dims, opts, @window_scatter_min)
+
+  # Select-and-scatter; input + source cast to the output type (f16/bf16 widened to f32). The
+  # source carries one value per window (its shape is the window grid).
+  defp window_scatter(%T{type: out_type, shape: in_shape} = out, tensor, %T{shape: grid} = source, init_value, window_dims, opts, op) do
+    rank = tuple_size(in_shape)
+    work_type = if out_type in @half_types, do: {:f, 32}, else: out_type
+    pad_lo = Enum.map(opts[:padding], &elem(&1, 0))
+    src = as_mat_type(from_nx(tensor), work_type)
+    vals = as_mat_type(from_nx(source), work_type)
+
+    Evision.Mat.window_scatter(
+      src,
+      vals,
+      to_number(init_value) * 1.0,
+      Tuple.to_list(in_shape),
+      Tuple.to_list(window_dims),
+      norm_list(opts[:strides], rank),
+      pad_lo,
+      Tuple.to_list(grid),
+      op
+    )
+    |> reject_error()
+    |> maybe_narrow(work_type, out_type)
+    |> Evision.Mat.reshape(reduce_out_dims(in_shape))
+    |> reject_error()
+    |> to_nx(out)
+  end
+
+  defp norm_list(v, rank) when is_integer(v), do: List.duplicate(v, rank)
+  defp norm_list(v, rank) when is_nil(v), do: List.duplicate(1, rank)
+  defp norm_list(v, _rank) when is_list(v), do: v
+
   # {product of leading dims, second-last dim, last dim} for a batched matrix shape.
   defp mat_dims(shape) do
     [n, m | lead] = shape |> Tuple.to_list() |> Enum.reverse()

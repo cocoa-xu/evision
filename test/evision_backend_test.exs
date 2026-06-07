@@ -788,4 +788,66 @@ defmodule Evision.Backend.Test do
       close_at(Nx.dot(Nx.dot(b(p), b(l)), b(u)), Nx.as_type(ai, :f64), 1.0e-3)
     end
   end
+
+  describe "window_sum / window_max / window_min / window_product" do
+    test "match Nx.BinaryBackend exactly across windows, strides, padding, dilations, dtypes" do
+      t3 = Nx.tensor([[[1, 2, 3], [4, 5, 6], [7, 8, 9]], [[10, 11, 12], [13, 14, 15], [16, 17, 18]]])
+      t2 = Nx.tensor([[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12]], type: :s32)
+      t1 = Nx.tensor([1, 2, 3, 4, 5], type: :u8)
+
+      cases = [
+        {t3, {1, 2, 1}, []},
+        {t3, {2, 2, 1}, [strides: [1, 2, 3], padding: [{0, 1}, {2, 0}, {1, 1}]]},
+        {t2, {2, 2}, [strides: [1, 2]]},
+        {t2, {2, 2}, [window_dilations: [1, 2]]},
+        {t2, {2, 3}, [padding: :same]},
+        {t1, {2}, []},
+        {t1, {2}, [strides: [2]]}
+      ]
+
+      for op <- [:window_sum, :window_max, :window_min, :window_product], {t, w, o} <- cases do
+        assert_same(apply(Nx, op, [ev(t), w, o]), apply(Nx, op, [t, w, o]))
+      end
+    end
+
+    test "match Nx.BinaryBackend approximately for floats" do
+      t = Nx.tensor([[1.5, -2.0, 3.25, 0.5], [4.0, -1.0, 2.0, 6.0], [0.0, 3.0, -4.0, 1.0]], type: :f32)
+
+      for op <- [:window_sum, :window_max, :window_min, :window_product],
+          o <- [[], [strides: [2, 1]], [padding: :same], [window_dilations: [1, 2]]] do
+        assert_close(apply(Nx, op, [ev(t), {2, 2}, o]), apply(Nx, op, [t, {2, 2}, o]))
+      end
+    end
+  end
+
+  describe "window_scatter_max / window_scatter_min" do
+    test "match Nx.BinaryBackend across windows, strides, and duplicate targets" do
+      t = Nx.tensor([[1, 3, 2, 7, 5, 4], [8, 6, 9, 2, 1, 0], [4, 5, 3, 1, 2, 6], [7, 0, 8, 3, 9, 2]])
+
+      cases = [
+        # non-overlapping {2,3} windows -> grid {2,2}
+        {t, {2, 3}, [strides: [2, 3]], Nx.tensor([[10, 20], [30, 40]])},
+        # overlapping (stride 1) -> grid {3,5}; exercises duplicate-target accumulation
+        {t, {2, 2}, [strides: [1, 1]], Nx.add(Nx.iota({3, 5}, type: :s64), 1)},
+        # stride {2,2} -> grid {2,3}
+        {t, {2, 2}, [strides: [2, 2]], Nx.tensor([[1, 2, 3], [4, 5, 6]])}
+      ]
+
+      for op <- [:window_scatter_max, :window_scatter_min], {tt, w, o, src} <- cases do
+        assert_same(apply(Nx, op, [ev(tt), ev(src), 0, w, o]), apply(Nx, op, [tt, src, 0, w, o]))
+      end
+    end
+
+    test "match Nx.BinaryBackend for floats" do
+      t = Nx.tensor([[1.0, 5.0, 2.0, 8.0], [3.0, 9.0, 4.0, 6.0], [7.0, 0.0, 5.0, 1.0]], type: :f32)
+      src = Nx.tensor([[10.0, 20.0]], type: :f32)
+
+      for op <- [:window_scatter_max, :window_scatter_min] do
+        assert_close(
+          apply(Nx, op, [ev(t), ev(src), 0.0, {3, 2}, [strides: [1, 2]]]),
+          apply(Nx, op, [t, src, 0.0, {3, 2}, [strides: [1, 2]]])
+        )
+      end
+    end
+  end
 end
