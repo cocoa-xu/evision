@@ -20,7 +20,7 @@ jobs:
       DEBIAN_FRONTEND: noninteractive
       OPENCV_VER: "5.0.0"
       MIX_ENV: prod
-      ELIXIR_VERSION: "1.16.1"
+      ELIXIR_VERSION: "1.17.3"
       EVISION_PREFER_PRECOMPILED: "false"
       EVISION_GENERATE_LANG: "erlang,elixir"
     container: ubuntu:20.04

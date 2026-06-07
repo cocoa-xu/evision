@@ -31,7 +31,7 @@ jobs:
           - pair: 
               OTP_VERSION: "25.3"
               NIF_VERSION: "2.16"
-              ELIXIR_VERSION: "1.16.1"
+              ELIXIR_VERSION: "1.17.3"
 
     steps:
       - name: Checkout
@@ -201,12 +201,12 @@ jobs:
               arch: aarch64-linux-musl
               OTP_VERSION: "25.3"
               NIF_VERSION: "2.16"
-              ELIXIR_VERSION: "1.16.1"
+              ELIXIR_VERSION: "1.17.3"
           - pair:
               arch: riscv64-linux-musl
               OTP_VERSION: "25.3"
               NIF_VERSION: "2.16"
-              ELIXIR_VERSION: "1.16.1"
+              ELIXIR_VERSION: "1.17.3"
 
     steps:
       - name: Checkout

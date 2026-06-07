@@ -811,10 +811,10 @@ defmodule Evision.Backend.Test do
         close_at(Nx.dot(Nx.dot(b(p), b(l)), b(u)), a, 1.0e-4)
       end
 
-      # integer input -> P keeps the input dtype (s64), L/U are float
+      # integer input -> P keeps the input dtype, L/U are float
       ai = Nx.tensor([[1, 2, 3], [4, 5, 6], [7, 8, 10]])
       {p, l, u} = Nx.LinAlg.lu(ev(ai))
-      assert Nx.type(p) == {:s, 64}
+      assert Nx.type(p) == Nx.type(ai)
       assert match?({:f, _}, Nx.type(l)) and match?({:f, _}, Nx.type(u))
       close_at(Nx.dot(Nx.dot(b(p), b(l)), b(u)), Nx.as_type(ai, :f64), 1.0e-3)
     end
