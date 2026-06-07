@@ -108,6 +108,10 @@ defmodule Evision.Backend do
   end
 
   @impl true
+  @spec init(keyword()) :: keyword()
+  def init(opts), do: opts
+
+  @impl true
   @spec backend_copy(Nx.Tensor.t(), atom, any) :: Nx.Tensor.t()
   def backend_copy(tensor, Nx.Tensor, opts) do
     backend_copy(tensor, Nx.BinaryBackend, opts)
