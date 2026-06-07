@@ -548,4 +548,37 @@ defmodule Evision.Backend.Test do
       )
     end
   end
+
+  describe "take_along_axis / top_k" do
+    test "take_along_axis matches across axes, ranks, dtypes" do
+      t = Nx.tensor([[1, 2, 3], [4, 5, 6]])
+
+      cases = [
+        {t, Nx.tensor([[0, 1, 1], [1, 0, 0]]), 0},
+        {t, Nx.tensor([[0, 2, 1, 0], [2, 1, 2, 0]]), 1},
+        {Nx.tensor([10, 20, 30, 40]), Nx.tensor([3, 0, 0, 2, 1]), 0},
+        {Nx.iota({2, 3}, type: :f32), Nx.tensor([[0, 0, 0]]), 0}
+      ]
+
+      for {tt, idx, axis} <- cases do
+        assert_same(
+          Nx.take_along_axis(ev(tt), ev(idx), axis: axis),
+          Nx.take_along_axis(tt, idx, axis: axis)
+        )
+      end
+    end
+
+    test "top_k matches Nx.BinaryBackend (values and indices)" do
+      for {t, k} <- [
+            {Nx.tensor([3, 1, 2, 5]), 2},
+            {Nx.tensor([[3, 1, 2, 5], [9, 8, 7, 6]]), 2},
+            {Nx.tensor([[1.5, 4.5, 2.5, 0.5]], type: :f32), 3}
+          ] do
+        {gv, gi} = Nx.top_k(ev(t), k: k)
+        {wv, wi} = Nx.top_k(t, k: k)
+        assert_same(gv, wv)
+        assert_same(gi, wi)
+      end
+    end
+  end
 end

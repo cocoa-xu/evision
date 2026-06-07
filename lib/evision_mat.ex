@@ -1386,6 +1386,20 @@ defmodule Evision.Mat do
     |> Evision.Internal.Structurise.to_struct()
   end
 
+  @doc false
+  # Per-element gather along one axis (Nx.take_along_axis): out has the indices' shape;
+  # each output replaces the `axis` coordinate with the int64 index. Returns [1, n].
+  def take_along_axis(mat, indices, in_dims, out_dims, axis) do
+    :evision_nif.mat_take_along_axis(
+      src: from_struct(mat),
+      indices: from_struct(indices),
+      in_dims: in_dims,
+      out_dims: out_dims,
+      axis: axis
+    )
+    |> Evision.Internal.Structurise.to_struct()
+  end
+
   @doc namespace: :"cv.Mat"
   @spec expm1(maybe_mat_in()) :: maybe_mat_out()
   def expm1(mat) do

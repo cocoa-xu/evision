@@ -39,6 +39,7 @@
 #include "strided_copy.h"
 #include "subtract.h"
 #include "take.h"
+#include "take_along_axis.h"
 #include "to_batched.h"
 #include "to_binary.h"
 #include "transpose.h"

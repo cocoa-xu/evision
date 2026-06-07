@@ -1224,6 +1224,29 @@ defmodule Evision.Backend do
     |> elem(0)
   end
 
+  @impl true
+  def take_along_axis(%T{shape: out_shape} = out, %T{shape: shape} = tensor, indices, axis) do
+    idx = as_mat_type(from_nx(indices), {:s, 64})
+
+    Evision.Mat.take_along_axis(from_nx(tensor), idx, Tuple.to_list(shape), Tuple.to_list(out_shape), axis)
+    |> reject_error()
+    |> Evision.Mat.reshape(reduce_out_dims(out_shape))
+    |> reject_error()
+    |> to_nx(out)
+  end
+
+  # top_k is optional (the fallback is shadowed by the catch-all), so it is built here
+  # from argsort + take_along_axis + slice along the last axis.
+  @impl true
+  def top_k(_out, tensor, opts) do
+    axis = Nx.rank(tensor) - 1
+    indices = Nx.argsort(tensor, axis: axis, direction: :desc)
+    values = Nx.take_along_axis(tensor, indices, axis: axis)
+    k = opts[:k]
+
+    {Nx.slice_along_axis(values, 0, k, axis: axis), Nx.slice_along_axis(indices, 0, k, axis: axis)}
+  end
+
   # Reduce `op` (0 sum, 1 product) over `opts[:axes]` (nil = all axes). Cast to the
   # accumulator type so integer promotion (s64/u64) and f64 float accumulation match
   # Nx, move the reduced axes to the end, flatten to [keep, reduce], reduce per row.
