@@ -96,6 +96,16 @@ version. Two headline changes land together:
   contrib `xstereo` module. The converter is now gated on `HAVE_OPENCV_XSTEREO`,
   so a build without contrib modules no longer references the absent
   `cv::stereo` namespace.
+- Nerves 32-bit ARM targets (rpi/rpi0/rpi2/rpi3/rpi4) build again with OpenCV
+  5.0.0. Cortex-A53/A72 boards report an arm64/aarch64 processor name while
+  building 32-bit armv7hf, so OpenCV's bundled MLAS selected its AArch64 `.S`
+  GEMM kernels, which the 32-bit assembler rejects (`no such instruction:
+  'dup v16.4s'`). MLAS is now skipped when the target claims ARM64 but has a
+  32-bit ABI, and the DNN module falls back to its built-in SGEMM.
+- Building on FreeBSD compiles again with OpenCV 5.0.0. Intel IPP ICV's
+  vendored safestring header declares a 3-argument `memset_s` that conflicts
+  with FreeBSD libc's C11 4-argument `memset_s`, so the optional IPP
+  accelerator is now disabled on FreeBSD.
 
 ### Performance
 
