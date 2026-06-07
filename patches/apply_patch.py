@@ -309,6 +309,57 @@ endif()
         print(f"warning: anchor not found in {mlas_cmake}, skipping patch_mlas_skip_msvc")
 
 
+def patch_mlas_skip_arm32(opencv_version: str, opencv_src_root: str):
+    """Skip the vendored MLAS subdirectory on 32-bit ARM targets.
+
+    MLAS picks its assembly kernels from CMAKE_SYSTEM_PROCESSOR. Nerves 32-bit
+    ARM targets (rpi/rpi0/rpi2/rpi3/rpi4 — Cortex-A53/A72 built as armv7hf)
+    report an arm64/aarch64 processor name, so MLAS sets MLAS_ARM64 and pulls in
+    lib/aarch64/*.S, but the toolchain is a 32-bit AArch32 assembler that rejects
+    the AArch64 mnemonics (``no such instruction: 'dup v16.4s'``). Skip MLAS when
+    the target claims ARM64 yet has a 32-bit ABI; the DNN module falls back to
+    its built-in SGEMM. Mirrors patch_mlas_skip_msvc.
+    """
+    mlas_cmake = (
+        Path(opencv_src_root) / '3rdparty' / 'mlas' / 'CMakeLists.txt'
+    )
+    if not mlas_cmake.exists():
+        return
+
+    anchor = 'include(CheckLanguage)'
+    insertion = """\
+if(MLAS_ARM64 AND CMAKE_SIZEOF_VOID_P EQUAL 4)
+  set(OPENCV_DNN_MLAS_SKIP_REASON
+    "MLAS AArch64 .S kernels need a 64-bit ABI; target is 32-bit ARM"
+    CACHE INTERNAL "" FORCE)
+  message(STATUS "MLAS: skipped on 32-bit ARM (DNN will use its built-in SGEMM)")
+  return()
+endif()
+
+"""
+
+    with open(mlas_cmake, 'r') as f:
+        original = f.read()
+    if 'MLAS: skipped on 32-bit ARM' in original:
+        return
+
+    fixed = StringIO()
+    patched = False
+    for line in original.splitlines(keepends=True):
+        if not patched and line.strip() == anchor:
+            fixed.write(insertion)
+            patched = True
+        fixed.write(line)
+
+    if patched:
+        with open(mlas_cmake, 'w') as dst:
+            dst.truncate(0)
+            dst.write(fixed.getvalue())
+        print("[+] patched 3rdparty/mlas/CMakeLists.txt to skip MLAS on 32-bit ARM")
+    else:
+        print(f"warning: anchor not found in {mlas_cmake}, skipping patch_mlas_skip_arm32")
+
+
 def patch_cmake_minimum_version(opencv_version: str, opencv_src_root: str):
     # cmake/OpenCVGenPkgconfig.cmake uses cmake_minimum_required(VERSION 2.8.12.2)
     # which fails with CMake 4.x that removed compat with < 3.5
@@ -338,6 +389,7 @@ patches = [
     patch_imread,
     patch_cmake_minimum_version,
     patch_mlas_skip_msvc,
+    patch_mlas_skip_arm32,
     patch_ocr_tesseract_run_with_components
 ]
 
