@@ -74,7 +74,7 @@ jobs:
       MIX_ENV: test
       OPENCV_VER: "5.0.0"
       OTP_VERSION: "26.2.2"
-      ELIXIR_VERSION: "1.16.1"
+      ELIXIR_VERSION: "1.17.3"
       EVISION_PREFER_PRECOMPILED: "false"
     steps:
       - name: Checkout

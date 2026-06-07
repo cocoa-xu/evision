@@ -55,7 +55,7 @@ cd ./cache/otp
 tar -xzf "otp-v${OTP_VERSION}-${TRIPLET}.tar.gz"
 cd "${ROOT_DIR}"
 
-ELIXIR_VERSION="1.16.2"
+ELIXIR_VERSION="1.17.3"
 export PATH="$(pwd)/./cache/otp/usr/local/bin:$(pwd)/./cache/elixir/elixir-${ELIXIR_VERSION}/bin:${PATH}"
 export ERL_ROOTDIR="$(pwd)/./cache/otp/usr/local/lib/erlang"
 mkdir -p ./cache/elixir
