@@ -56,6 +56,9 @@ lib-4.11.0
 src-4.11.0
 .golden/
 
+# benchmarks
+/benchmarks/evision_backend/
+
 # nvcc
 c_src/modules/evision_cuda.o
 
