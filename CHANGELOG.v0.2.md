@@ -1,6 +1,7 @@
 # Changelog
 
-## Unreleased
+## v0.2.17 (2026-05-27)
+[Browse the Repository](https://github.com/cocoa-xu/evision/tree/v0.2.17) | [Released Assets](https://github.com/cocoa-xu/evision/releases/tag/v0.2.17)
 
 ### Fixed
 
