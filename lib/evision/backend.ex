@@ -1119,6 +1119,39 @@ defmodule Evision.Backend do
     end
   end
 
+  ## Elementwise binary (no cv primitive)
+
+  @bop_atan2 0
+  @bop_pow 1
+  @bop_quotient 2
+  @bop_remainder 3
+
+  @impl true
+  def atan2(out, l, r), do: binary_math(out, l, r, @bop_atan2)
+
+  @impl true
+  def pow(out, l, r), do: binary_math(out, l, r, @bop_pow)
+
+  @impl true
+  def quotient(out, l, r), do: binary_math(out, l, r, @bop_quotient)
+
+  @impl true
+  def remainder(out, l, r), do: binary_math(out, l, r, @bop_remainder)
+
+  # Broadcast l and r to the output shape and cast both to the output type (f16/bf16
+  # widened to f32 since the NIF covers only real C types), then narrow the result back.
+  defp binary_math(%T{type: out_type, shape: shape} = out, l, r, op) do
+    work_type = if out_type in @half_types, do: {:f, 32}, else: out_type
+    {l, r} = enforce_same_shape(l, r, shape)
+    lm = as_mat_type(from_nx(l), work_type)
+    rm = as_mat_type(from_nx(r), work_type)
+
+    Evision.Mat.binop(lm, rm, op)
+    |> reject_error()
+    |> maybe_narrow(work_type, out_type)
+    |> to_nx(out)
+  end
+
   # Reduce `op` (0 sum, 1 product) over `opts[:axes]` (nil = all axes). Cast to the
   # accumulator type so integer promotion (s64/u64) and f64 float accumulation match
   # Nx, move the reduced axes to the end, flatten to [keep, reduce], reduce per row.

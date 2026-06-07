@@ -426,4 +426,45 @@ defmodule Evision.Backend.Test do
       end
     end
   end
+
+  describe "atan2 / pow / quotient / remainder" do
+    test "atan2 matches approximately (float out, incl. integer inputs)" do
+      for {l, r} <- [
+            {Nx.tensor([1.0, -1.0, 0.0, 2.5]), Nx.tensor([1.0, 1.0, -1.0, 0.5])},
+            {Nx.tensor([1, 2, 3]), Nx.tensor([4, 5, 6])}
+          ] do
+        assert_close(Nx.atan2(ev(l), ev(r)), Nx.atan2(l, r))
+      end
+    end
+
+    test "pow matches (integer modular, float approximate)" do
+      for {l, r} <- [
+            {Nx.tensor([2, 3, 4]), Nx.tensor([3, 2, 1])},
+            {Nx.tensor([2, 5], type: :u8), Nx.tensor([10, 2], type: :u8)},
+            {Nx.tensor([-2, 3], type: :s32), Nx.tensor([3, 3], type: :s32)}
+          ] do
+        assert_same(Nx.pow(ev(l), ev(r)), Nx.pow(l, r))
+      end
+
+      for {l, r} <- [{Nx.tensor([2.0, 9.0, 4.0]), Nx.tensor([0.5, 0.5, 2.0])}] do
+        assert_close(Nx.pow(ev(l), ev(r)), Nx.pow(l, r))
+      end
+    end
+
+    test "quotient/remainder match exactly across integer signs" do
+      for {l, r} <- [
+            {Nx.tensor([7, -7, 8, -8]), Nx.tensor([2, 2, 3, 3])},
+            {Nx.tensor([10, 20], type: :u8), Nx.tensor([3, 7], type: :u8)}
+          ] do
+        assert_same(Nx.quotient(ev(l), ev(r)), Nx.quotient(l, r))
+        assert_same(Nx.remainder(ev(l), ev(r)), Nx.remainder(l, r))
+      end
+    end
+
+    test "remainder matches approximately for floats" do
+      for {l, r} <- [{Nx.tensor([5.5, -5.5, 7.0]), Nx.tensor([2.0, 2.0, 3.0])}] do
+        assert_close(Nx.remainder(ev(l), ev(r)), Nx.remainder(l, r))
+      end
+    end
+  end
 end

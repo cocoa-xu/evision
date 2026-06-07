@@ -1350,6 +1350,14 @@ defmodule Evision.Mat do
     |> Evision.Internal.Structurise.to_struct()
   end
 
+  @doc false
+  # Elementwise binary op with no cv primitive (Nx.atan2/pow/quotient/remainder):
+  # op 0=atan2, 1=pow, 2=quotient, 3=remainder. `l` and `r` share the output type.
+  def binop(l, r, op) do
+    :evision_nif.mat_binop(l: from_struct(l), r: from_struct(r), op: op)
+    |> Evision.Internal.Structurise.to_struct()
+  end
+
   @doc namespace: :"cv.Mat"
   @spec expm1(maybe_mat_in()) :: maybe_mat_out()
   def expm1(mat) do

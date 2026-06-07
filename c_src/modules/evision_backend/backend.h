@@ -3,6 +3,7 @@
 
 #include "abs.h"
 #include "add.h"
+#include "binop.h"
 #include "bit_unary.h"
 #include "bitwise_and.h"
 #include "bitwise_not.h"
