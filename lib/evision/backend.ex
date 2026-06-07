@@ -1278,28 +1278,44 @@ defmodule Evision.Backend do
     {Nx.slice_along_axis(values, 0, k, axis: axis), Nx.slice_along_axis(indices, 0, k, axis: axis)}
   end
 
-  # Reduce `op` (0 sum, 1 product) over `opts[:axes]` (nil = all axes). Cast to the
-  # accumulator type so integer promotion (s64/u64) and f64 float accumulation match
-  # Nx, move the reduced axes to the end, flatten to [keep, reduce], reduce per row.
+  # Reduce `op` (0 sum, 1 product, 2 max, 3 min) over `opts[:axes]` (nil = all axes).
+  # The reduce NIF reads the native dtype and promotes per element (sum/product use a
+  # s64/u64/f64 accumulator to match Nx), so no input cast is needed. The reduced axes
+  # are flattened against the kept axes: trailing -> reduce each row, leading -> reduce
+  # each column (no transpose), interleaved -> transpose them last then reduce per row.
   defp reduce_aggregate(%T{type: out_type, shape: out_shape} = out, %T{shape: shape} = tensor, opts, op) do
     rank = tuple_size(shape)
     axes = all_axes(rank)
     reduce_axes = Enum.sort(opts[:axes] || axes)
-    perm = (axes -- reduce_axes) ++ reduce_axes
-    keep_size = sizes_product(shape, axes -- reduce_axes)
+    keep_axes = axes -- reduce_axes
+    keep_size = sizes_product(shape, keep_axes)
     reduce_size = sizes_product(shape, reduce_axes)
+    mat = from_nx(tensor)
 
-    mat = as_mat_type(from_nx(tensor), accumulator_type(out_type))
+    reduced =
+      cond do
+        keep_axes ++ reduce_axes == axes ->
+          mat
+          |> Evision.Mat.reshape([keep_size, reduce_size])
+          |> reject_error()
+          |> Evision.Mat.reduce_rows(op)
 
-    transposed =
-      if perm == axes,
-        do: mat,
-        else: reject_error(Evision.Mat.transpose(mat, perm, as_shape: shape))
+        reduce_axes ++ keep_axes == axes ->
+          mat
+          |> Evision.Mat.reshape([reduce_size, keep_size])
+          |> reject_error()
+          |> Evision.Mat.reduce_cols(op)
 
-    transposed
-    |> Evision.Mat.reshape([keep_size, reduce_size])
-    |> reject_error()
-    |> Evision.Mat.reduce_rows(op)
+        true ->
+          mat
+          |> Evision.Mat.transpose(keep_axes ++ reduce_axes, as_shape: shape)
+          |> reject_error()
+          |> Evision.Mat.reshape([keep_size, reduce_size])
+          |> reject_error()
+          |> Evision.Mat.reduce_rows(op)
+      end
+
+    reduced
     |> reject_error()
     |> as_mat_type(out_type)
     |> Evision.Mat.reshape(reduce_out_dims(out_shape))
@@ -1311,10 +1327,6 @@ defmodule Evision.Backend do
   defp all_axes(rank), do: Enum.to_list(0..(rank - 1))
 
   defp sizes_product(shape, axes), do: Enum.reduce(axes, 1, &(elem(shape, &1) * &2))
-
-  defp accumulator_type({:u, _}), do: {:u, 64}
-  defp accumulator_type({:s, _}), do: {:s, 64}
-  defp accumulator_type(_float), do: {:f, 64}
 
   defp reduce_out_dims({}), do: [1]
   defp reduce_out_dims(shape), do: Tuple.to_list(shape)
@@ -1640,7 +1652,8 @@ defmodule Evision.Backend do
       norm_list(opts[:input_dilation], d),
       norm_list(opts[:kernel_dilation], d),
       opts[:feature_group_size],
-      opts[:batch_group_size]
+      opts[:batch_group_size],
+      conv_im2row_budget()
     )
     |> reject_error()
     |> Evision.Mat.reshape(Tuple.to_list(canon_shape))
@@ -1650,6 +1663,14 @@ defmodule Evision.Backend do
     |> Nx.as_type(out_type)
     |> from_nx()
     |> to_nx(out)
+  end
+
+  # Memory budget (bytes) for the conv im2row fast-path buffers; 0 = NIF default. The
+  # process-local override is set per-test (each ExUnit test runs in its own process, so
+  # it never leaks across parallel tests); the application config is the global knob.
+  defp conv_im2row_budget do
+    Process.get(:evision_conv_im2row_budget_bytes) ||
+      Application.get_env(:evision, :conv_im2row_budget_bytes, 0)
   end
 
   # {product of leading dims, second-last dim, last dim} for a batched matrix shape.
