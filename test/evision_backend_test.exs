@@ -53,6 +53,56 @@ defmodule Evision.Backend.Test do
     end
   end
 
+  describe "input immutability (shared-buffer safety)" do
+    # Read-only NIFs share a cv-owned source buffer instead of deep-copying it, so a
+    # reshape (or any internal pipeline that reshapes) can alias its input. These
+    # assert that operating on a derived tensor never writes back into the original.
+    for type <- [:f32, :s32] do
+      test "ops on a reshape do not mutate the original (#{type})" do
+        a = Nx.iota({32, 32}, type: unquote(type)) |> Nx.add(1) |> ev()
+        a0 = Nx.to_binary(a)
+
+        b = Nx.reshape(a, {1024})
+        b0 = Nx.to_binary(b)
+
+        _ = Nx.add(b, 7)
+        _ = Nx.negate(b)
+        _ = Nx.sum(b)
+        _ = Nx.sort(Nx.reshape(b, {32, 32}), axis: 1)
+
+        assert Nx.to_binary(a) == a0
+        assert Nx.to_binary(b) == b0
+      end
+
+      test "reduction/scan/sort pipelines leave their input intact (#{type})" do
+        a = Nx.iota({24, 48}, type: unquote(type)) |> Nx.add(1) |> ev()
+        a0 = Nx.to_binary(a)
+
+        _ = Nx.sum(a, axes: [1])
+        _ = Nx.reduce_max(a, axes: [0])
+        _ = Nx.cumulative_sum(a, axis: 1)
+        _ = Nx.sort(a, axis: 1)
+
+        assert Nx.to_binary(a) == a0
+      end
+    end
+
+    test "multiple live aliases stay independent under GC" do
+      a = Nx.iota({64, 64}, type: :f32) |> Nx.add(1.0) |> ev()
+      a0 = Nx.to_binary(a)
+
+      Enum.each(1..100, fn i ->
+        view = Nx.reshape(a, {4096})
+        _ = Nx.add(view, i * 1.0)
+        _ = Nx.sum(view)
+        if rem(i, 10) == 0, do: :erlang.garbage_collect()
+      end)
+
+      :erlang.garbage_collect()
+      assert Nx.to_binary(a) == a0
+    end
+  end
+
   describe "argmax/argmin (index family)" do
     test "match Nx.BinaryBackend across axes, ranks, tie-breaks, and dtypes" do
       tensors = [
@@ -1071,6 +1121,33 @@ defmodule Evision.Backend.Test do
       opts = [feature_group_size: 2, padding: :same, strides: [1, 2], kernel_dilation: [1, 2]]
 
       assert_close(Nx.conv(ev(img), ev(kernel), opts), Nx.conv(img, kernel, opts))
+    end
+
+    test "im2row fast path tiles correctly across tile and batch boundaries" do
+      # A tiny memory budget forces the im2row path into many tiles (here ~1-4 output
+      # rows each), so tiles split mid-batch and the last tile is partial -- exercising
+      # the boundary arithmetic that a single-tile conv never hits. The override is
+      # process-local, so it never leaks into other (parallel) tests.
+      Process.put(:evision_conv_im2row_budget_bytes, 256)
+
+      img2 = Nx.iota({2, 3, 5, 5}, type: :f32)
+      k2 = Nx.iota({4, 3, 2, 2}, type: :f32)
+      imgd = Nx.iota({1, 4, 5, 5}, type: :f32)
+      kd = Nx.iota({4, 1, 3, 3}, type: :f32)
+      fimg = Nx.iota({2, 4, 16, 16}, type: :f32) |> Nx.divide(100.0)
+      fk = Nx.iota({4, 2, 3, 3}, type: :f32) |> Nx.divide(50.0)
+
+      cases = [
+        {img2, k2, [strides: [2, 1]]},
+        {img2, k2, [padding: :same]},
+        {img2, k2, [padding: :same, kernel_dilation: [2, 1]]},
+        {imgd, kd, [feature_group_size: 4]},
+        {fimg, fk, [feature_group_size: 2, padding: :same, strides: [1, 2], kernel_dilation: [1, 2]]}
+      ]
+
+      for {i, k, o} <- cases do
+        assert_close(Nx.conv(ev(i), ev(k), o), Nx.conv(i, k, o))
+      end
     end
   end
 end
