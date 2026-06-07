@@ -9,7 +9,8 @@
 #include "parallel.h"
 
 // Elementwise integer shift (Nx.left_shift / right_shift). `l` and `r` share the
-// output type and shape. op 0 = left (<<), 1 = right (>>). Left shifts compute in
+// output type and either the same shape or one is a 1-element scalar, broadcast
+// (stride 0) over the other. op 0 = left (<<), 1 = right (>>). Left shifts compute in
 // the unsigned counterpart (modular, no signed-overflow UB); right shifts use the
 // native >> (arithmetic for signed, logical for unsigned). A shift >= bit width
 // yields 0, except a right shift of a negative signed value yields -1 -- matching
@@ -20,12 +21,13 @@ static void evision_shift(const cv::Mat &l, const cv::Mat &r, cv::Mat &dst, int 
     const T *lp = (const T *)l.data;
     const T *rp = (const T *)r.data;
     T *dp = (T *)dst.data;
-    size_t n = l.total();
+    size_t n = dst.total();
+    size_t ls = (l.total() == 1) ? 0 : 1, rs = (r.total() == 1) ? 0 : 1;
     uint64_t width = (uint64_t)(sizeof(T) * 8);
     evision_parallel_for((int64_t)n, (int64_t)n, EVISION_PARALLEL_SIMPLE_MIN_WORK, [&](int64_t begin, int64_t end) {
         for (int64_t i = begin; i < end; i++) {
-            T a = lp[(size_t)i];
-            T b = rp[(size_t)i];
+            T a = lp[(size_t)i * ls];
+            T b = rp[(size_t)i * rs];
             if (op == 0) {
                 dp[(size_t)i] = ((uint64_t)b >= width) ? (T)0 : (T)((U)a << b);
             } else if ((uint64_t)b >= width) {
@@ -55,7 +57,7 @@ static ERL_NIF_TERM evision_cv_mat_shift(ErlNifEnv *env, int argc, const ERL_NIF
             evision_to_safe(env, evision_get_kw(env, erl_terms, "op"), op, ArgInfo("op", 0))) {
             Mat lc = l.isContinuous() ? l : l.clone();
             Mat rc = r.isContinuous() ? r : r.clone();
-            Mat dst = lc.clone();
+            Mat dst = (rc.total() > lc.total() ? rc : lc).clone();
             switch (dst.depth()) {
                 case CV_8U:  evision_shift<uint8_t>(lc, rc, dst, op); break;
                 case CV_8S:  evision_shift<int8_t>(lc, rc, dst, op); break;

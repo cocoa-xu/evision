@@ -428,6 +428,67 @@ defmodule Evision.Backend.Test do
         assert_same(apply(Nx, op, [s, ev(t)]), apply(Nx, op, [s, t]))
       end
     end
+
+    # atan2/pow/quotient/remainder go through mat_binop, which broadcasts a
+    # 1-element operand (stride 0) rather than materializing it.
+    test "atan2 / pow / remainder by a float scalar match Nx.BinaryBackend" do
+      for t <- [Nx.tensor([1.0, 2.0, 3.0], type: :f32)],
+          s <- [2.0, 0.5],
+          op <- [:atan2, :pow, :remainder] do
+        assert_close(apply(Nx, op, [ev(t), s]), apply(Nx, op, [t, s]))
+        assert_close(apply(Nx, op, [s, ev(t)]), apply(Nx, op, [s, t]))
+      end
+    end
+
+    test "pow / quotient / remainder by an integer scalar match Nx.BinaryBackend exactly" do
+      for t <- [Nx.tensor([7, 8, 9], type: :s32)],
+          s <- [2, 3],
+          op <- [:pow, :quotient, :remainder] do
+        assert_same(apply(Nx, op, [ev(t), s]), apply(Nx, op, [t, s]))
+        assert_same(apply(Nx, op, [s, ev(t)]), apply(Nx, op, [s, t]))
+      end
+    end
+
+    test "left_shift / right_shift by a scalar match Nx.BinaryBackend" do
+      for t <- [Nx.tensor([1, 2, 3, 4], type: :s32)],
+          s <- [1, 2],
+          op <- [:left_shift, :right_shift] do
+        assert_same(apply(Nx, op, [ev(t), s]), apply(Nx, op, [t, s]))
+        assert_same(apply(Nx, op, [s, ev(t)]), apply(Nx, op, [s, t]))
+      end
+    end
+  end
+
+  describe "logical_and / or / xor (truthiness)" do
+    test "match Nx.BinaryBackend for non-boolean inputs" do
+      pairs = [
+        {Nx.tensor([2, 4, 6], type: :s32), Nx.tensor([1, 0, 1], type: :s32)},
+        {Nx.tensor([0, 1, 2], type: :s32), Nx.tensor([3, 0, 0], type: :s32)},
+        {Nx.tensor([0.0, 1.5, 0.0], type: :f32), Nx.tensor([2.0, 0.0, 0.0], type: :f32)}
+      ]
+
+      for {a, b} <- pairs, op <- [:logical_and, :logical_or, :logical_xor] do
+        assert_same(apply(Nx, op, [ev(a), ev(b)]), apply(Nx, op, [a, b]))
+      end
+    end
+
+    test "match Nx.BinaryBackend with scalar operands" do
+      for t <- [Nx.tensor([0, 2, 0, 5], type: :s32)],
+          s <- [0, 3],
+          op <- [:logical_and, :logical_or, :logical_xor] do
+        assert_same(apply(Nx, op, [ev(t), s]), apply(Nx, op, [t, s]))
+        assert_same(apply(Nx, op, [s, ev(t)]), apply(Nx, op, [s, t]))
+      end
+    end
+
+    test "broadcast non-scalar operands like Nx.BinaryBackend" do
+      a = Nx.tensor([[1], [0], [2]], type: :s32)
+      b = Nx.tensor([0, 1, 3], type: :s32)
+
+      for op <- [:logical_and, :logical_or, :logical_xor] do
+        assert_same(apply(Nx, op, [ev(a), ev(b)]), apply(Nx, op, [a, b]))
+      end
+    end
   end
 
   describe "elementwise broadcasting semantics" do

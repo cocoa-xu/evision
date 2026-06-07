@@ -359,6 +359,13 @@ defmodule Evision.Backend do
   defp align_operands(l, %T{shape: {}} = r, _out_shape), do: {l, float_scalar(r)}
   defp align_operands(l, r, out_shape), do: enforce_same_shape(l, r, out_shape)
 
+  # For NIFs that broadcast a 1-element operand themselves (mat_binop, mat_shift),
+  # a 0-d operand is left untouched; two different non-scalar shapes still need a
+  # materialized broadcast.
+  defp same_shape_unless_scalar(%T{shape: {}} = l, r, _shape), do: {l, r}
+  defp same_shape_unless_scalar(l, %T{shape: {}} = r, _shape), do: {l, r}
+  defp same_shape_unless_scalar(l, r, shape), do: enforce_same_shape(l, r, shape)
+
   defp maybe_cast_type_for_matrix_mul_div(%T{type: {:f, _}}=tensor) do
     from_nx(tensor)
   end
@@ -569,38 +576,21 @@ defmodule Evision.Backend do
     {to_nx(l_mat, %T{l | shape: out_shape}), to_nx(b_mat, %T{r | shape: out_shape})}
   end
 
+  # Nx logical ops are truthiness-based: reduce each operand to a 0/1 mask, then
+  # combine elementwise (min=and, max=or, not_equal=xor). Building on the masked
+  # ops keeps the result correct for any dtype (cv's bitwise `&`/`^` over the raw
+  # values are wrong, e.g. `2 and 1`) and inherits their broadcast + scalar paths.
   @impl true
   @spec logical_and(Nx.Tensor.t(), Nx.Tensor.t(), Nx.Tensor.t()) :: Nx.Tensor.t()
-  def logical_and(%T{shape: out_shape} = out, l, r) do
-    {l, r} = enforce_same_shape(l, r, out_shape)
-    {l, r} = enforce_same_type(l, r)
-    Evision.Mat.logical_and(from_nx(l), from_nx(r))
-    |> reject_error()
-    |> to_nx(out)
-    |> Nx.not_equal(0)
-  end
+  def logical_and(_out, l, r), do: Nx.min(Nx.not_equal(l, 0), Nx.not_equal(r, 0))
 
   @impl true
   @spec logical_or(Nx.Tensor.t(), Nx.Tensor.t(), Nx.Tensor.t()) :: Nx.Tensor.t()
-  def logical_or(%T{shape: out_shape} = out, l, r) do
-    {l, r} = enforce_same_shape(l, r, out_shape)
-    {l, r} = enforce_same_type(l, r)
-    Evision.Mat.logical_or(from_nx(l), from_nx(r))
-    |> reject_error()
-    |> to_nx(out)
-    |> Nx.not_equal(0)
-  end
+  def logical_or(_out, l, r), do: Nx.max(Nx.not_equal(l, 0), Nx.not_equal(r, 0))
 
   @impl true
   @spec logical_xor(Nx.Tensor.t(), Nx.Tensor.t(), Nx.Tensor.t()) :: Nx.Tensor.t()
-  def logical_xor(%T{shape: out_shape} =out, l, r) do
-    {l, r} = enforce_same_shape(l, r, out_shape)
-    {l, r} = enforce_same_type(l, r)
-    Evision.Mat.logical_xor(from_nx(l), from_nx(r))
-    |> reject_error()
-    |> to_nx(out)
-    |> Nx.not_equal(0)
-  end
+  def logical_xor(_out, l, r), do: Nx.not_equal(Nx.not_equal(l, 0), Nx.not_equal(r, 0))
 
   @impl true
   @spec abs(Nx.Tensor.t(), Nx.Tensor.t()) :: Nx.Tensor.t()
@@ -1089,7 +1079,7 @@ defmodule Evision.Backend do
 
   # l and r are broadcast to the output shape and cast to the (integer) output type.
   defp shift(%T{shape: shape, type: type} = out, l, r, op) do
-    {l, r} = enforce_same_shape(l, r, shape)
+    {l, r} = same_shape_unless_scalar(l, r, shape)
     lm = as_mat_type(from_nx(l), type)
     rm = as_mat_type(from_nx(r), type)
     Evision.Mat.shift(lm, rm, op) |> reject_error() |> to_nx(out)
@@ -1144,7 +1134,7 @@ defmodule Evision.Backend do
   # widened to f32 since the NIF covers only real C types), then narrow the result back.
   defp binary_math(%T{type: out_type, shape: shape} = out, l, r, op) do
     work_type = if out_type in @half_types, do: {:f, 32}, else: out_type
-    {l, r} = enforce_same_shape(l, r, shape)
+    {l, r} = same_shape_unless_scalar(l, r, shape)
     lm = as_mat_type(from_nx(l), work_type)
     rm = as_mat_type(from_nx(r), work_type)
 
