@@ -160,7 +160,17 @@ jobs:
 
       - name: Make a nerves project
         run: |
-          mix archive.install hex nerves_bootstrap --force || true
+          # nerves_bootstrap comes from Hex; retry to ride out transient registry timeouts
+          n=0
+          until mix archive.install hex nerves_bootstrap --force; do
+            n=$((n + 1))
+            if [ "$n" -ge 5 ]; then
+              echo "nerves_bootstrap archive.install failed after $n attempts"
+              exit 1
+            fi
+            echo "archive.install failed, retrying ($n)..."
+            sleep 10
+          done
           wget -k https://github.com/fwup-home/fwup/releases/download/v1.16.0/fwup_1.16.0_amd64.deb -O ./fwup_1.16.0_amd64.deb
           sudo dpkg -i ./fwup_1.16.0_amd64.deb
           cd ../
