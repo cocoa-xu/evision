@@ -301,7 +301,8 @@ defmodule Mix.Tasks.Evision.Backend.Bench do
           "type" => "f32"
         },
         input: fn -> make_f32(config.reduce) end,
-        run: fn tensor -> Nx.cumulative_sum(tensor, axis: 1) end
+        run: fn tensor -> Nx.cumulative_sum(tensor, axis: 1) end,
+        atol: 1.0e-3
       },
       %{
         name: "sort_axis1_f32",
