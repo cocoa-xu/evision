@@ -309,16 +309,19 @@ endif()
         print(f"warning: anchor not found in {mlas_cmake}, skipping patch_mlas_skip_msvc")
 
 
-def patch_mlas_skip_arm32(opencv_version: str, opencv_src_root: str):
-    """Skip the vendored MLAS subdirectory on 32-bit ARM targets.
+def patch_mlas_skip_crosscompile(opencv_version: str, opencv_src_root: str):
+    """Skip the vendored MLAS subdirectory when cross-compiling.
 
-    MLAS picks its assembly kernels from CMAKE_SYSTEM_PROCESSOR. Nerves 32-bit
-    ARM targets (rpi/rpi0/rpi2/rpi3/rpi4 — Cortex-A53/A72 built as armv7hf)
-    report an arm64/aarch64 processor name, so MLAS sets MLAS_ARM64 and pulls in
-    lib/aarch64/*.S, but the toolchain is a 32-bit AArch32 assembler that rejects
-    the AArch64 mnemonics (``no such instruction: 'dup v16.4s'``). Skip MLAS when
-    the target claims ARM64 yet has a 32-bit ABI; the DNN module falls back to
-    its built-in SGEMM. Mirrors patch_mlas_skip_msvc.
+    MLAS builds its .S kernels through a separate ASM language. Cross toolchains
+    (Nerves, iOS, ...) usually set only CMAKE_C/CXX_COMPILER, so cmake's
+    enable_language(ASM) auto-detects the *host* assembler (e.g. /usr/bin/cc on an
+    x86_64 runner) and feeds it the target's AArch64 .S, which fails with host
+    GAS errors (``no such instruction: 'fmla v5.4s...'``, ``too many memory
+    references``). This hits every Nerves ARM board: the 32-bit ones report an
+    arm64 CMAKE_SYSTEM_PROCESSOR (so MLAS picks lib/aarch64), and rpi5 is genuine
+    aarch64 — both assembled by the host x86 `as`. Skip MLAS whenever it needs
+    ASM and we are cross-compiling; the DNN module falls back to its built-in
+    SGEMM. Mirrors patch_mlas_skip_msvc.
     """
     mlas_cmake = (
         Path(opencv_src_root) / '3rdparty' / 'mlas' / 'CMakeLists.txt'
@@ -328,11 +331,11 @@ def patch_mlas_skip_arm32(opencv_version: str, opencv_src_root: str):
 
     anchor = 'include(CheckLanguage)'
     insertion = """\
-if(MLAS_ARM64 AND CMAKE_SIZEOF_VOID_P EQUAL 4)
+if(_MLAS_REQUIRES_ASM AND (CMAKE_CROSSCOMPILING OR CMAKE_TOOLCHAIN_FILE))
   set(OPENCV_DNN_MLAS_SKIP_REASON
-    "MLAS AArch64 .S kernels need a 64-bit ABI; target is 32-bit ARM"
+    "cross toolchain has no matching ASM compiler for MLAS .S kernels"
     CACHE INTERNAL "" FORCE)
-  message(STATUS "MLAS: skipped on 32-bit ARM (DNN will use its built-in SGEMM)")
+  message(STATUS "MLAS: skipped when cross-compiling (DNN will use its built-in SGEMM)")
   return()
 endif()
 
@@ -340,7 +343,7 @@ endif()
 
     with open(mlas_cmake, 'r') as f:
         original = f.read()
-    if 'MLAS: skipped on 32-bit ARM' in original:
+    if 'MLAS: skipped when cross-compiling' in original:
         return
 
     fixed = StringIO()
@@ -355,9 +358,9 @@ endif()
         with open(mlas_cmake, 'w') as dst:
             dst.truncate(0)
             dst.write(fixed.getvalue())
-        print("[+] patched 3rdparty/mlas/CMakeLists.txt to skip MLAS on 32-bit ARM")
+        print("[+] patched 3rdparty/mlas/CMakeLists.txt to skip MLAS when cross-compiling")
     else:
-        print(f"warning: anchor not found in {mlas_cmake}, skipping patch_mlas_skip_arm32")
+        print(f"warning: anchor not found in {mlas_cmake}, skipping patch_mlas_skip_crosscompile")
 
 
 def patch_cmake_minimum_version(opencv_version: str, opencv_src_root: str):
@@ -389,7 +392,7 @@ patches = [
     patch_imread,
     patch_cmake_minimum_version,
     patch_mlas_skip_msvc,
-    patch_mlas_skip_arm32,
+    patch_mlas_skip_crosscompile,
     patch_ocr_tesseract_run_with_components
 ]
 
