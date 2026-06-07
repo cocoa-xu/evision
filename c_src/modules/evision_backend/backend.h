@@ -35,5 +35,6 @@
 #include "to_batched.h"
 #include "to_binary.h"
 #include "transpose.h"
+#include "unary_math.h"
 
 #endif // EVISION_BACKEND_BACKEND_H

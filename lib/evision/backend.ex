@@ -888,6 +888,99 @@ defmodule Evision.Backend do
     reject_error(Evision.Mat.cumulative(m2d, op, reverse?))
   end
 
+  ## Elementwise unary math
+
+  @uop_sin 0
+  @uop_cos 1
+  @uop_tan 2
+  @uop_asin 3
+  @uop_acos 4
+  @uop_atan 5
+  @uop_sinh 6
+  @uop_cosh 7
+  @uop_tanh 8
+  @uop_asinh 9
+  @uop_acosh 10
+  @uop_atanh 11
+  @uop_erf 12
+  @uop_erfc 13
+  @uop_cbrt 14
+  @uop_log1p 15
+  @uop_rsqrt 16
+  @uop_sigmoid 17
+
+  # sqrt reuses cv::sqrt (the fast path, like exp/log); the rest have no cv
+  # primitive and go through the element-wise math NIF.
+  @impl true
+  def sqrt(out, tensor), do: unary_math(out, tensor, &Evision.sqrt/1)
+
+  @impl true
+  def sin(out, tensor), do: unary_math(out, tensor, &Evision.Mat.unary_math(&1, @uop_sin))
+
+  @impl true
+  def cos(out, tensor), do: unary_math(out, tensor, &Evision.Mat.unary_math(&1, @uop_cos))
+
+  @impl true
+  def tan(out, tensor), do: unary_math(out, tensor, &Evision.Mat.unary_math(&1, @uop_tan))
+
+  @impl true
+  def asin(out, tensor), do: unary_math(out, tensor, &Evision.Mat.unary_math(&1, @uop_asin))
+
+  @impl true
+  def acos(out, tensor), do: unary_math(out, tensor, &Evision.Mat.unary_math(&1, @uop_acos))
+
+  @impl true
+  def atan(out, tensor), do: unary_math(out, tensor, &Evision.Mat.unary_math(&1, @uop_atan))
+
+  @impl true
+  def sinh(out, tensor), do: unary_math(out, tensor, &Evision.Mat.unary_math(&1, @uop_sinh))
+
+  @impl true
+  def cosh(out, tensor), do: unary_math(out, tensor, &Evision.Mat.unary_math(&1, @uop_cosh))
+
+  @impl true
+  def tanh(out, tensor), do: unary_math(out, tensor, &Evision.Mat.unary_math(&1, @uop_tanh))
+
+  @impl true
+  def asinh(out, tensor), do: unary_math(out, tensor, &Evision.Mat.unary_math(&1, @uop_asinh))
+
+  @impl true
+  def acosh(out, tensor), do: unary_math(out, tensor, &Evision.Mat.unary_math(&1, @uop_acosh))
+
+  @impl true
+  def atanh(out, tensor), do: unary_math(out, tensor, &Evision.Mat.unary_math(&1, @uop_atanh))
+
+  @impl true
+  def erf(out, tensor), do: unary_math(out, tensor, &Evision.Mat.unary_math(&1, @uop_erf))
+
+  @impl true
+  def erfc(out, tensor), do: unary_math(out, tensor, &Evision.Mat.unary_math(&1, @uop_erfc))
+
+  @impl true
+  def cbrt(out, tensor), do: unary_math(out, tensor, &Evision.Mat.unary_math(&1, @uop_cbrt))
+
+  @impl true
+  def log1p(out, tensor), do: unary_math(out, tensor, &Evision.Mat.unary_math(&1, @uop_log1p))
+
+  @impl true
+  def rsqrt(out, tensor), do: unary_math(out, tensor, &Evision.Mat.unary_math(&1, @uop_rsqrt))
+
+  @impl true
+  def sigmoid(out, tensor), do: unary_math(out, tensor, &Evision.Mat.unary_math(&1, @uop_sigmoid))
+
+  # Cast the input to the (float) output type, widening f16/bf16 to f32 (the math
+  # NIF/cv::sqrt handle only f32/f64) and narrowing the result back.
+  defp unary_math(%T{type: out_type} = out, tensor, fun) do
+    work_type = if out_type in @half_types, do: {:f, 32}, else: out_type
+
+    from_nx(tensor)
+    |> as_mat_type(work_type)
+    |> fun.()
+    |> reject_error()
+    |> maybe_narrow(work_type, out_type)
+    |> to_nx(out)
+  end
+
   ## Reductions
 
   @impl true

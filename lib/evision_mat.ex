@@ -1306,6 +1306,14 @@ defmodule Evision.Mat do
     |> Evision.Internal.Structurise.to_struct()
   end
 
+  @doc false
+  # Element-wise unary float math (Nx trig/hyperbolic/erf/cbrt/log1p/rsqrt/sigmoid):
+  # op codes match Evision.Backend's @uop_* constants. `mat` must already be f32/f64.
+  def unary_math(mat, op) do
+    :evision_nif.mat_unary_math(src: from_struct(mat), op: op)
+    |> Evision.Internal.Structurise.to_struct()
+  end
+
   @doc namespace: :"cv.Mat"
   @spec expm1(maybe_mat_in()) :: maybe_mat_out()
   def expm1(mat) do

@@ -249,4 +249,40 @@ defmodule Evision.Backend.Test do
       end
     end
   end
+
+  describe "elementwise unary math" do
+    test "match Nx.BinaryBackend approximately (in-domain real inputs)" do
+      general = Nx.tensor([0.2, 0.5, 0.9, 1.5, 2.0, 3.0], type: :f32)
+      unit = Nx.tensor([-0.9, -0.3, 0.0, 0.3, 0.9], type: :f32)
+      ge1 = Nx.tensor([1.0, 1.5, 2.0, 5.0], type: :f32)
+      pos = Nx.tensor([0.1, 0.5, 1.0, 2.0, 9.0], type: :f32)
+
+      cases = [
+        {:sin, general}, {:cos, general}, {:tan, general},
+        {:sinh, general}, {:cosh, general}, {:tanh, general},
+        {:asinh, general}, {:atan, general}, {:sigmoid, general},
+        {:erf, general}, {:erfc, general}, {:cbrt, general},
+        {:asin, unit}, {:acos, unit}, {:atanh, unit},
+        {:acosh, ge1},
+        {:sqrt, pos}, {:rsqrt, pos}, {:log1p, pos}
+      ]
+
+      for {op, t} <- cases do
+        assert_close(apply(Nx, op, [ev(t)]), apply(Nx, op, [t]))
+      end
+    end
+
+    test "cast integer input to float and handle f64/f16" do
+      int_t = Nx.tensor([1, 2, 3])
+      assert_close(Nx.sin(ev(int_t)), Nx.sin(int_t))
+
+      f64_t = Nx.tensor([0.5, 1.0, 2.0], type: :f64)
+      assert_close(Nx.cos(ev(f64_t)), Nx.cos(f64_t))
+      assert_close(Nx.sqrt(ev(f64_t)), Nx.sqrt(f64_t))
+
+      f16_t = Nx.tensor([0.5, 1.0, 2.0], type: :f16)
+      assert_close(Nx.tanh(ev(f16_t)), Nx.tanh(f16_t))
+      assert_close(Nx.sqrt(ev(f16_t)), Nx.sqrt(f16_t))
+    end
+  end
 end
