@@ -1,4 +1,4 @@
-#ifdef HAVE_OPENCV_STEREO
+#ifdef HAVE_OPENCV_XSTEREO
 typedef std::vector<stereo::MatchQuasiDense> vector_MatchQuasiDense;
 
 template<> struct evisionVecConverter<stereo::MatchQuasiDense>
