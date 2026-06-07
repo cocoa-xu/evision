@@ -160,4 +160,46 @@ defmodule Evision.Backend.Test do
       end
     end
   end
+
+  describe "indexed_add / indexed_put" do
+    test "match Nx.BinaryBackend across axes, ranks, dtypes (incl. wide ints), and duplicates" do
+      # Integer / same-type results -> exact. Covers default + explicit axes,
+      # scalar + block updates, and duplicate coordinates (add sums, put last-wins).
+      int_cases = [
+        {Nx.tensor([0, 0, 0]), Nx.tensor([[1], [2]]), Nx.tensor([2, 4]), []},
+        {Nx.tensor([1, 2, 3]), Nx.tensor([[0], [1], [2], [0]]), Nx.tensor([10, 20, 30, 40]), []},
+        {Nx.iota({1, 2, 3}), Nx.tensor([[0, 0, 0], [0, 1, 1], [0, 0, 2]]), Nx.tensor([1, 3, -2]), []},
+        {Nx.iota({1, 3, 2}), Nx.tensor([[0, 0], [0, 2]]), Nx.tensor([[0, 10], [40, 50]]), []},
+        {Nx.tensor([[1, 2, 3], [4, 5, 6]]), Nx.tensor([[0], [2], [2]]),
+         Nx.tensor([[7, 8], [9, 10], [11, 12]]), [axes: [1]]},
+        {Nx.tensor([[1, 2], [3, 4]]), Nx.tensor([[1, 0], [0, 1], [1, 0]]), Nx.tensor([5, 6, 7]), []}
+      ]
+
+      for op <- [:indexed_add, :indexed_put], {t, i, u, o} <- int_cases do
+        assert_same(apply(Nx, op, [ev(t), ev(i), ev(u), o]), apply(Nx, op, [t, i, u, o]))
+      end
+
+      # Wide-int dtypes cv::add/cv::reduce reject -> exercises the custom typed path.
+      for op <- [:indexed_add, :indexed_put], type <- [{:u, 32}, {:s, 64}, {:u, 64}] do
+        t = Nx.tensor([[10, 20, 30], [40, 50, 60]], type: type)
+        i = Nx.tensor([[0, 1], [1, 2], [0, 1]])
+        u = Nx.tensor([1, 2, 3], type: type)
+        assert_same(apply(Nx, op, [ev(t), ev(i), ev(u)]), apply(Nx, op, [t, i, u]))
+      end
+    end
+
+    test "match Nx.BinaryBackend approximately for float, half, and mixed dtypes" do
+      cases = [
+        {Nx.tensor([0.0, 0.0, 0.0]), Nx.tensor([[0], [1], [0]]), Nx.tensor([1.5, 2.5, 3.0]), []},
+        {Nx.tensor([1.0, 2.0, 3.0], type: :f16), Nx.tensor([[0], [2]]),
+         Nx.tensor([4.0, 5.0], type: :f16), []},
+        {Nx.tensor([1, 2, 3], type: :s32), Nx.tensor([[0], [1]]),
+         Nx.tensor([1.5, 2.5], type: :f32), []}
+      ]
+
+      for op <- [:indexed_add, :indexed_put], {t, i, u, o} <- cases do
+        assert_close(apply(Nx, op, [ev(t), ev(i), ev(u), o]), apply(Nx, op, [t, i, u, o]))
+      end
+    end
+  end
 end

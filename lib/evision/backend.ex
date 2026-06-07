@@ -936,6 +936,54 @@ defmodule Evision.Backend do
     |> to_nx(out)
   end
 
+  @scatter_put 0
+  @scatter_add 1
+
+  @impl true
+  def indexed_add(out, target, indices, updates, opts),
+    do: indexed_op(out, target, indices, updates, opts, @scatter_add)
+
+  @impl true
+  def indexed_put(out, target, indices, updates, opts),
+    do: indexed_op(out, target, indices, updates, opts, @scatter_put)
+
+  # Mirrors Nx.BinaryBackend's with_permutation: scatter into `target`, transposing
+  # the indexed `axes` to the front first (and the result back) when they are not
+  # already leading, so the leftover axes form one contiguous block per coordinate.
+  defp indexed_op(%T{shape: out_shape} = out, target, indices, updates, opts, op) do
+    axes = opts[:axes]
+    target_axes = Nx.axes(target)
+
+    if List.starts_with?(target_axes, axes) do
+      scatter(out, target, indices, updates, op)
+    else
+      perm = axes ++ (target_axes -- axes)
+      perm_shape = perm |> Enum.map(&elem(out_shape, &1)) |> List.to_tuple()
+
+      scatter(%{out | shape: perm_shape}, Nx.transpose(target, axes: perm), indices, updates, op)
+      |> Nx.transpose(axes: inverse_perm(perm))
+    end
+  end
+
+  defp scatter(%T{type: out_type, shape: shape} = out, target, %T{shape: indices_shape} = indices, updates, op) do
+    work_type = if op == @scatter_add and out_type in @half_types, do: {:f, 32}, else: out_type
+    depth = elem(indices_shape, 1)
+    {lead, leftover} = shape |> Tuple.to_list() |> Enum.split(depth)
+    dims = from_nx(Nx.tensor(lead, type: {:s, 64}))
+    idx = as_mat_type(from_nx(indices), {:s, 64})
+    base = as_mat_type(from_nx(target), work_type)
+    upd = as_mat_type(from_nx(updates), work_type)
+
+    base
+    |> Evision.Mat.indexed(idx, upd, dims, Enum.product(leftover), op)
+    |> reject_error()
+    |> maybe_narrow(work_type, out_type)
+    |> to_nx(out)
+  end
+
+  defp maybe_narrow(mat, type, type), do: mat
+  defp maybe_narrow(mat, _work_type, out_type), do: as_mat_type(mat, out_type)
+
   @doc false
   def from_nx(%T{data: %EB{ref: mat_ref}}), do: mat_ref
   def from_nx(%T{} = tensor) do

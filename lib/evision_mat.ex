@@ -1278,6 +1278,22 @@ defmodule Evision.Mat do
     |> Evision.Internal.Structurise.to_struct()
   end
 
+  @doc false
+  # Scatter into a copy of `mat` (Nx.indexed_put / indexed_add): each int64
+  # coordinate row over `dims` selects one inner block to overwrite (op 0) or
+  # accumulate (op 1). `mat`/`updates` must already be the output type.
+  def indexed(mat, indices, updates, dims, inner, op) do
+    :evision_nif.mat_indexed(
+      src: from_struct(mat),
+      indices: from_struct(indices),
+      updates: from_struct(updates),
+      dims: from_struct(dims),
+      inner: inner,
+      op: op
+    )
+    |> Evision.Internal.Structurise.to_struct()
+  end
+
   @doc namespace: :"cv.Mat"
   @spec expm1(maybe_mat_in()) :: maybe_mat_out()
   def expm1(mat) do

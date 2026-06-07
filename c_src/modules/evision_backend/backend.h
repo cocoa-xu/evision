@@ -17,6 +17,7 @@
 #include "floor.h"
 #include "from_binary.h"
 #include "gather.h"
+#include "indexed.h"
 #include "logical_and.h"
 #include "logical_or.h"
 #include "logical_xor.h"
