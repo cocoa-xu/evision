@@ -74,6 +74,27 @@ class ErlEnumExpressionGenerator(ast.NodeVisitor):
                 elif node.id == 'CV_16F':
                     self.expression = '7'
                     self.expression_erlang = '7'
+                elif node.id == 'CV_16BF':
+                    self.expression = '8'
+                    self.expression_erlang = '8'
+                elif node.id == 'CV_Bool':
+                    self.expression = '9'
+                    self.expression_erlang = '9'
+                elif node.id == 'CV_64U':
+                    self.expression = '10'
+                    self.expression_erlang = '10'
+                elif node.id == 'CV_64S':
+                    self.expression = '11'
+                    self.expression_erlang = '11'
+                elif node.id == 'CV_32U':
+                    self.expression = '12'
+                    self.expression_erlang = '12'
+                elif node.id == 'CV_DEPTH_CURR_MAX':
+                    self.expression = '13'
+                    self.expression_erlang = '13'
+                elif node.id == 'CV_DEPTH_MAX':
+                    self.expression = '32'
+                    self.expression_erlang = '32'
                 elif node.id == 'CV_MAT_CONT_FLAG':
                     self.skip_this = True
                 elif node.id == 'CV_SUBMAT_FLAG':

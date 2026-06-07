@@ -40,12 +40,21 @@ from fixes import (
     evision_erlang_module_fixes,
 )
 from config.modules import NAMESPACE_TO_ELIXIR_MODULE
+from config.struct_types import MODULE_NAME_MAP
 
 
 if sys.version_info[0] >= 3:
     from io import StringIO
 else:
     from cStringIO import StringIO
+
+
+def _enum_struct_name(original_name):
+    # Map an enum's cv namespace path (e.g. "ccm.CcmType", "xfeatures2d.AKAZE")
+    # to its Evision module, applying the module-name casing map to the prefix.
+    parts = original_name.split('.')
+    elixir_module = MODULE_NAME_MAP.get(parts[0], parts[0][:1].upper() + parts[0][1:])
+    return '.'.join(['Evision', elixir_module] + parts[1:])
 
 
 class Pipeline(object):
@@ -208,8 +217,7 @@ class Pipeline(object):
                         if the_name is not None:
                             struct_name = the_name
                         else:
-                            print(f'warning: enum name {original_name} is not a struct')
-                            struct_name = '!fixme!'
+                            struct_name = _enum_struct_name(original_name)
             typed_enum = self.typed_enums.get(struct_name, None)
             if typed_enum is None:
                 self.typed_enums[struct_name] = list()

@@ -87,6 +87,7 @@ gpumat_to_pointer_elixir = '''  @doc """
   defp compact_type({:s, 64}), do: :s64
   defp compact_type({:u, 64}), do: :u64
   defp compact_type({:f, 16}), do: :f16
+  defp compact_type({:bf, 16}), do: :bf16
   defp compact_type({:f, 32}), do: :f32
   defp compact_type({:f, 64}), do: :f64
   
@@ -99,6 +100,7 @@ gpumat_to_pointer_elixir = '''  @doc """
   defp dtype_byte_size(:s64), do: 8
   defp dtype_byte_size(:u64), do: 8
   defp dtype_byte_size(:f16), do: 2
+  defp dtype_byte_size(:bf16), do: 2
   defp dtype_byte_size(:f32), do: 4
   defp dtype_byte_size(:f64), do: 8
   defp dtype_byte_size(dtype) do

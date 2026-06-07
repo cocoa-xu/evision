@@ -59,34 +59,6 @@ def patch_fix_getLayerShapes(opencv_version: str, opencv_src_root: str):
             dst.write(fixed.getvalue())
 
 
-def patch_winograd(opencv_version: str, opencv_src_root: str):
-    if opencv_version not in ['4.7.0']:
-        return
-
-    # modules/dnn/src/layers/fast_convolution/fast_convolution.cpp
-    fast_convolution_cpp = Path(opencv_src_root) / 'modules' / 'dnn' / 'src' / 'layers' / 'fast_convolution' / 'fast_convolution.cpp'
-    fixed = StringIO()
-    patched_1 = False
-    with open(fast_convolution_cpp, 'r') as source:
-        for line in source:
-            if not patched_1 and line.strip() == 'Mat weightsMat = _weightsMat.getMat();':
-                fixed.write("""#if CV_TRY_AVX2
-    // Disabel Winograd when CV_TRY_AVX2 is true, but conv->useAVX2 is false.
-    if (conv->conv_type == _FX_CONV_TYPE_WINOGRAD3X3 && !conv->useAVX2)
-        conv->conv_type = _FX_CONV_TYPE_GENERIC;
-#endif
-
-    Mat weightsMat = _weightsMat.getMat(); // patched\n""")
-                patched_1 = True
-            else:
-                fixed.write(line)
-
-    if patched_1:
-        with open(fast_convolution_cpp, 'w') as dst:
-            dst.truncate(0)
-            dst.write(fixed.getvalue())
-
-
 def patch_rpath_linux(opencv_version: str, opencv_src_root: str):
     # CMakeLists.txt
     cmakelists_txt = Path(opencv_src_root) / 'CMakeLists.txt'
@@ -135,36 +107,6 @@ def patch_python_bindings_generator(opencv_version: str, opencv_src_root: str):
         with open(cmakelists_txt, 'w') as dst:
             dst.truncate(0)
             dst.write(fixed.getvalue())
-
-def patch_intrin_rvv(opencv_version: str, opencv_src_root: str):
-    if opencv_version in ['4.11.0']:
-        return
-    # 4.13.0 renamed intrin_rvv.hpp to intrin_rvv_scalable.hpp / intrin_rvv071.hpp;
-    # the patched file no longer exists, so skip.
-    if opencv_version in ['4.13.0']:
-        return
-    if opencv_version not in ['4.9.0']:
-        print(f"warning: skipped, applying `patch_intrin_rvv` to opencv version `{opencv_version}`")
-    # modules/core/include/opencv2/core/hal/intrin_rvv.hpp
-    intrin_rvv_hpp = Path(opencv_src_root) / 'modules' / 'core' / 'include' / 'opencv2' / 'core' / 'hal' / 'intrin_rvv.hpp'
-    fixed = StringIO()
-    patched_1 = False
-    with open(intrin_rvv_hpp, 'r') as source:
-        for line in source:
-            if not patched_1 and line.strip() == '#define OPENCV_HAL_INTRIN_RVV_HPP':
-                fixed.write("""#define OPENCV_HAL_INTRIN_RVV_HPP // patched
-typedef float float32_t;
-typedef double float64_t;
-""")
-                patched_1 = True
-            else:
-                fixed.write(line)
-
-    if patched_1:
-        with open(intrin_rvv_hpp, 'w') as dst:
-            dst.truncate(0)
-            dst.write(fixed.getvalue())
-
 
 def patch_carotene_vround(opencv_version: str, opencv_src_root: str):
     """Gate carotene's ARMv8 round-to-nearest intrinsics on __aarch64__.
@@ -269,6 +211,65 @@ def patch_ocr_tesseract_run_with_components(opencv_version: str, opencv_src_root
         print(f"warning: anchor line not found in {ocr_hpp}, skipping patch")
 
 
+def patch_mlas_skip_msvc(opencv_version: str, opencv_src_root: str):
+    """Skip the vendored MLAS subdirectory when building with MSVC.
+
+    MLAS ships GNU-style ``.S`` SGEMM kernels (AT&T syntax, ``-msse2`` /
+    ``-mavx`` style flags). On Windows + MSVC, ``check_language(ASM)`` finds
+    MASM (``ml64.exe``) and ``enable_language(ASM)`` succeeds, so the OBJECT
+    target gets created; CMake (CMP0091 NEW) then auto-applies
+    ``MSVC_RUNTIME_LIBRARY=MultiThreadedDLL`` to every language on the target
+    and configure dies with::
+
+        CMake Error in 3rdparty/mlas/CMakeLists.txt:
+          MSVC_RUNTIME_LIBRARY value 'MultiThreadedDLL' not known for this
+          ASM compiler.
+
+    Even if that propagation were silenced, the GNU-style ``.S`` files
+    couldn't be assembled with MASM/armasm. Reuse the file's existing
+    early-return pattern (``OPENCV_DNN_MLAS_SKIP_REASON`` + ``return()``)
+    so the DNN module falls back to its built-in SGEMM.
+    """
+    mlas_cmake = (
+        Path(opencv_src_root) / '3rdparty' / 'mlas' / 'CMakeLists.txt'
+    )
+    if not mlas_cmake.exists():
+        return
+
+    anchor = 'include(CheckLanguage)'
+    insertion = """\
+if(MSVC AND _MLAS_REQUIRES_ASM)
+  set(OPENCV_DNN_MLAS_SKIP_REASON
+    "MLAS .S kernels are GNU-style; MASM/armasm cannot assemble them"
+    CACHE INTERNAL "" FORCE)
+  message(STATUS "MLAS: skipped on MSVC (DNN will use its built-in SGEMM)")
+  return()
+endif()
+
+"""
+
+    with open(mlas_cmake, 'r') as f:
+        original = f.read()
+    if 'MLAS: skipped on MSVC' in original:
+        return
+
+    fixed = StringIO()
+    patched = False
+    for line in original.splitlines(keepends=True):
+        if not patched and line.strip() == anchor:
+            fixed.write(insertion)
+            patched = True
+        fixed.write(line)
+
+    if patched:
+        with open(mlas_cmake, 'w') as dst:
+            dst.truncate(0)
+            dst.write(fixed.getvalue())
+        print("[+] patched 3rdparty/mlas/CMakeLists.txt to skip MLAS on MSVC")
+    else:
+        print(f"warning: anchor not found in {mlas_cmake}, skipping patch_mlas_skip_msvc")
+
+
 def patch_cmake_minimum_version(opencv_version: str, opencv_src_root: str):
     # cmake/OpenCVGenPkgconfig.cmake uses cmake_minimum_required(VERSION 2.8.12.2)
     # which fails with CMake 4.x that removed compat with < 3.5
@@ -291,13 +292,12 @@ def patch_cmake_minimum_version(opencv_version: str, opencv_src_root: str):
 
 patches = [
     patch_fix_getLayerShapes,
-    patch_winograd,
     patch_rpath_linux,
     patch_python_bindings_generator,
-    patch_intrin_rvv,
     patch_carotene_vround,
     patch_imread,
     patch_cmake_minimum_version,
+    patch_mlas_skip_msvc,
     patch_ocr_tesseract_run_with_components
 ]
 

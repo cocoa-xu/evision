@@ -5,6 +5,8 @@ defmodule Evision.DNN.DetectionModel.Test do
   @moduletag timeout: 600_000
   @tag :dnn
   @tag :require_downloading
+  # OpenCV 5.0 removed the Darknet importer (readNet "darknet"); needs an ONNX model.
+  @tag skip: "Darknet importer removed in OpenCV 5.0"
   @download_file "https://github.com/AlexeyAB/darknet/releases/download/yolov4/yolov4.weights"
 
   test "yolov4" do

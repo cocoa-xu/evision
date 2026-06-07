@@ -53,7 +53,8 @@ defmodule Evision.VideoWriter.Test do
     end
 
     defp encode(frame, writer, frames_count) do
-      writer = Evision.VideoWriter.write(writer, frame)
+      # VideoWriter is a mutable resource; write to the same handle each time.
+      Evision.VideoWriter.write(writer, frame)
       encode(frame, writer, frames_count - 1)
     end
   end

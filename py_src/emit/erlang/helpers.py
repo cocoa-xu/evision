@@ -215,6 +215,19 @@ def map_argtype_to_guard_erlang(argname, argtype, classname: Optional[str] = Non
         return ''
 
 
+def _fold_leading_acronym(name):
+    if not name or not name[0].isupper():
+        return name
+    run = 0
+    while run < len(name) and name[run].isupper():
+        run += 1
+    if run == len(name):
+        return name.lower()
+    if run == 1:
+        return name[0].lower() + name[1:]
+    return name[:run - 1].lower() + name[run - 1:]
+
+
 def map_uppercase_to_erlang_name(name):
     namespace_map = {
         "AKAZE": "akaze",
@@ -266,10 +279,9 @@ def map_uppercase_to_erlang_name(name):
     if name[0:3] == 'cv_':
         name = name[3:]
     name_parts = name.split('_')
-    if len(name_parts[0]) > 1:
-        if name_parts[0][0].isupper() and name_parts[0][1].islower():
-            name_parts[0] = name_parts[0][0].lower() + name_parts[0][1:]
-    name_parts[0] = namespace_map.get(name_parts[0], name_parts[0])
+    # special-case casing wins; otherwise fold the leading uppercase acronym
+    # (ALIKED -> aliked, ANNIndex -> annIndex, PCABackProject -> pcaBackProject)
+    name_parts[0] = namespace_map.get(name_parts[0], _fold_leading_acronym(name_parts[0]))
     name = '_'.join(name_parts)
     if not name[0].islower():
         raise RuntimeError('The function %s is not started with lowercase name' % name)

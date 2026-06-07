@@ -17,6 +17,10 @@ static ERL_NIF_TERM __evision_get_mat_type(ErlNifEnv *env, int type) {
         case CV_32F: return enif_make_tuple2(env, kAtomF, enif_make_uint64(env, 32));
         case CV_64F: return enif_make_tuple2(env, kAtomF, enif_make_uint64(env, 64));
         case CV_16F: return enif_make_tuple2(env, kAtomF, enif_make_uint64(env, 16));
+        case CV_64S: return enif_make_tuple2(env, kAtomS, enif_make_uint64(env, 64));
+        case CV_32U: return enif_make_tuple2(env, kAtomU, enif_make_uint64(env, 32));
+        case CV_64U: return enif_make_tuple2(env, kAtomU, enif_make_uint64(env, 64));
+        case CV_16BF: return enif_make_tuple2(env, kAtomBF, enif_make_uint64(env, 16));
         default:     return enif_make_tuple2(env, kAtomUser, enif_make_uint64(env, depth));
     }
 }
@@ -29,17 +33,15 @@ static ERL_NIF_TERM _evision_get_mat_type(ErlNifEnv *env, const cv::Mat& img) {
 static ERL_NIF_TERM _evision_get_mat_shape(ErlNifEnv *env, const cv::Mat& img) {
     cv::MatSize size = img.size;
     int channels = img.channels();
-    int dims = size.dims();
+    int dims = img.dims;
     int include_channels = 0;
-    if (!(img.type() == CV_8S || img.type() == CV_8U || img.type() == CV_16F \
-        || img.type() == CV_16S || img.type() == CV_16U || img.type() == CV_32S \
-        || img.type() == CV_32F || img.type() == CV_64F)) {
+    if (img.channels() != 1) {
         dims += 1;
         include_channels = 1;
     }
     ERL_NIF_TERM* shape = (ERL_NIF_TERM *)enif_alloc(sizeof(ERL_NIF_TERM) * dims);
 
-    for (int i = 0; i < size.dims(); i++) {
+    for (int i = 0; i < img.dims; i++) {
         shape[i] = enif_make_int(env, size[i]);
     }
     if (include_channels) {

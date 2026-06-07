@@ -8,27 +8,27 @@ defmodule Evision.Features2D.Test do
   end
 
   describe "implicit cast to Evision.Features2D" do
-    test "cast from Evision.AKAZE.t()", %{image: image} do
-      detector = Evision.AKAZE.create(nil)
+    test "cast from Evision.XFeatures2D.AKAZE.t()", %{image: image} do
+      detector = Evision.XFeatures2D.AKAZE.create(nil)
       features = Evision.Detail.computeImageFeatures2(detector, image)
       assert Evision.Detail.ImageFeatures == features.__struct__
     end
 
     test "cast from Evision.AffineFeature.t()", %{image: image} do
-      detector = Evision.AKAZE.create(nil)
+      detector = Evision.XFeatures2D.AKAZE.create(nil)
       affine_detector = Evision.AffineFeature.create(detector)
       features = Evision.Detail.computeImageFeatures2(affine_detector, image)
       assert Evision.Detail.ImageFeatures == features.__struct__
     end
 
-    test "cast from Evision.BRISK.t()", %{image: image} do
-      detector = Evision.BRISK.create(thresh: 30, octaves: 3)
+    test "cast from Evision.XFeatures2D.BRISK.t()", %{image: image} do
+      detector = Evision.XFeatures2D.BRISK.create(thresh: 30, octaves: 3)
       features = Evision.Detail.computeImageFeatures2(detector, image)
       assert Evision.Detail.ImageFeatures == features.__struct__
     end
 
-    test "cast from Evision.KAZE.t()", %{image: image} do
-      detector = Evision.KAZE.create(nil)
+    test "cast from Evision.XFeatures2D.KAZE.t()", %{image: image} do
+      detector = Evision.XFeatures2D.KAZE.create(nil)
       features = Evision.Detail.computeImageFeatures2(detector, image)
       assert Evision.Detail.ImageFeatures == features.__struct__
     end
@@ -41,8 +41,8 @@ defmodule Evision.Features2D.Test do
   end
 
   describe "implicit cast to Evision.Features2D okay but not implemented detectAndCompute" do
-    test "cast from Evision.AgastFeatureDetector.t()", %{image: image} do
-      detector = Evision.AgastFeatureDetector.create(nil)
+    test "cast from Evision.XFeatures2D.AgastFeatureDetector.t()", %{image: image} do
+      detector = Evision.XFeatures2D.AgastFeatureDetector.create(nil)
       {:error, msg} = Evision.Detail.computeImageFeatures2(detector, image)
       assert msg =~ "The function/feature is not implemented"
     end

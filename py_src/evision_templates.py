@@ -15,7 +15,7 @@ cv_32F() -> 5.
 cv_64F() -> 6.
 cv_16F() -> 7.
 
-cv_cn_shift() -> 3.
+cv_cn_shift() -> 5.
 cv_depth_max() ->
     1 bsl cv_cn_shift().
 cv_mat_depth_mask() ->
@@ -122,7 +122,7 @@ gen_cv_types_elixir = """
   def cv_64F, do: 6
   def cv_16F, do: 7
 
-  def cv_cn_shift, do: 3
+  def cv_cn_shift, do: 5
   def cv_depth_max, do: 1 <<< cv_cn_shift()
   def cv_mat_depth_mask, do: cv_depth_max() - 1
   def cv_maketype(depth, cn), do: (depth &&& cv_mat_depth_mask()) + ((cn - 1) <<< cv_cn_shift())

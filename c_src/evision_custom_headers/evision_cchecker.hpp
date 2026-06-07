@@ -1,7 +1,7 @@
 #ifdef HAVE_OPENCV_DNN
-#ifdef HAVE_OPENCV_MCC
+#ifdef HAVE_OPENCV_OBJDETECT
 
-#include "opencv2/mcc.hpp"
+#include "opencv2/objdetect.hpp"
 
 template <>
 struct evisionVecConverter<Ptr<cv::mcc::CChecker>>
@@ -19,5 +19,5 @@ struct evisionVecConverter<Ptr<cv::mcc::CChecker>>
 };
 typedef std::vector<cv::Ptr<cv::mcc::CChecker>> vector_Ptr_CChecker;
 
-#endif  // HAVE_OPENCV_MCC
+#endif  // HAVE_OPENCV_OBJDETECT
 #endif  // HAVE_OPENCV_DNN

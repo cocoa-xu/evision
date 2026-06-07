@@ -560,7 +560,7 @@ defmodule Evision.Backend do
   end
 
   @spec enforce_same_shape(Nx.Tensor.t(), Nx.Tensor.t(), tuple()) :: {Nx.Tensor.t(), Nx.Tensor.t()}
-  defp enforce_same_shape(l, r, out_shape) do
+  defp enforce_same_shape(%T{} = l, %T{} = r, out_shape) do
     l_mat = Evision.Mat.reshape(from_nx(Nx.broadcast(l, out_shape)), out_shape)
     b_mat = Evision.Mat.reshape(from_nx(Nx.broadcast(r, out_shape)), out_shape)
     {to_nx(l_mat, %T{l | shape: out_shape}), to_nx(b_mat, %T{r | shape: out_shape})}

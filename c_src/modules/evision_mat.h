@@ -198,7 +198,7 @@ static ERL_NIF_TERM evision_cv_mat_roi(ErlNifEnv *env, int argc, const ERL_NIF_T
             if (erl_terms.find("ranges") != erl_terms.end() &&
                 evision_to_safe(env, evision_get_kw(env, erl_terms, "ranges"), ranges, ArgInfo("ranges", 0))) {
                 Mat ret;
-                int dims = img.size.dims();
+                int dims = img.size.dims;
                 if ((int)ranges.size() == dims + 1) {
                     int img_channels = img.channels();
                     Range last = ranges[dims];
@@ -518,6 +518,8 @@ static ERL_NIF_TERM evision_cv_mat_at(ErlNifEnv *env, int argc, const ERL_NIF_TE
 
             int i32;
             double f64;
+            int64_t i64;
+            uint64_t u64;
             type = -1;
 
             switch ( depth ) {
@@ -554,6 +556,22 @@ static ERL_NIF_TERM evision_cv_mat_at(ErlNifEnv *env, int argc, const ERL_NIF_TE
                     f64 = ((double *)img.data)[pos]; type = 1;
                     break;
                 }
+                case CV_16BF: {
+                    f64 = _do_cast_bf16<double>(((uint16_t *)img.data)[pos]); type = 1;
+                    break;
+                }
+                case CV_32U: {
+                    i64 = ((uint32_t *)img.data)[pos]; type = 2;
+                    break;
+                }
+                case CV_64S: {
+                    i64 = ((int64_t *)img.data)[pos]; type = 2;
+                    break;
+                }
+                case CV_64U: {
+                    u64 = ((uint64_t *)img.data)[pos]; type = 3;
+                    break;
+                }
             }
 
             ERL_NIF_TERM ret;
@@ -561,6 +579,10 @@ static ERL_NIF_TERM evision_cv_mat_at(ErlNifEnv *env, int argc, const ERL_NIF_TE
                 ret = enif_make_int(env, i32);
             } else if (type == 1) {
                 ret = enif_make_double(env, f64);
+            } else if (type == 2) {
+                ret = enif_make_int64(env, i64);
+            } else if (type == 3) {
+                ret = enif_make_uint64(env, u64);
             } else {
                 ret = evision::nif::error(env, "unknown data type");
             }
@@ -852,8 +874,8 @@ static ERL_NIF_TERM evision_cv_mat_size(ErlNifEnv *env, int argc, const ERL_NIF_
 
         if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0))) {
             ERL_NIF_TERM p = 0;
-            evision::nif::make_i32_list_from_c_array(env, img.size.dims(), img.size.p, p);
-            ERL_NIF_TERM dims = enif_make_int64(env, img.size.dims());
+            evision::nif::make_i32_list_from_c_array(env, img.size.dims, img.size.p, p);
+            ERL_NIF_TERM dims = enif_make_int64(env, img.size.dims);
             return enif_make_tuple2(env, dims, p);
         }
     }
@@ -902,7 +924,7 @@ static ERL_NIF_TERM evision_cv_mat_last_dim_as_channel(ErlNifEnv *env, int argc,
             if ((src.type() == CV_8S || src.type() == CV_8U || src.type() == CV_16F \
                 || src.type() == CV_16S || src.type() == CV_16U || src.type() == CV_32S \
                 || src.type() == CV_32F || src.type() == CV_64F)) {
-                int ndims = src.size.dims();
+                int ndims = src.size.dims;
                 if (ndims <= 1) {
                     return evision::nif::error(env, "image only has 1 dimension");
                 }

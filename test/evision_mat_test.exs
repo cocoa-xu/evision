@@ -380,7 +380,7 @@ defmodule Evision.Mat.Test do
              channels: 3,
              dims: 2,
              type: {:f, 64},
-             raw_type: 22,
+             raw_type: 70,
              shape: {120, 120, 3}
            } = Evision.gaussianBlur(v, {31, 31}, 0)
   end

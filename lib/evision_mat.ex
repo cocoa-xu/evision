@@ -1870,15 +1870,15 @@ defmodule Evision.Mat do
     mat = Evision.Internal.Structurise.to_struct(arange)
 
     with %Evision.Mat{} <- mat,
-         ret = {length, _} <- Evision.Mat.shape(mat),
-         {:mat_shape_error, false, _} <- {:mat_shape_error, length == :error, ret} do
+         shape when is_tuple(shape) <- Evision.Mat.shape(mat) do
+      length = shape |> Tuple.to_list() |> Enum.reduce(1, &(&1 * &2))
       Evision.Mat.reshape(mat, {1, length})
     else
-      {:mat_shape_error, true, error} ->
-        error
-
       {:error, msg} ->
         {:error, msg}
+
+      other ->
+        other
     end
   end
 
@@ -2085,6 +2085,10 @@ defmodule Evision.Mat do
   defp check_unsupported_type({:s, 8} = type), do: type
   defp check_unsupported_type({:s, 16} = type), do: type
   defp check_unsupported_type({:s, 32} = type), do: type
+  defp check_unsupported_type({:s, 64} = type), do: type
+  defp check_unsupported_type({:u, 32} = type), do: type
+  defp check_unsupported_type({:u, 64} = type), do: type
+  defp check_unsupported_type({:bf, 16} = type), do: type
   defp check_unsupported_type(:f32), do: {:f, 32}
   defp check_unsupported_type(:f64), do: {:f, 64}
   defp check_unsupported_type(:u8), do: {:u, 8}
@@ -2092,6 +2096,10 @@ defmodule Evision.Mat do
   defp check_unsupported_type(:s8), do: {:s, 8}
   defp check_unsupported_type(:s16), do: {:s, 16}
   defp check_unsupported_type(:s32), do: {:s, 32}
+  defp check_unsupported_type(:s64), do: {:s, 64}
+  defp check_unsupported_type(:u32), do: {:u, 32}
+  defp check_unsupported_type(:u64), do: {:u, 64}
+  defp check_unsupported_type(:bf16), do: {:bf, 16}
 
   defp check_unsupported_type(type) do
     case type do

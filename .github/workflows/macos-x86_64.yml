@@ -59,10 +59,10 @@ jobs:
     if: ${{ !contains(github.event.pull_request.labels.*.name, 'skip-ci') }}
     runs-on: macos-15-intel
     env:
-      OPENCV_VER: "4.13.0"
+      OPENCV_VER: "5.0.0"
       MIX_ENV: "test"
       EVISION_PREFER_PRECOMPILED: "false"
-      FFMPEG_VER: "5"
+      FFMPEG_VER: "6"
       OTP_VERSION: "25.3.2.2"
       ELIXIR_VERSION: "1.15.2"
       CMAKE_VER: "3.18.6"

@@ -19,6 +19,16 @@ int get_binary_type(const std::string& t, int l, int n, int& type) {
             else type = CV_16U;
             return true;
         }
+        if (l == 32) {
+            if (n != 0) type = CV_32UC(n);
+            else type = CV_32U;
+            return true;
+        }
+        if (l == 64) {
+            if (n != 0) type = CV_64UC(n);
+            else type = CV_64U;
+            return true;
+        }
     } else if (t == "s") {
         if (l == 8) {
             if (n != 0) type = CV_8SC(n);
@@ -35,6 +45,11 @@ int get_binary_type(const std::string& t, int l, int n, int& type) {
             else type = CV_32S;
             return true;
         }
+        if (l == 64) {
+            if (n != 0) type = CV_64SC(n);
+            else type = CV_64S;
+            return true;
+        }
     } else if (t == "f") {
         if (l == 16) {
             if (n != 0) type = CV_16FC(n);
@@ -49,6 +64,12 @@ int get_binary_type(const std::string& t, int l, int n, int& type) {
         if (l == 64) {
             if (n != 0) type = CV_64FC(n);
             else type = CV_64F;
+            return true;
+        }
+    } else if (t == "bf") {
+        if (l == 16) {
+            if (n != 0) type = CV_16BFC(n);
+            else type = CV_16BF;
             return true;
         }
     }
@@ -70,6 +91,16 @@ int get_compact_type(const std::string& compact, int n, int& type) {
             else type = CV_16U;
             return true;
         }
+        if (compact == "u32") {
+            if (n != 0) type = CV_32UC(n);
+            else type = CV_32U;
+            return true;
+        }
+        if (compact == "u64") {
+            if (n != 0) type = CV_64UC(n);
+            else type = CV_64U;
+            return true;
+        }
     } else if (compact[0] == 's') {
         if (compact == "s8") {
             if (n != 0) type = CV_8SC(n);
@@ -86,6 +117,11 @@ int get_compact_type(const std::string& compact, int n, int& type) {
             else type = CV_32S;
             return true;
         }
+        if (compact == "s64") {
+            if (n != 0) type = CV_64SC(n);
+            else type = CV_64S;
+            return true;
+        }
     } else if (compact[0] == 'f') {
         if (compact == "f16") {
             if (n != 0) type = CV_16FC(n);
@@ -100,6 +136,12 @@ int get_compact_type(const std::string& compact, int n, int& type) {
         if (compact == "f64") {
             if (n != 0) type = CV_64FC(n);
             else type = CV_64F;
+            return true;
+        }
+    } else if (compact[0] == 'b') {
+        if (compact == "bf16") {
+            if (n != 0) type = CV_16BFC(n);
+            else type = CV_16BF;
             return true;
         }
     }

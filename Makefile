@@ -3,7 +3,7 @@ ifndef MIX_APP_PATH
 endif
 
 PRIV_DIR = $(MIX_APP_PATH)/priv
-OPENCV_CONFIG_CMAKE = $(PRIV_DIR)/lib/cmake/opencv4/OpenCVConfig.cmake
+OPENCV_CONFIG_CMAKE = $(PRIV_DIR)/lib/cmake/opencv5/OpenCVConfig.cmake
 EVISION_SO = $(PRIV_DIR)/evision.so
 WINDOWS_FIX_SO = $(PRIV_DIR)/windows_fix.so
 SRC = $(shell pwd)/src
@@ -23,13 +23,13 @@ CMAKE_BUILD_TYPE ?= Release
 # OpenCV
 OPENCV_USE_GIT_HEAD ?= false
 OPENCV_GIT_REPO ?= "https://github.com/opencv/opencv.git"
-OPENCV_VER ?= 4.13.0
+OPENCV_VER ?= 5.0.0
 ifneq ($(OPENCV_USE_GIT_HEAD), false)
 	OPENCV_VER=$(OPENCV_USE_GIT_BRANCH)
 endif
 OPENCV_CONTRIB_USE_GIT_HEAD ?= false
 OPENCV_CONTRIB_GIT_REPO ?= "https://github.com/opencv/opencv_contrib.git"
-OPENCV_CONTRIB_VER ?= 4.13.0
+OPENCV_CONTRIB_VER ?= 5.0.0
 ifneq ($(OPENCV_CONTRIB_USE_GIT_HEAD), false)
 	OPENCV_CONTRIB_VER=$(OPENCV_CONTRIB_USE_GIT_BRANCH)
 endif

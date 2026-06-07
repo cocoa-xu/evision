@@ -37,7 +37,13 @@
 #include "opencv2/core/utils/tls.hpp"
 
 #include "evision_generated_include.h"
-#include "opencv2/core/types_c.h"
+
+// OpenCV 5.0 renamed the features2d module to features; keep the legacy macro
+// defined so the hand-written Feature2D converter and the module report compile.
+#if defined(HAVE_OPENCV_FEATURES) && !defined(HAVE_OPENCV_FEATURES2D)
+#define HAVE_OPENCV_FEATURES2D
+#endif
+
 #include "erlcompat.hpp"
 #include "ArgInfo.hpp"
 #include "evision_consts.h"
@@ -455,6 +461,18 @@ static inline auto _do_cast_type(const From * ptr) -> To {
 }
 
 template <typename To>
+auto _do_cast_bf16(uint16_t value) -> To {
+    // bf16 is the high 16 bits of a 32-bit float; stored little-endian.
+    int n = 1;
+    if(*(char *)&n != 1) {
+        value = (value >> 8) | (value << 8);
+    }
+    union { uint32_t u; float f; } conv;
+    conv.u = ((uint32_t)value) << 16;
+    return (To)conv.f;
+}
+
+template <typename To>
 auto _do_cast_f16(uint16_t value) -> To {
     // _do_cast_f16 only means to cast from half-precision float to float
     // it should always be encoded in little-endian format
@@ -621,28 +639,24 @@ static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Mat& m, const ArgInfo& in
         else if (enif_is_identical(type_term, kAtomF64)) {
             nx_tensor_type = type = CV_64F;
             originalElemSize = 8;
+        }
+        else if (enif_is_identical(type_term, kAtomS64)) {
+            nx_tensor_type = type = CV_64S;
+            originalElemSize = 8;
+        }
+        else if (enif_is_identical(type_term, kAtomU32)) {
+            nx_tensor_type = type = CV_32U;
+            originalElemSize = 4;
+        }
+        else if (enif_is_identical(type_term, kAtomU64)) {
+            nx_tensor_type = type = CV_64U;
+            originalElemSize = 8;
+        }
+        else if (enif_is_identical(type_term, kAtomBF16)) {
+            nx_tensor_type = type = CV_16BF;
+            originalElemSize = 2;
         } else {
-            if (enif_is_identical(type_term, kAtomS64)) {
-                type = CV_32S;
-                originalElemSize = 8;
-                nx_tensor_type = INT32_MAX;
-                needcast = true;
-                cast_from = 1;
-            } else if (enif_is_identical(type_term, kAtomU64)) {
-                type = CV_32S;
-                originalElemSize = 8;
-                nx_tensor_type = INT32_MAX - 1;
-                needcast = true;
-                cast_from = 2;
-            } else if (enif_is_identical(type_term, kAtomU32)) {
-                type = CV_32S;
-                originalElemSize = 4;
-                nx_tensor_type = INT32_MAX - 2;
-                needcast = true;
-                cast_from = 3;
-            } else {
-                return false;
-            }
+            return false;
         }
 
 #ifndef CV_MAX_DIM
@@ -806,14 +820,17 @@ static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Mat& m, const ArgInfo& in
                 case CV_64F:
                     m.at<double>(i) = _do_cast_type<double, double>((const double *)oi);
                     break;
-                case INT32_MAX:
+                case CV_64S:
                     m.at<double>(i) = _do_cast_type<int64_t, double>((const int64_t *)oi);
                     break;
-                case INT32_MAX - 1:
+                case CV_64U:
                     m.at<double>(i) = _do_cast_type<uint64_t, double>((const uint64_t *)oi);
                     break;
-                case INT32_MAX - 2:
+                case CV_32U:
                     m.at<double>(i) = _do_cast_type<uint32_t, double>((const uint32_t *)oi);
+                    break;
+                case CV_16BF:
+                    m.at<double>(i) = _do_cast_bf16<double>(*(const uint16_t *)oi);
                     break;
                 default:
                     break;
@@ -962,14 +979,16 @@ bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, cv::Ptr<cv::Feature2D> &featur
         return info.has_default || info.outputarg;
     }
 
+#ifdef HAVE_OPENCV_XFEATURES2D
     {
-        using source_type = evision_res<cv::Ptr<cv::AKAZE>>;
+        using source_type = evision_res<cv::Ptr<cv::xfeatures2d::AKAZE>>;
         source_type * in_res;
         if (enif_get_resource(env, obj, source_type::type, (void **)&in_res) ) {
             feature = in_res->val;
             return true;
         }
     }
+#endif
 
     {
         using source_type = evision_res<cv::Ptr<cv::AffineFeature>>;
@@ -980,23 +999,27 @@ bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, cv::Ptr<cv::Feature2D> &featur
         }
     }
 
+#ifdef HAVE_OPENCV_XFEATURES2D
     {
-        using source_type = evision_res<cv::Ptr<cv::AgastFeatureDetector>>;
+        using source_type = evision_res<cv::Ptr<cv::xfeatures2d::AgastFeatureDetector>>;
         source_type * in_res;
         if (enif_get_resource(env, obj, source_type::type, (void **)&in_res) ) {
             feature = in_res->val;
             return true;
         }
     }
+#endif
 
+#ifdef HAVE_OPENCV_XFEATURES2D
     {
-        using source_type = evision_res<cv::Ptr<cv::BRISK>>;
+        using source_type = evision_res<cv::Ptr<cv::xfeatures2d::BRISK>>;
         source_type * in_res;
         if (enif_get_resource(env, obj, source_type::type, (void **)&in_res) ) {
             feature = in_res->val;
             return true;
         }
     }
+#endif
 
     {
         using source_type = evision_res<cv::Ptr<cv::FastFeatureDetector>>;
@@ -1016,14 +1039,16 @@ bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, cv::Ptr<cv::Feature2D> &featur
         }
     }
 
+#ifdef HAVE_OPENCV_XFEATURES2D
     {
-        using source_type = evision_res<cv::Ptr<cv::KAZE>>;
+        using source_type = evision_res<cv::Ptr<cv::xfeatures2d::KAZE>>;
         source_type * in_res;
         if (enif_get_resource(env, obj, source_type::type, (void **)&in_res) ) {
             feature = in_res->val;
             return true;
         }
     }
+#endif
 
     {
         using source_type = evision_res<cv::Ptr<cv::MSER>>;
@@ -3174,6 +3199,8 @@ on_load(ErlNifEnv* env, void**, ERL_NIF_TERM)
     kAtomU64 = evision::nif::atom(env, "u64");
     kAtomS64 = evision::nif::atom(env, "s64");
     kAtomF16 = evision::nif::atom(env, "f16");
+    kAtomBF = evision::nif::atom(env, "bf");
+    kAtomBF16 = evision::nif::atom(env, "bf16");
     kAtomF32 = evision::nif::atom(env, "f32");
     kAtomF64 = evision::nif::atom(env, "f64");
     kAtomUser = evision::nif::atom(env, "user");
