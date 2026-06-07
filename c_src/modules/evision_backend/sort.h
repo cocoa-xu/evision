@@ -67,7 +67,7 @@ static ERL_NIF_TERM evision_cv_mat_sort_rows(ErlNifEnv *env, int argc, const ERL
         Mat src;
         int descending = 0;
 
-        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "src"), src, ArgInfo("src", 0)) &&
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "src"), src, ArgInfo("src", ArgInfo::INPUT_ONLY)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "descending"), descending, ArgInfo("descending", 0))) {
             Mat dst(src.rows, src.cols, src.type());
             switch (src.depth()) {
@@ -98,7 +98,7 @@ static ERL_NIF_TERM evision_cv_mat_argsort_rows(ErlNifEnv *env, int argc, const 
         Mat src;
         int descending = 0;
 
-        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "src"), src, ArgInfo("src", 0)) &&
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "src"), src, ArgInfo("src", ArgInfo::INPUT_ONLY)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "descending"), descending, ArgInfo("descending", 0))) {
             Mat dst(src.rows, src.cols, CV_32S);
             switch (src.depth()) {

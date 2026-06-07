@@ -45,7 +45,7 @@ static ERL_NIF_TERM evision_cv_mat_predicate(ErlNifEnv *env, int argc, const ERL
         Mat src;
         int op = 0;
 
-        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "src"), src, ArgInfo("src", 0)) &&
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "src"), src, ArgInfo("src", ArgInfo::INPUT_ONLY)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "op"), op, ArgInfo("op", 0))) {
             Mat src_c = src.isContinuous() ? src : src.clone();
             Mat dst(1, (int)src_c.total(), CV_8U);

@@ -23,9 +23,9 @@ static ERL_NIF_TERM evision_cv_mat_select(ErlNifEnv *env, int argc, const ERL_NI
     {
         Mat mask, on_true, on_false;
 
-        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "mask"), mask, ArgInfo("mask", 0)) &&
-            evision_to_safe(env, evision_get_kw(env, erl_terms, "on_true"), on_true, ArgInfo("on_true", 0)) &&
-            evision_to_safe(env, evision_get_kw(env, erl_terms, "on_false"), on_false, ArgInfo("on_false", 0))) {
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "mask"), mask, ArgInfo("mask", ArgInfo::INPUT_ONLY)) &&
+            evision_to_safe(env, evision_get_kw(env, erl_terms, "on_true"), on_true, ArgInfo("on_true", ArgInfo::INPUT_ONLY)) &&
+            evision_to_safe(env, evision_get_kw(env, erl_terms, "on_false"), on_false, ArgInfo("on_false", ArgInfo::INPUT_ONLY))) {
             Mat mc = mask.isContinuous() ? mask : mask.clone();
             Mat fc = on_false.isContinuous() ? on_false : on_false.clone();
             Mat dst = on_true.clone();

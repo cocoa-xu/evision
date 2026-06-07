@@ -163,7 +163,7 @@ static ERL_NIF_TERM evision_cv_mat_window_reduce(ErlNifEnv *env, int argc, const
         std::vector<int> in_dims, out_dims, win_dims, strides, pad_lo, dil;
         int op = 0;
 
-        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "src"), src, ArgInfo("src", 0)) &&
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "src"), src, ArgInfo("src", ArgInfo::INPUT_ONLY)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "in_dims"), in_dims, ArgInfo("in_dims", 0)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "out_dims"), out_dims, ArgInfo("out_dims", 0)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "win_dims"), win_dims, ArgInfo("win_dims", 0)) &&
@@ -257,8 +257,8 @@ static ERL_NIF_TERM evision_cv_mat_window_scatter(ErlNifEnv *env, int argc, cons
         double init = 0.0;
         int op = 0;
 
-        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "src"), src, ArgInfo("src", 0)) &&
-            evision_to_safe(env, evision_get_kw(env, erl_terms, "source"), source, ArgInfo("source", 0)) &&
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "src"), src, ArgInfo("src", ArgInfo::INPUT_ONLY)) &&
+            evision_to_safe(env, evision_get_kw(env, erl_terms, "source"), source, ArgInfo("source", ArgInfo::INPUT_ONLY)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "init"), init, ArgInfo("init", 0)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "in_dims"), in_dims, ArgInfo("in_dims", 0)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "win_dims"), win_dims, ArgInfo("win_dims", 0)) &&

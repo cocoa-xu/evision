@@ -56,7 +56,7 @@ static ERL_NIF_TERM evision_cv_mat_unary_math(ErlNifEnv *env, int argc, const ER
         Mat src;
         int op = 0;
 
-        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "src"), src, ArgInfo("src", 0)) &&
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "src"), src, ArgInfo("src", ArgInfo::INPUT_ONLY)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "op"), op, ArgInfo("op", 0))) {
             Mat dst = src.clone();
             switch (dst.depth()) {

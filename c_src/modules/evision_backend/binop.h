@@ -77,8 +77,8 @@ static ERL_NIF_TERM evision_cv_mat_binop(ErlNifEnv *env, int argc, const ERL_NIF
         Mat l, r;
         int op = 0;
 
-        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "l"), l, ArgInfo("l", 0)) &&
-            evision_to_safe(env, evision_get_kw(env, erl_terms, "r"), r, ArgInfo("r", 0)) &&
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "l"), l, ArgInfo("l", ArgInfo::INPUT_ONLY)) &&
+            evision_to_safe(env, evision_get_kw(env, erl_terms, "r"), r, ArgInfo("r", ArgInfo::INPUT_ONLY)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "op"), op, ArgInfo("op", 0))) {
             Mat lc = l.isContinuous() ? l : l.clone();
             Mat rc = r.isContinuous() ? r : r.clone();

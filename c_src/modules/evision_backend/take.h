@@ -24,8 +24,8 @@ static ERL_NIF_TERM evision_cv_mat_take(ErlNifEnv *env, int argc, const ERL_NIF_
         Mat src, indices;
         int outer = 0, axis_dim = 0, inner = 0;
 
-        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "src"), src, ArgInfo("src", 0)) &&
-            evision_to_safe(env, evision_get_kw(env, erl_terms, "indices"), indices, ArgInfo("indices", 0)) &&
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "src"), src, ArgInfo("src", ArgInfo::INPUT_ONLY)) &&
+            evision_to_safe(env, evision_get_kw(env, erl_terms, "indices"), indices, ArgInfo("indices", ArgInfo::INPUT_ONLY)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "outer"), outer, ArgInfo("outer", 0)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "axis_dim"), axis_dim, ArgInfo("axis_dim", 0)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "inner"), inner, ArgInfo("inner", 0))) {
@@ -41,7 +41,10 @@ static ERL_NIF_TERM evision_cv_mat_take(ErlNifEnv *env, int argc, const ERL_NIF_
 
             int64_t copies = (int64_t)outer * num_idx;
             int64_t work = copies * (inner > 0 ? inner : 1);
-            if (!evision_should_parallelize(copies, work, EVISION_PARALLEL_SIMPLE_MIN_WORK)) {
+            // take is a scattered gather of `inner`-sized blocks; threading random
+            // reads only pays off once the blocks (or their count) are large, so it
+            // takes a higher bar than the contiguous elementwise kernels.
+            if (!evision_should_parallelize(copies, work, EVISION_PARALLEL_NESTED_MIN_WORK)) {
                 for (int64_t o = 0; o < outer; o++) {
                     for (int64_t i = 0; i < num_idx; i++) {
                         int64_t idx = ip[i];
