@@ -2,7 +2,7 @@ defmodule Evision.MixProject.Metadata do
   @moduledoc false
 
   def app, do: :evision
-  def version, do: "1.0.0-dev"
+  def version, do: "1.0.0-rc.0"
   def github_url, do: "https://github.com/cocoa-xu/evision"
   def opencv_version, do: "5.0.0"
   # evision 1.0.x targets OpenCV 5.0.x only.
@@ -55,14 +55,7 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
   end
 
   def available_targets do
-    opencv_version = System.get_env("OPENCV_VER", Metadata.opencv_version())
-    available_targets = @available_targets
-
-    if Enum.member?(["4.11.0"], opencv_version) do
-      available_targets -- ["ppc64le-linux-gnu", "aarch64-windows-msvc"]
-    else
-      available_targets
-    end
+    @available_targets
   end
 
   def available_nif_urls(_host_nif_version, version \\ Metadata.version()) do

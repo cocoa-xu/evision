@@ -1,6 +1,6 @@
 {application, evision,
  [{description, "OpenCV BEAM binding."},
-  {vsn, "1.0.0-dev"},
+  {vsn, "1.0.0-rc.0"},
   {registered, []},
   {applications,
    [kernel,

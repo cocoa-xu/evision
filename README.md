@@ -33,7 +33,7 @@ Then you can add `evision` as a dependency in your `mix.exs`.
 ```elixir
 def deps do
   [
-    {:evision, "~> 0.2"}
+    {:evision, "~> 1.0"}
   ]
 end
 ```
