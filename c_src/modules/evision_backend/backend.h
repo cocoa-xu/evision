@@ -11,6 +11,7 @@
 #include "ceil.h"
 #include "clip.h"
 #include "cmp.h"
+#include "cumulative.h"
 #include "divide.h"
 #include "expm1.h"
 #include "eye.h"

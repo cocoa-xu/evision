@@ -216,4 +216,37 @@ defmodule Evision.Backend.Test do
       end
     end
   end
+
+  describe "cumulative_sum / product / min / max" do
+    test "match Nx.BinaryBackend exactly for integer dtypes across axes and :reverse" do
+      tensors = [
+        Nx.tensor([1, 2, 3, 4]),
+        Nx.tensor([[1, 2, 3], [4, 5, 6]]),
+        Nx.tensor([[[1, 2], [3, 4]], [[5, 6], [7, 8]]]),
+        Nx.tensor([[3, 1, 2], [9, 8, 7]], type: :s32),
+        Nx.tensor([[10, 20], [30, 40]], type: :u64)
+      ]
+
+      opts_list = [[], [reverse: true], [axis: 0], [axis: 1, reverse: true]]
+
+      for op <- [:cumulative_sum, :cumulative_product, :cumulative_min, :cumulative_max],
+          t <- tensors, opts <- opts_list, axis_in_rank?(t, opts) do
+        assert_same(apply(Nx, op, [ev(t), opts]), apply(Nx, op, [t, opts]))
+      end
+    end
+
+    test "match Nx.BinaryBackend approximately for float and half dtypes" do
+      tensors = [
+        Nx.tensor([[1.5, -2.0, 3.25], [0.5, 4.0, -1.0]], type: :f32),
+        Nx.tensor([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]], type: :f16)
+      ]
+
+      opts_list = [[], [reverse: true], [axis: 0], [axis: 1, reverse: true]]
+
+      for op <- [:cumulative_sum, :cumulative_product, :cumulative_min, :cumulative_max],
+          t <- tensors, opts <- opts_list, axis_in_rank?(t, opts) do
+        assert_close(apply(Nx, op, [ev(t), opts]), apply(Nx, op, [t, opts]))
+      end
+    end
+  end
 end

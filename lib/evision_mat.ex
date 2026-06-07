@@ -1294,6 +1294,18 @@ defmodule Evision.Mat do
     |> Evision.Internal.Structurise.to_struct()
   end
 
+  @doc false
+  # Row-wise prefix scan (Nx.cumulative_*): op 0=sum 1=product 2=min 3=max,
+  # optionally reversed. `mat` is a 2D mat already cast to the output type.
+  def cumulative(mat, op, reverse?) do
+    :evision_nif.mat_cumulative(
+      src: from_struct(mat),
+      op: op,
+      reverse: if(reverse?, do: 1, else: 0)
+    )
+    |> Evision.Internal.Structurise.to_struct()
+  end
+
   @doc namespace: :"cv.Mat"
   @spec expm1(maybe_mat_in()) :: maybe_mat_out()
   def expm1(mat) do

@@ -753,7 +753,7 @@ defmodule Evision.Backend do
     descending? = opts[:direction] == :desc
 
     from_nx(tensor)
-    |> sort_along_axis(shape, opts[:axis], &sort_values(&1, type, descending?))
+    |> along_axis(shape, opts[:axis], &sort_values(&1, type, descending?))
     |> to_nx(out)
   end
 
@@ -762,7 +762,7 @@ defmodule Evision.Backend do
     descending? = opts[:direction] == :desc
 
     from_nx(tensor)
-    |> sort_along_axis(shape, opts[:axis], fn m2d ->
+    |> along_axis(shape, opts[:axis], fn m2d ->
       m2d
       |> sort_indices(type, descending?)
       |> Evision.Mat.as_type(out_type)
@@ -812,9 +812,9 @@ defmodule Evision.Backend do
 
   defp as_mat_type(mat, type), do: reject_error(Evision.Mat.as_type(mat, type))
 
-  # Reduce an n-d sort/argsort along `axis` to cv's 2D per-row form: move the
+  # Reduce an n-d row-wise op along `axis` to cv's 2D per-row form: move the
   # target axis last, flatten to [n, axis_len], apply `fun`, then restore.
-  defp sort_along_axis(mat, shape, axis, fun) do
+  defp along_axis(mat, shape, axis, fun) do
     rank = tuple_size(shape)
     identity = Enum.to_list(0..(rank - 1))
     perm = (identity -- [axis]) ++ [axis]
@@ -845,6 +845,47 @@ defmodule Evision.Backend do
     |> Enum.with_index()
     |> Enum.sort_by(&elem(&1, 0))
     |> Enum.map(&elem(&1, 1))
+  end
+
+  ## Cumulative
+
+  @scan_sum 0
+  @scan_product 1
+  @scan_min 2
+  @scan_max 3
+
+  @impl true
+  def cumulative_sum(out, tensor, opts), do: cumulative(out, tensor, opts, @scan_sum)
+
+  @impl true
+  def cumulative_product(out, tensor, opts), do: cumulative(out, tensor, opts, @scan_product)
+
+  @impl true
+  def cumulative_min(out, tensor, opts), do: cumulative(out, tensor, opts, @scan_min)
+
+  @impl true
+  def cumulative_max(out, tensor, opts), do: cumulative(out, tensor, opts, @scan_max)
+
+  # Prefix scan along `axis` (output keeps the input shape and type). Half floats
+  # are widened to f32 (lossless) since the scan NIF covers only real C types.
+  defp cumulative(%T{type: type, shape: shape} = out, tensor, opts, op) do
+    reverse? = opts[:reverse]
+
+    from_nx(tensor)
+    |> along_axis(shape, opts[:axis], &scan(&1, type, op, reverse?))
+    |> to_nx(out)
+  end
+
+  defp scan(m2d, type, op, reverse?) when type in @half_types do
+    m2d
+    |> as_mat_type({:f, 32})
+    |> Evision.Mat.cumulative(op, reverse?)
+    |> reject_error()
+    |> as_mat_type(type)
+  end
+
+  defp scan(m2d, _type, op, reverse?) do
+    reject_error(Evision.Mat.cumulative(m2d, op, reverse?))
   end
 
   ## Reductions
