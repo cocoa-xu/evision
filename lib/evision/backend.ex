@@ -741,6 +741,112 @@ defmodule Evision.Backend do
   defp reduce_arg(mat, :min, axis, last_index?),
     do: Evision.reduceArgMin(mat, axis, lastIndex: last_index?)
 
+  ## Sorting
+
+  # cv::sort/sortIdx support these depths directly; wider integer depths go through
+  # a custom NIF, and half floats are widened to f32 (lossless) so cv can handle them.
+  @wide_int_types [{:u, 32}, {:s, 64}, {:u, 64}]
+  @half_types [{:f, 16}, {:bf, 16}]
+
+  @impl true
+  def sort(out, %T{shape: shape, type: type} = tensor, opts) do
+    descending? = opts[:direction] == :desc
+
+    from_nx(tensor)
+    |> sort_along_axis(shape, opts[:axis], &sort_values(&1, type, descending?))
+    |> to_nx(out)
+  end
+
+  @impl true
+  def argsort(%T{type: out_type} = out, %T{shape: shape, type: type} = tensor, opts) do
+    descending? = opts[:direction] == :desc
+
+    from_nx(tensor)
+    |> sort_along_axis(shape, opts[:axis], fn m2d ->
+      m2d
+      |> sort_indices(type, descending?)
+      |> Evision.Mat.as_type(out_type)
+      |> reject_error()
+    end)
+    |> to_nx(out)
+  end
+
+  defp sort_values(m2d, type, descending?) when type in @wide_int_types do
+    reject_error(Evision.Mat.sort_rows(m2d, descending?))
+  end
+
+  defp sort_values(m2d, type, descending?) when type in @half_types do
+    m2d
+    |> as_mat_type({:f, 32})
+    |> Evision.sort(sort_flags(descending?))
+    |> reject_error()
+    |> as_mat_type(type)
+  end
+
+  defp sort_values(m2d, _type, descending?) do
+    reject_error(Evision.sort(m2d, sort_flags(descending?)))
+  end
+
+  defp sort_indices(m2d, type, descending?) when type in @wide_int_types do
+    reject_error(Evision.Mat.argsort_rows(m2d, descending?))
+  end
+
+  # cv::sortIdx is stable ascending but not descending, so sort the order-reversing
+  # complement ascending to reproduce Nx's stable descending order.
+  defp sort_indices(m2d, type, descending?) do
+    work = if type in @half_types, do: as_mat_type(m2d, {:f, 32}), else: m2d
+    work = if descending?, do: complement(work), else: work
+    reject_error(Evision.sortIdx(work, 0))
+  end
+
+  # SORT_EVERY_ROW = 0, SORT_ASCENDING = 0, SORT_DESCENDING = 16.
+  defp sort_flags(true), do: 16
+  defp sort_flags(false), do: 0
+
+  defp complement(mat) do
+    case Evision.Mat.type(mat) do
+      {t, _} when t in [:f, :bf] -> reject_error(Evision.Mat.negate(mat))
+      {t, _} when t in [:s, :u] -> reject_error(Evision.Mat.bitwise_not(mat))
+    end
+  end
+
+  defp as_mat_type(mat, type), do: reject_error(Evision.Mat.as_type(mat, type))
+
+  # Reduce an n-d sort/argsort along `axis` to cv's 2D per-row form: move the
+  # target axis last, flatten to [n, axis_len], apply `fun`, then restore.
+  defp sort_along_axis(mat, shape, axis, fun) do
+    rank = tuple_size(shape)
+    identity = Enum.to_list(0..(rank - 1))
+    perm = (identity -- [axis]) ++ [axis]
+    axis_len = elem(shape, axis)
+    n = div(Nx.size(shape), max(axis_len, 1))
+    t_shape = perm |> Enum.map(&elem(shape, &1)) |> List.to_tuple()
+
+    transposed =
+      if perm == identity,
+        do: mat,
+        else: reject_error(Evision.Mat.transpose(mat, perm, as_shape: shape))
+
+    result_t =
+      transposed
+      |> Evision.Mat.reshape([n, axis_len])
+      |> reject_error()
+      |> fun.()
+      |> Evision.Mat.reshape(Tuple.to_list(t_shape))
+      |> reject_error()
+
+    if perm == identity,
+      do: result_t,
+      else: reject_error(Evision.Mat.transpose(result_t, inverse_perm(perm), as_shape: t_shape))
+  end
+
+  defp inverse_perm(perm) do
+    perm
+    |> Enum.with_index()
+    |> Enum.sort_by(&elem(&1, 0))
+    |> Enum.map(&elem(&1, 1))
+  end
+
   @doc false
   def from_nx(%T{data: %EB{ref: mat_ref}}), do: mat_ref
   def from_nx(%T{} = tensor) do

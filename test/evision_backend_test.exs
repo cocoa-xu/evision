@@ -44,4 +44,33 @@ defmodule Evision.Backend.Test do
       end
     end
   end
+
+  describe "sort/argsort" do
+    test "match Nx.BinaryBackend across axes, ranks, directions, ties, and dtypes" do
+      base = [
+        Nx.tensor([3, 1, 2, 1, 3]),
+        Nx.tensor([[3, 1, 2], [1, 3, 2]]),
+        Nx.tensor([[[2, 1], [1, 2]], [[3, 0], [0, 3]]]),
+        Nx.tensor([[5, 5, 5], [5, 5, 5]]),
+        Nx.tensor([[1.5, -2.0, 3.25], [3.25, 1.5, -2.0]], type: :f32)
+      ]
+
+      # exercise the wide-int custom NIF path (u32/s64/u64) and the half-float
+      # cast path (f16/bf16), with ties to pin stable ordering
+      typed = for ty <- [:u32, :s64, :u64, :f16, :bf16], do: Nx.tensor([[3, 1, 2, 1], [4, 0, 5, 0]], type: ty)
+
+      opts_list = [
+        [],
+        [direction: :desc],
+        [axis: 1],
+        [axis: 1, direction: :desc],
+        [axis: 2],
+        [axis: 2, direction: :desc]
+      ]
+
+      for t <- base ++ typed, fun <- [:sort, :argsort], opts <- opts_list, axis_in_rank?(t, opts) do
+        assert_same(apply(Nx, fun, [ev(t), opts]), apply(Nx, fun, [t, opts]))
+      end
+    end
+  end
 end

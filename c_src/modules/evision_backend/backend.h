@@ -25,6 +25,7 @@
 #include "reshape.h"
 #include "round.h"
 #include "sign.h"
+#include "sort.h"
 #include "subtract.h"
 #include "to_batched.h"
 #include "to_binary.h"

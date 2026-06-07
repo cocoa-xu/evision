@@ -1224,6 +1224,24 @@ defmodule Evision.Mat do
     |> Evision.Internal.Structurise.to_struct()
   end
 
+  @doc false
+  # Row-wise sort for wide-int depths (CV_32U/CV_64S/CV_64U) unsupported by cv::sort.
+  def sort_rows(mat, descending?) do
+    mat = from_struct(mat)
+
+    :evision_nif.mat_sort_rows(src: mat, descending: if(descending?, do: 1, else: 0))
+    |> Evision.Internal.Structurise.to_struct()
+  end
+
+  @doc false
+  # Row-wise stable argsort for wide-int depths unsupported by cv::sortIdx.
+  def argsort_rows(mat, descending?) do
+    mat = from_struct(mat)
+
+    :evision_nif.mat_argsort_rows(src: mat, descending: if(descending?, do: 1, else: 0))
+    |> Evision.Internal.Structurise.to_struct()
+  end
+
   @doc namespace: :"cv.Mat"
   @spec expm1(maybe_mat_in()) :: maybe_mat_out()
   def expm1(mat) do
