@@ -16,6 +16,7 @@
 #include "eye.h"
 #include "floor.h"
 #include "from_binary.h"
+#include "gather.h"
 #include "logical_and.h"
 #include "logical_or.h"
 #include "logical_xor.h"

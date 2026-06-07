@@ -912,6 +912,30 @@ defmodule Evision.Backend do
     |> to_nx(out)
   end
 
+  @impl true
+  def gather(%T{shape: out_shape} = out, tensor, %T{shape: indices_shape} = indices, opts) do
+    axes = opts[:axes]
+    tensor_axes = Nx.axes(tensor)
+
+    tensor =
+      if List.starts_with?(tensor_axes, axes) do
+        tensor
+      else
+        Nx.transpose(tensor, axes: axes ++ (tensor_axes -- axes))
+      end
+
+    depth = elem(indices_shape, tuple_size(indices_shape) - 1)
+    {lead, leftover} = tensor.shape |> Tuple.to_list() |> Enum.split(depth)
+    dims = from_nx(Nx.tensor(lead, type: {:s, 64}))
+    idx = as_mat_type(from_nx(indices), {:s, 64})
+
+    Evision.Mat.gather(from_nx(tensor), idx, dims, Enum.product(leftover))
+    |> reject_error()
+    |> Evision.Mat.reshape(reduce_out_dims(out_shape))
+    |> reject_error()
+    |> to_nx(out)
+  end
+
   @doc false
   def from_nx(%T{data: %EB{ref: mat_ref}}), do: mat_ref
   def from_nx(%T{} = tensor) do

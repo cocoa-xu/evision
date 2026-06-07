@@ -130,4 +130,34 @@ defmodule Evision.Backend.Test do
       end
     end
   end
+
+  describe "gather" do
+    test "matches Nx.BinaryBackend across axes, ranks, dtypes, and index shapes" do
+      t2 = Nx.tensor([[1, 2], [3, 4]])
+      t23 = Nx.tensor([[1, 2, 3], [4, 5, 6]])
+      t3 = Nx.tensor([[[1, 2], [11, 12]], [[101, 102], [111, 112]]], type: :s64)
+      t23f = Nx.tensor([[1.5, 2.5, 3.5], [4.5, 5.5, 6.5]], type: :f32)
+      iota = Nx.iota({2, 1, 3})
+
+      # {tensor, indices, opts} triples valid for Nx.gather (coords in bounds,
+      # indices last dim == length(axes)); covers default + explicit axes,
+      # contiguous + non-contiguous axes, scalar + subset gathers, int + float.
+      cases = [
+        {t2, Nx.tensor([[1, 1], [0, 1], [1, 0]]), []},
+        {t2, Nx.tensor([[[1, 1], [0, 0]], [[1, 0], [0, 1]]]), []},
+        {t3, Nx.tensor([[0, 0, 0], [0, 1, 1], [1, 1, 1]]), []},
+        {t23, Nx.tensor([[1], [0]]), []},
+        {t23, Nx.tensor([[1], [0], [2], [1]]), [axes: [1]]},
+        {iota, Nx.tensor([[[1], [0], [2]]]), [axes: [2]]},
+        {t23f, Nx.tensor([[0, 0], [1, 2], [0, 2]]), []},
+        {t23f, Nx.tensor([[0], [1]]), [axes: [0]]},
+        {t3, Nx.tensor([[0], [1]]), [axes: [0]]},
+        {t3, Nx.tensor([[0, 1], [1, 0]]), [axes: [0, 2]]}
+      ]
+
+      for {t, idx, opts} <- cases do
+        assert_same(Nx.gather(ev(t), ev(idx), opts), Nx.gather(t, idx, opts))
+      end
+    end
+  end
 end

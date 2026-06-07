@@ -1265,6 +1265,19 @@ defmodule Evision.Mat do
     |> Evision.Internal.Structurise.to_struct()
   end
 
+  @doc false
+  # Gather over leading axes (Nx.gather): each int64 coordinate row over `dims`
+  # selects one inner block; type-agnostic byte copy.
+  def gather(mat, indices, dims, inner) do
+    :evision_nif.mat_gather(
+      src: from_struct(mat),
+      indices: from_struct(indices),
+      dims: from_struct(dims),
+      inner: inner
+    )
+    |> Evision.Internal.Structurise.to_struct()
+  end
+
   @doc namespace: :"cv.Mat"
   @spec expm1(maybe_mat_in()) :: maybe_mat_out()
   def expm1(mat) do
