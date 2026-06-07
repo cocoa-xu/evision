@@ -23,6 +23,22 @@ defmodule Evision.Backend.Test do
            "got #{inspect(Nx.to_flat_list(got_b))} vs #{inspect(Nx.to_flat_list(want))}"
   end
 
+  # Move a tensor onto BinaryBackend (factor reconstruction is done there, since
+  # Evision.Backend.multiply does matrix mult for two non-scalar operands).
+  defp b(t), do: Nx.backend_copy(t, Nx.BinaryBackend)
+
+  # Assert two tensors are close at a given tolerance (both moved to BinaryBackend first).
+  # Reconstruction of cv-exact factors uses a tight tol; comparing canonical values to Nx's
+  # iterative SVD/eigh reference uses a looser one (the reference is only ~1e-4 accurate).
+  defp close_at(x, y, tol) do
+    xb = b(x)
+    yb = b(y)
+    assert Nx.shape(xb) == Nx.shape(yb)
+
+    assert Nx.to_number(Nx.all_close(xb, yb, atol: tol, rtol: tol)) == 1,
+           "#{inspect(Nx.to_flat_list(xb))} vs #{inspect(Nx.to_flat_list(yb))}"
+  end
+
   defp axis_in_rank?(t, opts) do
     case opts[:axis] do
       nil -> true
@@ -620,6 +636,52 @@ defmodule Evision.Backend.Test do
       ab = Nx.tensor([[[14.0, 10.0], [9.0, 9.0]], [[4.0, 11.0], [2.0, 3.0]]], type: :f64)
       bv = Nx.tensor([[2.0, 3.0], [1.0, -3.0]], type: :f64)
       assert_close(Nx.LinAlg.solve(ev(ab), ev(bv)), Nx.LinAlg.solve(ab, bv))
+    end
+  end
+
+  describe "svd" do
+    test "reconstructs square A and matches singular values" do
+      a = Nx.tensor([[1.0, 2.0, 0.0], [2.0, 3.0, 1.0], [0.0, 1.0, 2.0]], type: :f64)
+      {u, s, vt} = Nx.LinAlg.svd(ev(a))
+      a_rec = Nx.dot(Nx.multiply(b(u), Nx.reshape(b(s), {1, 3})), b(vt))
+      close_at(a_rec, a, 1.0e-4)
+      close_at(s, elem(Nx.LinAlg.svd(a), 1), 1.0e-3)
+    end
+
+    test "rectangular full/reduced shapes and singular values" do
+      a = Nx.tensor([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]], type: :f64)
+
+      {uf, sf, vtf} = Nx.LinAlg.svd(ev(a), full_matrices?: true)
+      assert {Nx.shape(uf), Nx.shape(sf), Nx.shape(vtf)} == {{3, 3}, {2}, {2, 2}}
+
+      {ur, sr, vtr} = Nx.LinAlg.svd(ev(a), full_matrices?: false)
+      assert {Nx.shape(ur), Nx.shape(sr), Nx.shape(vtr)} == {{3, 2}, {2}, {2, 2}}
+
+      close_at(sf, elem(Nx.LinAlg.svd(a, full_matrices?: true), 1), 1.0e-3)
+      a_rec = Nx.dot(Nx.multiply(b(ur), Nx.reshape(b(sr), {1, 2})), b(vtr))
+      close_at(a_rec, a, 1.0e-4)
+    end
+  end
+
+  describe "eigh" do
+    test "reconstructs symmetric A and matches eigenvalues as a set" do
+      tensors = [
+        Nx.tensor([[2.0, 1.0], [1.0, 2.0]], type: :f64),
+        Nx.tensor([[2.0, 0.0, 0.0], [0.0, 3.0, 0.0], [0.0, 0.0, 5.0]], type: :f64),
+        Nx.tensor([[4.0, 1.0, -2.0], [1.0, 2.0, 0.0], [-2.0, 0.0, 3.0]], type: :f64)
+      ]
+
+      for a <- tensors do
+        n = elem(Nx.shape(a), 0)
+        {vals, vecs} = Nx.LinAlg.eigh(ev(a))
+        vb = b(vecs)
+        a_rec = Nx.dot(Nx.multiply(vb, Nx.reshape(b(vals), {1, n})), Nx.transpose(vb))
+        close_at(a_rec, a, 1.0e-4)
+
+        # order/sign conventions differ from Nx, so compare eigenvalues as a sorted set
+        {vals_ref, _} = Nx.LinAlg.eigh(a)
+        close_at(Nx.sort(vals), Nx.sort(vals_ref), 1.0e-3)
+      end
     end
   end
 end

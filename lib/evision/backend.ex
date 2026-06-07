@@ -1425,6 +1425,38 @@ defmodule Evision.Backend do
     end
   end
 
+  @impl true
+  def svd({u_out, s_out, vt_out}, %T{shape: shape} = tensor, opts) do
+    {_batch, m, n} = mat_dims(shape)
+    flags = if opts[:full_matrices?], do: Evision.SVD.Flags.cv_FULL_UV(), else: 0
+
+    results =
+      for am <- split_2d(tensor, m, n) do
+        {w, u, vt} = Evision.svdDecomp(am, flags: flags)
+        {u, w, vt}
+      end
+
+    {stack_f64(u_out, Enum.map(results, &elem(&1, 0))),
+     stack_f64(s_out, Enum.map(results, &elem(&1, 1))),
+     stack_f64(vt_out, Enum.map(results, &elem(&1, 2)))}
+  end
+
+  @impl true
+  def eigh({vals_out, vecs_out}, %T{shape: shape} = tensor, _opts) do
+    {_batch, n, _n} = mat_dims(shape)
+
+    results =
+      for am <- split_2d(tensor, n, n) do
+        {evals, evecs} = Evision.eigen(am)
+        # cv stores eigenvectors as rows in descending-eigenvalue order; Nx wants them as
+        # columns (column i pairing with eigenvalue i), so transpose.
+        {evals, reject_error(Evision.Mat.transpose(evecs, [1, 0], as_shape: {n, n}))}
+      end
+
+    {stack_f64(vals_out, Enum.map(results, &elem(&1, 0))),
+     stack_f64(vecs_out, Enum.map(results, &elem(&1, 1)))}
+  end
+
   # {product of leading dims, second-last dim, last dim} for a batched matrix shape.
   defp mat_dims(shape) do
     [n, m | lead] = shape |> Tuple.to_list() |> Enum.reverse()
