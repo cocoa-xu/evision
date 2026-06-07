@@ -1376,6 +1376,96 @@ defmodule Evision.Backend do
   defp maybe_narrow(mat, type, type), do: mat
   defp maybe_narrow(mat, _work_type, out_type), do: as_mat_type(mat, out_type)
 
+  ## Linear algebra
+
+  # Each callback receives `out` tensors already shaped and typed by Nx, so the only job
+  # is to produce matching values. cv covers determinant/solve/SVD/eigen; cholesky, lu, qr
+  # and triangular_solve have no cv factor extraction and go through custom NIFs. All ops
+  # compute in f64 (cast back to out.type) and loop over the leading batch dims.
+
+  @impl true
+  def determinant(%T{type: out_type, shape: out_shape} = out, %T{shape: shape} = tensor) do
+    {_batch, n, _n} = mat_dims(shape)
+
+    bin =
+      for m <- split_2d(tensor, n, n), into: <<>> do
+        <<determinant_one(m)::float-64-native>>
+      end
+
+    Evision.Mat.from_binary_by_shape(bin, {:f, 64}, out_shape)
+    |> reject_error()
+    |> as_mat_type(out_type)
+    |> to_nx(out)
+  end
+
+  defp determinant_one(mat) do
+    case Evision.determinant(mat) do
+      {:error, msg} -> raise RuntimeError, msg
+      d when is_number(d) -> d * 1.0
+    end
+  end
+
+  @impl true
+  def solve(out, %T{shape: a_shape} = a, %T{shape: b_shape} = b) do
+    {batch, n, _n} = mat_dims(a_shape)
+    {b_trailing, vector?} = rhs_trailing(a_shape, b_shape)
+
+    Enum.zip_with(split_2d(a, n, n), split_into(b, batch, b_trailing), fn am, bm ->
+      bm = if vector?, do: reject_error(Evision.Mat.reshape(bm, [n, 1])), else: bm
+      solve_one(am, bm)
+    end)
+    |> then(&stack_f64(out, &1))
+  end
+
+  defp solve_one(a, b) do
+    case Evision.solve(a, b, flags: Evision.DecompTypes.cv_DECOMP_LU()) do
+      %Evision.Mat{} = x -> x
+      {:error, msg} -> raise RuntimeError, msg
+      _ -> raise ArgumentError, "can't solve for singular matrix"
+    end
+  end
+
+  # {product of leading dims, second-last dim, last dim} for a batched matrix shape.
+  defp mat_dims(shape) do
+    [n, m | lead] = shape |> Tuple.to_list() |> Enum.reverse()
+    {Enum.product(lead), m, n}
+  end
+
+  # b's per-matrix trailing shape (drop a's leading batch dims) + whether it is a vector.
+  defp rhs_trailing(a_shape, b_shape) do
+    trailing =
+      b_shape |> Tuple.to_list() |> Enum.drop(tuple_size(a_shape) - 2) |> List.to_tuple()
+
+    {trailing, tuple_size(trailing) == 1}
+  end
+
+  # Split a batched {batch.., rows, cols} tensor into a list of {rows, cols} f64 mats.
+  defp split_2d(tensor, rows, cols),
+    do: split_into(tensor, div(Nx.size(tensor), rows * cols), {rows, cols})
+
+  defp split_into(tensor, batch, trailing) do
+    bin = tensor |> from_nx() |> as_mat_type({:f, 64}) |> to_binary_f64()
+    chunk = div(byte_size(bin), batch)
+
+    for i <- 0..(batch - 1) do
+      binary_part(bin, i * chunk, chunk)
+      |> Evision.Mat.from_binary_by_shape({:f, 64}, trailing)
+      |> reject_error()
+    end
+  end
+
+  defp to_binary_f64(mat), do: reject_error(Evision.Mat.to_binary(mat, 0))
+
+  # Concatenate f64 mats (batch order) then reshape/cast to the output template.
+  defp stack_f64(%T{type: out_type, shape: shape} = out, mats) do
+    bin = mats |> Enum.map(&to_binary_f64/1) |> IO.iodata_to_binary()
+
+    Evision.Mat.from_binary_by_shape(bin, {:f, 64}, shape)
+    |> reject_error()
+    |> as_mat_type(out_type)
+    |> to_nx(out)
+  end
+
   @doc false
   def from_nx(%T{data: %EB{ref: mat_ref}}), do: mat_ref
   def from_nx(%T{} = tensor) do

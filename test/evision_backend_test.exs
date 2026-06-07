@@ -581,4 +581,45 @@ defmodule Evision.Backend.Test do
       end
     end
   end
+
+  describe "determinant" do
+    test "matches Nx.BinaryBackend across sizes, dtypes, and batches" do
+      tensors = [
+        Nx.tensor([[2.0, 1.0], [1.0, 3.0]], type: :f64),
+        Nx.tensor([[1.0, 2.0, 3.0], [0.0, 1.0, 4.0], [5.0, 6.0, 0.0]], type: :f64),
+        Nx.tensor([[4.0, 3.0], [6.0, 3.0]], type: :f32),
+        # integer input -> f32 output
+        Nx.tensor([[1, 2], [3, 4]]),
+        # batched {2, 2, 2}
+        Nx.tensor([[[2.0, 0.0], [0.0, 3.0]], [[1.0, 2.0], [3.0, 4.0]]], type: :f64)
+      ]
+
+      for t <- tensors do
+        assert_close(Nx.LinAlg.determinant(ev(t)), Nx.LinAlg.determinant(t))
+      end
+    end
+  end
+
+  describe "solve" do
+    test "matches Nx.BinaryBackend for vector/matrix rhs, dtypes, and batches" do
+      a = Nx.tensor([[1.0, 0.0, 1.0], [1.0, 1.0, 0.0], [1.0, 1.0, 1.0]], type: :f64)
+
+      cases = [
+        {a, Nx.tensor([0.0, 2.0, 1.0], type: :f64)},
+        {a, Nx.tensor([[2.0, 2.0, 3.0], [2.0, 2.0, 4.0], [2.0, 0.0, 1.0]], type: :f64)},
+        {Nx.tensor([[2.0, 1.0], [1.0, 3.0]], type: :f32), Nx.tensor([3.0, 5.0], type: :f32)},
+        # integer input -> f32 solution
+        {Nx.tensor([[3, 2], [1, 2]]), Nx.tensor([7, 5])}
+      ]
+
+      for {aa, bb} <- cases do
+        assert_close(Nx.LinAlg.solve(ev(aa), ev(bb)), Nx.LinAlg.solve(aa, bb))
+      end
+
+      # batched: a {2, 2, 2}, b {2, 2} (a per-batch vector rhs)
+      ab = Nx.tensor([[[14.0, 10.0], [9.0, 9.0]], [[4.0, 11.0], [2.0, 3.0]]], type: :f64)
+      bv = Nx.tensor([[2.0, 3.0], [1.0, -3.0]], type: :f64)
+      assert_close(Nx.LinAlg.solve(ev(ab), ev(bv)), Nx.LinAlg.solve(ab, bv))
+    end
+  end
 end
