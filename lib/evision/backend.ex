@@ -700,6 +700,47 @@ defmodule Evision.Backend do
     |> to_nx(out)
   end
 
+  ## Aggregates
+
+  @impl true
+  def argmax(out, tensor, opts), do: arg_aggregate(:max, out, tensor, opts)
+
+  @impl true
+  def argmin(out, tensor, opts), do: arg_aggregate(:min, out, tensor, opts)
+
+  defp arg_aggregate(which, %T{type: out_type, shape: out_shape} = out, %T{shape: shape} = tensor, opts) do
+    last_index? = opts[:tie_break] == :high
+    mat = from_nx(tensor)
+
+    reduced =
+      if opts[:axis] == nil or Nx.rank(shape) <= 1 do
+        flat = reject_error(Evision.Mat.reshape(mat, [1, Nx.size(shape)]))
+        reduce_arg(flat, which, 1, last_index?)
+      else
+        reduce_arg(mat, which, opts[:axis], last_index?)
+      end
+
+    reshape_to =
+      case Tuple.to_list(out_shape) do
+        [] -> [1]
+        dims -> dims
+      end
+
+    reduced
+    |> reject_error()
+    |> Evision.Mat.as_type(out_type)
+    |> reject_error()
+    |> Evision.Mat.reshape(reshape_to)
+    |> reject_error()
+    |> to_nx(out)
+  end
+
+  defp reduce_arg(mat, :max, axis, last_index?),
+    do: Evision.reduceArgMax(mat, axis, lastIndex: last_index?)
+
+  defp reduce_arg(mat, :min, axis, last_index?),
+    do: Evision.reduceArgMin(mat, axis, lastIndex: last_index?)
+
   @doc false
   def from_nx(%T{data: %EB{ref: mat_ref}}), do: mat_ref
   def from_nx(%T{} = tensor) do
