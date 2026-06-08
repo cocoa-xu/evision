@@ -30,16 +30,16 @@ echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen
 echo "LANG=en_US.UTF-8" > /etc/locale.conf
 locale-gen en_US.UTF-8
 
-curl -fSL "${CUDA_PIN}" -o cuda.pin
+curl -fSL --retry 3 --retry-delay 5 "${CUDA_PIN}" -o cuda.pin
 mv cuda.pin /etc/apt/preferences.d/cuda-repository-pin-600
-curl -fSL "${CUDA_DEB}" -o cuda.deb
+curl -fSL --retry 3 --retry-delay 5 "${CUDA_DEB}" -o cuda.deb
 sudo dpkg -i cuda.deb
 sudo cp /var/cuda-repo-*/cuda-*-keyring.gpg /usr/share/keyrings/
 sudo apt-get update
 sudo apt-get -y install "${CUDA_TOOLKIT}"
 sudo rm -rf cuda.deb
 
-curl -fSL "${CUDNN_DEB}" -o cudnn.deb
+curl -fSL --retry 3 --retry-delay 5 "${CUDNN_DEB}" -o cudnn.deb
 sudo dpkg -i cudnn.deb
 sudo cp /var/cudnn-local-repo-*/cudnn-*-keyring.gpg /usr/share/keyrings/
 sudo apt-get update
@@ -57,7 +57,7 @@ sudo ln -sf "${CUDA_STUB}" "/usr/lib/${TRIPLET}/libcuda.so.1"
 sudo ldconfig
 
 mkdir -p ./cache/otp
-curl -fSL "https://github.com/cocoa-xu/otp-build/releases/download/v${OTP_VERSION}/otp-${TRIPLET}.tar.gz" -o "./cache/otp/otp-v${OTP_VERSION}-${TRIPLET}.tar.gz"
+curl -fSL --retry 3 --retry-delay 5 "https://github.com/cocoa-xu/otp-build/releases/download/v${OTP_VERSION}/otp-${TRIPLET}.tar.gz" -o "./cache/otp/otp-v${OTP_VERSION}-${TRIPLET}.tar.gz"
 export ROOT_DIR="$(pwd)"
 cd ./cache/otp
 tar -xzf "otp-v${OTP_VERSION}-${TRIPLET}.tar.gz"
@@ -67,7 +67,7 @@ ELIXIR_VERSION="1.17.3"
 export PATH="$(pwd)/./cache/otp/usr/local/bin:$(pwd)/./cache/elixir/elixir-${ELIXIR_VERSION}/bin:${PATH}"
 export ERL_ROOTDIR="$(pwd)/./cache/otp/usr/local/lib/erlang"
 mkdir -p ./cache/elixir
-curl -fSL "https://github.com/elixir-lang/elixir/archive/refs/tags/v${ELIXIR_VERSION}.tar.gz" -o "./cache/elixir/elixir-${ELIXIR_VERSION}.tar.gz"
+curl -fSL --retry 3 --retry-delay 5 "https://github.com/elixir-lang/elixir/archive/refs/tags/v${ELIXIR_VERSION}.tar.gz" -o "./cache/elixir/elixir-${ELIXIR_VERSION}.tar.gz"
 cd ./cache/elixir
 tar -xzf "elixir-${ELIXIR_VERSION}.tar.gz"
 cd "elixir-${ELIXIR_VERSION}"
