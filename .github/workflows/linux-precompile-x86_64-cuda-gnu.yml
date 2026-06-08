@@ -2,6 +2,9 @@ name: linux-precompile-x86_64-cuda-gnu
 
 on:
   workflow_dispatch:
+    inputs:
+      version:
+        required: true
   push:
     tags:
       - 'v*'
@@ -9,6 +12,9 @@ on:
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+
+permissions:
+  contents: write
 
 jobs:
   x86_64-linux-gnu-cuda:
@@ -56,6 +62,17 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+
+      - name: Get tagged version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            export INPUT_VERSION="${{ github.event.inputs.version }}"
+            export TAGGED_VERSION="${INPUT_VERSION##*v}"
+          else
+            export TAGGED_VERSION="${GITHUB_REF##*/v}"
+          fi
+          echo "tag=${TAGGED_VERSION}" >> $GITHUB_OUTPUT
 
       - name: Install system dependencies
         run: |
@@ -137,7 +154,7 @@ jobs:
 
       - name: Create precompiled library
         run: |
-          export PKG_NAME=evision-nif_${{ env.NIF_VERSION }}-x86_64-linux-gnu-contrib-cuda${{ matrix.cuda_id }}-cudnn${{ matrix.cudnn_id }}-${GITHUB_REF##*/v}
+          export PKG_NAME=evision-nif_${{ env.NIF_VERSION }}-x86_64-linux-gnu-contrib-cuda${{ matrix.cuda_id }}-cudnn${{ matrix.cudnn_id }}-${{ steps.version.outputs.tag }}
           mkdir -p "${PKG_NAME}"
 
           export PRIV_DIR="$(pwd)/_build/${MIX_ENV}/lib/evision/priv"
@@ -156,8 +173,8 @@ jobs:
 
       - name: Upload precompiled library
         uses: softprops/action-gh-release@v2
-        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
         with:
+          tag_name: v${{ steps.version.outputs.tag }}
           files: |
             artifacts/*.tar.gz
             artifacts/*.sha256

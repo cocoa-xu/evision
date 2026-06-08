@@ -1,6 +1,10 @@
 name: linux-precompile-aarch64-cuda-gnu
 
 on:
+  workflow_dispatch:
+    inputs:
+      version:
+        required: true
   push:
     tags:
       - 'v*'
@@ -8,6 +12,9 @@ on:
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+
+permissions:
+  contents: write
 
 jobs:
   aarch64-linux-gnu-cuda:
@@ -66,16 +73,28 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
+      - name: Get tagged version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            export INPUT_VERSION="${{ github.event.inputs.version }}"
+            export TAGGED_VERSION="${INPUT_VERSION##*v}"
+          else
+            export TAGGED_VERSION="${GITHUB_REF##*/v}"
+          fi
+          echo "tag=${TAGGED_VERSION}" >> $GITHUB_OUTPUT
+
       - name: Mix compile (with contrib modules)
         run: |
           ls -la
           cp -a .github/scripts/*.sh ./
           chmod +x *.sh
           mkdir -p artifacts
-          ./script-to-build-gnu.sh "${{ matrix.pair.cuda_pin }}" "${{ matrix.pair.cuda_deb }}" "${{ matrix.pair.cuda_toolkit }}" "${{ matrix.pair.cuda_id }}" "${{ matrix.pair.cudnn_deb }}" "${{ matrix.pair.cudnn_package }}" "${{ matrix.pair.cudnn_id }}" "${{ env.OTP_VERSION }}" "${{ env.ELIXIR_VERSION }}" "${{ env.TRIPLET }}" "${GITHUB_REF}"
+          ./script-to-build-gnu.sh "${{ matrix.pair.cuda_pin }}" "${{ matrix.pair.cuda_deb }}" "${{ matrix.pair.cuda_toolkit }}" "${{ matrix.pair.cuda_id }}" "${{ matrix.pair.cudnn_deb }}" "${{ matrix.pair.cudnn_package }}" "${{ matrix.pair.cudnn_id }}" "${{ env.OTP_VERSION }}" "${{ env.ELIXIR_VERSION }}" "${{ env.TRIPLET }}" "refs/tags/v${{ steps.version.outputs.tag }}"
 
       - uses: softprops/action-gh-release@v2
         with:
+          tag_name: v${{ steps.version.outputs.tag }}
           files: |
             artifacts/*.tar.gz
             artifacts/*.sha256
