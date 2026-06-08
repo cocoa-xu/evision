@@ -40,10 +40,10 @@ jobs:
           - pair:
               OTP_VERSION: "25"
               NIF_VERSION: "2.16"
-              # cuda 12.9.3
+              # cuda 12.9.2
               cuda_major: "12"
               cuda_minor: "9"
-              cuda_patch: "3"
+              cuda_patch: "2"
               # cudnn 8.9.7
               cudnn_major: "8"
               cudnn_minor: "9"
@@ -51,10 +51,10 @@ jobs:
           - pair:
               OTP_VERSION: "25"
               NIF_VERSION: "2.16"
-              # cuda 12.9.3
+              # cuda 12.9.2
               cuda_major: "12"
               cuda_minor: "9"
-              cuda_patch: "3"
+              cuda_patch: "2"
               # cudnn 9.23.0
               cudnn_major: "9"
               cudnn_minor: "23"
