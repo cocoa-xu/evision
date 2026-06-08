@@ -10,7 +10,7 @@ defmodule Evision.MixProject.Metadata do
 
   def default_cuda_version, do: {"12", "9"}
 
-  def all_cuda_version(target) do
+  def all_cuda_version(_target) do
     cuda12 = [{"12", "8"}, {"12", "9"}]
     cuda13 = [{"13", "9"}]
 
