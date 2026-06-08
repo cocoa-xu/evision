@@ -14,11 +14,7 @@ defmodule Evision.MixProject.Metadata do
     cuda12 = [{"12", "8"}, {"12", "9"}]
     cuda13 = [{"13", "9"}]
 
-    if String.contains?("msvc", target) do
-      cuda12
-    else
-      cuda12 ++ cuda13
-    end
+    cuda12 ++ cuda13
   end
 end
 

@@ -40,10 +40,10 @@ jobs:
           - pair:
               OTP_VERSION: "25"
               NIF_VERSION: "2.16"
-              # cuda 12.8.1
+              # cuda 12.9.3
               cuda_major: "12"
-              cuda_minor: "8"
-              cuda_patch: "1"
+              cuda_minor: "9"
+              cuda_patch: "3"
               # cudnn 8.9.7
               cudnn_major: "8"
               cudnn_minor: "9"
@@ -51,13 +51,24 @@ jobs:
           - pair:
               OTP_VERSION: "25"
               NIF_VERSION: "2.16"
-              # cuda 12.8.1
+              # cuda 12.9.3
               cuda_major: "12"
-              cuda_minor: "8"
-              cuda_patch: "1"
-              # cudnn 9.11.0
+              cuda_minor: "9"
+              cuda_patch: "3"
+              # cudnn 9.23.0
               cudnn_major: "9"
-              cudnn_minor: "11"
+              cudnn_minor: "23"
+              cudnn_patch: "0"
+          - pair:
+              OTP_VERSION: "25"
+              NIF_VERSION: "2.16"
+              # cuda 13.3.0
+              cuda_major: "13"
+              cuda_minor: "3"
+              cuda_patch: "0"
+              # cudnn 9.23.0
+              cudnn_major: "9"
+              cudnn_minor: "23"
               cudnn_patch: "0"
 
     name: x86_64-windows-msvc-cuda${{ matrix.pair.cuda_major }}-cudnn${{ matrix.pair.cudnn_major }}
@@ -84,7 +95,7 @@ jobs:
           vsversion: "2022"
 
       - name: Install CUDA with cudnn ${{ matrix.pair.cudnn_major }}
-        uses: cocoa-xu/cuda-toolkit@v0.7.1
+        uses: cocoa-xu/cuda-toolkit@v0.7.2
         with:
           mirror: "https://mirrors.uwucocoa.moe/nvidia"
           use-github-cache: false
