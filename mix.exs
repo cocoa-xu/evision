@@ -11,13 +11,13 @@ defmodule Evision.MixProject.Metadata do
   def default_cuda_version, do: {"12", "9"}
 
   def all_cuda_version(target) do
-    cuda11 = [{"11", "8"}, {"11", "9"}]
     cuda12 = [{"12", "8"}, {"12", "9"}]
+    cuda13 = [{"13", "9"}]
 
     if String.contains?("msvc", target) do
       cuda12
     else
-      cuda11 ++ cuda12
+      cuda12 ++ cuda13
     end
   end
 end
