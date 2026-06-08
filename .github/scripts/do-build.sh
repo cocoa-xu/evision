@@ -48,6 +48,14 @@ sudo rm -rf cudnn.deb
 
 export PATH="/usr/local/cuda/bin:${PATH}"
 
+# the cuda-toolkit package ships libcuda only as a stub under lib64/stubs, which
+# find_library does not search, so opencv_cudacodec fails to configure. Symlink
+# it to a standard path; the real driver resolves at runtime on the user's box.
+CUDA_STUB=$(find /usr/local/cuda* -name libcuda.so -path '*stubs*' 2>/dev/null | head -1)
+sudo ln -sf "${CUDA_STUB}" "/usr/lib/${TRIPLET}/libcuda.so"
+sudo ln -sf "${CUDA_STUB}" "/usr/lib/${TRIPLET}/libcuda.so.1"
+sudo ldconfig
+
 mkdir -p ./cache/otp
 curl -fSL "https://github.com/cocoa-xu/otp-build/releases/download/v${OTP_VERSION}/otp-${TRIPLET}.tar.gz" -o "./cache/otp/otp-v${OTP_VERSION}-${TRIPLET}.tar.gz"
 export ROOT_DIR="$(pwd)"

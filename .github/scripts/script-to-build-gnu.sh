@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -x
+set -xe
 
 CUDA_PIN=$1
 CUDA_DEB=$2
@@ -13,7 +13,8 @@ OTP_VERSION=$8
 ELIXIR_VERSION=$9
 TRIPLET=${10}
 GITHUB_REF=${11}
-IMAGE_NAME="ubuntu:20.04"
+OS_IMAGE=${12:-ubuntu:20.04}
+IMAGE_NAME="${OS_IMAGE}"
 
 sudo docker run --privileged --network=host --platform=linux/arm64 --rm -v $(pwd):/work "${IMAGE_NAME}" \
     sh -c "chmod a+x /work/do-build.sh && /work/do-build.sh '${CUDA_PIN}' '${CUDA_DEB}' '${CUDA_TOOLKIT}' '${CUDA_ID}' '${CUDNN_DEB}' '${CUDNN_PACKAGE}' '${CUDNN_ID}' '${OTP_VERSION}' '${ELIXIR_VERSION}' '${TRIPLET}' '${GITHUB_REF}'"
