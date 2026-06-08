@@ -17,7 +17,7 @@ def patch_imread(opencv_version: str, opencv_src_root: str):
     loadsave_cpp = Path(opencv_src_root) / 'modules' / 'imgcodecs' / 'src' / 'loadsave.cpp'
     fixed = StringIO()
     patched_1 = False
-    with open(loadsave_cpp, 'r') as source:
+    with open(loadsave_cpp, 'r', encoding='utf-8') as source:
         for line in source:
             if not patched_1 and line.strip() == 'Mat img = dst.getMat();':
                 fixed.write("    Mat& img = dst.getMatRef(); // patched\n")
@@ -26,7 +26,7 @@ def patch_imread(opencv_version: str, opencv_src_root: str):
                 fixed.write(line)
     
     if patched_1:
-        with open(loadsave_cpp, 'w') as dst:
+        with open(loadsave_cpp, 'w', encoding='utf-8') as dst:
             dst.truncate(0)
             dst.write(fixed.getvalue())
                 
@@ -42,7 +42,7 @@ def patch_fix_getLayerShapes(opencv_version: str, opencv_src_root: str):
     fixed = StringIO()
     patched_1 = False
     patched_2 = False
-    with open(dnn_hpp, 'r') as source:
+    with open(dnn_hpp, 'r', encoding='utf-8') as source:
         for line in source:
             if not patched_1 and line.strip() == 'void getLayerShapes(const MatShape& netInputShape,':
                 fixed.write('        CV_WRAP void getLayerShapes(const MatShape& netInputShape,\n')
@@ -54,7 +54,7 @@ def patch_fix_getLayerShapes(opencv_version: str, opencv_src_root: str):
                 fixed.write(line)
 
     if patched_1 or patched_2:
-        with open(dnn_hpp, 'w') as dst:
+        with open(dnn_hpp, 'w', encoding='utf-8') as dst:
             dst.truncate(0)
             dst.write(fixed.getvalue())
 
@@ -64,7 +64,7 @@ def patch_rpath_linux(opencv_version: str, opencv_src_root: str):
     cmakelists_txt = Path(opencv_src_root) / 'CMakeLists.txt'
     fixed = StringIO()
     patched_1 = False
-    with open(cmakelists_txt, 'r') as source:
+    with open(cmakelists_txt, 'r', encoding='utf-8') as source:
         for line in source:
             if not patched_1 and line.strip() == 'string(REPLACE "opencv_" "" OPENCV_MODULES_BUILD_ST          "${OPENCV_MODULES_BUILD_ST}")':
                 fixed.write(r"""if(UNIX AND NOT APPLE)
@@ -83,7 +83,7 @@ string(REPLACE "opencv_" "" OPENCV_MODULES_BUILD_ST          "${OPENCV_MODULES_B
                 fixed.write(line)
 
     if patched_1:
-        with open(cmakelists_txt, 'w') as dst:
+        with open(cmakelists_txt, 'w', encoding='utf-8') as dst:
             dst.truncate(0)
             dst.write(fixed.getvalue())
 
@@ -93,7 +93,7 @@ def patch_python_bindings_generator(opencv_version: str, opencv_src_root: str):
     cmakelists_txt = Path(opencv_src_root) / 'modules' / 'python' / 'CMakeLists.txt'
     fixed = StringIO()
     patched_1 = False
-    with open(cmakelists_txt, 'r') as source:
+    with open(cmakelists_txt, 'r', encoding='utf-8') as source:
         for line in source:
             if not patched_1 and line.strip() == 'if(ANDROID OR APPLE_FRAMEWORK OR WINRT)':
                 fixed.write("""if(ANDROID OR APPLE_FRAMEWORK OR WINRT) # patched
@@ -104,7 +104,7 @@ def patch_python_bindings_generator(opencv_version: str, opencv_src_root: str):
                 fixed.write(line)
 
     if patched_1:
-        with open(cmakelists_txt, 'w') as dst:
+        with open(cmakelists_txt, 'w', encoding='utf-8') as dst:
             dst.truncate(0)
             dst.write(fixed.getvalue())
 
@@ -128,7 +128,7 @@ def patch_carotene_vround(opencv_version: str, opencv_src_root: str):
     original = '#if defined(__ARM_ARCH) && (__ARM_ARCH >= 8)'
     fixed = StringIO()
     patched = 0
-    with open(vround_hpp, 'r') as source:
+    with open(vround_hpp, 'r', encoding='utf-8') as source:
         for line in source:
             if line.strip() == original:
                 fixed.write('#if defined(__aarch64__) // patched\n')
@@ -137,7 +137,7 @@ def patch_carotene_vround(opencv_version: str, opencv_src_root: str):
                 fixed.write(line)
 
     if patched:
-        with open(vround_hpp, 'w') as dst:
+        with open(vround_hpp, 'w', encoding='utf-8') as dst:
             dst.truncate(0)
             dst.write(fixed.getvalue())
         print(f"[+] patched carotene vround_helper.hpp ({patched} guards)")
@@ -167,7 +167,7 @@ def patch_intrin_neon_v_floor(opencv_version: str, opencv_src_root: str):
     original = '#if __ARM_ARCH > 7'
     fixed = StringIO()
     patched = 0
-    with open(intrin_neon_hpp, 'r') as source:
+    with open(intrin_neon_hpp, 'r', encoding='utf-8') as source:
         for line in source:
             if line.strip() == original:
                 fixed.write('#if defined(__aarch64__) // patched\n')
@@ -176,7 +176,7 @@ def patch_intrin_neon_v_floor(opencv_version: str, opencv_src_root: str):
                 fixed.write(line)
 
     if patched:
-        with open(intrin_neon_hpp, 'w') as dst:
+        with open(intrin_neon_hpp, 'w', encoding='utf-8') as dst:
             dst.truncate(0)
             dst.write(fixed.getvalue())
         print(f"[+] patched intrin_neon.hpp v_floor guard ({patched})")
@@ -227,14 +227,14 @@ def patch_ocr_tesseract_run_with_components(opencv_version: str, opencv_src_root
 '''
 
     # Idempotency: skip if already patched.
-    with open(ocr_hpp, 'r') as f:
+    with open(ocr_hpp, 'r', encoding='utf-8') as f:
         if 'runWithComponents' in f.read():
             print("[+] OCRTesseract already patched with runWithComponents()")
             return
 
     fixed = StringIO()
     patched = False
-    with open(ocr_hpp, 'r') as source:
+    with open(ocr_hpp, 'r', encoding='utf-8') as source:
         for line in source:
             if not patched and line.rstrip() == anchor:
                 fixed.write(insertion)
@@ -242,7 +242,7 @@ def patch_ocr_tesseract_run_with_components(opencv_version: str, opencv_src_root
             fixed.write(line)
 
     if patched:
-        with open(ocr_hpp, 'w') as dst:
+        with open(ocr_hpp, 'w', encoding='utf-8') as dst:
             dst.truncate(0)
             dst.write(fixed.getvalue())
         print("[+] patched OCRTesseract with runWithComponents()")
@@ -287,7 +287,7 @@ endif()
 
 """
 
-    with open(mlas_cmake, 'r') as f:
+    with open(mlas_cmake, 'r', encoding='utf-8') as f:
         original = f.read()
     if 'MLAS: skipped on MSVC' in original:
         return
@@ -301,7 +301,7 @@ endif()
         fixed.write(line)
 
     if patched:
-        with open(mlas_cmake, 'w') as dst:
+        with open(mlas_cmake, 'w', encoding='utf-8') as dst:
             dst.truncate(0)
             dst.write(fixed.getvalue())
         print("[+] patched 3rdparty/mlas/CMakeLists.txt to skip MLAS on MSVC")
@@ -341,7 +341,7 @@ endif()
 
 """
 
-    with open(mlas_cmake, 'r') as f:
+    with open(mlas_cmake, 'r', encoding='utf-8') as f:
         original = f.read()
     if 'MLAS: skipped when cross-compiling' in original:
         return
@@ -355,12 +355,82 @@ endif()
         fixed.write(line)
 
     if patched:
-        with open(mlas_cmake, 'w') as dst:
+        with open(mlas_cmake, 'w', encoding='utf-8') as dst:
             dst.truncate(0)
             dst.write(fixed.getvalue())
         print("[+] patched 3rdparty/mlas/CMakeLists.txt to skip MLAS when cross-compiling")
     else:
         print(f"warning: anchor not found in {mlas_cmake}, skipping patch_mlas_skip_crosscompile")
+
+
+def patch_cudev_ulong_msvc(opencv_version: str, opencv_src_root: str):
+    """Define the scalar ``ulong`` type for cudev on MSVC.
+
+    OpenCV 5.0 added ``CV_CUDEV_MAKE_VEC_INST(long)`` and
+    ``CV_CUDEV_MAKE_VEC_INST(ulong)`` to opencv_contrib's cudev
+    ``util/vec_traits.hpp`` (4.x had neither). ``MakeVec<ulong, N>`` /
+    ``VecTraits<ulong>`` therefore reference a scalar ``ulong`` type.
+
+    On Linux that type is supplied by glibc's ``<sys/types.h>`` (pulled in
+    transitively by the CUDA runtime headers), so the CUDA modules compile.
+    MSVC never defines ``ulong``, so any .cu that includes cudev (e.g.
+    modules/core/src/cuda/gpu_mat_nd.cu) fails to compile with::
+
+        vec_traits.hpp(80): error: identifier "ulong" is undefined
+
+    Note ``uchar``/``ushort``/``uint`` come from core's hal/interface.h and
+    are fine; only ``ulong`` is missing. Define it once, at global scope in
+    cudev's foundational common.hpp (included first by vec_traits.hpp), so it
+    is visible to every cudev header. The width follows CUDA's own
+    ``ulong1..4`` element type (``unsigned long``), keeping it layout-
+    compatible with ``make_ulong*`` rather than a fixed-width alias.
+    """
+    # cudev lives in contrib: 3rd_party/opencv/opencv_contrib-{ver}/
+    opencv_root = Path(opencv_src_root).parent
+    contrib_root = opencv_root / f'opencv_contrib-{opencv_version}'
+    common_hpp = (
+        contrib_root / 'modules' / 'cudev' / 'include' / 'opencv2' / 'cudev'
+        / 'common.hpp'
+    )
+    if not common_hpp.exists():
+        print(f"warning: {common_hpp} not found, skipping patch_cudev_ulong_msvc")
+        return
+
+    anchor = '#include "opencv2/core/cuda_stream_accessor.hpp"'
+    insertion = """\
+
+// patched(evision): MSVC has no scalar `ulong` (glibc supplies it via
+// <sys/types.h>, which the CUDA runtime headers pull in on Linux). cudev's
+// vec_traits.hpp instantiates MakeVec<ulong>/VecTraits<ulong>, so provide it
+// on MSVC. Width matches CUDA's ulong1..4 element type so it stays layout-
+// compatible with make_ulong*; defined at global scope before namespace cv.
+#if defined(_MSC_VER) && !defined(OPENCV_CUDEV_HAS_ULONG)
+#define OPENCV_CUDEV_HAS_ULONG
+typedef unsigned long ulong;
+#endif
+"""
+
+    with open(common_hpp, 'r', encoding='utf-8') as f:
+        original = f.read()
+    if 'OPENCV_CUDEV_HAS_ULONG' in original:
+        print("[+] cudev common.hpp already patched with ulong typedef")
+        return
+
+    fixed = StringIO()
+    patched = False
+    for line in original.splitlines(keepends=True):
+        fixed.write(line)
+        if not patched and line.strip() == anchor:
+            fixed.write(insertion)
+            patched = True
+
+    if patched:
+        with open(common_hpp, 'w', encoding='utf-8') as dst:
+            dst.truncate(0)
+            dst.write(fixed.getvalue())
+        print("[+] patched cudev common.hpp with MSVC ulong typedef")
+    else:
+        print(f"warning: anchor not found in {common_hpp}, skipping patch_cudev_ulong_msvc")
 
 
 def patch_cmake_minimum_version(opencv_version: str, opencv_src_root: str):
@@ -369,7 +439,7 @@ def patch_cmake_minimum_version(opencv_version: str, opencv_src_root: str):
     pkgconfig_cmake = Path(opencv_src_root) / 'cmake' / 'OpenCVGenPkgconfig.cmake'
     fixed = StringIO()
     patched_1 = False
-    with open(pkgconfig_cmake, 'r') as source:
+    with open(pkgconfig_cmake, 'r', encoding='utf-8') as source:
         for line in source:
             if not patched_1 and line.strip() == 'cmake_minimum_required(VERSION 2.8.12.2)':
                 fixed.write("cmake_minimum_required(VERSION 3.5) # patched\n")
@@ -378,7 +448,7 @@ def patch_cmake_minimum_version(opencv_version: str, opencv_src_root: str):
                 fixed.write(line)
 
     if patched_1:
-        with open(pkgconfig_cmake, 'w') as dst:
+        with open(pkgconfig_cmake, 'w', encoding='utf-8') as dst:
             dst.truncate(0)
             dst.write(fixed.getvalue())
 
@@ -390,6 +460,7 @@ patches = [
     patch_carotene_vround,
     patch_intrin_neon_v_floor,
     patch_imread,
+    patch_cudev_ulong_msvc,
     patch_cmake_minimum_version,
     patch_mlas_skip_msvc,
     patch_mlas_skip_crosscompile,
