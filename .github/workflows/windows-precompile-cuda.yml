@@ -26,12 +26,14 @@ jobs:
       EVISION_GENERATE_LANG: "erlang,elixir"
       EVISION_ENABLE_CONTRIB: "true"
       EVISION_ENABLE_CUDA: "true"
+      EVISION_CUDA_VERSION: ${{ matrix.pair.cuda_major }}
+      EVISION_CUDNN_VERSION: ${{ matrix.pair.cudnn_major }}
       MAKE: "nmake"
       MSBUILD_PLATFORM: x64
       CMAKE_GENERATOR_TYPE: Ninja
       EVISION_KEEP_OCV_BUILD_DIR: "false"
       CMAKE_OPENCV_OPTIONS: >-
-        -D CUDA_ARCH_BIN="5.0;5.2;6.0;6.1;7.0;7.5;8.0;8.6;8.9;9.0"
+        -D CUDA_ARCH_BIN="${{ matrix.pair.cuda_arch_bin }}"
         -D CUDA_NVCC_FLAGS=--expt-relaxed-constexpr
     strategy:
       fail-fast: false
@@ -44,6 +46,8 @@ jobs:
               cuda_major: "12"
               cuda_minor: "9"
               cuda_patch: "2"
+              # CUDA 12 supports Maxwell (5.x) through Hopper (9.0)
+              cuda_arch_bin: "5.0;5.2;6.0;6.1;7.0;7.5;8.0;8.6;8.9;9.0"
               # cudnn 8.9.7
               cudnn_major: "8"
               cudnn_minor: "9"
@@ -55,6 +59,8 @@ jobs:
               cuda_major: "12"
               cuda_minor: "9"
               cuda_patch: "2"
+              # CUDA 12 supports Maxwell (5.x) through Hopper (9.0)
+              cuda_arch_bin: "5.0;5.2;6.0;6.1;7.0;7.5;8.0;8.6;8.9;9.0"
               # cudnn 9.23.0
               cudnn_major: "9"
               cudnn_minor: "23"
@@ -66,6 +72,8 @@ jobs:
               cuda_major: "13"
               cuda_minor: "3"
               cuda_patch: "0"
+              # CUDA 13 dropped Maxwell/Pascal/Volta; lowest supported is Turing (7.5)
+              cuda_arch_bin: "7.5;8.0;8.6;8.9;9.0"
               # cudnn 9.23.0
               cudnn_major: "9"
               cudnn_minor: "23"
