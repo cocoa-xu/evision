@@ -77,6 +77,14 @@ jobs:
           fi
           echo "tag=${TAGGED_VERSION}" >> $GITHUB_OUTPUT
 
+      - name: Cache OTP + Elixir tarballs
+        uses: actions/cache@v5
+        with:
+          key: otp-elixir-${{ env.OTP_VERSION }}-${{ env.ELIXIR_VERSION }}-${{ env.TRIPLET }}
+          path: |
+            cache/otp/otp-*.tar.gz
+            cache/elixir/elixir-*.tar.gz
+
       - name: Mix compile (with contrib modules)
         run: |
           ls -la

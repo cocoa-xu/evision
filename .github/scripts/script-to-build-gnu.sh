@@ -16,7 +16,10 @@ GITHUB_REF=${11}
 OS_IMAGE=${12:-ubuntu:20.04}
 IMAGE_NAME="${OS_IMAGE}"
 
+RC=0
 sudo docker run --privileged --network=host --platform=linux/arm64 --rm -v $(pwd):/work "${IMAGE_NAME}" \
-    sh -c "chmod a+x /work/do-build.sh && /work/do-build.sh '${CUDA_PIN}' '${CUDA_DEB}' '${CUDA_TOOLKIT}' '${CUDA_ID}' '${CUDNN_DEB}' '${CUDNN_PACKAGE}' '${CUDNN_ID}' '${OTP_VERSION}' '${ELIXIR_VERSION}' '${TRIPLET}' '${GITHUB_REF}'"
-sudo chown -R $(id -u):$(id -g) .
-sudo chmod a+rw -R ./artifacts
+    sh -c "chmod a+x /work/do-build.sh && /work/do-build.sh '${CUDA_PIN}' '${CUDA_DEB}' '${CUDA_TOOLKIT}' '${CUDA_ID}' '${CUDNN_DEB}' '${CUDNN_PACKAGE}' '${CUDNN_ID}' '${OTP_VERSION}' '${ELIXIR_VERSION}' '${TRIPLET}' '${GITHUB_REF}'" || RC=$?
+# chown back even on failure so actions/cache can read the cached tarballs
+sudo chown -R $(id -u):$(id -g) . || true
+sudo chmod a+rw -R ./artifacts || true
+exit $RC
