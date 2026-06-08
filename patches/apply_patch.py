@@ -433,6 +433,92 @@ typedef unsigned long ulong;
         print(f"warning: anchor not found in {common_hpp}, skipping patch_cudev_ulong_msvc")
 
 
+def patch_cudev_vec_traits_int64_msvc(opencv_version: str, opencv_src_root: str):
+    """Add 64-bit integer MakeVec/VecTraits to cudev on MSVC (Windows LLP64).
+
+    cudev's util/vec_traits.hpp instantiates MakeVec<T,N> and VecTraits<T> for
+    {uchar, ushort, short, int, uint, float, double, long, ulong}. On Linux
+    (LP64) `long`/`ulong` ARE the 64-bit integers, so VecTraits<int64_t> /
+    VecTraits<uint64_t> resolve to those specializations. On Windows (LLP64)
+    `long`/`ulong` are 32-bit, so the 64-bit element types (`long long` /
+    `unsigned long long` == int64_t/uint64_t) get NO specialization.
+
+    OpenCV 5.0 added the CV_64S/CV_64U depths: modules/core/src/cuda/gpu_mat.cu
+    convertTo() builds a dispatch table instantiating convertToScale<int64_t,
+    ...>/<uint64_t,...>, and cudev/util/type_traits.hpp LargerType reads
+    VecTraits<T>::cn / ::elem_type and MakeVec<...>::type. So MSVC fails with::
+
+        gpu_mat.cu(489): error: incomplete type "cv::cudev::VecTraits<uint64_t>"
+
+    Reuse the file's own CV_CUDEV_MAKE_VEC_INST / CV_CUDEV_VEC_TRAITS_INST
+    macros to add long long / unsigned long long, inserted before each macro's
+    #undef and guarded to MSVC so Linux/LP64 (already covered by long/ulong) is
+    untouched. saturate_cast.hpp already has signed/unsigned long long overloads
+    and limits.hpp doesn't specialize 64-bit ints on any platform, so this is
+    the only missing piece. Depends on patch_cudev_ulong_msvc for `ulong`.
+    """
+    opencv_root = Path(opencv_src_root).parent
+    contrib_root = opencv_root / f'opencv_contrib-{opencv_version}'
+    vec_traits = (
+        contrib_root / 'modules' / 'cudev' / 'include' / 'opencv2' / 'cudev'
+        / 'util' / 'vec_traits.hpp'
+    )
+    if not vec_traits.exists():
+        print(f"warning: {vec_traits} not found, skipping patch_cudev_vec_traits_int64_msvc")
+        return
+
+    make_anchor = 'CV_CUDEV_MAKE_VEC_INST(ulong)'
+    make_insertion = """\
+#if defined(_MSC_VER)
+// patched(evision): Windows is LLP64, so `long`/`ulong` above are 32-bit and do
+// NOT cover the 64-bit integer element types. On Linux (LP64) `long`/`ulong`
+// ARE int64/uint64 and cover them. Supply the missing 64-bit MakeVec via
+// long long / unsigned long long (OpenCV 5.0's CV_64S/CV_64U paths in
+// gpu_mat.cu convertTo and cudev type_traits LargerType need them).
+typedef long long          longlong;
+typedef unsigned long long ulonglong;
+CV_CUDEV_MAKE_VEC_INST(longlong)
+CV_CUDEV_MAKE_VEC_INST(ulonglong)
+#endif
+"""
+    traits_anchor = 'CV_CUDEV_VEC_TRAITS_INST(ulong)'
+    traits_insertion = """\
+#if defined(_MSC_VER)
+// patched(evision): matching 64-bit VecTraits (see the MakeVec block above) so
+// VecTraits<int64_t>/<uint64_t> are complete types on Windows.
+CV_CUDEV_VEC_TRAITS_INST(longlong)
+CV_CUDEV_VEC_TRAITS_INST(ulonglong)
+#endif
+"""
+
+    with open(vec_traits, 'r', encoding='utf-8') as f:
+        original = f.read()
+    if 'CV_CUDEV_MAKE_VEC_INST(longlong)' in original:
+        print("[+] cudev vec_traits.hpp already patched with 64-bit int traits")
+        return
+
+    fixed = StringIO()
+    made = False
+    traits_done = False
+    for line in original.splitlines(keepends=True):
+        fixed.write(line)
+        if not made and line.strip() == make_anchor:
+            fixed.write(make_insertion)
+            made = True
+        elif not traits_done and line.strip() == traits_anchor:
+            fixed.write(traits_insertion)
+            traits_done = True
+
+    if made and traits_done:
+        with open(vec_traits, 'w', encoding='utf-8') as dst:
+            dst.truncate(0)
+            dst.write(fixed.getvalue())
+        print("[+] patched cudev vec_traits.hpp with MSVC 64-bit int MakeVec/VecTraits")
+    else:
+        print(f"warning: anchors not found in {vec_traits} "
+              f"(MakeVec={made}, VecTraits={traits_done}), skipping patch_cudev_vec_traits_int64_msvc")
+
+
 def patch_cmake_minimum_version(opencv_version: str, opencv_src_root: str):
     # cmake/OpenCVGenPkgconfig.cmake uses cmake_minimum_required(VERSION 2.8.12.2)
     # which fails with CMake 4.x that removed compat with < 3.5
@@ -461,6 +547,7 @@ patches = [
     patch_intrin_neon_v_floor,
     patch_imread,
     patch_cudev_ulong_msvc,
+    patch_cudev_vec_traits_int64_msvc,
     patch_cmake_minimum_version,
     patch_mlas_skip_msvc,
     patch_mlas_skip_crosscompile,
