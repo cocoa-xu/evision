@@ -4,13 +4,118 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version to tag, without the leading v (e.g. 1.0.0-rc.1)"
+        required: true
+        type: string
+      x86_64:
+        description: "Build x86_64-linux-gnu"
+        type: boolean
+        default: false
+      i686:
+        description: "Build i686-linux-gnu"
+        type: boolean
+        default: false
+      aarch64:
+        description: "Build aarch64-linux-gnu"
+        type: boolean
+        default: false
+      armv7l:
+        description: "Build armv7l-linux-gnueabihf"
+        type: boolean
+        default: false
+      armv6:
+        description: "Build armv6-linux-gnueabihf"
+        type: boolean
+        default: false
+      s390x:
+        description: "Build s390x-linux-gnu"
+        type: boolean
+        default: true
+      riscv64:
+        description: "Build riscv64-linux-gnu"
+        type: boolean
+        default: true
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.gen.outputs.matrix }}
+      version: ${{ steps.gen.outputs.version }}
+    steps:
+      - name: Resolve build matrix and release version
+        id: gen
+        env:
+          EVENT: ${{ github.event_name }}
+          REF: ${{ github.ref }}
+          IN_VERSION: ${{ inputs.version }}
+          IN_X86_64: ${{ inputs.x86_64 }}
+          IN_I686: ${{ inputs.i686 }}
+          IN_AARCH64: ${{ inputs.aarch64 }}
+          IN_ARMV7L: ${{ inputs.armv7l }}
+          IN_ARMV6: ${{ inputs.armv6 }}
+          IN_S390X: ${{ inputs.s390x }}
+          IN_RISCV64: ${{ inputs.riscv64 }}
+        run: |
+          set -euo pipefail
+
+          # Single source of truth for the build matrix; field names mirror the
+          # build steps (matrix.pair.*). ppc64le-linux-gnu stays disabled.
+          all="$(cat <<'JSON'
+          [
+            {"pair":{"arch":"x86_64-linux-gnu","cmake_toolchain_file":"","c_compiler":"gcc","cpp_compiler":"g++","OTP_VERSION":"25","NIF_VERSION":"2.16"}},
+            {"pair":{"arch":"i686-linux-gnu","cmake_toolchain_file":"cc_toolchain/i686-linux-gnu.cmake","c_compiler":"gcc-i686-linux-gnu","cpp_compiler":"g++-i686-linux-gnu","OTP_VERSION":"25","NIF_VERSION":"2.16"}},
+            {"pair":{"arch":"aarch64-linux-gnu","cmake_toolchain_file":"cc_toolchain/aarch64-linux-gnu.cmake","c_compiler":"gcc-aarch64-linux-gnu","cpp_compiler":"g++-aarch64-linux-gnu","OTP_VERSION":"25","NIF_VERSION":"2.16"}},
+            {"pair":{"arch":"armv7l-linux-gnueabihf","cmake_toolchain_file":"cc_toolchain/armv7l-linux-gnueabihf.cmake","c_compiler":"gcc-arm-linux-gnueabihf","cpp_compiler":"g++-arm-linux-gnueabihf","OTP_VERSION":"25","NIF_VERSION":"2.16"}},
+            {"pair":{"arch":"armv6-linux-gnueabihf","cmake_toolchain_file":"cc_toolchain/armv6-nerves-linux-gnueabihf.cmake","c_compiler":"armv6-nerves-linux-gnueabihf-gcc","cpp_compiler":"armv6-nerves-linux-gnueabihf-g++","OTP_VERSION":"25","NIF_VERSION":"2.16"}},
+            {"pair":{"arch":"s390x-linux-gnu","cmake_toolchain_file":"cc_toolchain/s390x-linux-gnu.cmake","c_compiler":"gcc-s390x-linux-gnu","cpp_compiler":"g++-s390x-linux-gnu","OTP_VERSION":"25","NIF_VERSION":"2.16"}},
+            {"pair":{"arch":"riscv64-linux-gnu","cmake_toolchain_file":"cc_toolchain/riscv64-linux-gnu.cmake","c_compiler":"gcc-riscv64-linux-gnu","cpp_compiler":"g++-riscv64-linux-gnu","OTP_VERSION":"25","NIF_VERSION":"2.16"}}
+          ]
+          JSON
+          )"
+
+          if [ "$EVENT" = "workflow_dispatch" ]; then
+            version="${IN_VERSION##*v}"
+            if [ -z "$version" ]; then
+              echo "::error::A release version is required." >&2
+              exit 1
+            fi
+
+            sel=()
+            [ "$IN_X86_64" = "true" ]  && sel+=("x86_64-linux-gnu")
+            [ "$IN_I686" = "true" ]    && sel+=("i686-linux-gnu")
+            [ "$IN_AARCH64" = "true" ] && sel+=("aarch64-linux-gnu")
+            [ "$IN_ARMV7L" = "true" ]  && sel+=("armv7l-linux-gnueabihf")
+            [ "$IN_ARMV6" = "true" ]   && sel+=("armv6-linux-gnueabihf")
+            [ "$IN_S390X" = "true" ]   && sel+=("s390x-linux-gnu")
+            [ "$IN_RISCV64" = "true" ] && sel+=("riscv64-linux-gnu")
+
+            if [ "${#sel[@]}" -eq 0 ]; then
+              echo "::error::Select at least one architecture to build." >&2
+              exit 1
+            fi
+
+            keep="$(printf '%s\n' "${sel[@]}" | jq -R . | jq -c -s .)"
+            matrix="$(echo "$all" | jq -c --argjson keep "$keep" '[ .[] | select(.pair.arch as $a | $keep | index($a)) ]')"
+          else
+            version="${REF##*/v}"
+            matrix="$(echo "$all" | jq -c .)"
+          fi
+
+          echo "matrix={\"include\":$matrix}" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "Resolved version: $version"
+          echo "Resolved matrix:  $matrix"
+
   mix_compile:
+    needs: setup
     runs-on: ubuntu-latest
     env:
       ImageOS: ubuntu20
@@ -26,64 +131,7 @@ jobs:
     container: ubuntu:20.04
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - pair:
-              arch: x86_64-linux-gnu
-              cmake_toolchain_file: ""
-              c_compiler: gcc
-              cpp_compiler: g++
-              OTP_VERSION: "25"
-              NIF_VERSION: "2.16"
-          - pair:
-              arch: i686-linux-gnu
-              cmake_toolchain_file: cc_toolchain/i686-linux-gnu.cmake
-              c_compiler: gcc-i686-linux-gnu
-              cpp_compiler: g++-i686-linux-gnu
-              OTP_VERSION: "25"
-              NIF_VERSION: "2.16"
-          - pair:
-              arch: aarch64-linux-gnu
-              cmake_toolchain_file: cc_toolchain/aarch64-linux-gnu.cmake
-              c_compiler: gcc-aarch64-linux-gnu
-              cpp_compiler: g++-aarch64-linux-gnu
-              OTP_VERSION: "25"
-              NIF_VERSION: "2.16"
-          - pair:
-              arch: armv7l-linux-gnueabihf
-              cmake_toolchain_file: cc_toolchain/armv7l-linux-gnueabihf.cmake
-              c_compiler: gcc-arm-linux-gnueabihf
-              cpp_compiler: g++-arm-linux-gnueabihf
-              OTP_VERSION: "25"
-              NIF_VERSION: "2.16"
-          - pair:
-              arch: armv6-linux-gnueabihf
-              cmake_toolchain_file: cc_toolchain/armv6-nerves-linux-gnueabihf.cmake
-              c_compiler: armv6-nerves-linux-gnueabihf-gcc
-              cpp_compiler: armv6-nerves-linux-gnueabihf-g++
-              OTP_VERSION: "25"
-              NIF_VERSION: "2.16"
-          # - pair:
-          #     arch: ppc64le-linux-gnu
-          #     cmake_toolchain_file: cc_toolchain/ppc64le-linux-gnu.cmake
-          #     c_compiler: gcc-powerpc64le-linux-gnu
-          #     cpp_compiler: g++-powerpc64le-linux-gnu
-          #     OTP_VERSION: "25"
-          #     NIF_VERSION: "2.16"
-          - pair:
-              arch: s390x-linux-gnu
-              cmake_toolchain_file: cc_toolchain/s390x-linux-gnu.cmake
-              c_compiler: gcc-s390x-linux-gnu
-              cpp_compiler: g++-s390x-linux-gnu
-              OTP_VERSION: "25"
-              NIF_VERSION: "2.16"
-          - pair:
-              arch: riscv64-linux-gnu
-              cmake_toolchain_file: cc_toolchain/riscv64-linux-gnu.cmake
-              c_compiler: gcc-riscv64-linux-gnu
-              cpp_compiler: g++-riscv64-linux-gnu
-              OTP_VERSION: "25"
-              NIF_VERSION: "2.16"
+      matrix: ${{ fromJSON(needs.setup.outputs.matrix) }}
 
     steps:
       - name: Checkout
@@ -167,7 +215,7 @@ jobs:
 
       - name: Create precompiled library (without contrib modules)
         run: |
-          export PKG_NAME=evision-nif_${{ matrix.pair.NIF_VERSION }}-${{ matrix.pair.arch }}-${GITHUB_REF##*/v}
+          export PKG_NAME=evision-nif_${{ matrix.pair.NIF_VERSION }}-${{ matrix.pair.arch }}-${{ needs.setup.outputs.version }}
           mkdir -p "${PKG_NAME}"
           export PRIV_DIR="$(pwd)/_build/${MIX_ENV}/lib/evision/priv"
           mv "${PRIV_DIR}/include" /tmp/include
@@ -216,7 +264,7 @@ jobs:
 
       - name: Create precompiled library (with contrib modules)
         run: |
-          export PKG_NAME=evision-nif_${{ matrix.pair.NIF_VERSION }}-${{ matrix.pair.arch }}-contrib-${GITHUB_REF##*/v}
+          export PKG_NAME=evision-nif_${{ matrix.pair.NIF_VERSION }}-${{ matrix.pair.arch }}-contrib-${{ needs.setup.outputs.version }}
           mkdir -p "${PKG_NAME}"
 
           export PRIV_DIR="$(pwd)/_build/${MIX_ENV}/lib/evision/priv"
@@ -235,6 +283,7 @@ jobs:
 
       - uses: softprops/action-gh-release@v2
         with:
+          tag_name: v${{ needs.setup.outputs.version }}
           files: |
             artifacts/*.tar.gz
             artifacts/*.sha256
