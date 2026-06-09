@@ -312,16 +312,29 @@ endif()
 def patch_mlas_skip_crosscompile(opencv_version: str, opencv_src_root: str):
     """Skip the vendored MLAS subdirectory when cross-compiling.
 
-    MLAS builds its .S kernels through a separate ASM language. Cross toolchains
-    (Nerves, iOS, ...) usually set only CMAKE_C/CXX_COMPILER, so cmake's
-    enable_language(ASM) auto-detects the *host* assembler (e.g. /usr/bin/cc on an
-    x86_64 runner) and feeds it the target's AArch64 .S, which fails with host
-    GAS errors (``no such instruction: 'fmla v5.4s...'``, ``too many memory
-    references``). This hits every Nerves ARM board: the 32-bit ones report an
-    arm64 CMAKE_SYSTEM_PROCESSOR (so MLAS picks lib/aarch64), and rpi5 is genuine
-    aarch64 — both assembled by the host x86 `as`. Skip MLAS whenever it needs
-    ASM and we are cross-compiling; the DNN module falls back to its built-in
-    SGEMM. Mirrors patch_mlas_skip_msvc.
+    Covers two distinct failure modes; in both, the DNN module falls back to
+    its built-in SGEMM.
+
+    (1) ASM arches (flagged by _MLAS_REQUIRES_ASM: x86, x86_64, arm64,
+    loongarch64) build .S kernels through a separate ASM language. Cross
+    toolchains (Nerves, iOS, ...) usually set only CMAKE_C/CXX_COMPILER, so
+    cmake's enable_language(ASM) auto-detects the *host* assembler (e.g.
+    /usr/bin/cc on an x86_64 runner) and feeds it the target's .S, which fails
+    with host GAS errors (``no such instruction: 'fmla v5.4s...'``). Every
+    Nerves ARM board hits this: the 32-bit ones report an arm64
+    CMAKE_SYSTEM_PROCESSOR (so MLAS picks lib/aarch64), and rpi5 is genuine
+    aarch64; both are assembled by the host x86 `as`.
+
+    (2) s390x and riscv64 use pure-C++ kernels (so _MLAS_REQUIRES_ASM is FALSE
+    and (1) misses them), but OpenCV 5.0's vendored MLAS subset is incomplete
+    for them and fails to build at all:
+      - s390x: lib/s390x/SgemmKernel.cpp does ``#include "SgemmKernelZVECTOR.h"``,
+        a header that was never vendored (fatal compile error).
+      - riscv64: MlasGQASupported<MLFloat16> in compute.cpp references
+        MlasHGemmSupported(), which the SGEMM-only vendored subset never defines
+        for this arch (undefined-reference link error in opencv_dnn).
+    The C++ ARM (lib/arm/sgemmc.cpp) and POWER paths cross-compile cleanly and
+    keep MLAS, as does a native x86_64 build. Mirrors patch_mlas_skip_msvc.
     """
     mlas_cmake = (
         Path(opencv_src_root) / '3rdparty' / 'mlas' / 'CMakeLists.txt'
@@ -331,9 +344,9 @@ def patch_mlas_skip_crosscompile(opencv_version: str, opencv_src_root: str):
 
     anchor = 'include(CheckLanguage)'
     insertion = """\
-if(_MLAS_REQUIRES_ASM AND (CMAKE_CROSSCOMPILING OR CMAKE_TOOLCHAIN_FILE))
+if((_MLAS_REQUIRES_ASM OR MLAS_S390X OR MLAS_RISCV64) AND (CMAKE_CROSSCOMPILING OR CMAKE_TOOLCHAIN_FILE))
   set(OPENCV_DNN_MLAS_SKIP_REASON
-    "cross toolchain has no matching ASM compiler for MLAS .S kernels"
+    "MLAS not built for cross target ${CMAKE_SYSTEM_PROCESSOR} (host assembler mismatch or incomplete vendored kernels)"
     CACHE INTERNAL "" FORCE)
   message(STATUS "MLAS: skipped when cross-compiling (DNN will use its built-in SGEMM)")
   return()
