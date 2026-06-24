@@ -151,7 +151,7 @@ jobs:
           sha256sum "${PKG_NAME}.tar.gz" | tee "${PKG_NAME}.tar.gz.sha256"
           mv "${TMP_INCLUDE_DIR}" "${PRIV_DIR}/include"
 
-      - uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v3
         if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
         with:
           files: |
