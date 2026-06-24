@@ -64,7 +64,7 @@ jobs:
     name: aarch64-linux-gnu-cuda${{ matrix.pair.cuda_id }}-cudnn${{ matrix.pair.cudnn_id }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
 
       - name: Get tagged version
         id: version
