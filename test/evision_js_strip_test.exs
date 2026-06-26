@@ -13,7 +13,7 @@ defmodule Evision.JSStripTest do
   # this test leaves untouched.
   @target_modules [
     Evision,
-    Evision.CascadeClassifier,
+    Evision.QRCodeDetector,
     Evision.FishEye,
     Evision.ArUco.Dictionary,
     Evision.JS
@@ -46,17 +46,17 @@ defmodule Evision.JSStripTest do
       assert %{arg_plan: [:in, :out, :in, :in]} = find_entry(entries, :canny, 3)
     end
 
-    test "Evision.CascadeClassifier carries constructor + method entries" do
-      entries = js_entries(Evision.CascadeClassifier)
+    test "Evision.QRCodeDetector carries constructor + method entries" do
+      entries = js_entries(Evision.QRCodeDetector)
 
-      assert %{js_kind: :constructor, js_class: "cv.CascadeClassifier"} =
-               find_entry(entries, :cascadeClassifier, 0)
+      assert %{js_kind: :constructor, js_class: "cv.QRCodeDetector"} =
+               find_entry(entries, :qrCodeDetector, 0)
 
       assert %{
                js_kind: :method,
-               js_class: "cv.CascadeClassifier",
-               js_method: "detectMultiScale"
-             } = find_entry(entries, :detectMultiScale, 2)
+               js_class: "cv.QRCodeDetector",
+               js_method: "detect"
+             } = find_entry(entries, :detect, 2)
     end
 
     test "Evision.FishEye fisheye_-prefix entry survives stripping" do
@@ -83,7 +83,7 @@ defmodule Evision.JSStripTest do
 
     test "runnable?/3 returns true for known triples" do
       assert Evision.JS.runnable?(Evision, :canny, 3)
-      assert Evision.JS.runnable?(Evision.CascadeClassifier, :detectMultiScale, 2)
+      assert Evision.JS.runnable?(Evision.QRCodeDetector, :detect, 2)
       assert Evision.JS.runnable?(Evision.FishEye, :initUndistortRectifyMap, 6)
     end
 
@@ -108,8 +108,8 @@ defmodule Evision.JSStripTest do
       assert length(whitelist) > 0
 
       assert Enum.any?(whitelist, fn entry ->
-               entry.module == Evision.CascadeClassifier and
-                 entry.fun == :detectMultiScale and
+               entry.module == Evision.QRCodeDetector and
+                 entry.fun == :detect and
                  entry.arity == 2
              end)
     end

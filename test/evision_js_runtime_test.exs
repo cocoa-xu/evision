@@ -66,30 +66,30 @@ defmodule Evision.JSRuntimeTest do
              } = entry
     end
 
-    test "returns {:ok, entry} for a known method (Evision.CascadeClassifier.detectMultiScale/2)" do
+    test "returns {:ok, entry} for a known method (Evision.QRCodeDetector.detect/2)" do
       assert {:ok, entry} =
-               Evision.JS.lookup(Evision.CascadeClassifier, :detectMultiScale, 2)
+               Evision.JS.lookup(Evision.QRCodeDetector, :detect, 2)
 
       assert %{
-               module: Evision.CascadeClassifier,
-               fun: :detectMultiScale,
+               module: Evision.QRCodeDetector,
+               fun: :detect,
                arity: 2,
                js_kind: :method,
-               js_class: "cv.CascadeClassifier",
-               js_method: "detectMultiScale"
+               js_class: "cv.QRCodeDetector",
+               js_method: "detect"
              } = entry
     end
 
-    test "returns {:ok, entry} for a known constructor (Evision.CascadeClassifier.cascadeClassifier/0)" do
+    test "returns {:ok, entry} for a known constructor (Evision.QRCodeDetector.qrCodeDetector/0)" do
       assert {:ok, entry} =
-               Evision.JS.lookup(Evision.CascadeClassifier, :cascadeClassifier, 0)
+               Evision.JS.lookup(Evision.QRCodeDetector, :qrCodeDetector, 0)
 
       assert %{
-               module: Evision.CascadeClassifier,
-               fun: :cascadeClassifier,
+               module: Evision.QRCodeDetector,
+               fun: :qrCodeDetector,
                arity: 0,
                js_kind: :constructor,
-               js_class: "cv.CascadeClassifier"
+               js_class: "cv.QRCodeDetector"
              } = entry
     end
 
@@ -112,7 +112,7 @@ defmodule Evision.JSRuntimeTest do
       assert {:ok, %{arg_plan: [:in, :in, :out]}} = Evision.JS.lookup(Evision, :add, 2)
 
       assert {:ok, %{arg_plan: [:in, :out]}} =
-               Evision.JS.lookup(Evision.CascadeClassifier, :detectMultiScale, 2)
+               Evision.JS.lookup(Evision.QRCodeDetector, :detect, 2)
     end
 
     test "omits arg_plan for ambiguous same-arity overloads (canny/4)" do
@@ -127,7 +127,7 @@ defmodule Evision.JSRuntimeTest do
     end
 
     test "true for a class method known to opencv.js" do
-      assert Evision.JS.runnable?(Evision.CascadeClassifier, :detectMultiScale, 2)
+      assert Evision.JS.runnable?(Evision.QRCodeDetector, :detect, 2)
     end
 
     test "false for evision-specific binding (Evision.Mat.from_binary/2)" do

@@ -185,9 +185,9 @@ class EntriesTest(unittest.TestCase):
         self.assertIn(("imgproc", None, "threshold", "function"), entries)
         self.assertIn(("imgproc", None, "cvtColor", "function"), entries)
         self.assertIn(("imgproc", None, "resize", "function"), entries)
-        self.assertIn(("objdetect", "CascadeClassifier", "CascadeClassifier", "constructor"), entries)
-        self.assertIn(("objdetect", "CascadeClassifier", "detectMultiScale", "method"), entries)
-        self.assertIn(("dnn", None, "readNetFromCaffe", "function"), entries)
+        self.assertIn(("objdetect", "QRCodeDetector", "QRCodeDetector", "constructor"), entries)
+        self.assertIn(("objdetect", "QRCodeDetector", "detect", "method"), entries)
+        self.assertIn(("dnn", None, "readNetFromONNX", "function"), entries)
 
 
 class NamespacePrefixOverrideTest(unittest.TestCase):

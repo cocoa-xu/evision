@@ -78,30 +78,28 @@ defmodule Evision.JSTagTest do
     end
   end
 
-  describe "class methods + constructor on Evision.CascadeClassifier" do
+  describe "class methods + constructor on Evision.QRCodeDetector" do
     setup do
-      %{entries: js_entries(Evision.CascadeClassifier)}
+      %{entries: js_entries(Evision.QRCodeDetector)}
     end
 
-    test "constructor (arity 0 and 1)", %{entries: entries} do
-      for arity <- [0, 1] do
-        assert %{js_kind: :constructor, js_class: "cv.CascadeClassifier"} =
-                 find_entry(entries, :cascadeClassifier, arity)
-      end
+    test "constructor (arity 0)", %{entries: entries} do
+      assert %{js_kind: :constructor, js_class: "cv.QRCodeDetector"} =
+               find_entry(entries, :qrCodeDetector, 0)
     end
 
-    test "detectMultiScale method", %{entries: entries} do
+    test "detect method", %{entries: entries} do
       assert %{
                js_kind: :method,
-               js_class: "cv.CascadeClassifier",
-               js_method: "detectMultiScale"
-             } = find_entry(entries, :detectMultiScale, 2)
+               js_class: "cv.QRCodeDetector",
+               js_method: "detect"
+             } = find_entry(entries, :detect, 2)
     end
 
     test "method arg_plan covers post-receiver args only (CCD-54)", %{entries: entries} do
       # The receiver is the wire's `recv`; arg_plan describes only the args
-      # after it. detectMultiScale(self, image) → opencv.js (image, objects/dst).
-      assert %{arg_plan: [:in, :out]} = find_entry(entries, :detectMultiScale, 2)
+      # after it. detect(self, img) → opencv.js (img, points/dst).
+      assert %{arg_plan: [:in, :out]} = find_entry(entries, :detect, 2)
     end
   end
 
@@ -156,16 +154,16 @@ defmodule Evision.JSTagTest do
                ~r/-js\(#\{fun => canny, arity => \d+, js_kind => function, js_name => <<"cv\.Canny">>\}\)\./
     end
 
-    test "evision_cascadeclassifier.erl emits method + constructor entries" do
+    test "evision_qrcodedetector.erl emits method + constructor entries" do
       source =
-        Path.join([File.cwd!(), "src", "generated", "evision_cascadeclassifier.erl"])
+        Path.join([File.cwd!(), "src", "generated", "evision_qrcodedetector.erl"])
         |> File.read!()
 
       assert source =~
-               ~r/-js\(#\{fun => cascadeClassifier, arity => 0, js_kind => constructor, js_class => <<"cv\.CascadeClassifier">>\}\)\./
+               ~r/-js\(#\{fun => qrCodeDetector, arity => 0, js_kind => constructor, js_class => <<"cv\.QRCodeDetector">>\}\)\./
 
       assert source =~
-               ~r/-js\(#\{fun => detectMultiScale, arity => 2, js_kind => method, js_class => <<"cv\.CascadeClassifier">>, js_method => <<"detectMultiScale">>, arg_plan => \[in, out\]\}\)\./
+               ~r/-js\(#\{fun => detect, arity => 2, js_kind => method, js_class => <<"cv\.QRCodeDetector">>, js_method => <<"detect">>, arg_plan => \[in, out\]\}\)\./
     end
   end
 
@@ -179,14 +177,14 @@ defmodule Evision.JSTagTest do
     # as "not guaranteed to remain in future versions" — so D25 deployments
     # MUST opt in explicitly via `strip_beams: [keep: ["Attr"]]`.
 
-    test "@js attributes survive strip_release-style strip on Evision.CascadeClassifier" do
-      path = :code.which(Evision.CascadeClassifier)
+    test "@js attributes survive strip_release-style strip on Evision.QRCodeDetector" do
+      path = :code.which(Evision.QRCodeDetector)
       assert is_list(path), "expected loaded BEAM path, got #{inspect(path)}"
 
       {:ok, original} = File.read(path)
 
       original_js =
-        Evision.CascadeClassifier
+        Evision.QRCodeDetector
         |> js_entries()
         |> length()
 
@@ -206,8 +204,8 @@ defmodule Evision.JSTagTest do
       assert length(stripped_js) == original_js,
              "@js count must survive strip: pre=#{original_js} post=#{length(stripped_js)}"
 
-      assert %{js_kind: :method, js_method: "detectMultiScale"} =
-               Enum.find(stripped_js, &(&1.fun == :detectMultiScale and &1.arity == 2))
+      assert %{js_kind: :method, js_method: "detect"} =
+               Enum.find(stripped_js, &(&1.fun == :detect and &1.arity == 2))
     end
 
     test "@js attributes survive strip_release-style strip on Evision (free functions)" do
@@ -232,9 +230,9 @@ defmodule Evision.JSTagTest do
       # an explicit keep list (or Mix release's current — undocumented —
       # default) does. If OTP ever changes strip/1 to preserve Attr this
       # test will flip and force a doc update.
-      path = :code.which(Evision.CascadeClassifier)
+      path = :code.which(Evision.QRCodeDetector)
       {:ok, original} = File.read(path)
-      {:ok, {Evision.CascadeClassifier, stripped}} = :beam_lib.strip(original)
+      {:ok, {Evision.QRCodeDetector, stripped}} = :beam_lib.strip(original)
 
       assert {:error, :beam_lib, {:missing_chunk, _, _}} =
                :beam_lib.chunks(stripped, [~c"Attr"])
