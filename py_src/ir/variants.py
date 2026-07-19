@@ -147,6 +147,19 @@ class FuncVariant(object):
     def function_guard(self, kind: str):
         return list(filter(lambda x: x != '', [map_argtype_to_guard(kind, map_argname(kind, argname), argtype, classname=self.classname) for argname, _, argtype in self.py_arglist[:self.pos_end]]))
 
+    def normalized_guard(self, kind: str):
+        # Like function_guard/1 but with canonical positional argnames, and with one
+        # entry per positional arg (empty string when an arg has no guard) so the
+        # signature length equals the clause arity. Two clauses that differ only in
+        # argname, or in an argtype mapping to the same guard, yield identical
+        # signatures; keeping unguarded positions prevents a longer clause from
+        # looking like a shorter one. The emitter drops a clause an earlier same-arity
+        # clause already subsumes (Elixir 1.20 flags those as unreachable).
+        return [
+            map_argtype_to_guard(kind, f'__a{idx}', argtype, classname=self.classname)
+            for idx, (_, _, argtype) in enumerate(self.py_arglist[:self.pos_end])
+        ]
+
     def function_signature(self):
         return ''.join(filter(lambda x: x != '', [map_argtype_to_type(argtype, classname=self.classname) for _, _, argtype in self.py_arglist[:self.pos_end]]))
     
