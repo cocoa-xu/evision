@@ -1847,6 +1847,9 @@ defmodule Evision.MixProject do
           lib/*.ex
           patches
           py_src/*.py
+          py_src/config
+          py_src/emit
+          py_src/ir
           scripts
           src/evision_mat.erl
           src/evision_highgui.erl
