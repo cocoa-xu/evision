@@ -222,3 +222,34 @@ def test_attribute_lines_without_plan_are_unchanged():
 def test_runtime_module_type_blocks_document_arg_plan():
     assert "optional(:arg_plan) => [:in | :out]" in JA.elixir_runtime_module([_NO_PLAN])
     assert "arg_plan => [in | out]" in JA.erlang_runtime_module([_NO_PLAN])
+
+
+# ---- opencv.js asset URL helper ---------------------------------------------
+
+
+def test_runtime_modules_emit_opencv_js_url():
+    ex = JA.elixir_runtime_module([_NO_PLAN])
+    assert '@github_url "https://github.com/cocoa-xu/evision"' in ex
+    assert "def opencv_js_url(version \\\\ nil) do" in ex
+    assert 'to_string(Application.spec(:evision, :vsn))' in ex
+    assert '"#{@github_url}/releases/download/v#{version}/opencv.js"' in ex
+
+    erl = JA.erlang_runtime_module([_NO_PLAN])
+    assert "opencv_js_url() ->" in erl
+    assert "application:get_key(evision, vsn)" in erl
+    assert (
+        'iolist_to_binary([<<"https://github.com/cocoa-xu/evision/releases/download/v">>,'
+        " Version, <<\"/opencv.js\">>])"
+    ) in erl
+
+
+def test_runtime_modules_emit_opencv_js_path():
+    ex = JA.elixir_runtime_module([_NO_PLAN])
+    assert "def opencv_js_path do" in ex
+    assert "case :code.priv_dir(:evision) do" in ex
+    assert 'Path.join(to_string(dir), "opencv.js")' in ex
+
+    erl = JA.erlang_runtime_module([_NO_PLAN])
+    assert "opencv_js_path() ->" in erl
+    assert "code:priv_dir(evision)" in erl
+    assert 'filename:join(Dir, "opencv.js")' in erl

@@ -71,3 +71,15 @@ config :evision,
     :raw,
     :numerical
   ]
+
+# Embed the CSP-clean `opencv.js` runtime into evision's `priv` at compile time.
+#
+# When `true`, evision downloads the `opencv.js` release asset (precompiled
+# builds) or builds it from the OpenCV source it already fetched (from-source
+# builds; needs an activated Emscripten SDK). The file lands next to the NIF and
+# is reachable at runtime via `Evision.JS.opencv_js_path/0`. The
+# `EVISION_EMBED_JS=true` environment variable overrides this.
+#
+# Defaults to `false`.
+#
+#     config :evision, Evision.JS, embed_js: true
