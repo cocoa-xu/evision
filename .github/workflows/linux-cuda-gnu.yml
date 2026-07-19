@@ -26,6 +26,7 @@ on:
       - '.github/workflows/linux-ppc64le.yml'
       - '.github/workflows/linux-s390x.yml'
       - '.github/workflows/linux-precompile-*.yml'
+      - '.github/workflows/opencv-js-*.yml'
   push:
     branches:
       - main
@@ -51,6 +52,7 @@ on:
       - '.github/workflows/linux-ppc64le.yml'
       - '.github/workflows/linux-s390x.yml'
       - '.github/workflows/linux-precompile-*.yml'
+      - '.github/workflows/opencv-js-*.yml'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

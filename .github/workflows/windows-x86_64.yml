@@ -23,6 +23,7 @@ on:
       - '.github/workflows/freebsd-*.yml'
       - '.github/workflows/test-*.yml'
       - '.github/workflows/windows-precompile.yml'
+      - '.github/workflows/opencv-js-*.yml'
       - '.github/*manylinux*.sh'
   push:
     branches:
@@ -47,6 +48,7 @@ on:
       - '.github/workflows/test-*.yml'
       - '.github/workflows/windows-precompile-cuda.yml'
       - '.github/workflows/windows-precompile.yml'
+      - '.github/workflows/opencv-js-*.yml'
       - '.github/*manylinux*.sh'
 
 concurrency:

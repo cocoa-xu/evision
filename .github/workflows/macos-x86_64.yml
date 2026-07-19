@@ -24,6 +24,7 @@ on:
       - '.github/workflows/test-*.yml'
       - '.github/workflows/macos-precompile.yml'
       - '.github/workflows/macos-apple-device-precompile.yml'
+      - '.github/workflows/opencv-js-*.yml'
       - '.github/*manylinux*.sh'
   push:
     branches:
@@ -48,6 +49,7 @@ on:
       - '.github/workflows/freebsd-*.yml'
       - '.github/workflows/test-*.yml'
       - '.github/workflows/macos-precompile.yml'
+      - '.github/workflows/opencv-js-*.yml'
       - '.github/*manylinux*.sh'
 
 concurrency:

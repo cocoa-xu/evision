@@ -28,6 +28,7 @@ on:
       - '.github/workflows/linux-s390x.yml'
       - '.github/workflows/linux-cuda-*.yml'
       - '.github/workflows/linux-precompile-*.yml'
+      - '.github/workflows/opencv-js-*.yml'
       - '.github/*manylinux*.sh'
   push:
     branches:
@@ -59,6 +60,7 @@ on:
       - '.github/workflows/linux-s390x.yml'
       - '.github/workflows/linux-cuda-*.yml'
       - '.github/workflows/linux-precompile-*.yml'
+      - '.github/workflows/opencv-js-*.yml'
       - '.github/*manylinux*.sh'
 
 concurrency:

@@ -22,6 +22,7 @@ on:
       - '.github/workflows/windows-*'
       - '.github/workflows/freebsd-*'
       - '.github/workflows/test-*.yml'
+      - '.github/workflows/opencv-js-*.yml'
       - '.github/*manylinux*.sh'
   push:
     tags:
@@ -46,6 +47,7 @@ on:
       - '.github/workflows/windows-*'
       - '.github/workflows/test-*.yml'
       - '.github/workflows/freebsd-*.yml'
+      - '.github/workflows/opencv-js-*.yml'
       - '.github/*manylinux*.sh'
   workflow_dispatch:
 
