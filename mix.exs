@@ -721,63 +721,14 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
     windows_fix_so_file = Path.join([app_priv(), windows_fix_so_file])
 
     with_precompiled_lock(precompiled_lock_dir(cache_dir), fn ->
-      # first we check if we already have the NIF file
-      # if not, then we defintely need to copy it (and other files) from somewhere
       needs_copy = !File.exists?(evision_so_file) or !File.exists?(windows_fix_so_file)
 
       if needs_copy do
-        # to copy the nif file and other files
-        # we first check if they are cached in the cache dir
         if !File.dir?(unarchive_dest_dir) do
-          # if `unarchive_dest_dir` does not exists
-          # then perhaps we need to extract these files from the precompiled binary tarball
-          #
-          # to extract files from the tarball
-          # we check if the tarball is cached in the cache dir
-          {needs_download, needs_unarchive} =
-            if File.exists?(cache_file) do
-              # and it has to be a regular file
-              if File.regular?(cache_file) do
-                # of course we have to compute its checksum
-                {:ok, algo, cache_file_checksum} = checksum(cache_file)
-
-                Logger.info(
-                  "Precompiled binary tarball cached at #{cache_file}, #{algo}=#{cache_file_checksum}"
-                )
-
-                # and verify the checksum in the map
-                {checksum_matched?, algo_in_map, checksum_in_map} =
-                  verify_checksum(cache_file, algo, cache_file_checksum)
-
-                if checksum_matched? do
-                  # if these checksum matches
-                  # we can extract files from the tarball
-                  {false, true}
-                else
-                  Logger.error(
-                    "Checksum mismatched: #{cache_file}[#{algo}=#{cache_file_checksum}], expected:[#{algo_in_map}=#{checksum_in_map}]"
-                  )
-
-                  Logger.warning("Will delete cached tarball #{cache_file} and re-download")
-                  # otherwise we delete the cached file and download it again
-                  {true, true}
-                end
-              else
-                # not a regular file
-                # remove it and download again
-                File.rm_rf!(cache_file)
-
-                Logger.warning(
-                  "Cached file at #{cache_file} is not a regular file, will delete it and re-download"
-                )
-
-                {true, true}
-              end
-            else
-              {true, true}
-            end
-
-          if needs_download do
+          # When the extracted dir is missing we rebuild it from the tarball, so the
+          # unarchive below is unconditional; we only download first when no valid
+          # tarball is already cached.
+          if !cached_tarball_usable?(cache_file) do
             download_url =
               get_download_url(
                 target,
@@ -811,20 +762,52 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
             end
           end
 
-          if needs_unarchive do
-            File.rm_rf!(unarchive_dest_dir)
-            unarchive!(cache_file, cache_dir)
-          end
+          File.rm_rf!(unarchive_dest_dir)
+          unarchive!(cache_file, cache_dir)
         end
-
-        # if `unarchive_dest_dir` exists and is a directory
-        # then we can simply copy they to the expected locations
 
         deploy_from_dir!(cached_priv_dir, cached_elixir_dir)
       else
         :ok
       end
     end)
+  end
+
+  defp cached_tarball_usable?(cache_file) do
+    cond do
+      !File.exists?(cache_file) ->
+        false
+
+      !File.regular?(cache_file) ->
+        File.rm_rf!(cache_file)
+
+        Logger.warning(
+          "Cached file at #{cache_file} is not a regular file, will delete it and re-download"
+        )
+
+        false
+
+      true ->
+        {:ok, algo, cache_file_checksum} = checksum(cache_file)
+
+        Logger.info(
+          "Precompiled binary tarball cached at #{cache_file}, #{algo}=#{cache_file_checksum}"
+        )
+
+        {checksum_matched?, algo_in_map, checksum_in_map} =
+          verify_checksum(cache_file, algo, cache_file_checksum)
+
+        if checksum_matched? do
+          true
+        else
+          Logger.error(
+            "Checksum mismatched: #{cache_file}[#{algo}=#{cache_file_checksum}], expected:[#{algo_in_map}=#{checksum_in_map}]"
+          )
+
+          Logger.warning("Will delete cached tarball #{cache_file} and re-download")
+          false
+        end
+    end
   end
 
   def verify_checksum(cache_file, algo, cache_file_checksum) do
