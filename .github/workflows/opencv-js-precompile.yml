@@ -1,0 +1,143 @@
+name: opencv-js-precompile
+
+# Builds a CSP-clean opencv.js (runs under `script-src 'wasm-unsafe-eval'` with
+# no `'unsafe-eval'`) from OpenCV source and publishes it as an immutable release
+# asset. Single arch-independent target, so no build matrix. See
+# scripts/build_opencv_js.sh for why this differs from stock only by
+# -s DYNAMIC_EXECUTION=0.
+
+on:
+  workflow_dispatch:
+    inputs:
+      opencv_ver:
+        description: "OpenCV version to build opencv.js for"
+        required: false
+        default: "5.0.0"
+      embind_aot:
+        description: "Also pass -s EMBIND_AOT=1 (faster embind invokers, may fail to link on some bindings)"
+        type: boolean
+        required: false
+        default: false
+      publish_release:
+        description: "Publish opencv.js as a release asset (outward-facing; off = build + verify only)"
+        type: boolean
+        required: false
+        default: false
+  push:
+    tags:
+      - "opencv-js-v*"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # the publish step creates the release and uploads assets
+    env:
+      # Proven-good pin for OpenCV 5.0.0 embind (needs C++17 since emsdk 4.0.20).
+      EMSDK_VERSION: "4.0.20"
+      OPENCV_JS_EMBIND_AOT: ${{ github.event.inputs.embind_aot == 'true' && '1' || '0' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Resolve OpenCV version
+        env:
+          INPUT_VER: ${{ github.event.inputs.opencv_ver }}
+        run: |
+          if [ -n "$INPUT_VER" ]; then
+            version="$INPUT_VER"
+          elif [ "$GITHUB_REF_TYPE" = "tag" ]; then
+            version="${GITHUB_REF_NAME#opencv-js-v}"
+          else
+            version="5.0.0"
+          fi
+          echo "OPENCV_VER=${version}" >> "$GITHUB_ENV"
+          echo "building opencv.js for OpenCV ${version}"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up Node (for the CSP verification)
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Cache Emscripten SDK
+        id: cache-emsdk
+        uses: actions/cache@v6
+        with:
+          key: emsdk-${{ env.EMSDK_VERSION }}
+          path: ./emsdk
+
+      - name: Install Emscripten SDK
+        run: |
+          if [ ! -d emsdk/.git ]; then
+            git clone --depth 1 https://github.com/emscripten-core/emsdk.git emsdk
+          fi
+          cd emsdk
+          ./emsdk install "${EMSDK_VERSION}"
+          ./emsdk activate "${EMSDK_VERSION}"
+
+      - name: Cache OpenCV source
+        id: cache-opencv
+        uses: actions/cache@v6
+        with:
+          key: opencv-src-${{ env.OPENCV_VER }}
+          path: ./3rd_party
+
+      - name: Download OpenCV source
+        if: steps.cache-opencv.outputs.cache-hit != 'true'
+        run: bash scripts/download_opencv.sh "${OPENCV_VER}" 3rd_party/cache 3rd_party/opencv
+
+      - name: Build CSP-clean opencv.js
+        run: |
+          . ./emsdk/emsdk_env.sh
+          sh scripts/build_opencv_js.sh "${OPENCV_VER}" "3rd_party/opencv/opencv-${OPENCV_VER}" out
+
+      - name: Verify functional (eval allowed)
+        run: node scripts/verify_opencv_js_csp.mjs out/opencv.js
+
+      - name: Verify CSP-clean (eval disabled == no 'unsafe-eval')
+        env:
+          REQUIRE_NO_EVAL: "1"
+        run: node --disallow-code-generation-from-strings scripts/verify_opencv_js_csp.mjs out/opencv.js
+
+      - name: Scan for residual eval / new Function call sites
+        run: |
+          count=$(grep -oE "eval\(|new Function\(" out/opencv.js | wc -l | tr -d ' ')
+          echo "eval( / new Function( occurrences: ${count}"
+          if [ "${count}" != "0" ]; then
+            echo "::warning::${count} eval/new Function occurrences (inspect; string literals/comments are benign, the eval-disabled verify step is the real gate)"
+          fi
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: opencv-js-${{ env.OPENCV_VER }}-csp-clean
+          path: |
+            out/opencv.js
+            out/opencv.sha256
+          if-no-files-found: error
+
+      - name: Publish release asset
+        if: github.event_name == 'push' || github.event.inputs.publish_release == 'true'
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ github.ref_type == 'tag' && github.ref_name || format('opencv-js-v{0}', env.OPENCV_VER) }}
+          name: opencv.js ${{ env.OPENCV_VER }} (CSP-clean)
+          body: |
+            CSP-clean opencv.js for OpenCV ${{ env.OPENCV_VER }}: the stock single-threaded,
+            single-file WASM build with OpenCV's default whitelist, differing only by
+            `-s DYNAMIC_EXECUTION=0` so it runs under `script-src 'wasm-unsafe-eval'`
+            with no `'unsafe-eval'`. Verified by loading + exercising embind under Node's
+            `--disallow-code-generation-from-strings`. `opencv.sha256` pins the exact bytes.
+          files: |
+            out/opencv.js
+            out/opencv.sha256
+          fail_on_unmatched_files: true
