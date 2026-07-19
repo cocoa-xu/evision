@@ -685,49 +685,19 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
         cudnn_version
       )
 
-    filename =
-      filename(
-        target,
-        version,
-        nif_version,
-        enable_contrib,
-        enable_cuda,
-        cuda_version,
-        cudnn_version,
-        ".tar.gz"
-      )
-
     cache_dir = cache_dir()
-    cache_file = Path.join([cache_dir, filename])
+    cache_file = Path.join([cache_dir, name <> ".tar.gz"])
     unarchive_dest_dir = Path.join([cache_dir, name])
     cached_priv_dir = Path.join([cache_dir, name, "priv"])
     cached_elixir_dir = Path.join([cache_dir, name, "elixir_generated"])
 
-    evision_so_file =
-      if os == "windows" do
-        "evision.dll"
-      else
-        "evision.so"
-      end
-
-    windows_fix_so_file =
-      if os == "windows" do
-        "windows_fix.dll"
-      else
-        "windows_fix.so"
-      end
-
-    evision_so_file = Path.join([app_priv(), evision_so_file])
-    windows_fix_so_file = Path.join([app_priv(), windows_fix_so_file])
-
     with_precompiled_lock(precompiled_lock_dir(cache_dir), fn ->
-      needs_copy = !File.exists?(evision_so_file) or !File.exists?(windows_fix_so_file)
-
-      if needs_copy do
+      if nif_installed?(os) do
+        :ok
+      else
+        # Rebuild the extracted dir from the tarball when it's missing, so the unarchive
+        # is unconditional here; we only download first when no valid tarball is cached.
         if !File.dir?(unarchive_dest_dir) do
-          # When the extracted dir is missing we rebuild it from the tarball, so the
-          # unarchive below is unconditional; we only download first when no valid
-          # tarball is already cached.
           if !cached_tarball_usable?(cache_file) do
             download_url =
               get_download_url(
@@ -743,22 +713,12 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
             {:ok, _} = Application.ensure_all_started(:inets)
             {:ok, _} = Application.ensure_all_started(:ssl)
 
-            # of course we have to verify its checksum too
             {:ok, algo, checksum} = download!(download_url, cache_file, true)
+            Logger.info("Downloaded precompiled tarball to #{cache_file} (#{algo}=#{checksum})")
 
-            Logger.info(
-              "Precompiled binary tarball downloaded and saved to #{cache_file}, #{algo}=#{checksum}"
-            )
-
-            {checksum_matched?, algo_in_map, checksum_in_map} =
-              verify_checksum(cache_file, algo, checksum)
-
-            if !checksum_matched? do
-              msg =
-                "Checksum mismatched: downloaded file: #{cache_file}[#{algo}=#{checksum}], expected:[#{algo_in_map}=#{checksum_in_map}]"
-
-              Logger.error(msg)
-              raise RuntimeError, msg
+            case verify_checksum(cache_file, algo, checksum) do
+              :ok -> :ok
+              {:error, reason} -> raise "precompiled tarball verification failed: #{reason}"
             end
           end
 
@@ -767,10 +727,16 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
         end
 
         deploy_from_dir!(cached_priv_dir, cached_elixir_dir)
-      else
-        :ok
       end
     end)
+  end
+
+  defp nif_installed?(os) do
+    ext = if os == "windows", do: "dll", else: "so"
+    priv = app_priv()
+
+    File.exists?(Path.join(priv, "evision.#{ext}")) and
+      File.exists?(Path.join(priv, "windows_fix.#{ext}"))
   end
 
   defp cached_tarball_usable?(cache_file) do
@@ -779,50 +745,48 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
         false
 
       !File.regular?(cache_file) ->
-        File.rm_rf!(cache_file)
-
         Logger.warning(
-          "Cached file at #{cache_file} is not a regular file, will delete it and re-download"
+          "Cached tarball #{cache_file} is not a regular file; removing and re-downloading"
         )
 
+        File.rm_rf!(cache_file)
         false
 
       true ->
-        {:ok, algo, cache_file_checksum} = checksum(cache_file)
+        {:ok, algo, checksum} = checksum(cache_file)
+        Logger.info("Found cached precompiled tarball #{cache_file} (#{algo}=#{checksum})")
 
-        Logger.info(
-          "Precompiled binary tarball cached at #{cache_file}, #{algo}=#{cache_file_checksum}"
-        )
+        case verify_checksum(cache_file, algo, checksum) do
+          :ok ->
+            true
 
-        {checksum_matched?, algo_in_map, checksum_in_map} =
-          verify_checksum(cache_file, algo, cache_file_checksum)
-
-        if checksum_matched? do
-          true
-        else
-          Logger.error(
-            "Checksum mismatched: #{cache_file}[#{algo}=#{cache_file_checksum}], expected:[#{algo_in_map}=#{checksum_in_map}]"
-          )
-
-          Logger.warning("Will delete cached tarball #{cache_file} and re-download")
-          false
+          {:error, reason} ->
+            Logger.warning(reason <> "; re-downloading")
+            false
         end
     end
   end
 
-  def verify_checksum(cache_file, algo, cache_file_checksum) do
+  def verify_checksum(cache_file, algo, checksum) do
     checksum_map = read_checksum_map()
     basename = Path.basename(cache_file)
 
     case Map.fetch(checksum_map, basename) do
       {:ok, algo_with_hash} ->
-        [algo_in_map, hash] = String.split(algo_with_hash, ":")
-        {cache_file_checksum == hash and algo_in_map == algo, algo_in_map, hash}
+        case String.split(algo_with_hash, ":") do
+          [^algo, ^checksum] ->
+            :ok
+
+          [expected_algo, expected_hash] ->
+            {:error,
+             "checksum mismatch for #{basename}: got #{algo}=#{checksum}, " <>
+               "expected #{expected_algo}=#{expected_hash}"}
+        end
 
       :error ->
         {:error,
-         "the precompiled NIF file does not exist in the checksum file. " <>
-           "Please consider run: `EVISION_FETCH_PRECOMPILED=true mix evision.fetch --all` to generate the checksum file."}
+         "#{basename} is not listed in the checksum file; run " <>
+           "`EVISION_FETCH_PRECOMPILED=true mix evision.fetch --all` to regenerate it"}
     end
   end
 
@@ -830,49 +794,27 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
     app_priv = app_priv()
     generated_elixir_dir = Path.join([File.cwd!(), "lib", "generated"])
 
-    if File.exists?(app_priv) do
-      File.rm_rf!(app_priv)
-    end
-
-    if File.exists?(generated_elixir_dir) do
-      File.rm_rf!(generated_elixir_dir)
-    end
+    File.rm_rf!(app_priv)
+    File.rm_rf!(generated_elixir_dir)
 
     Logger.info("Copying priv directory: #{cached_priv_dir} => #{app_priv}")
-
-    with {:ok, _} <- File.cp_r(cached_priv_dir, app_priv) do
-      :ok
-    else
-      error ->
-        msg = "Failed to copy priv directory, `File.cp_r`: #{inspect(error)}"
-        Logger.error(msg)
-        raise RuntimeError, msg
-    end
+    File.cp_r!(cached_priv_dir, app_priv)
 
     Logger.info(
       "Copying generated Elixir binding files: #{cached_elixir_dir} => #{generated_elixir_dir}"
     )
 
-    with {:ok, _} <- File.cp_r(cached_elixir_dir, generated_elixir_dir) do
-      :ok
-    else
-      error ->
-        msg = "Failed to copy generated Elixir binding files, `File.cp_r`: #{inspect(error)}"
-        Logger.error(msg)
-        raise RuntimeError, msg
-    end
+    File.cp_r!(cached_elixir_dir, generated_elixir_dir)
+
+    :ok
   end
 
   def unarchive!(filepath, to_directory) do
     File.mkdir_p!(to_directory)
 
-    with :ok <- :erl_tar.extract(filepath, [:compressed, {:cwd, to_directory}]) do
-      :ok
-    else
-      err ->
-        msg = "Failed to unarchive tarball file: #{filepath}, error: #{inspect(err)}"
-        Logger.error(msg)
-        raise RuntimeError, msg
+    case :erl_tar.extract(filepath, [:compressed, {:cwd, to_directory}]) do
+      :ok -> :ok
+      {:error, reason} -> raise "failed to unarchive #{filepath}: #{inspect(reason)}"
     end
   end
 
@@ -893,49 +835,33 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
   def run(_args) do
     {target, [_arch, os, _abi]} = get_target()
 
-    evision_so_file =
-      if os == "windows" do
-        "evision.dll"
-      else
-        "evision.so"
-      end
-
-    windows_fix_so_file =
-      if os == "windows" do
-        "windows_fix.dll"
-      else
-        "windows_fix.so"
-      end
-
-    evision_so_file = Path.join([app_priv(), evision_so_file])
-    windows_fix_so_file = Path.join([app_priv(), windows_fix_so_file])
-
-    if !File.exists?(evision_so_file) or !File.exists?(windows_fix_so_file) do
-      with {:precompiled, _} <- deploy_type(true) do
-        version = Metadata.version()
-        nif_version = get_compile_nif_version()
-        enable_contrib = System.get_env("EVISION_ENABLE_CONTRIB", "true") == "true"
-        enable_cuda = System.get_env("EVISION_ENABLE_CUDA", "false") == "true"
-        {default_cuda_version, default_cudnn_version} = Metadata.default_cuda_version()
-        cuda_version = System.get_env("EVISION_CUDA_VERSION", default_cuda_version)
-        cudnn_version = System.get_env("EVISION_CUDNN_VERSION", default_cudnn_version)
-
-        prepare(
-          target,
-          os,
-          version,
-          nif_version,
-          enable_contrib,
-          enable_cuda,
-          cuda_version,
-          cudnn_version
-        )
-      else
-        _ ->
-          raise RuntimeError, "Cannot use precompiled binaries."
-      end
-    else
+    if nif_installed?(os) do
       :ok
+    else
+      case deploy_type(true) do
+        {:precompiled, _} ->
+          version = Metadata.version()
+          nif_version = get_compile_nif_version()
+          enable_contrib = System.get_env("EVISION_ENABLE_CONTRIB", "true") == "true"
+          enable_cuda = System.get_env("EVISION_ENABLE_CUDA", "false") == "true"
+          {default_cuda_version, default_cudnn_version} = Metadata.default_cuda_version()
+          cuda_version = System.get_env("EVISION_CUDA_VERSION", default_cuda_version)
+          cudnn_version = System.get_env("EVISION_CUDNN_VERSION", default_cudnn_version)
+
+          prepare(
+            target,
+            os,
+            version,
+            nif_version,
+            enable_contrib,
+            enable_cuda,
+            cuda_version,
+            cudnn_version
+          )
+
+        _ ->
+          raise "Cannot use precompiled binaries."
+      end
     end
   end
 end
