@@ -933,8 +933,8 @@ defmodule Evision.MixProject do
       make_executable: make_executable(),
       make_makefile: make_makefile(),
       make_env: make_env,
-      xref: [
-        exclude: [
+      elixirc_options: [
+        no_warn_undefined: [
           :wx,
           :wxBitmap,
           :wxBoxSizer,

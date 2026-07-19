@@ -26,7 +26,7 @@ defmodule Evision.Zoo.Utils.HTTP do
     path = IO.chardata_to_string(path)
     headers = build_headers(opts[:headers] || [])
 
-    case File.open(path, [:write]) do
+    case File.open(path, [:write, :raw, :binary]) do
       {:ok, file} ->
         try do
           request = {url, headers}
@@ -72,7 +72,7 @@ defmodule Evision.Zoo.Utils.HTTP do
   end
 
   defp download_receive(state, {_, {{_, 200, _}, _headers, body}}) do
-    case IO.binwrite(state.file, body) do
+    case :file.write(state.file, body) do
       :ok ->
         :ok
 
@@ -91,7 +91,7 @@ defmodule Evision.Zoo.Utils.HTTP do
   end
 
   defp download_receive(state, {_, :stream, body_part}) do
-    case IO.binwrite(state.file, body_part) do
+    case :file.write(state.file, body_part) do
       :ok ->
         part_size = byte_size(body_part)
         state = update_in(state.size, &(&1 + part_size))

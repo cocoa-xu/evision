@@ -871,7 +871,7 @@ defmodule Evision.Mat do
   end
 
   def to_pointer(img, opts) when is_list(opts) do
-    opts = Keyword.validate!(opts || [], mode: :local)
+    opts = Keyword.validate!(opts, mode: :local)
     img = from_struct(img)
     :evision_nif.mat_to_pointer([img: img] ++ opts)
   end
@@ -1558,9 +1558,6 @@ defmodule Evision.Mat do
          {:is_binary, true, _} <- {:is_binary, is_binary(bin), bin} do
       Nx.reshape(Nx.from_binary(bin, mat_type, backend: backend), mat_shape)
     else
-      {:error, reason} ->
-        {:error, reason}
-
       {:not_empty_shape, false} ->
         {:error, "shape is {}"}
 
@@ -2384,7 +2381,7 @@ defmodule Evision.Mat do
       type when is_atom(type) ->
         :ok
 
-      true ->
+      _ ->
         raise_unsupported_type(type)
     end
 
