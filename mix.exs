@@ -809,6 +809,110 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
     :ok
   end
 
+  # --- Embedded opencv.js (config :evision, Evision.JS, embed_js: true) -------
+
+  @doc """
+  Whether the CSP-clean `opencv.js` should be embedded into `priv`.
+
+  Enabled by `config :evision, Evision.JS, embed_js: true`, or by the
+  `EVISION_EMBED_JS=true` environment variable (which takes precedence).
+  """
+  def embed_js? do
+    case System.get_env("EVISION_EMBED_JS") do
+      nil ->
+        :evision
+        |> Application.get_env(Evision.JS, [])
+        |> Keyword.get(:embed_js, false) == true
+
+      value ->
+        String.downcase(value) == "true"
+    end
+  end
+
+  @doc "Release-asset URL of the CSP-clean opencv.js for `version`."
+  def opencv_js_url(version \\ Metadata.version()) do
+    "#{Metadata.github_url()}/releases/download/v#{version}/opencv.js"
+  end
+
+  @doc """
+  Ensure a CSP-clean `opencv.js` sits next to the NIF in `priv`.
+
+  Downloads the release asset on the precompiled route, or builds it from the
+  OpenCV source evision already fetched on the from-source route. Idempotent:
+  a no-op once `priv/opencv.js` exists.
+  """
+  def ensure_opencv_js! do
+    dest = Path.join(app_priv(), "opencv.js")
+
+    if File.exists?(dest) do
+      :ok
+    else
+      File.mkdir_p!(Path.dirname(dest))
+
+      case deploy_type(false) do
+        {:precompiled, _} -> download_opencv_js!(dest)
+        {:build_from_source, _} -> build_opencv_js!(dest)
+      end
+
+      Logger.info("Embedded opencv.js at #{dest}")
+      :ok
+    end
+  end
+
+  defp download_opencv_js!(dest) do
+    version = Metadata.version()
+    js_url = opencv_js_url(version)
+    sha_url = String.replace_suffix(js_url, "opencv.js", "opencv.sha256")
+    cached_js = Path.join(cache_dir(), "opencv-#{version}.js")
+
+    {:ok, _} = Application.ensure_all_started(:inets)
+    {:ok, _} = Application.ensure_all_started(:ssl)
+
+    {:ok, _algo, actual} = download!(js_url, cached_js, true)
+
+    # opencv.sha256 is `<hex>  opencv.js`; the first token is the digest.
+    {:ok, sha_body} = download!(sha_url)
+    expected = sha_body |> to_string() |> String.split(~r/\s+/, trim: true) |> List.first()
+
+    if is_binary(expected) and String.downcase(expected) != actual do
+      File.rm_rf!(cached_js)
+      raise "opencv.js checksum mismatch: expected #{expected}, got #{actual} (#{sha_url})"
+    end
+
+    File.cp!(cached_js, dest)
+  end
+
+  defp build_opencv_js!(dest) do
+    unless System.find_executable("emcmake") do
+      raise """
+      config :evision, Evision.JS, embed_js: true needs to build opencv.js from source \
+      on this target, which requires an activated Emscripten SDK (emcc/emcmake on PATH). \
+      Install emsdk and `source emsdk_env.sh` before compiling, use a precompiled build, \
+      or set embed_js: false.
+      """
+    end
+
+    version = System.get_env("OPENCV_VER", Metadata.opencv_version())
+    opencv_dir = Path.join([File.cwd!(), "3rd_party", "opencv", "opencv-#{version}"])
+
+    unless File.dir?(opencv_dir) do
+      raise "cannot build opencv.js: OpenCV source not found at #{opencv_dir}"
+    end
+
+    out_dir = Path.join(Mix.Project.build_path(), "opencv_js")
+    File.mkdir_p!(out_dir)
+    script = Path.join([File.cwd!(), "scripts", "build_opencv_js.sh"])
+
+    {_, status} =
+      System.cmd("sh", [script, version, opencv_dir, out_dir],
+        into: IO.stream(:stdio, :line),
+        stderr_to_stdout: true
+      )
+
+    if status != 0, do: raise("opencv.js build failed (exit #{status})")
+    File.cp!(Path.join(out_dir, "opencv.js"), dest)
+  end
+
   def unarchive!(filepath, to_directory) do
     File.mkdir_p!(to_directory)
 
@@ -866,6 +970,23 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
   end
 end
 
+defmodule Mix.Tasks.Compile.EvisionEmbedJs do
+  @moduledoc false
+  # Runs after the NIF is in place (either route) and, when opted in, ensures a
+  # CSP-clean opencv.js is embedded in priv. No-op by default.
+  use Mix.Task
+  alias Mix.Tasks.Compile.EvisionPrecompiled
+
+  @impl true
+  def run(_args) do
+    if EvisionPrecompiled.embed_js?() do
+      EvisionPrecompiled.ensure_opencv_js!()
+    end
+
+    {:ok, []}
+  end
+end
+
 defmodule Evision.MixProject do
   use Mix.Project
   require Logger
@@ -908,9 +1029,9 @@ defmodule Evision.MixProject do
                 make_env
             end
 
-          {[:elixir_make] ++ Mix.compilers(), make_env}
+          {[:elixir_make, :evision_embed_js] ++ Mix.compilers(), make_env}
         else
-          {[:evision_precompiled] ++ Mix.compilers(), %{}}
+          {[:evision_precompiled, :evision_embed_js] ++ Mix.compilers(), %{}}
         end
       else
         {Mix.compilers(), %{}}

@@ -166,4 +166,27 @@ defmodule Evision.JSRuntimeTest do
                Evision.JS.lookup(Evision.ArUco.Dictionary, :dictionary, 0)
     end
   end
+
+  describe "opencv_js_url/0,1" do
+    test "targets the opencv.js asset on this evision release" do
+      vsn = to_string(Application.spec(:evision, :vsn))
+
+      assert Evision.JS.opencv_js_url() ==
+               "https://github.com/cocoa-xu/evision/releases/download/v#{vsn}/opencv.js"
+    end
+
+    test "accepts an explicit release version" do
+      assert Evision.JS.opencv_js_url("1.0.1-rc.0") ==
+               "https://github.com/cocoa-xu/evision/releases/download/v1.0.1-rc.0/opencv.js"
+    end
+  end
+
+  describe "opencv_js_path/0" do
+    test "returns :error unless opencv.js is embedded, or {:ok, path} to it" do
+      case Evision.JS.opencv_js_path() do
+        :error -> :ok
+        {:ok, path} -> assert String.ends_with?(path, "opencv.js") and File.exists?(path)
+      end
+    end
+  end
 end
