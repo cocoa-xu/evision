@@ -19,6 +19,25 @@ else:
 unique_signatures = {}
 nif_declared = {}
 
+
+def _guard_subsumes(prior, current):
+    # Whether a clause guarded by `prior` makes a later clause guarded by `current`
+    # unreachable. True when, position by position, the guards are equal, or the
+    # earlier one is a bare `is_number(__aK)` (from a `double` arg) and the later is
+    # `is_integer(__aK)` / `is_float(__aK)`. Both lists use canonical argnames (see
+    # FunctionVariant.normalized_guard), so the comparison is argname-agnostic.
+    if len(prior) != len(current):
+        return False
+    for idx, (p, c) in enumerate(zip(prior, current)):
+        if p == c:
+            continue
+        canonical = f'__a{idx}'
+        if p == f'is_number({canonical})' and c in (f'is_integer({canonical})', f'is_float({canonical})'):
+            continue
+        return False
+    return True
+
+
 class ModuleGenerator(object):
     def __init__(self, module_name: str):
         self.module_name = module_name.strip()
@@ -404,6 +423,11 @@ class ModuleGenerator(object):
             func_guards_len_desc = list(reversed(argsort([len(g) for g in func_guards[kind]])))
             more_than_one_variant = len(func_guards_len_desc) > 1
             named_args_generated = False
+            # normalized guard signatures already emitted for each (name, arity), so a
+            # later clause an earlier one subsumes can be skipped. Scoped to this
+            # function's own overload group to avoid dropping look-alike clauses from
+            # unrelated overloads elsewhere.
+            emitted_guard_sigs = {}
             # start from the variant with the most number of constraints/guards
             for i in func_guards_len_desc:
                 # generated binding code will be written to this variable
@@ -487,10 +511,16 @@ class ModuleGenerator(object):
                     usign = kind + func.classname + function_sign
                 else:
                     usign = kind + function_sign
+                norm_guard = func_variant.normalized_guard(kind)
+                guard_key = (module_func_name, func_arity)
                 if unique_signatures.get(usign, None) is True:
+                    pass
+                elif kind == 'elixir' and any(_guard_subsumes(prev, norm_guard) for prev in emitted_guard_sigs.get(guard_key, [])):
                     pass
                 else:
                     unique_signatures[usign] = True
+                    if kind == 'elixir':
+                        emitted_guard_sigs.setdefault(guard_key, []).append(norm_guard)
                     inline_doc = func_variant.inline_docs(kind, is_instance_method, self.module_name)
                     func_when_guard = when_guard(kind, func_guard)
 
