@@ -25,7 +25,7 @@ on:
         default: false
   push:
     tags:
-      - "opencv-js-v*"
+      - "v*"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -51,7 +51,7 @@ jobs:
           if [ -n "$INPUT_VER" ]; then
             version="$INPUT_VER"
           elif [ "$GITHUB_REF_TYPE" = "tag" ]; then
-            version="${GITHUB_REF_NAME#opencv-js-v}"
+            version="${GITHUB_REF_NAME#v}"
           else
             version="5.0.0"
           fi
