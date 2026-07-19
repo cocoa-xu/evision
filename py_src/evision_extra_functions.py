@@ -39,7 +39,7 @@ gpumat_to_pointer_elixir = '''  @doc """
     {:ok, %Evision.IPCHandle.Local{} | %Evision.IPCHandle.CUDA{} | %Evision.IPCHandle.Host{}} | {:error, String.t()}
   def to_pointer(%{ref: ref}, [mode: mode] = opts)
   when is_list(opts) and mode in [:local, :cuda_ipc, :host_ipc] do
-    opts = Keyword.validate!(opts || [], [mode: :local])
+    opts = Keyword.validate!(opts, [mode: :local])
     with {:ok, handle} <- :evision_nif.cuda_cuda_GpuMat_to_pointer([img: ref] ++ opts) do
       mode = opts[:mode]
       case {mode, handle} do
@@ -205,7 +205,7 @@ gpumat_to_pointer_elixir = '''  @doc """
   """
   @spec from_pointer(list(integer()), atom() | {atom(), integer()}, tuple(), [device_id: non_neg_integer()]) :: Evision.CUDA.GpuMat.t() | {:error, String.t()}
   def from_pointer(device_pointer, dtype, shape, opts) when is_list(device_pointer) and is_tuple(shape) and is_list(opts) do
-    opts = Keyword.validate!(opts || [], [device_id: 0])
+    opts = Keyword.validate!(opts, [device_id: 0])
     positional = [
       device_pointer: device_pointer,
       dtype: compact_type(dtype),

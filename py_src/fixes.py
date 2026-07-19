@@ -246,8 +246,6 @@ def evision_elixir_module_fixes():
             Nx.as_type(bboxes, :f64)
           Evision.Mat ->
             Evision.Mat.as_type(bboxes, :f64)
-          _ ->
-            raise "Invalid struct, expecting Nx.Tensor or Evision.Mat"
         end
         positional = [
           bboxes: Evision.Mat.to_binary(bboxes),
@@ -330,8 +328,6 @@ def evision_elixir_module_fixes():
               Nx.as_type(bboxes, :f64)
           Evision.Mat ->
               Evision.Mat.as_type(bboxes, :f64)
-          _ ->
-              raise "Invalid struct, expecting Nx.Tensor or Evision.Mat"
         end
         positional = [
           bboxes: Evision.Mat.to_binary(bboxes),
@@ -413,8 +409,6 @@ def evision_elixir_module_fixes():
               Nx.as_type(bboxes, :f64)
           Evision.Mat ->
               Evision.Mat.as_type(bboxes, :f64)
-          _ ->
-              raise "Invalid struct, expecting Nx.Tensor or Evision.Mat"
         end
         positional = [
           bboxes: Evision.Mat.to_binary(bboxes),
@@ -504,8 +498,6 @@ def evision_elixir_module_fixes():
               Nx.as_type(bboxes, :s32)
           Evision.Mat ->
               Evision.Mat.as_type(bboxes, :s32)
-          _ ->
-              raise "Invalid struct, expecting Nx.Tensor or Evision.Mat"
         end
         positional = [
           bboxes: Evision.Mat.to_binary(bboxes),
@@ -592,8 +584,6 @@ def evision_elixir_module_fixes():
               Nx.as_type(bboxes, :s32)
           Evision.Mat ->
               Evision.Mat.as_type(bboxes, :s32)
-          _ ->
-              raise "Invalid struct, expecting Nx.Tensor or Evision.Mat"
         end
         positional = [
           bboxes: Evision.Mat.to_binary(bboxes),
