@@ -13,8 +13,7 @@ defmodule Evision.JSTagTest do
 
   defp strip_with_attr(beam) do
     {:ok, {_mod, chunks}} =
-      :beam_lib.chunks(beam, :beam_lib.significant_chunks() ++ [~c"Attr"],
-        [:allow_missing_chunks])
+      :beam_lib.chunks(beam, :beam_lib.significant_chunks() ++ [~c"Attr"], [:allow_missing_chunks])
 
     chunks = for {name, chunk} <- chunks, is_binary(chunk), do: {name, chunk}
     {:ok, stripped} = :beam_lib.build_module(chunks)
@@ -143,21 +142,25 @@ defmodule Evision.JSTagTest do
     end
   end
 
+  # These assert on the Erlang backend output (src/generated/*.erl), produced
+  # only when EVISION_GENERATE_LANG includes "erlang". The default test build is
+  # elixir-only, so skip when the sources are absent rather than hard-fail.
   describe "Erlang generated source emits -js attributes" do
-    test "evision.erl carries -js lines for free functions" do
-      path = Path.join([File.cwd!(), "src", "generated", "evision.erl"])
-      assert File.exists?(path), "generated Erlang source missing: #{path}"
+    @generated_erl_dir Path.join([File.cwd!(), "src", "generated"])
+    @skip_without_erlang not File.exists?(Path.join(@generated_erl_dir, "evision.erl")) &&
+                           "Erlang sources not generated (EVISION_GENERATE_LANG is elixir-only)"
 
-      source = File.read!(path)
+    @tag skip: @skip_without_erlang
+    test "evision.erl carries -js lines for free functions" do
+      source = File.read!(Path.join(@generated_erl_dir, "evision.erl"))
 
       assert source =~
                ~r/-js\(#\{fun => canny, arity => \d+, js_kind => function, js_name => <<"cv\.Canny">>\}\)\./
     end
 
+    @tag skip: @skip_without_erlang
     test "evision_qrcodedetector.erl emits method + constructor entries" do
-      source =
-        Path.join([File.cwd!(), "src", "generated", "evision_qrcodedetector.erl"])
-        |> File.read!()
+      source = File.read!(Path.join(@generated_erl_dir, "evision_qrcodedetector.erl"))
 
       assert source =~
                ~r/-js\(#\{fun => qrCodeDetector, arity => 0, js_kind => constructor, js_class => <<"cv\.QRCodeDetector">>\}\)\./
