@@ -9,6 +9,7 @@ from helper import *
 from emit.erlang.helpers import map_uppercase_to_erlang_name
 import evision_templates as ET
 import doxygen_groups
+import evision_js_attr
 
 if sys.version_info[0] >= 3:
     from io import StringIO
@@ -77,6 +78,22 @@ class ModuleGenerator(object):
         self.doc_func_groups = {}
         self.doc_group_titles = {}
 
+        # opencv.js correspondence per emitted (function_name, arity).
+        # Populated as `add_function` runs against the JS entry set on
+        # `_current_js_entry` for the surrounding `_process_function` call.
+        # See ``evision_js_attr`` and js-corr.2 (CCD-19).
+        # key: kind ('elixir' | 'erlang')
+        # value: dict
+        #   key: function_name
+        #   value: dict
+        #     key: function_arity
+        #     value: entry dict from evision_js_attr.lookup_for_func
+        self.js_attrs = {
+            "elixir": {},
+            "erlang": {},
+        }
+        self._current_js_entry = None
+
     def set_doc_groups(self, func_to_group, group_titles):
         self.doc_func_groups = func_to_group or {}
         self.doc_group_titles = group_titles or {}
@@ -112,6 +129,10 @@ class ModuleGenerator(object):
             self.end_erlang()
 
     def end_elixir(self):
+        elixir_js_attrs = self.js_attrs.get('elixir', {})
+        if elixir_js_attrs:
+            self.write_elixir('\n')
+            self.write_elixir(evision_js_attr.elixir_register_attribute())
         for function_name, function in self.function['elixir'].items():
             seen_group = False
             for arity, functions in function.items():
@@ -134,6 +155,11 @@ class ModuleGenerator(object):
                             self.write_elixir(docs_mfa[i])
                             self.write_elixir('\n')
                         self.write_elixir('\n  """\n')
+                js_entry = elixir_js_attrs.get(function_name, {}).get(arity)
+                if js_entry is not None:
+                    self.write_elixir(
+                        evision_js_attr.elixir_attribute_line(js_entry, function_name, arity)
+                    )
                 functions = sorted(functions, key=lambda x: -x[0])
                 for _, function_code in functions:
                     self.write_elixir(function_code)
@@ -142,6 +168,19 @@ class ModuleGenerator(object):
     def end_erlang(self):
         if self.erlang_ended:
             return
+        erlang_js_attrs = self.js_attrs.get('erlang', {})
+        if erlang_js_attrs:
+            # Emit ``-js(...).`` lines as a single block. Erlang allows
+            # user-defined attributes anywhere in a module body; readers
+            # pick them up via ``module_info(attributes)`` regardless of
+            # position.
+            for function_name in sorted(erlang_js_attrs):
+                for arity in sorted(erlang_js_attrs[function_name]):
+                    js_entry = erlang_js_attrs[function_name][arity]
+                    self.write_erlang(
+                        evision_js_attr.erlang_attribute_line(js_entry, function_name, arity)
+                    )
+            self.write_erlang('\n')
         for function_name, function in self.function['erlang'].items():
             for arity, functions in function.items():
                 docs_spec_mfa = self.inline_docs['erlang'].get(function_name, {}).get(arity, [])
@@ -253,6 +292,11 @@ class ModuleGenerator(object):
             self._gen_property_impl(class_name, property_name, func_arity, generating_type, property_templates)
 
     def _gen_property_impl(self, class_name: str, property_name: str, func_arity: int, generating_type: str, property_templates: dict):
+        # Properties are not part of opencv.js; clear any entry leaked in from
+        # an enclosing `_process_function` call so `add_function` does not
+        # mistakenly tag the getter/setter.
+        self._current_js_entry = None
+
         # function name in the `evision_{self.module_name}.ex` file
         func_name = f"{generating_type}_{property_name}"
         # nif function name in the `evision_nif.ex` file
@@ -280,6 +324,17 @@ class ModuleGenerator(object):
     def _process_function(self, full_qualified_name: str, name: str, func: FuncInfo, is_ns: bool, is_constructor: bool, namespace_list: list):
         # ======== step 1. get wrapper name and ensure function name starts with a lowercase letter ========
         nif_name, func_name = func.get_wrapper_name(True)
+
+        # Resolve the opencv.js correspondence once per FuncInfo. `add_function`
+        # picks it up and stores it per emitted (function_name, arity) so
+        # `end_elixir` / `end_erlang` can splice in the `@js` / `-js(...)`
+        # attribute lines before the corresponding clause.
+        self._current_js_entry = evision_js_attr.lookup_for_func(func)
+        self._current_arg_plans = (
+            self._compute_arg_plans(func, is_constructor)
+            if self._current_js_entry is not None
+            else {}
+        )
         if func_name in special_handling_funcs() or func_name in special_handling_funcs_only_in_beam():
             return
         if 'waitany' in func_name.lower():
@@ -741,6 +796,59 @@ class ModuleGenerator(object):
             self.nif_declaration[kind].write(nif_declaration)
             nif_declared[kind][nif_name] = True
 
+    def _variant_arg_plan(self, v):
+        # opencv.js positional layout for one C++ variant: "out" for each
+        # OutputArray (the dst the browser runtime alloc-on-misses), "in" for
+        # each *required* input (supplied positionally from an Elixir input).
+        # Optional inputs are omitted — in Elixir they ride the `opts` keyword
+        # bag, which has no positional slot in the required-arity clause. Array
+        # counters and ignored types reach neither binding.
+        plan = []
+        for a in v.args:
+            if a.name in v.array_counters:
+                continue
+            if a.tp in ignored_arg_types():
+                continue
+            if a.outputarg:
+                plan.append("out")
+            elif a.inputarg and not a.defval:
+                plan.append("in")
+        return plan
+
+    def _compute_arg_plans(self, func, is_constructor):
+        # Per-arity opencv.js arg-plan for the @js tag (CCD-54), consumed by the
+        # CCD-35 workflow->opencv.js compiler to place the pre-allocated dst Mat.
+        # A plan attaches to a variant's *required-positional* Elixir arity. An
+        # arity is ambiguous — and gets no plan, so the compiler hard-errors
+        # instead of guessing — when either:
+        #   (a) two variants' required clauses land on it with different layouts, or
+        #   (b) another variant's `opts` clause also lands on it (a distinct
+        #       positional shape). canny/4 is the textbook case: Canny(image,
+        #       t1, t2, opts) [V1 opts clause] collides with Canny(dx, dy, t1,
+        #       t2) [V2 required clause].
+        # Two required clauses that agree on the layout are NOT ambiguous
+        # (cvtColor/2: src,dst,code with an optional dstCn only changes the opts
+        # arity), so they keep their shared plan.
+        self_offset = 1 if (func.classname and not func.is_static and not is_constructor) else 0
+
+        required_plans = {}
+        opts_at = {}
+        for v in func.variants:
+            r = v.min_args + self_offset
+            required_plans.setdefault(r, []).append(self._variant_arg_plan(v))
+            if v.has_opts:
+                opts_at[r + 1] = opts_at.get(r + 1, 0) + 1
+
+        plans = {}
+        for arity, arity_plans in required_plans.items():
+            distinct = {tuple(p) for p in arity_plans}
+            if len(distinct) != 1 or opts_at.get(arity, 0) > 0:
+                continue
+            plan = arity_plans[0]
+            if plan:
+                plans[arity] = plan
+        return plans
+
     def add_function(self, kind: str, function_name: str, function_arity: int, guards_count: int, generated_code: str):
         if self.function.get(kind, None) is None:
             self.function[kind] = {}
@@ -750,6 +858,15 @@ class ModuleGenerator(object):
         if function_arity not in function_dict[function_name]:
             function_dict[function_name][function_arity] = []
         function_dict[function_name][function_arity].append((guards_count, generated_code))
+
+        if self._current_js_entry is not None:
+            kind_attrs = self.js_attrs.setdefault(kind, {})
+            arity_attrs = kind_attrs.setdefault(function_name, {})
+            plan = self._current_arg_plans.get(function_arity)
+            if plan is not None:
+                arity_attrs[function_arity] = {**self._current_js_entry, "arg_plan": plan}
+            else:
+                arity_attrs[function_arity] = self._current_js_entry
 
     def add_function_docs(self, kind: str, function_name: str, function_arity: int, inline_docs: str, typespec: str = None):
         if self.inline_docs.get(kind, None) is None:
