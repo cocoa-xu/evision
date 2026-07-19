@@ -4,7 +4,7 @@ name: opencv-js-precompile
 # no `'unsafe-eval'`) from OpenCV source and publishes it as an immutable release
 # asset. Single arch-independent target, so no build matrix. See
 # scripts/build_opencv_js.sh for why this differs from stock only by
-# -s DYNAMIC_EXECUTION=0.
+# -s DYNAMIC_EXECUTION=0 plus -s EMBIND_AOT=1.
 
 on:
   workflow_dispatch:
@@ -14,15 +14,14 @@ on:
         required: false
         default: "5.0.0"
       embind_aot:
-        description: "Also pass -s EMBIND_AOT=1 (faster embind invokers, may fail to link on some bindings)"
+        description: "Pass -s EMBIND_AOT=1 (eval-free AND fast invokers; injected only at the opencv.js link)"
         type: boolean
         required: false
-        default: false
-      publish_release:
-        description: "Publish opencv.js as a release asset (outward-facing; off = build + verify only)"
-        type: boolean
+        default: true
+      release_tag:
+        description: "Existing release tag to upload opencv.js into (e.g. v1.0.1-rc.0). Empty = build + verify only. Never creates or moves a tag."
         required: false
-        default: false
+        default: ""
   push:
     tags:
       - "v*"
@@ -39,7 +38,9 @@ jobs:
     env:
       # Proven-good pin for OpenCV 5.0.0 embind (needs C++17 since emsdk 4.0.20).
       EMSDK_VERSION: "4.0.20"
-      OPENCV_JS_EMBIND_AOT: ${{ github.event.inputs.embind_aot == 'true' && '1' || '0' }}
+      # AOT on by default; only an explicit `false` from the dispatch input opts out
+      # (tag pushes carry no input, so they get AOT too).
+      OPENCV_JS_EMBIND_AOT: ${{ github.event.inputs.embind_aot == 'false' && '0' || '1' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -125,17 +126,33 @@ jobs:
             out/opencv.sha256
           if-no-files-found: error
 
-      - name: Publish release asset
-        if: github.event_name == 'push' || github.event.inputs.publish_release == 'true'
+      # Dispatch: attach the built assets to an EXISTING release, chosen by tag. We
+      # assert the release exists first, so a typo can never create or move a tag
+      # (`gh release upload` would otherwise not create tags anyway, but this is
+      # explicit). --clobber replaces same-named assets on re-runs.
+      - name: Upload opencv.js into existing release (no retag)
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.release_tag != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.event.inputs.release_tag }}
+        run: |
+          gh release view "${RELEASE_TAG}" --repo "${GITHUB_REPOSITORY}" >/dev/null
+          echo "uploading opencv.js assets into existing release ${RELEASE_TAG} (no tag created or moved)"
+          gh release upload "${RELEASE_TAG}" out/opencv.js out/opencv.sha256 --repo "${GITHUB_REPOSITORY}" --clobber
+
+      # Tag push: create/update that tag's release with the assets.
+      - name: Publish release asset (tag push)
+        if: github.event_name == 'push'
         uses: softprops/action-gh-release@v3
         with:
-          tag_name: ${{ github.ref_type == 'tag' && github.ref_name || format('opencv-js-v{0}', env.OPENCV_VER) }}
+          tag_name: ${{ github.ref_name }}
           name: opencv.js ${{ env.OPENCV_VER }} (CSP-clean)
           body: |
             CSP-clean opencv.js for OpenCV ${{ env.OPENCV_VER }}: the stock single-threaded,
             single-file WASM build with OpenCV's default whitelist, differing only by
-            `-s DYNAMIC_EXECUTION=0` so it runs under `script-src 'wasm-unsafe-eval'`
-            with no `'unsafe-eval'`. Verified by loading + exercising embind under Node's
+            `-s DYNAMIC_EXECUTION=0` plus `-s EMBIND_AOT=1` (eval-free AND fast invokers),
+            so it runs under `script-src 'wasm-unsafe-eval'` with no `'unsafe-eval'`.
+            Verified by loading + exercising embind under Node's
             `--disallow-code-generation-from-strings`. `opencv.sha256` pins the exact bytes.
           files: |
             out/opencv.js
