@@ -1,0 +1,81 @@
+name: "Upload release assets (retrying)"
+description: >
+  Upload assets to a GitHub release, retrying on transient failures (e.g. "No
+  server is currently available to service your request"). softprops has no
+  built-in retry, so a flaky upload after a multi-hour build would otherwise
+  waste the whole build. Only uploads assets; never changes the release name or
+  body (so it is safe against a shared release).
+
+inputs:
+  files:
+    description: "Newline/space-separated files or globs to upload."
+    required: true
+  tag:
+    description: "Release tag. Empty falls back to the pushed tag (github.ref_name)."
+    required: false
+    default: ""
+  fail_on_unmatched_files:
+    description: "Fail if a files pattern matches nothing."
+    required: false
+    default: "false"
+  max_attempts:
+    description: "Maximum upload attempts."
+    required: false
+    default: "10"
+  token:
+    description: "Token used for the gh CLI (needs contents: write)."
+    required: false
+    default: ${{ github.token }}
+
+runs:
+  using: "composite"
+  steps:
+    - shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        REPO: ${{ github.repository }}
+        IN_TAG: ${{ inputs.tag }}
+        REF_NAME: ${{ github.ref_name }}
+        FILES: ${{ inputs.files }}
+        FAIL_UNMATCHED: ${{ inputs.fail_on_unmatched_files }}
+        MAX_ATTEMPTS: ${{ inputs.max_attempts }}
+      run: |
+        set -u
+        tag="${IN_TAG:-$REF_NAME}"
+        if [ -z "$tag" ]; then echo "::error::no release tag given and github.ref_name is empty"; exit 1; fi
+
+        # Expand the newline/space-separated globs into an explicit asset list.
+        assets=()
+        for pat in $FILES; do
+          matched=0
+          for f in $pat; do
+            if [ -f "$f" ]; then assets+=("$f"); matched=1; fi
+          done
+          if [ "$matched" = 0 ] && [ "$FAIL_UNMATCHED" = "true" ]; then
+            echo "::error::no files matched pattern: $pat"; exit 1
+          fi
+        done
+        if [ "${#assets[@]}" -eq 0 ]; then
+          echo "::error::no files to upload (patterns: $FILES)"; exit 1
+        fi
+        echo "uploading ${#assets[@]} asset(s) to release ${tag}: ${assets[*]}"
+
+        attempt=1
+        while :; do
+          # Create the release if missing (title = tag, empty notes). A no-op when
+          # it exists, so an existing release's name/body is never overwritten.
+          if ! gh release view "$tag" --repo "$REPO" >/dev/null 2>&1; then
+            gh release create "$tag" --repo "$REPO" --title "$tag" --notes "" >/dev/null 2>&1 || true
+          fi
+          if gh release upload "$tag" "${assets[@]}" --repo "$REPO" --clobber; then
+            echo "release upload succeeded on attempt ${attempt}"
+            exit 0
+          fi
+          if [ "$attempt" -ge "$MAX_ATTEMPTS" ]; then
+            echo "::error::release upload failed after ${attempt} attempts"; exit 1
+          fi
+          wait=$(( attempt * 15 )); [ "$wait" -gt 120 ] && wait=120
+          echo "::warning::release upload attempt ${attempt} failed; retrying in ${wait}s"
+          sleep "$wait"
+          attempt=$(( attempt + 1 ))
+        done

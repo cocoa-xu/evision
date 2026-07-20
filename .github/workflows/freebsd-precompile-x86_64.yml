@@ -106,9 +106,9 @@ jobs:
             cd "${ROOT_DIR}"
             bash ./build.sh
 
-      - uses: softprops/action-gh-release@v3
+      - uses: ./.github/actions/upload-release
         with:
-          tag_name: v${{ steps.version.outputs.tag }}
+          tag: v${{ steps.version.outputs.tag }}
           files: |
             evision-nif_*.tar.gz
             evision-nif_*.sha256

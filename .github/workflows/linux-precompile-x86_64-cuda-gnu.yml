@@ -172,9 +172,9 @@ jobs:
           mv /tmp/include "${PRIV_DIR}/include"
 
       - name: Upload precompiled library
-        uses: softprops/action-gh-release@v3
+        uses: ./.github/actions/upload-release
         with:
-          tag_name: v${{ steps.version.outputs.tag }}
+          tag: v${{ steps.version.outputs.tag }}
           files: |
             artifacts/*.tar.gz
             artifacts/*.sha256

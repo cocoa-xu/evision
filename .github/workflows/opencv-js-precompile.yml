@@ -49,13 +49,11 @@ jobs:
         env:
           INPUT_VER: ${{ github.event.inputs.opencv_ver }}
         run: |
-          if [ -n "$INPUT_VER" ]; then
-            version="$INPUT_VER"
-          elif [ "$GITHUB_REF_TYPE" = "tag" ]; then
-            version="${GITHUB_REF_NAME#v}"
-          else
-            version="5.0.0"
-          fi
+          # The OpenCV version is independent of the evision release tag. NEVER
+          # derive it from GITHUB_REF_NAME: that is evision's version (e.g.
+          # v1.0.1-rc.0), not an OpenCV version. Use the dispatch input if given,
+          # otherwise the pinned default.
+          version="${INPUT_VER:-5.0.0}"
           echo "OPENCV_VER=${version}" >> "$GITHUB_ENV"
           echo "building opencv.js for OpenCV ${version}"
 
@@ -138,23 +136,22 @@ jobs:
         run: |
           gh release view "${RELEASE_TAG}" --repo "${GITHUB_REPOSITORY}" >/dev/null
           echo "uploading opencv.js assets into existing release ${RELEASE_TAG} (no tag created or moved)"
-          gh release upload "${RELEASE_TAG}" out/opencv.js out/opencv.sha256 --repo "${GITHUB_REPOSITORY}" --clobber
+          n=0
+          until gh release upload "${RELEASE_TAG}" out/opencv.js out/opencv.sha256 --repo "${GITHUB_REPOSITORY}" --clobber; do
+            n=$((n+1))
+            if [ "$n" -ge 5 ]; then echo "::error::upload failed after $n attempts"; exit 1; fi
+            echo "::warning::upload attempt $n failed; retrying in $((n*15))s"; sleep $((n*15))
+          done
 
-      # Tag push: create/update that tag's release with the assets.
+      # Tag push: attach the assets to that tag's release, retrying on transient
+      # upload failures. Deliberately does not set the release name/body: this is
+      # the shared evision release, not an opencv.js-only one.
       - name: Publish release asset (tag push)
         if: github.event_name == 'push'
-        uses: softprops/action-gh-release@v3
+        uses: ./.github/actions/upload-release
         with:
-          tag_name: ${{ github.ref_name }}
-          name: opencv.js ${{ env.OPENCV_VER }} (CSP-clean)
-          body: |
-            CSP-clean opencv.js for OpenCV ${{ env.OPENCV_VER }}: the stock single-threaded,
-            single-file WASM build with OpenCV's default whitelist, differing only by
-            `-s DYNAMIC_EXECUTION=0` plus `-s EMBIND_AOT=1` (eval-free AND fast invokers),
-            so it runs under `script-src 'wasm-unsafe-eval'` with no `'unsafe-eval'`.
-            Verified by loading + exercising embind under Node's
-            `--disallow-code-generation-from-strings`. `opencv.sha256` pins the exact bytes.
+          tag: ${{ github.ref_name }}
           files: |
             out/opencv.js
             out/opencv.sha256
-          fail_on_unmatched_files: true
+          fail_on_unmatched_files: "true"

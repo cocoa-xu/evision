@@ -281,9 +281,9 @@ jobs:
           sha256sum "${PKG_NAME}.tar.gz" | tee "${PKG_NAME}.tar.gz.sha256"
           mv /tmp/include "${PRIV_DIR}/include"
 
-      - uses: softprops/action-gh-release@v3
+      - uses: ./.github/actions/upload-release
         with:
-          tag_name: v${{ needs.setup.outputs.version }}
+          tag: v${{ needs.setup.outputs.version }}
           files: |
             artifacts/*.tar.gz
             artifacts/*.sha256
