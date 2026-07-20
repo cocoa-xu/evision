@@ -1,81 +1,129 @@
 name: "Upload release assets (retrying)"
 description: >
-  Upload assets to a GitHub release, retrying on transient failures (e.g. "No
-  server is currently available to service your request"). softprops has no
-  built-in retry, so a flaky upload after a multi-hour build would otherwise
-  waste the whole build. Only uploads assets; never changes the release name or
-  body (so it is safe against a shared release).
+  Upload assets to a GitHub release via softprops/action-gh-release, retrying
+  transient failures (e.g. "No server is currently available to service your
+  request") up to 10 times. softprops is a Node action, so unlike the gh CLI it
+  works inside container jobs (ubuntu/alpine images have no gh). Only adds
+  assets; never changes the release name or body.
 
 inputs:
   files:
-    description: "Newline/space-separated files or globs to upload."
+    description: "Newline-separated files/globs to upload."
     required: true
   tag:
-    description: "Release tag. Empty falls back to the pushed tag (github.ref_name)."
+    description: "Release tag (tag_name). Empty falls back to the pushed tag."
     required: false
     default: ""
   fail_on_unmatched_files:
     description: "Fail if a files pattern matches nothing."
     required: false
     default: "false"
-  max_attempts:
-    description: "Maximum upload attempts."
-    required: false
-    default: "10"
-  token:
-    description: "Token used for the gh CLI (needs contents: write)."
-    required: false
-    default: ${{ github.token }}
 
 runs:
   using: "composite"
   steps:
-    - shell: bash
-      env:
-        GH_TOKEN: ${{ inputs.token }}
-        REPO: ${{ github.repository }}
-        IN_TAG: ${{ inputs.tag }}
-        REF_NAME: ${{ github.ref_name }}
-        FILES: ${{ inputs.files }}
-        FAIL_UNMATCHED: ${{ inputs.fail_on_unmatched_files }}
-        MAX_ATTEMPTS: ${{ inputs.max_attempts }}
-      run: |
-        set -u
-        tag="${IN_TAG:-$REF_NAME}"
-        if [ -z "$tag" ]; then echo "::error::no release tag given and github.ref_name is empty"; exit 1; fi
-
-        # Expand the newline/space-separated globs into an explicit asset list.
-        assets=()
-        for pat in $FILES; do
-          matched=0
-          for f in $pat; do
-            if [ -f "$f" ]; then assets+=("$f"); matched=1; fi
-          done
-          if [ "$matched" = 0 ] && [ "$FAIL_UNMATCHED" = "true" ]; then
-            echo "::error::no files matched pattern: $pat"; exit 1
-          fi
-        done
-        if [ "${#assets[@]}" -eq 0 ]; then
-          echo "::error::no files to upload (patterns: $FILES)"; exit 1
-        fi
-        echo "uploading ${#assets[@]} asset(s) to release ${tag}: ${assets[*]}"
-
-        attempt=1
-        while :; do
-          # Create the release if missing (title = tag, empty notes). A no-op when
-          # it exists, so an existing release's name/body is never overwritten.
-          if ! gh release view "$tag" --repo "$REPO" >/dev/null 2>&1; then
-            gh release create "$tag" --repo "$REPO" --title "$tag" --notes "" >/dev/null 2>&1 || true
-          fi
-          if gh release upload "$tag" "${assets[@]}" --repo "$REPO" --clobber; then
-            echo "release upload succeeded on attempt ${attempt}"
-            exit 0
-          fi
-          if [ "$attempt" -ge "$MAX_ATTEMPTS" ]; then
-            echo "::error::release upload failed after ${attempt} attempts"; exit 1
-          fi
-          wait=$(( attempt * 15 )); [ "$wait" -gt 120 ] && wait=120
-          echo "::warning::release upload attempt ${attempt} failed; retrying in ${wait}s"
-          sleep "$wait"
-          attempt=$(( attempt + 1 ))
-        done
+    - id: a1
+      uses: softprops/action-gh-release@v3
+      continue-on-error: true
+      with:
+        tag_name: ${{ inputs.tag }}
+        files: ${{ inputs.files }}
+        fail_on_unmatched_files: ${{ inputs.fail_on_unmatched_files }}
+    - if: steps.a1.outcome == 'failure'
+      shell: bash
+      run: echo "::warning::release upload attempt 1 failed; retrying in 10s" && sleep 10
+    - id: a2
+      if: steps.a1.outcome == 'failure'
+      uses: softprops/action-gh-release@v3
+      continue-on-error: true
+      with:
+        tag_name: ${{ inputs.tag }}
+        files: ${{ inputs.files }}
+        fail_on_unmatched_files: ${{ inputs.fail_on_unmatched_files }}
+    - if: steps.a2.outcome == 'failure'
+      shell: bash
+      run: echo "::warning::release upload attempt 2 failed; retrying in 15s" && sleep 15
+    - id: a3
+      if: steps.a2.outcome == 'failure'
+      uses: softprops/action-gh-release@v3
+      continue-on-error: true
+      with:
+        tag_name: ${{ inputs.tag }}
+        files: ${{ inputs.files }}
+        fail_on_unmatched_files: ${{ inputs.fail_on_unmatched_files }}
+    - if: steps.a3.outcome == 'failure'
+      shell: bash
+      run: echo "::warning::release upload attempt 3 failed; retrying in 20s" && sleep 20
+    - id: a4
+      if: steps.a3.outcome == 'failure'
+      uses: softprops/action-gh-release@v3
+      continue-on-error: true
+      with:
+        tag_name: ${{ inputs.tag }}
+        files: ${{ inputs.files }}
+        fail_on_unmatched_files: ${{ inputs.fail_on_unmatched_files }}
+    - if: steps.a4.outcome == 'failure'
+      shell: bash
+      run: echo "::warning::release upload attempt 4 failed; retrying in 30s" && sleep 30
+    - id: a5
+      if: steps.a4.outcome == 'failure'
+      uses: softprops/action-gh-release@v3
+      continue-on-error: true
+      with:
+        tag_name: ${{ inputs.tag }}
+        files: ${{ inputs.files }}
+        fail_on_unmatched_files: ${{ inputs.fail_on_unmatched_files }}
+    - if: steps.a5.outcome == 'failure'
+      shell: bash
+      run: echo "::warning::release upload attempt 5 failed; retrying in 45s" && sleep 45
+    - id: a6
+      if: steps.a5.outcome == 'failure'
+      uses: softprops/action-gh-release@v3
+      continue-on-error: true
+      with:
+        tag_name: ${{ inputs.tag }}
+        files: ${{ inputs.files }}
+        fail_on_unmatched_files: ${{ inputs.fail_on_unmatched_files }}
+    - if: steps.a6.outcome == 'failure'
+      shell: bash
+      run: echo "::warning::release upload attempt 6 failed; retrying in 60s" && sleep 60
+    - id: a7
+      if: steps.a6.outcome == 'failure'
+      uses: softprops/action-gh-release@v3
+      continue-on-error: true
+      with:
+        tag_name: ${{ inputs.tag }}
+        files: ${{ inputs.files }}
+        fail_on_unmatched_files: ${{ inputs.fail_on_unmatched_files }}
+    - if: steps.a7.outcome == 'failure'
+      shell: bash
+      run: echo "::warning::release upload attempt 7 failed; retrying in 75s" && sleep 75
+    - id: a8
+      if: steps.a7.outcome == 'failure'
+      uses: softprops/action-gh-release@v3
+      continue-on-error: true
+      with:
+        tag_name: ${{ inputs.tag }}
+        files: ${{ inputs.files }}
+        fail_on_unmatched_files: ${{ inputs.fail_on_unmatched_files }}
+    - if: steps.a8.outcome == 'failure'
+      shell: bash
+      run: echo "::warning::release upload attempt 8 failed; retrying in 90s" && sleep 90
+    - id: a9
+      if: steps.a8.outcome == 'failure'
+      uses: softprops/action-gh-release@v3
+      continue-on-error: true
+      with:
+        tag_name: ${{ inputs.tag }}
+        files: ${{ inputs.files }}
+        fail_on_unmatched_files: ${{ inputs.fail_on_unmatched_files }}
+    - if: steps.a9.outcome == 'failure'
+      shell: bash
+      run: echo "::warning::release upload attempt 9 failed; retrying in 120s" && sleep 120
+    - id: a10
+      if: steps.a9.outcome == 'failure'
+      uses: softprops/action-gh-release@v3
+      with:
+        tag_name: ${{ inputs.tag }}
+        files: ${{ inputs.files }}
+        fail_on_unmatched_files: ${{ inputs.fail_on_unmatched_files }}
