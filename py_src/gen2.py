@@ -55,15 +55,16 @@ if __name__ == "__main__":
                 for l in f.readlines():
                     srcfiles.append(l.strip())
 
-        # OpenCV's header list omits modules/flann/include/opencv2/flann/defines.h,
-        # but the cvflann enums (flann_algorithm_t, flann_distance_t,
-        # flann_centers_init_t) live there. pipeline.add_const() relies on
-        # them to emit Evision.Flann.Algorithm, Evision.Flann.CentersInit,
-        # and friends, so inject the file explicitly when flann.hpp is in
-        # the list.
+        # OpenCV omits the flann defines header from the list, but the cvflann
+        # enums (flann_algorithm_t, flann_distance_t, flann_centers_init_t) live
+        # there and pipeline.add_const() needs them for Evision.Flann.Algorithm etc.
+        # Inject it beside flann.hpp, matching on the opencv2/flann.hpp suffix so
+        # both a source tree (modules/flann/include/opencv2/flann.hpp) and an
+        # installed tree (include/opencv4/opencv2/flann.hpp, e.g. a system/Nix
+        # OpenCV) resolve it.
         for l in list(srcfiles):
-            if l.endswith("modules/flann/include/opencv2/flann.hpp"):
-                flann_defines = l.replace("modules/flann/include/opencv2/flann.hpp", "modules/flann/include/opencv2/flann/defines.h")
+            if l.endswith("opencv2/flann.hpp"):
+                flann_defines = l[:-len("flann.hpp")] + "flann/defines.h"
                 if os.path.exists(flann_defines) and flann_defines not in srcfiles:
                     srcfiles.append(flann_defines)
                 break
