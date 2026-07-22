@@ -39,4 +39,40 @@ defmodule Evision.NewTypesTest do
     mat = Evision.Mat.from_binary_by_shape(<<big::native-signed-64>>, {:s, 64}, {1})
     assert Evision.Mat.at(mat, 0) == big
   end
+
+  describe "Evision.Constant" do
+    test "exposes the OpenCV 5.0 depth codes" do
+      assert Evision.Constant.cv_16BF() == 8
+      assert Evision.Constant.cv_Bool() == 9
+      assert Evision.Constant.cv_64U() == 10
+      assert Evision.Constant.cv_64S() == 11
+      assert Evision.Constant.cv_32U() == 12
+    end
+
+    test "makes multi-channel types from the new depths" do
+      # CV_MAKETYPE(depth, cn) == depth + (cn - 1) * CV_DEPTH_MAX
+      assert Evision.Constant.cv_64SC1() == 11
+      assert Evision.Constant.cv_64SC4() == 11 + 3 * 32
+      assert Evision.Constant.cv_32UC3() == 12 + 2 * 32
+      assert Evision.Constant.cv_16BFC(2) == 8 + 1 * 32
+      assert Evision.Constant.cv_BoolC1() == 9
+    end
+
+    test "agrees with the depth cv::Mat reports for each new type" do
+      for {bin, type, depth, raw_type} <- [
+            {<<1::native-signed-64>>, {:s, 64}, Evision.Constant.cv_64S(),
+             Evision.Constant.cv_64SC1()},
+            {<<1::native-unsigned-64>>, {:u, 64}, Evision.Constant.cv_64U(),
+             Evision.Constant.cv_64UC1()},
+            {<<1::native-unsigned-32>>, {:u, 32}, Evision.Constant.cv_32U(),
+             Evision.Constant.cv_32UC1()},
+            {<<0x3F80::native-unsigned-16>>, {:bf, 16}, Evision.Constant.cv_16BF(),
+             Evision.Constant.cv_16BFC1()}
+          ] do
+        mat = Evision.Mat.from_binary_by_shape(bin, type, {1})
+        assert Evision.Mat.depth(mat) == depth
+        assert Evision.Mat.raw_type(mat) == raw_type
+      end
+    end
+  end
 end
