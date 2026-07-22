@@ -4,6 +4,9 @@
 import ast
 import sys
 
+from cv_depths import CV_CONSTANTS
+
+
 class ErlEnumExpressionGenerator(ast.NodeVisitor):
     def __init__(self):
         self.expression = ''
@@ -50,51 +53,10 @@ class ErlEnumExpressionGenerator(ast.NodeVisitor):
             self.expression_erlang = '({} bsr {})'
         elif type(node) is ast.Name:
             if node.id[:3] == 'CV_':
-                if node.id == 'CV_8U':
-                    self.expression = '0'
-                    self.expression_erlang = '0'
-                elif node.id == 'CV_8S':
-                    self.expression = '1'
-                    self.expression_erlang = '1'
-                elif node.id == 'CV_16U':
-                    self.expression = '2'
-                    self.expression_erlang = '2'
-                elif node.id == 'CV_16S':
-                    self.expression = '3'
-                    self.expression_erlang = '3'
-                elif node.id == 'CV_32S':
-                    self.expression = '4'
-                    self.expression_erlang = '4'
-                elif node.id == 'CV_32F':
-                    self.expression = '5'
-                    self.expression_erlang = '5'
-                elif node.id == 'CV_64F':
-                    self.expression = '6'
-                    self.expression_erlang = '6'
-                elif node.id == 'CV_16F':
-                    self.expression = '7'
-                    self.expression_erlang = '7'
-                elif node.id == 'CV_16BF':
-                    self.expression = '8'
-                    self.expression_erlang = '8'
-                elif node.id == 'CV_Bool':
-                    self.expression = '9'
-                    self.expression_erlang = '9'
-                elif node.id == 'CV_64U':
-                    self.expression = '10'
-                    self.expression_erlang = '10'
-                elif node.id == 'CV_64S':
-                    self.expression = '11'
-                    self.expression_erlang = '11'
-                elif node.id == 'CV_32U':
-                    self.expression = '12'
-                    self.expression_erlang = '12'
-                elif node.id == 'CV_DEPTH_CURR_MAX':
-                    self.expression = '13'
-                    self.expression_erlang = '13'
-                elif node.id == 'CV_DEPTH_MAX':
-                    self.expression = '32'
-                    self.expression_erlang = '32'
+                if node.id in CV_CONSTANTS:
+                    value = str(CV_CONSTANTS[node.id])
+                    self.expression = value
+                    self.expression_erlang = value
                 elif node.id == 'CV_MAT_CONT_FLAG':
                     self.skip_this = True
                 elif node.id == 'CV_SUBMAT_FLAG':

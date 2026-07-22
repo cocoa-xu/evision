@@ -2,6 +2,7 @@ import ast
 
 import pytest
 
+import cv_depths
 from py2e import Py2EExpressionGenerator
 from erl_enum_expression_generator import ErlEnumExpressionGenerator
 
@@ -13,34 +14,52 @@ def _eval(generator_cls, expr):
 
 
 # OpenCV 5.0 core depth codes and structural constants, verified against
-# modules/core/include/opencv2/core/hal/interface.h at the 5.0.0 tag.
-DEPTH_CONSTANTS = {
-    "CV_8U": "0",
-    "CV_8S": "1",
-    "CV_16U": "2",
-    "CV_16S": "3",
-    "CV_32S": "4",
-    "CV_32F": "5",
-    "CV_64F": "6",
-    "CV_16F": "7",
-    "CV_16BF": "8",
-    "CV_Bool": "9",
-    "CV_64U": "10",
-    "CV_64S": "11",
-    "CV_32U": "12",
-    "CV_DEPTH_CURR_MAX": "13",
-    "CV_DEPTH_MAX": "32",
+# modules/core/include/opencv2/core/hal/interface.h at the 5.0.0 tag. Spelled
+# out here so they stay an oracle independent of py_src/cv_depths.py.
+DEPTHS = {
+    "CV_8U": 0,
+    "CV_8S": 1,
+    "CV_16U": 2,
+    "CV_16S": 3,
+    "CV_32S": 4,
+    "CV_32F": 5,
+    "CV_64F": 6,
+    "CV_16F": 7,
+    "CV_16BF": 8,
+    "CV_Bool": 9,
+    "CV_64U": 10,
+    "CV_64S": 11,
+    "CV_32U": 12,
 }
+
+STRUCTURAL = {
+    "CV_DEPTH_CURR_MAX": 13,
+    "CV_DEPTH_MAX": 32,
+}
+
+DEPTH_CONSTANTS = {**DEPTHS, **STRUCTURAL}
+
+
+def test_shared_table_matches_the_opencv_header():
+    assert cv_depths.CV_DEPTHS == DEPTHS
+    assert cv_depths.CV_CONSTANTS == DEPTH_CONSTANTS
+    assert cv_depths.CV_CN_SHIFT == 5
+
+
+def test_depth_codes_are_contiguous_from_zero():
+    # CV_DEPTH_CURR_MAX is derived as len(CV_DEPTHS), which only holds while
+    # the codes stay dense and in declaration order.
+    assert list(cv_depths.CV_DEPTHS.values()) == list(range(len(DEPTHS)))
 
 
 @pytest.mark.parametrize("name,value", DEPTH_CONSTANTS.items())
 def test_py2e_resolves_depth_constants(name, value):
-    assert _eval(Py2EExpressionGenerator, name) == value
+    assert _eval(Py2EExpressionGenerator, name) == str(value)
 
 
 @pytest.mark.parametrize("name,value", DEPTH_CONSTANTS.items())
 def test_erl_enum_resolves_depth_constants(name, value):
-    assert _eval(ErlEnumExpressionGenerator, name) == value
+    assert _eval(ErlEnumExpressionGenerator, name) == str(value)
 
 
 def test_depth_mask_all_expression_is_well_formed():
