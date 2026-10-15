@@ -389,7 +389,10 @@ static ERL_NIF_TERM evision_${name}_set_${member}(ErlNifEnv *env, int argc, cons
         return failmsgp(env, "cannot get `${storage_name}` from `self`: mismatched type or invalid resource?");
     }
 
-    if (evision_to_safe(env, argv[1], self_ptr->${member}, ArgInfo("${member}", 0))) {
+    std::map<std::string, ERL_NIF_TERM> erl_terms;
+    evision::nif::parse_arg(env, 1, argv, erl_terms);
+
+    if (evision_to_safe(env, evision_get_kw(env, erl_terms, "${member}"), self_ptr->${member}, ArgInfo("${member}", 0))) {
         bool success;
         return evision_from_as_map<${storage_name}>(env, *self_ptr, self, "Elixir.Evision.${elixir_module_name}", success);
     }
@@ -436,7 +439,10 @@ static ERL_NIF_TERM evision_${name}_set_${member}(ErlNifEnv *env, int argc, cons
         return failmsgp(env, "Incorrect type of object (must be '${name}' or its derivative)");
     }
 
-    if (evision_to_safe(env, argv[1], _self_algo_${access}${member}, ArgInfo("${member}", 0))) {
+    std::map<std::string, ERL_NIF_TERM> erl_terms;
+    evision::nif::parse_arg(env, 1, argv, erl_terms);
+
+    if (evision_to_safe(env, evision_get_kw(env, erl_terms, "${member}"), _self_algo_${access}${member}, ArgInfo("${member}", 0))) {
         bool success;
         return evision_from_as_map<${storage_name}>(env, *self_ptr, self, "Elixir.Evision.${elixir_module_name}", success);
     }
