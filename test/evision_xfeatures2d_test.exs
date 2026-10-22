@@ -1,6 +1,9 @@
 defmodule Evision.XFeatures2D.Test do
   use ExUnit.Case
 
+  @moduletag :xfeatures2d
+  @moduletag :stitching
+
   setup do
     %Evision.Mat{} = image = Evision.imread(Path.join([__DIR__, "testdata", "back.jpg"]))
     %{image: image}

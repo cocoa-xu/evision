@@ -30,6 +30,39 @@ mix test --include require_ffmpeg
 ```
 
 
+### Native boundary regressions
+
+The `evision_*safety_test.exs` files call `:evision_nif` directly, bypassing the
+Elixir wrappers. They cover malformed shapes, types and indices, integer
+overflow, binary extents, and C++ exception containment. Run them together with
+the normal Nx and Mat tests so stricter validation cannot silently reject valid
+operations.
+
+Use a source-built NIF, not a downloaded release. When changing C++ sources in
+an existing build, remove only the old NIF before rebuilding: the Makefile can
+otherwise reuse it even when a header has changed.
+
+```sh
+rm -f _build/test/lib/evision/priv/evision.so
+MIX_ENV=test EVISION_PREFER_PRECOMPILED=false mix compile
+MIX_ENV=test EVISION_PREFER_PRECOMPILED=false mix test --no-compile \
+  test/evision_*safety_test.exs test/evision_backend_test.exs \
+  test/evision_mat_test.exs test/evision_new_types_test.exs \
+  test/evision_input_immutability_test.exs
+```
+
+For native sanitizer runs, compile the NIF with
+`-fsanitize=address,undefined -fno-omit-frame-pointer` and load the matching ASan
+runtime before starting the BEAM executable. Use
+`ASAN_OPTIONS=detect_leaks=0:abort_on_error=1` and
+`UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1` so native failures fail the run.
+Leak detection is disabled for the host VM; this does not disable bounds checks.
+On macOS, launch `beam.smp` directly because protected shell launchers can strip
+`DYLD_INSERT_LIBRARIES` before Erlang starts.
+
+Tests tagged `:face`, `:xfeatures2d`, or `:stitching` run only when their OpenCV
+modules are compiled, like the existing `:dnn`, `:ml`, `:photo`, and `:video` tags.
+
 ### downloading_list.txt
 
 ```shell
