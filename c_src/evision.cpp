@@ -670,7 +670,6 @@ static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Mat& m, const ArgInfo& in
         if (ndims > CV_MAX_DIM) {
             return false;
         }
-        size_t elemsize = CV_ELEM_SIZE1(type);
         std::vector<uint64_t> _sizes(ndims);
         if (is_number) {
             _sizes[0] = 1;
@@ -696,6 +695,69 @@ static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Mat& m, const ArgInfo& in
         if (expected_bytes != data.size ||
             expected_bytes > (size_t)std::numeric_limits<ptrdiff_t>::max()) return false;
 
+        // see https://github.com/opencv/opencv/issues/24057
+        // e.g., Nx.tensor([1,2,3,4]), Nx.tensor(1)
+        if ( ( info.arithm_op_src ) && ( ndims == 1 ) && ( _sizes[0] <= 4 ) )
+        {
+            const int sz  = (int)_sizes[0]; // Real Data Length(1, 2, 3 or 4)
+            const int sz2 = 4;       // Scalar has 4 elements.
+            m = Mat::zeros(sz2, 1, CV_64F);
+
+            const char *base_ptr = (const char *)data.data;
+            for(int i = 0; i < sz; i++ )
+            {
+                const void * oi = static_cast<const void *>(base_ptr + originalElemSize * i);
+                switch (nx_tensor_type)
+                {
+                case CV_8S:
+                    m.at<double>(i) = _do_cast_type<int8_t, double>((const int8_t *)oi);
+                    break;
+                case CV_8U:
+                    m.at<double>(i) = _do_cast_type<uint8_t, double>((const uint8_t *)oi);
+                    break;
+                case CV_16S:
+                    m.at<double>(i) = _do_cast_type<int16_t, double>((const int16_t *)oi);
+                    break;
+                case CV_16U:
+                    m.at<double>(i) = _do_cast_type<uint16_t, double>((const uint16_t *)oi);
+                    break;
+                case CV_16F:
+                    m.at<double>(i) = _do_cast_f16<double>(_do_cast_type<uint16_t, uint16_t>((const uint16_t *)oi));
+                    break;
+                case CV_32S:
+                    m.at<double>(i) = _do_cast_type<int32_t, double>((const int32_t *)oi);
+                    break;
+                case CV_32F:
+                    m.at<double>(i) = _do_cast_type<float, double>((const float *)oi);
+                    break;
+                case CV_64F:
+                    m.at<double>(i) = _do_cast_type<double, double>((const double *)oi);
+                    break;
+                case CV_64S:
+                    m.at<double>(i) = _do_cast_type<int64_t, double>((const int64_t *)oi);
+                    break;
+                case CV_64U:
+                    m.at<double>(i) = _do_cast_type<uint64_t, double>((const uint64_t *)oi);
+                    break;
+                case CV_32U:
+                    m.at<double>(i) = _do_cast_type<uint32_t, double>((const uint32_t *)oi);
+                    break;
+                case CV_16BF:
+                    m.at<double>(i) = _do_cast_bf16<double>(_do_cast_type<uint16_t, uint16_t>((const uint16_t *)oi));
+                    break;
+                default:
+                    break;
+                }
+            }
+            if (is_number) {
+                // Normally cv.XXX(x) means cv.XXX( (x, 0., 0., 0.) );
+                // However  cv.add(mat,x) means cv::add(mat, (x,x,x,x) ).
+                m.at<double>(1) = m.at<double>(2) = m.at<double>(3) = m.at<double>(0);
+            }
+            return true;
+        }
+
+        size_t elemsize = CV_ELEM_SIZE1(type);
         std::vector<uint64_t> _strides(ndims);
         _strides[ndims - 1] = originalElemSize;
         if (is_number == 0) {
@@ -794,68 +856,6 @@ static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Mat& m, const ArgInfo& in
                 step[i] = default_step;
                 default_step *= size[i];
             }
-        }
-
-        // see https://github.com/opencv/opencv/issues/24057
-        // e.g., Nx.tensor([1,2,3,4]), Nx.tensor(1)
-        if ( ( info.arithm_op_src ) && ( ndims == 1 ) && ( size[0] <= 4 ) )
-        {
-            const int sz  = size[0]; // Real Data Length(1, 2, 3 or 4)
-            const int sz2 = 4;       // Scalar has 4 elements.
-            m = Mat::zeros(sz2, 1, CV_64F);
-
-            const char *base_ptr = (const char *)data.data;
-            for(int i = 0; i < sz; i++ )
-            {
-                const void * oi = static_cast<const void *>(base_ptr + step[0] * i);
-                switch (nx_tensor_type)
-                {
-                case CV_8S:
-                    m.at<double>(i) = _do_cast_type<int8_t, double>((const int8_t *)oi);
-                    break;
-                case CV_8U:
-                    m.at<double>(i) = _do_cast_type<uint8_t, double>((const uint8_t *)oi);
-                    break;
-                case CV_16S:
-                    m.at<double>(i) = _do_cast_type<int16_t, double>((const int16_t *)oi);
-                    break;
-                case CV_16U:
-                    m.at<double>(i) = _do_cast_type<uint16_t, double>((const uint16_t *)oi);
-                    break;
-                case CV_16F:
-                    m.at<double>(i) = _do_cast_f16<double>(_do_cast_type<uint16_t, uint16_t>((const uint16_t *)oi));
-                    break;
-                case CV_32S:
-                    m.at<double>(i) = _do_cast_type<int32_t, double>((const int32_t *)oi);
-                    break;
-                case CV_32F:
-                    m.at<double>(i) = _do_cast_type<float, double>((const float *)oi);
-                    break;
-                case CV_64F:
-                    m.at<double>(i) = _do_cast_type<double, double>((const double *)oi);
-                    break;
-                case CV_64S:
-                    m.at<double>(i) = _do_cast_type<int64_t, double>((const int64_t *)oi);
-                    break;
-                case CV_64U:
-                    m.at<double>(i) = _do_cast_type<uint64_t, double>((const uint64_t *)oi);
-                    break;
-                case CV_32U:
-                    m.at<double>(i) = _do_cast_type<uint32_t, double>((const uint32_t *)oi);
-                    break;
-                case CV_16BF:
-                    m.at<double>(i) = _do_cast_bf16<double>(_do_cast_type<uint16_t, uint16_t>((const uint16_t *)oi));
-                    break;
-                default:
-                    break;
-                }
-            }
-            if (info.arithm_op_src && is_number) {
-                // Normally cv.XXX(x) means cv.XXX( (x, 0., 0., 0.) );
-                // However  cv.add(mat,x) means cv::add(mat, (x,x,x,x) ).
-                m.at<double>(1) = m.at<double>(2) = m.at<double>(3) = m.at<double>(0);
-            }
-            return true;
         }
 
         // handle degenerate case

@@ -43,22 +43,19 @@ static ERL_NIF_TERM evision_cv_mat_indexed(ErlNifEnv *env, int argc, const ERL_N
             evision_to_safe(env, evision_get_kw(env, erl_terms, "dims"), dims, ArgInfo("dims", ArgInfo::INPUT_ONLY)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "inner"), inner, ArgInfo("inner", 0)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "op"), op, ArgInfo("op", 0))) {
-            if (!evision_backend_indices(indices) || !evision_backend_tensor(updates) ||
+            if (!evision_backend_indices(indices) ||
                 updates.type() != src.type() || (op != 0 && op != 1))
                 return evision::nif::error(env, "indexed: invalid index or update type");
             // The writable converter already made a private, continuous copy.
             Mat result = src;
-            Mat upd_c = updates.isContinuous() ? updates : updates.clone();
-            Mat idx_c = indices.isContinuous() ? indices : indices.clone();
-            Mat dim_c = dims.isContinuous() ? dims : dims.clone();
+            Mat dim_c = dims;
             std::vector<int64_t> mult;
             if (!evision_backend_coordinates(result, dim_c, inner, mult))
                 return evision::nif::error(env, "indexed: invalid source shape or dimension type");
 
-            const int64_t *ip = (const int64_t *)idx_c.data;
             const int64_t *dimp = (const int64_t *)dim_c.data;
             int64_t depth = (int64_t)dim_c.total();
-            int64_t total_idx = (int64_t)idx_c.total();
+            int64_t total_idx = (int64_t)indices.total();
             if (depth <= 0 || total_idx % depth != 0)
                 return evision::nif::error(env, "indexed: indices size not a multiple of coordinate depth");
             int64_t num_updates = total_idx / depth;
@@ -66,6 +63,9 @@ static ERL_NIF_TERM evision_cv_mat_indexed(ErlNifEnv *env, int argc, const ERL_N
             if (!evision_backend_shape(updates, {(int)num_updates, inner}))
                 return evision::nif::error(env, "indexed: update size mismatch");
 
+            Mat upd_c = updates.isContinuous() ? updates : updates.clone();
+            Mat idx_c = indices.isContinuous() ? indices : indices.clone();
+            const int64_t *ip = (const int64_t *)idx_c.data;
             uchar *rp = result.data;
             const uchar *up = upd_c.data;
             size_t elem_size = result.elemSize();

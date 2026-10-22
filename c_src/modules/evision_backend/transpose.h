@@ -22,16 +22,11 @@ static ERL_NIF_TERM evision_cv_mat_transpose(ErlNifEnv *env, int argc, const ERL
 
     if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0)) &&
         evision_to_safe(env, evision_get_kw(env, erl_terms, "axes"), axes, ArgInfo("axes", 0)) &&
-        evision_to_safe(env, evision_get_kw(env, erl_terms, "as_shape"), as_shape, ArgInfo("as_shape", 0)) &&
-        evision_to_safe(env, evision_get_kw(env, erl_terms, "as_shaped"), as_shaped, ArgInfo("as_shaped", 0))) {
-        int ndims = (int)as_shape.size();
-        if (ndims <= 0 || ndims > 32 || axes.size() != as_shape.size()) {
+        evision_to_safe(env, evision_get_kw(env, erl_terms, "as_shaped"), as_shaped, ArgInfo("as_shaped", 0)) &&
+        (!as_shaped || evision_to_safe(env, evision_get_kw(env, erl_terms, "as_shape"), as_shape, ArgInfo("as_shape", 0)))) {
+        int ndims = as_shaped ? (int)as_shape.size() : img.dims;
+        if (ndims <= 0 || ndims > 32 || axes.size() != (size_t)ndims) {
             return evision::nif::error(env, "invalid transpose shape or axes");
-        }
-        for (int dim : as_shape) {
-            if (dim <= 0) {
-                return evision::nif::error(env, "invalid transpose shape");
-            }
         }
         std::vector<bool> seen((size_t)ndims, false);
         for (int axis : axes) {

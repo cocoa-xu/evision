@@ -53,16 +53,14 @@ template <typename T>
 static void window_reduce_typed(const T *sp, T *dp, int r,
                                 const std::vector<int> &in_dims, const std::vector<int> &out_dims,
                                 const std::vector<int> &win_dims, const std::vector<int> &strides,
-                                const std::vector<int> &pad_lo, const std::vector<int> &dil, int op) {
+                                const std::vector<int> &pad_lo, const std::vector<int> &dil, int op,
+                                int64_t out_total, int64_t win_total) {
     std::vector<int64_t> in_stride((size_t)r);
     int64_t acc = 1;
     for (int k = r - 1; k >= 0; k--) { in_stride[(size_t)k] = acc; acc *= in_dims[(size_t)k]; }
 
-    int64_t out_total = 1, win_total = 1;
-    for (int k = 0; k < r; k++) { out_total *= out_dims[(size_t)k]; win_total *= win_dims[(size_t)k]; }
-
     T init = window_identity<T>(op);
-    int64_t work = out_total * (win_total > 0 ? win_total : 1);
+    int64_t work = out_total * win_total;
 
     if (!evision_should_parallelize(out_total, work, EVISION_PARALLEL_NESTED_MIN_WORK)) {
         std::vector<int> op_idx((size_t)r, 0), w_idx((size_t)r, 0);
@@ -183,12 +181,11 @@ static ERL_NIF_TERM evision_cv_mat_window_reduce(ErlNifEnv *env, int argc, const
                 return evision::nif::error(env, "window_reduce: invalid shape, axes or operation");
             int r = (int)in_dims.size();
             Mat src_c = src.isContinuous() ? src : src.clone();
-            int64_t out_total = 1;
-            for (int k = 0; k < r; k++) out_total *= out_dims[(size_t)k];
-            Mat dst(1, (int)(out_total > 0 ? out_total : 1), src.type());
+            Mat dst(1, (int)out_count, src.type());
 
             EVISION_WINDOW_DISPATCH(window_reduce_typed, src_c, dst,
-                                    r, in_dims, out_dims, win_dims, strides, pad_lo, dil, op)
+                                    r, in_dims, out_dims, win_dims, strides, pad_lo, dil, op,
+                                    (int64_t)out_count, (int64_t)win_count)
             return evision_from(env, dst);
         }
     }
@@ -205,17 +202,12 @@ template <typename T>
 static void window_scatter_typed(const T *sp, const T *srcvals, T *dp, int r,
                                  const std::vector<int> &in_dims, const std::vector<int> &win_dims,
                                  const std::vector<int> &strides, const std::vector<int> &pad_lo,
-                                 const std::vector<int> &grid, T init, int op) {
+                                 const std::vector<int> &grid, T init, int op,
+                                 int64_t in_total, int64_t grid_total, int64_t win_total) {
     std::vector<int64_t> in_stride((size_t)r);
     int64_t acc = 1;
     for (int k = r - 1; k >= 0; k--) { in_stride[(size_t)k] = acc; acc *= in_dims[(size_t)k]; }
 
-    int64_t in_total = 1, grid_total = 1, win_total = 1;
-    for (int k = 0; k < r; k++) {
-        in_total *= in_dims[(size_t)k];
-        grid_total *= grid[(size_t)k];
-        win_total *= win_dims[(size_t)k];
-    }
     evision_parallel_for(in_total, in_total, EVISION_PARALLEL_SIMPLE_MIN_WORK, [&](int64_t begin, int64_t end) {
         for (int64_t i = begin; i < end; i++) dp[i] = init;
     });
@@ -309,21 +301,21 @@ static ERL_NIF_TERM evision_cv_mat_window_scatter(ErlNifEnv *env, int argc, cons
             int r = (int)in_dims.size();
             Mat src_c = src.isContinuous() ? src : src.clone();
             Mat source_c = source.isContinuous() ? source : source.clone();
-            int64_t in_total = 1;
-            for (int k = 0; k < r; k++) in_total *= in_dims[(size_t)k];
-            Mat dst(1, (int)(in_total > 0 ? in_total : 1), src.type());
+            int64_t in_total = (int64_t)src.total();
+            int64_t grid_total = (int64_t)source.total();
+            Mat dst(1, (int)in_total, src.type());
 
             switch (src.depth()) {
-                case CV_8U:  window_scatter_typed<uint8_t>((const uint8_t *)src_c.data, (const uint8_t *)source_c.data, (uint8_t *)dst.data, r, in_dims, win_dims, strides, pad_lo, grid, (uint8_t)init, op); break;
-                case CV_8S:  window_scatter_typed<int8_t>((const int8_t *)src_c.data, (const int8_t *)source_c.data, (int8_t *)dst.data, r, in_dims, win_dims, strides, pad_lo, grid, (int8_t)init, op); break;
-                case CV_16U: window_scatter_typed<uint16_t>((const uint16_t *)src_c.data, (const uint16_t *)source_c.data, (uint16_t *)dst.data, r, in_dims, win_dims, strides, pad_lo, grid, (uint16_t)init, op); break;
-                case CV_16S: window_scatter_typed<int16_t>((const int16_t *)src_c.data, (const int16_t *)source_c.data, (int16_t *)dst.data, r, in_dims, win_dims, strides, pad_lo, grid, (int16_t)init, op); break;
-                case CV_32S: window_scatter_typed<int32_t>((const int32_t *)src_c.data, (const int32_t *)source_c.data, (int32_t *)dst.data, r, in_dims, win_dims, strides, pad_lo, grid, (int32_t)init, op); break;
-                case CV_32U: window_scatter_typed<uint32_t>((const uint32_t *)src_c.data, (const uint32_t *)source_c.data, (uint32_t *)dst.data, r, in_dims, win_dims, strides, pad_lo, grid, (uint32_t)init, op); break;
-                case CV_64S: window_scatter_typed<int64_t>((const int64_t *)src_c.data, (const int64_t *)source_c.data, (int64_t *)dst.data, r, in_dims, win_dims, strides, pad_lo, grid, (int64_t)init, op); break;
-                case CV_64U: window_scatter_typed<uint64_t>((const uint64_t *)src_c.data, (const uint64_t *)source_c.data, (uint64_t *)dst.data, r, in_dims, win_dims, strides, pad_lo, grid, (uint64_t)init, op); break;
-                case CV_32F: window_scatter_typed<float>((const float *)src_c.data, (const float *)source_c.data, (float *)dst.data, r, in_dims, win_dims, strides, pad_lo, grid, (float)init, op); break;
-                case CV_64F: window_scatter_typed<double>((const double *)src_c.data, (const double *)source_c.data, (double *)dst.data, r, in_dims, win_dims, strides, pad_lo, grid, init, op); break;
+                case CV_8U:  window_scatter_typed<uint8_t>((const uint8_t *)src_c.data, (const uint8_t *)source_c.data, (uint8_t *)dst.data, r, in_dims, win_dims, strides, pad_lo, grid, (uint8_t)init, op, in_total, grid_total, (int64_t)win_count); break;
+                case CV_8S:  window_scatter_typed<int8_t>((const int8_t *)src_c.data, (const int8_t *)source_c.data, (int8_t *)dst.data, r, in_dims, win_dims, strides, pad_lo, grid, (int8_t)init, op, in_total, grid_total, (int64_t)win_count); break;
+                case CV_16U: window_scatter_typed<uint16_t>((const uint16_t *)src_c.data, (const uint16_t *)source_c.data, (uint16_t *)dst.data, r, in_dims, win_dims, strides, pad_lo, grid, (uint16_t)init, op, in_total, grid_total, (int64_t)win_count); break;
+                case CV_16S: window_scatter_typed<int16_t>((const int16_t *)src_c.data, (const int16_t *)source_c.data, (int16_t *)dst.data, r, in_dims, win_dims, strides, pad_lo, grid, (int16_t)init, op, in_total, grid_total, (int64_t)win_count); break;
+                case CV_32S: window_scatter_typed<int32_t>((const int32_t *)src_c.data, (const int32_t *)source_c.data, (int32_t *)dst.data, r, in_dims, win_dims, strides, pad_lo, grid, (int32_t)init, op, in_total, grid_total, (int64_t)win_count); break;
+                case CV_32U: window_scatter_typed<uint32_t>((const uint32_t *)src_c.data, (const uint32_t *)source_c.data, (uint32_t *)dst.data, r, in_dims, win_dims, strides, pad_lo, grid, (uint32_t)init, op, in_total, grid_total, (int64_t)win_count); break;
+                case CV_64S: window_scatter_typed<int64_t>((const int64_t *)src_c.data, (const int64_t *)source_c.data, (int64_t *)dst.data, r, in_dims, win_dims, strides, pad_lo, grid, (int64_t)init, op, in_total, grid_total, (int64_t)win_count); break;
+                case CV_64U: window_scatter_typed<uint64_t>((const uint64_t *)src_c.data, (const uint64_t *)source_c.data, (uint64_t *)dst.data, r, in_dims, win_dims, strides, pad_lo, grid, (uint64_t)init, op, in_total, grid_total, (int64_t)win_count); break;
+                case CV_32F: window_scatter_typed<float>((const float *)src_c.data, (const float *)source_c.data, (float *)dst.data, r, in_dims, win_dims, strides, pad_lo, grid, (float)init, op, in_total, grid_total, (int64_t)win_count); break;
+                case CV_64F: window_scatter_typed<double>((const double *)src_c.data, (const double *)source_c.data, (double *)dst.data, r, in_dims, win_dims, strides, pad_lo, grid, init, op, in_total, grid_total, (int64_t)win_count); break;
                 default: return evision::nif::error(env, "window_scatter: unsupported depth");
             }
             return evision_from(env, dst);

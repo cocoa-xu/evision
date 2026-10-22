@@ -46,7 +46,7 @@ static ERL_NIF_TERM evision_cv_mat_take(ErlNifEnv *env, int argc, const ERL_NIF_
             uchar *dp = dst.data;
 
             int64_t copies = (int64_t)outer * num_idx;
-            int64_t work = copies * (inner > 0 ? inner : 1);
+            int64_t work = (int64_t)output_count;
             // take is a scattered gather of `inner`-sized blocks; threading random
             // reads only pays off once the blocks (or their count) are large, so it
             // takes a higher bar than the contiguous elementwise kernels.

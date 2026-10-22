@@ -79,7 +79,7 @@ static ERL_NIF_TERM evision_cv_mat_lu(ErlNifEnv *env, int argc, const ERL_NIF_TE
             if (!evision_backend_matrix(a) || a.type() != CV_64F ||
                 n <= 0 || a.rows != n || a.cols != n)
                 return evision::nif::error(env, "lu: expected an n-by-n f64 matrix");
-            Mat m = a.clone();  // mutated in place into the row-permuted A
+            Mat m = a;  // The writable converter already made a private copy.
             double *mp = (double *)m.data;
             std::vector<int> perm((size_t)n);
             for (int i = 0; i < n; i++) perm[(size_t)i] = i;
@@ -149,12 +149,11 @@ static ERL_NIF_TERM evision_cv_mat_qr(ErlNifEnv *env, int argc, const ERL_NIF_TE
             evision_to_safe(env, evision_get_kw(env, erl_terms, "m"), m, ArgInfo("m", 0)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "n"), n, ArgInfo("n", 0)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "complete"), complete, ArgInfo("complete", 0))) {
-            size_t q_count;
             if (!evision_backend_matrix(a) || a.type() != CV_64F ||
                 m <= 0 || n <= 0 || a.rows != m || a.cols != n ||
-                !evision_backend_count({m, m}, q_count))
+                m > std::numeric_limits<int>::max() / m)
                 return evision::nif::error(env, "qr: invalid dimensions or type");
-            Mat R = a.clone();                 // m x n, mutated into the upper factor
+            Mat R = a;                        // Private converter copy, mutated into the upper factor.
             Mat Q = Mat::eye(m, m, CV_64F);     // accumulated orthogonal factor
             double *rp = (double *)R.data;
             double *qp = (double *)Q.data;

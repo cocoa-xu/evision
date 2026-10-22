@@ -31,8 +31,6 @@ static ERL_NIF_TERM evision_cv_mat_to_batched(ErlNifEnv *env, int argc, const ER
             return evision::nif::error(env, "to_batched failed: invalid shape");
         }
 
-        int mat_type = img.channels() == 1 ? img.type() : img.depth();
-        size_t elem_size = img.elemSize1();
         size_t mat_num_elem = img.total() * img.channels();
         size_t as_shape_num_elem;
         if (img.empty() || !evision_shape_byte_size(as_shape, 1, as_shape_num_elem)) {
@@ -44,10 +42,14 @@ static ERL_NIF_TERM evision_cv_mat_to_batched(ErlNifEnv *env, int argc, const ER
         if (mat_num_elem != as_shape_num_elem) {
             return evision::nif::error(env, "to_batched failed: cannot treated matrix as the request shape");
         }
-        if (!img.isContinuous()) img = img.clone();
-        
         uint64_t remainder = as_shape[0] % batch_size;
         uint64_t num_full_batches = as_shape[0] / batch_size;
+        unsigned num_batches = (unsigned)num_full_batches;
+        if (remainder != 0 && leftover == "repeat") ++num_batches;
+        if (num_batches == 0) return enif_make_list(env, 0);
+
+        int mat_type = img.channels() == 1 ? img.type() : img.depth();
+        size_t elem_size = img.elemSize1();
         uint64_t slice_size = as_shape_num_elem / as_shape[0] * elem_size;
         size_t batch_bytes;
         if (!evision_checked_mul_size((size_t)slice_size, (size_t)batch_size, batch_bytes) ||
@@ -55,14 +57,9 @@ static ERL_NIF_TERM evision_cv_mat_to_batched(ErlNifEnv *env, int argc, const ER
             return evision::nif::error(env, "to_batched failed: batch size overflow");
         }
 
-        unsigned num_batches = (unsigned)num_full_batches;
-        if (remainder != 0) {
-            if (leftover == "repeat") {
-                num_batches += 1;
-            }
-        }
-
-        std::vector<ERL_NIF_TERM> batches(num_batches);
+        if (!img.isContinuous()) img = img.clone();
+        std::vector<ERL_NIF_TERM> batches;
+        batches.reserve(num_batches);
         char * data = (char *)img.data;
         // skip the first (batches)
         int ndims = (int)as_shape.size();
@@ -73,7 +70,7 @@ static ERL_NIF_TERM evision_cv_mat_to_batched(ErlNifEnv *env, int argc, const ER
         char * offset_data = data;
         for (size_t i = 0; i < num_full_batches; i++) {
             Mat mat = Mat(ndims, sizes, mat_type, offset_data);
-            batches[i] = evision_from(env, mat.clone());
+            batches.push_back(evision_from(env, mat.clone()));
             offset_data += batch_bytes;
         }
         // deal with leftover
@@ -96,7 +93,7 @@ static ERL_NIF_TERM evision_cv_mat_to_batched(ErlNifEnv *env, int argc, const ER
                 repeat_dst += copy_bytes;
                 remaining -= copy_bytes;
             }
-            batches[num_batches - 1] = evision_from(env, last_batch);
+            batches.push_back(evision_from(env, last_batch));
         }
 
         ERL_NIF_TERM ret = enif_make_list_from_array(env, batches.data(), num_batches);

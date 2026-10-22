@@ -36,7 +36,7 @@ static ERL_NIF_TERM evision_cv_mat_take_along_axis(ErlNifEnv *env, int argc, con
             int r = (int)in_dims.size();
             if ((int)out_dims.size() != r || axis < 0 || axis >= r)
                 return evision::nif::error(env, "take_along_axis: bad rank or axis");
-            if (!evision_backend_shape(src, in_dims) || !evision_backend_indices(indices) ||
+            if (!evision_backend_shape(src, in_dims) || indices.type() != CV_64S ||
                 !evision_backend_shape(indices, out_dims))
                 return evision::nif::error(env, "take_along_axis: invalid shape or index type");
             for (int k = 0; k < r; k++) {
@@ -44,12 +44,11 @@ static ERL_NIF_TERM evision_cv_mat_take_along_axis(ErlNifEnv *env, int argc, con
                     return evision::nif::error(env, "take_along_axis: non-axis dimensions must match");
             }
 
-            std::vector<int64_t> in_stride((size_t)(r > 0 ? r : 1));
+            std::vector<int64_t> in_stride((size_t)r);
             int64_t acc = 1;
             for (int k = r - 1; k >= 0; k--) { in_stride[(size_t)k] = acc; acc *= in_dims[(size_t)k]; }
 
-            int64_t out_total = 1;
-            for (int k = 0; k < r; k++) out_total *= out_dims[(size_t)k];
+            int64_t out_total = (int64_t)indices.total();
             int64_t axis_dim = in_dims[(size_t)axis];
             int64_t axis_stride = in_stride[(size_t)axis];
 
@@ -57,33 +56,31 @@ static ERL_NIF_TERM evision_cv_mat_take_along_axis(ErlNifEnv *env, int argc, con
             Mat idx_c = indices.isContinuous() ? indices : indices.clone();
             const int64_t *ip = (const int64_t *)idx_c.data;
             size_t elem = src_c.elemSize();
-            Mat dst(1, (int)(out_total > 0 ? out_total : 1), src.type());
+            Mat dst(1, (int)out_total, src.type());
             const uchar *sp = src_c.data;
             uchar *dp = dst.data;
 
-            if (out_total > 0) {
-                std::atomic<bool> bad_index(false);
-                evision_parallel_for(out_total, out_total, EVISION_PARALLEL_SIMPLE_MIN_WORK, [&](int64_t begin, int64_t end) {
-                    for (int64_t p = begin; p < end; p++) {
-                        int64_t q = p;
-                        int64_t base = 0;
-                        for (int k = r - 1; k >= 0; k--) {
-                            int64_t coord = q % out_dims[(size_t)k];
-                            q /= out_dims[(size_t)k];
-                            if (k != axis) base += coord * in_stride[(size_t)k];
-                        }
-
-                        int64_t iv = ip[p];
-                        if (iv < 0 || iv >= axis_dim) {
-                            bad_index.store(true, std::memory_order_relaxed);
-                        } else {
-                            std::memcpy(dp + (size_t)p * elem, sp + (size_t)(base + iv * axis_stride) * elem, elem);
-                        }
+            std::atomic<bool> bad_index(false);
+            evision_parallel_for(out_total, out_total, EVISION_PARALLEL_SIMPLE_MIN_WORK, [&](int64_t begin, int64_t end) {
+                for (int64_t p = begin; p < end; p++) {
+                    int64_t iv = ip[p];
+                    if (iv < 0 || iv >= axis_dim) {
+                        bad_index.store(true, std::memory_order_relaxed);
+                        continue;
                     }
-                });
-                if (bad_index.load(std::memory_order_relaxed))
-                    return evision::nif::error(env, "take_along_axis: index out of bounds");
-            }
+                    int64_t q = p;
+                    int64_t base = 0;
+                    for (int k = r - 1; k >= 0; k--) {
+                        int64_t coord = q % out_dims[(size_t)k];
+                        q /= out_dims[(size_t)k];
+                        if (k != axis) base += coord * in_stride[(size_t)k];
+                    }
+
+                    std::memcpy(dp + (size_t)p * elem, sp + (size_t)(base + iv * axis_stride) * elem, elem);
+                }
+            });
+            if (bad_index.load(std::memory_order_relaxed))
+                return evision::nif::error(env, "take_along_axis: index out of bounds");
             return evision_from(env, dst);
         }
     }

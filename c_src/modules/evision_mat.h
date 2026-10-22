@@ -906,7 +906,7 @@ static ERL_NIF_TERM evision_cv_mat_as_shape(ErlNifEnv *env, int argc, const ERL_
         Mat img;
         std::vector<int> as_shape;
 
-        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0)) &&
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", ArgInfo::INPUT_ONLY)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "as_shape"), as_shape, ArgInfo("as_shape", 0))) {
             size_t expected_bytes, actual_bytes;
             if (img.empty() ||
@@ -916,8 +916,9 @@ static ERL_NIF_TERM evision_cv_mat_as_shape(ErlNifEnv *env, int argc, const ERL_
                 return evision::nif::error(env, "as_shape byte size does not match source matrix");
             }
             if (as_shape.empty()) as_shape.push_back(1);
-            // The writable converter already copied the input. Retain that
-            // private allocation through reshape's refcounted header.
+            if (!img.isContinuous()) img = img.clone();
+            // Retain owned storage through reshape's refcounted header. The
+            // input-only converter still copies binary-backed matrices.
             return evision_from(env, img.reshape(1, (int)as_shape.size(), as_shape.data()));
         }
     }

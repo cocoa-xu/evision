@@ -49,23 +49,20 @@ static ERL_NIF_TERM evision_cv_mat_strided_copy(ErlNifEnv *env, int argc, const 
             if (!evision_backend_shape(src, in_dims) || !evision_backend_count(out_dims, output_count))
                 return evision::nif::error(env, "strided_copy: invalid shape");
 
-            std::vector<int64_t> in_stride((size_t)(r > 0 ? r : 1));
-            int64_t acc = 1;
-            for (int k = r - 1; k >= 0; k--) { in_stride[(size_t)k] = acc; acc *= in_dims[(size_t)k]; }
-
-            int64_t out_total = 1;
             for (int k = 0; k < r; k++) {
-                out_total *= out_dims[(size_t)k];
-                if (out_dims[(size_t)k] <= 0) continue;
                 int64_t lo = starts[(size_t)k];
                 int64_t hi = (int64_t)starts[(size_t)k] + (int64_t)(out_dims[(size_t)k] - 1) * strides[(size_t)k];
                 if (lo < 0 || lo >= in_dims[(size_t)k] || hi < 0 || hi >= in_dims[(size_t)k])
                     return evision::nif::error(env, "strided_copy: index out of bounds");
             }
 
+            std::vector<int64_t> in_stride((size_t)r);
+            int64_t acc = 1;
+            for (int k = r - 1; k >= 0; k--) { in_stride[(size_t)k] = acc; acc *= in_dims[(size_t)k]; }
+            int64_t out_total = (int64_t)output_count;
             Mat src_c = src.isContinuous() ? src : src.clone();
             size_t elem = src_c.elemSize();
-            Mat dst(1, (int)(out_total > 0 ? out_total : 1), src.type());
+            Mat dst(1, (int)output_count, src.type());
             const uchar *sp = src_c.data;
             uchar *dp = dst.data;
 
@@ -86,35 +83,33 @@ static ERL_NIF_TERM evision_cv_mat_strided_copy(ErlNifEnv *env, int argc, const 
                 inner_step = strides.back();
             }
 
-            if (out_total > 0) {
-                std::vector<int64_t> idx((size_t)outer_rank, 0);
-                int64_t in_off = 0;
-                for (int k = 0; k < r; k++) in_off += (int64_t)starts[(size_t)k] * in_stride[(size_t)k];
-                for (int64_t o = 0; o < out_total; o += block) {
-                    uchar* target = dp + (size_t)o * elem;
-                    const uchar* source = sp + (size_t)in_off * elem;
-                    if (inner_step == 1) {
-                        std::memcpy(target, source, (size_t)block * elem);
-                    } else {
-                        switch (elem) {
-                            case 1: evision_copy_strided_elements<1>(target, source, block, inner_step); break;
-                            case 2: evision_copy_strided_elements<2>(target, source, block, inner_step); break;
-                            case 4: evision_copy_strided_elements<4>(target, source, block, inner_step); break;
-                            case 8: evision_copy_strided_elements<8>(target, source, block, inner_step); break;
-                            default:
-                                for (int64_t i = 0; i < block; i++)
-                                    std::memcpy(target + i * elem, source + i * inner_step * (int64_t)elem, elem);
-                        }
+            std::vector<int64_t> idx((size_t)outer_rank, 0);
+            int64_t in_off = 0;
+            for (int k = 0; k < r; k++) in_off += (int64_t)starts[(size_t)k] * in_stride[(size_t)k];
+            for (int64_t o = 0; o < out_total; o += block) {
+                uchar* target = dp + (size_t)o * elem;
+                const uchar* source = sp + (size_t)in_off * elem;
+                if (inner_step == 1) {
+                    std::memcpy(target, source, (size_t)block * elem);
+                } else {
+                    switch (elem) {
+                        case 1: evision_copy_strided_elements<1>(target, source, block, inner_step); break;
+                        case 2: evision_copy_strided_elements<2>(target, source, block, inner_step); break;
+                        case 4: evision_copy_strided_elements<4>(target, source, block, inner_step); break;
+                        case 8: evision_copy_strided_elements<8>(target, source, block, inner_step); break;
+                        default:
+                            for (int64_t i = 0; i < block; i++)
+                                std::memcpy(target + i * elem, source + i * inner_step * (int64_t)elem, elem);
                     }
-                    if (o + block == out_total) break;
-                    for (int k = outer_rank - 1; k >= 0; k--) {
-                        if (++idx[(size_t)k] < out_dims[(size_t)k]) {
-                            in_off += (int64_t)strides[(size_t)k] * in_stride[(size_t)k];
-                            break;
-                        }
-                        idx[(size_t)k] = 0;
-                        in_off -= (int64_t)(out_dims[(size_t)k] - 1) * strides[(size_t)k] * in_stride[(size_t)k];
+                }
+                if (o + block == out_total) break;
+                for (int k = outer_rank - 1; k >= 0; k--) {
+                    if (++idx[(size_t)k] < out_dims[(size_t)k]) {
+                        in_off += (int64_t)strides[(size_t)k] * in_stride[(size_t)k];
+                        break;
                     }
+                    idx[(size_t)k] = 0;
+                    in_off -= (int64_t)(out_dims[(size_t)k] - 1) * strides[(size_t)k] * in_stride[(size_t)k];
                 }
             }
             return evision_from(env, dst);

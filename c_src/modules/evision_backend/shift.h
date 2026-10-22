@@ -60,7 +60,8 @@ static ERL_NIF_TERM evision_cv_mat_shift(ErlNifEnv *env, int argc, const ERL_NIF
                 return evision::nif::error(env, "shift: incompatible shapes or types");
             Mat lc = l.isContinuous() ? l : l.clone();
             Mat rc = r.isContinuous() ? r : r.clone();
-            Mat dst = (rc.total() > lc.total() ? rc : lc).clone();
+            const Mat& layout = rc.total() > lc.total() ? rc : lc;
+            Mat dst(layout.dims, layout.size.p, layout.type());
             switch (dst.depth()) {
                 case CV_8U:  evision_shift<uint8_t>(lc, rc, dst, op); break;
                 case CV_8S:  evision_shift<int8_t>(lc, rc, dst, op); break;
