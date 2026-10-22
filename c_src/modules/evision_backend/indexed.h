@@ -6,6 +6,7 @@
 #include <erl_nif.h>
 #include "../../ArgInfo.hpp"
 #include "../evision_mat_utils.hpp"
+#include "validation.h"
 
 // out[coord] += src_block, element-wise, in the element's own type. Integer adds
 // use an unsigned accumulator so wraparound is well-defined (two's complement),
@@ -42,11 +43,17 @@ static ERL_NIF_TERM evision_cv_mat_indexed(ErlNifEnv *env, int argc, const ERL_N
             evision_to_safe(env, evision_get_kw(env, erl_terms, "dims"), dims, ArgInfo("dims", 0)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "inner"), inner, ArgInfo("inner", 0)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "op"), op, ArgInfo("op", 0))) {
+            if (!evision_backend_indices(indices) || !evision_backend_tensor(updates) ||
+                updates.type() != src.type() || (op != 0 && op != 1))
+                return evision::nif::error(env, "indexed: invalid index or update type");
             // clone so the immutable source Mat is never mutated; clone() is continuous.
             Mat result = src.clone();
             Mat upd_c = updates.isContinuous() ? updates : updates.clone();
             Mat idx_c = indices.isContinuous() ? indices : indices.clone();
             Mat dim_c = dims.isContinuous() ? dims : dims.clone();
+            std::vector<int64_t> mult;
+            if (!evision_backend_coordinates(result, dim_c, inner, mult))
+                return evision::nif::error(env, "indexed: invalid source shape or dimension type");
 
             const int64_t *ip = (const int64_t *)idx_c.data;
             const int64_t *dimp = (const int64_t *)dim_c.data;
@@ -56,12 +63,8 @@ static ERL_NIF_TERM evision_cv_mat_indexed(ErlNifEnv *env, int argc, const ERL_N
                 return evision::nif::error(env, "indexed: indices size not a multiple of coordinate depth");
             int64_t num_updates = total_idx / depth;
 
-            std::vector<int64_t> mult((size_t)depth);
-            int64_t acc = inner;
-            for (int64_t k = depth - 1; k >= 0; k--) {
-                mult[(size_t)k] = acc;
-                acc *= dimp[(size_t)k];
-            }
+            if (!evision_backend_shape(updates, {(int)num_updates, inner}))
+                return evision::nif::error(env, "indexed: update size mismatch");
 
             uchar *rp = result.data;
             const uchar *up = upd_c.data;

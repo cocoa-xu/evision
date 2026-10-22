@@ -6,6 +6,7 @@
 #include <vector>
 #include <erl_nif.h>
 #include "../../ArgInfo.hpp"
+#include "../../evision_native_safety.hpp"
 
 static void repeat_bytes(uint8_t *dst, const uint8_t *src, size_t elem_size, size_t count)
 {
@@ -104,6 +105,14 @@ static ERL_NIF_TERM evision_cv_mat_broadcast_to(ErlNifEnv *env, int argc, const 
         if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "to_shape"), to_shape, ArgInfo("to_shape", 0)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "force_src_shape"), force_src_shape, ArgInfo("force_src_shape", 0))) {
+            size_t target_bytes, source_bytes;
+            if (img.empty() || to_shape.empty() ||
+                !evision_shape_byte_size(to_shape, img.elemSize(), target_bytes) ||
+                (!force_src_shape.empty() &&
+                 (!evision_shape_byte_size(force_src_shape, img.elemSize(), source_bytes) ||
+                  source_bytes / img.elemSize() != img.total()))) {
+                return evision::nif::error(env, "broadcast: invalid shape or source size mismatch");
+            }
             int64_t ndims = to_shape.size();
             std::vector<int> src_shape(ndims);
 

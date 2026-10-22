@@ -8,6 +8,8 @@
 #include "../../ArgInfo.hpp"
 #include "../evision_mat_utils.hpp"
 #include "parallel.h"
+#include "validation.h"
+#include "arithmetic.h"
 
 // Reduction of a 2D single-channel mat: sum (op 0) / product (op 1) accumulate
 // left-to-right, max (op 2) / min (op 3) seed from the first element. axis 1
@@ -57,8 +59,8 @@ static void evision_reduce_rows(const cv::Mat &src, cv::Mat &dst, int op) {
             Tacc acc = (op == 1) ? (Tacc)1 : (op == 2 || op == 3) ? (Tacc)sp[0] : (Tacc)0;
             int start = (op == 2 || op == 3) ? 1 : 0;
             switch (op) {
-                case 0: for (int c = start; c < cols; c++) acc = (Tacc)(acc + (Tacc)sp[c]); break;
-                case 1: for (int c = start; c < cols; c++) acc = (Tacc)(acc * (Tacc)sp[c]); break;
+                case 0: for (int c = start; c < cols; c++) acc = evision_wrapping_add(acc, (Tacc)sp[c]); break;
+                case 1: for (int c = start; c < cols; c++) acc = evision_wrapping_mul(acc, (Tacc)sp[c]); break;
                 case 2: for (int c = start; c < cols; c++) acc = evision_reduce_max(acc, (Tacc)sp[c]); break;
                 case 3: for (int c = start; c < cols; c++) acc = evision_reduce_min(acc, (Tacc)sp[c]); break;
             }
@@ -82,8 +84,8 @@ static void evision_reduce_cols(const cv::Mat &src, cv::Mat &dst, int op) {
         for (int r = rstart; r < rows; r++) {
             const Tin *row = sp + (int64_t)r * cols;
             switch (op) {
-                case 0: for (int64_t c = cb; c < ce; c++) dp[c] = (Tacc)(dp[c] + (Tacc)row[c]); break;
-                case 1: for (int64_t c = cb; c < ce; c++) dp[c] = (Tacc)(dp[c] * (Tacc)row[c]); break;
+                case 0: for (int64_t c = cb; c < ce; c++) dp[c] = evision_wrapping_add(dp[c], (Tacc)row[c]); break;
+                case 1: for (int64_t c = cb; c < ce; c++) dp[c] = evision_wrapping_mul(dp[c], (Tacc)row[c]); break;
                 case 2: for (int64_t c = cb; c < ce; c++) dp[c] = evision_reduce_max(dp[c], (Tacc)row[c]); break;
                 case 3: for (int64_t c = cb; c < ce; c++) dp[c] = evision_reduce_min(dp[c], (Tacc)row[c]); break;
             }
@@ -129,6 +131,10 @@ static ERL_NIF_TERM evision_cv_mat_reduce(ErlNifEnv *env, int argc, const ERL_NI
         if (evision_to_safe(env, evision_get_kw(env, erl_terms, "src"), src, ArgInfo("src", ArgInfo::INPUT_ONLY)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "op"), op, ArgInfo("op", 0)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "axis"), axis, ArgInfo("axis", 0))) {
+            if (!evision_backend_matrix(src))
+                return evision::nif::error(env, "reduce: expected a nonempty single-channel matrix");
+            if (op < 0 || op > 3 || axis < 0 || axis > 1)
+                return evision::nif::error(env, "reduce: invalid operation or axis");
             Mat src_c = src.isContinuous() ? src : src.clone();
             bool leading = (axis == 0);
             int out_depth = evision_reduce_out_depth(src_c.depth(), op);

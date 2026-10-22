@@ -6,6 +6,7 @@
 #include <erl_nif.h>
 #include "../../ArgInfo.hpp"
 #include "../evision_mat_utils.hpp"
+#include "validation.h"
 
 // General strided copy (Nx.slice / reverse). For each output element at multi-index
 // (i_0..i_{r-1}), reads src at input index (starts[k] + i_k * strides[k]) per axis;
@@ -32,6 +33,9 @@ static ERL_NIF_TERM evision_cv_mat_strided_copy(ErlNifEnv *env, int argc, const 
             int r = (int)in_dims.size();
             if ((int)out_dims.size() != r || (int)starts.size() != r || (int)strides.size() != r)
                 return evision::nif::error(env, "strided_copy: rank mismatch");
+            size_t output_count;
+            if (!evision_backend_shape(src, in_dims) || !evision_backend_count(out_dims, output_count))
+                return evision::nif::error(env, "strided_copy: invalid shape");
 
             std::vector<int64_t> in_stride((size_t)(r > 0 ? r : 1));
             int64_t acc = 1;
@@ -59,12 +63,13 @@ static ERL_NIF_TERM evision_cv_mat_strided_copy(ErlNifEnv *env, int argc, const 
                 for (int k = 0; k < r; k++) in_off += (int64_t)starts[(size_t)k] * in_stride[(size_t)k];
                 for (int64_t o = 0; o < out_total; o++) {
                     std::memcpy(dp + (size_t)o * elem, sp + (size_t)in_off * elem, elem);
-                    for (int k = r - 1; k >= 0; k--) {
-                        idx[(size_t)k]++;
-                        in_off += (int64_t)strides[(size_t)k] * in_stride[(size_t)k];
-                        if (idx[(size_t)k] < out_dims[(size_t)k]) break;
+                    for (int k = r - 1; k >= 0 && o + 1 < out_total; k--) {
+                        if (++idx[(size_t)k] < out_dims[(size_t)k]) {
+                            in_off += (int64_t)strides[(size_t)k] * in_stride[(size_t)k];
+                            break;
+                        }
                         idx[(size_t)k] = 0;
-                        in_off -= (int64_t)out_dims[(size_t)k] * strides[(size_t)k] * in_stride[(size_t)k];
+                        in_off -= (int64_t)(out_dims[(size_t)k] - 1) * strides[(size_t)k] * in_stride[(size_t)k];
                     }
                 }
             }

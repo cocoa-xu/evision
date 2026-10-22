@@ -3,6 +3,7 @@
 
 #include <erl_nif.h>
 #include "../../ArgInfo.hpp"
+#include "../../evision_native_safety.hpp"
 
 // @evision c: mat_reshape, evision_cv_mat_reshape, 1
 // @evision nif: def mat_reshape(_opts \\ []), do: :erlang.nif_error(:undefined)
@@ -19,6 +20,11 @@ static ERL_NIF_TERM evision_cv_mat_reshape(ErlNifEnv *env, int argc, const ERL_N
 
         if (evision_to_safe(env, evision_get_kw(env, erl_terms, "mat"), mat, ArgInfo("mat", ArgInfo::INPUT_ONLY)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "shape"), shape, ArgInfo("shape", 0))) {
+            size_t expected_bytes, actual_bytes;
+            if (mat.empty() || !evision_shape_byte_size(shape, mat.elemSize(), expected_bytes) ||
+                !evision_checked_mul_size(mat.total(), mat.elemSize(), actual_bytes) ||
+                expected_bytes != actual_bytes)
+                return evision::nif::error(env, "reshape byte size does not match source matrix");
             Mat ret;
 
             int error_flag = false;

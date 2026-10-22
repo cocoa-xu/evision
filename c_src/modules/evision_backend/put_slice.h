@@ -6,6 +6,7 @@
 #include <erl_nif.h>
 #include "../../ArgInfo.hpp"
 #include "../evision_mat_utils.hpp"
+#include "validation.h"
 
 // Scatter a dense block into a copy of `base` (Nx.put_slice; also the building block
 // for concatenate). dst = clone(base); for each element of `slice` at multi-index
@@ -32,6 +33,9 @@ static ERL_NIF_TERM evision_cv_mat_put_slice(ErlNifEnv *env, int argc, const ERL
             int r = (int)base_dims.size();
             if ((int)slice_dims.size() != r || (int)starts.size() != r)
                 return evision::nif::error(env, "put_slice: rank mismatch");
+            if (!evision_backend_shape(base, base_dims) || !evision_backend_shape(slice, slice_dims) ||
+                base.type() != slice.type())
+                return evision::nif::error(env, "put_slice: invalid shape or type");
 
             std::vector<int64_t> base_stride((size_t)(r > 0 ? r : 1));
             int64_t acc = 1;
@@ -40,7 +44,8 @@ static ERL_NIF_TERM evision_cv_mat_put_slice(ErlNifEnv *env, int argc, const ERL
             int64_t slice_total = 1;
             for (int k = 0; k < r; k++) {
                 slice_total *= slice_dims[(size_t)k];
-                if (starts[(size_t)k] < 0 || starts[(size_t)k] + slice_dims[(size_t)k] > base_dims[(size_t)k])
+                if (starts[(size_t)k] < 0 ||
+                    (int64_t)starts[(size_t)k] + slice_dims[(size_t)k] > base_dims[(size_t)k])
                     return evision::nif::error(env, "put_slice: slice out of bounds");
             }
 

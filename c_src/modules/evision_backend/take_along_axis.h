@@ -8,6 +8,7 @@
 #include "../../ArgInfo.hpp"
 #include "../evision_mat_utils.hpp"
 #include "parallel.h"
+#include "validation.h"
 
 // Per-element gather along one axis (Nx.take_along_axis). out has the indices' shape;
 // out[j_0..j_{r-1}] = src[j with the `axis` coord replaced by indices[j]]. The non-axis
@@ -35,6 +36,13 @@ static ERL_NIF_TERM evision_cv_mat_take_along_axis(ErlNifEnv *env, int argc, con
             int r = (int)in_dims.size();
             if ((int)out_dims.size() != r || axis < 0 || axis >= r)
                 return evision::nif::error(env, "take_along_axis: bad rank or axis");
+            if (!evision_backend_shape(src, in_dims) || !evision_backend_indices(indices) ||
+                !evision_backend_shape(indices, out_dims))
+                return evision::nif::error(env, "take_along_axis: invalid shape or index type");
+            for (int k = 0; k < r; k++) {
+                if (k != axis && out_dims[(size_t)k] != in_dims[(size_t)k])
+                    return evision::nif::error(env, "take_along_axis: non-axis dimensions must match");
+            }
 
             std::vector<int64_t> in_stride((size_t)(r > 0 ? r : 1));
             int64_t acc = 1;

@@ -10,6 +10,8 @@
 #include "../../ArgInfo.hpp"
 #include "../evision_mat_utils.hpp"
 #include "parallel.h"
+#include "validation.h"
+#include "arithmetic.h"
 
 // Sliding-window ops (Nx.window_*). Windows preserve the input dtype (no accumulator
 // upcast, unlike reduce), so everything is templated over the element type T; f16/bf16 are
@@ -80,8 +82,8 @@ static void window_reduce_typed(const T *sp, T *dp, int r,
                 if (inrange) {
                     T x = sp[soff];
                     switch (op) {
-                        case 0: av = (T)(av + x); break;
-                        case 1: av = (T)(av * x); break;
+                        case 0: av = evision_wrapping_add(av, x); break;
+                        case 1: av = evision_wrapping_mul(av, x); break;
                         case 2: av = window_max_value(av, x); break;
                         case 3: av = window_min_value(av, x); break;
                     }
@@ -119,8 +121,8 @@ static void window_reduce_typed(const T *sp, T *dp, int r,
                 if (inrange) {
                     T x = sp[soff];
                     switch (op) {
-                        case 0: av = (T)(av + x); break;
-                        case 1: av = (T)(av * x); break;
+                        case 0: av = evision_wrapping_add(av, x); break;
+                        case 1: av = evision_wrapping_mul(av, x); break;
                         case 2: av = window_max_value(av, x); break;
                         case 3: av = window_min_value(av, x); break;
                     }
@@ -171,6 +173,14 @@ static ERL_NIF_TERM evision_cv_mat_window_reduce(ErlNifEnv *env, int argc, const
             evision_to_safe(env, evision_get_kw(env, erl_terms, "pad_lo"), pad_lo, ArgInfo("pad_lo", 0)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "dilations"), dil, ArgInfo("dilations", 0)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "op"), op, ArgInfo("op", 0))) {
+            size_t out_count, win_count;
+            const size_t rank = in_dims.size();
+            if (!evision_backend_shape(src, in_dims) || out_dims.size() != rank ||
+                !evision_backend_count(out_dims, out_count) || win_dims.size() != rank ||
+                !evision_backend_count(win_dims, win_count) || pad_lo.size() != rank ||
+                !evision_positive_axes(strides, rank) || !evision_positive_axes(dil, rank) ||
+                op < 0 || op > 3)
+                return evision::nif::error(env, "window_reduce: invalid shape, axes or operation");
             int r = (int)in_dims.size();
             Mat src_c = src.isContinuous() ? src : src.clone();
             int64_t out_total = 1;
@@ -237,9 +247,31 @@ static void window_scatter_typed(const T *sp, const T *srcvals, T *dp, int r,
             for (int k = r - 1; k >= 0; k--) { if (++w_idx[(size_t)k] < win_dims[(size_t)k]) break; w_idx[(size_t)k] = 0; }
         }
 
-        if (best_off >= 0) dp[best_off] = (T)(dp[best_off] + srcvals[p]);
+        if (best_off >= 0) dp[best_off] = evision_wrapping_add(dp[best_off], srcvals[p]);
         for (int k = r - 1; k >= 0; k--) { if (++g_idx[(size_t)k] < grid[(size_t)k]) break; g_idx[(size_t)k] = 0; }
     }
+}
+
+// Check the truncated value before a floating-to-integer conversion. Powers of
+// two keep the upper bound exact even when double cannot represent INT64_MAX.
+static bool window_scatter_init_in_range(int depth, double value) {
+    int bits;
+    bool is_signed;
+    switch (depth) {
+        case CV_8U: bits = 8; is_signed = false; break;
+        case CV_8S: bits = 8; is_signed = true; break;
+        case CV_16U: bits = 16; is_signed = false; break;
+        case CV_16S: bits = 16; is_signed = true; break;
+        case CV_32U: bits = 32; is_signed = false; break;
+        case CV_32S: bits = 32; is_signed = true; break;
+        case CV_64U: bits = 64; is_signed = false; break;
+        case CV_64S: bits = 64; is_signed = true; break;
+        default: return true;
+    }
+    const double limit = std::ldexp(1.0, bits - (is_signed ? 1 : 0));
+    const double truncated = std::trunc(value);
+    return std::isfinite(truncated) && truncated < limit &&
+           truncated >= (is_signed ? -limit : 0.0);
 }
 
 // @evision c: mat_window_scatter, evision_cv_mat_window_scatter, 1
@@ -266,6 +298,14 @@ static ERL_NIF_TERM evision_cv_mat_window_scatter(ErlNifEnv *env, int argc, cons
             evision_to_safe(env, evision_get_kw(env, erl_terms, "pad_lo"), pad_lo, ArgInfo("pad_lo", 0)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "grid"), grid, ArgInfo("grid", 0)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "op"), op, ArgInfo("op", 0))) {
+            size_t win_count;
+            const size_t rank = in_dims.size();
+            if (!evision_backend_shape(src, in_dims) || !evision_backend_shape(source, grid) ||
+                source.type() != src.type() || grid.size() != rank || win_dims.size() != rank ||
+                !evision_backend_count(win_dims, win_count) || pad_lo.size() != rank ||
+                !evision_positive_axes(strides, rank) || op < 0 || op > 1 ||
+                !window_scatter_init_in_range(src.depth(), init))
+                return evision::nif::error(env, "window_scatter: invalid shape, type or axes");
             int r = (int)in_dims.size();
             Mat src_c = src.isContinuous() ? src : src.clone();
             Mat source_c = source.isContinuous() ? source : source.clone();

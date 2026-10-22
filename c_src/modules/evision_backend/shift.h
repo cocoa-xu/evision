@@ -7,6 +7,7 @@
 #include "../../ArgInfo.hpp"
 #include "../evision_mat_utils.hpp"
 #include "parallel.h"
+#include "validation.h"
 
 // Elementwise integer shift (Nx.left_shift / right_shift). `l` and `r` share the
 // output type and either the same shape or one is a 1-element scalar, broadcast
@@ -55,6 +56,8 @@ static ERL_NIF_TERM evision_cv_mat_shift(ErlNifEnv *env, int argc, const ERL_NIF
         if (evision_to_safe(env, evision_get_kw(env, erl_terms, "l"), l, ArgInfo("l", ArgInfo::INPUT_ONLY)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "r"), r, ArgInfo("r", ArgInfo::INPUT_ONLY)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "op"), op, ArgInfo("op", 0))) {
+            if (!evision_backend_pair(l, r))
+                return evision::nif::error(env, "shift: incompatible shapes or types");
             Mat lc = l.isContinuous() ? l : l.clone();
             Mat rc = r.isContinuous() ? r : r.clone();
             Mat dst = (rc.total() > lc.total() ? rc : lc).clone();

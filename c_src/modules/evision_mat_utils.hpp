@@ -167,6 +167,7 @@ static ERL_NIF_TERM _evision_binary_ref(ERL_NIF_TERM bin_term, evision_res<cv::M
     // keep reference to binary by creating new nif-env and copying
     // binary-term reference to it
     new_env = enif_alloc_env();
+    if (new_env == nullptr) return 1;
     term = enif_make_copy(new_env, bin_term);
 
     if (!enif_inspect_binary(new_env, term, &bin)) {

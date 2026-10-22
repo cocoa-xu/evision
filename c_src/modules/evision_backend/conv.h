@@ -9,6 +9,7 @@
 #include "../../ArgInfo.hpp"
 #include "../evision_mat_utils.hpp"
 #include "parallel.h"
+#include "validation.h"
 
 // N-d cross-correlation (Nx.conv) on already-permuted canonical layouts: input [N, Cin,
 // *spatial], kernel [O, Cin/G, *spatial], output [N/Bg, O, *spatial]. The caller does the
@@ -132,7 +133,7 @@ static void conv2d_im2row(const T *I, const T *K, T *Out,
 
     // Bound the im2row + gemm-output buffers; the tile height is the GEMM's M, so keep it
     // as large as the budget allows. Normal convs fit one tile (no tiling).
-    int64_t tile = budget_bytes / ((int64_t)(CKK + O_pg) * (int64_t)sizeof(T));
+    int64_t tile = budget_bytes / (((int64_t)CKK + O_pg) * (int64_t)sizeof(T));
     if (tile < 1) tile = 1;
     if (tile > total_rows) tile = total_rows;
 
@@ -159,11 +160,11 @@ static void conv2d_im2row(const T *I, const T *K, T *Out,
                     for (int ic = 0; ic < Cin_pg; ic++) {
                         const T *inch = I + (int64_t)n * in_ns + (int64_t)(cbase + ic) * in_cs;
                         for (int kh = 0; kh < KH; kh++) {
-                            int ih = oh * sh + kh * kdh - ph;
+                            int64_t ih = (int64_t)oh * sh + (int64_t)kh * kdh - ph;
                             bool h_ok = ih >= 0 && ih < H;
-                            const T *inrow = inch + (int64_t)ih * W;
+                            const T *inrow = h_ok ? inch + ih * W : nullptr;
                             for (int kw = 0; kw < KW; kw++) {
-                                int iw = ow * sw + kw * kdw - pw;
+                                int64_t iw = (int64_t)ow * sw + (int64_t)kw * kdw - pw;
                                 crow[ci++] = (h_ok && iw >= 0 && iw < W) ? inrow[iw] : (T)0;
                             }
                         }
@@ -217,7 +218,22 @@ static ERL_NIF_TERM evision_cv_mat_conv(ErlNifEnv *env, int argc, const ERL_NIF_
             evision_to_safe(env, evision_get_kw(env, erl_terms, "feature_groups"), feature_groups, ArgInfo("feature_groups", 0)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "batch_groups"), batch_groups, ArgInfo("batch_groups", 0)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "im2row_budget"), im2row_budget, ArgInfo("im2row_budget", 0))) {
-            int d = (int)in_shape.size() - 2;
+            const size_t rank = in_shape.size();
+            size_t output_count;
+            if (rank < 3 || k_shape.size() != rank || out_shape.size() != rank ||
+                !evision_backend_shape(input, in_shape) || !evision_backend_shape(kernel, k_shape) ||
+                input.type() != kernel.type() ||
+                (input.type() != CV_32F && input.type() != CV_64F) ||
+                !evision_backend_count(out_shape, output_count) ||
+                !evision_positive_axes(stride, rank - 2) || pad_lo.size() != rank - 2 ||
+                !evision_positive_axes(in_dil, rank - 2) || !evision_positive_axes(k_dil, rank - 2) ||
+                feature_groups <= 0 || batch_groups <= 0 ||
+                k_shape[0] % feature_groups != 0 || k_shape[0] % batch_groups != 0 ||
+                in_shape[0] % batch_groups != 0 ||
+                (int64_t)k_shape[1] * feature_groups != in_shape[1] ||
+                out_shape[0] != in_shape[0] / batch_groups || out_shape[1] != k_shape[0])
+                return evision::nif::error(env, "conv: invalid shape, type, groups or axes");
+            int d = (int)rank - 2;
             Mat in_c = input.isContinuous() ? input : input.clone();
             Mat k_c = kernel.isContinuous() ? kernel : kernel.clone();
 

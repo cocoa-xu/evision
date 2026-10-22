@@ -3,6 +3,7 @@
 
 #include <erl_nif.h>
 #include "../../ArgInfo.hpp"
+#include "../../evision_native_safety.hpp"
 
 // @evision c: mat_eye,evision_cv_mat_eye,1
 // @evision nif: def mat_eye(_opts \\ []), do: :erlang.nif_error(:undefined)
@@ -23,6 +24,10 @@ static ERL_NIF_TERM evision_cv_mat_eye(ErlNifEnv *env, int argc, const ERL_NIF_T
             evision_to_safe(env, evision_get_kw(env, erl_terms, "l"), l, ArgInfo("l", 0))) {
             int type = 0;
             if (!get_binary_type(t, l, 1, type)) return evision::nif::error(env, "not implemented for the given type");
+            size_t bytes;
+            if (n == 0 || n > (uint64_t)std::numeric_limits<int>::max() ||
+                !evision_shape_byte_size({(int)n, (int)n}, CV_ELEM_SIZE(type), bytes))
+                return evision::nif::error(env, "invalid matrix size");
 
             Mat ret;
             int error_flag = false;

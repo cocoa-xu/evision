@@ -369,6 +369,9 @@ static ERL_NIF_TERM evision_cv_mat_zeros(ErlNifEnv *env, int argc, const ERL_NIF
             evision_to_safe(env, evision_get_kw(env, erl_terms, "l"), l, ArgInfo("l", 0))) {
             int type;
             if (!get_binary_type(t, l, 0, type)) return evision::nif::error(env, "not implemented for the given type");
+            size_t byte_size;
+            if (!evision_shape_byte_size(shape, CV_ELEM_SIZE(type), byte_size))
+                return evision::nif::error(env, "invalid matrix shape");
             Mat out = Mat(Mat::zeros(shape.size(), shape.data(), type));
             return evision_from(env, out);
         }
@@ -397,6 +400,9 @@ static ERL_NIF_TERM evision_cv_mat_ones(ErlNifEnv *env, int argc, const ERL_NIF_
             evision_to_safe(env, evision_get_kw(env, erl_terms, "l"), l, ArgInfo("l", 0))) {
             int type;
             if (!get_binary_type(t, l, 0, type)) return evision::nif::error(env, "not implemented for the given type");
+            size_t byte_size;
+            if (!evision_shape_byte_size(shape, CV_ELEM_SIZE(type), byte_size))
+                return evision::nif::error(env, "invalid matrix shape");
             Mat out = Mat(Mat::ones(shape.size(), shape.data(), type));
             return evision_from(env, out);
         }
@@ -442,7 +448,7 @@ static ERL_NIF_TERM evision_cv_mat_arange(ErlNifEnv *env, int argc, const ERL_NI
 
             int dims[1] = {(int)count64};
             std::vector<int32_t> values((size_t)count64);
-            int32_t v = from;
+            int64_t v = from;
             for (int64_t i = 0; i < count64; i++) {
                 values[i] = v;
                 v += step;
@@ -481,6 +487,9 @@ static ERL_NIF_TERM evision_cv_mat_full(ErlNifEnv *env, int argc, const ERL_NIF_
             int type;
             if (!get_binary_type(t, l, 0, type)) return evision::nif::error(env, "not implemented for the given type");
 
+            size_t byte_size;
+            if (!evision_shape_byte_size(shape, CV_ELEM_SIZE(type), byte_size))
+                return evision::nif::error(env, "invalid matrix shape");
             Mat ret((int)shape.size(), shape.data(), type, Scalar(number));
             return evision_from(env, ret);
         }
@@ -899,8 +908,15 @@ static ERL_NIF_TERM evision_cv_mat_as_shape(ErlNifEnv *env, int argc, const ERL_
 
         if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "as_shape"), as_shape, ArgInfo("as_shape", 0))) {
-            Mat ret = Mat((int)as_shape.size(), as_shape.data(), img.depth(), img.data);
-            return evision_from(env, ret.clone());
+            size_t expected_bytes, actual_bytes;
+            if (img.empty() ||
+                !evision_shape_byte_size(as_shape, img.elemSize1(), expected_bytes) ||
+                !evision_checked_mul_size(img.total(), img.elemSize(), actual_bytes) ||
+                expected_bytes != actual_bytes) {
+                return evision::nif::error(env, "as_shape byte size does not match source matrix");
+            }
+            if (as_shape.empty()) as_shape.push_back(1);
+            return evision_from(env, img.reshape(1, (int)as_shape.size(), as_shape.data()).clone());
         }
     }
 

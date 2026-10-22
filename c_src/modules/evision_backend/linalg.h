@@ -8,6 +8,7 @@
 #include <erl_nif.h>
 #include "../../ArgInfo.hpp"
 #include "../evision_mat_utils.hpp"
+#include "validation.h"
 
 // Decompositions OpenCV exposes no factor-extraction for. All inputs/outputs are f64
 // (the caller casts to/from out.type) and a single n*n (or m*n) matrix; the caller loops
@@ -30,6 +31,9 @@ static ERL_NIF_TERM evision_cv_mat_cholesky(ErlNifEnv *env, int argc, const ERL_
 
         if (evision_to_safe(env, evision_get_kw(env, erl_terms, "a"), a, ArgInfo("a", 0)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "n"), n, ArgInfo("n", 0))) {
+            if (!evision_backend_matrix(a) || a.type() != CV_64F ||
+                n <= 0 || a.rows != n || a.cols != n)
+                return evision::nif::error(env, "linalg: expected an n-by-n f64 matrix");
             Mat a_c = a.isContinuous() ? a : a.clone();
             const double *ap = (const double *)a_c.data;
             Mat l = Mat::zeros(n, n, CV_64F);
@@ -72,6 +76,9 @@ static ERL_NIF_TERM evision_cv_mat_lu(ErlNifEnv *env, int argc, const ERL_NIF_TE
 
         if (evision_to_safe(env, evision_get_kw(env, erl_terms, "a"), a, ArgInfo("a", 0)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "n"), n, ArgInfo("n", 0))) {
+            if (!evision_backend_matrix(a) || a.type() != CV_64F ||
+                n <= 0 || a.rows != n || a.cols != n)
+                return evision::nif::error(env, "lu: expected an n-by-n f64 matrix");
             Mat m = a.clone();  // mutated in place into the row-permuted A
             double *mp = (double *)m.data;
             std::vector<int> perm((size_t)n);
@@ -142,6 +149,11 @@ static ERL_NIF_TERM evision_cv_mat_qr(ErlNifEnv *env, int argc, const ERL_NIF_TE
             evision_to_safe(env, evision_get_kw(env, erl_terms, "m"), m, ArgInfo("m", 0)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "n"), n, ArgInfo("n", 0)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "complete"), complete, ArgInfo("complete", 0))) {
+            size_t q_count;
+            if (!evision_backend_matrix(a) || a.type() != CV_64F ||
+                m <= 0 || n <= 0 || a.rows != m || a.cols != n ||
+                !evision_backend_count({m, m}, q_count))
+                return evision::nif::error(env, "qr: invalid dimensions or type");
             Mat R = a.clone();                 // m x n, mutated into the upper factor
             Mat Q = Mat::eye(m, m, CV_64F);     // accumulated orthogonal factor
             double *rp = (double *)R.data;
@@ -224,7 +236,13 @@ static ERL_NIF_TERM evision_cv_mat_triangular_solve(ErlNifEnv *env, int argc, co
             evision_to_safe(env, evision_get_kw(env, erl_terms, "lower"), lower, ArgInfo("lower", 0)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "left_side"), left_side, ArgInfo("left_side", 0)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "transpose"), transpose, ArgInfo("transpose", 0))) {
+            if (!evision_backend_matrix(a) || a.type() != CV_64F ||
+                n <= 0 || a.rows != n || a.cols != n)
+                return evision::nif::error(env, "linalg: expected an n-by-n f64 matrix");
             Mat a_c = a.isContinuous() ? a : a.clone();
+            if (!evision_backend_matrix(b) || b.type() != CV_64F ||
+                (left_side ? b.rows != n : b.cols != n))
+                return evision::nif::error(env, "triangular_solve: incompatible right-hand side");
             Mat b_c = b.isContinuous() ? b : b.clone();
             const double *ad = (const double *)a_c.data;
             const double *bd = (const double *)b_c.data;
