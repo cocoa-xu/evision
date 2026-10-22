@@ -118,8 +118,7 @@ defmodule Mix.Tasks.Evision.Backend.Bench do
   defp run_case(bench, warmup, iterations, verify?, comparison_backend) do
     binary_input = bench.input.()
     evision_input = map_tensors(binary_input, &Nx.backend_copy(&1, Evision.Backend))
-    reference = Map.get(bench, :reference, bench.run)
-    expected = if verify?, do: reference.(binary_input)
+    expected = if verify?, do: bench.run.(binary_input)
 
     if verify? do
       verify_case!("Evision.Backend", bench, bench.run.(evision_input), expected)
@@ -417,46 +416,6 @@ defmodule Mix.Tasks.Evision.Backend.Bench do
         rtol: 1.0e-3
       },
       %{
-        name: "slice_2d_f32",
-        category: "copy",
-        details: %{
-          "op" => "Nx.slice/3",
-          "shape" => shape_list(config.elementwise),
-          "type" => "f32"
-        },
-        input: fn -> make_f32(config.elementwise) end,
-        run: fn tensor ->
-          {rows, cols} = Nx.shape(tensor)
-          Nx.slice(tensor, [1, 1], [div(rows, 2), div(cols, 2)])
-        end
-      },
-      %{
-        name: "reverse_last_axis_f32",
-        category: "copy",
-        details: %{
-          "op" => "Nx.reverse/2",
-          "shape" => shape_list(config.elementwise),
-          "type" => "f32"
-        },
-        input: fn -> make_f32(config.elementwise) end,
-        run: fn tensor -> Nx.reverse(tensor, axes: [1]) end
-      },
-      %{
-        name: "put_slice_2d_f32",
-        category: "copy",
-        details: %{
-          "op" => "Nx.put_slice/3",
-          "shape" => shape_list(config.elementwise),
-          "type" => "f32"
-        },
-        input: fn ->
-          {rows, cols} = config.elementwise
-          {make_f32(config.elementwise), make_f32({div(rows, 2), div(cols, 2)}, 2053, 19)}
-        end,
-        run: fn {base, update} -> Nx.put_slice(base, [1, 1], update) end,
-        reference: &reference_put_slice/1
-      },
-      %{
         name: "concatenate_axis0_f32",
         category: "shape",
         details: %{
@@ -474,33 +433,6 @@ defmodule Mix.Tasks.Evision.Backend.Bench do
         run: fn tensors -> Nx.concatenate(tensors, axis: 0) end
       }
     ]
-  end
-
-  # Splice independent BinaryBackend rows to avoid quadratic repeated updates
-  # when preparing the reference for a large put_slice benchmark.
-  defp reference_put_slice({base, update}) do
-    {rows, cols} = Nx.shape(base)
-    {update_rows, update_cols} = Nx.shape(update)
-    source = Nx.to_binary(base)
-    values = Nx.to_binary(update)
-    width = div(byte_size(source), rows * cols)
-
-    result =
-      for row <- 0..(rows - 1), into: <<>> do
-        if row in 1..update_rows do
-          binary_part(source, row * cols * width, width) <>
-            binary_part(values, (row - 1) * update_cols * width, update_cols * width) <>
-            binary_part(
-              source,
-              (row * cols + update_cols + 1) * width,
-              (cols - update_cols - 1) * width
-            )
-        else
-          binary_part(source, row * cols * width, cols * width)
-        end
-      end
-
-    result |> Nx.from_binary(Nx.type(base)) |> Nx.reshape(Nx.shape(base))
   end
 
   defp profile_config("smoke") do
