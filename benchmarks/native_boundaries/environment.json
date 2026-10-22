@@ -1,0 +1,75 @@
+{
+  "date_local": "2026-10-23",
+  "hardware": "Apple M6, 12 logical CPUs, 24 GiB RAM",
+  "os": "macOS 27.0.1 (26A434), arm64",
+  "compiler": "Apple clang 21.0.0 (clang-2100.3.34.2)",
+  "opencv": "5.0.0",
+  "elixir": "1.20.4",
+  "erlang": "29.1.2",
+  "nx": "0.12.1",
+  "opencv_threads": 1,
+  "erlang_flags": "+S 12:12 +SDcpu 12",
+  "variants": {
+    "baseline": {
+      "revision": "5b2a528",
+      "nif_sha256": "68694b26f2e3d717e4d348921af7c171520ab399df87d548d0a717c18007b8ff"
+    },
+    "safe": {
+      "revision": "f0c0595",
+      "nif_sha256": "45a26976cd03e7ebc908f99af1b361f98ed002a60f2c4c68a28e1a2b91c6ecd2"
+    },
+    "optimized": {
+      "revision": "e9a49f93984743248608d2f78276770f824b613a",
+      "nif_sha256": "1e74f0f0268eb3e59a72eb859eee93b246bcde7ac58418986ceca6550f6d9dfe",
+      "changed_source_sha256": {
+        "c_src/modules/evision_backend/strided_copy.h": "e3d150f2362eeaa483e1f8b024e0eb12e2add25ee77cd80b9c83e3d1c54e9c45",
+        "c_src/modules/evision_backend/put_slice.h": "7228ec587d6bcb1419b0ea5f7b8272a673dfd855478c745d13779334bbed1351",
+        "c_src/modules/evision_backend/indexed.h": "4502c735301b859b2eaf88bf771f490413d287928463161dab7337b07fe73341",
+        "c_src/modules/evision_backend/to_batched.h": "30e4b5c20b92a2dc3d2aea87b6ec338f9dbcb837dd33405293a603494ba3f14c",
+        "c_src/modules/evision_mat.h": "824252bdbf33c71a2b747f6cc611dabf4513f08c7707feef91795d592095732b"
+      }
+    }
+  },
+  "native_compiler_argv": [
+    "clang++",
+    "-std=c++17",
+    "-O3",
+    "-DNDEBUG",
+    "-shared",
+    "-fPIC",
+    "-Wno-deprecated-declarations",
+    "-Wno-unused-parameter",
+    "-Wno-missing-field-initializers",
+    "-Wno-unused-but-set-variable",
+    "-flat_namespace",
+    "-undefined",
+    "dynamic_lookup",
+    "-I$REPO/_build/test/lib/evision/priv/include/opencv5",
+    "-I/opt/homebrew/opt/erlang/lib/erlang/usr/include",
+    "-Wl,-rpath,$REPO/_build/test/lib/evision/priv/lib",
+    "$REPO/_build/native-performance/optimized/c_src/evision.cpp",
+    "$REPO/_build/native-performance/optimized/c_src/modules/evision_cuda.cc",
+    "$REPO/_build/native-performance/optimized/c_src/modules/evision_cuda_ipc.cc",
+    "$REPO/_build/test/lib/evision/priv/lib/libopencv_highgui.5.0.0.dylib",
+    "$REPO/_build/test/lib/evision/priv/lib/libopencv_objdetect.5.0.0.dylib",
+    "$REPO/_build/test/lib/evision/priv/lib/libopencv_photo.5.0.0.dylib",
+    "$REPO/_build/test/lib/evision/priv/lib/libopencv_video.5.0.0.dylib",
+    "$REPO/_build/test/lib/evision/priv/lib/libopencv_videoio.5.0.0.dylib",
+    "$REPO/_build/test/lib/evision/priv/lib/libopencv_imgcodecs.5.0.0.dylib",
+    "$REPO/_build/test/lib/evision/priv/lib/libopencv_features.5.0.0.dylib",
+    "$REPO/_build/test/lib/evision/priv/lib/libopencv_dnn.5.0.0.dylib",
+    "$REPO/_build/test/lib/evision/priv/lib/libopencv_imgproc.5.0.0.dylib",
+    "$REPO/_build/test/lib/evision/priv/lib/libopencv_geometry.5.0.0.dylib",
+    "$REPO/_build/test/lib/evision/priv/lib/libopencv_flann.5.0.0.dylib",
+    "$REPO/_build/test/lib/evision/priv/lib/libopencv_core.5.0.0.dylib",
+    "-o",
+    "$REPO/_build/native-performance/optimized/evision.so"
+  ],
+  "notes": [
+    "All variants used identical generated bindings, compiler flags and installed OpenCV libraries.",
+    "Nx git_revision metadata describes the shared Elixir benchmark harness, not the swapped NIF. Use the explicit variant and NIF SHA256.",
+    "Native r2/r3/r4 are independent VMs in rotated variant order. Preliminaries and r1 are excluded.",
+    "Nx controls and copy cases ran in separate VMs, three runs per variant per group.",
+    "Native samples time batches of NIF calls. Nx samples time one materialized operation."
+  ]
+}

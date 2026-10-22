@@ -48,7 +48,7 @@ MIX_ENV=test EVISION_PREFER_PRECOMPILED=false mix compile
 MIX_ENV=test EVISION_PREFER_PRECOMPILED=false mix test --no-compile \
   test/evision_*safety_test.exs test/evision_backend_test.exs \
   test/evision_mat_test.exs test/evision_new_types_test.exs \
-  test/evision_input_immutability_test.exs
+  test/evision_input_immutability_test.exs test/evision_backend_copy_test.exs
 ```
 
 For native sanitizer runs, compile the NIF with
@@ -62,6 +62,11 @@ On macOS, launch `beam.smp` directly because protected shell launchers can strip
 
 Tests tagged `:face`, `:xfeatures2d`, or `:stitching` run only when their OpenCV
 modules are compiled, like the existing `:dnn`, `:ml`, `:photo`, and `:video` tags.
+
+The copy regressions exercise contiguous blocks, positive and negative strides,
+scalar inputs, aliased updates, and output lifetime after the input process exits.
+Performance measurements and reproduction commands are in
+[`benchmarks/native_boundaries/README.md`](../benchmarks/native_boundaries/README.md).
 
 ### downloading_list.txt
 
