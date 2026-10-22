@@ -26,7 +26,7 @@ static ERL_NIF_TERM evision_cv_mat_put_slice(ErlNifEnv *env, int argc, const ERL
         std::vector<int> base_dims, slice_dims, starts;
 
         if (evision_to_safe(env, evision_get_kw(env, erl_terms, "base"), base, ArgInfo("base", 0)) &&
-            evision_to_safe(env, evision_get_kw(env, erl_terms, "slice"), slice, ArgInfo("slice", 0)) &&
+            evision_to_safe(env, evision_get_kw(env, erl_terms, "slice"), slice, ArgInfo("slice", ArgInfo::INPUT_ONLY)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "base_dims"), base_dims, ArgInfo("base_dims", 0)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "slice_dims"), slice_dims, ArgInfo("slice_dims", 0)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "starts"), starts, ArgInfo("starts", 0))) {
@@ -49,19 +49,29 @@ static ERL_NIF_TERM evision_cv_mat_put_slice(ErlNifEnv *env, int argc, const ERL
                     return evision::nif::error(env, "put_slice: slice out of bounds");
             }
 
-            Mat dst = base.clone();
+            // The writable converter already made a private copy of base.
+            Mat dst = base;
             Mat sl = slice.isContinuous() ? slice : slice.clone();
             size_t elem = dst.elemSize();
             const uchar *sp = sl.data;
             uchar *dp = dst.data;
 
+            int outer_rank = r;
+            int64_t block = 1;
+            for (int k = r - 1; k >= 0; k--) {
+                if (base_stride[(size_t)k] != block) break;
+                block *= slice_dims[(size_t)k];
+                outer_rank = k;
+            }
+
             if (slice_total > 0) {
-                std::vector<int64_t> idx((size_t)(r > 0 ? r : 1), 0);
+                std::vector<int64_t> idx((size_t)outer_rank, 0);
                 int64_t dst_off = 0;
                 for (int k = 0; k < r; k++) dst_off += (int64_t)starts[(size_t)k] * base_stride[(size_t)k];
-                for (int64_t s = 0; s < slice_total; s++) {
-                    std::memcpy(dp + (size_t)dst_off * elem, sp + (size_t)s * elem, elem);
-                    for (int k = r - 1; k >= 0; k--) {
+                for (int64_t s = 0; s < slice_total; s += block) {
+                    std::memcpy(dp + (size_t)dst_off * elem, sp + (size_t)s * elem, (size_t)block * elem);
+                    if (s + block == slice_total) break;
+                    for (int k = outer_rank - 1; k >= 0; k--) {
                         idx[(size_t)k]++;
                         dst_off += base_stride[(size_t)k];
                         if (idx[(size_t)k] < slice_dims[(size_t)k]) break;

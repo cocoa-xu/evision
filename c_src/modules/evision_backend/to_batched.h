@@ -20,7 +20,7 @@ static ERL_NIF_TERM evision_cv_mat_to_batched(ErlNifEnv *env, int argc, const ER
     std::vector<int> as_shape;
     std::string leftover;
 
-    if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("l", 0)) &&
+    if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", ArgInfo::INPUT_ONLY)) &&
         evision_to_safe(env, evision_get_kw(env, erl_terms, "batch_size"), batch_size, ArgInfo("batch_size", 0)) &&
         evision_to_safe(env, evision_get_kw(env, erl_terms, "as_shape"), as_shape, ArgInfo("as_shape", 0)) &&
         evision_to_safe(env, evision_get_kw(env, erl_terms, "leftover"), leftover, ArgInfo("leftover", 0))) {
@@ -44,6 +44,7 @@ static ERL_NIF_TERM evision_cv_mat_to_batched(ErlNifEnv *env, int argc, const ER
         if (mat_num_elem != as_shape_num_elem) {
             return evision::nif::error(env, "to_batched failed: cannot treated matrix as the request shape");
         }
+        if (!img.isContinuous()) img = img.clone();
         
         uint64_t remainder = as_shape[0] % batch_size;
         uint64_t num_full_batches = as_shape[0] / batch_size;
@@ -77,8 +78,8 @@ static ERL_NIF_TERM evision_cv_mat_to_batched(ErlNifEnv *env, int argc, const ER
         }
         // deal with leftover
         if (num_batches != num_full_batches) {
-            std::vector<char> last_batch_buffer(batch_bytes);
-            char * last_batch_data = last_batch_buffer.data();
+            Mat last_batch(ndims, sizes, mat_type);
+            char * last_batch_data = (char *)last_batch.data;
 
             // copy leftover first
             uint64_t leftover_bytes = slice_size * remainder;
@@ -95,8 +96,7 @@ static ERL_NIF_TERM evision_cv_mat_to_batched(ErlNifEnv *env, int argc, const ER
                 repeat_dst += copy_bytes;
                 remaining -= copy_bytes;
             }
-            Mat mat = Mat(ndims, sizes, mat_type, last_batch_data);
-            batches[num_batches - 1] = evision_from(env, mat.clone());
+            batches[num_batches - 1] = evision_from(env, last_batch);
         }
 
         ERL_NIF_TERM ret = enif_make_list_from_array(env, batches.data(), num_batches);

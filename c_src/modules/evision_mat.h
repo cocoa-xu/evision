@@ -916,7 +916,9 @@ static ERL_NIF_TERM evision_cv_mat_as_shape(ErlNifEnv *env, int argc, const ERL_
                 return evision::nif::error(env, "as_shape byte size does not match source matrix");
             }
             if (as_shape.empty()) as_shape.push_back(1);
-            return evision_from(env, img.reshape(1, (int)as_shape.size(), as_shape.data()).clone());
+            // The writable converter already copied the input. Retain that
+            // private allocation through reshape's refcounted header.
+            return evision_from(env, img.reshape(1, (int)as_shape.size(), as_shape.data()));
         }
     }
 

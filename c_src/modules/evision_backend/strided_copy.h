@@ -8,6 +8,18 @@
 #include "../evision_mat_utils.hpp"
 #include "validation.h"
 
+template <size_t Width>
+static inline void evision_copy_strided_elements(uchar* dst, const uchar* src,
+                                                int64_t count, int stride) {
+    if (stride == -1) {
+        for (int64_t i = 0; i < count; i++)
+            std::memcpy(dst + i * Width, src - i * Width, Width);
+    } else {
+        for (int64_t i = 0; i < count; i++)
+            std::memcpy(dst + i * Width, src + i * stride * (int64_t)Width, Width);
+    }
+}
+
 // General strided copy (Nx.slice / reverse). For each output element at multi-index
 // (i_0..i_{r-1}), reads src at input index (starts[k] + i_k * strides[k]) per axis;
 // strides may be negative (reverse). Type-agnostic byte copy via an odometer that
@@ -25,7 +37,7 @@ static ERL_NIF_TERM evision_cv_mat_strided_copy(ErlNifEnv *env, int argc, const 
         Mat src;
         std::vector<int> in_dims, out_dims, starts, strides;
 
-        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "src"), src, ArgInfo("src", 0)) &&
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "src"), src, ArgInfo("src", ArgInfo::INPUT_ONLY)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "in_dims"), in_dims, ArgInfo("in_dims", 0)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "out_dims"), out_dims, ArgInfo("out_dims", 0)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "starts"), starts, ArgInfo("starts", 0)) &&
@@ -57,13 +69,45 @@ static ERL_NIF_TERM evision_cv_mat_strided_copy(ErlNifEnv *env, int argc, const 
             const uchar *sp = src_c.data;
             uchar *dp = dst.data;
 
+            // Coalesce a contiguous trailing region into one copy. Otherwise
+            // copy the innermost strided row with fixed-width loads, so reverse
+            // does not need a multidimensional carry for every element.
+            int outer_rank = r;
+            int64_t block = 1;
+            int inner_step = 1;
+            for (int k = r - 1; k >= 0; k--) {
+                if (strides[(size_t)k] != 1 || in_stride[(size_t)k] != block) break;
+                block *= out_dims[(size_t)k];
+                outer_rank = k;
+            }
+            if (outer_rank == r && r > 0) {
+                outer_rank = r - 1;
+                block = out_dims.back();
+                inner_step = strides.back();
+            }
+
             if (out_total > 0) {
-                std::vector<int64_t> idx((size_t)(r > 0 ? r : 1), 0);
+                std::vector<int64_t> idx((size_t)outer_rank, 0);
                 int64_t in_off = 0;
                 for (int k = 0; k < r; k++) in_off += (int64_t)starts[(size_t)k] * in_stride[(size_t)k];
-                for (int64_t o = 0; o < out_total; o++) {
-                    std::memcpy(dp + (size_t)o * elem, sp + (size_t)in_off * elem, elem);
-                    for (int k = r - 1; k >= 0 && o + 1 < out_total; k--) {
+                for (int64_t o = 0; o < out_total; o += block) {
+                    uchar* target = dp + (size_t)o * elem;
+                    const uchar* source = sp + (size_t)in_off * elem;
+                    if (inner_step == 1) {
+                        std::memcpy(target, source, (size_t)block * elem);
+                    } else {
+                        switch (elem) {
+                            case 1: evision_copy_strided_elements<1>(target, source, block, inner_step); break;
+                            case 2: evision_copy_strided_elements<2>(target, source, block, inner_step); break;
+                            case 4: evision_copy_strided_elements<4>(target, source, block, inner_step); break;
+                            case 8: evision_copy_strided_elements<8>(target, source, block, inner_step); break;
+                            default:
+                                for (int64_t i = 0; i < block; i++)
+                                    std::memcpy(target + i * elem, source + i * inner_step * (int64_t)elem, elem);
+                        }
+                    }
+                    if (o + block == out_total) break;
+                    for (int k = outer_rank - 1; k >= 0; k--) {
                         if (++idx[(size_t)k] < out_dims[(size_t)k]) {
                             in_off += (int64_t)strides[(size_t)k] * in_stride[(size_t)k];
                             break;

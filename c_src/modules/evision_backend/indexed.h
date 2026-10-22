@@ -38,16 +38,16 @@ static ERL_NIF_TERM evision_cv_mat_indexed(ErlNifEnv *env, int argc, const ERL_N
         int inner = 0, op = 0;
 
         if (evision_to_safe(env, evision_get_kw(env, erl_terms, "src"), src, ArgInfo("src", 0)) &&
-            evision_to_safe(env, evision_get_kw(env, erl_terms, "indices"), indices, ArgInfo("indices", 0)) &&
-            evision_to_safe(env, evision_get_kw(env, erl_terms, "updates"), updates, ArgInfo("updates", 0)) &&
-            evision_to_safe(env, evision_get_kw(env, erl_terms, "dims"), dims, ArgInfo("dims", 0)) &&
+            evision_to_safe(env, evision_get_kw(env, erl_terms, "indices"), indices, ArgInfo("indices", ArgInfo::INPUT_ONLY)) &&
+            evision_to_safe(env, evision_get_kw(env, erl_terms, "updates"), updates, ArgInfo("updates", ArgInfo::INPUT_ONLY)) &&
+            evision_to_safe(env, evision_get_kw(env, erl_terms, "dims"), dims, ArgInfo("dims", ArgInfo::INPUT_ONLY)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "inner"), inner, ArgInfo("inner", 0)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "op"), op, ArgInfo("op", 0))) {
             if (!evision_backend_indices(indices) || !evision_backend_tensor(updates) ||
                 updates.type() != src.type() || (op != 0 && op != 1))
                 return evision::nif::error(env, "indexed: invalid index or update type");
-            // clone so the immutable source Mat is never mutated; clone() is continuous.
-            Mat result = src.clone();
+            // The writable converter already made a private, continuous copy.
+            Mat result = src;
             Mat upd_c = updates.isContinuous() ? updates : updates.clone();
             Mat idx_c = indices.isContinuous() ? indices : indices.clone();
             Mat dim_c = dims.isContinuous() ? dims : dims.clone();
