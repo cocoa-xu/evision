@@ -7,6 +7,7 @@
 #endif
 
 #include <cmath>
+#include <cstdint>
 #include <erl_nif.h>
 #include <limits>
 #include <functional>
@@ -457,7 +458,7 @@ typedef std::vector<std::vector<KeyPoint> > vector_vector_KeyPoint;
 enum { ARG_NONE = 0, ARG_MAT = 1, ARG_SCALAR = 2 };
 
 template <typename From, typename To>
-static inline auto _do_cast_type(const From * ptr) -> To {
+static inline auto _do_cast_type(const void * ptr) -> To {
     // Erlang sub-binaries need not satisfy the alignment of the element type.
     From value;
     memcpy(&value, ptr, sizeof(value));
@@ -549,7 +550,11 @@ static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Mat& m, const ArgInfo& in
             // Read-only inputs can share OpenCV-owned storage. Binary-backed
             // data may only be borrowed by calls that never retain or return a
             // view of it; the NIF argument keeps the binary alive for the call.
-            if (info.input_only && (in_res->in_buf == nullptr || info.borrowed_input)) {
+            // OpenCV kernels may use typed loads, so an unaligned sub-binary
+            // still needs an aligned copy even for a read-only operation.
+            if (info.input_only && (in_res->in_buf == nullptr ||
+                (info.borrowed_input &&
+                 (uintptr_t)in_res->val->data % in_res->val->elemSize1() == 0))) {
                 m = *in_res->val;
             } else {
                 in_res->val->copyTo(m);
@@ -850,7 +855,8 @@ static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Mat& m, const ArgInfo& in
         Mat casted(ndims, size, type, mat_data, step);
         // Nx strides are derived from its contiguous binary above. Borrow only
         // for calls that cannot retain this data, and never borrow cast storage.
-        if (info.borrowed_input && !enif_allocator) {
+        if (info.borrowed_input && !enif_allocator &&
+            (uintptr_t)mat_data % CV_ELEM_SIZE1(type) == 0) {
             m = casted;
         } else {
             casted.copyTo(m);

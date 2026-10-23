@@ -56,14 +56,18 @@ static ERL_NIF_TERM evision_cv_mat_unary_math(ErlNifEnv *env, int argc, const ER
         Mat src;
         int op = 0;
 
-        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "src"), src, ArgInfo("src", ArgInfo::INPUT_ONLY)) &&
-            evision_to_safe(env, evision_get_kw(env, erl_terms, "op"), op, ArgInfo("op", 0))) {
+        if (!evision_to_safe(env, evision_get_kw(env, erl_terms, "op"), op, ArgInfo("op", 0)))
+            return enif_make_badarg(env);
+        if (op < 0 || op > 17) return error(env, "mat_unary_math: invalid operation");
+
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "src"), src, ArgInfo("src", ArgInfo::BORROWED_INPUT))) {
+            const int depth = src.depth();
+            if (src.empty() || src.channels() != 1 || (depth != CV_32F && depth != CV_64F))
+                return error(env, "mat_unary_math: expected a single-channel f32 or f64 matrix");
+            // Allocate a writable copy only after validating the operation.
             Mat dst = src.clone();
-            switch (dst.depth()) {
-                case CV_32F: evision_unary_math<float>(dst, op); break;
-                case CV_64F: evision_unary_math<double>(dst, op); break;
-                default: return evision::nif::error(env, "mat_unary_math: expected f32 or f64");
-            }
+            if (depth == CV_32F) evision_unary_math<float>(dst, op);
+            else evision_unary_math<double>(dst, op);
             return evision_from(env, dst);
         }
     }

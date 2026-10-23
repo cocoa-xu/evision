@@ -52,10 +52,19 @@ static ERL_NIF_TERM evision_cv_mat_bit_unary(ErlNifEnv *env, int argc, const ERL
         Mat src;
         int op = 0;
 
-        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "src"), src, ArgInfo("src", 0)) &&
-            evision_to_safe(env, evision_get_kw(env, erl_terms, "op"), op, ArgInfo("op", 0))) {
+        if (!evision_to_safe(env, evision_get_kw(env, erl_terms, "op"), op, ArgInfo("op", 0)))
+            return enif_make_badarg(env);
+        if (op < 0 || op > 1) return error(env, "mat_bit_unary: invalid operation");
+
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "src"), src, ArgInfo("src", ArgInfo::BORROWED_INPUT))) {
+            const int depth = src.depth();
+            if (src.empty() || src.channels() != 1 ||
+                (depth != CV_8U && depth != CV_8S && depth != CV_16U && depth != CV_16S &&
+                 depth != CV_32S && depth != CV_32U && depth != CV_64S && depth != CV_64U))
+                return error(env, "mat_bit_unary: expected a single-channel integer matrix");
+            // Keep the input immutable; mutate only this private copy.
             Mat dst = src.clone();
-            switch (dst.depth()) {
+            switch (depth) {
                 case CV_8U:  evision_bit_unary<uint8_t>(dst, op); break;
                 case CV_8S:  evision_bit_unary<int8_t>(dst, op); break;
                 case CV_16U: evision_bit_unary<uint16_t>(dst, op); break;
