@@ -13,6 +13,7 @@
 #include <functional>
 #include <memory>
 #include "evision_native_safety.hpp"
+#include "evision_numeric_cast.hpp"
 
 #if defined(_MSC_VER) && (_MSC_VER > 1800)
 #pragma warning(pop)
@@ -456,54 +457,6 @@ typedef std::vector<std::vector<DMatch> > vector_vector_DMatch;
 typedef std::vector<std::vector<KeyPoint> > vector_vector_KeyPoint;
 
 enum { ARG_NONE = 0, ARG_MAT = 1, ARG_SCALAR = 2 };
-
-template <typename From, typename To>
-static inline auto _do_cast_type(const void * ptr) -> To {
-    // Erlang sub-binaries need not satisfy the alignment of the element type.
-    From value;
-    memcpy(&value, ptr, sizeof(value));
-    return static_cast<To>(value);
-}
-
-template <typename To>
-auto _do_cast_bf16(uint16_t value) -> To {
-    // bf16 is the high 16 bits of a 32-bit float; stored little-endian.
-    int n = 1;
-    if(*(char *)&n != 1) {
-        value = (value >> 8) | (value << 8);
-    }
-    union { uint32_t u; float f; } conv;
-    conv.u = ((uint32_t)value) << 16;
-    return (To)conv.f;
-}
-
-template <typename To>
-auto _do_cast_f16(uint16_t value) -> To {
-    // _do_cast_f16 only means to cast from half-precision float to float
-    // it should always be encoded in little-endian format
-    int n = 1;
-    if(*(char *)&n != 1) {
-        value = (value >> 8) | (value << 8);
-    }
-
-	uint32_t sn = (uint32_t)((value >> 15) & 0x1);
-	uint32_t exp = (value >> 10) & 0x1f;
-	uint32_t res = exp + 127 - 15;
-	uint32_t fc = value & 0x3ff;
-	
-	if (exp == 0) {
-		res = 0;
-	} else if (exp == 0x1f) {
-		res = 0xff;
-	}
-	
-	union {
-		float f;
-		uint32_t b;
-	} u;
-	u.b = (uint32_t)(sn << 31) | (uint32_t)(res << 23) | (uint32_t)(fc << 13);
-	return static_cast<To>(u.f);
-}
 
 static void * evision_cast(ErlNifBinary& bin, int cast_from, const std::vector<uint64_t> &sizes, const std::vector<uint64_t> &strides) {
     uint64_t num_elems = 1;

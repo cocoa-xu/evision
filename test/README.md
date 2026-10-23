@@ -1,5 +1,30 @@
 ## Tests
 
+### Native numeric conversions
+
+The standalone C++ tests compile the same numeric conversion helpers used by
+the NIF. They check all 65,536 encodings of both f16 and bf16 against an
+independent arithmetic reference, including signed zero, subnormals, infinities,
+NaNs, and aligned or unaligned native-order loads into f32 and f64.
+
+On a little-endian development machine:
+
+```shell
+cmake -S test/native -B _build/native-casts -DCMAKE_BUILD_TYPE=Release -DEVISION_TEST_ENDIAN=little
+cmake --build _build/native-casts --config Release
+ctest --test-dir _build/native-casts -C Release --verbose
+```
+
+The `native-numeric-casts` workflow runs these tests on Linux, Windows, and
+macOS, plus s390x Linux under QEMU user-mode emulation. The s390x test requires
+big-endian byte order at runtime, so a host-native executable cannot silently
+stand in for it. This checks the shared conversion code, not the complete
+OpenCV/BEAM stack on s390x. The ExUnit tests in
+`evision_native_conversion_safety_test.exs` cover NIF integration on the native
+platforms.
+
+### Elixir integration tests
+
 As we allow users to select a subset of OpenCV modules, all tests have corresponding tags and, by default, they will be
 enabled by the availability of the module (i.e., will be tested if the corresponding module is compiled). 
 

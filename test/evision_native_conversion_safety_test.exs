@@ -8,6 +8,61 @@ defmodule Evision.NativeConversionSafetyTest do
     ref
   end
 
+  test "rectangular ROI bounds cannot overflow before copying" do
+    binary = <<1, 2, 3, 4, 5, 6>>
+    input = Evision.Mat.from_binary_by_shape(binary, :u8, {2, 3})
+
+    for source <- [input, Evision.Mat.clone(input)] do
+      for rect <- [
+            {2_147_483_647, 0, 2, 1},
+            {0, 2_147_483_647, 1, 2},
+            {2, 0, 2_147_483_647, 1},
+            {0, 1, 1, 2_147_483_647},
+            {-1, 0, 1, 1},
+            {0, -1, 1, 1},
+            {0, 0, -1, 1},
+            {0, 0, 1, -1},
+            {3, 0, 1, 1},
+            {0, 2, 1, 1}
+          ] do
+        assert {:error, _} = Evision.Mat.roi(source, rect)
+      end
+
+      assert Evision.Mat.to_binary(Evision.Mat.roi(source, {1, 0, 2, 2})) == <<2, 3, 5, 6>>
+
+      for rect <- [{3, 0, 0, 2}, {0, 2, 3, 0}, {3, 2, 0, 0}] do
+        assert Evision.Mat.total(Evision.Mat.roi(source, rect)) == 0
+      end
+
+      assert Evision.Mat.to_binary(source) == binary
+    end
+
+    assert Evision.Mat.total(Evision.Mat.roi(Evision.Mat.empty(), {0, 0, 0, 0})) == 0
+    volume = Evision.Mat.from_binary_by_shape(binary, :u8, {2, 1, 3})
+    assert {:error, _} = Evision.Mat.roi(volume, {0, 0, 1, 1})
+  end
+
+  test "16-bit float reads and arithmetic scalars preserve subnormals and signed zero" do
+    ones = Evision.Mat.ones({2, 3}, :f64)
+
+    for {type, kind, patterns} <- [
+          {:f16, "f", [0, 0x8000, 1, 0x8001, 0x03FF, 0x83FF, 0x0400, 0x8400, 0x7BFF, 0xFBFF]},
+          {:bf16, "bf", [0, 0x8000, 1, 0x8001, 0x007F, 0x807F, 0x0080, 0x8080, 0x7F7F, 0xFF7F]}
+        ],
+        bits <- patterns do
+      binary = <<bits::unsigned-native-16>>
+      expected = Nx.from_binary(binary, type) |> Nx.as_type(:f64) |> Nx.to_binary()
+      source = mat(binary, [1], kind, 16)
+      value = :evision_nif.mat_at(img: source, pos: 0)
+      assert <<value::float-native-64>> == expected
+
+      scalar = %{__struct__: :nx_tensor, shape: {}, type: type, data: binary}
+      %{ref: result} = :evision_nif.multiply(src1: ones.ref, src2: scalar)
+      assert :evision_nif.mat_to_binary(img: result) == :binary.copy(expected, 6)
+      assert :evision_nif.mat_to_binary(img: source) == binary
+    end
+  end
+
   test "forged tensor maps cannot read beyond their binary" do
     for {shape, type, data} <- [
           {{4096}, :u8, <<1>>},
