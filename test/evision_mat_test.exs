@@ -302,13 +302,31 @@ defmodule Evision.Mat.Test do
       assert msg =~ "as_shape"
     end
 
-    test "at handles non-continuous matrices and returns the right scalar" do
+    test "at reads flat scalar positions without changing its input" do
       bin = for v <- 1..16, into: <<>>, do: <<v::little-size(8)>>
       mat = Evision.Mat.from_binary_by_shape(bin, {:u, 8}, {4, 4})
 
       assert Evision.Mat.at(mat, 0) == 1
       assert Evision.Mat.at(mat, 15) == 16
       assert {:error, _} = Evision.Mat.at(mat, 16)
+
+      for {pair, type, first, last} <- [
+            {<<1::unsigned-native-16, 65_535::unsigned-native-16>>, {:u, 16}, 1, 65_535},
+            {<<-7::signed-native-32, 9::signed-native-32>>, {:s, 32}, -7, 9},
+            {<<1.25::float-native-32, -2.5::float-native-32>>, {:f, 32}, 1.25, -2.5},
+            {<<1.25::float-native-64, -2.5::float-native-64>>, {:f, 64}, 1.25, -2.5}
+          ] do
+        payload = :binary.copy(pair, 64)
+        binary = :binary.part(<<0, payload::binary>>, 1, byte_size(payload))
+        mat = Evision.Mat.from_binary(binary, type, 32, 2, 2)
+
+        for source <- [mat, Evision.Mat.clone(mat)] do
+          assert Evision.Mat.at(source, 0) == first
+          assert Evision.Mat.at(source, 127) == last
+          assert {:error, _} = Evision.Mat.at(source, 128)
+          assert Evision.Mat.to_binary(source) == payload
+        end
+      end
     end
 
     test "arange supports negative step" do

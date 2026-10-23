@@ -17,7 +17,7 @@ static ERL_NIF_TERM evision_cv_mat_expm1(ErlNifEnv *env, int argc, const ERL_NIF
     {
         Mat img;
 
-        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0))) {
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", ArgInfo::BORROWED_INPUT))) {
             Mat ret;
 
             ERRWRAP2(cv::exp(img, ret), env, error_flag, error_term);

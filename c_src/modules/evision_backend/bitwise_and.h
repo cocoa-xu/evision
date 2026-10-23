@@ -17,8 +17,8 @@ static ERL_NIF_TERM evision_cv_mat_bitwise_and(ErlNifEnv *env, int argc, const E
         Mat l;
         Mat r;
 
-        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "l"), l, ArgInfo("l", 0)) &&
-            evision_to_safe(env, evision_get_kw(env, erl_terms, "r"), r, ArgInfo("r", 0))) {
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "l"), l, ArgInfo("l", ArgInfo::BORROWED_INPUT)) &&
+            evision_to_safe(env, evision_get_kw(env, erl_terms, "r"), r, ArgInfo("r", ArgInfo::BORROWED_INPUT))) {
             Mat ret;
             int error_flag = false;
             ERRWRAP2(cv::bitwise_and(l, r, ret), env, error_flag, error_term);

@@ -87,7 +87,7 @@ static ERL_NIF_TERM evision_cv_mat_type(ErlNifEnv *env, int argc, const ERL_NIF_
     {
         Mat img;
 
-        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0))) {
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", ArgInfo::BORROWED_INPUT))) {
             return _evision_get_mat_type(env, img);
         }
     }
@@ -111,7 +111,7 @@ static ERL_NIF_TERM evision_cv_mat_as_type(ErlNifEnv *env, int argc, const ERL_N
         int l = 0;
         int type;
 
-        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0)) &&
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", ArgInfo::BORROWED_INPUT)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "t"), t, ArgInfo("t", 0)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "l"), l, ArgInfo("l", 0))) {
             if (get_binary_type(t, l, 0, type)) {
@@ -517,14 +517,24 @@ static ERL_NIF_TERM evision_cv_mat_at(ErlNifEnv *env, int argc, const ERL_NIF_TE
         Mat img;
         size_t pos = 0;
 
-        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0)) &&
-            evision_to_safe(env, evision_get_kw(env, erl_terms, "pos"), pos, ArgInfo("img", 0))) {
-            size_t count = img.total() * img.channels();
-            if (pos >= count) {
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", ArgInfo::BORROWED_INPUT)) &&
+            evision_to_safe(env, evision_get_kw(env, erl_terms, "pos"), pos, ArgInfo("pos", 0))) {
+            size_t count;
+            if (!evision_checked_mul_size(img.total(), (size_t)img.channels(), count) || pos >= count) {
                 return evision::nif::error(env, "index out of bounds");
             }
-            if (!img.isContinuous()) {
-                img = img.clone();
+            const unsigned char *value = img.data;
+            if (img.isContinuous()) {
+                value += pos * img.elemSize1();
+            } else {
+                // Locate one scalar through the original strides instead of
+                // copying the whole matrix to flatten it.
+                value += (pos % img.channels()) * img.elemSize1();
+                size_t pixel = pos / img.channels();
+                for (int dim = img.dims - 1; dim >= 0; --dim) {
+                    value += (pixel % (size_t)img.size[dim]) * img.step[dim];
+                    pixel /= (size_t)img.size[dim];
+                }
             }
 
             int type = img.type();
@@ -538,52 +548,52 @@ static ERL_NIF_TERM evision_cv_mat_at(ErlNifEnv *env, int argc, const ERL_NIF_TE
 
             switch ( depth ) {
                 case CV_8U: {
-                    i32 = ((uint8_t *)img.data)[pos]; type = 0;
+                    i32 = _do_cast_type<uint8_t, int>(value); type = 0;
                     break;
                 }
                 case CV_16U: {
-                    i32 = ((uint16_t *)img.data)[pos]; type = 0;
+                    i32 = _do_cast_type<uint16_t, int>(value); type = 0;
                     break;
                 }
                 case CV_8S: {
-                    i32 = ((int8_t *)img.data)[pos]; type = 0;
+                    i32 = _do_cast_type<int8_t, int>(value); type = 0;
                     break;
                 }
                 case CV_16S: {
-                    i32 = ((int16_t *)img.data)[pos]; type = 0;
+                    i32 = _do_cast_type<int16_t, int>(value); type = 0;
                     break;
                 }
                 case CV_32S: {
-                    i32 = ((int32_t *)img.data)[pos]; type = 0;
+                    i32 = _do_cast_type<int32_t, int>(value); type = 0;
                     break;
                 }
                 case CV_16F: {
-                    f64 = _do_cast_f16<double>(((uint16_t *)img.data)[pos]); type = 1;
+                    f64 = _do_cast_f16<double>(_do_cast_type<uint16_t, uint16_t>(value)); type = 1;
                     break;
                 }
 
                 case CV_32F: {
-                    f64 = ((float *)img.data)[pos]; type = 1;
+                    f64 = _do_cast_type<float, double>(value); type = 1;
                     break;
                 }
                 case CV_64F: {
-                    f64 = ((double *)img.data)[pos]; type = 1;
+                    f64 = _do_cast_type<double, double>(value); type = 1;
                     break;
                 }
                 case CV_16BF: {
-                    f64 = _do_cast_bf16<double>(((uint16_t *)img.data)[pos]); type = 1;
+                    f64 = _do_cast_bf16<double>(_do_cast_type<uint16_t, uint16_t>(value)); type = 1;
                     break;
                 }
                 case CV_32U: {
-                    i64 = ((uint32_t *)img.data)[pos]; type = 2;
+                    i64 = _do_cast_type<uint32_t, int64_t>(value); type = 2;
                     break;
                 }
                 case CV_64S: {
-                    i64 = ((int64_t *)img.data)[pos]; type = 2;
+                    i64 = _do_cast_type<int64_t, int64_t>(value); type = 2;
                     break;
                 }
                 case CV_64U: {
-                    u64 = ((uint64_t *)img.data)[pos]; type = 3;
+                    u64 = _do_cast_type<uint64_t, uint64_t>(value); type = 3;
                     break;
                 }
             }
@@ -647,8 +657,13 @@ static ERL_NIF_TERM evision_cv_mat_dot(ErlNifEnv *env, int argc, const ERL_NIF_T
     {
         Mat a, b;
 
-        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "a"), a, ArgInfo("a", 0)) &&
-            evision_to_safe(env, evision_get_kw(env, erl_terms, "b"), b, ArgInfo("b", 0))) {
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "a"), a, ArgInfo("a", ArgInfo::BORROWED_INPUT)) &&
+            evision_to_safe(env, evision_get_kw(env, erl_terms, "b"), b, ArgInfo("b", ArgInfo::BORROWED_INPUT))) {
+            if (a.type() != b.type() || a.size != b.size)
+                return evision::nif::error(env, "dot: shape or type mismatch");
+            // Preserve the contiguous evaluation order used before borrowing.
+            if (!a.isContinuous()) a = a.clone();
+            if (!b.isContinuous()) b = b.clone();
             double out = 0;
             int error_flag = false;
             ERRWRAP2(out = a.dot(b), env, error_flag, error_term);
@@ -674,7 +689,7 @@ static ERL_NIF_TERM evision_cv_mat_channels(ErlNifEnv *env, int argc, const ERL_
     {
         Mat img;
 
-        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0))) {
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", ArgInfo::BORROWED_INPUT))) {
             int channels = img.channels();
             return enif_make_int64(env, channels);
         }
@@ -696,7 +711,7 @@ static ERL_NIF_TERM evision_cv_mat_depth(ErlNifEnv *env, int argc, const ERL_NIF
     {
         Mat img;
 
-        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0))) {
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", ArgInfo::BORROWED_INPUT))) {
             int depth = img.depth();
             return enif_make_int64(env, depth);
         }
@@ -718,7 +733,7 @@ static ERL_NIF_TERM evision_cv_mat_isSubmatrix(ErlNifEnv *env, int argc, const E
     {
         Mat img;
 
-        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0))) {
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", ArgInfo::BORROWED_INPUT))) {
             bool isSubmatrix = img.isSubmatrix();
             if (isSubmatrix) {
                 return evision::nif::atom(env, "true");
@@ -744,7 +759,7 @@ static ERL_NIF_TERM evision_cv_mat_isContinuous(ErlNifEnv *env, int argc, const 
     {
         Mat img;
 
-        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0))) {
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", ArgInfo::BORROWED_INPUT))) {
             bool isContinuous = img.isContinuous();
             if (isContinuous) {
                 return evision::nif::atom(env, "true");
@@ -772,7 +787,7 @@ static ERL_NIF_TERM evision_cv_mat_total(ErlNifEnv *env, int argc, const ERL_NIF
         int start_dim = -1;
         int end_dim = INT_MAX;
 
-        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0))) {
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", ArgInfo::BORROWED_INPUT))) {
             evision_to_safe(env, evision_get_kw(env, erl_terms, "start_dim"), start_dim, ArgInfo("start_dim", 0));
             evision_to_safe(env, evision_get_kw(env, erl_terms, "end_dim"), end_dim, ArgInfo("end_dim", 0));
             size_t total_elems;
@@ -802,7 +817,7 @@ static ERL_NIF_TERM evision_cv_mat_elemSize(ErlNifEnv *env, int argc, const ERL_
     {
         Mat img;
 
-        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0))) {
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", ArgInfo::BORROWED_INPUT))) {
             return enif_make_int64(env, img.elemSize());
         }
     }
@@ -823,7 +838,7 @@ static ERL_NIF_TERM evision_cv_mat_elemSize1(ErlNifEnv *env, int argc, const ERL
     {
         Mat img;
 
-        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0))) {
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", ArgInfo::BORROWED_INPUT))) {
             return enif_make_int64(env, img.elemSize1());
         }
     }
@@ -844,7 +859,7 @@ static ERL_NIF_TERM evision_cv_mat_raw_type(ErlNifEnv *env, int argc, const ERL_
     {
         Mat img;
 
-        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0))) {
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", ArgInfo::BORROWED_INPUT))) {
             return enif_make_int64(env, img.type());
         }
     }
@@ -865,7 +880,7 @@ static ERL_NIF_TERM evision_cv_mat_dims(ErlNifEnv *env, int argc, const ERL_NIF_
     {
         Mat img;
 
-        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0))) {
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", ArgInfo::BORROWED_INPUT))) {
             return enif_make_int64(env, img.dims);
         }
     }
