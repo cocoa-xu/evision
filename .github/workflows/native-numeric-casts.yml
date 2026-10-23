@@ -5,6 +5,7 @@ on:
     paths:
       - 'c_src/**'
       - 'test/native/**'
+      - 'cmake/EvisionCpuDispatch.cmake'
       - 'cc_toolchain/s390x-linux-gnu.cmake'
       - '.github/workflows/native-numeric-casts.yml'
   push:
@@ -12,6 +13,7 @@ on:
     paths:
       - 'c_src/**'
       - 'test/native/**'
+      - 'cmake/EvisionCpuDispatch.cmake'
       - 'cc_toolchain/s390x-linux-gnu.cmake'
       - '.github/workflows/native-numeric-casts.yml'
 
@@ -27,17 +29,33 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-24.04, macos-15-intel, windows-2025]
+        include:
+          - os: ubuntu-24.04
+            cpu: avx2
+          - os: ubuntu-24.04-arm
+            cpu: neon
+          - os: macos-15
+            cpu: neon
+          - os: macos-15-intel
+            cpu: avx2
+          - os: windows-2025
+            cpu: avx2
     runs-on: ${{ matrix.os }}
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
       - name: Configure native conversion tests
-        run: cmake -S test/native -B _build/native-casts -DCMAKE_BUILD_TYPE=Release -DEVISION_TEST_ENDIAN=little
+        run: cmake -S test/native -B _build/native-casts -DCMAKE_BUILD_TYPE=Release -DEVISION_TEST_ENDIAN=little -DEVISION_TEST_CPU=${{ matrix.cpu }}
       - name: Build
         run: cmake --build _build/native-casts --config Release
-      - name: Test every f16 and bf16 encoding
+      - name: Test numeric conversions and CPU dispatch
         run: ctest --test-dir _build/native-casts -C Release --verbose
+      - name: Check native kernels with ASan and UBSan
+        if: runner.os != 'Windows'
+        run: |
+          cmake -S test/native -B _build/native-casts-sanitized -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEVISION_TEST_ENDIAN=little -DEVISION_TEST_CPU=${{ matrix.cpu }} '-DCMAKE_CXX_FLAGS=-fsanitize=address,undefined -fno-omit-frame-pointer' '-DCMAKE_EXE_LINKER_FLAGS=-fsanitize=address,undefined'
+          cmake --build _build/native-casts-sanitized --parallel 2
+          ctest --test-dir _build/native-casts-sanitized --verbose
 
   s390x:
     runs-on: ubuntu-24.04
@@ -55,7 +73,8 @@ jobs:
           -DCMAKE_TOOLCHAIN_FILE="$GITHUB_WORKSPACE/cc_toolchain/s390x-linux-gnu.cmake"
           '-DCMAKE_CROSSCOMPILING_EMULATOR=qemu-s390x;-L;/usr/s390x-linux-gnu'
           -DEVISION_TEST_ENDIAN=big
+          -DEVISION_TEST_CPU=baseline
       - name: Build for s390x Linux
         run: cmake --build _build/native-casts-s390x
-      - name: Test every f16 and bf16 encoding on big-endian s390x
+      - name: Test numeric conversions and baseline dispatch on big-endian s390x
         run: ctest --test-dir _build/native-casts-s390x --verbose
