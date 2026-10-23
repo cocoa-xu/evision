@@ -546,13 +546,10 @@ static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Mat& m, const ArgInfo& in
             // (immutable) matrix is never modified -- even if this NIF writes
             // to the argument in place.
             //
-            // `input_only` is set only by generated bindings, where the matrix
-            // is passed to OpenCV as a const InputArray and never written. For
-            // those we can share the data through a refcounted shallow copy and
-            // skip the deep copy. The `in_buf` check keeps zero-copy
-            // (binary-backed) matrices on the deep-copy path: their data is
-            // owned by an Erlang binary, so a shared view could outlive it.
-            if (info.input_only && in_res->in_buf == nullptr) {
+            // Read-only inputs can share OpenCV-owned storage. Binary-backed
+            // data may only be borrowed by calls that never retain or return a
+            // view of it; the NIF argument keeps the binary alive for the call.
+            if (info.input_only && (in_res->in_buf == nullptr || info.borrowed_input)) {
                 m = *in_res->val;
             } else {
                 in_res->val->copyTo(m);
@@ -565,8 +562,7 @@ static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Mat& m, const ArgInfo& in
     // Nx.tensor
     if (enif_is_map(env, o))
     {
-        // we have to do copy because the incoming binary data is from erlang/elixir (immutable)
-        bool needcopy = true, needcast = false;
+        bool needcast = false;
         ERL_NIF_TERM struct_name_term;
         if (!enif_get_map_value(env, o, kAtomStructKey, &struct_name_term)) {
             return false;
@@ -796,18 +792,6 @@ static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Mat& m, const ArgInfo& in
         //     ismultichannel = wrapChannels && ndims >= 1;
         // }
 
-        for (int i = ndims-1; i >= 0 && !needcopy; i--)
-        {
-            // these checks handle cases of
-            //  a) multi-dimensional (ndims > 2) arrays, as well as simpler 1- and 2-dimensional cases
-            //  b) transposed arrays, where _strides[] elements go in non-descending order
-            //  c) flipped arrays, where some of _strides[] elements are negative
-            // the _sizes[i] > 1 is needed to avoid spurious copies when NPY_RELAXED_STRIDES is set
-            if( (i == ndims-1 && _sizes[i] > 1 && (size_t)_strides[i] != elemsize) ||
-                (i < ndims-1 && _sizes[i] > 1 && _strides[i] < _strides[i+1]) )
-                needcopy = true;
-        }
-
         if (ismultichannel)
         {
             int channels = ndims >= 1 ? (int)_sizes[ndims - 1] : 1;
@@ -818,9 +802,6 @@ static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Mat& m, const ArgInfo& in
             }
             ndims--;
             type |= CV_MAKETYPE(0, channels);
-
-            if (ndims >= 1 && _strides[ndims - 1] != elemsize*_sizes[ndims])
-                needcopy = true;
 
             elemsize = CV_ELEM_SIZE(type);
         }
@@ -867,7 +848,13 @@ static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Mat& m, const ArgInfo& in
         }
 
         Mat casted(ndims, size, type, mat_data, step);
-        casted.copyTo(m);
+        // Nx strides are derived from its contiguous binary above. Borrow only
+        // for calls that cannot retain this data, and never borrow cast storage.
+        if (info.borrowed_input && !enif_allocator) {
+            m = casted;
+        } else {
+            casted.copyTo(m);
+        }
         if (enif_allocator) {
             enif_free(mat_data);
         }
