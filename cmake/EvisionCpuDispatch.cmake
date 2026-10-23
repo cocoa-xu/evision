@@ -1,0 +1,43 @@
+include(CheckCXXCompilerFlag)
+include(CheckCXXSourceCompiles)
+set(EVISION_CPU_KERNEL_DIR "${CMAKE_CURRENT_LIST_DIR}/../c_src/modules/evision_backend/kernels")
+
+function(evision_add_cpu_kernels target)
+    add_library(${target} STATIC
+        "${EVISION_CPU_KERNEL_DIR}/dispatch.cpp"
+        "${EVISION_CPU_KERNEL_DIR}/select_baseline.cpp")
+    set_target_properties(${target} PROPERTIES CXX_STANDARD 17 CXX_STANDARD_REQUIRED ON POSITION_INDEPENDENT_CODE ON)
+    target_include_directories(${target} PUBLIC "${EVISION_CPU_KERNEL_DIR}")
+
+    string(TOLOWER "${CMAKE_SYSTEM_PROCESSOR}" cpu)
+    if(APPLE AND CMAKE_OSX_ARCHITECTURES)
+        list(LENGTH CMAKE_OSX_ARCHITECTURES arch_count)
+        if(arch_count EQUAL 1)
+            string(TOLOWER "${CMAKE_OSX_ARCHITECTURES}" cpu)
+        else()
+            # A universal binary needs separately compiled slices. Keep the
+            # portable implementation when building multiple slices together.
+            set(cpu "universal")
+        endif()
+    endif()
+
+    if(cpu MATCHES "^(arm64|aarch64)$")
+        check_cxx_source_compiles("#include <arm_neon.h>\nint main() { return vget_lane_u8(vdup_n_u8(0), 0); }" EVISION_COMPILER_HAS_NEON)
+        if(EVISION_COMPILER_HAS_NEON)
+            target_sources(${target} PRIVATE "${EVISION_CPU_KERNEL_DIR}/select_neon.cpp")
+            target_compile_definitions(${target} PRIVATE EVISION_HAVE_NEON=1)
+        endif()
+    elseif(cpu MATCHES "^(x86_64|amd64)$")
+        if(MSVC)
+            set(avx2_flag "/arch:AVX2")
+        else()
+            set(avx2_flag "-mavx2")
+        endif()
+        check_cxx_compiler_flag("${avx2_flag}" EVISION_COMPILER_HAS_AVX2)
+        if(EVISION_COMPILER_HAS_AVX2)
+            target_sources(${target} PRIVATE "${EVISION_CPU_KERNEL_DIR}/select_avx2.cpp")
+            set_source_files_properties("${EVISION_CPU_KERNEL_DIR}/select_avx2.cpp" PROPERTIES COMPILE_FLAGS "${avx2_flag}")
+            target_compile_definitions(${target} PRIVATE EVISION_HAVE_AVX2=1)
+        endif()
+    endif()
+endfunction()
