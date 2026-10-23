@@ -1,0 +1,18 @@
+cmake_minimum_required(VERSION 3.16)
+project(evision_native_tests LANGUAGES CXX)
+
+enable_testing()
+set(EVISION_TEST_ENDIAN "" CACHE STRING "Expected runtime byte order: little or big")
+if(NOT EVISION_TEST_ENDIAN MATCHES "^(little|big)$")
+    message(FATAL_ERROR "Set EVISION_TEST_ENDIAN to little or big")
+endif()
+
+add_executable(numeric_cast_test numeric_cast_test.cpp)
+target_compile_features(numeric_cast_test PRIVATE cxx_std_17)
+target_include_directories(numeric_cast_test PRIVATE ../../c_src)
+if(MSVC)
+    target_compile_options(numeric_cast_test PRIVATE /W4 /WX)
+else()
+    target_compile_options(numeric_cast_test PRIVATE -Wall -Wextra -Werror -pedantic)
+endif()
+add_test(NAME numeric_cast COMMAND numeric_cast_test ${EVISION_TEST_ENDIAN})
