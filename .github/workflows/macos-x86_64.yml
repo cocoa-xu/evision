@@ -186,4 +186,7 @@ jobs:
           export OTP_VERSION="${{ env.OTP_VERSION }}"
           export OTP_MAIN_VER="${OTP_VERSION%%.*}"
           export PATH="$HOME/.elixir-install/installs/otp/${{ env.OTP_VERSION }}/bin:$HOME/.elixir-install/installs/elixir/${{ env.ELIXIR_VERSION }}-otp-${OTP_MAIN_VER}/bin:$PATH"
-          find ./test -name '*_test.exs' -exec bash -c "echo {} && mix test --include require_downloading --include require_ffmpeg {}" \;
+          find ./test -name '*_test.exs' -print0 | while IFS= read -r -d '' test_file; do
+            echo "$test_file"
+            mix test --include require_downloading --include require_ffmpeg "$test_file" || exit "$?"
+          done

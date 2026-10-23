@@ -152,6 +152,10 @@ jobs:
         run: |
           mix compile --force --warnings-as-errors --no-optional-deps
 
+      - name: Test native conversions
+        shell: bash
+        run: mix test --no-compile test/evision_native_conversion_safety_test.exs
+
       - name: Cache testdata
         id: cache-mix-testdata
         uses: actions/cache@v6
