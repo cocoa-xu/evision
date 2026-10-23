@@ -48,9 +48,14 @@ baseline implementation; per-architecture builds enable their supported kernels.
 
 The standalone `cpu_dispatch_test` exercises all 256 mask patterns per block,
 unaligned inputs, every short tail, input immutability, fallback selection, and
-the baseline override. Native CI includes macOS and Linux AArch64, x86_64 Linux,
-macOS and Windows, plus the baseline under big-endian s390x emulation. NIF tests
-exercise both modes and compare Nx results with BinaryBackend.
+the baseline override. Guard-page cases place buffers against inaccessible pages
+at either end and protect inputs as read-only. They cover empty buffers and long
+tails as well as short SIMD boundaries, so padding cannot hide out-of-range reads.
+Native CI includes macOS and Linux AArch64, x86_64 Linux, macOS and Windows, plus
+the baseline under big-endian s390x emulation. Linux/macOS sanitizer jobs fail on
+the first ASan or UBSan finding. NIF tests exercise both modes, compare Nx results
+with BinaryBackend, and verify input/output ownership after creator exit and GC
+with one or four OpenCV threads and unaligned binary-backed or OpenCV-owned inputs.
 
 Compare complete Nx operations, including output materialization, with:
 

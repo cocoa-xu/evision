@@ -90,4 +90,78 @@ defmodule Evision.CpuDispatchTest do
       end
     end
   end
+
+  test "unaligned inputs and selected output survive creator exit and GC with parallel tails" do
+    previous_threads = Evision.getNumThreads()
+    on_exit(fn -> Evision.setNumThreads(previous_threads) end)
+
+    for mode <- [:baseline, :auto], threads <- [1, 4] do
+      Evision.Backend.set_cpu_dispatch(mode)
+      Evision.setNumThreads(threads)
+
+      for {kind, bits} <- [{"u", 8}, {"s", 16}, {"f", 16}, {"bf", 16}, {"f", 32}, {"f", 64}],
+          storage <- [:binary, :opencv] do
+        count = 65_539
+        width = div(bits, 8)
+        result = select_after_creator_exit(count, kind, bits, storage)
+        :erlang.garbage_collect()
+
+        expected =
+          for i <- 0..(count - 1), byte <- 0..(width - 1), into: <<>> do
+            offset = i * width + byte
+
+            value =
+              if rem(i, 4) == 0, do: rem(offset * 19 + 173, 256), else: rem(offset * 37, 256)
+
+            <<value>>
+          end
+
+        assert :evision_nif.mat_to_binary(img: result) == expected
+      end
+    end
+  end
+
+  defp select_after_creator_exit(count, kind, bits, storage) do
+    owner = self()
+    tag = make_ref()
+
+    {pid, monitor} =
+      spawn_monitor(fn ->
+        width = div(bits, 8)
+        mask = for i <- 0..(count - 1), into: <<>>, do: <<Enum.at([0, 1, 128, 255], rem(i, 4))>>
+        a = for i <- 0..(count * width - 1), into: <<>>, do: <<rem(i * 37, 256)>>
+        b = for i <- 0..(count * width - 1), into: <<>>, do: <<rem(i * 19 + 173, 256)>>
+
+        make = fn binary, type, size, offset ->
+          parent = :binary.copy(<<0xCC>>, offset) <> binary <> :binary.copy(<<0xDD>>, 64)
+          unaligned = binary_part(parent, offset, byte_size(binary))
+
+          %{ref: ref} =
+            :evision_nif.mat_from_binary_by_shape(
+              binary: unaligned,
+              shape: [count],
+              t: type,
+              l: size
+            )
+
+          if storage == :opencv do
+            %{ref: copied} = :evision_nif.mat_clone(img: ref)
+            copied
+          else
+            ref
+          end
+        end
+
+        refs = {make.(mask, "u", 8, 1), make.(a, kind, bits, 3), make.(b, kind, bits, 5)}
+        send(owner, {tag, refs})
+      end)
+
+    assert_receive {^tag, {mask, a, b}}, 10_000
+    assert_receive {:DOWN, ^monitor, :process, ^pid, :normal}, 10_000
+    :erlang.garbage_collect()
+    original = Enum.map([mask, a, b], &:evision_nif.mat_to_binary(img: &1))
+    %{ref: result} = :evision_nif.mat_select(mask: mask, on_true: a, on_false: b)
+    assert Enum.map([mask, a, b], &:evision_nif.mat_to_binary(img: &1)) == original
+    result
+  end
 end

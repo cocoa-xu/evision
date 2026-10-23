@@ -52,8 +52,11 @@ jobs:
         run: ctest --test-dir _build/native-casts -C Release --verbose
       - name: Check native kernels with ASan and UBSan
         if: runner.os != 'Windows'
+        env:
+          ASAN_OPTIONS: halt_on_error=1
+          UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
         run: |
-          cmake -S test/native -B _build/native-casts-sanitized -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEVISION_TEST_ENDIAN=little -DEVISION_TEST_CPU=${{ matrix.cpu }} '-DCMAKE_CXX_FLAGS=-fsanitize=address,undefined -fno-omit-frame-pointer' '-DCMAKE_EXE_LINKER_FLAGS=-fsanitize=address,undefined'
+          cmake -S test/native -B _build/native-casts-sanitized -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEVISION_TEST_ENDIAN=little -DEVISION_TEST_CPU=${{ matrix.cpu }} '-DCMAKE_CXX_FLAGS=-fsanitize=address,undefined -fno-sanitize-recover=all -fno-omit-frame-pointer' '-DCMAKE_EXE_LINKER_FLAGS=-fsanitize=address,undefined'
           cmake --build _build/native-casts-sanitized --parallel 2
           ctest --test-dir _build/native-casts-sanitized --verbose
 
