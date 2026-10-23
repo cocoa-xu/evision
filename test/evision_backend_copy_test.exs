@@ -35,6 +35,51 @@ defmodule Evision.BackendCopyTest do
     end
   end
 
+  test "concatenate validates layouts before copying and preserves all input owners" do
+    for dims <- @shapes,
+        type <- @types,
+        storage <- [:binary, :owned],
+        axis <- 0..(length(dims) - 1) do
+      tensors =
+        for width <- [1, 3, 2] do
+          shape = dims |> List.replace_at(axis, width) |> List.to_tuple()
+          Nx.iota(shape, type: type) |> Nx.add(width) |> Nx.as_type(type)
+        end
+
+      inputs = Enum.map(tensors, &mat(&1, storage))
+      expected = Nx.concatenate(tensors, axis: axis)
+
+      result =
+        Evision.Mat.concatenate(
+          inputs,
+          Enum.map(tensors, &Tuple.to_list(Nx.shape(&1))),
+          Tuple.to_list(Nx.shape(expected)),
+          axis
+        )
+
+      assert bytes(result) == Nx.to_binary(expected)
+
+      for {input, tensor} <- Enum.zip(inputs, tensors),
+          do: assert(bytes(input) == Nx.to_binary(tensor))
+    end
+
+    src = mat(Nx.iota({2, 3}, type: :u8), :binary)
+
+    for {inputs, shapes, out, axis} <- [
+          {[], [], [2, 3], 0},
+          {[src], [], [2, 3], 0},
+          {[src], [[2, 3]], [2, 3], -1},
+          {[src], [[2, 3]], [2, 3], 2},
+          {[src], [[2, 2]], [2, 2], 0},
+          {[src], [[2, 3]], [1, 3], 0},
+          {[src], [[2, 3]], [3, 3], 0},
+          {[src], [[3, 2]], [2, 3], 0},
+          {[src], [[2, 3]], [2_147_483_647, 2_147_483_647], 0}
+        ] do
+      assert {:error, _} = Evision.Mat.concatenate(inputs, shapes, out, axis)
+    end
+  end
+
   test "strided copies preserve bytes across ranks, widths, directions and storage owners" do
     for dims <- @shapes, type <- @types, storage <- [:binary, :owned] do
       tensor = Nx.iota(List.to_tuple(dims), type: type)
@@ -190,4 +235,23 @@ defmodule Evision.BackendCopyTest do
              ]
     end
   end
+  test "broadcast select rejects mismatched native layouts" do
+    mask = mat(Nx.tensor([0, 1], type: :u8), :binary)
+    value = mat(Nx.tensor([10, 20], type: :s32), :binary)
+
+    for {shapes, out} <- [
+          {[[2], [2], [2]], [3]},
+          {[[1], [2], [2]], [2]},
+          {[[2], [1], [2]], [2]},
+          {[[2], [2], [2]], [0]},
+          {[[2], [2], [2]], []},
+          {[[2], [2], [2]], [2_147_483_647, 2_147_483_647]}
+        ] do
+      assert {:error, _} = Evision.Mat.select_broadcast(mask, value, value, shapes, out)
+    end
+
+    assert {:error, _} = Evision.Mat.select_broadcast(value, value, value, [[2], [2], [2]], [2])
+    assert {:error, _} = Evision.Mat.select_broadcast(mask, mask, value, [[2], [2], [2]], [2])
+  end
+
 end

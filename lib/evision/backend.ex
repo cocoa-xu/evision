@@ -1002,27 +1002,29 @@ defmodule Evision.Backend do
 
   # all = every element nonzero (min over the {0,1} nonzero mask); any = some nonzero (max).
   defp bool_reduce(out, %T{} = tensor, opts, op) do
-    mask = tensor |> from_nx() |> nonzero_mask()
-    reduce_aggregate(out, to_nx(mask, tensor), opts, op)
+    mask = nonzero_mask(tensor)
+    reduce_aggregate(out, to_nx(mask, %T{tensor | type: {:u, 8}}), opts, op)
   end
 
-  defp nonzero_mask(mat) do
-    mat |> Evision.Mat.sign() |> reject_error() |> Evision.Mat.abs() |> reject_error()
+  defp nonzero_mask(%T{type: type} = tensor) do
+    mat = from_nx(tensor)
+    mat = if type in @half_types, do: as_mat_type(mat, {:f, 32}), else: mat
+    Evision.Mat.predicate(mat, 3) |> reject_error()
   end
 
   @impl true
+  def select(%T{shape: shape, type: type} = out, %T{shape: {}} = pred, on_true, on_false) do
+    selected = if Nx.to_number(pred) == 0, do: on_false, else: on_true
+    selected |> Nx.broadcast(shape) |> cast_mat(type) |> to_nx(out)
+  end
+
   def select(%T{shape: shape, type: out_type} = out, pred, on_true, on_false) do
-    mask =
-      pred
-      |> Nx.broadcast(shape)
-      |> from_nx()
-      |> nonzero_mask()
-      |> as_mat_type({:u, 8})
+    mask = if pred.type == {:u, 8}, do: from_nx(pred), else: nonzero_mask(pred)
+    t = cast_mat(on_true, out_type)
+    f = cast_mat(on_false, out_type)
+    shapes = Enum.map([pred, on_true, on_false], &Tuple.to_list(&1.shape))
 
-    t = on_true |> Nx.as_type(out_type) |> Nx.broadcast(shape) |> from_nx()
-    f = on_false |> Nx.as_type(out_type) |> Nx.broadcast(shape) |> from_nx()
-
-    Evision.Mat.select(mask, t, f)
+    Evision.Mat.select_broadcast(mask, t, f, shapes, Tuple.to_list(shape))
     |> reject_error()
     |> to_nx(out)
   end
@@ -1204,27 +1206,13 @@ defmodule Evision.Backend do
   end
 
   @impl true
-  def concatenate(%T{type: out_type, shape: shape} = out, tensors, 0) do
-    bin =
-      tensors
-      |> Enum.map(fn t -> t |> from_nx() |> as_mat_type(out_type) |> to_binary_mat!() end)
-      |> IO.iodata_to_binary()
+  def concatenate(%T{type: out_type, shape: shape} = out, tensors, axis) do
+    inputs = Enum.map(tensors, &cast_mat(&1, out_type))
+    shapes = Enum.map(tensors, &Tuple.to_list(&1.shape))
 
-    Evision.Mat.from_binary_by_shape(bin, out_type, shape)
+    Evision.Mat.concatenate(inputs, shapes, Tuple.to_list(shape), axis)
     |> reject_error()
     |> to_nx(out)
-  end
-
-  def concatenate(%T{type: out_type, shape: shape} = out, tensors, axis) do
-    rank = tuple_size(shape)
-    base = Evision.Mat.full(shape, 0, out_type) |> reject_error() |> to_nx(out)
-
-    tensors
-    |> Enum.reduce({base, 0}, fn t, {acc, offset} ->
-      starts = List.duplicate(0, rank) |> List.replace_at(axis, offset)
-      {do_put_slice(out, acc, t, starts), offset + elem(t.shape, axis)}
-    end)
-    |> elem(0)
   end
 
   def take_along_axis(%T{shape: out_shape} = out, %T{shape: shape} = tensor, indices, axis) do

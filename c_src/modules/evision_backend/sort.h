@@ -68,7 +68,7 @@ static ERL_NIF_TERM evision_cv_mat_sort_rows(ErlNifEnv *env, int argc, const ERL
         Mat src;
         int descending = 0;
 
-        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "src"), src, ArgInfo("src", ArgInfo::INPUT_ONLY)) &&
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "src"), src, ArgInfo("src", ArgInfo::BORROWED_INPUT)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "descending"), descending, ArgInfo("descending", 0))) {
             if (!evision_backend_matrix(src))
                 return evision::nif::error(env, "sort: expected a nonempty single-channel matrix");
@@ -101,7 +101,7 @@ static ERL_NIF_TERM evision_cv_mat_argsort_rows(ErlNifEnv *env, int argc, const 
         Mat src;
         int descending = 0;
 
-        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "src"), src, ArgInfo("src", ArgInfo::INPUT_ONLY)) &&
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "src"), src, ArgInfo("src", ArgInfo::BORROWED_INPUT)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "descending"), descending, ArgInfo("descending", 0))) {
             if (!evision_backend_matrix(src))
                 return evision::nif::error(env, "sort: expected a nonempty single-channel matrix");

@@ -20,7 +20,7 @@ static ERL_NIF_TERM evision_cv_mat_to_batched(ErlNifEnv *env, int argc, const ER
     std::vector<int> as_shape;
     std::string leftover;
 
-    if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", ArgInfo::INPUT_ONLY)) &&
+    if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", ArgInfo::BORROWED_INPUT)) &&
         evision_to_safe(env, evision_get_kw(env, erl_terms, "batch_size"), batch_size, ArgInfo("batch_size", 0)) &&
         evision_to_safe(env, evision_get_kw(env, erl_terms, "as_shape"), as_shape, ArgInfo("as_shape", 0)) &&
         evision_to_safe(env, evision_get_kw(env, erl_terms, "leftover"), leftover, ArgInfo("leftover", 0))) {

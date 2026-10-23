@@ -703,7 +703,9 @@ defmodule Evision.Backend.Test do
         Nx.tensor([1, 0, 2]),
         Nx.tensor([[1, 0, 3], [4, 5, 6]]),
         Nx.tensor([[0.0, 1.0], [2.0, 3.0]], type: :f32),
-        Nx.tensor([[1, 1], [1, 0]], type: :u8)
+        Nx.tensor([[1, 1], [1, 0]], type: :u8),
+        Nx.tensor([[:nan, :infinity], [-0.0, :neg_infinity]], type: :f32),
+        Nx.tensor([[0.0, :nan], [1.0, -0.0]], type: :bf16)
       ]
 
       opts_list = [[], [axes: [0]], [axes: [1]], [axes: [1], keep_axes: true]]
@@ -765,6 +767,20 @@ defmodule Evision.Backend.Test do
             values = Nx.iota({17}, type: type)
             {Nx.tensor(mask, type: :u8), values, Nx.add(values, 20)}
           end
+
+      cases =
+        cases ++
+          for type <- [:f16, :bf16, :f32, :f64] do
+            {Nx.tensor([:nan, :infinity, :neg_infinity, -0.0, 0.0, -2.0], type: type),
+             Nx.tensor([1, 2, 3, 4, 5, 6]), Nx.tensor(9)}
+          end
+
+      cases =
+        cases ++ [
+          {Nx.tensor(:nan), Nx.tensor([1, 2]), Nx.tensor([3, 4])},
+          {Nx.tensor([[0, 1, 0], [1, 0, 1]]), Nx.tensor([[1, 2, 3]]), Nx.tensor(7)},
+          {Nx.iota({2, 3, 4}) |> Nx.remainder(2), Nx.iota({1, 3, 1}), Nx.iota({4})}
+        ]
 
       for {p, a, b} <- cases do
         assert_same(Nx.select(ev(p), ev(a), ev(b)), Nx.select(p, a, b))

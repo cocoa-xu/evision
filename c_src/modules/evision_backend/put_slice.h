@@ -8,8 +8,8 @@
 #include "../evision_mat_utils.hpp"
 #include "validation.h"
 
-// Scatter a dense block into a copy of `base` (Nx.put_slice; also the building block
-// for concatenate). dst = clone(base); for each element of `slice` at multi-index
+// Scatter a dense block into a copy of `base` (Nx.put_slice).
+// dst = clone(base); for each element of `slice` at multi-index
 // (j_0..j_{r-1}), write it to dst at (starts[k] + j_k). Type-agnostic byte copy via
 // an odometer tracking the destination offset; the block is bounds-checked up front.
 // @evision c: mat_put_slice, evision_cv_mat_put_slice, 1
@@ -26,7 +26,7 @@ static ERL_NIF_TERM evision_cv_mat_put_slice(ErlNifEnv *env, int argc, const ERL
         std::vector<int> base_dims, slice_dims, starts;
 
         if (evision_to_safe(env, evision_get_kw(env, erl_terms, "base"), base, ArgInfo("base", 0)) &&
-            evision_to_safe(env, evision_get_kw(env, erl_terms, "slice"), slice, ArgInfo("slice", ArgInfo::INPUT_ONLY)) &&
+            evision_to_safe(env, evision_get_kw(env, erl_terms, "slice"), slice, ArgInfo("slice", ArgInfo::BORROWED_INPUT)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "base_dims"), base_dims, ArgInfo("base_dims", 0)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "slice_dims"), slice_dims, ArgInfo("slice_dims", 0)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "starts"), starts, ArgInfo("starts", 0))) {

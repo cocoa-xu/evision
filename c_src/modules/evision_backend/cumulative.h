@@ -70,7 +70,7 @@ static ERL_NIF_TERM evision_cv_mat_cumulative(ErlNifEnv *env, int argc, const ER
         Mat src;
         int op = 0, reverse = 0;
 
-        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "src"), src, ArgInfo("src", ArgInfo::INPUT_ONLY)) &&
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "src"), src, ArgInfo("src", ArgInfo::BORROWED_INPUT)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "op"), op, ArgInfo("op", 0)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "reverse"), reverse, ArgInfo("reverse", 0))) {
             if (!evision_backend_matrix(src))
