@@ -16,7 +16,7 @@ static ERL_NIF_TERM evision_cv_mat_bitwise_not(ErlNifEnv *env, int argc, const E
     {
         Mat img;
 
-        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0))) {
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", ArgInfo::BORROWED_INPUT))) {
             Mat ret;
 
             int error_flag = false;

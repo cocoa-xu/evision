@@ -753,6 +753,19 @@ defmodule Evision.Backend.Test do
         {Nx.tensor(0), Nx.tensor([1, 2, 3]), Nx.tensor([4, 5, 6])}
       ]
 
+      masks = [
+        List.duplicate(0, 17),
+        List.duplicate(255, 17),
+        [0, 1, 128, 255, 0, 2, 3, 0, 255, 128, 0, 1, 0, 0, 255, 2, 0]
+      ]
+
+      cases =
+        cases ++
+          for mask <- masks, type <- [:u8, :s16, :f32, :f64] do
+            values = Nx.iota({17}, type: type)
+            {Nx.tensor(mask, type: :u8), values, Nx.add(values, 20)}
+          end
+
       for {p, a, b} <- cases do
         assert_same(Nx.select(ev(p), ev(a), ev(b)), Nx.select(p, a, b))
       end

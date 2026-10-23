@@ -17,8 +17,8 @@ static ERL_NIF_TERM evision_cv_mat_multiply(ErlNifEnv *env, int argc, const ERL_
         Mat l;
         Mat r;
 
-        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "l"), l, ArgInfo("l", 0)) &&
-            evision_to_safe(env, evision_get_kw(env, erl_terms, "r"), r, ArgInfo("r", 0))) {
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "l"), l, ArgInfo("l", ArgInfo::BORROWED_INPUT)) &&
+            evision_to_safe(env, evision_get_kw(env, erl_terms, "r"), r, ArgInfo("r", ArgInfo::BORROWED_INPUT))) {
             Mat ret;
 
             int error_flag = false;
@@ -48,8 +48,8 @@ static ERL_NIF_TERM evision_cv_mat_multiply_typed(ErlNifEnv *env, int argc, cons
         std::string t;
         int l = 0;
 
-        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "lhs"), lhs, ArgInfo("lhs", 0)) &&
-            evision_to_safe(env, evision_get_kw(env, erl_terms, "rhs"), rhs, ArgInfo("rhs", 0)) &&
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "lhs"), lhs, ArgInfo("lhs", ArgInfo::BORROWED_INPUT)) &&
+            evision_to_safe(env, evision_get_kw(env, erl_terms, "rhs"), rhs, ArgInfo("rhs", ArgInfo::BORROWED_INPUT)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "t"), t, ArgInfo("t", 0)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "l"), l, ArgInfo("l", 0))) {
             int type;

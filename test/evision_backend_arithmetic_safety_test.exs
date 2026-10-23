@@ -22,6 +22,37 @@ defmodule Evision.BackendArithmeticSafetyTest do
     end
   end
 
+  test "unary kernels reject invalid operations and multi-channel inputs" do
+    integer = mat(<<1, 2>>, "u", 8)
+    float = mat(<<1.0::float-native-32, 2.0::float-native-32>>, "f", 32)
+
+    for op <- [-1, 2] do
+      assert {:error, _} = :evision_nif.mat_bit_unary(src: integer, op: op)
+    end
+
+    for op <- [-1, 18] do
+      assert {:error, _} = :evision_nif.mat_unary_math(src: float, op: op)
+    end
+
+    for {function, binary, t, bits} <- [
+          {:mat_bit_unary, <<1, 2, 3, 4>>, "u", 8},
+          {:mat_unary_math, :binary.copy(<<1.0::float-native-32>>, 4), "f", 32}
+        ] do
+      %{ref: src} =
+        :evision_nif.mat_from_binary(
+          binary: binary,
+          rows: 1,
+          cols: 2,
+          channels: 2,
+          t: t,
+          l: bits
+        )
+
+      assert {:error, _} = apply(:evision_nif, function, [[src: src, op: 0]])
+      assert :evision_nif.mat_to_binary(img: src) == binary
+    end
+  end
+
   test "signed minimum quotient and remainder cannot trap the VM" do
     for bits <- [32, 64] do
       minimum = -Integer.pow(2, bits - 1)

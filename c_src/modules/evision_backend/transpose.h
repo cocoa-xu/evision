@@ -20,7 +20,7 @@ static ERL_NIF_TERM evision_cv_mat_transpose(ErlNifEnv *env, int argc, const ERL
     std::vector<int> as_shape;
     bool as_shaped = true;
 
-    if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0)) &&
+    if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", ArgInfo::BORROWED_INPUT)) &&
         evision_to_safe(env, evision_get_kw(env, erl_terms, "axes"), axes, ArgInfo("axes", 0)) &&
         evision_to_safe(env, evision_get_kw(env, erl_terms, "as_shaped"), as_shaped, ArgInfo("as_shaped", 0)) &&
         (!as_shaped || evision_to_safe(env, evision_get_kw(env, erl_terms, "as_shape"), as_shape, ArgInfo("as_shape", 0)))) {
@@ -50,6 +50,7 @@ static ERL_NIF_TERM evision_cv_mat_transpose(ErlNifEnv *env, int argc, const ERL
             Mat shaped(ndims, as_shape.data(), img.depth(), img.data);
             ERRWRAP2(cv::transposeND(shaped, axes, ret), env, error_flag, error_term);
         } else {
+            if (!img.isContinuous()) img = img.clone();
             ERRWRAP2(cv::transposeND(img, axes, ret), env, error_flag, error_term);
         }
 
