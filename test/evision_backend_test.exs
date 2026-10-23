@@ -800,6 +800,18 @@ defmodule Evision.Backend.Test do
         Nx.tensor([-1, -2], type: :s64)
       ]
 
+      unary_tensors =
+        unary_tensors ++
+          [
+            Nx.iota({256}, type: :u8),
+            Nx.iota({256}, type: :s16) |> Nx.subtract(128) |> Nx.as_type(:s8)
+          ] ++
+          for bits <- [16, 32, 64], signed <- [:s, :u] do
+            top = Integer.pow(2, if(signed == :s, do: bits - 1, else: bits))
+            values = if signed == :s, do: [0, 1, -1, -top, top - 1], else: [0, 1, div(top, 2), top - 1]
+            Nx.tensor(values, type: {signed, bits})
+          end
+
       for op <- [:count_leading_zeros, :population_count], t <- unary_tensors do
         assert_same(apply(Nx, op, [ev(t)]), apply(Nx, op, [t]))
       end
