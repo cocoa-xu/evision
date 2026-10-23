@@ -24,7 +24,7 @@ defmodule Evision.StructSetter.Test do
   test "every generated setter accepts the value its getter returns" do
     failures =
       for {module, ctor} <- default_constructible_modules(),
-          object = apply(module, ctor, []),
+          object = initialized_object(module, ctor),
           is_struct(object, module),
           {prop, getter, setter} <- properties(module),
           value = apply(module, getter, [object]),
@@ -40,6 +40,38 @@ defmodule Evision.StructSetter.Test do
                "  #{inspect(module)}.set_#{prop}/2 -> #{inspect(result)}"
              end)
   end
+
+  defp initialized_object(Evision.LineDescriptor.KeyLine = module, ctor) do
+    # OpenCV's KeyLine constructor leaves its scalar fields uninitialized.
+    # Set known values before any getter reads them, and check the round trip.
+    values = [
+      angle: 0.5,
+      class_id: 3,
+      octave: 1,
+      pt: {2.0, 3.0},
+      response: 0.75,
+      size: 8.0,
+      startPointX: 1.0,
+      startPointY: 2.0,
+      endPointX: 3.0,
+      endPointY: 4.0,
+      sPointInOctaveX: 0.5,
+      sPointInOctaveY: 1.0,
+      ePointInOctaveX: 1.5,
+      ePointInOctaveY: 2.0,
+      lineLength: 2.5,
+      numOfPixels: 4
+    ]
+
+    Enum.reduce(values, apply(module, ctor, []), fn {prop, value}, object ->
+      result = apply(module, String.to_atom("set_#{prop}"), [object, value])
+      assert is_struct(result, module), "#{inspect(module)}.set_#{prop}/2: #{inspect(result)}"
+      assert apply(module, String.to_atom("get_#{prop}"), [result]) == value
+      result
+    end)
+  end
+
+  defp initialized_object(module, ctor), do: apply(module, ctor, [])
 
   defp default_constructible_modules do
     {:ok, modules} = :application.get_key(:evision, :modules)
