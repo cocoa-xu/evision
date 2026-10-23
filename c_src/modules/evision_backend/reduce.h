@@ -128,7 +128,7 @@ static ERL_NIF_TERM evision_cv_mat_reduce(ErlNifEnv *env, int argc, const ERL_NI
         Mat src;
         int op = 0, axis = 1;
 
-        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "src"), src, ArgInfo("src", ArgInfo::INPUT_ONLY)) &&
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "src"), src, ArgInfo("src", ArgInfo::BORROWED_INPUT)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "op"), op, ArgInfo("op", 0)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "axis"), axis, ArgInfo("axis", 0))) {
             if (!evision_backend_matrix(src))

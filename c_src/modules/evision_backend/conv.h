@@ -204,8 +204,8 @@ static ERL_NIF_TERM evision_cv_mat_conv(ErlNifEnv *env, int argc, const ERL_NIF_
         int feature_groups = 1, batch_groups = 1;
         int im2row_budget = 0;
 
-        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "input"), input, ArgInfo("input", ArgInfo::INPUT_ONLY)) &&
-            evision_to_safe(env, evision_get_kw(env, erl_terms, "kernel"), kernel, ArgInfo("kernel", ArgInfo::INPUT_ONLY)) &&
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "input"), input, ArgInfo("input", ArgInfo::BORROWED_INPUT)) &&
+            evision_to_safe(env, evision_get_kw(env, erl_terms, "kernel"), kernel, ArgInfo("kernel", ArgInfo::BORROWED_INPUT)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "in_shape"), in_shape, ArgInfo("in_shape", 0)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "k_shape"), k_shape, ArgInfo("k_shape", 0)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "out_shape"), out_shape, ArgInfo("out_shape", 0)) &&
