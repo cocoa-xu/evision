@@ -6,6 +6,7 @@
 #include <vector>
 #include <erl_nif.h>
 #include "../../ArgInfo.hpp"
+#include "../../evision_native_safety.hpp"
 
 static void repeat_bytes(uint8_t *dst, const uint8_t *src, size_t elem_size, size_t count)
 {
@@ -29,7 +30,8 @@ static void broadcast(
     void *dst_data,
     const std::vector<int>& src_shape,
     const std::vector<int>& to_shape,
-    size_t elem_size
+    size_t elem_size,
+    size_t target_count
 )
 {
     const size_t ndims = to_shape.size();
@@ -43,15 +45,8 @@ static void broadcast(
 
     uint8_t *dst = (uint8_t *)dst_data;
 
-    if (ndims == 0) {
-        memcpy(dst, src, elem_size);
-        return;
-    }
-
     if (img.total() == 1) {
-        size_t count = 1;
-        for (size_t d = 0; d < ndims; ++d) count *= (size_t)to_shape[d];
-        repeat_bytes(dst, src, elem_size, count);
+        repeat_bytes(dst, src, elem_size, target_count);
         return;
     }
 
@@ -65,8 +60,7 @@ static void broadcast(
 
     const size_t last = (size_t)to_shape[ndims - 1];
     const bool last_is_broadcast = src_shape[ndims - 1] == 1;
-    size_t outer = 1;
-    for (size_t d = 0; d + 1 < ndims; ++d) outer *= (size_t)to_shape[d];
+    const size_t outer = target_count / last;
 
     std::vector<int> idx(ndims - 1, 0);
     for (size_t o = 0; o < outer; ++o) {
@@ -104,6 +98,14 @@ static ERL_NIF_TERM evision_cv_mat_broadcast_to(ErlNifEnv *env, int argc, const 
         if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "to_shape"), to_shape, ArgInfo("to_shape", 0)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "force_src_shape"), force_src_shape, ArgInfo("force_src_shape", 0))) {
+            size_t target_bytes, source_bytes;
+            if (img.empty() || to_shape.empty() ||
+                !evision_shape_byte_size(to_shape, img.elemSize(), target_bytes) ||
+                (!force_src_shape.empty() &&
+                 (!evision_shape_byte_size(force_src_shape, img.elemSize(), source_bytes) ||
+                  source_bytes / img.elemSize() != img.total()))) {
+                return evision::nif::error(env, "broadcast: invalid shape or source size mismatch");
+            }
             int64_t ndims = to_shape.size();
             std::vector<int> src_shape(ndims);
 
@@ -141,7 +143,7 @@ static ERL_NIF_TERM evision_cv_mat_broadcast_to(ErlNifEnv *env, int argc, const 
                 return evision::nif::error(env, "cannot broadcast to specified shape, out of memory");
             }
 
-            broadcast(img, result.data, src_shape, to_shape, elem_size);
+            broadcast(img, result.data, src_shape, to_shape, elem_size, target_bytes / elem_size);
             return evision_from(env, result);
         }
     }

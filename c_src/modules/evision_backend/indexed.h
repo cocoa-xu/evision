@@ -6,6 +6,7 @@
 #include <erl_nif.h>
 #include "../../ArgInfo.hpp"
 #include "../evision_mat_utils.hpp"
+#include "validation.h"
 
 // out[coord] += src_block, element-wise, in the element's own type. Integer adds
 // use an unsigned accumulator so wraparound is well-defined (two's complement),
@@ -37,32 +38,34 @@ static ERL_NIF_TERM evision_cv_mat_indexed(ErlNifEnv *env, int argc, const ERL_N
         int inner = 0, op = 0;
 
         if (evision_to_safe(env, evision_get_kw(env, erl_terms, "src"), src, ArgInfo("src", 0)) &&
-            evision_to_safe(env, evision_get_kw(env, erl_terms, "indices"), indices, ArgInfo("indices", 0)) &&
-            evision_to_safe(env, evision_get_kw(env, erl_terms, "updates"), updates, ArgInfo("updates", 0)) &&
-            evision_to_safe(env, evision_get_kw(env, erl_terms, "dims"), dims, ArgInfo("dims", 0)) &&
+            evision_to_safe(env, evision_get_kw(env, erl_terms, "indices"), indices, ArgInfo("indices", ArgInfo::INPUT_ONLY)) &&
+            evision_to_safe(env, evision_get_kw(env, erl_terms, "updates"), updates, ArgInfo("updates", ArgInfo::INPUT_ONLY)) &&
+            evision_to_safe(env, evision_get_kw(env, erl_terms, "dims"), dims, ArgInfo("dims", ArgInfo::INPUT_ONLY)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "inner"), inner, ArgInfo("inner", 0)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "op"), op, ArgInfo("op", 0))) {
-            // clone so the immutable source Mat is never mutated; clone() is continuous.
-            Mat result = src.clone();
-            Mat upd_c = updates.isContinuous() ? updates : updates.clone();
-            Mat idx_c = indices.isContinuous() ? indices : indices.clone();
-            Mat dim_c = dims.isContinuous() ? dims : dims.clone();
+            if (!evision_backend_indices(indices) ||
+                updates.type() != src.type() || (op != 0 && op != 1))
+                return evision::nif::error(env, "indexed: invalid index or update type");
+            // The writable converter already made a private, continuous copy.
+            Mat result = src;
+            Mat dim_c = dims;
+            std::vector<int64_t> mult;
+            if (!evision_backend_coordinates(result, dim_c, inner, mult))
+                return evision::nif::error(env, "indexed: invalid source shape or dimension type");
 
-            const int64_t *ip = (const int64_t *)idx_c.data;
             const int64_t *dimp = (const int64_t *)dim_c.data;
             int64_t depth = (int64_t)dim_c.total();
-            int64_t total_idx = (int64_t)idx_c.total();
+            int64_t total_idx = (int64_t)indices.total();
             if (depth <= 0 || total_idx % depth != 0)
                 return evision::nif::error(env, "indexed: indices size not a multiple of coordinate depth");
             int64_t num_updates = total_idx / depth;
 
-            std::vector<int64_t> mult((size_t)depth);
-            int64_t acc = inner;
-            for (int64_t k = depth - 1; k >= 0; k--) {
-                mult[(size_t)k] = acc;
-                acc *= dimp[(size_t)k];
-            }
+            if (!evision_backend_shape(updates, {(int)num_updates, inner}))
+                return evision::nif::error(env, "indexed: update size mismatch");
 
+            Mat upd_c = updates.isContinuous() ? updates : updates.clone();
+            Mat idx_c = indices.isContinuous() ? indices : indices.clone();
+            const int64_t *ip = (const int64_t *)idx_c.data;
             uchar *rp = result.data;
             const uchar *up = upd_c.data;
             size_t elem_size = result.elemSize();

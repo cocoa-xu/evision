@@ -6,28 +6,7 @@
 #include <vector>
 #include "../../ArgInfo.hpp"
 #include "../evision_mat_utils.hpp"
-
-static bool evision_checked_mul_size(size_t lhs, size_t rhs, size_t& out) {
-    if (rhs != 0 && lhs > std::numeric_limits<size_t>::max() / rhs) {
-        return false;
-    }
-    out = lhs * rhs;
-    return true;
-}
-
-static bool evision_shape_byte_size(const std::vector<int>& shape, size_t elem_size, size_t& byte_size) {
-    // An empty shape is a scalar (0-dim Mat): the empty product is 1 element.
-    size_t count = 1;
-    for (int dim : shape) {
-        if (dim <= 0) {
-            return false;
-        }
-        if (!evision_checked_mul_size(count, (size_t)dim, count)) {
-            return false;
-        }
-    }
-    return evision_checked_mul_size(count, elem_size, byte_size);
-}
+#include "../../evision_native_safety.hpp"
 
 // @evision c: mat_from_binary,evision_cv_mat_from_binary,1
 // @evision nif: def mat_from_binary(_opts \\ []), do: :erlang.nif_error(:undefined)
@@ -80,7 +59,12 @@ static ERL_NIF_TERM evision_cv_mat_from_binary(ErlNifEnv *env, int argc, const E
                     // 	which means that no data is copied. This operation is very efficient and can be used
                     // 	to process external data using OpenCV functions. The external data is not automatically
                     // 	deallocated, so you should take care of it.
-                    res->val = new Mat(img_rows, img_cols, type, (void *)res->in_buf);
+                    try {
+                        res->val = new Mat(img_rows, img_cols, type, (void *)res->in_buf);
+                    } catch (...) {
+                        enif_release_resource(res);
+                        throw;
+                    }
 
                     // transfer ownership to ERTS
                     ERL_NIF_TERM term = enif_make_resource(env, res);
@@ -123,6 +107,7 @@ static ERL_NIF_TERM evision_cv_mat_from_binary_by_shape(ErlNifEnv *env, int argc
             if (enif_inspect_binary(env, erl_binary, &data)) {
                 // validate binary data
                 int type = 0;
+                if (shape.empty()) shape.push_back(1);
                 int ndims = (int)shape.size();
                 if (!get_binary_type(t, l, 0, type)) return evision::nif::error(env, "not implemented for the given type");
                 size_t declared_size;
@@ -146,7 +131,12 @@ static ERL_NIF_TERM evision_cv_mat_from_binary_by_shape(ErlNifEnv *env, int argc
                     // 	which means that no data is copied. This operation is very efficient and can be used
                     // 	to process external data using OpenCV functions. The external data is not automatically
                     // 	deallocated, so you should take care of it.
-                    res->val = new Mat(ndims, shape.data(), type, (void *)res->in_buf);
+                    try {
+                        res->val = new Mat(ndims, shape.data(), type, (void *)res->in_buf);
+                    } catch (...) {
+                        enif_release_resource(res);
+                        throw;
+                    }
 
                     // transfer ownership to ERTS
                     ERL_NIF_TERM term = enif_make_resource(env, res);

@@ -7,6 +7,7 @@
 #include "../../ArgInfo.hpp"
 #include "../evision_mat_utils.hpp"
 #include "parallel.h"
+#include "validation.h"
 
 // Row-wise prefix scan (Nx.cumulative_*): op 0=sum, 1=product, 2=min, 3=max,
 // accumulating left-to-right (or right-to-left when reverse). Output has the same
@@ -72,6 +73,8 @@ static ERL_NIF_TERM evision_cv_mat_cumulative(ErlNifEnv *env, int argc, const ER
         if (evision_to_safe(env, evision_get_kw(env, erl_terms, "src"), src, ArgInfo("src", ArgInfo::INPUT_ONLY)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "op"), op, ArgInfo("op", 0)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "reverse"), reverse, ArgInfo("reverse", 0))) {
+            if (!evision_backend_matrix(src))
+                return evision::nif::error(env, "cumulative: expected a nonempty single-channel matrix");
             Mat dst(src.rows, src.cols, src.type());
             bool rev = reverse != 0;
             switch (src.depth()) {

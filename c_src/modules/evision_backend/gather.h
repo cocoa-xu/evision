@@ -8,6 +8,7 @@
 #include "../../ArgInfo.hpp"
 #include "../evision_mat_utils.hpp"
 #include "parallel.h"
+#include "validation.h"
 
 // Gather over the leading axes (Nx.gather). The tensor is pre-transposed so the
 // indexed axes lead; each consecutive `depth`-tuple in `indices` is a coordinate
@@ -31,36 +32,35 @@ static ERL_NIF_TERM evision_cv_mat_gather(ErlNifEnv *env, int argc, const ERL_NI
             evision_to_safe(env, evision_get_kw(env, erl_terms, "indices"), indices, ArgInfo("indices", ArgInfo::INPUT_ONLY)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "dims"), dims, ArgInfo("dims", ArgInfo::INPUT_ONLY)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "inner"), inner, ArgInfo("inner", 0))) {
-            Mat src_c = src.isContinuous() ? src : src.clone();
-            Mat idx_c = indices.isContinuous() ? indices : indices.clone();
-            Mat dim_c = dims.isContinuous() ? dims : dims.clone();
-            const uchar *sp = src_c.data;
-            const int64_t *ip = (const int64_t *)idx_c.data;
+            if (!evision_backend_indices(indices))
+                return evision::nif::error(env, "gather: indices must be s64");
+            Mat dim_c = dims;
+            std::vector<int64_t> mult;
+            if (!evision_backend_coordinates(src, dim_c, inner, mult))
+                return evision::nif::error(env, "gather: invalid source shape or dimension type");
             const int64_t *dimp = (const int64_t *)dim_c.data;
 
             int64_t depth = (int64_t)dim_c.total();
-            int64_t total_idx = (int64_t)idx_c.total();
+            int64_t total_idx = (int64_t)indices.total();
             if (depth <= 0 || total_idx % depth != 0)
                 return evision::nif::error(env, "gather: indices size not a multiple of coordinate depth");
             int64_t num_gathers = total_idx / depth;
 
-            // mult[k] = number of elements spanned by one step along leading axis k
-            // (product of the trailing leading dims times the inner block size).
-            std::vector<int64_t> mult((size_t)depth);
-            int64_t acc = inner;
-            for (int64_t k = depth - 1; k >= 0; k--) {
-                mult[(size_t)k] = acc;
-                acc *= dimp[(size_t)k];
-            }
+            size_t output_count;
+            if (!evision_backend_count({(int)num_gathers, inner}, output_count))
+                return evision::nif::error(env, "gather: output size overflow");
 
+            Mat src_c = src.isContinuous() ? src : src.clone();
+            Mat idx_c = indices.isContinuous() ? indices : indices.clone();
+            const uchar *sp = src_c.data;
+            const int64_t *ip = (const int64_t *)idx_c.data;
             size_t elem_size = src_c.elemSize();
             size_t inner_bytes = (size_t)inner * elem_size;
-            Mat dst(1, (int)(num_gathers * inner), src.type());
+            Mat dst(1, (int)output_count, src.type());
             uchar *dp = dst.data;
 
             std::atomic<bool> bad_index(false);
-            int64_t work = num_gathers * (inner > 0 ? inner : 1);
-            evision_parallel_for(num_gathers, work, [&](int64_t begin, int64_t end) {
+            evision_parallel_for(num_gathers, (int64_t)output_count, [&](int64_t begin, int64_t end) {
                 for (int64_t g = begin; g < end; g++) {
                     int64_t offset = 0;
                     for (int64_t k = 0; k < depth; k++) {

@@ -9,6 +9,7 @@
 #include "../../ArgInfo.hpp"
 #include "../evision_mat_utils.hpp"
 #include "parallel.h"
+#include "validation.h"
 
 // N-d cross-correlation (Nx.conv) on already-permuted canonical layouts: input [N, Cin,
 // *spatial], kernel [O, Cin/G, *spatial], output [N/Bg, O, *spatial]. The caller does the
@@ -22,7 +23,7 @@ static void conv_typed(const T *I, const T *K, T *Out, int d,
                        const std::vector<int> &in_shape, const std::vector<int> &k_shape,
                        const std::vector<int> &out_shape, const std::vector<int> &stride,
                        const std::vector<int> &pad_lo, const std::vector<int> &in_dil,
-                       const std::vector<int> &k_dil, int G, int Bg) {
+                       const std::vector<int> &k_dil, int G, int Bg, int64_t out_total) {
     int rank = d + 2;
     int Cin_pg = k_shape[1];
     int O = k_shape[0];
@@ -42,12 +43,10 @@ static void conv_typed(const T *I, const T *K, T *Out, int d,
     std::vector<int64_t> dilated_in((size_t)d);
     for (int s = 0; s < d; s++) dilated_in[(size_t)s] = (int64_t)(in_shape[(size_t)(2 + s)] - 1) * in_dil[(size_t)s] + 1;
 
-    int64_t out_total = 1;
-    for (int i = 0; i < rank; i++) out_total *= out_shape[(size_t)i];
     int64_t k_spatial = 1;
     for (int s = 0; s < d; s++) k_spatial *= k_shape[(size_t)(2 + s)];
 
-    int64_t work = out_total * Cin_pg * (k_spatial > 0 ? k_spatial : 1);
+    int64_t work = out_total * Cin_pg * k_spatial;
     evision_parallel_for(out_total, work, EVISION_PARALLEL_CONV_MIN_WORK, [&](int64_t begin, int64_t end) {
         std::vector<int> oidx((size_t)rank, 0), kp((size_t)d, 0);
         int64_t q = begin;
@@ -132,7 +131,7 @@ static void conv2d_im2row(const T *I, const T *K, T *Out,
 
     // Bound the im2row + gemm-output buffers; the tile height is the GEMM's M, so keep it
     // as large as the budget allows. Normal convs fit one tile (no tiling).
-    int64_t tile = budget_bytes / ((int64_t)(CKK + O_pg) * (int64_t)sizeof(T));
+    int64_t tile = budget_bytes / (((int64_t)CKK + O_pg) * (int64_t)sizeof(T));
     if (tile < 1) tile = 1;
     if (tile > total_rows) tile = total_rows;
 
@@ -159,11 +158,11 @@ static void conv2d_im2row(const T *I, const T *K, T *Out,
                     for (int ic = 0; ic < Cin_pg; ic++) {
                         const T *inch = I + (int64_t)n * in_ns + (int64_t)(cbase + ic) * in_cs;
                         for (int kh = 0; kh < KH; kh++) {
-                            int ih = oh * sh + kh * kdh - ph;
+                            int64_t ih = (int64_t)oh * sh + (int64_t)kh * kdh - ph;
                             bool h_ok = ih >= 0 && ih < H;
-                            const T *inrow = inch + (int64_t)ih * W;
+                            const T *inrow = h_ok ? inch + ih * W : nullptr;
                             for (int kw = 0; kw < KW; kw++) {
-                                int iw = ow * sw + kw * kdw - pw;
+                                int64_t iw = (int64_t)ow * sw + (int64_t)kw * kdw - pw;
                                 crow[ci++] = (h_ok && iw >= 0 && iw < W) ? inrow[iw] : (T)0;
                             }
                         }
@@ -217,44 +216,46 @@ static ERL_NIF_TERM evision_cv_mat_conv(ErlNifEnv *env, int argc, const ERL_NIF_
             evision_to_safe(env, evision_get_kw(env, erl_terms, "feature_groups"), feature_groups, ArgInfo("feature_groups", 0)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "batch_groups"), batch_groups, ArgInfo("batch_groups", 0)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "im2row_budget"), im2row_budget, ArgInfo("im2row_budget", 0))) {
-            int d = (int)in_shape.size() - 2;
+            const size_t rank = in_shape.size();
+            size_t output_count;
+            if (rank < 3 || k_shape.size() != rank || out_shape.size() != rank ||
+                !evision_backend_shape(input, in_shape) || !evision_backend_shape(kernel, k_shape) ||
+                input.type() != kernel.type() ||
+                (input.type() != CV_32F && input.type() != CV_64F) ||
+                !evision_backend_count(out_shape, output_count) ||
+                !evision_positive_axes(stride, rank - 2) || pad_lo.size() != rank - 2 ||
+                !evision_positive_axes(in_dil, rank - 2) || !evision_positive_axes(k_dil, rank - 2) ||
+                feature_groups <= 0 || batch_groups <= 0 ||
+                k_shape[0] % feature_groups != 0 || k_shape[0] % batch_groups != 0 ||
+                in_shape[0] % batch_groups != 0 ||
+                (int64_t)k_shape[1] * feature_groups != in_shape[1] ||
+                out_shape[0] != in_shape[0] / batch_groups || out_shape[1] != k_shape[0])
+                return evision::nif::error(env, "conv: invalid shape, type, groups or axes");
+            int d = (int)rank - 2;
             Mat in_c = input.isContinuous() ? input : input.clone();
             Mat k_c = kernel.isContinuous() ? kernel : kernel.clone();
 
-            int64_t out_total = 1;
-            for (size_t i = 0; i < out_shape.size(); i++) out_total *= out_shape[i];
-            Mat dst(1, (int)(out_total > 0 ? out_total : 1), input.type());
-
-            bool in_dil_one = std::all_of(in_dil.begin(), in_dil.end(), [](int x) { return x == 1; });
-            bool fast2d = d == 2 && batch_groups == 1 && in_dil_one &&
-                          (input.depth() == CV_32F || input.depth() == CV_64F);
-
-            // Caller may cap the im2row buffer (Application config / per-process override);
-            // 0 or unset means use the default.
-            int64_t budget = im2row_budget > 0 ? (int64_t)im2row_budget : (64LL << 20);
+            Mat dst(1, (int)output_count, input.type());
+            bool fast2d = d == 2 && batch_groups == 1 &&
+                          std::all_of(in_dil.begin(), in_dil.end(), [](int x) { return x == 1; });
 
             if (fast2d) {
+                // 0 or unset means use the default im2row buffer budget.
+                int64_t budget = im2row_budget > 0 ? (int64_t)im2row_budget : (64LL << 20);
                 if (input.depth() == CV_32F)
                     conv2d_im2row<float>((const float *)in_c.data, (const float *)k_c.data, (float *)dst.data,
                                          in_shape, k_shape, out_shape, stride, pad_lo, k_dil, feature_groups, budget);
                 else
                     conv2d_im2row<double>((const double *)in_c.data, (const double *)k_c.data, (double *)dst.data,
                                           in_shape, k_shape, out_shape, stride, pad_lo, k_dil, feature_groups, budget);
+            } else if (input.depth() == CV_32F) {
+                conv_typed<float>((const float *)in_c.data, (const float *)k_c.data, (float *)dst.data,
+                                  d, in_shape, k_shape, out_shape, stride, pad_lo, in_dil, k_dil,
+                                  feature_groups, batch_groups, (int64_t)output_count);
             } else {
-                switch (input.depth()) {
-                    case CV_32F:
-                        conv_typed<float>((const float *)in_c.data, (const float *)k_c.data, (float *)dst.data,
-                                          d, in_shape, k_shape, out_shape, stride, pad_lo, in_dil, k_dil,
-                                          feature_groups, batch_groups);
-                        break;
-                    case CV_64F:
-                        conv_typed<double>((const double *)in_c.data, (const double *)k_c.data, (double *)dst.data,
-                                           d, in_shape, k_shape, out_shape, stride, pad_lo, in_dil, k_dil,
-                                           feature_groups, batch_groups);
-                        break;
-                    default:
-                        return evision::nif::error(env, "conv: unsupported depth (expected f32/f64)");
-                }
+                conv_typed<double>((const double *)in_c.data, (const double *)k_c.data, (double *)dst.data,
+                                   d, in_shape, k_shape, out_shape, stride, pad_lo, in_dil, k_dil,
+                                   feature_groups, batch_groups, (int64_t)output_count);
             }
             return evision_from(env, dst);
         }

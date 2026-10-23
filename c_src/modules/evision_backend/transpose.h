@@ -4,6 +4,7 @@
 #include <erl_nif.h>
 #include <limits>
 #include "../../ArgInfo.hpp"
+#include "../../evision_native_safety.hpp"
 
 // @evision c: mat_transpose,evision_cv_mat_transpose,1
 // @evision nif: def mat_transpose(_opts \\ []), do: :erlang.nif_error(:undefined)
@@ -21,31 +22,26 @@ static ERL_NIF_TERM evision_cv_mat_transpose(ErlNifEnv *env, int argc, const ERL
 
     if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0)) &&
         evision_to_safe(env, evision_get_kw(env, erl_terms, "axes"), axes, ArgInfo("axes", 0)) &&
-        evision_to_safe(env, evision_get_kw(env, erl_terms, "as_shape"), as_shape, ArgInfo("as_shape", 0)) &&
-        evision_to_safe(env, evision_get_kw(env, erl_terms, "as_shaped"), as_shaped, ArgInfo("as_shaped", 0))) {
-        int ndims = (int)as_shape.size();
-        if (ndims <= 0 || axes.size() != as_shape.size()) {
+        evision_to_safe(env, evision_get_kw(env, erl_terms, "as_shaped"), as_shaped, ArgInfo("as_shaped", 0)) &&
+        (!as_shaped || evision_to_safe(env, evision_get_kw(env, erl_terms, "as_shape"), as_shape, ArgInfo("as_shape", 0)))) {
+        int ndims = as_shaped ? (int)as_shape.size() : img.dims;
+        if (ndims <= 0 || ndims > 32 || axes.size() != (size_t)ndims) {
             return evision::nif::error(env, "invalid transpose shape or axes");
         }
-        for (int dim : as_shape) {
-            if (dim <= 0) {
-                return evision::nif::error(env, "invalid transpose shape");
-            }
+        std::vector<bool> seen((size_t)ndims, false);
+        for (int axis : axes) {
+            if (axis < 0 || axis >= ndims || seen[(size_t)axis])
+                return evision::nif::error(env, "invalid transpose axes");
+            seen[(size_t)axis] = true;
         }
 
         int error_flag = false;
         cv::Mat ret;
         if (as_shaped) {
-            size_t expected_elems = 1;
-            for (int dim : as_shape) {
-                if ((size_t)dim > std::numeric_limits<size_t>::max() / expected_elems) {
-                    return evision::nif::error(env, "as_shape overflow");
-                }
-                expected_elems *= (size_t)dim;
-            }
-            size_t expected_bytes = expected_elems * (size_t)CV_ELEM_SIZE1(img.depth());
-            size_t actual_bytes = (size_t)img.total() * (size_t)img.elemSize();
-            if (expected_bytes != actual_bytes) {
+            size_t expected_bytes, actual_bytes;
+            if (img.empty() || !evision_shape_byte_size(as_shape, img.elemSize1(), expected_bytes) ||
+                !evision_checked_mul_size(img.total(), img.elemSize(), actual_bytes) ||
+                expected_bytes != actual_bytes) {
                 return evision::nif::error(env, "as_shape byte size does not match source matrix");
             }
             if (!img.isContinuous()) {

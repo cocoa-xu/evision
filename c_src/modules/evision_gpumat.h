@@ -158,6 +158,10 @@ static ERL_NIF_TERM evision_cv_cuda_cuda_GpuMat_from_pointer(ErlNifEnv *env, int
         if (shape.size() > 3 || shape.size() == 0) {
             return evision::nif::error(env, "GpuMat expects shape to be 1 <= tuple_size(shape) <= 3");
         }
+        for (int64_t dim : shape) {
+            if (dim <= 0 || dim > std::numeric_limits<int>::max())
+                return evision::nif::error(env, "GpuMat dimensions must be positive int values");
+        }
         evision_to_safe(env, evision_get_kw(env, erl_terms, "device_id"), device_id, ArgInfo("device_id", 0x8));
         int height;
         int width = 1;

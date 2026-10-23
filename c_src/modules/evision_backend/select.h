@@ -6,6 +6,7 @@
 #include "../../ArgInfo.hpp"
 #include "../evision_mat_utils.hpp"
 #include "parallel.h"
+#include "validation.h"
 
 // Elementwise select (Nx.select): result = mask ? on_true : on_false. All three
 // have the same shape (broadcast by the caller); on_true/on_false are already the
@@ -26,6 +27,11 @@ static ERL_NIF_TERM evision_cv_mat_select(ErlNifEnv *env, int argc, const ERL_NI
         if (evision_to_safe(env, evision_get_kw(env, erl_terms, "mask"), mask, ArgInfo("mask", ArgInfo::INPUT_ONLY)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "on_true"), on_true, ArgInfo("on_true", ArgInfo::INPUT_ONLY)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "on_false"), on_false, ArgInfo("on_false", ArgInfo::INPUT_ONLY))) {
+            if (!evision_backend_tensor(mask) || mask.type() != CV_8U ||
+                !evision_backend_tensor(on_true) || !evision_backend_tensor(on_false) ||
+                on_true.type() != on_false.type() || mask.total() != on_true.total() ||
+                on_false.total() != on_true.total())
+                return evision::nif::error(env, "select: invalid shape or type");
             Mat mc = mask.isContinuous() ? mask : mask.clone();
             Mat fc = on_false.isContinuous() ? on_false : on_false.clone();
             Mat dst = on_true.clone();

@@ -8,6 +8,7 @@
 #include "../../ArgInfo.hpp"
 #include "../evision_mat_utils.hpp"
 #include "parallel.h"
+#include "validation.h"
 
 // Elementwise binary ops without an OpenCV primitive (Nx.atan2 / pow / quotient /
 // remainder). op 0=atan2, 1=pow, 2=quotient, 3=remainder. l and r share the output
@@ -52,15 +53,25 @@ static void evision_binop_int(const cv::Mat &l, const cv::Mat &r, cv::Mat &dst, 
                     Acc base = (Acc)a, result = 1;
                     T e = b;
                     while (e > 0) {
-                        if (e & 1) result = (Acc)(result * base);
-                        base = (Acc)(base * base);
+                        if (e & 1) result = (Acc)((uint64_t)result * base);
+                        base = (Acc)((uint64_t)base * base);
                         e >>= 1;
                     }
                     dp[(size_t)i] = (T)result;
                     break;
                 }
-                case 2: dp[(size_t)i] = (b == 0) ? (T)0 : (T)(a / b); break;
-                case 3: dp[(size_t)i] = (b == 0) ? (T)0 : (T)(a % b); break;
+                case 2: case 3:
+                    if (b == 0) {
+                        dp[(size_t)i] = (T)0;
+                    } else if (std::is_signed<T>::value &&
+                               a == std::numeric_limits<T>::min() && b == (T)-1) {
+                        // min / -1 is not representable and can trap in native
+                        // code. Nx integer arithmetic wraps at the type width.
+                        dp[(size_t)i] = (op == 2) ? a : (T)0;
+                    } else {
+                        dp[(size_t)i] = (op == 2) ? (T)(a / b) : (T)(a % b);
+                    }
+                    break;
                 default: dp[(size_t)i] = (T)0; break;
             }
         }
@@ -83,9 +94,12 @@ static ERL_NIF_TERM evision_cv_mat_binop(ErlNifEnv *env, int argc, const ERL_NIF
         if (evision_to_safe(env, evision_get_kw(env, erl_terms, "l"), l, ArgInfo("l", ArgInfo::INPUT_ONLY)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "r"), r, ArgInfo("r", ArgInfo::INPUT_ONLY)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "op"), op, ArgInfo("op", 0))) {
+            if (!evision_backend_pair(l, r))
+                return evision::nif::error(env, "binop: incompatible shapes or types");
             Mat lc = l.isContinuous() ? l : l.clone();
             Mat rc = r.isContinuous() ? r : r.clone();
-            Mat dst = (rc.total() > lc.total() ? rc : lc).clone();
+            const Mat& layout = rc.total() > lc.total() ? rc : lc;
+            Mat dst(layout.dims, layout.size.p, layout.type());
             switch (dst.depth()) {
                 case CV_8U:  evision_binop_int<uint8_t, uint8_t>(lc, rc, dst, op); break;
                 case CV_8S:  evision_binop_int<int8_t, uint8_t>(lc, rc, dst, op); break;

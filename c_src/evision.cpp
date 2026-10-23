@@ -11,6 +11,7 @@
 #include <limits>
 #include <functional>
 #include <memory>
+#include "evision_native_safety.hpp"
 
 #if defined(_MSC_VER) && (_MSC_VER > 1800)
 #pragma warning(pop)
@@ -24,11 +25,11 @@
 #endif
 
 #define F(ERL_NAME, C_NAME, ARITY)    \
-  {#ERL_NAME, ARITY, C_NAME, 0}
+  {#ERL_NAME, ARITY, evision_nif_dispatch<C_NAME>, 0}
 #define F_CPU(ERL_NAME, C_NAME, ARITY)    \
-  {#ERL_NAME, ARITY, C_NAME, ERL_NIF_DIRTY_JOB_CPU_BOUND}
+  {#ERL_NAME, ARITY, evision_nif_dispatch<C_NAME>, ERL_NIF_DIRTY_JOB_CPU_BOUND}
 #define F_IO(ERL_NAME, C_NAME, ARITY)    \
-  {#ERL_NAME, ARITY, C_NAME, ERL_NIF_DIRTY_JOB_IO_BOUND}
+  {#ERL_NAME, ARITY, evision_nif_dispatch<C_NAME>, ERL_NIF_DIRTY_JOB_IO_BOUND}
 
 #include "opencv2/opencv_modules.hpp"
 #include "opencv2/core.hpp"
@@ -457,7 +458,10 @@ enum { ARG_NONE = 0, ARG_MAT = 1, ARG_SCALAR = 2 };
 
 template <typename From, typename To>
 static inline auto _do_cast_type(const From * ptr) -> To {
-    return static_cast<To>(ptr[0]);
+    // Erlang sub-binaries need not satisfy the alignment of the element type.
+    From value;
+    memcpy(&value, ptr, sizeof(value));
+    return static_cast<To>(value);
 }
 
 template <typename To>
@@ -666,7 +670,6 @@ static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Mat& m, const ArgInfo& in
         if (ndims > CV_MAX_DIM) {
             return false;
         }
-        size_t elemsize = CV_ELEM_SIZE1(type);
         std::vector<uint64_t> _sizes(ndims);
         if (is_number) {
             _sizes[0] = 1;
@@ -674,7 +677,8 @@ static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Mat& m, const ArgInfo& in
             for (int dim_i = 0; dim_i < ndims; dim_i++) {
                 ErlNifUInt64 u64;
                 ERL_NIF_TERM shape_i = shapes[dim_i];
-                if (enif_get_uint64(env, shape_i, &u64)) {
+                if (enif_get_uint64(env, shape_i, &u64) && u64 > 0 &&
+                    u64 <= (uint64_t)std::numeric_limits<int>::max()) {
                     _sizes[dim_i] = u64;
                 } else {
                     return false;
@@ -682,6 +686,78 @@ static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Mat& m, const ArgInfo& in
             }
         }
         
+        // A map can be forged without going through Nx or the Elixir wrappers.
+        // Verify the complete byte extent before any scalar read or Mat view.
+        size_t expected_bytes = (size_t)originalElemSize;
+        for (uint64_t dim : _sizes) {
+            if (!evision_checked_mul_size(expected_bytes, (size_t)dim, expected_bytes)) return false;
+        }
+        if (expected_bytes != data.size ||
+            expected_bytes > (size_t)std::numeric_limits<ptrdiff_t>::max()) return false;
+
+        // see https://github.com/opencv/opencv/issues/24057
+        // e.g., Nx.tensor([1,2,3,4]), Nx.tensor(1)
+        if ( ( info.arithm_op_src ) && ( ndims == 1 ) && ( _sizes[0] <= 4 ) )
+        {
+            const int sz  = (int)_sizes[0]; // Real Data Length(1, 2, 3 or 4)
+            const int sz2 = 4;       // Scalar has 4 elements.
+            m = Mat::zeros(sz2, 1, CV_64F);
+
+            const char *base_ptr = (const char *)data.data;
+            for(int i = 0; i < sz; i++ )
+            {
+                const void * oi = static_cast<const void *>(base_ptr + originalElemSize * i);
+                switch (nx_tensor_type)
+                {
+                case CV_8S:
+                    m.at<double>(i) = _do_cast_type<int8_t, double>((const int8_t *)oi);
+                    break;
+                case CV_8U:
+                    m.at<double>(i) = _do_cast_type<uint8_t, double>((const uint8_t *)oi);
+                    break;
+                case CV_16S:
+                    m.at<double>(i) = _do_cast_type<int16_t, double>((const int16_t *)oi);
+                    break;
+                case CV_16U:
+                    m.at<double>(i) = _do_cast_type<uint16_t, double>((const uint16_t *)oi);
+                    break;
+                case CV_16F:
+                    m.at<double>(i) = _do_cast_f16<double>(_do_cast_type<uint16_t, uint16_t>((const uint16_t *)oi));
+                    break;
+                case CV_32S:
+                    m.at<double>(i) = _do_cast_type<int32_t, double>((const int32_t *)oi);
+                    break;
+                case CV_32F:
+                    m.at<double>(i) = _do_cast_type<float, double>((const float *)oi);
+                    break;
+                case CV_64F:
+                    m.at<double>(i) = _do_cast_type<double, double>((const double *)oi);
+                    break;
+                case CV_64S:
+                    m.at<double>(i) = _do_cast_type<int64_t, double>((const int64_t *)oi);
+                    break;
+                case CV_64U:
+                    m.at<double>(i) = _do_cast_type<uint64_t, double>((const uint64_t *)oi);
+                    break;
+                case CV_32U:
+                    m.at<double>(i) = _do_cast_type<uint32_t, double>((const uint32_t *)oi);
+                    break;
+                case CV_16BF:
+                    m.at<double>(i) = _do_cast_bf16<double>(_do_cast_type<uint16_t, uint16_t>((const uint16_t *)oi));
+                    break;
+                default:
+                    break;
+                }
+            }
+            if (is_number) {
+                // Normally cv.XXX(x) means cv.XXX( (x, 0., 0., 0.) );
+                // However  cv.add(mat,x) means cv::add(mat, (x,x,x,x) ).
+                m.at<double>(1) = m.at<double>(2) = m.at<double>(3) = m.at<double>(0);
+            }
+            return true;
+        }
+
+        size_t elemsize = CV_ELEM_SIZE1(type);
         std::vector<uint64_t> _strides(ndims);
         _strides[ndims - 1] = originalElemSize;
         if (is_number == 0) {
@@ -780,68 +856,6 @@ static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Mat& m, const ArgInfo& in
                 step[i] = default_step;
                 default_step *= size[i];
             }
-        }
-
-        // see https://github.com/opencv/opencv/issues/24057
-        // e.g., Nx.tensor([1,2,3,4]), Nx.tensor(1)
-        if ( ( info.arithm_op_src ) && ( ndims == 1 ) && ( size[0] <= 4 ) )
-        {
-            const int sz  = size[0]; // Real Data Length(1, 2, 3 or 4)
-            const int sz2 = 4;       // Scalar has 4 elements.
-            m = Mat::zeros(sz2, 1, CV_64F);
-
-            const char *base_ptr = (const char *)data.data;
-            for(int i = 0; i < sz; i++ )
-            {
-                const void * oi = static_cast<const void *>(base_ptr + step[0] * i);
-                switch (nx_tensor_type)
-                {
-                case CV_8S:
-                    m.at<double>(i) = _do_cast_type<int8_t, double>((const int8_t *)oi);
-                    break;
-                case CV_8U:
-                    m.at<double>(i) = _do_cast_type<uint8_t, double>((const uint8_t *)oi);
-                    break;
-                case CV_16S:
-                    m.at<double>(i) = _do_cast_type<int16_t, double>((const int16_t *)oi);
-                    break;
-                case CV_16U:
-                    m.at<double>(i) = _do_cast_type<uint16_t, double>((const uint16_t *)oi);
-                    break;
-                case CV_16F:
-                    m.at<double>(i) = _do_cast_f16<double>(*(const uint16_t *)oi);
-                    break;
-                case CV_32S:
-                    m.at<double>(i) = _do_cast_type<int32_t, double>((const int32_t *)oi);
-                    break;
-                case CV_32F:
-                    m.at<double>(i) = _do_cast_type<float, double>((const float *)oi);
-                    break;
-                case CV_64F:
-                    m.at<double>(i) = _do_cast_type<double, double>((const double *)oi);
-                    break;
-                case CV_64S:
-                    m.at<double>(i) = _do_cast_type<int64_t, double>((const int64_t *)oi);
-                    break;
-                case CV_64U:
-                    m.at<double>(i) = _do_cast_type<uint64_t, double>((const uint64_t *)oi);
-                    break;
-                case CV_32U:
-                    m.at<double>(i) = _do_cast_type<uint32_t, double>((const uint32_t *)oi);
-                    break;
-                case CV_16BF:
-                    m.at<double>(i) = _do_cast_bf16<double>(*(const uint16_t *)oi);
-                    break;
-                default:
-                    break;
-                }
-            }
-            if (info.arithm_op_src && is_number) {
-                // Normally cv.XXX(x) means cv.XXX( (x, 0., 0., 0.) );
-                // However  cv.add(mat,x) means cv::add(mat, (x,x,x,x) ).
-                m.at<double>(1) = m.at<double>(2) = m.at<double>(3) = m.at<double>(0);
-            }
-            return true;
         }
 
         // handle degenerate case
@@ -1237,11 +1251,13 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const Mat& m)
 
     evision_res<cv::Mat *> * res;
     if (alloc_resource(&res)) {
-        res->val = new cv::Mat();
-        // should we copy the matrix?
-        // probably no, because all input matrice are copied when calling `evision_to`
-        // and this function returns the output/result matrix, which should already be a new matrix
-        *res->val = m;
+        try {
+            // Share the output's refcounted storage, with exception-safe ownership.
+            res->val = new cv::Mat(m);
+        } catch (...) {
+            enif_release_resource(res);
+            throw;
+        }
     } else {
         return evision::nif::error(env, "out of memory");
     }
@@ -3137,6 +3153,21 @@ static int convert_to_char(ErlNifEnv *env, ERL_NIF_TERM o, std::unique_ptr<std::
 // #include "modules/evision_dnn.h"
 
 /************************************************************************/
+
+// No C++ exception may cross the Erlang NIF ABI, including exceptions from
+// hand-written constructors and allocations outside generated ERRWRAP2 calls.
+template <ERL_NIF_TERM (*Function)(ErlNifEnv*, int, const ERL_NIF_TERM*)>
+static ERL_NIF_TERM evision_nif_dispatch(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]) {
+    try {
+        return Function(env, argc, argv);
+    } catch (const cv::Exception& e) {
+        return evision::nif::error(env, e.what());
+    } catch (const std::exception& e) {
+        return evision::nif::error(env, e.what());
+    } catch (...) {
+        return evision::nif::error(env, "native operation failed");
+    }
+}
 
 #include "evision_generated_modules_content.h"
 

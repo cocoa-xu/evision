@@ -7,6 +7,7 @@
 #include "../../ArgInfo.hpp"
 #include "../evision_mat_utils.hpp"
 #include "parallel.h"
+#include "validation.h"
 
 // Gather along one axis (Nx.take). Type-agnostic byte copy:
 // out[o, i, inner-block] = src[o, indices[i], inner-block], where o in [0,outer),
@@ -29,6 +30,11 @@ static ERL_NIF_TERM evision_cv_mat_take(ErlNifEnv *env, int argc, const ERL_NIF_
             evision_to_safe(env, evision_get_kw(env, erl_terms, "outer"), outer, ArgInfo("outer", 0)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "axis_dim"), axis_dim, ArgInfo("axis_dim", 0)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "inner"), inner, ArgInfo("inner", 0))) {
+            size_t output_count;
+            if (!evision_backend_shape(src, {outer, axis_dim, inner}) ||
+                !evision_backend_indices(indices) ||
+                !evision_backend_count({outer, (int)indices.total(), inner}, output_count))
+                return evision::nif::error(env, "take: invalid shape or index type");
             Mat src_c = src.isContinuous() ? src : src.clone();
             Mat idx_c = indices.isContinuous() ? indices : indices.clone();
             const uchar *sp = src_c.data;
@@ -36,11 +42,11 @@ static ERL_NIF_TERM evision_cv_mat_take(ErlNifEnv *env, int argc, const ERL_NIF_
             int64_t num_idx = (int64_t)idx_c.total();
             size_t inner_bytes = (size_t)inner * src_c.elemSize();
 
-            Mat dst(1, (int)((int64_t)outer * num_idx * inner), src.type());
+            Mat dst(1, (int)output_count, src.type());
             uchar *dp = dst.data;
 
             int64_t copies = (int64_t)outer * num_idx;
-            int64_t work = copies * (inner > 0 ? inner : 1);
+            int64_t work = (int64_t)output_count;
             // take is a scattered gather of `inner`-sized blocks; threading random
             // reads only pays off once the blocks (or their count) are large, so it
             // takes a higher bar than the contiguous elementwise kernels.

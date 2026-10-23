@@ -9,6 +9,7 @@
 #include "../../ArgInfo.hpp"
 #include "../evision_mat_utils.hpp"
 #include "parallel.h"
+#include "validation.h"
 
 // Row-wise sort/argsort for depths that need custom handling. Floats use Nx's
 // NaN order: ascending puts NaNs last, descending puts them first.
@@ -69,6 +70,8 @@ static ERL_NIF_TERM evision_cv_mat_sort_rows(ErlNifEnv *env, int argc, const ERL
 
         if (evision_to_safe(env, evision_get_kw(env, erl_terms, "src"), src, ArgInfo("src", ArgInfo::INPUT_ONLY)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "descending"), descending, ArgInfo("descending", 0))) {
+            if (!evision_backend_matrix(src))
+                return evision::nif::error(env, "sort: expected a nonempty single-channel matrix");
             Mat dst(src.rows, src.cols, src.type());
             switch (src.depth()) {
                 case CV_32U: evision_sort_rows<uint32_t>(src, dst, descending != 0); break;
@@ -100,6 +103,8 @@ static ERL_NIF_TERM evision_cv_mat_argsort_rows(ErlNifEnv *env, int argc, const 
 
         if (evision_to_safe(env, evision_get_kw(env, erl_terms, "src"), src, ArgInfo("src", ArgInfo::INPUT_ONLY)) &&
             evision_to_safe(env, evision_get_kw(env, erl_terms, "descending"), descending, ArgInfo("descending", 0))) {
+            if (!evision_backend_matrix(src))
+                return evision::nif::error(env, "sort: expected a nonempty single-channel matrix");
             Mat dst(src.rows, src.cols, CV_32S);
             switch (src.depth()) {
                 case CV_32U: evision_argsort_rows<uint32_t>(src, dst, descending != 0); break;

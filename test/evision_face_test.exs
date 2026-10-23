@@ -1,6 +1,8 @@
 defmodule Evision.Face.FaceRecognizerTest do
   use ExUnit.Case
 
+  @moduletag :face
+
   setup do
     %Evision.Mat{} =
       image =
