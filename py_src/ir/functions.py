@@ -316,7 +316,11 @@ class FuncInfo(object):
                     elif underscore_type in all_classes and all_classes[underscore_type].issimple is False:
                         code_cvt_list.append("evision_to_safe(env, %s, ptr_%s, %s)" % (erl_term, a.name, a.crepr(defval)))
                     else:
-                        code_cvt_list.append("evision_to_safe(env, %s, %s, %s)" % (erl_term, a.name, a.crepr(defval)))
+                        # resize writes a separate destination, including when
+                        # the requested size equals the source size. It never
+                        # retains the Mat input beyond this call.
+                        borrowed = self.cname == "cv::resize" and a.name == "src" and a.tp == "Mat"
+                        code_cvt_list.append("evision_to_safe(env, %s, %s, %s)" % (erl_term, a.name, a.crepr(defval, borrowed=borrowed)))
                         if elixir_argname == 'outBlobNames':
                             # outBlobNames cannot be `[]`
                             code_cvt_list.append("%s.size() > 0" % (a.name,))

@@ -244,10 +244,17 @@ defmodule Evision.Mat.Test do
       mat = Evision.Mat.from_binary_by_shape(original_bin, {:u, 8}, {3, 3})
       patch = Evision.Mat.from_binary_by_shape(<<0, 0>>, {:u, 8}, {1, 2})
 
-      updated = Evision.Mat.update_roi(mat, [{1, 2}, {0, 2}], patch)
+      for source <- [mat, Evision.Mat.clone(mat)] do
+        roi = Evision.Mat.roi(source, {0, 1, 2, 1})
+        updated = Evision.Mat.update_roi(source, [{1, 2}, {0, 2}], patch)
+        updated_roi = Evision.Mat.update_roi(roi, [:all, :all], patch)
 
-      assert Evision.Mat.to_binary(updated) == <<1, 2, 3, 0, 0, 6, 7, 8, 9>>
-      assert Evision.Mat.to_binary(mat) == original_bin
+        assert Evision.Mat.to_binary(updated) == <<1, 2, 3, 0, 0, 6, 7, 8, 9>>
+        assert Evision.Mat.to_binary(updated_roi) == <<0, 0>>
+        assert Evision.Mat.to_binary(source) == original_bin
+        assert Evision.Mat.to_binary(roi) == <<4, 5>>
+        assert Evision.Mat.to_binary(patch) == <<0, 0>>
+      end
     end
 
     test "dot returns a scalar matching OpenCV Mat::dot semantics" do
@@ -325,7 +332,9 @@ defmodule Evision.Mat.Test do
     end
 
     test "ceil, floor, round all process every channel of multi-channel matrices" do
-      values = for v <- [0.4, 0.6, 1.4, 1.6, 2.4, 2.6], into: <<>>, do: <<v::float-little-size(32)>>
+      values =
+        for v <- [0.4, 0.6, 1.4, 1.6, 2.4, 2.6], into: <<>>, do: <<v::float-little-size(32)>>
+
       mat = Evision.Mat.from_binary(values, {:f, 32}, 1, 2, 3)
 
       ceiled_bin = Evision.Mat.to_binary(Evision.Mat.ceil(mat))

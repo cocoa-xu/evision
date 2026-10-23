@@ -85,7 +85,7 @@ class ArgInfo(object):
                            "vector_GpuMat", "vector_cuda_GpuMat",
                            "UMat", "vector_UMat"] # or self.tp.startswith("vector")
 
-    def crepr(self, overwrite_defval=None):
+    def crepr(self, overwrite_defval=None, borrowed=False):
         # has_default = 0
         # if (defval is not None and len(defval) > 0) or self.defval == self.tp + "()":
         #     has_default = 1
@@ -100,4 +100,6 @@ class ArgInfo(object):
         # Pure read-only input: handed to OpenCV as a const InputArray, so the
         # converter may share the source buffer instead of deep-copying it.
         arg += 0x20 if not self.outputarg else 0x0
+        # Only explicitly audited calls may borrow binary-backed inputs.
+        arg += 0x40 if borrowed and not self.outputarg else 0x0
         return "ArgInfo(\"%s\", %d)" % (self.name, arg)

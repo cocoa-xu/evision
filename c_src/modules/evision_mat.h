@@ -141,7 +141,7 @@ static ERL_NIF_TERM evision_cv_mat_shape(ErlNifEnv *env, int argc, const ERL_NIF
         Mat img;
 
         // const char *keywords[] = {"img", NULL};
-        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0))) {
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", ArgInfo::BORROWED_INPUT))) {
             ERL_NIF_TERM ret = _evision_get_mat_shape(env, img);
             return ret;
         }
@@ -162,7 +162,8 @@ static ERL_NIF_TERM evision_cv_mat_roi(ErlNifEnv *env, int argc, const ERL_NIF_T
 
     int error_flag = false;
     Mat img;
-    if (evision_to_safe(env, evision_get_kw(env, erl_terms, "mat"), img, ArgInfo("mat", 0)))
+    // Every successful branch copies the selected pixels into owned storage.
+    if (evision_to_safe(env, evision_get_kw(env, erl_terms, "mat"), img, ArgInfo("mat", ArgInfo::BORROWED_INPUT)))
     {
         {
             // Mat operator()( const Rect& roi ) const;
@@ -228,16 +229,16 @@ static ERL_NIF_TERM evision_cv_mat_roi(ErlNifEnv *env, int argc, const ERL_NIF_T
                         ERRWRAP2(ret = img(ranges), env, error_flag, error_term);
                         ret = ret.clone();
                     } else {
+                        Mat region;
+                        ERRWRAP2(region = img(ranges), env, error_flag, error_term);
+                        if (error_flag) return error_term;
                         // because we are taking channel in [start, end)
                         // if start == end, we would still have 1 channel to extract
                         // this follows the convention in elixir as 0..0 is effectively [0]
                         std::vector<cv::Mat> by_channel(last.end - last.start);
                         size_t by_channel_index = 0;
                         for (int channel_index = last.start; channel_index < last.end; channel_index++) {
-                            ERRWRAP2(cv::extractChannel(img, by_channel[by_channel_index], channel_index), env, error_flag, error_term);
-                            if (error_flag) break;
-
-                            ERRWRAP2(by_channel[by_channel_index] = by_channel[by_channel_index](ranges), env, error_flag, error_term);
+                            ERRWRAP2(cv::extractChannel(region, by_channel[by_channel_index], channel_index), env, error_flag, error_term);
                             if (error_flag) break;
 
                             by_channel_index++;
@@ -279,8 +280,8 @@ static ERL_NIF_TERM evision_cv_mat_update_roi(ErlNifEnv *env, int argc, const ER
     if (erl_terms.find("mat") != erl_terms.end() &&
         erl_terms.find("with_mat") != erl_terms.end() &&
         erl_terms.find("ranges") != erl_terms.end() &&
-        evision_to_safe(env, evision_get_kw(env, erl_terms, "mat"), mat, ArgInfo("mat", 0)) &&
-        evision_to_safe(env, evision_get_kw(env, erl_terms, "with_mat"), with_mat, ArgInfo("with_mat", 0)) &&
+        evision_to_safe(env, evision_get_kw(env, erl_terms, "mat"), mat, ArgInfo("mat", ArgInfo::BORROWED_INPUT)) &&
+        evision_to_safe(env, evision_get_kw(env, erl_terms, "with_mat"), with_mat, ArgInfo("with_mat", ArgInfo::BORROWED_INPUT)) &&
         evision_to_safe(env, evision_get_kw(env, erl_terms, "ranges"), ranges, ArgInfo("ranges", 0)))
     {
         if (mat.type() != with_mat.type()) {
@@ -293,6 +294,7 @@ static ERL_NIF_TERM evision_cv_mat_update_roi(ErlNifEnv *env, int argc, const ER
             error_flag = true;
             error_term = evision::nif::error(env, "Cannot update roi: range dimension mismatch");
         } else {
+            bool replace_all = true;
             for (int i = 0; i < mat.dims; i++) {
                 if (ranges[i] == cv::Range::all()) {
                     ranges[i] = cv::Range(0, mat.size.p[i]);
@@ -307,8 +309,11 @@ static ERL_NIF_TERM evision_cv_mat_update_roi(ErlNifEnv *env, int argc, const ER
                     error_term = evision::nif::error(env, "Cannot update roi: patch shape mismatch");
                     break;
                 }
+                replace_all = replace_all && ranges[i].start == 0 && ranges[i].end == mat.size.p[i];
             }
             if (!error_flag) {
+                if (replace_all) return evision_from(env, with_mat.clone());
+                // Validate before allocating, then write only to a private copy.
                 mat = mat.clone();
                 Mat target;
                 ERRWRAP2(target = mat(ranges), env, error_flag, error_term);
@@ -881,7 +886,7 @@ static ERL_NIF_TERM evision_cv_mat_size(ErlNifEnv *env, int argc, const ERL_NIF_
     {
         Mat img;
 
-        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", 0))) {
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", ArgInfo::BORROWED_INPUT))) {
             ERL_NIF_TERM p = 0;
             evision::nif::make_i32_list_from_c_array(env, img.size.dims, img.size.p, p);
             ERL_NIF_TERM dims = enif_make_int64(env, img.size.dims);
@@ -939,7 +944,7 @@ static ERL_NIF_TERM evision_cv_mat_last_dim_as_channel(ErlNifEnv *env, int argc,
     {
         Mat src;
 
-        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "src"), src, ArgInfo("src", 0))) {
+        if (evision_to_safe(env, evision_get_kw(env, erl_terms, "src"), src, ArgInfo("src", ArgInfo::INPUT_ONLY))) {
             if ((src.type() == CV_8S || src.type() == CV_8U || src.type() == CV_16F \
                 || src.type() == CV_16S || src.type() == CV_16U || src.type() == CV_32S \
                 || src.type() == CV_32F || src.type() == CV_64F)) {
@@ -956,9 +961,9 @@ static ERL_NIF_TERM evision_cv_mat_last_dim_as_channel(ErlNifEnv *env, int argc,
                 if (channels <= 0 || channels > CV_CN_MAX) {
                     return evision::nif::error(env, "invalid number of channels");
                 }
-                int type = CV_MAKETYPE(src.depth(), channels);
-                Mat ret = Mat(ndims - 1, new_shape.data(), type, src.data);
-                return evision_from(env, ret.clone());
+                if (!src.isContinuous()) src = src.clone();
+                // Keep the owned buffer alive when update_roi restores channels.
+                return evision_from(env, src.reshape(channels, ndims - 1, new_shape.data()));
             } else {
                 return evision::nif::error(env, "image already has channel info");
             }

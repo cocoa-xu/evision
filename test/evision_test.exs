@@ -111,6 +111,30 @@ defmodule Evision.Test do
 
     %Mat{shape: {^resize_width, ^resize_height, 3}} =
       Evision.resize(mat, {resize_height, resize_width})
+
+    results =
+      Task.async(fn ->
+        binary = :binary.copy(<<1, 2, 3, 4>>, 64)
+        mat = Mat.from_binary(binary, :u8, 16, 16, 1)
+
+        for source <- [mat, Mat.clone(mat)] do
+          resized =
+            Evision.resize(source, {8, 8}, interpolation: Evision.Constant.cv_INTER_NEAREST())
+
+          same_size = Evision.resize(source, {16, 16})
+          assert Mat.to_binary(source) == binary
+          {resized, same_size}
+        end
+      end)
+      |> Task.await()
+
+    # The input binary and its Mat resources belonged to the exited task.
+    :erlang.garbage_collect()
+
+    for {resized, same_size} <- results do
+      assert Mat.to_binary(resized) == :binary.copy(<<1, 3>>, 32)
+      assert Mat.to_binary(same_size) == :binary.copy(<<1, 2, 3, 4>>, 64)
+    end
   end
 
   test "Evision.imwrite" do
