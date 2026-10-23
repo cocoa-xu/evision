@@ -1472,8 +1472,19 @@ defmodule Evision.Mat do
   end
 
   @doc false
-  # Scatter a dense block into a copy of `base` (Nx.put_slice; also concatenate's
-  # building block): writes each `slice` element at (starts[k] + j_k). Same type.
+  # Concatenate same-type tensors into one independently owned allocation.
+  def concatenate(inputs, shapes, out_dims, axis) do
+    :evision_nif.mat_concatenate(
+      inputs: Enum.map(inputs, &from_struct/1),
+      shapes: shapes,
+      out_dims: out_dims,
+      axis: axis
+    )
+    |> Evision.Internal.Structurise.to_struct()
+  end
+
+  @doc false
+  # Scatter a dense block into a copy of `base` (Nx.put_slice).
   def put_slice(base, slice, base_dims, slice_dims, starts) do
     :evision_nif.mat_put_slice(
       base: from_struct(base),

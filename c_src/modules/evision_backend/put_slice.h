@@ -8,8 +8,8 @@
 #include "../evision_mat_utils.hpp"
 #include "validation.h"
 
-// Scatter a dense block into a copy of `base` (Nx.put_slice; also the building block
-// for concatenate). dst = clone(base); for each element of `slice` at multi-index
+// Scatter a dense block into a copy of `base` (Nx.put_slice).
+// dst = clone(base); for each element of `slice` at multi-index
 // (j_0..j_{r-1}), write it to dst at (starts[k] + j_k). Type-agnostic byte copy via
 // an odometer tracking the destination offset; the block is bounds-checked up front.
 // @evision c: mat_put_slice, evision_cv_mat_put_slice, 1
