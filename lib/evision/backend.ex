@@ -1002,27 +1002,29 @@ defmodule Evision.Backend do
 
   # all = every element nonzero (min over the {0,1} nonzero mask); any = some nonzero (max).
   defp bool_reduce(out, %T{} = tensor, opts, op) do
-    mask = tensor |> from_nx() |> nonzero_mask()
-    reduce_aggregate(out, to_nx(mask, tensor), opts, op)
+    mask = nonzero_mask(tensor)
+    reduce_aggregate(out, to_nx(mask, %T{tensor | type: {:u, 8}}), opts, op)
   end
 
-  defp nonzero_mask(mat) do
-    mat |> Evision.Mat.sign() |> reject_error() |> Evision.Mat.abs() |> reject_error()
+  defp nonzero_mask(%T{type: type} = tensor) do
+    mat = from_nx(tensor)
+    mat = if type in @half_types, do: as_mat_type(mat, {:f, 32}), else: mat
+    Evision.Mat.predicate(mat, 3) |> reject_error()
   end
 
   @impl true
+  def select(%T{shape: shape, type: type} = out, %T{shape: {}} = pred, on_true, on_false) do
+    selected = if Nx.to_number(pred) == 0, do: on_false, else: on_true
+    selected |> Nx.broadcast(shape) |> cast_mat(type) |> to_nx(out)
+  end
+
   def select(%T{shape: shape, type: out_type} = out, pred, on_true, on_false) do
-    mask =
-      pred
-      |> Nx.broadcast(shape)
-      |> from_nx()
-      |> nonzero_mask()
-      |> as_mat_type({:u, 8})
+    mask = if pred.type == {:u, 8}, do: from_nx(pred), else: nonzero_mask(pred)
+    t = cast_mat(on_true, out_type)
+    f = cast_mat(on_false, out_type)
+    shapes = Enum.map([pred, on_true, on_false], &Tuple.to_list(&1.shape))
 
-    t = on_true |> Nx.as_type(out_type) |> Nx.broadcast(shape) |> from_nx()
-    f = on_false |> Nx.as_type(out_type) |> Nx.broadcast(shape) |> from_nx()
-
-    Evision.Mat.select(mask, t, f)
+    Evision.Mat.select_broadcast(mask, t, f, shapes, Tuple.to_list(shape))
     |> reject_error()
     |> to_nx(out)
   end

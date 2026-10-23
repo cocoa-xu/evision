@@ -235,4 +235,23 @@ defmodule Evision.BackendCopyTest do
              ]
     end
   end
+  test "broadcast select rejects mismatched native layouts" do
+    mask = mat(Nx.tensor([0, 1], type: :u8), :binary)
+    value = mat(Nx.tensor([10, 20], type: :s32), :binary)
+
+    for {shapes, out} <- [
+          {[[2], [2], [2]], [3]},
+          {[[1], [2], [2]], [2]},
+          {[[2], [1], [2]], [2]},
+          {[[2], [2], [2]], [0]},
+          {[[2], [2], [2]], []},
+          {[[2], [2], [2]], [2_147_483_647, 2_147_483_647]}
+        ] do
+      assert {:error, _} = Evision.Mat.select_broadcast(mask, value, value, shapes, out)
+    end
+
+    assert {:error, _} = Evision.Mat.select_broadcast(value, value, value, [[2], [2], [2]], [2])
+    assert {:error, _} = Evision.Mat.select_broadcast(mask, mask, value, [[2], [2], [2]], [2])
+  end
+
 end
