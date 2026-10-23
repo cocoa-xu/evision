@@ -1334,6 +1334,20 @@ defmodule Evision.Mat do
   end
 
   @doc false
+  def select_broadcast(mask, on_true, on_false, [mask_dims, true_dims, false_dims], out_dims) do
+    :evision_nif.mat_select_broadcast(
+      mask: from_struct(mask),
+      on_true: from_struct(on_true),
+      on_false: from_struct(on_false),
+      mask_dims: mask_dims,
+      true_dims: true_dims,
+      false_dims: false_dims,
+      out_dims: out_dims
+    )
+    |> Evision.Internal.Structurise.to_struct()
+  end
+
+  @doc false
   # Elementwise predicate -> u8 (Nx.is_nan/is_infinity/logical_not): op 0=is_nan,
   # 1=is_infinity, 2=is_zero. `mat` must be a real C type (f16/bf16 widened first).
   def predicate(mat, op) do

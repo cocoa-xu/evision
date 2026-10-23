@@ -35,6 +35,7 @@
 #include "reshape.h"
 #include "round.h"
 #include "select.h"
+#include "select_broadcast.h"
 #include "shift.h"
 #include "sign.h"
 #include "sort.h"
