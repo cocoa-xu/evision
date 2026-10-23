@@ -467,42 +467,28 @@ static inline auto _do_cast_type(const void * ptr) -> To {
 
 template <typename To>
 auto _do_cast_bf16(uint16_t value) -> To {
-    // bf16 is the high 16 bits of a 32-bit float; stored little-endian.
-    int n = 1;
-    if(*(char *)&n != 1) {
-        value = (value >> 8) | (value << 8);
-    }
-    union { uint32_t u; float f; } conv;
-    conv.u = ((uint32_t)value) << 16;
-    return (To)conv.f;
+    // Mat and Nx binaries use native byte order, already decoded by the caller.
+    const uint32_t bits = (uint32_t)value << 16;
+    float result;
+    memcpy(&result, &bits, sizeof(result));
+    return static_cast<To>(result);
 }
 
 template <typename To>
 auto _do_cast_f16(uint16_t value) -> To {
-    // _do_cast_f16 only means to cast from half-precision float to float
-    // it should always be encoded in little-endian format
-    int n = 1;
-    if(*(char *)&n != 1) {
-        value = (value >> 8) | (value << 8);
+    // Subnormal values are mantissa * 2^-24. Preserve the sign of zero too.
+    const uint32_t sign = (uint32_t)(value & 0x8000) << 16;
+    const uint32_t exponent = (value >> 10) & 0x1f;
+    const uint32_t mantissa = value & 0x3ff;
+    if (exponent == 0) {
+        const To magnitude = static_cast<To>(mantissa) * static_cast<To>(0x1p-24);
+        return sign ? -magnitude : magnitude;
     }
-
-	uint32_t sn = (uint32_t)((value >> 15) & 0x1);
-	uint32_t exp = (value >> 10) & 0x1f;
-	uint32_t res = exp + 127 - 15;
-	uint32_t fc = value & 0x3ff;
-	
-	if (exp == 0) {
-		res = 0;
-	} else if (exp == 0x1f) {
-		res = 0xff;
-	}
-	
-	union {
-		float f;
-		uint32_t b;
-	} u;
-	u.b = (uint32_t)(sn << 31) | (uint32_t)(res << 23) | (uint32_t)(fc << 13);
-	return static_cast<To>(u.f);
+    const uint32_t expanded_exponent = exponent == 0x1f ? 0xff : exponent + 112;
+    const uint32_t bits = sign | (expanded_exponent << 23) | (mantissa << 13);
+    float result;
+    memcpy(&result, &bits, sizeof(result));
+    return static_cast<To>(result);
 }
 
 static void * evision_cast(ErlNifBinary& bin, int cast_from, const std::vector<uint64_t> &sizes, const std::vector<uint64_t> &strides) {

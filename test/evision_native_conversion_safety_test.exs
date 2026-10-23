@@ -42,6 +42,27 @@ defmodule Evision.NativeConversionSafetyTest do
     assert {:error, _} = Evision.Mat.roi(volume, {0, 0, 1, 1})
   end
 
+  test "16-bit float reads and arithmetic scalars preserve subnormals and signed zero" do
+    ones = Evision.Mat.ones({2, 3}, :f64)
+
+    for {type, kind, patterns} <- [
+          {:f16, "f", [0, 0x8000, 1, 0x8001, 0x03FF, 0x83FF, 0x0400, 0x8400, 0x7BFF, 0xFBFF]},
+          {:bf16, "bf", [0, 0x8000, 1, 0x8001, 0x007F, 0x807F, 0x0080, 0x8080, 0x7F7F, 0xFF7F]}
+        ],
+        bits <- patterns do
+      binary = <<bits::unsigned-native-16>>
+      expected = Nx.from_binary(binary, type) |> Nx.as_type(:f64) |> Nx.to_binary()
+      source = mat(binary, [1], kind, 16)
+      value = :evision_nif.mat_at(img: source, pos: 0)
+      assert <<value::float-native-64>> == expected
+
+      scalar = %{__struct__: :nx_tensor, shape: {}, type: type, data: binary}
+      %{ref: result} = :evision_nif.multiply(src1: ones.ref, src2: scalar)
+      assert :evision_nif.mat_to_binary(img: result) == :binary.copy(expected, 6)
+      assert :evision_nif.mat_to_binary(img: source) == binary
+    end
+  end
+
   test "forged tensor maps cannot read beyond their binary" do
     for {shape, type, data} <- [
           {{4096}, :u8, <<1>>},
