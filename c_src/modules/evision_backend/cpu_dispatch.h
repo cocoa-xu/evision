@@ -29,7 +29,11 @@ static unsigned evision_cpu_features() {
 }
 
 static evision::cpu::Selection evision_select_dispatch() {
-    return evision::cpu::select_kernel(evision_cpu_features(), evision_cpu_mode().load(std::memory_order_relaxed));
+    const auto mode = evision_cpu_mode().load(std::memory_order_relaxed);
+    // Forced baseline has no capability requirement. Skip the feature queries
+    // instead of doing work whose result select_kernel would discard.
+    const unsigned features = mode == evision::cpu::Mode::Auto ? evision_cpu_features() : 0;
+    return evision::cpu::select_kernel(features, mode);
 }
 
 static ERL_NIF_TERM evision_cpu_info(ErlNifEnv* env) {

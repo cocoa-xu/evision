@@ -18,6 +18,9 @@ template <size_t Width>
 struct Blend {
     static void run(const uint8_t* mask, const uint8_t* a, const uint8_t* b,
                     uint8_t* out, size_t) {
+        // Mixed blocks intentionally load both sources, replacing per-element
+        // source-address choices with SIMD selection. Uniform blocks bypass
+        // this work; select_loop.hpp records the profiling tradeoff.
         const uint8x8_t selected = vmvn_u8(vceq_u8(vld1_u8(mask), vdup_n_u8(0)));
         if constexpr (Width == 1) {
             vst1_u8(out, vbsl_u8(selected, vld1_u8(a), vld1_u8(b)));
