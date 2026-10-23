@@ -170,6 +170,17 @@ static ERL_NIF_TERM evision_cv_mat_roi(ErlNifEnv *env, int argc, const ERL_NIF_T
             cv::Rect2i rect;
             if (erl_terms.find("rect") != erl_terms.end() &&
                 evision_to_safe(env, evision_get_kw(env, erl_terms, "rect"), rect, ArgInfo("rect", 0))) {
+                // Check extents before OpenCV constructs a view. Adding the
+                // origin and extent in int can overflow its ROI bounds check.
+                if (img.dims > 2 || rect.x < 0 || rect.y < 0 ||
+                    rect.width < 0 || rect.height < 0 ||
+                    rect.x > img.cols || rect.y > img.rows ||
+                    rect.width > img.cols - rect.x || rect.height > img.rows - rect.y) {
+                    return evision::nif::error(env, "ROI rectangle out of bounds");
+                }
+                if (rect.width == 0 || rect.height == 0) {
+                    return evision_cv_mat_empty(env, 0, argv);
+                }
                 Mat ret;
                 ERRWRAP2(ret = img(rect), env, error_flag, error_term);
                 if (!error_flag) {

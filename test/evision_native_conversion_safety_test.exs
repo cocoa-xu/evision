@@ -8,6 +8,40 @@ defmodule Evision.NativeConversionSafetyTest do
     ref
   end
 
+  test "rectangular ROI bounds cannot overflow before copying" do
+    binary = <<1, 2, 3, 4, 5, 6>>
+    input = Evision.Mat.from_binary_by_shape(binary, :u8, {2, 3})
+
+    for source <- [input, Evision.Mat.clone(input)] do
+      for rect <- [
+            {2_147_483_647, 0, 2, 1},
+            {0, 2_147_483_647, 1, 2},
+            {2, 0, 2_147_483_647, 1},
+            {0, 1, 1, 2_147_483_647},
+            {-1, 0, 1, 1},
+            {0, -1, 1, 1},
+            {0, 0, -1, 1},
+            {0, 0, 1, -1},
+            {3, 0, 1, 1},
+            {0, 2, 1, 1}
+          ] do
+        assert {:error, _} = Evision.Mat.roi(source, rect)
+      end
+
+      assert Evision.Mat.to_binary(Evision.Mat.roi(source, {1, 0, 2, 2})) == <<2, 3, 5, 6>>
+
+      for rect <- [{3, 0, 0, 2}, {0, 2, 3, 0}, {3, 2, 0, 0}] do
+        assert Evision.Mat.total(Evision.Mat.roi(source, rect)) == 0
+      end
+
+      assert Evision.Mat.to_binary(source) == binary
+    end
+
+    assert Evision.Mat.total(Evision.Mat.roi(Evision.Mat.empty(), {0, 0, 0, 0})) == 0
+    volume = Evision.Mat.from_binary_by_shape(binary, :u8, {2, 1, 3})
+    assert {:error, _} = Evision.Mat.roi(volume, {0, 0, 1, 1})
+  end
+
   test "forged tensor maps cannot read beyond their binary" do
     for {shape, type, data} <- [
           {{4096}, :u8, <<1>>},
