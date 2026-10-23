@@ -13,6 +13,7 @@
 #include "ceil.h"
 #include "clip.h"
 #include "cmp.h"
+#include "concatenate.h"
 #include "conv.h"
 #include "cumulative.h"
 #include "divide.h"

@@ -1204,27 +1204,13 @@ defmodule Evision.Backend do
   end
 
   @impl true
-  def concatenate(%T{type: out_type, shape: shape} = out, tensors, 0) do
-    bin =
-      tensors
-      |> Enum.map(fn t -> t |> from_nx() |> as_mat_type(out_type) |> to_binary_mat!() end)
-      |> IO.iodata_to_binary()
+  def concatenate(%T{type: out_type, shape: shape} = out, tensors, axis) do
+    inputs = Enum.map(tensors, &cast_mat(&1, out_type))
+    shapes = Enum.map(tensors, &Tuple.to_list(&1.shape))
 
-    Evision.Mat.from_binary_by_shape(bin, out_type, shape)
+    Evision.Mat.concatenate(inputs, shapes, Tuple.to_list(shape), axis)
     |> reject_error()
     |> to_nx(out)
-  end
-
-  def concatenate(%T{type: out_type, shape: shape} = out, tensors, axis) do
-    rank = tuple_size(shape)
-    base = Evision.Mat.full(shape, 0, out_type) |> reject_error() |> to_nx(out)
-
-    tensors
-    |> Enum.reduce({base, 0}, fn t, {acc, offset} ->
-      starts = List.duplicate(0, rank) |> List.replace_at(axis, offset)
-      {do_put_slice(out, acc, t, starts), offset + elem(t.shape, axis)}
-    end)
-    |> elem(0)
   end
 
   def take_along_axis(%T{shape: out_shape} = out, %T{shape: shape} = tensor, indices, axis) do
