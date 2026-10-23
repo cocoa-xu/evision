@@ -86,6 +86,8 @@ defmodule Mix.Tasks.Evision.Backend.Bench do
   defp run_suite(cases, profile, output, warmup, iterations, verify?, comparison_backend) do
     metadata = %{
       "backend" => "Evision.Backend",
+      "cpu_dispatch" => Evision.Backend.cpu_dispatch_info(),
+      "opencv_threads" => Evision.getNumThreads(),
       "comparison_backend" => comparison_backend_name(comparison_backend),
       "comparison_env" => @torchx_env,
       "elixir" => System.version(),
@@ -249,6 +251,36 @@ defmodule Mix.Tasks.Evision.Backend.Bench do
     config = profile_config(profile)
 
     [
+      %{
+        name: "select_mixed_f32",
+        category: "select",
+        details: %{
+          "op" => "Nx.select/3",
+          "shape" => shape_list(config.elementwise),
+          "type" => "f32",
+          "mask" => "mixed"
+        },
+        input: fn ->
+          mask = Nx.remainder(Nx.iota(config.elementwise), 3) |> Nx.as_type(:u8)
+          {mask, make_f32(config.elementwise), make_f32(config.elementwise, 2053, 19)}
+        end,
+        run: fn {mask, a, b} -> Nx.select(mask, a, b) end
+      },
+      %{
+        name: "select_uniform_f32",
+        category: "select",
+        details: %{
+          "op" => "Nx.select/3",
+          "shape" => shape_list(config.elementwise),
+          "type" => "f32",
+          "mask" => "uniform"
+        },
+        input: fn ->
+          {Nx.broadcast(Nx.tensor(1, type: :u8), config.elementwise),
+           make_f32(config.elementwise), make_f32(config.elementwise, 2053, 19)}
+        end,
+        run: fn {mask, a, b} -> Nx.select(mask, a, b) end
+      },
       %{
         name: "elementwise_sin_f32",
         category: "elementwise",

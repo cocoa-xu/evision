@@ -111,7 +111,9 @@ install(
     TARGETS evision
     RUNTIME DESTINATION "${PRIV_DIR}"
 )
-target_link_libraries(evision "${EVISION_LIBRARIES}")
+include(cmake/EvisionCpuDispatch.cmake)
+evision_add_cpu_kernels(evision_cpu_kernels)
+target_link_libraries(evision "${EVISION_LIBRARIES}" evision_cpu_kernels)
 set_property(TARGET evision PROPERTY CXX_STANDARD 17)
 set_property(TARGET evision PROPERTY POSITION_INDEPENDENT_CODE ON)
 set_target_properties(evision PROPERTIES PREFIX "")

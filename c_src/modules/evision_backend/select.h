@@ -8,6 +8,7 @@
 #include "../evision_mat_utils.hpp"
 #include "parallel.h"
 #include "validation.h"
+#include "cpu_dispatch.h"
 
 template <size_t ElementSize>
 static void evision_select(const cv::Mat& mask, const cv::Mat& on_true,
@@ -18,31 +19,10 @@ static void evision_select(const cv::Mat& mask, const cv::Mat& on_true,
     unsigned char *dp = dst.data;
     const size_t elem_size = ElementSize == 0 ? dst.elemSize() : ElementSize;
     const size_t n = dst.total();
+    const auto kernel = evision_select_dispatch().select;
     evision_parallel_for((int64_t)n, (int64_t)n, EVISION_PARALLEL_SIMPLE_MIN_WORK, [&](int64_t begin, int64_t end) {
-        int64_t i = begin;
-        for (; i + 8 <= end; i += 8) {
-            uint64_t mask_bits;
-            std::memcpy(&mask_bits, mp + i, sizeof(mask_bits));
-            const size_t offset = (size_t)i * elem_size;
-            if (mask_bits == 0) {
-                std::memcpy(dp + offset, fp + offset, 8 * elem_size);
-            } else if (((mask_bits - UINT64_C(0x0101010101010101)) &
-                        ~mask_bits & UINT64_C(0x8080808080808080)) == 0) {
-                // No zero byte: copy this entire run from on_true.
-                std::memcpy(dp + offset, tp + offset, 8 * elem_size);
-            } else {
-                for (size_t k = 0; k < 8; ++k) {
-                    const size_t element_offset = offset + k * elem_size;
-                    const unsigned char *source = mp[(size_t)i + k] == 0 ? fp : tp;
-                    std::memcpy(dp + element_offset, source + element_offset, elem_size);
-                }
-            }
-        }
-        for (; i < end; i++) {
-            const size_t offset = (size_t)i * elem_size;
-            const unsigned char *source = mp[(size_t)i] == 0 ? fp : tp;
-            std::memcpy(dp + offset, source + offset, elem_size);
-        }
+        const size_t offset = (size_t)begin * elem_size;
+        kernel(mp + begin, tp + offset, fp + offset, dp + offset, (size_t)(end - begin), elem_size);
     });
 }
 
@@ -74,8 +54,7 @@ static ERL_NIF_TERM evision_cv_mat_select(ErlNifEnv *env, int argc, const ERL_NI
             Mat fc = on_false.isContinuous() ? on_false : on_false.clone();
             Mat dst(on_true.dims, on_true.size.p, on_true.type());
 
-            // Fixed copy sizes inline into scalar loads/stores instead of
-            // calling memcpy once per element. Preserve arbitrary-size support.
+            // Select fixed-width kernels while preserving arbitrary-size support.
             switch (dst.elemSize()) {
                 case 1: evision_select<1>(mc, tc, fc, dst); break;
                 case 2: evision_select<2>(mc, tc, fc, dst); break;

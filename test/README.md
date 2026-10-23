@@ -23,7 +23,50 @@ OpenCV/BEAM stack on s390x. The ExUnit tests in
 `evision_native_conversion_safety_test.exs` cover NIF integration on the native
 platforms.
 
-### Elixir integration tests
+### CPU dispatch
+
+Dense Nx `select` uses a baseline implementation or an optional AArch64 NEON /
+x86_64 AVX2 kernel. OpenCV checks CPU and OS feature support at runtime. AVX2 is
+compiled in its own source file so its compiler flags do not affect the baseline.
+Other architectures and unsupported toolchains retain the baseline implementation.
+
+Set `EVISION_CPU_DISPATCH=baseline` before starting the VM to disable these
+optional kernels, or change the mode for subsequent calls at runtime:
+
+```elixir
+Evision.Backend.set_cpu_dispatch(:baseline)
+Evision.Backend.set_cpu_dispatch(:auto)
+Evision.Backend.cpu_dispatch_info()
+```
+
+The setting is shared by all processes in the BEAM VM. Calls already in progress
+may finish with their previous implementation. It does not bind CPU cores, change
+OpenCV's own optimization settings, or eliminate compiler-generated baseline SIMD.
+The reported FP16, DotProd, and BF16 capabilities are feature observations, not
+claims that `select` uses those instructions. Universal macOS builds retain the
+baseline implementation; per-architecture builds enable their supported kernels.
+
+The standalone `cpu_dispatch_test` exercises all 256 mask patterns per block,
+unaligned inputs, every short tail, input immutability, fallback selection, and
+the baseline override. Guard-page cases place buffers against inaccessible pages
+at either end and protect inputs as read-only. They cover empty buffers and long
+tails as well as short SIMD boundaries, so padding cannot hide out-of-range reads.
+Native CI includes macOS and Linux AArch64, x86_64 Linux, macOS and Windows, plus
+the baseline under big-endian s390x emulation. Linux/macOS sanitizer jobs fail on
+the first ASan or UBSan finding. NIF tests exercise both modes, compare Nx results
+with BinaryBackend, and verify input/output ownership after creator exit and GC
+with one or four OpenCV threads and unaligned binary-backed or OpenCV-owned inputs.
+
+Compare complete Nx operations, including output materialization, with:
+
+```shell
+EVISION_CPU_DISPATCH=baseline mix evision.backend.bench --only select --output /tmp/select-baseline.json
+EVISION_CPU_DISPATCH=auto mix evision.backend.bench --only select --output /tmp/select-auto.json
+```
+
+Each report records the selected implementation and available CPU features.
+
+### Running Elixir tests
 
 As we allow users to select a subset of OpenCV modules, all tests have corresponding tags and, by default, they will be
 enabled by the availability of the module (i.e., will be tested if the corresponding module is compiled). 
