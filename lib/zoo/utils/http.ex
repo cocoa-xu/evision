@@ -31,7 +31,7 @@ defmodule Evision.Zoo.Utils.HTTP do
         try do
           request = {url, headers}
           http_opts = [ssl: http_ssl_opts()]
-          opts = [stream: :self, sync: false]
+          opts = [stream: :self, sync: false, max_header_size: 65_536]
 
           # using proxy
           # https://github.com/philss/rustler_precompiled/blob/700679f7c02551c4eddb13d7aaefe974099e77f7/lib/rustler_precompiled.ex
@@ -154,7 +154,8 @@ defmodule Evision.Zoo.Utils.HTTP do
     ]
 
     opts = [
-      body_format: :binary
+      body_format: :binary,
+      max_header_size: 65_536
     ]
 
     case :httpc.request(method, request, http_opts, opts) do
