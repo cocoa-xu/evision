@@ -376,7 +376,7 @@ do_download(URL) ->
     ssl:start(),
     HttpOtps = https_opts("github.com"),
     Request = {URL, []},
-    case httpc:request(get, Request, HttpOtps, [{body_format, binary}]) of
+    case httpc:request(get, Request, HttpOtps, [{body_format, binary}, {max_header_size, 65536}]) of
         {ok, {{_, 200, _}, _, Body}} ->
           {ok, Body};
         {error, Reason} ->

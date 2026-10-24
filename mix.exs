@@ -483,7 +483,7 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
   end
 
   def download!(url) do
-    opts = [body_format: :binary]
+    opts = [body_format: :binary, max_header_size: 65_536]
     arg = {url, []}
 
     # https://erlef.github.io/security-wg/secure_coding_and_deployment_hardening/inets
