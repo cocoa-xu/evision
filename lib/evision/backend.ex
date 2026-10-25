@@ -267,14 +267,25 @@ defmodule Evision.Backend do
   end
 
   @impl true
-  @spec dot(Nx.Tensor.t(), Nx.Tensor.t(), any, [], Nx.Tensor.t(), any, []) :: Nx.Tensor.t()
+  @spec dot(Nx.Tensor.t(), Nx.Tensor.t(), list(), list(), Nx.Tensor.t(), list(), list()) :: Nx.Tensor.t()
   def dot(
     %T{type: out_type} = out,
-    a, _left_axes, [],
-    b, _right_axes, []) do
-    Evision.Mat.matrix_multiply(from_nx(a), from_nx(b), out_type)
+    %T{shape: {_, _}, type: left_type} = a, [1], [],
+    %T{shape: {_, _}, type: right_type} = b, [0], [])
+      when left_type in [{:f, 32}, {:f, 64}] and right_type in [{:f, 32}, {:f, 64}] do
+    Evision.Mat.matrix_multiply(cast_mat(a, out_type), cast_mat(b, out_type), out_type)
     |> reject_error()
     |> to_nx(out)
+  end
+
+  def dot(_out, a, left_axes, left_batch_axes, b, right_axes, right_batch_axes) do
+    # GEMM only implements the conventional 2-D floating contraction above.
+    # Preserve Nx contraction, batching, and integer arithmetic for other cases.
+    Nx.dot(
+      Nx.backend_copy(a, Nx.BinaryBackend), left_axes, left_batch_axes,
+      Nx.backend_copy(b, Nx.BinaryBackend), right_axes, right_batch_axes
+    )
+    |> Nx.backend_transfer(Evision.Backend)
   end
 
   @impl true
@@ -328,19 +339,20 @@ defmodule Evision.Backend do
   end
 
   @impl true
-  def multiply(%T{type: type}=out, %T{}=l, %T{}=r) do
-    case check_mul_div_kind(l, r) do
-      :per_element ->
-        Evision.Mat.multiply(from_nx(float_scalar(l)), from_nx(float_scalar(r)), type)
+  def multiply(%T{type: type, shape: shape} = out, %T{type: left_type} = l, %T{type: right_type} = r)
+      when left_type in [{:f, 32}, {:f, 64}] and right_type in [{:f, 32}, {:f, 64}] do
+    {l, r} = align_operands(Nx.as_type(l, type), Nx.as_type(r, type), shape)
 
-      :matrix ->
-        l = maybe_cast_type_for_matrix_mul_div(l)
-        r = maybe_cast_type_for_matrix_mul_div(r)
-        Evision.Mat.matrix_multiply(l, r)
-        |> Evision.Mat.as_type(type)
-    end
+    Evision.Mat.multiply(from_nx(l), from_nx(r), type)
     |> reject_error()
     |> to_nx(out)
+  end
+
+  def multiply(_out, l, r) do
+    # OpenCV saturates some integer outputs and can lose wide integer precision.
+    # Keep other dtype combinations on the reference path until validated.
+    Nx.multiply(Nx.backend_copy(l, Nx.BinaryBackend), Nx.backend_copy(r, Nx.BinaryBackend))
+    |> Nx.backend_transfer(Evision.Backend)
   end
 
   @impl true
