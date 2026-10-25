@@ -847,6 +847,9 @@ defmodule Evision.Backend do
     end
   end
 
+  # Keep the existing owner when no conversion is needed. Mutating NIFs still
+  # make their own private copy; borrowing NIFs still align binary-backed inputs.
+  defp as_mat_type(%Evision.Mat{type: type} = mat, type), do: mat
   defp as_mat_type(mat, type), do: reject_error(Evision.Mat.as_type(mat, type))
 
   # Reduce an n-d row-wise op along `axis` to cv's 2D per-row form: move the
