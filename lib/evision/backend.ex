@@ -7,6 +7,33 @@ defmodule Evision.Backend do
 
   @dialyzer :no_contracts
 
+  @doc """
+  Reports the Nx CPU dispatch mode, selected dense `select` implementation,
+  compiled implementations, and CPU features currently enabled by OpenCV.
+
+  Feature support is detected at runtime, including OS support. Availability of
+  FP16, dot-product, or BF16 instructions does not imply that a kernel uses them.
+  """
+  @spec cpu_dispatch_info() :: map()
+  def cpu_dispatch_info, do: :evision_nif.mat_cpu_dispatch_info()
+
+  @doc """
+  Selects `:auto` or `:baseline` dispatch for custom Nx CPU kernels in this BEAM VM.
+
+  `:auto` chooses a compiled implementation supported by the CPU and OS.
+  `:baseline` disables the optional NEON/AVX2 implementations. The initial mode
+  comes from `EVISION_CPU_DISPATCH=auto|baseline`, read on first use, and defaults
+  to `auto`. This function overrides it for subsequent calls; calls already in
+  progress may finish using their previously selected implementation.
+
+  This currently controls dense `select`. It does not set CPU affinity, change
+  OpenCV's own dispatch, or disable compiler-generated baseline SIMD instructions.
+  """
+  @spec set_cpu_dispatch(:auto | :baseline) :: map()
+  def set_cpu_dispatch(mode) when mode in [:auto, :baseline] do
+    :evision_nif.mat_set_cpu_dispatch(mode: Atom.to_string(mode))
+  end
+
   @spec reject_error(Evision.Mat.maybe_mat_out()) :: Evision.Mat.t()
   defp reject_error(maybe_error) do
     case maybe_error do

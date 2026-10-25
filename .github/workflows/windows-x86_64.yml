@@ -152,9 +152,9 @@ jobs:
         run: |
           mix compile --force --warnings-as-errors --no-optional-deps
 
-      - name: Test native conversions
+      - name: Test native conversions and CPU dispatch
         shell: bash
-        run: mix test --no-compile test/evision_native_conversion_safety_test.exs
+        run: mix test --no-compile test/evision_native_conversion_safety_test.exs test/evision_cpu_dispatch_test.exs
 
       - name: Cache testdata
         id: cache-mix-testdata
