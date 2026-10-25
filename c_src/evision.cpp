@@ -2290,7 +2290,7 @@ ERL_NIF_TERM evision_from(ErlNifEnv *env, const Moments& m)
         enif_make_map_put(env, iter, kAtomNu12, evision_from(env, m.nu12), &iter) &&
         enif_make_map_put(env, iter, kAtomNu03, evision_from(env, m.nu03), &iter)
     ) {
-        return ret;
+        return iter;
     } else {
         return evision::nif::error(env, "error: Moments: map");
     }
