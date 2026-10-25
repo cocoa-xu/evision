@@ -348,10 +348,51 @@ defmodule Evision.Backend do
     |> to_nx(out)
   end
 
-  def multiply(_out, l, r) do
+  def multiply(%T{type: {:f, bits}} = out, %T{type: {:f, array_bits}} = array,
+               %T{shape: {}, type: {kind, _}} = scalar)
+      when bits in [32, 64] and array_bits in [32, 64] and kind in [:s, :u] do
+    multiply_integer_scalar(out, array, scalar, false)
+  end
+
+  def multiply(%T{type: {:f, bits}} = out, %T{shape: {}, type: {kind, _}} = scalar,
+               %T{type: {:f, array_bits}} = array)
+      when bits in [32, 64] and array_bits in [32, 64] and kind in [:s, :u] do
+    multiply_integer_scalar(out, array, scalar, true)
+  end
+
+  def multiply(out, l, r), do: multiply_reference(out, l, r)
+
+  defp multiply_integer_scalar(%T{type: {:f, bits}} = out, array, scalar, scalar_first?) do
+    # Nx reads integer bytes losslessly; this module's to_number/1 uses Mat.at,
+    # whose double return can round wide integers before the precision check.
+    integer = Nx.to_number(scalar)
+    <<value::float-native-size(^bits)>> = <<(integer * 1.0)::float-native-size(bits)>>
+
+    # Common scalar products stay native: the reference loop was over 100x
+    # slower on local million-element inputs. Only exact output-type scalars
+    # qualify; rounding an integer before multiplication can change the result.
+    if trunc(value) == integer do
+      scalar = Nx.tensor(value, type: {:f, 64}, backend: Evision.Backend)
+      {l, r} = if scalar_first?, do: {scalar, array}, else: {array, scalar}
+
+      Evision.Mat.multiply(from_nx(l), from_nx(r), out.type)
+      |> reject_error()
+      |> to_nx(out)
+    else
+      {l, r} = if scalar_first?, do: {scalar, array}, else: {array, scalar}
+      multiply_reference(out, l, r)
+    end
+  end
+
+  defp multiply_reference(out, l, r) do
     # OpenCV saturates some integer outputs and can lose wide integer precision.
-    # Keep other dtype combinations on the reference path until validated.
-    Nx.multiply(Nx.backend_copy(l, Nx.BinaryBackend), Nx.backend_copy(r, Nx.BinaryBackend))
+    # Keep the output template: Nx has already applied weak numeric promotion,
+    # which cannot be recovered from the now-tensorized scalar operands.
+    Nx.BinaryBackend.multiply(
+      out,
+      Nx.backend_copy(l, Nx.BinaryBackend),
+      Nx.backend_copy(r, Nx.BinaryBackend)
+    )
     |> Nx.backend_transfer(Evision.Backend)
   end
 
