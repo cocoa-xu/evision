@@ -35,3 +35,13 @@ that backend's `iota/3`; after the fix the smoke benchmark passes against the
 independent reference and the caller's original backend remains selected.
 
 Temporary probe source and output are removed after integration validation.
+
+## Historical comparison caveat
+
+With an Evision caller default, the old task could create OpenCV-owned inputs
+and then clone them with a same-backend copy. The corrected task creates its
+inputs on BinaryBackend before copying them to Evision. This can change the
+input ownership and subsequent safety-copy costs, independently of any kernel
+change. Compare historical reports only after controlling input preparation
+and storage. The separate cast-elision experiment explicitly holds storage
+constant and reports binary-backed and OpenCV-owned cases separately.

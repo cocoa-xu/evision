@@ -51,19 +51,19 @@ types, smaller sizes, sample ranges and the complete reproduction harness.
 
 ## Integration validation
 
-- Twenty new ExUnit tests cover the selected defects and cast-elision risks.
+- Twenty-four new ExUnit tests cover the selected defects and cast-elision risks.
   Multiply also joins the pre-existing broadcast shape matrix.
 - The rebuilt normal NIF passes the complete local suite in auto and baseline
-  modes: 297 passed, 37 default exclusions in each mode.
+  modes: 301 passed, 37 default exclusions in each mode.
 - A separately built NIF and CPU-kernel library instrumented with ASan/UBSan
-  passes the same complete suite in both modes: 297 passed, 37 exclusions each.
+  passes the same complete suite in both modes: 301 passed, 37 exclusions each.
   Both sanitizers stop on the first finding. Leak detection is disabled, and
   the existing BEAM and OpenCV binaries are not instrumented.
 - On macOS, the ASan runtime is preloaded into `beam.smp` directly before the
   NIF is loaded. The normal NIF is restored afterward and its SHA-256 verified.
 - The benchmark detection control rejected a known wrong integer-add result
   under both BinaryBackend and Evision caller defaults after the oracle fix.
-- The newly added u32 multiplication case passes the focused eight-test suite.
+- All twelve arithmetic tests pass, including every integer width, weak-number promotion and exact scalar precision boundaries.
 - Windows CI now explicitly runs all five new regression files alongside the
   existing conversion and dispatch tests. Remote CI results are recorded in
   the follow-up pull request.
@@ -87,3 +87,30 @@ converter defects and unmeasured performance hypotheses. The generalized
 multiply/dot reference paths deliberately prioritize correct results and may
 be slow for large integer or generalized contractions. Future native kernels
 must reproduce those semantics before replacing the fallbacks.
+
+The [promotion follow-up](promotion-follow-up.md) validates a proposed integer
+repair against 1,456 differential cases without changing production code. It
+shows why a blanket merged-type cast remains wrong for u64/signed pairs and
+mixed integer/float comparisons.
+
+## Independent cross-review
+
+Cross-review caught a weak-number multiplication issue in the initial fallback:
+rerunning the public Nx operation on already tensorized operands could change
+the output type chosen for raw numbers. The corrected fallback passes the
+original `out` template directly to `Nx.BinaryBackend.multiply/3`. Regression
+coverage includes raw numeric scalars on both sides.
+
+The [scalar multiplication follow-up](scalar-multiply.md) also caught and repaired
+a large performance regression in floating tensors multiplied by integer
+literals. Integer scalars take the native path only when exactly representable
+in the resolved output float type. Measured million-element calls retain the
+original native throughput of roughly 0.2-0.33 ms; the overly broad reference
+fallback took 29-36 ms. Non-representable scalars still use the reference path.
+
+An additional ownership review traced each same-type-helper consumer through
+stride-aware iteration, explicit contiguous copies, writable private copies, or
+fresh output allocation. A proposed runtime strided-ROI fixture was rejected
+because every public `Mat.roi` branch returns a clone. No runtime noncontiguous
+ROI coverage is claimed from that probe. Alignment, aliases, process exit and
+GC remain covered by the successful regression and sanitizer runs.

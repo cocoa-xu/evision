@@ -18,8 +18,9 @@ agent, and no commit or push was made.
 
 The native multiplication path now accepts only f32/f64 operands, promotes both
 to the Nx output type, aligns broadcasting, and calls typed elementwise
-`Evision.Mat.multiply/3`. Other combinations use `Nx.BinaryBackend`, then transfer
-the result back to Evision. This includes integer outputs, whose overflow must
+`Evision.Mat.multiply/3`. A later integration follow-up also admits integer scalars exactly representable
+in the resolved floating output type; see [scalar multiplication](scalar-multiply.md).
+Other combinations use `Nx.BinaryBackend`, then transfer the result back to Evision. This includes integer outputs, whose overflow must
 not silently switch from an exception to OpenCV saturation.
 
 The native dot path is restricted to nonbatched, two-dimensional f32/f64 inputs
@@ -222,7 +223,15 @@ Provenance: the incorrect mixed promotion rule dates to `f496cb7e`
 (2022-06-09). The current min/max output-template override dates to `25140b96`
 (2026-06-07, PR #322). Neither originated in PR #346.
 
-## Validation and remaining work
+## Integration follow-up
+
+Independent cross-review added weak-number and integer-scalar precision cases.
+The fallback now preserves the original output template through the direct
+BinaryBackend callback, and common exactly representable integer scalars retain
+the native floating path. The focused arithmetic file now contains twelve tests.
+See the research index for final complete-suite and sanitizer results.
+
+## Initial validation and remaining work
 
 The approved source was loaded only inside a short-lived probe VM:
 
