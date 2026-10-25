@@ -20,6 +20,7 @@ defmodule Mix.Tasks.Evision.Backend.Bench do
     * `--no-verify` - skip the correctness check before measuring.
 
   Timings include output materialization to keep the measured work eager and comparable.
+  Correctness references always use Nx.BinaryBackend, independently of the configured backend.
   Set `ENABLE_TORCHX_FOR_BENCHMARKING=true` to include Torchx.Backend timings.
   """
 
@@ -86,6 +87,7 @@ defmodule Mix.Tasks.Evision.Backend.Bench do
   defp run_suite(cases, profile, output, warmup, iterations, verify?, comparison_backend) do
     metadata = %{
       "backend" => "Evision.Backend",
+      "reference_backend" => "Nx.BinaryBackend",
       "cpu_dispatch" => Evision.Backend.cpu_dispatch_info(),
       "opencv_threads" => Evision.getNumThreads(),
       "comparison_backend" => comparison_backend_name(comparison_backend),
@@ -118,9 +120,15 @@ defmodule Mix.Tasks.Evision.Backend.Bench do
   end
 
   defp run_case(bench, warmup, iterations, verify?, comparison_backend) do
-    binary_input = bench.input.()
+    # A configured Evision default must not turn verification into comparing
+    # the implementation against itself, which can conceal incorrect results.
+    {binary_input, expected} =
+      Nx.with_default_backend(Nx.BinaryBackend, fn ->
+        input = bench.input.()
+        {input, if(verify?, do: bench.run.(input))}
+      end)
+
     evision_input = map_tensors(binary_input, &Nx.backend_copy(&1, Evision.Backend))
-    expected = if verify?, do: bench.run.(binary_input)
 
     if verify? do
       verify_case!("Evision.Backend", bench, bench.run.(evision_input), expected)
@@ -649,7 +657,14 @@ defmodule Mix.Tasks.Evision.Backend.Bench do
   defp materialize(value), do: value
 
   defp verify_case!(backend_name, bench, got, expected) do
-    case compare(got, expected, Map.get(bench, :atol, 1.0e-4), Map.get(bench, :rtol, 1.0e-4)) do
+    # Nx.all_close creates scalar tolerances, so the comparison itself also
+    # needs the reference backend rather than the caller's configured default.
+    comparison =
+      Nx.with_default_backend(Nx.BinaryBackend, fn ->
+        compare(got, expected, Map.get(bench, :atol, 1.0e-4), Map.get(bench, :rtol, 1.0e-4))
+      end)
+
+    case comparison do
       :ok ->
         :ok
 
