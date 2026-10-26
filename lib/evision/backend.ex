@@ -279,6 +279,18 @@ defmodule Evision.Backend do
   end
 
   def dot(
+    %T{type: out_type, shape: {}} = out,
+    %T{type: left_type, shape: {1}} = a, [0], [],
+    %T{type: right_type, shape: {1}} = b, [0], [])
+      when left_type in [{:f, 32}, {:f, 64}] and right_type in [{:f, 32}, {:f, 64}] do
+    Evision.Mat.matrix_multiply(
+      dot_matrix(a, [0], {1, 1}, out_type),
+      dot_matrix(b, [0], {1, 1}, out_type), out_type)
+    |> reject_error()
+    |> to_nx(out)
+  end
+
+  def dot(
     %T{type: out_type, shape: out_shape} = out,
     %T{type: left_type, shape: left_shape} = a, left_axes, [],
     %T{type: right_type, shape: right_shape} = b, right_axes, [])
@@ -298,7 +310,7 @@ defmodule Evision.Backend do
 
       Evision.Mat.matrix_multiply(left, right, out_type)
       |> reject_error()
-      |> dot_reshape(if(out_shape == {}, do: {1}, else: out_shape))
+      |> dot_reshape(out_shape)
       |> to_nx(out)
     else
       raise ArgumentError, "dot dimensions exceed OpenCV's signed-int limit"
@@ -329,6 +341,8 @@ defmodule Evision.Backend do
     end
   end
 
+  # Keep the native 1x1 scalar header; Nx scalar metadata needs no extra reshape.
+  defp dot_reshape(mat, {}), do: mat
   defp dot_reshape(%Evision.Mat{shape: shape} = mat, shape), do: mat
   defp dot_reshape(mat, shape), do: Evision.Mat.reshape(mat, shape) |> reject_error()
 

@@ -44,7 +44,7 @@ defmodule Evision.Backend.DotGemmTest do
       b = values(sb, tb, Enum.take([:right_a, :right_b, :right_c], tuple_size(sb)))
       actual = Nx.dot(ev(a), ca, ev(b), cb)
       same(actual, Nx.dot(a, ca, b, cb))
-      assert actual.data.ref.shape == if(actual.shape == {}, do: {1}, else: actual.shape)
+      assert actual.data.ref.shape == if(actual.shape == {}, do: {1, 1}, else: actual.shape)
     end
   end
 
@@ -153,7 +153,7 @@ defmodule Evision.Backend.DotGemmTest do
         # zero signs and finite overflow where BinaryBackend may raise.
         assert Nx.to_binary(actual) == Nx.to_binary(control)
         assert actual.shape == {}
-        assert actual.data.ref.shape == {1}
+        assert actual.data.ref.shape == {1, 1}
       end
     end
   end
