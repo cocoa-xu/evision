@@ -7,79 +7,7 @@
 #include <erl_nif.h>
 #include "../../ArgInfo.hpp"
 #include "../../evision_native_safety.hpp"
-
-static void repeat_bytes(uint8_t *dst, const uint8_t *src, size_t elem_size, size_t count)
-{
-    if (count == 0) return;
-    memcpy(dst, src, elem_size);
-    size_t copied = 1;
-    while (copied < count) {
-        size_t chunk = std::min(copied, count - copied);
-        memcpy(dst + copied * elem_size, dst, chunk * elem_size);
-        copied += chunk;
-    }
-}
-
-// Replicate img (interpreted as src_shape, already left-aligned with 1s to
-// to_shape's rank) into dst_data shaped as to_shape, following NumPy/Nx
-// broadcasting: a source dim of size 1 is stretched to the target size. Source
-// dims map to output coordinates with stride 0 where stretched; the contiguous
-// trailing run is copied as a block.
-static void broadcast(
-    const cv::Mat &img,
-    void *dst_data,
-    const std::vector<int>& src_shape,
-    const std::vector<int>& to_shape,
-    size_t elem_size,
-    size_t target_count
-)
-{
-    const size_t ndims = to_shape.size();
-
-    const uint8_t *src = (const uint8_t *)img.data;
-    cv::Mat tmp;
-    if (!img.isContinuous()) {
-        tmp = img.clone();
-        src = (const uint8_t *)tmp.data;
-    }
-
-    uint8_t *dst = (uint8_t *)dst_data;
-
-    if (img.total() == 1) {
-        repeat_bytes(dst, src, elem_size, target_count);
-        return;
-    }
-
-    // Row-major source strides (in elements); stretched dims get stride 0.
-    std::vector<size_t> src_strides(ndims, 0);
-    size_t stride = 1;
-    for (int64_t d = (int64_t)ndims - 1; d >= 0; --d) {
-        src_strides[d] = (src_shape[d] == 1) ? 0 : stride;
-        stride *= (size_t)src_shape[d];
-    }
-
-    const size_t last = (size_t)to_shape[ndims - 1];
-    const bool last_is_broadcast = src_shape[ndims - 1] == 1;
-    const size_t outer = target_count / last;
-
-    std::vector<int> idx(ndims - 1, 0);
-    for (size_t o = 0; o < outer; ++o) {
-        size_t base = 0;
-        for (size_t d = 0; d + 1 < ndims; ++d) base += (size_t)idx[d] * src_strides[d];
-
-        uint8_t *drow = dst + o * last * elem_size;
-        if (!last_is_broadcast) {
-            memcpy(drow, src + base * elem_size, last * elem_size);
-        } else {
-            repeat_bytes(drow, src + base * elem_size, elem_size, last);
-        }
-
-        for (int64_t d = (int64_t)ndims - 2; d >= 0; --d) {
-            if (++idx[d] < to_shape[d]) break;
-            idx[d] = 0;
-        }
-    }
-}
+#include "../../evision_broadcast.hpp"
 
 // @evision c: mat_broadcast_to, evision_cv_mat_broadcast_to, 1
 // @evision nif: def mat_broadcast_to(_opts \\ []), do: :erlang.nif_error(:undefined)
@@ -143,7 +71,10 @@ static ERL_NIF_TERM evision_cv_mat_broadcast_to(ErlNifEnv *env, int argc, const 
                 return evision::nif::error(env, "cannot broadcast to specified shape, out of memory");
             }
 
-            broadcast(img, result.data, src_shape, to_shape, elem_size, target_bytes / elem_size);
+            // Preserve the logical row order before passing raw contiguous bytes.
+            if (!img.isContinuous()) img = img.clone();
+            evision::backend::broadcast_copy(img.data, result.data, src_shape, to_shape,
+                                            elem_size, target_bytes / elem_size);
             return evision_from(env, result);
         }
     }
