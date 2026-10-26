@@ -328,19 +328,33 @@ defmodule Evision.Backend do
   end
 
   @impl true
-  def multiply(%T{type: type}=out, %T{}=l, %T{}=r) do
-    case check_mul_div_kind(l, r) do
-      :per_element ->
-        Evision.Mat.multiply(from_nx(float_scalar(l)), from_nx(float_scalar(r)), type)
+  def multiply(%T{type: type, shape: shape} = out, l, r) do
+    {l, r} =
+      if Nx.size(l) == 1 or Nx.size(r) == 1 do
+        {multiply_operand(l, shape), multiply_operand(r, shape)}
+      else
+        enforce_same_shape(l, r, shape)
+      end
 
-      :matrix ->
-        l = maybe_cast_type_for_matrix_mul_div(l)
-        r = maybe_cast_type_for_matrix_mul_div(r)
-        Evision.Mat.matrix_multiply(l, r)
-        |> Evision.Mat.as_type(type)
+    result = Evision.Mat.multiply(from_nx(l), from_nx(r), type) |> reject_error()
+
+    result =
+      if shape != {} and result.shape != shape,
+        do: Evision.Mat.as_shape(result, shape) |> reject_error(),
+        else: result
+
+    to_nx(result, out)
+  end
+
+  defp multiply_operand(%T{shape: {}} = scalar, _shape), do: float_scalar(scalar)
+
+  defp multiply_operand(tensor, shape) do
+    # Vectorization adds singleton axes to scalars; retain OpenCV's scalar path.
+    cond do
+      Nx.size(tensor) == 1 -> tensor |> Nx.reshape({}) |> float_scalar()
+      tensor.shape == shape -> tensor
+      true -> Nx.reshape(tensor, shape)
     end
-    |> reject_error()
-    |> to_nx(out)
   end
 
   @impl true

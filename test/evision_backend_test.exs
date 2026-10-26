@@ -23,8 +23,7 @@ defmodule Evision.Backend.Test do
            "got #{inspect(Nx.to_flat_list(got_b))} vs #{inspect(Nx.to_flat_list(want))}"
   end
 
-  # Move a tensor onto BinaryBackend (factor reconstruction is done there, since
-  # Evision.Backend.multiply does matrix mult for two non-scalar operands).
+  # Use an independent backend for factor reconstruction.
   defp b(t), do: Nx.backend_copy(t, Nx.BinaryBackend)
 
   # Assert two tensors are close at a given tolerance (both moved to BinaryBackend first).
@@ -508,10 +507,8 @@ defmodule Evision.Backend.Test do
       {{2, 3, 4}, {3, 4}}, {{2, 1, 4}, {1, 3, 1}}
     ]
 
-    # multiply is excluded: for two non-scalar operands Evision.Backend
-    # intentionally does matrix mult rather than elementwise.
     @elementwise_ops [
-      :add, :subtract, :divide, :min, :max,
+      :add, :subtract, :multiply, :divide, :min, :max,
       :equal, :not_equal, :greater, :less, :greater_equal, :less_equal
     ]
 
