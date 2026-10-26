@@ -681,7 +681,7 @@ defmodule Evision.Backend do
 
     {l_mat, r_mat} =
       cond do
-        # Matching scalar headers need only one result reshape, not two input reshapes.
+        # Matching scalar headers already work in OpenCV; avoid redundant reshapes.
         paired_scalars and l_mat.shape == r_mat.shape ->
           {l_mat, r_mat}
         paired_scalars ->
@@ -694,9 +694,7 @@ defmodule Evision.Backend do
           {l_mat, r_mat}
       end
 
-    result = Evision.Mat.cmp(l_mat, r_mat, op) |> reject_error()
-    shape = if out.shape == {}, do: {1}, else: out.shape
-    result |> reshape_comparison_mat(shape) |> to_nx(out)
+    Evision.Mat.cmp(l_mat, r_mat, op) |> reject_error() |> to_nx(out)
   end
 
   defp reshape_comparison_mat(%Evision.Mat{shape: shape} = mat, shape), do: mat

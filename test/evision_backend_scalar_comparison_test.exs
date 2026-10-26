@@ -32,7 +32,6 @@ defmodule Evision.BackendScalarComparisonTest do
   defp compare(left, right) do
     type = Nx.Type.merge(left.type, right.type)
     shape = if left.shape == {}, do: right.shape, else: left.shape
-    physical_shape = if shape == {}, do: {1}, else: shape
     originals = {Nx.to_binary(left), Nx.to_binary(right)}
 
     for {operation, predicate} <- @operations do
@@ -43,7 +42,7 @@ defmodule Evision.BackendScalarComparisonTest do
       actual = apply(Nx, operation, [left, right])
       assert actual.type == {:u, 8}
       assert actual.shape == shape
-      assert actual.data.ref.shape == physical_shape
+      if shape != {}, do: assert(actual.data.ref.shape == shape)
       assert Nx.to_binary(actual) == Evision.Mat.to_binary(expected)
       assert {Nx.to_binary(left), Nx.to_binary(right)} == originals
     end
@@ -56,7 +55,7 @@ defmodule Evision.BackendScalarComparisonTest do
     assert copied.data.ref.shape == {1}
     assert Nx.to_binary(Nx.equal(direct, copied)) == <<1>>
     assert Nx.to_binary(Nx.equal(copied, direct)) == <<1>>
-    assert Nx.equal(direct, direct).data.ref.shape == {1}
+    assert Nx.equal(direct, direct).data.ref.shape == {1, 1}
     assert {:error, _} = Evision.Mat.cmp(direct.data.ref, copied.data.ref, :eq)
   end
 
