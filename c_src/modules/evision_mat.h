@@ -971,9 +971,7 @@ static ERL_NIF_TERM evision_cv_mat_last_dim_as_channel(ErlNifEnv *env, int argc,
         Mat src;
 
         if (evision_to_safe(env, evision_get_kw(env, erl_terms, "src"), src, ArgInfo("src", ArgInfo::INPUT_ONLY))) {
-            if ((src.type() == CV_8S || src.type() == CV_8U || src.type() == CV_16F \
-                || src.type() == CV_16S || src.type() == CV_16U || src.type() == CV_32S \
-                || src.type() == CV_32F || src.type() == CV_64F)) {
+            if (src.channels() == 1) {
                 int ndims = src.size.dims;
                 if (ndims <= 1) {
                     return evision::nif::error(env, "image only has 1 dimension");
