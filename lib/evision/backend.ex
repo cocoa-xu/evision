@@ -346,11 +346,15 @@ defmodule Evision.Backend do
     to_nx(result, out)
   end
 
+  defp multiply_operand(%T{shape: {}} = scalar, _shape), do: float_scalar(scalar)
+
   defp multiply_operand(tensor, shape) do
     # Vectorization adds singleton axes to scalars; retain OpenCV's scalar path.
-    if Nx.size(tensor) == 1,
-      do: tensor |> Nx.reshape({}) |> float_scalar(),
-      else: Nx.reshape(tensor, shape)
+    cond do
+      Nx.size(tensor) == 1 -> tensor |> Nx.reshape({}) |> float_scalar()
+      tensor.shape == shape -> tensor
+      true -> Nx.reshape(tensor, shape)
+    end
   end
 
   @impl true
