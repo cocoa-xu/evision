@@ -2375,6 +2375,7 @@ defmodule Evision.Mat do
   end
 
   @spec check_unsupported_type(mat_type()) :: mat_type_tuple_form()
+  defp check_unsupported_type({:f, 16} = type), do: type
   defp check_unsupported_type({:f, 32} = type), do: type
   defp check_unsupported_type({:f, 64} = type), do: type
   defp check_unsupported_type({:u, 8} = type), do: type
@@ -2386,6 +2387,7 @@ defmodule Evision.Mat do
   defp check_unsupported_type({:u, 32} = type), do: type
   defp check_unsupported_type({:u, 64} = type), do: type
   defp check_unsupported_type({:bf, 16} = type), do: type
+  defp check_unsupported_type(:f16), do: {:f, 16}
   defp check_unsupported_type(:f32), do: {:f, 32}
   defp check_unsupported_type(:f64), do: {:f, 64}
   defp check_unsupported_type(:u8), do: {:u, 8}

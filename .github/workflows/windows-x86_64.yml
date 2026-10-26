@@ -154,7 +154,7 @@ jobs:
 
       - name: Test native conversions and CPU dispatch
         shell: bash
-        run: mix test --no-compile test/evision_native_conversion_safety_test.exs test/evision_cpu_dispatch_test.exs test/evision_backend_benchmark_test.exs test/evision_moments_test.exs test/evision_mat_channel_test.exs test/evision_backend_multiply_semantics_test.exs test/evision_backend_dot_gemm_test.exs test/evision_backend_cast_elision_test.exs test/evision_backend_matching_shape_test.exs test/evision_backend_broadcast_suffix_test.exs
+        run: mix test --no-compile test/evision_native_conversion_safety_test.exs test/evision_cpu_dispatch_test.exs test/evision_backend_benchmark_test.exs test/evision_moments_test.exs test/evision_mat_channel_test.exs test/evision_backend_multiply_semantics_test.exs test/evision_backend_dot_gemm_test.exs test/evision_backend_cast_elision_test.exs test/evision_backend_matching_shape_test.exs test/evision_backend_broadcast_suffix_test.exs test/evision_mat_f16_type_test.exs
 
       - name: Cache testdata
         id: cache-mix-testdata
