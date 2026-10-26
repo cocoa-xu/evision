@@ -331,6 +331,9 @@ defmodule Evision.Backend do
       mat
     else
       mat = cond do
+        # Use the specialized 2D kernel only when native and logical headers agree.
+        axes == [1, 0] and mat.dims == 2 and mat.shape == source_shape ->
+          Evision.transpose(mat) |> reject_error()
         axes != all_axes(tuple_size(source_shape)) ->
           Evision.Mat.transpose(mat, axes, as_shape: source_shape) |> reject_error()
         mat.shape != shape and not Evision.Mat.isContinuous(mat) ->

@@ -213,4 +213,42 @@ defmodule Evision.Backend.DotGemmTest do
     :erlang.garbage_collect()
     same(result, Nx.dot(values({2, 3, 4}, :f64), values({4, 5}, :f64)))
   end
+
+  test "2D contractions preserve native special-value bytes and input storage" do
+    for {type, bits, words} <- [
+          {:f32, 32,
+           [0, 0x80000000, 1, 0x80000001, 0x7F800000, 0xFF800000, 0x7FC00123, 0xFFC00456]},
+          {:f64, 64,
+           [
+             0,
+             0x8000000000000000,
+             1,
+             0x8000000000000001,
+             0x7FF0000000000000,
+             0xFFF0000000000000,
+             0x7FF8000000000123,
+             0xFFF8000000000456
+           ]}
+        ],
+        storage <- [:binary, :owned],
+        left_axis <- [0, 1],
+        right_axis <- [0, 1] do
+      raw =
+        for word <- words ++ Enum.reverse(words),
+            into: <<>>,
+            do: <<word::unsigned-native-size(bits)>>
+
+      tensor = Nx.from_binary(raw, type) |> Nx.reshape({4, 4})
+      {input, owner} = source(tensor, storage)
+      mat = Evision.Backend.from_nx(input)
+      transposed = Evision.Mat.transpose(mat, [1, 0], as_shape: {4, 4})
+      left = if left_axis == 0, do: transposed, else: mat
+      right = if right_axis == 1, do: transposed, else: mat
+      expected = Evision.Mat.matrix_multiply(left, right, type) |> Evision.Mat.to_binary()
+
+      assert Nx.to_binary(Nx.dot(input, [left_axis], input, [right_axis])) == expected
+      assert Nx.to_binary(input) == raw
+      assert Nx.to_binary(owner) == raw
+    end
+  end
 end
