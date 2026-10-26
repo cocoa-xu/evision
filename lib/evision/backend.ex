@@ -675,33 +675,32 @@ defmodule Evision.Backend do
 
   defp cmp_scalar(out, %T{type: lt} = l, %T{type: rt} = r, op) do
     merged = Nx.Type.merge(lt, rt)
+    l_mat = cast_mat(l, merged)
+    r_mat = cast_mat(r, merged)
     paired_scalars = l.shape == {} and r.shape == {}
-    l_mat = scalar_comparison_mat(l, merged, paired_scalars)
-    r_mat = scalar_comparison_mat(r, merged, paired_scalars)
+
+    {l_mat, r_mat} =
+      cond do
+        # Matching scalar headers need only one result reshape, not two input reshapes.
+        paired_scalars and l_mat.shape == r_mat.shape ->
+          {l_mat, r_mat}
+        paired_scalars ->
+          {reshape_comparison_mat(l_mat, {1}), reshape_comparison_mat(r_mat, {1})}
+        l.shape == {} and l_mat.dims > 2 ->
+          {reshape_comparison_mat(l_mat, {1}), r_mat}
+        r.shape == {} and r_mat.dims > 2 ->
+          {l_mat, reshape_comparison_mat(r_mat, {1})}
+        true ->
+          {l_mat, r_mat}
+      end
+
     result = Evision.Mat.cmp(l_mat, r_mat, op) |> reject_error()
     shape = if out.shape == {}, do: {1}, else: out.shape
-    result =
-      if result.shape == shape,
-        do: result,
-        else: Evision.Mat.reshape(result, shape) |> reject_error()
-    to_nx(result, out)
+    result |> reshape_comparison_mat(shape) |> to_nx(out)
   end
 
-  defp scalar_comparison_mat(%T{shape: {}} = tensor, type, paired_scalars) do
-    case cast_mat(tensor, type) do
-      %Evision.Mat{shape: {1}} = mat ->
-        mat
-
-      # OpenCV rejects mismatched singleton ranks and scalar headers above rank two.
-      %Evision.Mat{dims: dims} = mat when paired_scalars or dims > 2 ->
-        Evision.Mat.reshape(mat, {1}) |> reject_error()
-
-      mat ->
-        mat
-    end
-  end
-
-  defp scalar_comparison_mat(tensor, type, _paired_scalars), do: cast_mat(tensor, type)
+  defp reshape_comparison_mat(%Evision.Mat{shape: shape} = mat, shape), do: mat
+  defp reshape_comparison_mat(mat, shape), do: Evision.Mat.reshape(mat, shape) |> reject_error()
 
   @spec enforce_same_shape(Nx.Tensor.t(), Nx.Tensor.t(), tuple()) :: {Nx.Tensor.t(), Nx.Tensor.t()}
   defp enforce_same_shape(
