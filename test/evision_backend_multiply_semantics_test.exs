@@ -301,4 +301,15 @@ defmodule Evision.Backend.MultiplySemanticsTest do
       end
     end
   end
+
+  test "nonrepresentable integer factors preserve reference overflow errors" do
+    raw = <<0x7FEFFFFFFFFFFFFF::unsigned-native-64>>
+    array = Nx.from_binary(raw, :f64)
+    scalar = Nx.tensor(9_007_199_254_740_993, type: :s64)
+
+    for {a, b} <- [{array, scalar}, {scalar, array}] do
+      assert_raise ArithmeticError, fn -> Nx.multiply(a, b) end
+      assert_raise ArithmeticError, fn -> Nx.multiply(ev(a), ev(b)) end
+    end
+  end
 end
