@@ -328,19 +328,68 @@ defmodule Evision.Backend do
   end
 
   @impl true
-  def multiply(%T{type: type}=out, %T{}=l, %T{}=r) do
-    case check_mul_div_kind(l, r) do
-      :per_element ->
-        Evision.Mat.multiply(from_nx(float_scalar(l)), from_nx(float_scalar(r)), type)
+  def multiply(%T{type: type, shape: shape} = out, %T{type: left_type} = l, %T{type: right_type} = r)
+      when left_type in [{:f, 32}, {:f, 64}] and right_type in [{:f, 32}, {:f, 64}] do
+    {l, r} = align_operands(Nx.as_type(l, type), Nx.as_type(r, type), shape)
 
-      :matrix ->
-        l = maybe_cast_type_for_matrix_mul_div(l)
-        r = maybe_cast_type_for_matrix_mul_div(r)
-        Evision.Mat.matrix_multiply(l, r)
-        |> Evision.Mat.as_type(type)
-    end
+    Evision.Mat.multiply(from_nx(l), from_nx(r), type)
     |> reject_error()
     |> to_nx(out)
+  end
+
+  def multiply(%T{type: {:f, bits}} = out, %T{type: {:f, array_bits}} = array,
+               %T{type: {kind, _}} = scalar)
+      when bits in [32, 64] and array_bits in [32, 64] and kind in [:s, :u] do
+    if Nx.size(scalar) == 1,
+      do: multiply_integer_scalar(out, array, scalar, false),
+      else: multiply_reference(out, array, scalar)
+  end
+
+  def multiply(%T{type: {:f, bits}} = out, %T{type: {kind, _}} = scalar,
+               %T{type: {:f, array_bits}} = array)
+      when bits in [32, 64] and array_bits in [32, 64] and kind in [:s, :u] do
+    if Nx.size(scalar) == 1,
+      do: multiply_integer_scalar(out, array, scalar, true),
+      else: multiply_reference(out, scalar, array)
+  end
+
+  def multiply(out, l, r), do: multiply_reference(out, l, r)
+
+  defp multiply_integer_scalar(%T{type: {:f, bits}} = out, array, scalar, scalar_first?) do
+    # Nx reads integer bytes losslessly; this module's to_number/1 uses Mat.at,
+    # whose double return can round wide integers before the precision check.
+    # Vectorized scalars gain length-one axes. Normalize the read view while
+    # retaining the original operand for the precision fallback.
+    integer = scalar |> Nx.reshape({}) |> Nx.to_number()
+    <<value::float-native-size(^bits)>> = <<(integer * 1.0)::float-native-size(bits)>>
+
+    # Common scalar products stay native: the reference loop was over 100x
+    # slower on local million-element inputs. Only exact output-type scalars
+    # qualify; rounding an integer before multiplication can change the result.
+    if trunc(value) == integer do
+      array = if array.shape == out.shape, do: array, else: Nx.reshape(array, out.shape)
+      scalar = Nx.tensor(value, type: {:f, 64}, backend: Evision.Backend)
+      {l, r} = if scalar_first?, do: {scalar, array}, else: {array, scalar}
+
+      Evision.Mat.multiply(from_nx(l), from_nx(r), out.type)
+      |> reject_error()
+      |> to_nx(out)
+    else
+      {l, r} = if scalar_first?, do: {scalar, array}, else: {array, scalar}
+      multiply_reference(out, l, r)
+    end
+  end
+
+  defp multiply_reference(out, l, r) do
+    # OpenCV saturates some integer outputs and can lose wide integer precision.
+    # Keep the output template: Nx has already applied weak numeric promotion,
+    # which cannot be recovered from the now-tensorized scalar operands.
+    Nx.BinaryBackend.multiply(
+      out,
+      Nx.backend_copy(l, Nx.BinaryBackend),
+      Nx.backend_copy(r, Nx.BinaryBackend)
+    )
+    |> Nx.backend_transfer(Evision.Backend)
   end
 
   @impl true
