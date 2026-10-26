@@ -267,15 +267,87 @@ defmodule Evision.Backend do
   end
 
   @impl true
-  @spec dot(Nx.Tensor.t(), Nx.Tensor.t(), any, [], Nx.Tensor.t(), any, []) :: Nx.Tensor.t()
+  @spec dot(Nx.Tensor.t(), Nx.Tensor.t(), list(), list(), Nx.Tensor.t(), list(), list()) :: Nx.Tensor.t()
   def dot(
     %T{type: out_type} = out,
-    a, _left_axes, [],
-    b, _right_axes, []) do
+    %T{shape: {_, _}, type: left_type} = a, [1], [],
+    %T{shape: {_, _}, type: right_type} = b, [0], [])
+      when left_type in [{:f, 32}, {:f, 64}] and right_type in [{:f, 32}, {:f, 64}] do
+    Evision.Mat.matrix_multiply(cast_mat(a, out_type), cast_mat(b, out_type), out_type)
+    |> reject_error()
+    |> to_nx(out)
+  end
+
+  def dot(
+    %T{type: out_type, shape: {}} = out,
+    %T{type: left_type, shape: {1}} = a, [0], [],
+    %T{type: right_type, shape: {1}} = b, [0], [])
+      when left_type in [{:f, 32}, {:f, 64}] and right_type in [{:f, 32}, {:f, 64}] do
+    Evision.Mat.matrix_multiply(
+      dot_matrix(a, [0], {1, 1}, out_type),
+      dot_matrix(b, [0], {1, 1}, out_type), out_type)
+    |> reject_error()
+    |> to_nx(out)
+  end
+
+  def dot(
+    %T{type: out_type, shape: out_shape} = out,
+    %T{type: left_type, shape: left_shape} = a, left_axes, [],
+    %T{type: right_type, shape: right_shape} = b, right_axes, [])
+      when left_type in [{:f, 32}, {:f, 64}] and right_type in [{:f, 32}, {:f, 64}] and
+           out_type in [{:f, 32}, {:f, 64}] do
+    left_free = all_axes(tuple_size(left_shape)) -- left_axes
+    right_free = all_axes(tuple_size(right_shape)) -- right_axes
+    m = sizes_product(left_shape, left_free)
+    k = sizes_product(left_shape, left_axes)
+    n = sizes_product(right_shape, right_free)
+
+    if m <= 2_147_483_647 and k <= 2_147_483_647 and n <= 2_147_483_647 do
+      # Keep the supplied contraction-axis pairing while using native GEMM's
+      # reduction order, zero signs and overflow behavior.
+      left = dot_matrix(a, left_free ++ left_axes, {m, k}, out_type)
+      right = dot_matrix(b, right_axes ++ right_free, {k, n}, out_type)
+
+      Evision.Mat.matrix_multiply(left, right, out_type)
+      |> reject_error()
+      |> dot_reshape(out_shape)
+      |> to_nx(out)
+    else
+      raise ArgumentError, "dot dimensions exceed OpenCV's signed-int limit"
+    end
+  end
+
+  def dot(%T{type: out_type} = out, a, _left_axes, [], b, _right_axes, []) do
     Evision.Mat.matrix_multiply(from_nx(a), from_nx(b), out_type)
     |> reject_error()
     |> to_nx(out)
   end
+
+  defp dot_matrix(%T{shape: source_shape} = tensor, axes, shape, type) do
+    mat = cast_mat(tensor, type) |> reject_error()
+    # GEMM already accepts these one-element headers as 1x1. Higher-rank
+    # singleton headers still require normalization before the native call.
+    if shape == {1, 1} and mat.shape in [{1}, {1, 1}] and mat.dims in [1, 2] do
+      mat
+    else
+      mat = cond do
+        # Use the specialized 2D kernel only when native and logical headers agree.
+        axes == [1, 0] and mat.dims == 2 and mat.shape == source_shape ->
+          Evision.transpose(mat) |> reject_error()
+        axes != all_axes(tuple_size(source_shape)) ->
+          Evision.Mat.transpose(mat, axes, as_shape: source_shape) |> reject_error()
+        mat.shape != shape and not Evision.Mat.isContinuous(mat) ->
+          Evision.Mat.clone(mat) |> reject_error()
+        true -> mat
+      end
+      dot_reshape(mat, shape)
+    end
+  end
+
+  # Keep the native 1x1 scalar header; Nx scalar metadata needs no extra reshape.
+  defp dot_reshape(mat, {}), do: mat
+  defp dot_reshape(%Evision.Mat{shape: shape} = mat, shape), do: mat
+  defp dot_reshape(mat, shape), do: Evision.Mat.reshape(mat, shape) |> reject_error()
 
   @impl true
   @spec clip(Nx.Tensor.t(), Nx.Tensor.t(), Nx.Tensor.t(), Nx.Tensor.t()) :: Nx.Tensor.t()
