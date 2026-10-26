@@ -683,6 +683,13 @@ defmodule Evision.Backend do
   end
 
   @spec enforce_same_shape(Nx.Tensor.t(), Nx.Tensor.t(), tuple()) :: {Nx.Tensor.t(), Nx.Tensor.t()}
+  defp enforce_same_shape(
+         %T{shape: shape, data: %EB{ref: %Evision.Mat{shape: shape}}} = l,
+         %T{shape: shape, data: %EB{ref: %Evision.Mat{shape: shape}}} = r,
+         shape
+       ),
+       do: {l, r}
+
   defp enforce_same_shape(%T{} = l, %T{} = r, out_shape) do
     l_mat = Evision.Mat.reshape(from_nx(Nx.broadcast(l, out_shape)), out_shape)
     b_mat = Evision.Mat.reshape(from_nx(Nx.broadcast(r, out_shape)), out_shape)
@@ -921,6 +928,9 @@ defmodule Evision.Backend do
     end
   end
 
+  # Keep the existing owner when no conversion is needed. Mutating NIFs still
+  # make their own private copy; borrowing NIFs still align binary-backed inputs.
+  defp as_mat_type(%Evision.Mat{type: type} = mat, type), do: mat
   defp as_mat_type(mat, type), do: reject_error(Evision.Mat.as_type(mat, type))
 
   # Reduce an n-d row-wise op along `axis` to cv's 2D per-row form: move the
