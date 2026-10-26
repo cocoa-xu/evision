@@ -661,10 +661,8 @@ defmodule Evision.Backend do
   @impl true
   def less_equal(%T{shape: out_shape} = out, l, r), do: cmp(out, out_shape, l, r, :le)
 
-  # cv::compare broadcasts a 1x1 mat on either side, so a 0-d operand is cast to
-  # the merged comparison type (a single element) and compared in place, in the
-  # original operand order, instead of being broadcast to a full array. The merged
-  # type is what Nx compares in, which keeps fractional-scalar results correct.
+  # Keep scalar broadcasting in OpenCV with the existing merged comparison type
+  # and operand order. Normalize incompatible scalar Mat headers before comparing.
   defp cmp(out, _out_shape, %T{shape: {}} = l, r, op), do: cmp_scalar(out, l, r, op)
   defp cmp(out, _out_shape, l, %T{shape: {}} = r, op), do: cmp_scalar(out, l, r, op)
   defp cmp(out, out_shape, l, r, op) do
@@ -677,10 +675,33 @@ defmodule Evision.Backend do
 
   defp cmp_scalar(out, %T{type: lt} = l, %T{type: rt} = r, op) do
     merged = Nx.Type.merge(lt, rt)
-    Evision.Mat.cmp(cast_mat(l, merged), cast_mat(r, merged), op)
-    |> reject_error()
-    |> to_nx(out)
+    paired_scalars = l.shape == {} and r.shape == {}
+    l_mat = scalar_comparison_mat(l, merged, paired_scalars)
+    r_mat = scalar_comparison_mat(r, merged, paired_scalars)
+    result = Evision.Mat.cmp(l_mat, r_mat, op) |> reject_error()
+    shape = if out.shape == {}, do: {1}, else: out.shape
+    result =
+      if result.shape == shape,
+        do: result,
+        else: Evision.Mat.reshape(result, shape) |> reject_error()
+    to_nx(result, out)
   end
+
+  defp scalar_comparison_mat(%T{shape: {}} = tensor, type, paired_scalars) do
+    case cast_mat(tensor, type) do
+      %Evision.Mat{shape: {1}} = mat ->
+        mat
+
+      # OpenCV rejects mismatched singleton ranks and scalar headers above rank two.
+      %Evision.Mat{dims: dims} = mat when paired_scalars or dims > 2 ->
+        Evision.Mat.reshape(mat, {1}) |> reject_error()
+
+      mat ->
+        mat
+    end
+  end
+
+  defp scalar_comparison_mat(tensor, type, _paired_scalars), do: cast_mat(tensor, type)
 
   @spec enforce_same_shape(Nx.Tensor.t(), Nx.Tensor.t(), tuple()) :: {Nx.Tensor.t(), Nx.Tensor.t()}
   defp enforce_same_shape(
