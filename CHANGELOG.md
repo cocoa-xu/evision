@@ -96,7 +96,7 @@ requirement remains `~> 0.12.1`.
 - Mixed-type array comparisons still have lossy promotion and unsupported half
   combinations. Batched dot is not newly supported in this release.
 
-## v1.0.1-rc.0 (2026-07-19)
+## v1.0.1-rc.0 (2026-07-20)
 
 - Add OpenCV.js correspondence metadata and a CSP-compatible runtime build (#328).
 - Address Elixir 1.20 compile warnings and simplify precompiled deployment
