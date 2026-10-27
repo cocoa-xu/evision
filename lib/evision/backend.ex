@@ -661,10 +661,8 @@ defmodule Evision.Backend do
   @impl true
   def less_equal(%T{shape: out_shape} = out, l, r), do: cmp(out, out_shape, l, r, :le)
 
-  # cv::compare broadcasts a 1x1 mat on either side, so a 0-d operand is cast to
-  # the merged comparison type (a single element) and compared in place, in the
-  # original operand order, instead of being broadcast to a full array. The merged
-  # type is what Nx compares in, which keeps fractional-scalar results correct.
+  # Keep scalar broadcasting in OpenCV with the existing merged comparison type
+  # and operand order. Normalize incompatible scalar Mat headers before comparing.
   defp cmp(out, _out_shape, %T{shape: {}} = l, r, op), do: cmp_scalar(out, l, r, op)
   defp cmp(out, _out_shape, l, %T{shape: {}} = r, op), do: cmp_scalar(out, l, r, op)
   defp cmp(out, out_shape, l, r, op) do
@@ -677,10 +675,30 @@ defmodule Evision.Backend do
 
   defp cmp_scalar(out, %T{type: lt} = l, %T{type: rt} = r, op) do
     merged = Nx.Type.merge(lt, rt)
-    Evision.Mat.cmp(cast_mat(l, merged), cast_mat(r, merged), op)
-    |> reject_error()
-    |> to_nx(out)
+    l_mat = cast_mat(l, merged)
+    r_mat = cast_mat(r, merged)
+    paired_scalars = l.shape == {} and r.shape == {}
+
+    {l_mat, r_mat} =
+      cond do
+        # Matching scalar headers already work in OpenCV; avoid redundant reshapes.
+        paired_scalars and l_mat.shape == r_mat.shape ->
+          {l_mat, r_mat}
+        paired_scalars ->
+          {reshape_comparison_mat(l_mat, {1}), reshape_comparison_mat(r_mat, {1})}
+        l.shape == {} and l_mat.dims > 2 ->
+          {reshape_comparison_mat(l_mat, {1}), r_mat}
+        r.shape == {} and r_mat.dims > 2 ->
+          {l_mat, reshape_comparison_mat(r_mat, {1})}
+        true ->
+          {l_mat, r_mat}
+      end
+
+    Evision.Mat.cmp(l_mat, r_mat, op) |> reject_error() |> to_nx(out)
   end
+
+  defp reshape_comparison_mat(%Evision.Mat{shape: shape} = mat, shape), do: mat
+  defp reshape_comparison_mat(mat, shape), do: Evision.Mat.reshape(mat, shape) |> reject_error()
 
   @spec enforce_same_shape(Nx.Tensor.t(), Nx.Tensor.t(), tuple()) :: {Nx.Tensor.t(), Nx.Tensor.t()}
   defp enforce_same_shape(
