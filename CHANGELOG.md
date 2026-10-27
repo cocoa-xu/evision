@@ -69,8 +69,9 @@ requirement remains `~> 0.12.1`.
   [#351](https://github.com/cocoa-xu/evision/pull/351)).
 - Keep benchmark reference inputs on `Nx.BinaryBackend` regardless of the
   caller's default backend ([#349](https://github.com/cocoa-xu/evision/pull/349)).
-- Include required native helper headers in Hex source packages, resolve installed
-  OpenCV FLANN headers, handle HTTP response headers up to 64 KiB, and retain
+- Include required native helper headers and Python generator directories in Hex
+  source packages, resolve installed OpenCV FLANN headers, handle HTTP response
+  headers up to 64 KiB, and retain
   prerelease suffixes in the Hex release script. Include Windows CUDA archives in
   the release checksum manifest
   ([#334](https://github.com/cocoa-xu/evision/pull/334),
@@ -95,7 +96,7 @@ requirement remains `~> 0.12.1`.
 ### Known limitations
 
 - Mixed-type array comparisons still have lossy promotion and unsupported half
-  combinations. Batched dot is not newly supported in this release.
+  combinations. Batched dot remains unsupported.
 
 ## v1.0.1-rc.0 (2026-07-20)
 

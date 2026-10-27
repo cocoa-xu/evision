@@ -5,7 +5,6 @@ defmodule Evision.MixProject.Metadata do
   def version, do: "1.1.0-rc.0"
   def github_url, do: "https://github.com/cocoa-xu/evision"
   def opencv_version, do: "5.0.0"
-  # evision targets OpenCV 5.0.x only.
   def compatible_opencv_versions, do: ["5.0.0"]
 
   def default_cuda_version, do: {"12", "9"}

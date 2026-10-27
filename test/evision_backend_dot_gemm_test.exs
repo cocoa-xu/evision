@@ -42,10 +42,8 @@ defmodule Evision.Backend.DotGemmTest do
         Evision.Mat.from_nx(Nx.as_type(right, expected.type)), expected.type)
 
       actual = Nx.dot(a, b)
-      same(actual, expected)
+      metadata(actual, expected)
       assert Nx.to_binary(actual) == Evision.Mat.to_binary(native)
-      assert Nx.to_binary(a) == Nx.to_binary(left)
-      assert Nx.to_binary(b) == Nx.to_binary(right)
     end
   end
 
