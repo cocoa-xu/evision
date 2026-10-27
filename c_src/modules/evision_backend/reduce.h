@@ -115,6 +115,31 @@ static inline int evision_reduce_out_depth(int in_depth, int op) {
     }
 }
 
+static cv::Mat evision_reduce_half(const cv::Mat &src, int op, bool leading) {
+    const int lanes = leading ? src.cols : src.rows;
+    cv::Mat result(leading ? 1 : lanes, leading ? lanes : 1, CV_64F);
+    double *values = result.ptr<double>();
+    const int64_t work = lanes > 1 ? (int64_t)src.rows * src.cols : 0;
+    evision_parallel_for(lanes, work, EVISION_PARALLEL_SIMPLE_MIN_WORK, [&](int64_t begin, int64_t end) {
+        for (int64_t i = begin; i < end; ++i) {
+            // Borrow lane headers to avoid contending on src's refcount for every call.
+            // src stays alive until the synchronous parallel loop finishes.
+            const size_t offset = (size_t)i * (leading ? src.elemSize() : src.step[0]);
+            const cv::Mat lane(leading ? src.rows : 1, leading ? 1 : src.cols,
+                               src.type(), src.data + offset, src.step[0]);
+            if (op == 0) {
+                // OpenCV uses its own accumulation order, including f32 blocks for half inputs.
+                values[i] = cv::sum(lane)[0];
+            } else {
+                cv::minMaxLoc(lane, op == 3 ? &values[i] : nullptr,
+                              op == 2 ? &values[i] : nullptr);
+            }
+        }
+    });
+    if (op != 0) result.convertTo(result, src.depth());
+    return result;
+}
+
 // @evision c: mat_reduce, evision_cv_mat_reduce, 1
 // @evision nif: def mat_reduce(_opts \\ []), do: :erlang.nif_error(:undefined)
 static ERL_NIF_TERM evision_cv_mat_reduce(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
@@ -135,6 +160,11 @@ static ERL_NIF_TERM evision_cv_mat_reduce(ErlNifEnv *env, int argc, const ERL_NI
                 return evision::nif::error(env, "reduce: expected a nonempty single-channel matrix");
             if (op < 0 || op > 3 || axis < 0 || axis > 1)
                 return evision::nif::error(env, "reduce: invalid operation or axis");
+            if (src.depth() == CV_16F || src.depth() == CV_16BF) {
+                if (op == 1)
+                    return evision::nif::error(env, "mat_reduce: unsupported depth");
+                return evision_from(env, evision_reduce_half(src, op, axis == 0));
+            }
             Mat src_c = src.isContinuous() ? src : src.clone();
             bool leading = (axis == 0);
             int out_depth = evision_reduce_out_depth(src_c.depth(), op);
