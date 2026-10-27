@@ -111,11 +111,13 @@ defmodule Evision.BackendNativeHalfReduceTest do
       bytes = Nx.to_binary(source)
       storage = <<17, bytes::binary, 19>>
       view = binary_part(storage, 1, byte_size(bytes))
+      assert :binary.referenced_byte_size(view) > byte_size(view)
       borrowed = Evision.Mat.from_binary(view, type, 16, 16, 1)
 
       for mat <- [borrowed, Evision.Mat.clone(borrowed)], axis <- [0, 1], op <- @operations do
-        input = Evision.Mat.to_nx(mat, Evision.Backend)
-        expected = source |> Nx.reshape({16, 16}) |> then(&apply(Nx, op, [&1, [axes: [axis]]]))
+        template = Nx.reshape(source, {16, 16})
+        input = Evision.Backend.to_nx(mat, template)
+        expected = apply(Nx, op, [template, [axes: [axis]]])
         same(apply(Nx, op, [input, [axes: [axis]]]), expected)
         assert Evision.Mat.to_binary(mat) == bytes
         assert storage == <<17, bytes::binary, 19>>

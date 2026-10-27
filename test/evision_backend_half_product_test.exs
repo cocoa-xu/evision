@@ -119,11 +119,12 @@ defmodule Evision.BackendHalfProductTest do
       bytes = :binary.copy(unit, 64)
       storage = <<17, bytes::binary, 19>>
       view = binary_part(storage, 1, byte_size(bytes))
+      assert :binary.referenced_byte_size(view) > byte_size(view)
       borrowed = Evision.Mat.from_binary(view, type, 16, 16, 1)
 
       for mat <- [borrowed, Evision.Mat.clone(borrowed)], axis <- [0, 1] do
-        input = Evision.Mat.to_nx(mat)
         source = Nx.from_binary(bytes, type) |> Nx.reshape({16, 16})
+        input = Evision.Backend.to_nx(mat, source)
         same(Nx.product(input, axes: [axis]), Nx.product(source, axes: [axis]))
         assert Evision.Mat.to_binary(mat) == bytes
         assert storage == <<17, bytes::binary, 19>>
