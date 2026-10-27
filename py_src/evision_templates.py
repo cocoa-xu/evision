@@ -30,6 +30,9 @@ cv_maketype(Depth, Cn) ->
     (Depth band cv_mat_depth_mask()) + ((Cn-1) bsl cv_cn_shift()).
 
 {makers}
+
+cv_16SU1() ->
+    cv_16UC1().
 """
 
 

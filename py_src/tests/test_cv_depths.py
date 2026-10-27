@@ -1,4 +1,6 @@
 import ast
+import shutil
+import subprocess
 
 import pytest
 
@@ -91,10 +93,24 @@ def test_elixir_template_exposes_depth(name, value):
         assert f"\n  def cv_{depth}C{n}, do: cv_{depth}C({n})\n" in src
 
 
-def test_erlang_16u_helper_is_not_misnamed():
-    # cv_16SU1/0 was a typo that both took the place of cv_16UC1/0 and left
-    # the CV_16UC1 maker missing from the Erlang surface entirely.
-    assert "cv_16SU1" not in ET.gen_cv_types_erlang
+def test_erlang_legacy_16u_spelling_remains_callable(tmp_path):
+    if not shutil.which("erlc") or not shutil.which("erl"):
+        pytest.skip("Erlang is required to check generated helper compatibility")
+
+    source = tmp_path / "evision_depth_compat.erl"
+    source.write_text(
+        "-module(evision_depth_compat).\n"
+        "-compile([export_all, nowarn_export_all]).\n"
+        + ET.gen_cv_types_erlang
+    )
+    subprocess.run(["erlc", "-o", str(tmp_path), str(source)], check=True)
+    subprocess.run(
+        ["erl", "-noshell", "-pa", str(tmp_path), "-eval",
+         "2 = evision_depth_compat:cv_16SU1(), "
+         "2 = evision_depth_compat:cv_16UC1(), halt()."],
+        cwd=tmp_path,
+        check=True,
+    )
 
 
 def test_erlang_template_block_layout():
