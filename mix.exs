@@ -1865,6 +1865,9 @@ defmodule Evision.MixProject do
           c_src/erlcompat.hpp
           c_src/evision_consts.h
           c_src/evision_custom_headers.h
+          c_src/evision_native_safety.hpp
+          c_src/evision_numeric_cast.hpp
+          c_src/evision_broadcast.hpp
           c_src/evision.cpp
           c_src/nif_utils.hpp
           cc_toolchain
