@@ -38,6 +38,16 @@ def _guard_subsumes(prior, current):
     return True
 
 
+def _variant_shadowed(prior, current):
+    # Each argument is (normalized_guard, has_opts). A variant emits `f(P)`, plus
+    # `f(P, opts)` when it has optional args, so `prior` must have opts as well to
+    # shadow every clause of `current`; otherwise dropping `current` would lose a
+    # reachable `f(P, opts)`.
+    prior_guard, prior_has_opts = prior
+    current_guard, current_has_opts = current
+    return _guard_subsumes(prior_guard, current_guard) and (prior_has_opts or not current_has_opts)
+
+
 class ModuleGenerator(object):
     def __init__(self, module_name: str):
         self.module_name = module_name.strip()
@@ -423,10 +433,11 @@ class ModuleGenerator(object):
             func_guards_len_desc = list(reversed(argsort([len(g) for g in func_guards[kind]])))
             more_than_one_variant = len(func_guards_len_desc) > 1
             named_args_generated = False
-            # normalized guard signatures already emitted for each (name, arity), so a
-            # later clause an earlier one subsumes can be skipped. Scoped to this
-            # function's own overload group to avoid dropping look-alike clauses from
-            # unrelated overloads elsewhere.
+            # (normalized_guard, has_opts) of the variants already emitted for each
+            # function name, so a later variant whose clauses they all shadow can be
+            # skipped. Scoped to this function's own overload group to avoid dropping
+            # look-alike clauses from unrelated overloads elsewhere. Not keyed by
+            # py_noptargs: `f(arr, opts \\ [])` and `f(m)` both emit `f/1`.
             emitted_guard_sigs = {}
             # start from the variant with the most number of constraints/guards
             for i in func_guards_len_desc:
@@ -511,16 +522,15 @@ class ModuleGenerator(object):
                     usign = kind + func.classname + function_sign
                 else:
                     usign = kind + function_sign
-                norm_guard = func_variant.normalized_guard(kind)
-                guard_key = (module_func_name, func_arity)
+                clause_sig = (func_variant.normalized_guard(kind), func_variant.has_opts)
                 if unique_signatures.get(usign, None) is True:
                     pass
-                elif kind == 'elixir' and any(_guard_subsumes(prev, norm_guard) for prev in emitted_guard_sigs.get(guard_key, [])):
+                elif kind == 'elixir' and any(_variant_shadowed(prev, clause_sig) for prev in emitted_guard_sigs.get(module_func_name, [])):
                     pass
                 else:
                     unique_signatures[usign] = True
                     if kind == 'elixir':
-                        emitted_guard_sigs.setdefault(guard_key, []).append(norm_guard)
+                        emitted_guard_sigs.setdefault(module_func_name, []).append(clause_sig)
                     inline_doc = func_variant.inline_docs(kind, is_instance_method, self.module_name)
                     func_when_guard = when_guard(kind, func_guard)
 
