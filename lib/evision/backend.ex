@@ -508,7 +508,7 @@ defmodule Evision.Backend do
     |> to_nx(out)
   end
 
-  defp min_max(out, out_shape, l, r, fun) do
+  defp min_max(%T{type: out_type} = out, out_shape, l, r, fun) do
     shape =
       case out_shape do
         {} -> {1}
@@ -516,11 +516,10 @@ defmodule Evision.Backend do
       end
     l = Nx.broadcast(l, shape)
     r = Nx.broadcast(r, shape)
-    {l, r} = enforce_same_type(l, r)
-    l = Evision.Mat.reshape(from_nx(l), shape)
-    r = Evision.Mat.reshape(from_nx(r), shape)
+    l = Evision.Mat.reshape(cast_mat(l, out_type), shape)
+    r = Evision.Mat.reshape(cast_mat(r, out_type), shape)
     ret = fun.(l, r)
-    to_nx(ret, %{out | type: Evision.Mat.type(ret)})
+    to_nx(ret, out)
   end
 
   defp enforce_same_type(%T{type: type}=a, %T{type: type}=b), do: {a, b}
