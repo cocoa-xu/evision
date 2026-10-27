@@ -104,7 +104,7 @@ defmodule Evision.BackendMatchingShapeTest do
     other = Nx.backend_copy(template, Evision.Backend)
     assert input.data.ref.shape != template.shape
 
-    for operation <- [:add, :subtract, :less, :greater_equal] do
+    for operation <- [:add, :subtract, :min, :max, :less, :greater_equal] do
       actual = apply(Nx, operation, [input, other])
       same(actual, apply(Nx, operation, [template, template]))
       assert actual.data.ref.shape == template.shape
