@@ -1,5 +1,119 @@
 # Changelog
 
+## v1.1.0-rc.0 (2026-10-27)
+
+First release candidate for v1.1.0. Changes below are relative to v1.0.0 and
+include additions first shipped in v1.0.1-rc.0. OpenCV remains at 5.0.0; the Nx
+requirement remains `~> 0.12.1`.
+
+### Compatibility
+
+- Numerical operations and conversions use OpenCV behavior, including rounding,
+  overflow and nonfinite values. Results are not guaranteed to match
+  `Nx.BinaryBackend` bit for bit.
+- Array `Nx.min`/`Nx.max` now honor the requested output type. This fixes incorrect
+  types and values for mixed inputs, including vectorized numeric scalars. For
+  example, `max(u8[255], s8[127])` now returns `s16[255]` instead of `s8[127]`.
+  These corrections can change successful old results, including floating-point
+  rounding when the output type changes ([#358](https://github.com/cocoa-xu/evision/pull/358)).
+- `:f16` and `{:f, 16}` are now recognized as native types. Custom
+  `unsupported_type_map` entries for those types no longer apply. Request `:f32`
+  explicitly if f32 storage is required. Previously unsupported half reductions
+  can now succeed; native operations without half support still report errors
+  ([#356](https://github.com/cocoa-xu/evision/pull/356),
+  [#359](https://github.com/cocoa-xu/evision/pull/359),
+  [#360](https://github.com/cocoa-xu/evision/pull/360)).
+- The legacy Erlang `evision_nif:cv_16SU1/0` spelling is retained as an alias of
+  the corrected `cv_16UC1/0` helper.
+
+### Added
+
+- Runtime NEON/AVX2 dispatch for dense Nx `select`, with
+  `Evision.Backend.cpu_dispatch_info/0` and `set_cpu_dispatch/1`.
+  `EVISION_CPU_DISPATCH=baseline` disables the optional Evision kernels. It does
+  not disable OpenCV's own dispatch or compiler-generated baseline SIMD
+  ([#346](https://github.com/cocoa-xu/evision/pull/346)).
+- f16/bf16 sum, minimum, maximum and product reductions, including axis subsets
+  and vectorized inputs. Sum/extrema use OpenCV; products use ordered f64
+  accumulation and native output conversion (#359, #360).
+- OpenCV.js correspondence metadata and a CSP-compatible runtime build.
+  `Evision.JS.opencv_js_url/0,1` and `opencv_js_path/0` expose its URL and optional
+  embedded file, with matching Erlang APIs. Embedding is opt-in via
+  `config :evision, Evision.JS, embed_js: true` or `EVISION_EMBED_JS=true`
+  ([#328](https://github.com/cocoa-xu/evision/pull/328),
+  [#332](https://github.com/cocoa-xu/evision/pull/332)).
+- BEAM type-code helpers for OpenCV 5.0's `CV_64S`, `CV_64U`, `CV_32U`, `CV_16BF`
+  and `CV_Bool` depths, including channel-count variants.
+
+### Fixed
+
+- Validate native shapes, binary extents, indices, allocation sizes and ROI
+  bounds before memory access; contain C++ exceptions at registered NIF
+  boundaries. Define integer overflow in custom reductions/window arithmetic
+  and reject invalid floating-to-integer initial values
+  ([#338](https://github.com/cocoa-xu/evision/pull/338),
+  [#345](https://github.com/cocoa-xu/evision/pull/345)).
+- Correct f16/bf16 decoding and cover native byte order, including big-endian
+  s390x. Strengthen borrowed/offset-storage regression tests (#345,
+  [#362](https://github.com/cocoa-xu/evision/pull/362)).
+- Use native elementwise multiplication and honor nonbatched f32/f64 dot
+  contraction axes through GEMM, including matrix inputs produced by `squeeze`.
+  Normalize scalar comparison headers for OpenCV
+  ([#352](https://github.com/cocoa-xu/evision/pull/352),
+  [#353](https://github.com/cocoa-xu/evision/pull/353),
+  [#357](https://github.com/cocoa-xu/evision/pull/357)).
+- Return populated image moments, validate channel count when reinterpreting
+  dimensions, and unwrap generated plain-struct setter arguments correctly
+  ([#337](https://github.com/cocoa-xu/evision/pull/337),
+  [#350](https://github.com/cocoa-xu/evision/pull/350),
+  [#351](https://github.com/cocoa-xu/evision/pull/351)).
+- Keep benchmark reference inputs on `Nx.BinaryBackend` regardless of the
+  caller's default backend ([#349](https://github.com/cocoa-xu/evision/pull/349)).
+- Include required native helper headers in Hex source packages, resolve installed
+  OpenCV FLANN headers, handle HTTP response headers up to 64 KiB, and retain
+  prerelease suffixes in the Hex release script
+  ([#334](https://github.com/cocoa-xu/evision/pull/334),
+  [#347](https://github.com/cocoa-xu/evision/pull/347),
+  [#361](https://github.com/cocoa-xu/evision/pull/361)).
+- Address Elixir 1.20 compile warnings, simplify precompiled deployment, and retry
+  transient release-asset upload failures.
+
+### Performance
+
+- Reuse compatible read-only Mat inputs, reduce redundant copies and casts,
+  concatenate into one output allocation, fuse select mask/broadcast reads,
+  coalesce contiguous broadcast copies, and write unary results directly.
+  Matching min/max matrix/vector headers avoid extra reshape calls
+  (#339-344, #354-355, [#364](https://github.com/cocoa-xu/evision/pull/364)).
+- For #364 alone, measured complete f32 min calls (including `Nx.to_binary`) on
+  Apple M6 improve from 8.28 to 3.85 microseconds for 64 owned elements, and from
+  196.87 to 182.15 microseconds for 1,048,576 binary-backed elements. Tested
+  outputs retain exact bytes; these are workload-specific measurements, not
+  speedup guarantees for the entire release or other platforms.
+
+### Known limitations
+
+- Mixed-type array comparisons still have lossy promotion and unsupported half
+  combinations. Batched dot is not newly supported in this release.
+
+## v1.0.1-rc.0 (2026-07-19)
+
+- Add OpenCV.js correspondence metadata and a CSP-compatible runtime build (#328).
+- Address Elixir 1.20 compile warnings and simplify precompiled deployment
+  (#329-331).
+- Include additional Python generator directories in source packages.
+
+## v1.0.0 (2026-06-24)
+
+Stable release of the OpenCV 5.0 and Nx backend work described in v1.0.0-rc.0.
+Changes since that candidate:
+
+- Update precompiled CUDA variants to CUDA 12.9 and CUDA 13; remove CUDA 11
+  variants. CUDA requirements are separate from the CPU-only builds.
+- Fix 64-bit CUDA type handling on Windows/MSVC and MLAS cross-compilation for
+  s390x/riscv64.
+- Add selective Linux GNU precompile dispatch and improve release download retries.
+
 ## v1.0.0-rc.0 (2026-06-08)
 
 This is the first release candidate for evision **v1.0.0**, the first major
