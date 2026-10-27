@@ -161,8 +161,14 @@ static ERL_NIF_TERM evision_cv_mat_reduce(ErlNifEnv *env, int argc, const ERL_NI
             if (op < 0 || op > 3 || axis < 0 || axis > 1)
                 return evision::nif::error(env, "reduce: invalid operation or axis");
             if (src.depth() == CV_16F || src.depth() == CV_16BF) {
-                if (op == 1)
-                    return evision::nif::error(env, "mat_reduce: unsupported depth");
+                if (op == 1) {
+                    Mat wide;
+                    src.convertTo(wide, CV_32F);
+                    Mat dst(axis == 0 ? 1 : src.rows, axis == 0 ? src.cols : 1, CV_64F);
+                    if (axis == 0) evision_reduce_cols<float, double>(wide, dst, 1);
+                    else evision_reduce_rows<float, double>(wide, dst, 1);
+                    return evision_from(env, dst);
+                }
                 return evision_from(env, evision_reduce_half(src, op, axis == 0));
             }
             Mat src_c = src.isContinuous() ? src : src.clone();

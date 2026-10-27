@@ -133,11 +133,4 @@ defmodule Evision.BackendNativeHalfReduceTest do
       same(apply(Nx, op, [input, [axes: []]]), source)
     end
   end
-
-  test "half product remains outside this native capability change" do
-    for type <- [:f16, :bf16] do
-      input = Nx.tensor([[1, 2], [3, 4]], type: type, backend: Evision.Backend)
-      assert_raise RuntimeError, ~r/mat_reduce: unsupported depth/, fn -> Nx.product(input) end
-    end
-  end
 end
