@@ -10,7 +10,7 @@ export EVISION_ENABLE_CUDA=true
 export EVISION_CUDA_VERSION=12
 export EVISION_CUDNN_VERSION=9
 export NIF_VERSION=2.16
-export EVISION_VERSION="$(grep 'def version, do: "' mix.exs | grep -P -oh '(\d+).(\d+).(\d+)')"
+export EVISION_VERSION="$(sed -n 's/^[[:space:]]*def version, do: "\([^"]*\)"[[:space:]]*$/\1/p' mix.exs)"
 
 export TARBALL_FILENAME="evision-nif_${NIF_VERSION}-x86_64-linux-gnu-contrib-cuda${EVISION_CUDA_VERSION}-cudnn${EVISION_CUDNN_VERSION}-${EVISION_VERSION}"
 export TARBALL_NAME="${TARBALL_FILENAME}.tar.gz"
