@@ -23,6 +23,32 @@ defmodule Evision.Backend.DotGemmTest do
     assert Nx.to_flat_list(actual) == Nx.to_flat_list(expected)
   end
 
+  test "matrix products normalize native headers after squeeze" do
+    for left_type <- [:f32, :f64], right_type <- [:f32, :f64],
+        {left_shape, right_shape} <- [{{2, 3}, {3, 1}}, {{3, 1}, {1, 2}},
+                                      {{1, 3}, {3, 2}}, {{1, 1}, {1, 1}}] do
+      left = values(left_shape, left_type)
+      right = values(right_shape, right_type)
+      squeezed = fn tensor ->
+        tensor |> Nx.new_axis(2) |> ev() |> Nx.squeeze(axes: [2])
+      end
+
+      a = squeezed.(left)
+      b = squeezed.(right)
+      assert a.data.ref.shape != a.shape or b.data.ref.shape != b.shape
+      expected = Nx.dot(left, right)
+      native = Evision.Mat.matrix_multiply(
+        Evision.Mat.from_nx(Nx.as_type(left, expected.type)),
+        Evision.Mat.from_nx(Nx.as_type(right, expected.type)), expected.type)
+
+      actual = Nx.dot(a, b)
+      same(actual, expected)
+      assert Nx.to_binary(actual) == Evision.Mat.to_binary(native)
+      assert Nx.to_binary(a) == Nx.to_binary(left)
+      assert Nx.to_binary(b) == Nx.to_binary(right)
+    end
+  end
+
   test "ordered contractions, inner and outer products preserve metadata and promotion" do
     cases = [
       {{3}, [0], {3}, [0]},

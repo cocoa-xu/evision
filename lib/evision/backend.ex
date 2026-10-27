@@ -270,10 +270,12 @@ defmodule Evision.Backend do
   @spec dot(Nx.Tensor.t(), Nx.Tensor.t(), list(), list(), Nx.Tensor.t(), list(), list()) :: Nx.Tensor.t()
   def dot(
     %T{type: out_type} = out,
-    %T{shape: {_, _}, type: left_type} = a, [1], [],
-    %T{shape: {_, _}, type: right_type} = b, [0], [])
+    %T{shape: {_, _} = left_shape, type: left_type} = a, [1], [],
+    %T{shape: {_, _} = right_shape, type: right_type} = b, [0], [])
       when left_type in [{:f, 32}, {:f, 64}] and right_type in [{:f, 32}, {:f, 64}] do
-    Evision.Mat.matrix_multiply(cast_mat(a, out_type), cast_mat(b, out_type), out_type)
+    Evision.Mat.matrix_multiply(
+      dot_matrix(a, [0, 1], left_shape, out_type),
+      dot_matrix(b, [0, 1], right_shape, out_type), out_type)
     |> reject_error()
     |> to_nx(out)
   end
