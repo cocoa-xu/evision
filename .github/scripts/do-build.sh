@@ -14,6 +14,26 @@ ELIXIR_VERSION=$9
 TRIPLET=${10}
 GITHUB_REF=${11}
 
+download_installer() {
+    local download_attempt download_status
+    for download_attempt in 1 2 3 4 5; do
+        if curl -fSL --retry 5 --retry-delay 10 -C - "$1" -o "$2"; then
+            return 0
+        else
+            download_status=$?
+        fi
+        # curl's --retry does not cover truncated transfers or TLS receive errors.
+        case "${download_status}" in
+            18|56) ;;
+            *) return "${download_status}" ;;
+        esac
+        if [ "${download_attempt}" -lt 5 ]; then
+            sleep 10
+        fi
+    done
+    return "${download_status}"
+}
+
 export LANG=en_US.UTF-8 LANGUAGE=en_US:en LC_ALL=en_US.UTF-8 DEBIAN_FRONTEND=noninteractive
 DEBIAN_FRONTEND=noninteractive apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
@@ -32,14 +52,14 @@ locale-gen en_US.UTF-8
 
 curl -fSL --retry 5 --retry-delay 10 "${CUDA_PIN}" -o cuda.pin
 mv cuda.pin /etc/apt/preferences.d/cuda-repository-pin-600
-curl -fSL --retry 5 --retry-delay 10 "${CUDA_DEB}" -o cuda.deb
+download_installer "${CUDA_DEB}" cuda.deb
 sudo dpkg -i cuda.deb
 sudo cp /var/cuda-repo-*/cuda-*-keyring.gpg /usr/share/keyrings/
 sudo apt-get update
 sudo apt-get -y install "${CUDA_TOOLKIT}"
 sudo rm -rf cuda.deb
 
-curl -fSL --retry 5 --retry-delay 10 "${CUDNN_DEB}" -o cudnn.deb
+download_installer "${CUDNN_DEB}" cudnn.deb
 sudo dpkg -i cudnn.deb
 sudo cp /var/cudnn-local-repo-*/cudnn-*-keyring.gpg /usr/share/keyrings/
 sudo apt-get update

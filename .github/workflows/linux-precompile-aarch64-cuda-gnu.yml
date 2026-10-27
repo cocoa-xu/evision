@@ -5,6 +5,10 @@ on:
     inputs:
       version:
         required: true
+      cudnn_version:
+        description: 'Optional cuDNN major to rebuild'
+        required: false
+        default: ''
   push:
     tags:
       - 'v*'
@@ -68,10 +72,11 @@ jobs:
 
       - name: Get tagged version
         id: version
+        env:
+          INPUT_VERSION: ${{ github.event.inputs.version }}
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            export INPUT_VERSION="${{ github.event.inputs.version }}"
-            export TAGGED_VERSION="${INPUT_VERSION##*v}"
+          if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
+            export TAGGED_VERSION="${INPUT_VERSION#v}"
           else
             export TAGGED_VERSION="${GITHUB_REF##*/v}"
           fi
@@ -86,14 +91,22 @@ jobs:
             cache/elixir/elixir-*.tar.gz
 
       - name: Mix compile (with contrib modules)
+        if: ${{ !inputs.cudnn_version || inputs.cudnn_version == matrix.pair.cudnn_id }}
+        env:
+          RELEASE_TAG: v${{ steps.version.outputs.tag }}
         run: |
           ls -la
-          cp -a .github/scripts/*.sh ./
+          mkdir -p "${RUNNER_TEMP}/evision-release-scripts"
+          cp -a .github/scripts/*.sh "${RUNNER_TEMP}/evision-release-scripts/"
+          git fetch --depth=1 origin "refs/tags/${RELEASE_TAG}"
+          git checkout --detach FETCH_HEAD
+          cp -a "${RUNNER_TEMP}/evision-release-scripts/"*.sh ./
           chmod +x *.sh
           mkdir -p artifacts
-          ./script-to-build-gnu.sh "${{ matrix.pair.cuda_pin }}" "${{ matrix.pair.cuda_deb }}" "${{ matrix.pair.cuda_toolkit }}" "${{ matrix.pair.cuda_id }}" "${{ matrix.pair.cudnn_deb }}" "${{ matrix.pair.cudnn_package }}" "${{ matrix.pair.cudnn_id }}" "${{ env.OTP_VERSION }}" "${{ env.ELIXIR_VERSION }}" "${{ env.TRIPLET }}" "refs/tags/v${{ steps.version.outputs.tag }}" "${{ matrix.pair.os_image }}"
+          ./script-to-build-gnu.sh "${{ matrix.pair.cuda_pin }}" "${{ matrix.pair.cuda_deb }}" "${{ matrix.pair.cuda_toolkit }}" "${{ matrix.pair.cuda_id }}" "${{ matrix.pair.cudnn_deb }}" "${{ matrix.pair.cudnn_package }}" "${{ matrix.pair.cudnn_id }}" "${{ env.OTP_VERSION }}" "${{ env.ELIXIR_VERSION }}" "${{ env.TRIPLET }}" "refs/tags/${RELEASE_TAG}" "${{ matrix.pair.os_image }}"
 
       - uses: ./.github/actions/upload-release
+        if: ${{ !inputs.cudnn_version || inputs.cudnn_version == matrix.pair.cudnn_id }}
         with:
           tag: v${{ steps.version.outputs.tag }}
           files: |
