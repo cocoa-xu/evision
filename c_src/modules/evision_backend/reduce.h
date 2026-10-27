@@ -109,7 +109,7 @@ static void evision_reduce_typed(const cv::Mat &src, cv::Mat &dst, int op, bool 
 static inline int evision_reduce_out_depth(int in_depth, int op) {
     if (op == 2 || op == 3) return in_depth;
     switch (in_depth) {
-        case CV_32F: case CV_64F: return CV_64F;
+        case CV_16F: case CV_16BF: case CV_32F: case CV_64F: return CV_64F;
         case CV_8U: case CV_16U: case CV_32U: case CV_64U: return CV_64U;
         default: return CV_64S;
     }
@@ -160,15 +160,7 @@ static ERL_NIF_TERM evision_cv_mat_reduce(ErlNifEnv *env, int argc, const ERL_NI
                 return evision::nif::error(env, "reduce: expected a nonempty single-channel matrix");
             if (op < 0 || op > 3 || axis < 0 || axis > 1)
                 return evision::nif::error(env, "reduce: invalid operation or axis");
-            if (src.depth() == CV_16F || src.depth() == CV_16BF) {
-                if (op == 1) {
-                    Mat wide;
-                    src.convertTo(wide, CV_32F);
-                    Mat dst(axis == 0 ? 1 : src.rows, axis == 0 ? src.cols : 1, CV_64F);
-                    if (axis == 0) evision_reduce_cols<float, double>(wide, dst, 1);
-                    else evision_reduce_rows<float, double>(wide, dst, 1);
-                    return evision_from(env, dst);
-                }
+            if ((src.depth() == CV_16F || src.depth() == CV_16BF) && op != 1) {
                 return evision_from(env, evision_reduce_half(src, op, axis == 0));
             }
             Mat src_c = src.isContinuous() ? src : src.clone();
@@ -177,6 +169,15 @@ static ERL_NIF_TERM evision_cv_mat_reduce(ErlNifEnv *env, int argc, const ERL_NI
             Mat dst = leading ? Mat(1, src_c.cols, out_depth) : Mat(src_c.rows, 1, out_depth);
 
             switch (src_c.depth()) {
+                // Reuse ordered f64 products; widen half values in-register without a cast buffer.
+                case CV_16F:
+                    if (leading) evision_reduce_cols<cv::hfloat, double>(src_c, dst, 1);
+                    else evision_reduce_rows<cv::hfloat, double>(src_c, dst, 1);
+                    break;
+                case CV_16BF:
+                    if (leading) evision_reduce_cols<cv::bfloat, double>(src_c, dst, 1);
+                    else evision_reduce_rows<cv::bfloat, double>(src_c, dst, 1);
+                    break;
                 case CV_8U:  evision_reduce_typed<uint8_t>(src_c, dst, op, leading); break;
                 case CV_8S:  evision_reduce_typed<int8_t>(src_c, dst, op, leading); break;
                 case CV_16U: evision_reduce_typed<uint16_t>(src_c, dst, op, leading); break;
