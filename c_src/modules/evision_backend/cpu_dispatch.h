@@ -20,8 +20,7 @@ static std::atomic<evision::cpu::Mode>& evision_cpu_mode() {
 }
 
 static unsigned evision_cpu_features() {
-    // OpenCV checks OS support as well as CPU capabilities. Query once per NIF
-    // call so cv::setUseOptimized and OPENCV_CPU_DISABLE remain effective.
+    // Query OpenCV on each call so cv::setUseOptimized remains effective.
     unsigned features = 0;
     if (cv::checkHardwareSupport(CV_CPU_NEON)) features |= evision::cpu::Neon;
     if (cv::checkHardwareSupport(CV_CPU_AVX2)) features |= evision::cpu::Avx2;
@@ -30,8 +29,6 @@ static unsigned evision_cpu_features() {
 
 static evision::cpu::Selection evision_select_dispatch() {
     const auto mode = evision_cpu_mode().load(std::memory_order_relaxed);
-    // Forced baseline has no capability requirement. Skip the feature queries
-    // instead of doing work whose result select_kernel would discard.
     const unsigned features = mode == evision::cpu::Mode::Auto ? evision_cpu_features() : 0;
     return evision::cpu::select_kernel(features, mode);
 }

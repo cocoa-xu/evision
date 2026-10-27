@@ -331,7 +331,6 @@ defmodule Evision.Backend do
       mat
     else
       mat = cond do
-        # Use the specialized 2D kernel only when native and logical headers agree.
         axes == [1, 0] and mat.dims == 2 and mat.shape == source_shape ->
           Evision.transpose(mat) |> reject_error()
         axes != all_axes(tuple_size(source_shape)) ->
@@ -660,8 +659,6 @@ defmodule Evision.Backend do
   @impl true
   def less_equal(%T{shape: out_shape} = out, l, r), do: cmp(out, out_shape, l, r, :le)
 
-  # Keep scalar broadcasting in OpenCV with the existing merged comparison type
-  # and operand order. Normalize incompatible scalar Mat headers before comparing.
   defp cmp(out, _out_shape, %T{shape: {}} = l, r, op), do: cmp_scalar(out, l, r, op)
   defp cmp(out, _out_shape, l, %T{shape: {}} = r, op), do: cmp_scalar(out, l, r, op)
   defp cmp(out, out_shape, l, r, op) do
@@ -680,7 +677,6 @@ defmodule Evision.Backend do
 
     {l_mat, r_mat} =
       cond do
-        # Matching scalar headers already work in OpenCV; avoid redundant reshapes.
         paired_scalars and l_mat.shape == r_mat.shape ->
           {l_mat, r_mat}
         paired_scalars ->
@@ -945,8 +941,7 @@ defmodule Evision.Backend do
     end
   end
 
-  # Keep the existing owner when no conversion is needed. Mutating NIFs still
-  # make their own private copy; borrowing NIFs still align binary-backed inputs.
+  # Same-type reuse relies on each NIF's ownership and alignment policy.
   defp as_mat_type(%Evision.Mat{type: type} = mat, type), do: mat
   defp as_mat_type(mat, type), do: reject_error(Evision.Mat.as_type(mat, type))
 
@@ -1377,10 +1372,6 @@ defmodule Evision.Backend do
   end
 
   # Reduce `op` (0 sum, 1 product, 2 max, 3 min) over `opts[:axes]` (nil = all axes).
-  # The reduce NIF reads the native dtype and promotes per element (sum/product use a
-  # s64/u64/f64 accumulator to match Nx), so no input cast is needed. The reduced axes
-  # are flattened against the kept axes: trailing -> reduce each row, leading -> reduce
-  # each column (no transpose), interleaved -> transpose them last then reduce per row.
   defp reduce_aggregate(%T{type: out_type, shape: out_shape} = out, %T{shape: shape} = tensor, opts, op) do
     rank = tuple_size(shape)
     axes = all_axes(rank)

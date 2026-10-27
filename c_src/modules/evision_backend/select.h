@@ -54,7 +54,6 @@ static ERL_NIF_TERM evision_cv_mat_select(ErlNifEnv *env, int argc, const ERL_NI
             Mat fc = on_false.isContinuous() ? on_false : on_false.clone();
             Mat dst(on_true.dims, on_true.size.p, on_true.type());
 
-            // Select fixed-width kernels while preserving arbitrary-size support.
             switch (dst.elemSize()) {
                 case 1: evision_select<1>(mc, tc, fc, dst); break;
                 case 2: evision_select<2>(mc, tc, fc, dst); break;

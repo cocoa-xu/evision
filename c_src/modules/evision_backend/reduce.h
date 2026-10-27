@@ -11,16 +11,7 @@
 #include "validation.h"
 #include "arithmetic.h"
 
-// Reduction of a 2D single-channel mat: sum (op 0) / product (op 1) accumulate
-// left-to-right, max (op 2) / min (op 3) seed from the first element. axis 1
-// reduces each row (trailing axis) into a [rows, 1] result; axis 0 reduces each
-// column (leading axis) into a [1, cols] result -- the caller picks axis 0 when
-// the reduced axes are leading so no transpose is needed.
-//
-// The input keeps its native dtype: sum/product promote each element to the wide
-// accumulator (f64 for floats, s64/u64 for ints, matching Nx integer promotion
-// and f64 float accumulation) in-register, so there is no separate cast pass and
-// only the native bytes are streamed. max/min do not promote (Nx keeps the type).
+// op: 0=sum, 1=product, 2=max, 3=min; axis: 0=columns, 1=rows.
 
 template <typename T>
 static inline T evision_reduce_max(T acc, T v) {
@@ -38,9 +29,6 @@ static inline T evision_reduce_min(T acc, T v) {
     return (v < acc) ? v : acc;
 }
 
-// Wide accumulator for sum/product: floats accumulate in f64, signed ints in
-// s64, unsigned ints in u64 (unsigned wraparound is well-defined and matches
-// Nx's modular integer semantics).
 template <typename T> struct evision_reduce_acc { using type = T; };
 template <> struct evision_reduce_acc<float>    { using type = double; };
 template <> struct evision_reduce_acc<int8_t>   { using type = int64_t; };
@@ -105,7 +93,6 @@ static void evision_reduce_typed(const cv::Mat &src, cv::Mat &dst, int op, bool 
     }
 }
 
-// Output depth: sum/product promote to the wide type; max/min keep the input type.
 static inline int evision_reduce_out_depth(int in_depth, int op) {
     if (op == 2 || op == 3) return in_depth;
     switch (in_depth) {
@@ -169,7 +156,7 @@ static ERL_NIF_TERM evision_cv_mat_reduce(ErlNifEnv *env, int argc, const ERL_NI
             Mat dst = leading ? Mat(1, src_c.cols, out_depth) : Mat(src_c.rows, 1, out_depth);
 
             switch (src_c.depth()) {
-                // Reuse ordered f64 products; widen half values in-register without a cast buffer.
+                // Preserve the existing f64 product order; do not reassociate half products.
                 case CV_16F:
                     if (leading) evision_reduce_cols<cv::hfloat, double>(src_c, dst, 1);
                     else evision_reduce_rows<cv::hfloat, double>(src_c, dst, 1);

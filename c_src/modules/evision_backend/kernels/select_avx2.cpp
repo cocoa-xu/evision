@@ -7,9 +7,6 @@ template <size_t Width>
 struct Blend {
     static void run(const uint8_t* mask, const uint8_t* a, const uint8_t* b,
                     uint8_t* out, size_t) {
-        // Loading both sources is intentional for mixed blocks; the shared
-        // loop handles uniform blocks with a single-source copy. Width is a
-        // compile-time constant, so widening choices do not dispatch per lane.
         const __m128i zero = _mm_setzero_si128();
         const __m128i selected = _mm_cmpeq_epi8(_mm_loadl_epi64(reinterpret_cast<const __m128i*>(mask)), zero);
         if constexpr (Width == 1) {

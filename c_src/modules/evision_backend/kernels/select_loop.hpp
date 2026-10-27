@@ -6,8 +6,7 @@
 
 namespace evision { namespace cpu {
 
-// Each ISA supplies only the mixed-mask block. Uniform blocks retain their
-// single-source copy, and the tail never reads beyond the supplied extent.
+// Mixed SIMD blocks load both inputs; uniform blocks copy only one.
 template <size_t Width, class Blend>
 void select_loop(const uint8_t* mask, const uint8_t* on_true, const uint8_t* on_false,
                  uint8_t* output, size_t count, size_t element_size) {
@@ -17,10 +16,8 @@ void select_loop(const uint8_t* mask, const uint8_t* on_true, const uint8_t* on_
         uint64_t bits;
         std::memcpy(&bits, mask + i, sizeof(bits));
         const size_t offset = i * width;
-        // This guard is a measured tradeoff, not a rule against eager work:
-        // M6/Clang 21 profiling found unconditional blending faster for some
-        // mixed masks but slower for uniform masks. See PR #346 for the mask
-        // distributions and sizes before changing this branch policy.
+        // M6/Clang 21 measurements in PR #346 favored this guard for uniform
+        // masks, while unconditional blending won on some mixed masks.
         if (bits == 0) {
             std::memcpy(output + offset, on_false + offset, 8 * width);
         } else if (((bits - UINT64_C(0x0101010101010101)) &
