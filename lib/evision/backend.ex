@@ -516,11 +516,17 @@ defmodule Evision.Backend do
       end
     l = Nx.broadcast(l, shape)
     r = Nx.broadcast(r, shape)
-    l = Evision.Mat.reshape(cast_mat(l, out_type), shape)
-    r = Evision.Mat.reshape(cast_mat(r, out_type), shape)
+    l = min_max_reshape(cast_mat(l, out_type), shape)
+    r = min_max_reshape(cast_mat(r, out_type), shape)
     ret = fun.(l, r)
     to_nx(ret, out)
   end
+
+  defp min_max_reshape(%Evision.Mat{shape: shape, channels: 1, dims: dims} = mat, shape)
+       when dims <= 2,
+       do: mat
+
+  defp min_max_reshape(mat, shape), do: Evision.Mat.reshape(mat, shape)
 
   defp enforce_same_type(%T{type: type}=a, %T{type: type}=b), do: {a, b}
   defp enforce_same_type(%T{type: a_type={:f, 64}}=a, %T{type: _b_type}=b) do
