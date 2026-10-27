@@ -1,5 +1,23 @@
 # Changelog
 
+## v1.1.0-rc.1 (2026-10-28)
+
+Second release candidate for v1.1.0. It replaces v1.1.0-rc.0, which was not
+published to Hex. Changes below are relative to v1.1.0-rc.0.
+
+### Fixed
+
+- Generated bindings no longer contain an unreachable
+  `Evision.CUDA.GpuMat.gpuMat/1` clause, which Elixir 1.20 reported as a
+  redundant clause on every platform. Runtime behavior is unchanged
+  ([#365](https://github.com/cocoa-xu/evision/pull/365)).
+
+### Notes
+
+- FreeBSD precompiled packages require FreeBSD 14.4 or later and OpenBLAS
+  (`pkg install openblas`), as for v1.1.0-rc.0. Older FreeBSD installations
+  need a source build.
+
 ## v1.1.0-rc.0 (2026-10-27)
 
 First release candidate for v1.1.0. Changes below are relative to v1.0.0 and
