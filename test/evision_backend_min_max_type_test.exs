@@ -104,4 +104,27 @@ defmodule Evision.BackendMinMaxTypeTest do
              <<255::signed-native-16, 0::signed-native-16, 1::signed-native-16,
                128::signed-native-16>>
   end
+
+  test "vectorized raw numbers use the supplied output type and native casts" do
+    for type <- [:u8, :u32, :f16, :bf16, :f32],
+        number <- [-1, 2, 300, 3_000_000_000, 1.25],
+        op <- [:min, :max] do
+      source = Nx.tensor([[0, 255], [1, 128]], type: type, names: [:batch, :value])
+      array = source |> Nx.backend_copy(Evision.Backend) |> Nx.vectorize(:batch)
+      out_type = Nx.Type.merge_number(source.type, number)
+      a = native(source, {2, 2}, out_type)
+      b = native(Nx.tensor(number), {2, 2}, out_type)
+
+      for {args, mats} <- [{[array, number], [a, b]}, {[number, array], [b, a]}] do
+        actual = apply(Nx, op, args)
+        expected = apply(Evision, op, mats)
+
+        assert {actual.type, actual.shape, actual.names, actual.vectorized_axes} ==
+                 {out_type, {2}, [:value], [batch: 2]}
+
+        assert Nx.devectorize(actual).data.ref.shape == {2, 2}
+        assert Nx.to_binary(actual) == Evision.Mat.to_binary(expected)
+      end
+    end
+  end
 end
