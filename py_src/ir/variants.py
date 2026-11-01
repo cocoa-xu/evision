@@ -145,7 +145,7 @@ class FuncVariant(object):
         return len(self.py_arglist) - self.py_noptargs
 
     def function_guard(self, kind: str):
-        return list(filter(lambda x: x != '', [map_argtype_to_guard(kind, map_argname(kind, argname), argtype, classname=self.classname) for argname, _, argtype in self.py_arglist[:self.pos_end]]))
+        return list(filter(lambda x: x != '', [map_argtype_to_guard(kind, map_argname(kind, argname), argtype, classname=self.classname, decl=self.decl) for argname, _, argtype in self.py_arglist[:self.pos_end]]))
 
     def normalized_guard(self, kind: str):
         # Like function_guard/1 but with canonical positional argnames, and with one
@@ -156,7 +156,7 @@ class FuncVariant(object):
         # looking like a shorter one. The emitter drops a clause an earlier same-arity
         # clause already subsumes (Elixir 1.20 flags those as unreachable).
         return [
-            map_argtype_to_guard(kind, f'__a{idx}', argtype, classname=self.classname)
+            map_argtype_to_guard(kind, f'__a{idx}', argtype, classname=self.classname, decl=self.decl)
             for idx, (_, _, argtype) in enumerate(self.py_arglist[:self.pos_end])
         ]
 

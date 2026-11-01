@@ -291,13 +291,13 @@ def map_argname(kind, argname, **kwargs):
         print(f'warning: map_argname: unknown kind `{kind}`')
 
 
-def map_argtype_to_guard(kind, argname, argtype, classname: Optional[str] = None):
+def map_argtype_to_guard(kind, argname, argtype, classname: Optional[str] = None, decl: Optional[list] = None):
     if kind == 'elixir':
         from emit.elixir.helpers import map_argtype_to_guard_elixir
-        return map_argtype_to_guard_elixir(argname, argtype, classname=classname)
+        return map_argtype_to_guard_elixir(argname, argtype, classname=classname, decl=decl)
     elif kind == 'erlang':
         from emit.erlang.helpers import map_argtype_to_guard_erlang
-        return map_argtype_to_guard_erlang(argname, argtype, classname=classname)
+        return map_argtype_to_guard_erlang(argname, argtype, classname=classname, decl=decl)
     else:
         print(f'warning: map_argtype_to_guard: unknown kind `{kind}`')
 
