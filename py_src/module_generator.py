@@ -135,6 +135,9 @@ class ModuleGenerator(object):
             return ''
         return self.nif_declaration[kind].getvalue()
 
+    def get_erlang_attributes(self):
+        return evision_js_attr.erlang_attribute_block(self.js_attrs.get('erlang', {}))
+
     def get_generated_code(self, kind: str):
         if self.module.get(kind, None) is None:
             return ''
@@ -197,19 +200,6 @@ class ModuleGenerator(object):
     def end_erlang(self):
         if self.erlang_ended:
             return
-        erlang_js_attrs = self.js_attrs.get('erlang', {})
-        if erlang_js_attrs:
-            # Emit ``-js(...).`` lines as a single block. Erlang allows
-            # user-defined attributes anywhere in a module body; readers
-            # pick them up via ``module_info(attributes)`` regardless of
-            # position.
-            for function_name in sorted(erlang_js_attrs):
-                for arity in sorted(erlang_js_attrs[function_name]):
-                    js_entry = erlang_js_attrs[function_name][arity]
-                    self.write_erlang(
-                        evision_js_attr.erlang_attribute_line(js_entry, function_name, arity)
-                    )
-            self.write_erlang('\n')
         for function_name, function in self.function['erlang'].items():
             for arity, functions in function.items():
                 docs_spec_mfa = self.inline_docs['erlang'].get(function_name, {}).get(arity, [])

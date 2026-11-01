@@ -151,7 +151,7 @@ def elixir_attribute_line(entry: JsEntry, fun: str, arity: int) -> str:
 def erlang_attribute_line(entry: JsEntry, fun: str, arity: int) -> str:
     """``-js(#{...}).\\n`` line ready to splice before a function clause."""
     fields = [
-        f"fun => {_erlang_atom(fun)}",
+        f"'fun' => {_erlang_atom(fun)}",
         f"arity => {arity}",
         f"js_kind => {entry['js_kind']}",
     ]
@@ -164,6 +164,26 @@ def erlang_attribute_line(entry: JsEntry, fun: str, arity: int) -> str:
     if "arg_plan" in entry:
         fields.append(f"arg_plan => {_erlang_arg_plan(entry['arg_plan'])}")
     return f"-js(#{{{', '.join(fields)}}}).\n"
+
+
+def erlang_attribute_block(attrs: Dict[str, Dict[int, JsEntry]]) -> str:
+    lines = [
+        erlang_attribute_line(attrs[fun][arity], fun, arity)
+        for fun in sorted(attrs)
+        for arity in sorted(attrs[fun])
+    ]
+    return "".join(lines) + "\n" if lines else ""
+
+
+_ERLANG_HEADER_END = '-include("evision.hrl").\n\n'
+
+
+def place_erlang_attributes(source: str, attributes: str) -> str:
+    # Erlang rejects an attribute that follows a function definition.
+    header, sep, body = source.partition(_ERLANG_HEADER_END)
+    if attributes and not sep:
+        raise ValueError("Erlang module header not found")
+    return header + sep + attributes + body
 
 
 def _elixir_atom(name: str) -> str:
@@ -313,11 +333,8 @@ def elixir_runtime_module(entries_list: List[RuntimeEntry]) -> str:
 def erlang_runtime_module(entries_list: List[RuntimeEntry]) -> str:
     """Render ``src/generated/evision_js.erl`` from a flat entry list.
 
-    ``fun`` is a reserved word in Erlang's expression / type-spec grammar,
-    so every map key referring to that field is quoted as ``'fun'``.
-    Inside ``-attribute(#{...}).`` declarations (CCD-19's ``-js(...)``) the
-    attribute parser is more permissive and bare ``fun`` works there — that
-    permissiveness does NOT extend to function bodies or ``-spec``s.
+    ``fun`` is a reserved word in Erlang, so every map key referring to
+    that field is quoted as ``'fun'``, including in ``-js(...)`` attributes.
     """
     out = StringIO()
     out.write("-module(evision_js).\n")

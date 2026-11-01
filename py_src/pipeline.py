@@ -900,7 +900,10 @@ class Pipeline(object):
                     delete_typed_enum = True
                 module_file_generator.end('erlang')
                 self.evision_nif_erlang.write(module_file_generator.get_nif_declaration('erlang'))
-                self.save(erlang_output_path, f"evision_{name.lower()}.erl", module_file_generator.get_generated_code('erlang'))
+                self.save(erlang_output_path, f"evision_{name.lower()}.erl", evision_js_attr.place_erlang_attributes(
+                    module_file_generator.get_generated_code('erlang'),
+                    module_file_generator.get_erlang_attributes(),
+                ))
 
             if delete_typed_enum:
                 self.typed_enums[typed_enum_key] = None
@@ -984,7 +987,10 @@ class Pipeline(object):
             # 'evision.erl'
             self.evision_ex.end('erlang')
             self.evision_erlang.write(self.evision_ex.get_generated_code('erlang'))
-            self.save(erlang_output_path, "evision.erl", self.evision_erlang)            
+            self.save(erlang_output_path, "evision.erl", evision_js_attr.place_erlang_attributes(
+                self.evision_erlang.getvalue(),
+                self.evision_ex.get_erlang_attributes(),
+            ))
 
             # 'evision_constant.erl'
             self.evision_constant_erlang.write(self.enum_names_io_erlang.getvalue())
