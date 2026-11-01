@@ -187,7 +187,7 @@ def map_argtype_in_spec_elixir(classname: str, argtype: str, is_in: bool, decl: 
         return 'term()'
 
 
-def map_argtype_to_guard_elixir(argname, argtype, classname: Optional[str] = None):
+def map_argtype_to_guard_elixir(argname, argtype, classname: Optional[str] = None, decl: Optional[list] = None):
     if argtype == 'vector_char' or argtype == 'vector_uchar' or argtype == 'std::vector<char>' or argtype == 'std::vector<uchar>':
         return f'is_binary({argname})'
 
@@ -212,6 +212,8 @@ def map_argtype_to_guard_elixir(argname, argtype, classname: Optional[str] = Non
     elif argtype == 'IndexParams' or argtype == 'SearchParams' or argtype == 'Moments':
         return f'is_map({argname})'
     elif is_struct(argtype, classname=classname):
+        if resolve_parsed_enum(argtype, classname, decl) is not None:
+            return f'is_integer({argname})'
         _, struct_name = is_struct(argtype, also_get='struct_name', classname=classname)
         if struct_name == 'Evision.Feature2D':
             return f''
