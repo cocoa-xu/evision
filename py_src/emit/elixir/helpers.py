@@ -136,13 +136,13 @@ def map_argtype_in_spec_elixir(classname: str, argtype: str, is_in: bool, decl: 
     elif argtype == 'Index' and classname == 'flann_Index':
          return 'Evision.Flann.Index.t()'
     elif argtype == 'TrackerVit':
-        return 'Evision.TrackerVit'
+        return 'Evision.TrackerVit.t()'
     elif argtype == 'QRCodeDetectorAruco':
-        return 'Evision.QRCodeDetectorAruco'
+        return 'Evision.QRCodeDetectorAruco.t()'
     elif argtype in ['QRCodeDetectorAruco_Params', 'QRCodeDetectorAruco::Params']:
-        return 'Evision.QRCodeDetectorAruco.Params'
+        return 'Evision.QRCodeDetectorAruco.Params.t()'
     elif argtype in ['aruco_DetectorParameters', 'aruco::DetectorParameters']:
-        return 'Evision.Aruco.DetectorParameters'
+        return 'Evision.ArUco.DetectorParameters.t()'
     elif argtype == 'LayerId':
         return 'term()'
     elif argtype in manual_type_spec_elixir:
@@ -156,6 +156,8 @@ def map_argtype_in_spec_elixir(classname: str, argtype: str, is_in: bool, decl: 
         argtype_inner = argtype[len('vector_'):]
         if argtype == 'vector_char' or argtype == 'vector_uchar':
             return 'binary()'
+        if argtype_inner.startswith('Ptr_'):
+            argtype_inner = argtype_inner[len('Ptr_'):]
         spec_type = 'list(' + map_argtype_in_spec_elixir(classname, argtype_inner, is_in, decl) + ')'
         return spec_type
     elif argtype.startswith('std::vector<'):
@@ -169,6 +171,9 @@ def map_argtype_in_spec_elixir(classname: str, argtype: str, is_in: bool, decl: 
         spec_type = '{' + argtype_inner + '}'
         return spec_type
     elif is_struct(argtype, classname=classname, decl=decl):
+        enum_module = resolve_parsed_enum(argtype, classname, decl)
+        if enum_module is not None:
+            return f'{enum_module}.enum()'
         _, struct_name = is_struct(argtype, also_get='struct_name', classname=classname, decl=decl)
         return f'{struct_name}.t()'
     elif 'Volume' == argtype:

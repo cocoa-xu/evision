@@ -202,7 +202,8 @@ class Pipeline(object):
             if not original_name.startswith('cv.'):
                 print(f'warning: enum name {original_name} does not start with `cv.`')
                 sys.exit(-1)
-            if original_name.endswith('.<unnamed>'):
+            is_named_enum = not original_name.endswith('.<unnamed>')
+            if not is_named_enum:
                 original_name = original_name[:-10]
             if original_name == 'cv':
                struct_name = 'Evision'
@@ -219,6 +220,8 @@ class Pipeline(object):
                             struct_name = the_name
                         else:
                             struct_name = _enum_struct_name(original_name)
+                if is_named_enum:
+                    parsed_enum_modules[original_name.replace('.', '_')] = struct_name
             typed_enum = self.typed_enums.get(struct_name, None)
             if typed_enum is None:
                 self.typed_enums[struct_name] = list()
