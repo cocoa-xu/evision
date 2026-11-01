@@ -2,8 +2,10 @@ from types import SimpleNamespace
 
 import pytest
 
+import evision_structures as ES
 import helper
 from emit.elixir.helpers import map_argtype_in_spec_elixir
+from emit.erlang.helpers import map_argtype_in_spec_erlang
 from ir.functions import FuncInfo
 from pipeline import Pipeline
 
@@ -53,6 +55,26 @@ def test_enums_resolve_from_the_innermost_scope(enums, classname, argtype, decl,
         'HOGDescriptor_DescriptorStorageFormat': 'Evision.HOGDescriptor.DescriptorStorageFormat',
     })
     assert map_argtype_in_spec_elixir(classname, argtype, True, decl) == expected
+
+
+
+@pytest.mark.parametrize('classname,argtype,decl,expected', [
+    ('ccm_ColorCorrectionModel', 'ColorSpace', ['cv.ccm.ColorCorrectionModel.setColorSpace'], 'integer()'),
+    ('', 'CameraModel', ['cv.fisheye.calibrate'], 'integer()'),
+    ('ccm_ColorCorrectionModel', 'Mat', [], '#evision_mat{}'),
+])
+def test_erlang_specs_take_enums_as_integers(enums, classname, argtype, decl, expected):
+    enums.update({'ccm_ColorSpace': 'Evision.CCM.ColorSpace', 'CameraModel': 'Evision.CameraModel'})
+    assert map_argtype_in_spec_erlang(classname, argtype, True, decl) == expected
+
+
+def test_erlang_gpumat_record_has_every_field_to_struct_sets():
+    def fields(text, start):
+        body = text[text.index(start) + len(start):]
+        return {f.split('=')[0].strip() for f in body[:body.index('}')].split(',')}
+
+    hrl = Pipeline([], ['erlang']).evision_erlang_hrl.getvalue()
+    assert fields(ES.gpumat_struct_erlang, '#evision_cuda_gpumat{') <= fields(hrl, '-record(evision_cuda_gpumat, {')
 
 
 @pytest.mark.parametrize('classname,argtype,expected', [

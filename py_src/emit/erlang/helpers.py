@@ -169,6 +169,8 @@ def map_argtype_in_spec_erlang(classname: str, argtype: str, is_in: bool, decl: 
         spec_type = '{' + argtype_inner + '}'
         return spec_type
     elif is_struct(argtype, classname=classname, decl=decl):
+        if resolve_parsed_enum(argtype, classname, decl) is not None:
+            return 'integer()'
         _, struct_name = is_struct(argtype, also_get='struct_name', classname=classname, decl=decl)
         ty = struct_name.replace('.', '_').lower()
         return f'#{ty}' + '{}'
