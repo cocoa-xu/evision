@@ -14,6 +14,8 @@ synthetic ``FuncInfo`` variants, so they need no OpenCV build.
 """
 
 import os
+import shutil
+import subprocess
 import sys
 
 import pytest
@@ -161,6 +163,20 @@ def test_erlang_attribute_line_renders_arg_plan():
     assert "arg_plan => [in, out, in]" in line
 
 
+@pytest.mark.skipif(shutil.which("erlc") is None, reason="erlc not installed")
+def test_erlang_attribute_lines_compile(tmp_path):
+    src = tmp_path / "js_attrs.erl"
+    src.write_text(
+        "-module(js_attrs).\n"
+        + JA.erlang_attribute_line(_FN, "cvtColor", 2)
+        + JA.erlang_attribute_line(_METHOD, "process", 2)
+        + JA.erlang_attribute_line(_NO_PLAN, "canny", 4)
+    )
+    result = subprocess.run(
+        ["erlc", "-o", str(tmp_path), str(src)], capture_output=True, text=True
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+
 def test_elixir_entry_literal_renders_arg_plan():
     assert JA._elixir_entry_literal(_FN) == (
         '%{module: Evision, fun: :cvtColor, arity: 2, js_kind: :function, '
@@ -211,7 +227,7 @@ def test_attribute_lines_without_plan_are_unchanged():
         '  @js %{fun: :canny, arity: 4, js_kind: :function, js_name: "cv.Canny"}\n'
     )
     assert JA.erlang_attribute_line(_NO_PLAN, "canny", 4) == (
-        '-js(#{fun => canny, arity => 4, js_kind => function, '
+        "-js(#{'fun' => canny, arity => 4, js_kind => function, "
         'js_name => <<"cv.Canny">>}).\n'
     )
 

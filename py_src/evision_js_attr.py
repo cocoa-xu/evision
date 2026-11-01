@@ -151,7 +151,7 @@ def elixir_attribute_line(entry: JsEntry, fun: str, arity: int) -> str:
 def erlang_attribute_line(entry: JsEntry, fun: str, arity: int) -> str:
     """``-js(#{...}).\\n`` line ready to splice before a function clause."""
     fields = [
-        f"fun => {_erlang_atom(fun)}",
+        f"'fun' => {_erlang_atom(fun)}",
         f"arity => {arity}",
         f"js_kind => {entry['js_kind']}",
     ]
@@ -313,11 +313,8 @@ def elixir_runtime_module(entries_list: List[RuntimeEntry]) -> str:
 def erlang_runtime_module(entries_list: List[RuntimeEntry]) -> str:
     """Render ``src/generated/evision_js.erl`` from a flat entry list.
 
-    ``fun`` is a reserved word in Erlang's expression / type-spec grammar,
-    so every map key referring to that field is quoted as ``'fun'``.
-    Inside ``-attribute(#{...}).`` declarations (CCD-19's ``-js(...)``) the
-    attribute parser is more permissive and bare ``fun`` works there — that
-    permissiveness does NOT extend to function bodies or ``-spec``s.
+    ``fun`` is a reserved word in Erlang, so every map key referring to
+    that field is quoted as ``'fun'``, including in ``-js(...)`` attributes.
     """
     out = StringIO()
     out.write("-module(evision_js).\n")
