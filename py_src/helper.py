@@ -70,6 +70,25 @@ from config.struct_types import (
 
 module_name_map = MODULE_NAME_MAP
 
+# Elixir module of every named enum, keyed by its normalized OpenCV name
+# (`ccm_ColorSpace`). Filled while headers are parsed, read while specs are emitted.
+parsed_enum_modules = {}
+
+
+def resolve_parsed_enum(argtype: str, classname: str, decl: list) -> Optional[str]:
+    name = argtype.replace('cv::', '').replace('::', '_')
+    if classname:
+        scope = classname
+    elif decl and decl[0].startswith('cv.'):
+        scope = '_'.join(decl[0][len('cv.'):].split('.')[:-1])
+    else:
+        scope = ''
+    while True:
+        module = parsed_enum_modules.get(f'{scope}_{name}' if scope else name)
+        if module is not None or not scope:
+            return module
+        scope = scope.rpartition('_')[0]
+
 
 def reserved_keywords():
     return RESERVED_KEYWORDS
@@ -534,6 +553,10 @@ def is_struct(argtype: str, also_get: Optional[str] = None, classname: Optional[
                 if also_get == 'struct_name':
                     if struct_name is not None:
                         return arg_is_struct, struct_name
+                    if argtype.startswith(f"{module_name}."):
+                        return arg_is_struct, f"Evision.{argtype}"
+                    if argtype.startswith(f"{module_class[0]}_"):
+                        return arg_is_struct, f"Evision.{module_name}.{argtype[len(module_class[0]) + 1:]}"
                     return arg_is_struct, f"Evision.{module_name}.{argtype}"
                 else:
                     return arg_is_struct
