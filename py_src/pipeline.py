@@ -127,7 +127,7 @@ class Pipeline(object):
 
         self.evision_erlang_hrl.write(
             "-record(evision_mat, {channels, dims, type, raw_type, shape, ref}).\n"
-            "-record(evision_cuda_gpumat, {channels, type, raw_type, shape, ref, elemSize}).\n"
+            "-record(evision_cuda_gpumat, {channels, type, raw_type, shape, ref, elemSize, step, device_id}).\n"
             "-record(evision_videocapture, {fps, frame_count, frame_width, frame_height, isOpened, ref}).\n"
         )
 
