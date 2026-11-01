@@ -166,6 +166,26 @@ def erlang_attribute_line(entry: JsEntry, fun: str, arity: int) -> str:
     return f"-js(#{{{', '.join(fields)}}}).\n"
 
 
+def erlang_attribute_block(attrs: Dict[str, Dict[int, JsEntry]]) -> str:
+    lines = [
+        erlang_attribute_line(attrs[fun][arity], fun, arity)
+        for fun in sorted(attrs)
+        for arity in sorted(attrs[fun])
+    ]
+    return "".join(lines) + "\n" if lines else ""
+
+
+_ERLANG_HEADER_END = '-include("evision.hrl").\n\n'
+
+
+def place_erlang_attributes(source: str, attributes: str) -> str:
+    # Erlang rejects an attribute that follows a function definition.
+    header, sep, body = source.partition(_ERLANG_HEADER_END)
+    if attributes and not sep:
+        raise ValueError("Erlang module header not found")
+    return header + sep + attributes + body
+
+
 def _elixir_atom(name: str) -> str:
     # All evision-emitted def names are valid bare Elixir atoms (letter,
     # then letters/digits/underscore). The quoted form would still work but

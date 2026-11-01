@@ -163,15 +163,43 @@ def test_erlang_attribute_line_renders_arg_plan():
     assert "arg_plan => [in, out, in]" in line
 
 
+_ERLANG_MODULE = (
+    '-module(js_attrs).\n-compile(nowarn_export_all).\n-compile([export_all]).\n-include("evision.hrl").\n\n'
+    "to_struct(Any) -> Any.\n"
+)
+
+
+def test_erlang_attribute_block_is_sorted():
+    attrs = {"process": {2: _METHOD}, "canny": {4: _NO_PLAN}, "cvtColor": {3: _FN, 2: _FN}}
+    lines = JA.erlang_attribute_block(attrs).splitlines()
+    assert [line.split(", ")[:2] for line in lines[:-1]] == [
+        ["-js(#{'fun' => canny", "arity => 4"],
+        ["-js(#{'fun' => cvtColor", "arity => 2"],
+        ["-js(#{'fun' => cvtColor", "arity => 3"],
+        ["-js(#{'fun' => process", "arity => 2"],
+    ]
+    assert lines[-1] == ""
+    assert JA.erlang_attribute_block({}) == ""
+
+
+def test_erlang_attributes_go_before_the_first_function():
+    attrs = JA.erlang_attribute_block({"canny": {4: _NO_PLAN}})
+    placed = JA.place_erlang_attributes(_ERLANG_MODULE, attrs)
+    assert placed.index("-js(") < placed.index("to_struct(")
+    assert JA.place_erlang_attributes(_ERLANG_MODULE, "") == _ERLANG_MODULE
+
+
+def test_erlang_attributes_need_a_module_header():
+    with pytest.raises(ValueError):
+        JA.place_erlang_attributes("to_struct(Any) -> Any.\n", "-js(#{}).\n")
+
+
 @pytest.mark.skipif(shutil.which("erlc") is None, reason="erlc not installed")
-def test_erlang_attribute_lines_compile(tmp_path):
+def test_erlang_attributes_compile_in_a_generated_module(tmp_path):
+    (tmp_path / "evision.hrl").write_text("")
     src = tmp_path / "js_attrs.erl"
-    src.write_text(
-        "-module(js_attrs).\n"
-        + JA.erlang_attribute_line(_FN, "cvtColor", 2)
-        + JA.erlang_attribute_line(_METHOD, "process", 2)
-        + JA.erlang_attribute_line(_NO_PLAN, "canny", 4)
-    )
+    attrs = {"cvtColor": {2: _FN}, "process": {2: _METHOD}, "canny": {4: _NO_PLAN}}
+    src.write_text(JA.place_erlang_attributes(_ERLANG_MODULE, JA.erlang_attribute_block(attrs)))
     result = subprocess.run(
         ["erlc", "-o", str(tmp_path), str(src)], capture_output=True, text=True
     )
