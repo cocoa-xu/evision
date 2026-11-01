@@ -38,6 +38,17 @@ def _guard_subsumes(prior, current):
     return True
 
 
+_DNN_NET_LAYER_SHAPES_RETURNS = {
+    'getLayerShapes': '{list(list(integer())), list(list(integer()))}',
+    'getLayersShapes': '{list(integer()), list(list(list(integer()))), list(list(list(integer())))}',
+}
+
+
+def _dnn_net_layer_shapes_spec(func_name):
+    returns = _DNN_NET_LAYER_SHAPES_RETURNS[func_name]
+    return f'@spec {func_name}(Evision.DNN.Net.t(), [{{atom(), term()}},...] | nil) :: {returns} | {{:error, String.t()}}'
+
+
 def _variant_shadowed(prior, current):
     # Each argument is (normalized_guard, has_opts). A variant emits `f(P)`, plus
     # `f(P, opts)` when it has optional args, so `prior` must have opts as well to
@@ -580,17 +591,7 @@ class ModuleGenerator(object):
                     if func_name.startswith(evision_nif_prefix() + "dnn_dnn_Net") and (module_func_name == "getLayerShapes" or module_func_name == "getLayersShapes"):
                         func_arity = 2
                         if kind == 'elixir':
-                            specs = {
-                                'getLayerShapes': {
-                                    'elixir': '@spec getLayerShapes(Evision.DNN.Net.t(), [{{atom(), term()}},...] | nil) :: {list(list(integer())), list(list(integer()))} | {:error, String.t()}',
-                                    'erlang': '-spec getLayerShapes(#evision_mat{}, [{{atom(), term()}},...] | nil) -> {list(list(integer())), list(list(integer()))} | {error, binary()}.',
-                                },
-                                'getLayersShapes': {
-                                    'elixir': '@spec getLayerShapes(Evision.DNN.Net.t(), [{{atom(), term()}},...] | nil) :: {list(integer()), list(list(list(integer()))), list(list(list(integer())))} | {:error, String.t()}',
-                                    'erlang': '-spec getLayerShapes(#evision_mat{}, [{{atom(), term()}},...] | nil) ->  {list(integer()), list(list(list(integer()))), list(list(list(integer())))} | {error, binary()}.',
-                                }
-                            }
-                            spec = specs[module_func_name][kind]
+                            spec = _dnn_net_layer_shapes_spec(module_func_name)
                             function_code.write(f'  {spec}\n'
                                 f'  def {module_func_name}(self, opts \\\\ nil) when opts == nil or (is_list(opts) and is_tuple(hd(opts))) do\n'
                                 '    self = Evision.Internal.Structurise.from_struct(self)\n'
