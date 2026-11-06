@@ -57,6 +57,7 @@ MODULE_NAME_MAP = {
     "rgbd": "RGBD",
     "saliency": "Saliency",
     "segmentation": "Segmentation",
+    "slam": "SLAM",
     "stereo": "Stereo",
     "structured_light": "StructuredLight",
     "text": "Text",
@@ -76,6 +77,11 @@ SPECIAL_STRUCTS = {
 }
 
 STRUCT_TYPES = {
+    # OpenCV 5.1: ptcloud's slam namespace.
+    'OdometryParams': 'Evision.SLAM.OdometryParams',
+    'VisualOdometry': 'Evision.SLAM.VisualOdometry',
+    'SLAM.OdometryParams': 'Evision.SLAM.OdometryParams',
+    'SLAM.VisualOdometry': 'Evision.SLAM.VisualOdometry',
     # OpenCV 5.0: new classes + detectors moved to contrib xfeatures2d.
     'ALIKED': 'Evision.ALIKED',
     'ANNIndex': 'Evision.ANNIndex',
