@@ -48,6 +48,7 @@ MODULE_NAME_MAP = {
     "ml": "ML",
     "optflow": "OptFlow",
     "ocl": "OCL",
+    "ogl": "OGL",
     "plot": "Plot",
     "phase_unwrapping": "PhaseUnwrapping",
     "ppf_match_3d": "PPFMatch3D",
@@ -65,6 +66,7 @@ MODULE_NAME_MAP = {
     "utils_fs": "UtilsFS",
     "videoio_registry": "VideoIORegistry",
     "videostab": "VideoStab",
+    "viz3d": "Viz3D",
     "xfeatures2d": "XFeatures2D",
     "ximgproc": "XImgProc",
     "xphoto": "XPhoto",
@@ -77,7 +79,10 @@ SPECIAL_STRUCTS = {
 }
 
 STRUCT_TYPES = {
-    # OpenCV 5.1: ptcloud's slam namespace.
+    # OpenCV 5.1: new classes and ptcloud's slam namespace.
+    'ReduceParams': 'Evision.ReduceParams',
+    'VideoDeviceInfo': 'Evision.VideoDeviceInfo',
+    'XFeat': 'Evision.XFeat',
     'OdometryParams': 'Evision.SLAM.OdometryParams',
     'VisualOdometry': 'Evision.SLAM.VisualOdometry',
     'SLAM.OdometryParams': 'Evision.SLAM.OdometryParams',
