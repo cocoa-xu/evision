@@ -12,7 +12,7 @@ on:
       opencv_ver:
         description: "OpenCV version to build opencv.js for"
         required: false
-        default: "5.0.0"
+        default: "5.1.0"
       embind_aot:
         description: "Pass -s EMBIND_AOT=1 (eval-free AND fast invokers; injected only at the opencv.js link)"
         type: boolean
@@ -53,7 +53,7 @@ jobs:
           # derive it from GITHUB_REF_NAME: that is evision's version (e.g.
           # v1.0.1-rc.0), not an OpenCV version. Use the dispatch input if given,
           # otherwise the pinned default.
-          version="${INPUT_VER:-5.0.0}"
+          version="${INPUT_VER:-5.1.0}"
           echo "OPENCV_VER=${version}" >> "$GITHUB_ENV"
           echo "building opencv.js for OpenCV ${version}"
 

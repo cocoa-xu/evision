@@ -4,13 +4,14 @@ Elixir and Erlang have no class inheritance, so any inherited method that
 the user might call on a derived class must be emitted under that derived
 class's module. This pass walks each `ClassInfo`'s base chain (gated by
 `config.inheritance_policy.BASE_CLASSES_TO_CHECK` plus a hand-tuned regex
-heuristic) and copies the base's `methods` dict into the derived class's
-methods map.
+heuristic) and copies the base's `methods` and `props` into the derived
+class.
 
-Currently flattens **methods only**. Properties and constants are not yet
-flattened — that's a deliberate follow-up because adding them risks
-name/arity collisions on the Elixir side (Elixir doesn't separate method
-and accessor namespaces) and needs a per-collision audit.
+Constants are not flattened. Inherited properties emit `get_<name>` /
+`set_<name>` accessors in the derived module, so a derived class's own
+property of the same name wins. Under the current policy only
+`dnn::Layer` inherits properties (`blobs`, `name` and `type`, which
+OpenCV 5.1 moved to its new `dnn::LayerInfo` base).
 """
 
 from config.inheritance_policy import BASE_CLASSES_TO_CHECK
@@ -60,3 +61,26 @@ def flatten_methods(class_info, codegen):
         base_class, current_class = current_class.base, base_class
 
     return methods
+
+
+def flatten_props(class_info, codegen):
+    """Return `class_info.props` plus the properties inherited from base
+    classes per the same policy as `flatten_methods`."""
+    props = list(class_info.props)
+    names = {p.name for p in props}
+    base_class = class_info.base
+    current_class = class_info
+
+    while base_class is not None:
+        if not _should_flatten(base_class, current_class):
+            break
+        if base_class not in codegen.classes or current_class.base is None:
+            break
+        base_class = codegen.classes[current_class.base]
+        for prop in base_class.props:
+            if prop.name not in names:
+                props.append(prop)
+                names.add(prop.name)
+        base_class, current_class = current_class.base, base_class
+
+    return props

@@ -4,7 +4,7 @@
 from helper import normalize_class_name, get_elixir_module_name
 from ir.props import ClassProp
 from module_generator import ModuleGenerator  # emit-side; ir/ will be decoupled in a later step
-from ir.inheritance import flatten_methods
+from ir.inheritance import flatten_methods, flatten_props
 import evision_templates as ET
 import evision_structures as ES
 import sys
@@ -104,7 +104,7 @@ class ClassInfo(object):
         if self.ismap:
             return self.gen_map_code(codegen)
 
-        sorted_props = [(p.name, p) for p in self.props]
+        sorted_props = [(p.name, p) for p in flatten_props(self, codegen)]
         sorted_props.sort()
 
         methods = flatten_methods(self, codegen)
@@ -150,7 +150,7 @@ class ClassInfo(object):
         getset_code = StringIO()
         getset_inits = StringIO()
 
-        sorted_props = [(p.name, p) for p in self.props]
+        sorted_props = [(p.name, p) for p in flatten_props(self, codegen)]
         sorted_props.sort()
 
         access_op = "->"

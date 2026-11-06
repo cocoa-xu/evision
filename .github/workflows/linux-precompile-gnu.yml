@@ -123,7 +123,7 @@ jobs:
       LANGUAGE: en_US:en
       LC_ALL: en_US.UTF-8
       DEBIAN_FRONTEND: noninteractive
-      OPENCV_VER: "5.0.0"
+      OPENCV_VER: "5.1.0"
       MIX_ENV: prod
       ELIXIR_VERSION: "1.17.3"
       EVISION_PREFER_PRECOMPILED: "false"

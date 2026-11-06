@@ -16,8 +16,8 @@ def _eval(generator_cls, expr):
     return gen.expression
 
 
-# OpenCV 5.0 core depth codes and structural constants, verified against
-# modules/core/include/opencv2/core/hal/interface.h at the 5.0.0 tag. Spelled
+# OpenCV 5.1 core depth codes and structural constants, verified against
+# modules/core/include/opencv2/core/hal/interface.h at the 5.1.0 tag. Spelled
 # out here so they stay an oracle independent of py_src/cv_depths.py.
 DEPTHS = {
     "CV_8U": 0,
@@ -33,10 +33,12 @@ DEPTHS = {
     "CV_64U": 10,
     "CV_64S": 11,
     "CV_32U": 12,
+    "CV_8F_E4M3FN": 13,
+    "CV_8F_E4M3FNUZ": 14,
 }
 
 STRUCTURAL = {
-    "CV_DEPTH_CURR_MAX": 13,
+    "CV_DEPTH_CURR_MAX": 15,
     "CV_DEPTH_MAX": 32,
 }
 
@@ -70,7 +72,7 @@ def test_erl_enum_resolves_depth_constants(name, value):
 def test_depth_mask_all_expression_is_well_formed():
     # cv::Mat DEPTH_MASK_ALL = (1 << CV_DEPTH_CURR_MAX) - 1 (mat.hpp), the
     # enum that introduced CV_DEPTH_CURR_MAX into the generated surface.
-    assert _eval(Py2EExpressionGenerator, "(1 << CV_DEPTH_CURR_MAX) - 1") == "(bsl(1, 13) - 1)"
+    assert _eval(Py2EExpressionGenerator, "(1 << CV_DEPTH_CURR_MAX) - 1") == "(bsl(1, 15) - 1)"
 
 
 @pytest.mark.parametrize("name,value", DEPTHS.items())

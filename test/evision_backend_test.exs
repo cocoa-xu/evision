@@ -512,10 +512,32 @@ defmodule Evision.Backend.Test do
       :equal, :not_equal, :greater, :less, :greater_equal, :less_equal
     ]
 
-    test "OpenCV arithmetic itself does not broadcast" do
-      a = Evision.Backend.from_nx(ev(Nx.iota({2, 1}, type: :f32)))
-      b = Evision.Backend.from_nx(ev(Nx.iota({1, 3}, type: :f32)))
-      assert match?({:error, _}, Evision.Mat.add(a, b))
+    test "OpenCV arithmetic broadcasts like Nx" do
+      a = Nx.iota({2, 1}, type: :f32)
+      b = Nx.iota({1, 3}, type: :f32)
+      sum = Evision.Mat.add(Evision.Backend.from_nx(ev(a)), Evision.Backend.from_nx(ev(b)))
+      assert Evision.Mat.to_nx(sum, Nx.BinaryBackend) == Nx.add(a, b)
+    end
+
+    test "results keep the output shape when OpenCV broadcasts a scalar header" do
+      array = ev(Nx.iota({6}, type: :f32))
+      scalar = Nx.tensor(2, type: :f32, backend: Evision.Backend)
+      assert scalar.data.ref.shape == {1, 1}
+
+      for op <- [:add, :subtract, :multiply, :divide, :equal, :less, :greater_equal],
+          {l, r} <- [{array, scalar}, {scalar, array}] do
+        result = apply(Nx, op, [l, r])
+        assert result.data.ref.shape == {6}
+        assert Nx.backend_copy(result, Nx.BinaryBackend) ==
+                 apply(Nx, op, [Nx.backend_copy(l, Nx.BinaryBackend), Nx.backend_copy(r, Nx.BinaryBackend)])
+      end
+
+      ints = ev(Nx.iota({6}, type: :s32))
+      mask = Nx.tensor(2, type: :s32, backend: Evision.Backend)
+
+      for op <- [:bitwise_and, :bitwise_or, :bitwise_xor] do
+        assert apply(Nx, op, [ints, mask]).data.ref.shape == {6}
+      end
     end
 
     test "elementwise ops match Nx.BinaryBackend across broadcast-compatible shapes" do

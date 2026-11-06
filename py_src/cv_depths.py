@@ -26,6 +26,8 @@ CV_DEPTHS = {
     'CV_64U': 10,
     'CV_64S': 11,
     'CV_32U': 12,
+    'CV_8F_E4M3FN': 13,
+    'CV_8F_E4M3FNUZ': 14,
 }
 
 CV_DEPTH_MAX = 1 << CV_CN_SHIFT

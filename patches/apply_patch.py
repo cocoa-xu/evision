@@ -144,15 +144,16 @@ def patch_carotene_vround(opencv_version: str, opencv_src_root: str):
 
 
 def patch_intrin_neon_v_floor(opencv_version: str, opencv_src_root: str):
-    """Gate v_floor's ARMv8 round-to-minus-infinity intrinsic on __aarch64__.
+    """Gate v_floor/v_ceil's ARMv8 rounding intrinsics on __aarch64__.
 
     modules/core/include/opencv2/core/hal/intrin_neon.hpp implements
-    v_floor(v_float32x4) with `#if __ARM_ARCH > 7` -> vcvtmq_s32_f32, an
-    AArch64-only NEON intrinsic. On 32-bit ARMv8 targets such as Nerves
-    rpi3/rpi3a/rpi0_2 (Cortex-A53 built for armv7hf) __ARM_ARCH is 8, but GCC's
-    AArch32 arm_neon.h does not provide vcvtmq_s32_f32, so the core module
-    fails to compile. Restrict the fast path to AArch64; AArch32 keeps the
-    portable floor fallback already present in the #else branch.
+    v_floor(v_float32x4) with `#if __ARM_ARCH > 7` -> vcvtmq_s32_f32, and
+    since OpenCV 5.1 v_ceil(v_float32x4) the same way -> vcvtpq_s32_f32. On
+    32-bit ARMv8 targets such as Nerves rpi3/rpi3a/rpi0_2 (Cortex-A53 built
+    for armv7hf) __ARM_ARCH is 8, but GCC's AArch32 arm_neon.h does not
+    provide these conversions, so the core module fails to compile. Restrict
+    the fast paths to AArch64; AArch32 keeps the portable fallbacks already
+    present in the #else branches.
 
     Mirrors patch_carotene_vround for the universal-intrinsics NEON backend.
     """
@@ -179,7 +180,7 @@ def patch_intrin_neon_v_floor(opencv_version: str, opencv_src_root: str):
         with open(intrin_neon_hpp, 'w', encoding='utf-8') as dst:
             dst.truncate(0)
             dst.write(fixed.getvalue())
-        print(f"[+] patched intrin_neon.hpp v_floor guard ({patched})")
+        print(f"[+] patched intrin_neon.hpp v_floor/v_ceil guards ({patched})")
 
 
 def patch_ocr_tesseract_run_with_components(opencv_version: str, opencv_src_root: str):
