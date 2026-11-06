@@ -211,6 +211,7 @@ $(HEADERS_TXT): $(CONFIGURATION_PRIVATE_HPP)
 			-D OPENCV_GENERATE_PKGCONFIG=ON \
 			-D OPENCV_PC_FILE_NAME=opencv4.pc \
 			-D BUILD_ZLIB=ON \
+			-D BUILD_HARFBUZZ=ON \
 			-D BUILD_opencv_gapi=OFF \
 			-D BUILD_opencv_apps=OFF \
 			-D BUILD_opencv_java=OFF \
