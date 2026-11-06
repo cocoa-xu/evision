@@ -155,7 +155,7 @@ defmodule Evision.JSTagTest do
       source = File.read!(Path.join(@generated_erl_dir, "evision.erl"))
 
       assert source =~
-               ~r/-js\(#\{fun => canny, arity => \d+, js_kind => function, js_name => <<"cv\.Canny">>\}\)\./
+               ~r/-js\(#\{'fun' => canny, arity => \d+, js_kind => function, js_name => <<"cv\.Canny">>\}\)\./
     end
 
     @tag skip: @skip_without_erlang
@@ -163,10 +163,10 @@ defmodule Evision.JSTagTest do
       source = File.read!(Path.join(@generated_erl_dir, "evision_qrcodedetector.erl"))
 
       assert source =~
-               ~r/-js\(#\{fun => qrCodeDetector, arity => 0, js_kind => constructor, js_class => <<"cv\.QRCodeDetector">>\}\)\./
+               ~r/-js\(#\{'fun' => qrCodeDetector, arity => 0, js_kind => constructor, js_class => <<"cv\.QRCodeDetector">>\}\)\./
 
       assert source =~
-               ~r/-js\(#\{fun => detect, arity => 2, js_kind => method, js_class => <<"cv\.QRCodeDetector">>, js_method => <<"detect">>, arg_plan => \[in, out\]\}\)\./
+               ~r/-js\(#\{'fun' => detect, arity => 2, js_kind => method, js_class => <<"cv\.QRCodeDetector">>, js_method => <<"detect">>, arg_plan => \[in, out\]\}\)\./
     end
   end
 
