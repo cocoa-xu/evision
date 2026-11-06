@@ -56,7 +56,7 @@ defmodule Evision.BackendScalarComparisonTest do
     assert Nx.to_binary(Nx.equal(direct, copied)) == <<1>>
     assert Nx.to_binary(Nx.equal(copied, direct)) == <<1>>
     assert Nx.equal(direct, direct).data.ref.shape == {1, 1}
-    assert {:error, _} = Evision.Mat.cmp(direct.data.ref, copied.data.ref, :eq)
+    assert Evision.Mat.to_binary(Evision.Mat.cmp(direct.data.ref, copied.data.ref, :eq)) == <<1>>
   end
 
   test "all scalar header pairs preserve native comparison semantics" do

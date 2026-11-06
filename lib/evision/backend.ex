@@ -388,7 +388,7 @@ defmodule Evision.Backend do
     {l, r} = align_operands(l, r, out_shape)
     Evision.Mat.add(from_nx(l), from_nx(r), type)
     |> reject_error()
-    |> to_nx(out)
+    |> to_nx_reshaped(out)
   end
 
   @impl true
@@ -397,7 +397,7 @@ defmodule Evision.Backend do
     {l, r} = align_operands(l, r, out_shape)
     Evision.Mat.subtract(from_nx(l), from_nx(r), type)
     |> reject_error()
-    |> to_nx(out)
+    |> to_nx_reshaped(out)
   end
 
   @impl true
@@ -409,14 +409,9 @@ defmodule Evision.Backend do
         enforce_same_shape(l, r, shape)
       end
 
-    result = Evision.Mat.multiply(from_nx(l), from_nx(r), type) |> reject_error()
-
-    result =
-      if shape != {} and result.shape != shape,
-        do: Evision.Mat.as_shape(result, shape) |> reject_error(),
-        else: result
-
-    to_nx(result, out)
+    Evision.Mat.multiply(from_nx(l), from_nx(r), type)
+    |> reject_error()
+    |> to_nx_reshaped(out)
   end
 
   defp multiply_operand(%T{shape: {}} = scalar, _shape), do: float_scalar(scalar)
@@ -444,7 +439,7 @@ defmodule Evision.Backend do
         Evision.Mat.divide(l, r, type)
     end
     |> reject_error()
-    |> to_nx(out)
+    |> to_nx_reshaped(out)
   end
 
   defp check_mul_div_kind(%T{shape: {}}, _r) do
@@ -598,7 +593,7 @@ defmodule Evision.Backend do
     else
       Evision.Mat.bitwise_and(from_nx(right), from_nx(left))
     end
-    |> to_nx(out)
+    |> to_nx_reshaped(out)
   end
 
   @impl true
@@ -613,7 +608,7 @@ defmodule Evision.Backend do
     else
       Evision.Mat.bitwise_or(from_nx(right), from_nx(left))
     end
-    |> to_nx(out)
+    |> to_nx_reshaped(out)
   end
 
   @impl true
@@ -629,7 +624,7 @@ defmodule Evision.Backend do
     else
       Evision.Mat.bitwise_xor(from_nx(right), from_nx(left))
     end
-    |> to_nx(out)
+    |> to_nx_reshaped(out)
   end
 
   @spec maybe_cast_u8(Nx.Tensor.t(), Nx.Tensor.t()) :: {Nx.Tensor.t(), Nx.Tensor.t()}
@@ -674,7 +669,7 @@ defmodule Evision.Backend do
     {l, r} = enforce_same_type(l, r)
     Evision.Mat.cmp(from_nx(l), from_nx(r), op)
     |> reject_error()
-    |> to_nx(out)
+    |> to_nx_reshaped(out)
   end
 
   defp cmp_scalar(out, %T{type: lt} = l, %T{type: rt} = r, op) do
@@ -697,7 +692,7 @@ defmodule Evision.Backend do
           {l_mat, r_mat}
       end
 
-    Evision.Mat.cmp(l_mat, r_mat, op) |> reject_error() |> to_nx(out)
+    Evision.Mat.cmp(l_mat, r_mat, op) |> reject_error() |> to_nx_reshaped(out)
   end
 
   defp reshape_comparison_mat(%Evision.Mat{shape: shape} = mat, shape), do: mat
@@ -1837,6 +1832,15 @@ defmodule Evision.Backend do
     type = Evision.Mat.type(mat_ref)
     %{t | type: type, data: %__MODULE__{ref: check_shape_and_type(mat_ref, shape, type)}}
   end
+
+  # OpenCV 5.1 broadcasts elementwise operands, so a 1-D array combined with a
+  # 1x1 scalar header comes back as 1xN.
+  defp to_nx_reshaped(%Evision.Mat{shape: shape} = mat, %T{shape: out_shape} = out)
+       when out_shape != {} and shape != out_shape do
+    mat |> Evision.Mat.as_shape(out_shape) |> reject_error() |> to_nx(out)
+  end
+
+  defp to_nx_reshaped(mat, out), do: to_nx(mat, out)
 
   @spec to_number(number() | Nx.Tensor.t()) :: number()
   defp to_number(n) when is_number(n), do: n
