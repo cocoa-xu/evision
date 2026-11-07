@@ -5,19 +5,12 @@ defmodule Evision.DNN.TextDetectionModelEAST.Test do
   @moduletag timeout: 600_000
   @tag :dnn
   @tag :require_downloading
-  @download_file_1 "https://github.com/cocoa-xu/evision-extra/raw/main/testdata/text-detection/frozen_east_text_detection.pb.part1"
-  @download_file_2 "https://github.com/cocoa-xu/evision-extra/raw/main/testdata/text-detection/frozen_east_text_detection.pb.part2"
+  @download_file "https://huggingface.co/opencv/opencv_contribution/resolve/main/east_text_detection/east_text_detection_2026jul.onnx?download=true"
   test "Text Detection EAST" do
-    weights_p1 = Path.join([__DIR__, "testdata", "frozen_east_text_detection.pb.part1"])
-    weights_p2 = Path.join([__DIR__, "testdata", "frozen_east_text_detection.pb.part2"])
-    weights = Path.join([__DIR__, "testdata", "frozen_east_text_detection.pb"])
+    weights = Path.join([__DIR__, "testdata", "east_text_detection.onnx"])
     text_image = Evision.imread(Path.join([__DIR__, "testdata", "1023_6.png"]))
 
-    Evision.TestHelper.download!(@download_file_1, weights_p1)
-    Evision.TestHelper.download!(@download_file_2, weights_p2)
-    data_p1 = File.read!(weights_p1)
-    data_p2 = File.read!(weights_p2)
-    File.write!(weights, data_p1 <> data_p2)
+    Evision.TestHelper.download!(@download_file, weights)
 
     net = Evision.DNN.readNet(weights, config: "", framework: "")
 
@@ -35,7 +28,14 @@ defmodule Evision.DNN.TextDetectionModelEAST.Test do
 
     {vertices, confidences} = TextDetectionModelEAST.detect(model, text_image)
 
-    assert vertices == [[{3, 16}, {3, 8}, {50, 7}, {50, 16}]]
-    assert confidences == [0.998794674873352]
+    assert [quad] = vertices
+
+    for {{x, y}, {expected_x, expected_y}} <- Enum.zip(quad, [{3, 16}, {3, 8}, {50, 7}, {50, 16}]) do
+      assert_in_delta x, expected_x, 2
+      assert_in_delta y, expected_y, 2
+    end
+
+    assert [confidence] = confidences
+    assert_in_delta confidence, 0.9988, 1.0e-3
   end
 end
