@@ -38,3 +38,28 @@ def test_classes_outside_the_policy_keep_their_own_props():
     derived = _cls("cv::Bar", "Foo", ["y"])
 
     assert _names(derived, {"Foo": base, "Bar": derived}) == ["y"]
+
+
+def test_props_come_from_every_ancestor_nearest_first():
+    a = _cls("cv::dnn::A", None, ["a"])
+    b = _cls("cv::dnn::B", "dnn_A", ["b"])
+    c = _cls("cv::dnn::C", "dnn_B", ["c"])
+    classes = {"dnn_A": a, "dnn_B": b, "dnn_C": c}
+
+    assert _names(c, classes) == ["c", "b", "a"]
+
+
+def test_walk_stops_at_an_unknown_ancestor():
+    b = _cls("cv::dnn::B", "dnn_Missing", ["b"])
+    c = _cls("cv::dnn::C", "dnn_B", ["c"])
+
+    assert _names(c, {"dnn_B": b, "dnn_C": c}) == ["c", "b"]
+
+
+def test_policy_is_checked_against_each_ancestor():
+    grand = _cls("cv::Grand", None, ["g"])
+    flow = _cls("cv::SparseOpticalFlow", "Grand", ["f"])
+    derived = _cls("cv::Derived", "SparseOpticalFlow", ["d"])
+    classes = {"Grand": grand, "SparseOpticalFlow": flow, "Derived": derived}
+
+    assert _names(derived, classes) == ["d", "f"]
