@@ -72,6 +72,12 @@ int get_binary_type(const std::string& t, int l, int n, int& type) {
             else type = CV_16BF;
             return true;
         }
+    } else if (t == "f8_e4m3fn") {
+        if (l == 8) {
+            if (n != 0) type = CV_8F_E4M3FNC(n);
+            else type = CV_8F_E4M3FN;
+            return true;
+        }
     }
     return false;
 }

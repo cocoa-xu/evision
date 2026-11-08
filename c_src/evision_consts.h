@@ -59,6 +59,7 @@ static ERL_NIF_TERM kAtomF32;
 static ERL_NIF_TERM kAtomF64;
 static ERL_NIF_TERM kAtomBF;
 static ERL_NIF_TERM kAtomBF16;
+static ERL_NIF_TERM kAtomF8E4M3FN;
 static ERL_NIF_TERM kAtomUser;
 
 // atoms for cv::Moments
