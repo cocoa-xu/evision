@@ -114,7 +114,7 @@ def map_argtype_in_spec_elixir(classname: str, argtype: str, is_in: bool, decl: 
         return 'term()'
     elif 'IndexParams' in argtype:
         return 'map()'
-    elif argtype == 'SearchParams' or argtype == 'Moments':
+    elif argtype in ['SearchParams', 'Moments', 'LayerParams']:
         return 'map()'
     elif argtype in vec_out_types:
         return vec_out_types[argtype]
@@ -209,7 +209,7 @@ def map_argtype_to_guard_elixir(argname, argtype, classname: Optional[str] = Non
         return f'is_tuple({argname})'
     elif argtype in ['Scalar', 'cv::Scalar']:
         return f'(is_number({argname}) or is_tuple({argname}))'
-    elif argtype == 'IndexParams' or argtype == 'SearchParams' or argtype == 'Moments':
+    elif argtype in ['IndexParams', 'SearchParams', 'Moments', 'LayerParams']:
         return f'is_map({argname})'
     elif is_struct(argtype, classname=classname):
         if resolve_parsed_enum(argtype, classname, decl) is not None:
