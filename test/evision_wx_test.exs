@@ -202,4 +202,14 @@ if Code.ensure_loaded?(Evision.Wx.Server) do
       assert Wx.getWindowProperty("closed", Constant.cv_WND_PROP_VISIBLE()) == 1.0
     end
   end
+else
+  defmodule Evision.Wx.Test do
+    use ExUnit.Case
+
+    @moduletag :wx
+
+    test "Evision.Wx is compiled" do
+      flunk("Evision.Wx was not compiled: this Erlang/OTP has no wx")
+    end
+  end
 end
