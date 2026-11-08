@@ -41,10 +41,11 @@ defmodule Evision.StructSetter.Test do
              end)
   end
 
-  defp initialized_object(Evision.LineDescriptor.KeyLine = module, ctor) do
-    # OpenCV's KeyLine constructor leaves its scalar fields uninitialized.
-    # Set known values before any getter reads them, and check the round trip.
-    values = [
+  # These OpenCV constructors leave scalar fields uninitialized, and a garbage
+  # NaN float makes the getter raise. Set known values before any getter reads
+  # them, and check the round trip.
+  @known_values %{
+    Evision.LineDescriptor.KeyLine => [
       angle: 0.5,
       class_id: 3,
       octave: 1,
@@ -61,17 +62,22 @@ defmodule Evision.StructSetter.Test do
       ePointInOctaveY: 2.0,
       lineLength: 2.5,
       numOfPixels: 4
-    ]
+    ],
+    Evision.LineMod.Match => [x: 1, y: 2, similarity: 0.5, class_id: "a", template_id: 3]
+  }
 
-    Enum.reduce(values, apply(module, ctor, []), fn {prop, value}, object ->
-      result = apply(module, String.to_atom("set_#{prop}"), [object, value])
-      assert is_struct(result, module), "#{inspect(module)}.set_#{prop}/2: #{inspect(result)}"
-      assert apply(module, String.to_atom("get_#{prop}"), [result]) == value
-      result
-    end)
+  defp initialized_object(module, ctor) do
+    @known_values
+    |> Map.get(module, [])
+    |> Enum.reduce(apply(module, ctor, []), &set_and_check(module, &1, &2))
   end
 
-  defp initialized_object(module, ctor), do: apply(module, ctor, [])
+  defp set_and_check(module, {prop, value}, object) do
+    result = apply(module, String.to_atom("set_#{prop}"), [object, value])
+    assert is_struct(result, module), "#{inspect(module)}.set_#{prop}/2: #{inspect(result)}"
+    assert apply(module, String.to_atom("get_#{prop}"), [result]) == value
+    result
+  end
 
   defp default_constructible_modules do
     {:ok, modules} = :application.get_key(:evision, :modules)
