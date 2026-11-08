@@ -357,13 +357,13 @@ to_binary(Mat) when is_tuple(Mat), tuple_size(Mat) > 0, element(1, Mat) == evisi
     evision_internal_structurise:to_struct(Ret).
 
 from_binary(Bin, {T, L}, Rows, Cols, Channels) when is_binary(Bin), is_atom(T), L > 0, Rows > 0, Cols > 0, Channels > 0 ->
-    Ret = evision_nif:mat_from_binary([{b, Bin}, {t, T}, {l, L}, {rows, Rows}, {cols, Cols}, {channels, Channels}]),
+    Ret = evision_nif:mat_from_binary([{binary, Bin}, {t, T}, {l, L}, {rows, Rows}, {cols, Cols}, {channels, Channels}]),
     evision_internal_structurise:to_struct(Ret).
 
 from_binary_by_shape(Bin, {T, L}, Shape) when is_binary(Bin), is_atom(T), L > 0, is_tuple(Shape) ->
     from_binary_by_shape(Bin, {T, L}, [element(I,Shape) || I <- lists:seq(1,tuple_size(Shape))]);
 from_binary_by_shape(Bin, {T, L}, Shape) when is_binary(Bin), is_atom(T), L > 0, is_list(Shape) ->
-    Ret = evision_nif:mat_from_binary_by_shape([{b, Bin}, {t, T}, {l, L}, {shape, Shape}]),
+    Ret = evision_nif:mat_from_binary_by_shape([{binary, Bin}, {t, T}, {l, L}, {shape, Shape}]),
     evision_internal_structurise:to_struct(Ret).
 
 eye(N, {T, L}) when N > 0 ->
