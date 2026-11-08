@@ -52,7 +52,7 @@ if Code.ensure_loaded?(:wx_object) do
 
       style =
         if autosize?,
-          do: @wxDEFAULT_FRAME_STYLE &&& ~~~(@wxRESIZE_BORDER ||| @wxMAXIMIZE_BOX),
+          do: @wxDEFAULT_FRAME_STYLE &&& bnot(@wxRESIZE_BORDER ||| @wxMAXIMIZE_BOX),
           else: @wxDEFAULT_FRAME_STYLE
 
       frame = :wxFrame.new(:wx.null(), @wxID_ANY, name, style: style)
@@ -374,7 +374,7 @@ if Code.ensure_loaded?(:wx_object) do
       style =
         if value != 0,
           do: style ||| @wxSTAY_ON_TOP,
-          else: style &&& ~~~@wxSTAY_ON_TOP
+          else: style &&& bnot(@wxSTAY_ON_TOP)
 
       :wxWindow.setWindowStyleFlag(state.frame, style)
       {:ok, state}
