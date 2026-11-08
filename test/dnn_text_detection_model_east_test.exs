@@ -28,7 +28,7 @@ defmodule Evision.DNN.TextDetectionModelEAST.Test do
 
     {vertices, confidences} = TextDetectionModelEAST.detect(model, text_image)
 
-    assert [quad] = vertices
+    assert [[{_, _}, {_, _}, {_, _}, {_, _}] = quad] = vertices
 
     for {{x, y}, {expected_x, expected_y}} <- Enum.zip(quad, [{3, 16}, {3, 8}, {50, 7}, {50, 16}]) do
       assert_in_delta x, expected_x, 2
