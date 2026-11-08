@@ -524,7 +524,7 @@ defmodule Evision.Backend.Test do
       ints = {ev(Nx.iota({6}, type: :s32)), Nx.tensor(2, type: :s32, backend: Evision.Backend)}
       assert elem(floats, 1).data.ref.shape == {1, 1}
 
-      float_ops = [:add, :subtract, :multiply, :divide, :equal, :less, :greater_equal]
+      float_ops = [:add, :subtract, :multiply, :divide, :min, :max, :equal, :less, :greater_equal]
       int_ops = [:bitwise_and, :bitwise_or, :bitwise_xor]
       cases = Enum.map(float_ops, &{&1, floats}) ++ Enum.map(int_ops, &{&1, ints})
       to_binary = &Nx.backend_copy(&1, Nx.BinaryBackend)
