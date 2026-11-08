@@ -1052,23 +1052,7 @@ defmodule Evision.MixProject do
       package: package(),
       make_executable: make_executable(),
       make_makefile: make_makefile(),
-      make_env: make_env,
-      elixirc_options: [
-        no_warn_undefined: [
-          :wx,
-          :wxBitmap,
-          :wxBoxSizer,
-          :wxDC,
-          :wxFrame,
-          :wxImage,
-          :wxMemoryDC,
-          :wxPanel,
-          :wxSizer,
-          :wxStaticBoxSizer,
-          :wxWindowDC,
-          :wx_object
-        ]
-      ]
+      make_env: make_env
     ]
   end
 
@@ -1142,7 +1126,7 @@ defmodule Evision.MixProject do
 
   def application do
     [
-      extra_applications: [:logger, :inets, :ssl],
+      extra_applications: [:logger, :inets, :ssl, wx: :optional],
       mod: {Evision.Application, []}
     ]
   end
