@@ -595,6 +595,10 @@ static ERL_NIF_TERM evision_cv_mat_at(ErlNifEnv *env, int argc, const ERL_NIF_TE
                     f64 = _do_cast_bf16<double>(_do_cast_type<uint16_t, uint16_t>(value)); type = 1;
                     break;
                 }
+                case CV_8F_E4M3FN: {
+                    f64 = cv::fp8_t::decodeLUT()[_do_cast_type<uint8_t, uint8_t>(value)]; type = 1;
+                    break;
+                }
                 case CV_32U: {
                     i64 = _do_cast_type<uint32_t, int64_t>(value); type = 2;
                     break;

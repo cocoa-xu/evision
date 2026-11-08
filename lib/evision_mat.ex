@@ -19,6 +19,7 @@ defmodule Evision.Mat do
   - `:f32`
   - `:f64`
   - `:f16`
+  - `:f8_e4m3fn`
 
   #### Tuple Form
 
@@ -30,12 +31,14 @@ defmodule Evision.Mat do
   - `{:f, 32}`
   - `{:f, 64}`
   - `{:f, 16}`
+  - `{:f8_e4m3fn, 8}`, OpenCV's `CV_8F_E4M3FN`
 
   """
   @type mat_type ::
           {:u, 8 | 16}
           | {:s, 8 | 16 | 32}
           | {:f, 32 | 64 | 16}
+          | {:f8_e4m3fn, 8}
           | :u8
           | :u16
           | :s8
@@ -44,11 +47,13 @@ defmodule Evision.Mat do
           | :f32
           | :f64
           | :f16
+          | :f8_e4m3fn
 
   @type mat_type_tuple_form ::
           {:u, 8 | 16}
           | {:s, 8 | 16 | 32}
           | {:f, 32 | 64 | 16}
+          | {:f8_e4m3fn, 8}
 
   @typedoc """
   Type that represents an `Evision.Mat` struct.
@@ -2315,7 +2320,9 @@ defmodule Evision.Mat do
   defp compact_type_elem_size(:s8), do: 1
   defp compact_type_elem_size(:u16), do: 2
   defp compact_type_elem_size(:s16), do: 2
+  defp compact_type_elem_size(:f8_e4m3fn), do: 1
   defp compact_type_elem_size(:f16), do: 2
+  defp compact_type_elem_size(:bf16), do: 2
   defp compact_type_elem_size(:u32), do: 4
   defp compact_type_elem_size(:s32), do: 4
   defp compact_type_elem_size(:f32), do: 4
@@ -2387,6 +2394,7 @@ defmodule Evision.Mat do
   defp check_unsupported_type({:u, 32} = type), do: type
   defp check_unsupported_type({:u, 64} = type), do: type
   defp check_unsupported_type({:bf, 16} = type), do: type
+  defp check_unsupported_type({:f8_e4m3fn, 8} = type), do: type
   defp check_unsupported_type(:f16), do: {:f, 16}
   defp check_unsupported_type(:f32), do: {:f, 32}
   defp check_unsupported_type(:f64), do: {:f, 64}
@@ -2399,6 +2407,7 @@ defmodule Evision.Mat do
   defp check_unsupported_type(:u32), do: {:u, 32}
   defp check_unsupported_type(:u64), do: {:u, 64}
   defp check_unsupported_type(:bf16), do: {:bf, 16}
+  defp check_unsupported_type(:f8_e4m3fn), do: {:f8_e4m3fn, 8}
 
   defp check_unsupported_type(type) do
     case type do

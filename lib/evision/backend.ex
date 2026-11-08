@@ -268,6 +268,13 @@ defmodule Evision.Backend do
 
   @impl true
   @spec dot(Nx.Tensor.t(), Nx.Tensor.t(), list(), list(), Nx.Tensor.t(), list(), list()) :: Nx.Tensor.t()
+  def dot(out, %T{type: left_type} = a, left_axes, [], %T{type: right_type} = b, right_axes, [])
+      when left_type == {:f8_e4m3fn, 8} or right_type == {:f8_e4m3fn, 8} do
+    fp8_binary(out, a, b, fn work_out, left, right ->
+      dot(work_out, left, left_axes, [], right, right_axes, [])
+    end)
+  end
+
   def dot(
     %T{type: out_type} = out,
     %T{shape: {_, _} = left_shape, type: left_type} = a, [1], [],
@@ -352,6 +359,19 @@ defmodule Evision.Backend do
 
   @impl true
   @spec clip(Nx.Tensor.t(), Nx.Tensor.t(), Nx.Tensor.t(), Nx.Tensor.t()) :: Nx.Tensor.t()
+  def clip(out, %T{type: type} = t, %T{type: min_type} = min, %T{type: max_type} = max)
+      when type == {:f8_e4m3fn, 8} or min_type == {:f8_e4m3fn, 8} or max_type == {:f8_e4m3fn, 8} do
+    work_type = fp8_compute_type([out.type, type, min_type, max_type])
+    t = Nx.as_type(t, work_type)
+    min = Nx.as_type(min, work_type)
+    max = Nx.as_type(max, work_type)
+    # Match Mat.clip's two comparisons without extracting nonfinite bounds as
+    # BEAM numbers. The existing comparison/select callbacks operate on f32/f64.
+    result = Nx.select(Nx.less(t, min), min, t)
+    result = Nx.select(Nx.greater(result, max), max, result)
+    as_type(out, result)
+  end
+
   def clip(%T{} = out, %T{} = t, %T{} = min, %T{} = max) do
     t
     |> Nx.as_type(out.type)
@@ -384,6 +404,8 @@ defmodule Evision.Backend do
 
   @impl true
   @spec add(Nx.Tensor.t(), Nx.Tensor.t(), Nx.Tensor.t()) :: Nx.Tensor.t()
+  def add(out, %T{type: {:f8_e4m3fn, 8}} = l, r), do: fp8_binary(out, l, r, &add/3)
+  def add(out, l, %T{type: {:f8_e4m3fn, 8}} = r), do: fp8_binary(out, l, r, &add/3)
   def add(%T{type: type, shape: out_shape}=out, l, r) do
     {l, r} = align_operands(l, r, out_shape)
     Evision.Mat.add(from_nx(l), from_nx(r), type)
@@ -393,6 +415,8 @@ defmodule Evision.Backend do
 
   @impl true
   @spec subtract(Nx.Tensor.t(), Nx.Tensor.t(), Nx.Tensor.t()) :: Nx.Tensor.t()
+  def subtract(out, %T{type: {:f8_e4m3fn, 8}} = l, r), do: fp8_binary(out, l, r, &subtract/3)
+  def subtract(out, l, %T{type: {:f8_e4m3fn, 8}} = r), do: fp8_binary(out, l, r, &subtract/3)
   def subtract(%T{type: type, shape: out_shape}=out, l, r) do
     {l, r} = align_operands(l, r, out_shape)
     Evision.Mat.subtract(from_nx(l), from_nx(r), type)
@@ -401,6 +425,8 @@ defmodule Evision.Backend do
   end
 
   @impl true
+  def multiply(out, %T{type: {:f8_e4m3fn, 8}} = l, r), do: fp8_binary(out, l, r, &multiply/3)
+  def multiply(out, l, %T{type: {:f8_e4m3fn, 8}} = r), do: fp8_binary(out, l, r, &multiply/3)
   def multiply(%T{type: type, shape: shape} = out, l, r) do
     {l, r} =
       if Nx.size(l) == 1 or Nx.size(r) == 1 do
@@ -426,6 +452,8 @@ defmodule Evision.Backend do
   end
 
   @impl true
+  def divide(out, %T{type: {:f8_e4m3fn, 8}} = l, r), do: fp8_binary(out, l, r, &divide/3)
+  def divide(out, l, %T{type: {:f8_e4m3fn, 8}} = r), do: fp8_binary(out, l, r, &divide/3)
   def divide(%T{type: type, shape: shape}=out, l, r) do
     case check_mul_div_kind(l, r) do
       :per_element ->
@@ -485,12 +513,37 @@ defmodule Evision.Backend do
   defp cast_mat(%T{type: type} = t, type), do: from_nx(t)
   defp cast_mat(%T{} = t, type), do: Evision.Mat.as_type(from_nx(t), type)
 
+  # Nx may keep FP8 as the output even with an f64 operand. Select the compute
+  # type explicitly and cast back through the backend so Mat and tensor agree.
+  defp fp8_compute_type(types) do
+    if {:f, 64} in types, do: {:f, 64}, else: {:f, 32}
+  end
+
+  defp fp8_binary(out, l, r, fun) do
+    work_type = fp8_compute_type([out.type, l.type, r.type])
+    result = fun.(%{out | type: work_type}, Nx.as_type(l, work_type), Nx.as_type(r, work_type))
+    as_type(out, result)
+  end
+
   @impl true
+  def min(out, %T{type: lt} = l, %T{type: rt} = r)
+      when lt == {:f8_e4m3fn, 8} or rt == {:f8_e4m3fn, 8} do
+    # Use tensor operands even for scalars, so NaNs never pass through Mat.at.
+    fp8_binary(out, l, r, fn work_out, left, right ->
+      min_max(work_out, work_out.shape, left, right, &Evision.min/2)
+    end)
+  end
   def min(%T{type: out_type}=out, %T{shape: {}}=l, r), do: min_max_scalar(out, out_type, r, l, &Evision.min/2)
   def min(%T{type: out_type}=out, l, %T{shape: {}}=r), do: min_max_scalar(out, out_type, l, r, &Evision.min/2)
   def min(%T{shape: out_shape}=out, l, r), do: min_max(out, out_shape, l, r, &Evision.min/2)
 
   @impl true
+  def max(out, %T{type: lt} = l, %T{type: rt} = r)
+      when lt == {:f8_e4m3fn, 8} or rt == {:f8_e4m3fn, 8} do
+    fp8_binary(out, l, r, fn work_out, left, right ->
+      min_max(work_out, work_out.shape, left, right, &Evision.max/2)
+    end)
+  end
   def max(%T{type: out_type}=out, %T{shape: {}}=l, r), do: min_max_scalar(out, out_type, r, l, &Evision.max/2)
   def max(%T{type: out_type}=out, l, %T{shape: {}}=r), do: min_max_scalar(out, out_type, l, r, &Evision.max/2)
   def max(%T{shape: out_shape}=out, l, r), do: min_max(out, out_shape, l, r, &Evision.max/2)
@@ -665,6 +718,10 @@ defmodule Evision.Backend do
   @impl true
   def less_equal(%T{shape: out_shape} = out, l, r), do: cmp(out, out_shape, l, r, :le)
 
+  defp cmp(out, out_shape, %T{type: lt} = l, %T{type: rt} = r, op)
+      when lt == {:f8_e4m3fn, 8} or rt == {:f8_e4m3fn, 8} do
+    fp8_binary(out, l, r, &cmp(&1, out_shape, &2, &3, op))
+  end
   defp cmp(out, _out_shape, %T{shape: {}} = l, r, op), do: cmp_scalar(out, l, r, op)
   defp cmp(out, _out_shape, l, %T{shape: {}} = r, op), do: cmp_scalar(out, l, r, op)
   defp cmp(out, out_shape, l, r, op) do
@@ -733,6 +790,7 @@ defmodule Evision.Backend do
 
   @impl true
   @spec abs(Nx.Tensor.t(), Nx.Tensor.t()) :: Nx.Tensor.t()
+  def abs(out, %T{type: {:f8_e4m3fn, 8}} = tensor), do: unary_math(out, tensor, &Evision.Mat.abs/1)
   def abs(%T{} = out, tensor) do
     Evision.Mat.abs(from_nx(tensor))
     |> reject_error()
@@ -754,6 +812,7 @@ defmodule Evision.Backend do
 
   @impl true
   @spec ceil(Nx.Tensor.t(), Nx.Tensor.t()) :: Nx.Tensor.t()
+  def ceil(out, %T{type: {:f8_e4m3fn, 8}} = tensor), do: unary_math(out, tensor, &Evision.Mat.ceil/1)
   def ceil(%T{type: {s, _}} = out, tensor) when s == :f do
     Evision.Mat.ceil(from_nx(tensor))
     |> reject_error()
@@ -766,6 +825,7 @@ defmodule Evision.Backend do
 
   @impl true
   @spec floor(Nx.Tensor.t(), Nx.Tensor.t()) :: Nx.Tensor.t()
+  def floor(out, %T{type: {:f8_e4m3fn, 8}} = tensor), do: unary_math(out, tensor, &Evision.Mat.floor/1)
   def floor(%T{type: {s, _}} = out, tensor) when s == :f do
     Evision.Mat.floor(from_nx(tensor))
     |> reject_error()
@@ -778,6 +838,7 @@ defmodule Evision.Backend do
 
   @impl true
   @spec negate(Nx.Tensor.t(), Nx.Tensor.t()) :: Nx.Tensor.t()
+  def negate(out, %T{type: {:f8_e4m3fn, 8}} = tensor), do: unary_math(out, tensor, &Evision.Mat.negate/1)
   def negate(%T{} = out, tensor) do
     Evision.Mat.negate(from_nx(tensor))
     |> reject_error()
@@ -786,6 +847,7 @@ defmodule Evision.Backend do
 
   @impl true
   @spec round(Nx.Tensor.t(), Nx.Tensor.t()) :: Nx.Tensor.t()
+  def round(out, %T{type: {:f8_e4m3fn, 8}} = tensor), do: unary_math(out, tensor, &Evision.Mat.round/1)
   def round(%T{type: {s, _}} = out, tensor) when s == :f do
     Evision.Mat.round(from_nx(tensor))
     |> reject_error()
@@ -798,6 +860,7 @@ defmodule Evision.Backend do
 
   @impl true
   @spec sign(Nx.Tensor.t(), Nx.Tensor.t()) :: Nx.Tensor.t()
+  def sign(out, %T{type: {:f8_e4m3fn, 8}} = tensor), do: unary_math(out, tensor, &Evision.Mat.sign/1)
   def sign(%T{} = out, tensor) do
     Evision.Mat.sign(from_nx(tensor))
     |> reject_error()
@@ -806,6 +869,7 @@ defmodule Evision.Backend do
 
   @impl true
   @spec exp(Nx.Tensor.t(), Nx.Tensor.t()) :: Nx.Tensor.t()
+  def exp(out, %T{type: {:f8_e4m3fn, 8}} = tensor), do: unary_math(out, tensor, &Evision.exp/1)
   def exp(%T{} = out, tensor) do
     Evision.exp(from_nx(tensor))
     |> reject_error()
@@ -814,6 +878,7 @@ defmodule Evision.Backend do
 
   @impl true
   @spec expm1(Nx.Tensor.t(), Nx.Tensor.t()) :: Nx.Tensor.t()
+  def expm1(out, %T{type: {:f8_e4m3fn, 8}} = tensor), do: unary_math(out, tensor, &Evision.Mat.expm1/1)
   def expm1(%T{} = out, tensor) do
     Evision.Mat.expm1(from_nx(tensor))
     |> reject_error()
@@ -822,6 +887,7 @@ defmodule Evision.Backend do
 
   @impl true
   @spec log(Nx.Tensor.t(), Nx.Tensor.t()) :: Nx.Tensor.t()
+  def log(out, %T{type: {:f8_e4m3fn, 8}} = tensor), do: unary_math(out, tensor, &Evision.log/1)
   def log(%T{} = out, tensor) do
     Evision.log(from_nx(tensor))
     |> reject_error()
@@ -871,10 +937,10 @@ defmodule Evision.Backend do
 
   ## Sorting
 
-  # cv::sort/sortIdx support these depths directly; wider integer depths go through
-  # a custom NIF, and half floats are widened to f32 (lossless) so cv can handle them.
+  # Wider integer depths go through a custom NIF; f16/bf16/E4M3FN widen to f32
+  # (lossless) to use the custom float sort's stable ordering and NaN policy.
   @wide_int_types [{:u, 32}, {:s, 64}, {:u, 64}]
-  @half_types [{:f, 16}, {:bf, 16}]
+  @low_precision_float_types [{:f, 16}, {:bf, 16}, {:f8_e4m3fn, 8}]
   @float_sort_types [{:f, 32}, {:f, 64}]
   @custom_sort_types @wide_int_types ++ @float_sort_types
 
@@ -905,7 +971,7 @@ defmodule Evision.Backend do
     reject_error(Evision.Mat.sort_rows(m2d, descending?))
   end
 
-  defp sort_values(m2d, type, descending?) when type in @half_types do
+  defp sort_values(m2d, type, descending?) when type in @low_precision_float_types do
     m2d
     |> as_mat_type({:f, 32})
     |> Evision.Mat.sort_rows(descending?)
@@ -921,7 +987,7 @@ defmodule Evision.Backend do
     reject_error(Evision.Mat.argsort_rows(m2d, descending?))
   end
 
-  defp sort_indices(m2d, type, descending?) when type in @half_types do
+  defp sort_indices(m2d, type, descending?) when type in @low_precision_float_types do
     m2d
     |> as_mat_type({:f, 32})
     |> Evision.Mat.argsort_rows(descending?)
@@ -931,7 +997,7 @@ defmodule Evision.Backend do
   # cv::sortIdx is stable ascending but not descending, so sort the order-reversing
   # complement ascending to reproduce Nx's stable descending order.
   defp sort_indices(m2d, type, descending?) do
-    work = if type in @half_types, do: as_mat_type(m2d, {:f, 32}), else: m2d
+    work = if type in @low_precision_float_types, do: as_mat_type(m2d, {:f, 32}), else: m2d
     work = if descending?, do: complement(work), else: work
     reject_error(Evision.sortIdx(work, 0))
   end
@@ -950,6 +1016,17 @@ defmodule Evision.Backend do
   # Same-type reuse relies on each NIF's ownership and alignment policy.
   defp as_mat_type(%Evision.Mat{type: type} = mat, type), do: mat
   defp as_mat_type(mat, type), do: reject_error(Evision.Mat.as_type(mat, type))
+
+  # Preserve the existing output-driven casts unless FP8 participates. In that
+  # case an f64 operand must survive even if Nx requests a lower-precision output.
+  defp float_work_type(out_type, input_types) do
+    types = [out_type | input_types]
+    if {:f8_e4m3fn, 8} in types do
+      fp8_compute_type(types)
+    else
+      if out_type in @low_precision_float_types, do: {:f, 32}, else: out_type
+    end
+  end
 
   # Reduce an n-d row-wise op along `axis` to cv's 2D per-row form: move the
   # target axis last, flatten to [n, axis_len], apply `fun`, then restore.
@@ -1001,8 +1078,13 @@ defmodule Evision.Backend do
 
   def cumulative_max(out, tensor, opts), do: cumulative(out, tensor, opts, @scan_max)
 
-  # Prefix scan along `axis` (output keeps the input shape and type). Half floats
+  # Prefix scan along `axis` (output keeps the input shape and type). f16/bf16/E4M3FN
   # are widened to f32 (lossless) since the scan NIF covers only real C types.
+  defp cumulative(out, %T{type: {:f8_e4m3fn, 8}} = tensor, opts, op) do
+    work_type = fp8_compute_type([out.type, tensor.type])
+    result = cumulative(%{out | type: work_type}, Nx.as_type(tensor, work_type), opts, op)
+    as_type(out, result)
+  end
   defp cumulative(%T{type: type, shape: shape} = out, tensor, opts, op) do
     reverse? = opts[:reverse]
 
@@ -1011,7 +1093,7 @@ defmodule Evision.Backend do
     |> to_nx(out)
   end
 
-  defp scan(m2d, type, op, reverse?) when type in @half_types do
+  defp scan(m2d, type, op, reverse?) when type in @low_precision_float_types do
     m2d
     |> as_mat_type({:f, 32})
     |> Evision.Mat.cumulative(op, reverse?)
@@ -1103,10 +1185,10 @@ defmodule Evision.Backend do
   @impl true
   def sigmoid(out, tensor), do: unary_math(out, tensor, &Evision.Mat.unary_math(&1, @uop_sigmoid))
 
-  # Cast the input to the (float) output type, widening f16/bf16 to f32 (the math
+  # Cast the input to the (float) output type, widening f16/bf16/E4M3FN to f32 (the math
   # NIF/cv::sqrt handle only f32/f64) and narrowing the result back.
   defp unary_math(%T{type: out_type} = out, tensor, fun) do
-    work_type = if out_type in @half_types, do: {:f, 32}, else: out_type
+    work_type = float_work_type(out_type, [tensor.type])
 
     from_nx(tensor)
     |> as_mat_type(work_type)
@@ -1149,7 +1231,7 @@ defmodule Evision.Backend do
 
   defp nonzero_mask(%T{type: type} = tensor) do
     mat = from_nx(tensor)
-    mat = if type in @half_types, do: as_mat_type(mat, {:f, 32}), else: mat
+    mat = if type in @low_precision_float_types, do: as_mat_type(mat, {:f, 32}), else: mat
     Evision.Mat.predicate(mat, 3) |> reject_error()
   end
 
@@ -1184,10 +1266,10 @@ defmodule Evision.Backend do
 
   def logical_not(out, tensor), do: predicate(out, tensor, @pred_is_zero)
 
-  # Elementwise predicate -> u8. f16/bf16 widen to f32 (the NIF covers only real C types).
+  # Elementwise predicate -> u8. f16/bf16/E4M3FN widen to f32 (the NIF covers only real C types).
   defp predicate(%T{shape: out_shape} = out, %T{type: type} = tensor, op) do
     mat = from_nx(tensor)
-    mat = if type in @half_types, do: as_mat_type(mat, {:f, 32}), else: mat
+    mat = if type in @low_precision_float_types, do: as_mat_type(mat, {:f, 32}), else: mat
 
     mat
     |> Evision.Mat.predicate(op)
@@ -1273,10 +1355,10 @@ defmodule Evision.Backend do
   @impl true
   def remainder(out, l, r), do: binary_math(out, l, r, @bop_remainder)
 
-  # Broadcast l and r to the output shape and cast both to the output type (f16/bf16
+  # Broadcast l and r to the output shape and cast both to the output type (f16/bf16/E4M3FN
   # widened to f32 since the NIF covers only real C types), then narrow the result back.
   defp binary_math(%T{type: out_type, shape: shape} = out, l, r, op) do
-    work_type = if out_type in @half_types, do: {:f, 32}, else: out_type
+    work_type = float_work_type(out_type, [l.type, r.type])
     {l, r} = same_shape_unless_scalar(l, r, shape)
     lm = as_mat_type(from_nx(l), work_type)
     rm = as_mat_type(from_nx(r), work_type)
@@ -1378,6 +1460,11 @@ defmodule Evision.Backend do
   end
 
   # Reduce `op` (0 sum, 1 product, 2 max, 3 min) over `opts[:axes]` (nil = all axes).
+  defp reduce_aggregate(out, %T{type: {:f8_e4m3fn, 8}} = tensor, opts, op) do
+    work_type = fp8_compute_type([out.type, tensor.type])
+    result = reduce_aggregate(%{out | type: work_type}, Nx.as_type(tensor, work_type), opts, op)
+    as_type(out, result)
+  end
   defp reduce_aggregate(%T{type: out_type, shape: out_shape} = out, %T{shape: shape} = tensor, opts, op) do
     rank = tuple_size(shape)
     axes = all_axes(rank)
@@ -1495,7 +1582,7 @@ defmodule Evision.Backend do
   end
 
   defp scatter(%T{type: out_type, shape: shape} = out, target, %T{shape: indices_shape} = indices, updates, op) do
-    work_type = if op == @scatter_add and out_type in @half_types, do: {:f, 32}, else: out_type
+    work_type = if op == @scatter_add, do: float_work_type(out_type, [target.type, updates.type]), else: out_type
     depth = elem(indices_shape, 1)
     {lead, leftover} = shape |> Tuple.to_list() |> Enum.split(depth)
     dims = from_nx(Nx.tensor(lead, type: {:s, 64}))
@@ -1654,11 +1741,11 @@ defmodule Evision.Backend do
   def window_min(out, tensor, window_dims, opts),
     do: window_reduce_op(out, tensor, window_dims, opts, @window_min)
 
-  # Sliding-window reduction; output keeps the input type (f16/bf16 widened to f32). `out`
+  # Sliding-window reduction; output keeps the input type (f16/bf16/E4M3FN widened to f32). `out`
   # already carries the pooled shape; padding/strides/dilations come normalized from Nx.
   defp window_reduce_op(%T{type: out_type, shape: out_shape} = out, %T{shape: in_shape} = tensor, window_dims, opts, op) do
     rank = tuple_size(in_shape)
-    work_type = if out_type in @half_types, do: {:f, 32}, else: out_type
+    work_type = float_work_type(out_type, [tensor.type])
     pad_lo = Enum.map(opts[:padding], &elem(&1, 0))
 
     from_nx(tensor)
@@ -1690,11 +1777,11 @@ defmodule Evision.Backend do
   def window_scatter_min(out, tensor, source, init_value, window_dims, opts),
     do: window_scatter(out, tensor, source, init_value, window_dims, opts, @window_scatter_min)
 
-  # Select-and-scatter; input + source cast to the output type (f16/bf16 widened to f32). The
+  # Select-and-scatter; input + source cast to the output type (f16/bf16/E4M3FN widened to f32). The
   # source carries one value per window (its shape is the window grid).
   defp window_scatter(%T{type: out_type, shape: in_shape} = out, tensor, %T{shape: grid} = source, init_value, window_dims, opts, op) do
     rank = tuple_size(in_shape)
-    work_type = if out_type in @half_types, do: {:f, 32}, else: out_type
+    work_type = float_work_type(out_type, [tensor.type, source.type, Nx.type(init_value)])
     pad_lo = Enum.map(opts[:padding], &elem(&1, 0))
     src = as_mat_type(from_nx(tensor), work_type)
     vals = as_mat_type(from_nx(source), work_type)
@@ -1725,10 +1812,10 @@ defmodule Evision.Backend do
 
   # N-d cross-correlation. The input/kernel/output permutations and the float cast are done
   # here (via the implemented transpose/as_type), so the NIF only does the canonical-layout
-  # correlation; the result is permuted back to the output layout. f16/bf16 widen to f32.
+  # correlation; the result is permuted back to the output layout. f16/bf16/E4M3FN widen to f32.
   @impl true
   def conv(%T{type: out_type, shape: out_shape} = out, %T{shape: in_shape} = tensor, kernel, opts) do
-    work_type = if out_type in @half_types, do: {:f, 32}, else: out_type
+    work_type = float_work_type(out_type, [tensor.type, kernel.type])
     op = opts[:output_permutation]
     d = tuple_size(in_shape) - 2
 

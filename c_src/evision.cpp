@@ -613,6 +613,10 @@ static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Mat& m, const ArgInfo& in
         else if (enif_is_identical(type_term, kAtomBF16)) {
             nx_tensor_type = type = CV_16BF;
             originalElemSize = 2;
+        }
+        else if (enif_is_identical(type_term, kAtomF8E4M3FN)) {
+            nx_tensor_type = type = CV_8F_E4M3FN;
+            originalElemSize = 1;
         } else {
             return false;
         }
@@ -698,6 +702,9 @@ static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Mat& m, const ArgInfo& in
                     break;
                 case CV_16BF:
                     m.at<double>(i) = _do_cast_bf16<double>(_do_cast_type<uint16_t, uint16_t>((const uint16_t *)oi));
+                    break;
+                case CV_8F_E4M3FN:
+                    m.at<double>(i) = cv::fp8_t::decodeLUT()[_do_cast_type<uint8_t, uint8_t>((const uint8_t *)oi)];
                     break;
                 default:
                     break;
@@ -3178,6 +3185,7 @@ on_load(ErlNifEnv* env, void**, ERL_NIF_TERM)
     kAtomF16 = evision::nif::atom(env, "f16");
     kAtomBF = evision::nif::atom(env, "bf");
     kAtomBF16 = evision::nif::atom(env, "bf16");
+    kAtomF8E4M3FN = evision::nif::atom(env, "f8_e4m3fn");
     kAtomF32 = evision::nif::atom(env, "f32");
     kAtomF64 = evision::nif::atom(env, "f64");
     kAtomUser = evision::nif::atom(env, "user");
