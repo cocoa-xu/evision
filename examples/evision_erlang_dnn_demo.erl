@@ -28,6 +28,9 @@
 %% Client API
 -export([start/1, start/0]).
 
+%% Detection API, usable without the GUI
+-export([load_model/2, detect/3, draw_detections/2]).
+
 %% wx_object callbacks
 -export([init/1, terminate/2,  code_change/3,
 	 handle_info/2, handle_call/3, handle_cast/2, handle_event/2, handle_sync_event/3]).
@@ -59,40 +62,60 @@ start(VideoFilePath) ->
     wx_object:start_link(?MODULE, VideoFilePath, []).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% helper functions for detection model
+%%% Detection model: OpenCV's ONNX export of TensorFlow's
+%%% ssd_mobilenet_v2_coco_2018_03_29. It takes a 300x300 RGB uint8 image in
+%%% NHWC layout and returns normalized {Y1, X1, Y2, X2} boxes, scores,
+%%% 1-based COCO class ids and the number of detections.
 
-readlines(FileName) ->
-    {ok, Data} = file:read_file(FileName),
-    binary:split(Data, [<<"\n">>], [global]).
+-define(SSD_OUTPUTS, [<<"detection_boxes:0">>, <<"detection_scores:0">>,
+                      <<"detection_classes:0">>, <<"num_detections:0">>]).
 
-load_model(LabelFile, Opts) ->
-    case evision_nif:dnn_readNet(Opts) of
-        {ok, Model} ->
-            {ok, OutNames} = evision_dnn_net:getUnconnectedOutLayersNames(Model),
-            Labels = readlines(LabelFile),
-            {Model, Labels, OutNames, [300, 300]};
-        Error ->
-            io:format("Cannot open model: ~p~n", [Error]),
-            throw(Error)
-    end.
+load_model(ModelFile, LabelFile) ->
+    {ok, Data} = file:read_file(LabelFile),
+    {evision_dnn:readNet(ModelFile), binary:split(Data, [<<"\n">>], [global])}.
+
+detect({Net, Labels}, Frame, Threshold) ->
+    {H, W, _} = evision_mat:shape(Frame),
+    RGB = evision:cvtColor(Frame, evision_constant:cv_COLOR_BGR2RGB()),
+    Pixels = evision_mat:to_binary(evision:resize(RGB, {300, 300})),
+    Input = evision_mat:from_binary_by_shape(Pixels, {u, 8}, {1, 300, 300, 3}),
+    [Boxes, Scores, Classes, Count] =
+        evision_dnn_net:forward(evision_dnn_net:setInput(Net, Input), [{outBlobNames, ?SSD_OUTPUTS}]),
+    Detections = lists:zip3(boxes(floats(Boxes)), floats(Scores), floats(Classes)),
+    [{lists:nth(trunc(Class), Labels), Score,
+      {trunc(X1 * W), trunc(Y1 * H), trunc(X2 * W), trunc(Y2 * H)}}
+     || {{Y1, X1, Y2, X2}, Score, Class} <- lists:sublist(Detections, trunc(hd(floats(Count)))),
+        Score > Threshold].
+
+draw_detections(Frame, Detections) ->
+    Font = evision_constant:cv_FONT_HERSHEY_SIMPLEX(),
+    lists:foldl(
+      fun({Label, Score, {L, T, R, B}}, Mat) ->
+              Text = unicode:characters_to_binary(io_lib:format("~s: ~.2f", [Label, Score])),
+              Boxed = evision:rectangle(Mat, {L, T}, {R, B}, {255, 0, 0}, [{thickness, 2}]),
+              evision:putText(Boxed, Text, {L, max(T - 5, 12)}, Font, 0.5, {0, 0, 255})
+      end, Frame, Detections).
+
+floats(Mat) ->
+    [F || <<F:32/float-native>> <= evision_mat:to_binary(Mat)].
+
+boxes([Y1, X1, Y2, X2 | Rest]) -> [{Y1, X1, Y2, X2} | boxes(Rest)];
+boxes([]) -> [].
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 init(VideoFilePath) ->
-    % http://download.tensorflow.org/models/object_detection/ssd_mobilenet_v2_coco_2018_03_29.tar.gz
-    ModelFilePath = "examples/ssd_mobilenet_v2_coco_2018_03_29/frozen_inference_graph.pb",
-    % https://raw.githubusercontent.com/opencv/opencv_extra/master/testdata/dnn/ssd_mobilenet_v2_coco_2018_03_29.pbtxt
-    ModelOpts = [{model, ModelFilePath}, {config, "examples/ssd_mobilenet_v2_coco_2018_03_29.pbtxt"}, {framework, ""}],
-    % https://raw.githubusercontent.com/cocoa-xu/evision/main/test/models/coco_names.txt
-    ModelLabelFile = "examples/coco_names.txt",
-    wx:batch(fun() -> do_init(VideoFilePath, ModelLabelFile, ModelOpts) end).
+    % https://huggingface.co/opencv/opencv_contribution/resolve/main/ssd_mobilenet_v2_coco_2018_03_29/ssd_mobilenet_v2_coco_2018_03_29_2026jul.onnx?download=true
+    ModelFile = "examples/ssd_mobilenet_v2_coco_2018_03_29.onnx",
+    % https://raw.githubusercontent.com/cocoa-xu/evision/main/test/testdata/models/coco_names.txt
+    LabelFile = "examples/coco_names.txt",
+    wx:batch(fun() -> do_init(VideoFilePath, load_model(ModelFile, LabelFile)) end).
 
-do_init(VideoFilePath, ModelLabelFile, ModelOpts) ->
+do_init(VideoFilePath, Model) ->
     io:format("VideoFilePath: ~p~n", [VideoFilePath]),
-    {Model, Labels, OutNames, InputShape} = load_model(ModelLabelFile, ModelOpts),
     Frame = wxFrame:new(wx:null(), ?wxID_ANY, "Evision DNN Demo with Erlang"),
     Panel = wxPanel:new(Frame, []),
-    {ok, VideoCapture} = evision_videocapture:videoCapture(VideoFilePath),
+    VideoCapture = evision_videocapture:videoCapture(VideoFilePath),
 
     %% Setup sizers
     MainSizer = wxBoxSizer:new(?wxVERTICAL),
@@ -141,7 +164,7 @@ do_init(VideoFilePath, ModelLabelFile, ModelOpts) ->
         run=false,
         videocapture=VideoCapture,
         slider=Slider,
-        model={Model, Labels, OutNames, InputShape}},
+        model=Model},
     {Frame, State}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -211,31 +234,17 @@ handle_info({'EXIT',_, wx_deleted}, State) ->
     {noreply,State#state{run=false}};
 handle_info({'EXIT',_, normal}, State) ->
     {noreply,State#state{run=false}};
-handle_info({_, update}, State=#state{run=Run, videocapture=VideoCapture, slider=Slider, model={Model, Labels, OutNames, InputShape}}) ->
+handle_info({_, update}, State=#state{run=Run, videocapture=VideoCapture, slider=Slider, model=Model}) ->
     if Run == true ->
         {CanvasW, CanvasH} = wxPanel:getSize(State#state.canvas),
         W = trunc(CanvasW),
         H = trunc(CanvasH),
         case evision_videocapture:read(VideoCapture) of
-            {ok, Frame} ->
-                Opts = [
-                    {name, ""},
-                    {scalefactor, 1.0},
-                    {mean, [0, 0, 0]},
-                    {swapRB, true},
-                    {size, InputShape}
-                ],
-                {ok, FrameForInference} = evision:resize(Frame, InputShape),
-                {ok, Blob} = evision_dnn:blobFromImage(FrameForInference, Opts),
-                {ok, ReadyModel} = evision_dnn_net:setInput(Model, Blob, Opts),
-                {ok, Detections} = evision_dnn_net:forward(ReadyModel, [{outBlobNames, OutNames}]),
-                TranslatedOuts = postprocess(Frame, Detections, ReadyModel, wxSlider:getValue(Slider)/100),
-                ResultFrame = visualise_pred(Frame, Labels, TranslatedOuts),
-
-                {ok, NewFrame} = evision:resize(ResultFrame, [W, H]),
-                {ok, RGBFrame} = evision:cvtColor(NewFrame, evision:cv_COLOR_BGR2RGB()),
-                {ok, Binary} = evision_mat:to_binary(RGBFrame),
-                Img = wxImage:new(W, H, Binary),
+            Frame when is_tuple(Frame), element(1, Frame) == evision_mat ->
+                Detections = detect(Model, Frame, wxSlider:getValue(Slider) / 100),
+                ResultFrame = evision:resize(draw_detections(Frame, Detections), {W, H}),
+                RGBFrame = evision:cvtColor(ResultFrame, evision_constant:cv_COLOR_BGR2RGB()),
+                Img = wxImage:new(W, H, evision_mat:to_binary(RGBFrame)),
                 Bmp = wxBitmap:new(Img),
                 Fun = fun(DC) ->
                     wxDC:clear(DC),
@@ -298,79 +307,3 @@ redraw(DC, Bitmap) ->
 	      {wxBitmap:getWidth(Bitmap), wxBitmap:getHeight(Bitmap)},
 	      MemoryDC, {0,0}),
     wxMemoryDC:destroy(MemoryDC).
-
-postprocess(Mat, Detections, Model, ConfidenceThreshold) ->
-    {ok, OutLayers} = evision_dnn_net:getUnconnectedOutLayers(Model),
-    [OutLayer0 | _] = OutLayers,
-    {ok, OutLayer} = evision_dnn_net:getLayer(Model, OutLayer0),
-    OutLayerType = evision_dnn_layer:get_type(OutLayer),
-    postprocess_by_outtype(Mat, Detections, Model, ConfidenceThreshold, OutLayerType, []).
-
-postprocess_by_outtype(_, [], _, _, "DetectionOutput", Acc) ->
-    lists:reverse(Acc);
-postprocess_by_outtype(Mat, [Outs | Detections], Model, ConfidenceThreshold, OutType="DetectionOutput", Acc) ->
-    {ok, Data} = evision_mat:to_binary(Outs),
-    {ok, {H, W, _}} = evision_mat:shape(Mat),
-    TranslatedOuts = translate_outs(ConfidenceThreshold, Data, H, W, []),
-    postprocess_by_outtype(Mat, Detections, Model, ConfidenceThreshold, OutType, [TranslatedOuts | Acc]).
-
-translate_outs(_, <<>>, _, _, Acc) ->
-    Acc;
-translate_outs(ConfidenceThreshold, <<_:1/little-float-unit:32,
-    ClassID:1/little-float-unit:32, Confidence:1/little-float-unit:32, 
-    Left:1/little-float-unit:32, 
-    Top:1/little-float-unit:32, 
-    Right:1/little-float-unit:32,
-    Bottom:1/little-float-unit:32,
-    Rest/binary>>, H, W, Acc) ->
-    if Confidence > ConfidenceThreshold ->
-        Width = Right - Left + 1,
-        Height = Bottom - Top + 1,
-        [L, T, R, B] =
-            if (Width < 2) or (Height < 2) ->
-                [Left * W, Top * H, Right * W, Bottom * H];
-               true ->
-                [Left, Top, Right, Bottom]
-            end,
-        translate_outs(ConfidenceThreshold, Rest, H, W, [
-            {trunc(ClassID), Confidence, trunc(L), trunc(T), trunc(R), trunc(B)} | Acc
-        ]);
-       true ->
-        translate_outs(ConfidenceThreshold, Rest, H, W, Acc)
-    end.
-
-
-visualise_pred(Mat, _, []) ->
-    Mat;
-visualise_pred(Mat, Labels, TranslatedOuts) ->
-    do_visualise_pred(Mat, Labels, TranslatedOuts).
-
-do_visualise_pred(Mat, _, []) ->
-    Mat;
-do_visualise_pred(Mat, _, [[]]) ->
-    Mat;
-do_visualise_pred(Mat, Labels, [Group | Rest]) when is_list(Group) ->
-    NewMat = do_visualise_pred(Mat, Labels, Group),
-    do_visualise_pred(NewMat, Labels, Rest);
-do_visualise_pred(Mat, Labels, [{ClassID, Confidence, L, T, R, B} | Outs]) ->
-    ClassLabel = lists:nth(ClassID, Labels),
-    ClassText = erlang:list_to_binary(io_lib:format("~s: ~f", [ClassLabel, Confidence])),
-    {ok, NewMat} = evision:rectangle(Mat, [L, T], [R, B], [255, 0, 0]),
-
-    {ok, {{LabelWeight, LabelHeight}, Baseline}} = evision_nif:getTextSize([
-        {text, ClassText},
-        {fontFace, evision:cv_FONT_HERSHEY_SIMPLEX()},
-        {fontScale, 0.5},
-        {thickness, 1}]),
-    LabelWeightI = trunc(LabelWeight),
-    LabelHeightI = trunc(LabelHeight),
-    Top = max(T, LabelHeightI),
-    {ok, NewNewMat} =
-      evision:rectangle(NewMat, [L, Top - LabelHeightI], [L + LabelWeightI, Top + Baseline], [
-        255,
-        255,
-        255
-      ], [{thickness, -1}]),
-    {ok, MatWithText} =
-      evision:putText(NewNewMat, binary:bin_to_list(ClassText), [L, Top], evision:cv_FONT_HERSHEY_SIMPLEX(), 0.5, [0, 0, 255]),
-    do_visualise_pred(MatWithText, Labels, Outs).
