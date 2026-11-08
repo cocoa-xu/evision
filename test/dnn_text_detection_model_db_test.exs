@@ -33,7 +33,14 @@ defmodule Evision.DNN.TextDetectionModelDB.Test do
 
     {vertices, confidences} = TextDetectionModelDB.detect(model, text_image)
 
-    assert vertices == [[{2, 19}, {2, 8}, {27, 5}, {27, 17}]]
+    # arm64 and x86_64 builds differ by up to 3 px on this small image.
+    assert [[{_, _}, {_, _}, {_, _}, {_, _}] = quad] = vertices
+
+    for {{x, y}, {expected_x, expected_y}} <- Enum.zip(quad, [{2, 19}, {2, 8}, {27, 5}, {27, 17}]) do
+      assert_in_delta x, expected_x, 3
+      assert_in_delta y, expected_y, 3
+    end
+
     assert Enum.count(confidences) > 0
   end
 end
