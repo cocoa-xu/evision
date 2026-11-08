@@ -593,6 +593,7 @@ defmodule Evision.Backend do
     else
       Evision.Mat.bitwise_and(from_nx(right), from_nx(left))
     end
+    |> reject_error()
     |> to_nx_reshaped(out)
   end
 
@@ -608,6 +609,7 @@ defmodule Evision.Backend do
     else
       Evision.Mat.bitwise_or(from_nx(right), from_nx(left))
     end
+    |> reject_error()
     |> to_nx_reshaped(out)
   end
 
@@ -624,6 +626,7 @@ defmodule Evision.Backend do
     else
       Evision.Mat.bitwise_xor(from_nx(right), from_nx(left))
     end
+    |> reject_error()
     |> to_nx_reshaped(out)
   end
 

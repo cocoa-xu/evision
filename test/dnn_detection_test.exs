@@ -59,10 +59,10 @@ defmodule Evision.DNNDetection.Test do
     assert detections |> Enum.map(&elem(&1, 0)) |> Enum.frequencies() ==
              %{"car" => 5, "person" => 1}
 
-    assert [{"car", score, box} | _] = detections
+    assert [{"car", score, {l, t, r, b}} | _] = detections
     assert_in_delta score, 0.9736, 1.0e-3
 
-    for {actual, expected} <- Enum.zip(Tuple.to_list(box), [464, 205, 602, 339]) do
+    for {actual, expected} <- Enum.zip([l, t, r, b], [464, 205, 602, 339]) do
       assert_in_delta actual, expected, 2
     end
   end

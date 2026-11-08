@@ -520,23 +520,19 @@ defmodule Evision.Backend.Test do
     end
 
     test "results keep the output shape when OpenCV broadcasts a scalar header" do
-      array = ev(Nx.iota({6}, type: :f32))
-      scalar = Nx.tensor(2, type: :f32, backend: Evision.Backend)
-      assert scalar.data.ref.shape == {1, 1}
+      floats = {ev(Nx.iota({6}, type: :f32)), Nx.tensor(2, type: :f32, backend: Evision.Backend)}
+      ints = {ev(Nx.iota({6}, type: :s32)), Nx.tensor(2, type: :s32, backend: Evision.Backend)}
+      assert elem(floats, 1).data.ref.shape == {1, 1}
 
-      for op <- [:add, :subtract, :multiply, :divide, :equal, :less, :greater_equal],
-          {l, r} <- [{array, scalar}, {scalar, array}] do
+      float_ops = [:add, :subtract, :multiply, :divide, :min, :max, :equal, :less, :greater_equal]
+      int_ops = [:bitwise_and, :bitwise_or, :bitwise_xor]
+      cases = Enum.map(float_ops, &{&1, floats}) ++ Enum.map(int_ops, &{&1, ints})
+      to_binary = &Nx.backend_copy(&1, Nx.BinaryBackend)
+
+      for {op, {array, scalar}} <- cases, {l, r} <- [{array, scalar}, {scalar, array}] do
         result = apply(Nx, op, [l, r])
         assert result.data.ref.shape == {6}
-        assert Nx.backend_copy(result, Nx.BinaryBackend) ==
-                 apply(Nx, op, [Nx.backend_copy(l, Nx.BinaryBackend), Nx.backend_copy(r, Nx.BinaryBackend)])
-      end
-
-      ints = ev(Nx.iota({6}, type: :s32))
-      mask = Nx.tensor(2, type: :s32, backend: Evision.Backend)
-
-      for op <- [:bitwise_and, :bitwise_or, :bitwise_xor] do
-        assert apply(Nx, op, [ints, mask]).data.ref.shape == {6}
+        assert to_binary.(result) == apply(Nx, op, [to_binary.(l), to_binary.(r)])
       end
     end
 
