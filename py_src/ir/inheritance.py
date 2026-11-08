@@ -40,6 +40,15 @@ def _should_flatten(base_class, current_class):
     )
 
 
+def _inherited_bases(class_info, codegen):
+    """Yield the base classes, nearest first, whose members `class_info`
+    inherits under the policy above."""
+    current = class_info
+    while _should_flatten(current.base, current) and current.base in codegen.classes:
+        current = codegen.classes[current.base]
+        yield current
+
+
 def flatten_methods(class_info, codegen):
     """Return a (possibly enlarged) copy of `class_info.methods` that
     includes methods inherited from base classes per the policy above.
@@ -48,18 +57,8 @@ def flatten_methods(class_info, codegen):
     receives a fresh dict to feed to the emitter.
     """
     methods = class_info.methods.copy()
-    base_class = class_info.base
-    current_class = class_info
-
-    while base_class is not None:
-        if not _should_flatten(base_class, current_class):
-            break
-        if base_class not in codegen.classes or current_class.base is None:
-            break
-        base_class = codegen.classes[current_class.base]
-        class_info._add_methods_from_class(base_class, methods)
-        base_class, current_class = current_class.base, base_class
-
+    for base in _inherited_bases(class_info, codegen):
+        class_info._add_methods_from_class(base, methods)
     return methods
 
 
@@ -68,19 +67,9 @@ def flatten_props(class_info, codegen):
     classes per the same policy as `flatten_methods`."""
     props = list(class_info.props)
     names = {p.name for p in props}
-    base_class = class_info.base
-    current_class = class_info
-
-    while base_class is not None:
-        if not _should_flatten(base_class, current_class):
-            break
-        if base_class not in codegen.classes or current_class.base is None:
-            break
-        base_class = codegen.classes[current_class.base]
-        for prop in base_class.props:
+    for base in _inherited_bases(class_info, codegen):
+        for prop in base.props:
             if prop.name not in names:
                 props.append(prop)
                 names.add(prop.name)
-        base_class, current_class = current_class.base, base_class
-
     return props
