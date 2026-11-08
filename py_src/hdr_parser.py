@@ -11,8 +11,10 @@ opencv_hdr_list = [
 "../../flann/include/opencv2/flann/miniflann.hpp",
 "../../ml/include/opencv2/ml.hpp",
 "../../imgproc/include/opencv2/imgproc.hpp",
-"../../calib3d/include/opencv2/calib3d.hpp",
-"../../features2d/include/opencv2/features2d.hpp",
+"../../geometry/include/opencv2/geometry.hpp",
+"../../stereo/include/opencv2/stereo.hpp",
+"../../calib/include/opencv2/calib.hpp",
+"../../features/include/opencv2/features.hpp",
 "../../video/include/opencv2/video/tracking.hpp",
 "../../video/include/opencv2/video/background_segm.hpp",
 "../../objdetect/include/opencv2/objdetect.hpp",
@@ -197,6 +199,7 @@ class CppHeaderParser(object):
         self.CLASS_DECL = 4
 
         self.namespaces = set()
+        self.known_constants = {}
 
     def batch_replace(self, s, pairs):
         for before, after in pairs:
@@ -406,6 +409,7 @@ class CppHeaderParser(object):
                 prev_val_delta = 0
                 prev_val = val = pv[1].strip()
             decl.append(["const " + self.get_dotted_name(pv[0].strip()), val, [], [], None, ""])
+            self.known_constants[self.get_dotted_name(pv[0].strip())] = val
         return decl
 
     def parse_class_decl(self, decl_str):
@@ -930,6 +934,14 @@ class CppHeaderParser(object):
         if end_token == ";" and stmt.startswith("typedef"):
             # TODO: handle typedef's more intelligently
             return stmt_type, "", False, None
+
+        if end_token == ";" and stmt.startswith("using "):
+            using_const = re.match(r"using\s+([\w:]+)::(\w+)$", stmt)
+            if using_const:
+                target = using_const.group(1).strip(":").replace("::", ".") + "." + using_const.group(2)
+                if target in self.known_constants:
+                    const_decl = ["const " + self.get_dotted_name(using_const.group(2)), self.known_constants[target], [], [], None, ""]
+                    return stmt_type, "", False, ["enum " + self.get_dotted_name("<unnamed>"), "", [], [const_decl], None, ""]
 
         paren_pos = stmt.find("(")
         if paren_pos >= 0:
