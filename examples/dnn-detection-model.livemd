@@ -2,7 +2,7 @@
 
 <!-- livebook:{"persist_outputs":true} -->
 
-# Evision.DNN Example - Generic Object Detection Task
+# Evision.DNN Example - Object Detection with SSD MobileNet v2
 
 ```elixir
 # set `EVISION_PREFER_PRECOMPILED` to `false`
@@ -11,7 +11,7 @@
 # System.put_env("EVISION_PREFER_PRECOMPILED", "false")
 
 Mix.install([
-  {:evision, "~> 0.2"},
+  {:evision, "~> 1.0"},
   {:req, "~> 0.5"},
   {:kino, "~> 0.7"}
 ], system_env: [
@@ -79,250 +79,77 @@ end
 {:module, Helper, <<70, 79, 82, 49, 0, 0, 10, ...>>, {:download!, 3}}
 ```
 
-## Write the Generic DetectionModel Module
+## Write the Detection Module
+
+The model is OpenCV's ONNX export of TensorFlow's `ssd_mobilenet_v2_coco_2018_03_29`. It takes a 300x300 RGB `uint8` image in NHWC layout and returns four tensors: normalized `{y1, x1, y2, x2}` boxes, scores, 1-based COCO class ids, and the number of detections.
 
 ```elixir
-alias Evision, as: Cv
-
 # change to the file's directory
 # or somewhere you have write permission
 File.cd!(__DIR__)
 
-defmodule DetectionModel do
-  def visualise_pred(mat, _labels, []), do: {:ok, mat}
-
-  def visualise_pred(mat, labels, [translated_out | outs]) do
-    {:ok, mat} = _visualise_pred(mat, labels, translated_out)
-    visualise_pred(mat, labels, outs)
-  end
-
-  defp _visualise_pred(mat, _labels, []), do: {:ok, mat}
-
-  defp _visualise_pred(mat, labels, [{class_id, confidence, l, t, r, b} | outs]) do
-    confidence = "#{Float.round(confidence, 2)}"
-    label = Enum.at(labels, class_id)
-    text = "#{label}: #{confidence}"
-    mat = Cv.rectangle(mat, {l, t}, {r, b}, {255, 0, 0})
-
-    {{label_weight, label_height}, baseline} =
-      Cv.getTextSize(text, Cv.Constant.cv_FONT_HERSHEY_SIMPLEX(), 0.5, 1)
-
-    label_weight = trunc(label_weight)
-    label_height = trunc(label_height)
-    top = max(t, label_height)
-
-    mat =
-      Cv.rectangle(mat, {l, top - label_height}, {l + label_weight, top + baseline}, {
-        255,
-        255,
-        255
-      })
-
-    mat = Cv.putText(mat, text, {l, top}, Cv.Constant.cv_FONT_HERSHEY_SIMPLEX(), 0.5, {0, 0, 255})
-
-    _visualise_pred(mat, labels, outs)
-  end
-
-  def postprocess(mat, detections, net, confidence_threshold) do
-    out_layers = Cv.DNN.Net.getUnconnectedOutLayers(net)
-    out_layer = Cv.DNN.Net.getLayer(net, Enum.at(out_layers, 0))
-    out_layer_type = Cv.DNN.Layer.get_type(out_layer) |> IO.iodata_to_binary()
-    _postprocess(mat, detections, net, confidence_threshold, out_layer_type, [])
-  end
-
-  defp _postprocess(_mat, [], _net, _confidence_threshold, <<"DetectionOutput">>, acc),
-    do: {:ok, Enum.reverse(acc)}
-
-  defp _postprocess(
-         %Evision.Mat{shape: {h, w, _}} = mat,
-         [outs | detections],
-         net,
-         confidence_threshold,
-         <<"DetectionOutput">>,
-         acc
-       ) do
-    data = Cv.Mat.to_binary(outs)
-    {:ok, translated_outs} = _translate_outs(confidence_threshold, data, h, w, [])
-
-    _postprocess(mat, detections, net, confidence_threshold, "DetectionOutput", [
-      translated_outs | acc
-    ])
-  end
-
-  defp _translate_outs(_confidence_threshold, <<>>, _h, _w, acc), do: {:ok, acc}
-
-  defp _translate_outs(
-         confidence_threshold,
-         <<_batch_id::float-size(32)-little, class_id::float-size(32)-little,
-           confidence::float-size(32)-little, left::float-size(32)-little,
-           top::float-size(32)-little, right::float-size(32)-little,
-           bottom::float-size(32)-little, rest::binary>>,
-         h,
-         w,
-         acc
-       ) do
-    if confidence > confidence_threshold do
-      [class_id, l, t, r, b] =
-        Enum.map([class_id, left, top, right, bottom], fn f -> trunc(f) end)
-
-      width = r - l + 1
-      height = b - t + 1
-
-      [l, t, r, b] =
-        if width <= 2 or height <= 2 do
-          Enum.map([left * w, top * h, right * w, bottom * h], fn f -> trunc(f) end)
-        else
-          [l, t, r, b]
-        end
-
-      _translate_outs(confidence_threshold, rest, h, w, [
-        {class_id - 1, confidence, l, t, r, b} | acc
-      ])
-    else
-      _translate_outs(confidence_threshold, rest, h, w, acc)
-    end
-  end
-
-  def get_labels(class_label_file) do
-    class_label_file
-    |> File.read!()
-    |> String.split("\n")
-  end
-
-  def predict(mat, model, out_names, opts \\ []) do
-    blob = Cv.DNN.blobFromImage(mat, opts)
-
-    model = Cv.DNN.Net.setInput(model, blob, name: "", scalefactor: 1.0, mean: [0, 0, 0])
-
-    start_time = :os.system_time(:millisecond)
-    detections = Cv.DNN.Net.forward(model, outBlobNames: out_names)
-    end_time = :os.system_time(:millisecond)
-    IO.puts("Inference time=>#{end_time - start_time} ms")
-    {:ok, mat, detections}
-  end
-
-  def predict_file(image_file, model, out_names, opts \\ []) do
-    predict(Cv.imread(image_file), model, out_names, opts)
-  end
-
-  def get_model(params, config, framework \\ "") do
-    net =
-      Cv.DNN.readNet(params,
-        config: config,
-        framework: framework
-      )
-
-    out_names = Cv.DNN.Net.getUnconnectedOutLayersNames(net)
-    {:ok, net, out_names}
-  end
-end
-```
-
-<!-- livebook:{"output":true} -->
-
-```
-{:module, DetectionModel, <<70, 79, 82, 49, 0, 0, 34, ...>>, {:get_model, 3}}
-```
-
-## Example Detect Model: SSD MobileNetv2
-
-Basic steps:
-
-1. Download model weights and config file, as well as a list of class names.
-2. `DetectionModel.get_model`.
-3. `DetectionModel.get_labels`.
-4. `DetectionModel.predict` and specify some preprocessing parameters.
-5. `DetectionModel.postprocess`. This translates nerual network outputs to data that is easier to read/use.
-6. `DetectionModel.visualise_pred` if you want to see the result.
-
-```elixir
 defmodule SSDMobileNetV2 do
-  defp download_model() do
-    Helper.download!(
-      "https://raw.githubusercontent.com/opencv/opencv_extra/master/testdata/dnn/ssd_mobilenet_v2_coco_2018_03_29.pbtxt",
-      "ssd_mobilenet_v2_coco_2018_03_29.pbtxt"
-    )
+  @model_url "https://huggingface.co/opencv/opencv_contribution/resolve/main/ssd_mobilenet_v2_coco_2018_03_29/ssd_mobilenet_v2_coco_2018_03_29_2026jul.onnx?download=true"
+  @labels_url "https://raw.githubusercontent.com/cocoa-xu/evision/main/test/testdata/models/coco_names.txt"
+  @out_names [
+    "detection_boxes:0",
+    "detection_scores:0",
+    "detection_classes:0",
+    "num_detections:0"
+  ]
 
-    Helper.download!(
-      "https://raw.githubusercontent.com/cocoa-xu/evision/main/test/testdata/models/coco_names.txt",
-      "coco_names.txt"
-    )
+  def load do
+    Helper.download!(@model_url, "ssd_mobilenet_v2_coco_2018_03_29.onnx")
+    Helper.download!(@labels_url, "coco_names.txt")
 
-    graph_pb = "ssd_mobilenet_v2_coco_2018_03_29/frozen_inference_graph.pb"
-
-    if !File.exists?(graph_pb) do
-      Helper.download!(
-        "http://download.tensorflow.org/models/object_detection/ssd_mobilenet_v2_coco_2018_03_29.tar.gz",
-        "ssd_mobilenet_v2_coco_2018_03_29.tar.gz"
-      )
-
-      "ssd_mobilenet_v2_coco_2018_03_29.tar.gz"
-      |> File.read!()
-      |> :zlib.gunzip()
-      |> then(&:erl_tar.extract({:binary, &1}, [:memory, :compressed]))
-      |> elem(1)
-      |> Enum.map(fn {filename, content} -> {List.to_string(filename), content} end)
-      |> Enum.reject(
-        &(elem(&1, 0) != "ssd_mobilenet_v2_coco_2018_03_29/frozen_inference_graph.pb")
-      )
-      |> Enum.at(0)
-      |> then(fn {_filename, content} ->
-        File.mkdir_p!("ssd_mobilenet_v2_coco_2018_03_29")
-        File.write!(graph_pb, content)
-        :ok
-      end)
-    else
-      :ok
-    end
+    net = Evision.DNN.readNet("ssd_mobilenet_v2_coco_2018_03_29.onnx")
+    labels = "coco_names.txt" |> File.read!() |> String.split("\n")
+    {net, labels}
   end
 
-  def get_detection_model() do
-    :ok = download_model()
-    graph_pb = "ssd_mobilenet_v2_coco_2018_03_29/frozen_inference_graph.pb"
+  def detect({net, labels}, image, confidence_threshold \\ 0.5) do
+    {h, w, _} = image.shape
 
-    {:ok, net, out_names} =
-      DetectionModel.get_model(
-        graph_pb,
-        "ssd_mobilenet_v2_coco_2018_03_29.pbtxt"
-      )
+    input =
+      image
+      |> Evision.cvtColor(Evision.Constant.cv_COLOR_BGR2RGB())
+      |> Evision.resize({300, 300})
+      |> Evision.Mat.to_binary()
+      |> Evision.Mat.from_binary_by_shape({:u, 8}, {1, 300, 300, 3})
 
-    labels = DetectionModel.get_labels("coco_names.txt")
-    {net, out_names, labels}
+    [boxes, scores, classes, count] =
+      net
+      |> Evision.DNN.Net.setInput(input)
+      |> Evision.DNN.Net.forward(outBlobNames: @out_names)
+      |> Enum.map(&Evision.Mat.to_nx(&1, Nx.BinaryBackend))
+
+    count = count |> Nx.to_flat_list() |> hd() |> trunc()
+    boxes = boxes |> Nx.reshape({:auto, 4}) |> Nx.to_list()
+
+    [boxes, Nx.to_flat_list(scores), Nx.to_flat_list(classes)]
+    |> Enum.zip()
+    |> Enum.take(count)
+    |> Enum.filter(fn {_box, score, _class} -> score > confidence_threshold end)
+    |> Enum.map(fn {[y1, x1, y2, x2], score, class} ->
+      {Enum.at(labels, trunc(class) - 1), score,
+       {trunc(x1 * w), trunc(y1 * h), trunc(x2 * w), trunc(y2 * h)}}
+    end)
   end
 
-  def predict_file_and_show(filename, confidence_threshold \\ 0.5) when is_binary(filename) do
-    {net, out_names, labels} = get_detection_model()
+  def draw(image, detections) do
+    Enum.reduce(detections, image, fn {label, score, {l, t, r, b}}, image ->
+      text = "#{label}: #{Float.round(score, 2)}"
 
-    {:ok, mat, detections} =
-      DetectionModel.predict_file(filename, net, out_names,
-        scalefactor: 1,
-        swapRB: true,
-        mean: [0, 0, 0],
-        size: [300, 300]
+      image
+      |> Evision.rectangle({l, t}, {r, b}, {255, 0, 0}, thickness: 2)
+      |> Evision.putText(
+        text,
+        {l, max(t - 5, 12)},
+        Evision.Constant.cv_FONT_HERSHEY_SIMPLEX(),
+        0.5,
+        {0, 0, 255}
       )
-
-    {:ok, translated_outs} =
-      DetectionModel.postprocess(mat, detections, net, confidence_threshold)
-
-    {:ok, mat} = DetectionModel.visualise_pred(mat, labels, translated_outs)
-    mat
-  end
-
-  def predict_and_show(net, out_names, labels, mat, confidence_threshold \\ 0.5)
-      when is_reference(mat) do
-    {:ok, mat, detections} =
-      DetectionModel.predict(mat, net, out_names,
-        scalefactor: 1,
-        swapRB: true,
-        mean: [0, 0, 0],
-        size: [300, 300]
-      )
-
-    {:ok, translated_outs} =
-      DetectionModel.postprocess(mat, detections, net, confidence_threshold)
-
-    {:ok, mat} = DetectionModel.visualise_pred(mat, labels, translated_outs)
-    mat
+    end)
   end
 end
 ```
@@ -330,41 +157,39 @@ end
 <!-- livebook:{"output":true} -->
 
 ```
-{:module, SSDMobileNetV2, <<70, 79, 82, 49, 0, 0, 22, ...>>, {:predict_and_show, 5}}
+{:module, SSDMobileNetV2, <<70, 79, 82, 49, 0, 0, 22, ...>>, {:draw, 2}}
 ```
 
 ## Detect Objects in An Image
 
 ```elixir
 Helper.download!(
-  "https://raw.githubusercontent.com/cocoa-xu/evision/main/test/dnn_detection_test.jpg",
+  "https://raw.githubusercontent.com/cocoa-xu/evision/main/test/testdata/dnn_detection_test.jpg",
   "dnn_detection_test.jpg"
 )
 
-%Evision.Mat{type: type} = mat = SSDMobileNetV2.predict_file_and_show("dnn_detection_test.jpg")
+model = SSDMobileNetV2.load()
+image = Evision.imread("dnn_detection_test.jpg")
+detections = SSDMobileNetV2.detect(model, image)
 ```
 
 <!-- livebook:{"output":true} -->
 
 ```
-Inference time=>35 ms
-```
-
-<!-- livebook:{"output":true} -->
-
-```
-%Evision.Mat{
-  channels: 3,
-  dims: 2,
-  type: {:u, 8},
-  raw_type: 16,
-  shape: {586, 872, 3},
-  ref: #Reference<0.1834280076.3317825552.216669>
-}
+[
+  {"car", 0.9736444354057312, {464, 205, 602, 339}},
+  {"car", 0.8993234634399414, {280, 214, 480, 352}},
+  {"car", 0.882705807685852, {557, 208, 803, 364}},
+  {"car", 0.6523396968841553, {765, 198, 872, 350}},
+  {"person", 0.5624266862869263, {157, 133, 301, 372}},
+  {"car", 0.5576940774917603, {99, 162, 212, 316}}
+]
 ```
 
 ```elixir
-Cv.imencode(".png", mat)
+image
+|> SSDMobileNetV2.draw(detections)
+|> then(&Evision.imencode(".png", &1))
 |> Kino.Image.new(:png)
 ```
 
@@ -373,11 +198,11 @@ Cv.imencode(".png", mat)
 ```elixir
 # if you have a camera available
 # uncomment the line below
-# video = Cv.VideoCapture.videoCapture(0)
+# video = Evision.VideoCapture.videoCapture(0)
 
 # or the OpenCV library you compiled can decode video files
 # uncomment the line below
-# video = Cv.VideoCapture.videoCapture("/path/to/your/video/file")
+# video = Evision.VideoCapture.videoCapture("/path/to/your/video/file")
 ```
 
 <!-- livebook:{"output":true} -->
@@ -388,29 +213,25 @@ nil
 
 ```elixir
 defmodule VideoDetection do
-  def detect(video, widget, max_frames \\ 30 * 60)
-      when is_reference(video) and is_integer(max_frames) do
-    {net, out_names, labels} = SSDMobileNetV2.get_detection_model()
-    frame_read = Cv.VideoCapture.read(video)
-    _detect(net, out_names, labels, frame_read, video, widget, max_frames)
+  def detect(video, widget, max_frames \\ 30 * 60) when is_integer(max_frames) do
+    loop(SSDMobileNetV2.load(), video, widget, max_frames)
   end
 
-  defp _detect(_, _, _, _, _, _, 0), do: :ok
+  defp loop(_model, _video, _widget, 0), do: :ok
 
-  defp _detect(net, out_names, labels, frame, video, widget, left_frames)
-       when left_frames > 0 or left_frames < 0 do
-    mat = SSDMobileNetV2.predict_and_show(net, out_names, labels, frame)
+  defp loop(model, video, widget, frames_left) do
+    case Evision.VideoCapture.read(video) do
+      %Evision.Mat{} = frame ->
+        frame
+        |> SSDMobileNetV2.draw(SSDMobileNetV2.detect(model, frame))
+        |> then(&Evision.imencode(".png", &1))
+        |> Kino.Image.new(:png)
+        |> then(&Kino.Frame.render(widget, &1))
 
-    Cv.imencode(".png", mat)
-    |> Kino.Image.new(:png)
-    |> then(&Kino.Frame.render(widget, &1))
+        loop(model, video, widget, frames_left - 1)
 
-    frame_read = Cv.VideoCapture.read(video)
-
-    if left_frames > 0 do
-      _detect(net, out_names, labels, frame_read, video, widget, left_frames - 1)
-    else
-      _detect(net, out_names, labels, frame_read, video, widget, left_frames)
+      _ ->
+        :ok
     end
   end
 end
@@ -419,7 +240,7 @@ end
 <!-- livebook:{"output":true} -->
 
 ```
-{:module, VideoDetection, <<70, 79, 82, 49, 0, 0, 12, ...>>, {:_detect, 7}}
+{:module, VideoDetection, <<70, 79, 82, 49, 0, 0, 12, ...>>, {:loop, 4}}
 ```
 
 ### Run the detection
@@ -436,5 +257,5 @@ VideoDetection.detect(video, widget, 1800)
 <!-- livebook:{"output":true} -->
 
 ```
-"Inference time=>48 ms"
+:ok
 ```

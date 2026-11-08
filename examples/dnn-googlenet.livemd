@@ -11,7 +11,7 @@
 # System.put_env("EVISION_PREFER_PRECOMPILED", "false")
 
 Mix.install([
-  {:evision, "~> 0.2"},
+  {:evision, "~> 1.0"},
   {:kino, "~> 0.7"},
   {:req, "~> 0.5"}
 ], system_env: [
@@ -81,8 +81,7 @@ end
 
 ## Download GoogLeNet Model and A Test Image
 
-* Model parameters. `bvlc_googlenet.caffemodel`
-* Model config. `bvlc_googlenet.prototxt`
+* Model. `googlenet-8.onnx`, the BVLC GoogLeNet converted to ONNX
 * List of class names. `classification_classes_ILSVRC2012.txt`
 * Test image. `space_shuttle.jpg`
 
@@ -92,13 +91,8 @@ end
 File.cd!(__DIR__)
 
 Helper.download!(
-  "http://dl.caffe.berkeleyvision.org/bvlc_googlenet.caffemodel",
-  "bvlc_googlenet.caffemodel"
-)
-
-Helper.download!(
-  "https://raw.githubusercontent.com/opencv/opencv_extra/master/testdata/dnn/bvlc_googlenet.prototxt",
-  "bvlc_googlenet.prototxt"
+  "https://github.com/onnx/models/raw/69c5d3751dda5349fd3fc53f525395d180420c07/vision/classification/inception_and_googlenet/googlenet/model/googlenet-8.onnx",
+  "googlenet-8.onnx"
 )
 
 Helper.download!(
@@ -106,7 +100,10 @@ Helper.download!(
   "classification_classes_ILSVRC2012.txt"
 )
 
-Helper.download!("https://docs.opencv.org/4.5.4/space_shuttle.jpg", "space_shuttle.jpg")
+Helper.download!(
+  "https://raw.githubusercontent.com/opencv/opencv_extra/5.1.0/testdata/dnn/space_shuttle.jpg",
+  "space_shuttle.jpg"
+)
 ```
 
 <!-- livebook:{"output":true} -->
@@ -156,11 +153,7 @@ classes =
 ```elixir
 alias Evision, as: Cv
 
-model =
-  Cv.DNN.readNet("bvlc_googlenet.caffemodel",
-    config: "bvlc_googlenet.prototxt",
-    framework: ""
-  )
+model = Cv.DNN.readNet("googlenet-8.onnx")
 ```
 
 <!-- livebook:{"output":true} -->
@@ -172,22 +165,10 @@ model =
 ### Set Backend and Target
 
 ```elixir
-# "0: automatically (by default), "
-# "1: Halide language (http://halide-lang.org/), "
-# "2: Intel's Deep Learning Inference Engine (https://software.intel.com/openvino-toolkit), "
-# "3: OpenCV implementation, "
-# "4: VKCOM, "
-# "5: CUDA
-model = Cv.DNN.Net.setPreferableBackend(model, 0)
-
-# "0: CPU target (by default), "
-# "1: OpenCL, "
-# "2: OpenCL fp16 (half-float precision), "
-# "3: VPU, "
-# "4: Vulkan, "
-# "6: CUDA, "
-# "7: CUDA fp16 (half-float preprocess)
-model = Cv.DNN.Net.setPreferableTarget(model, 0)
+model =
+  model
+  |> Cv.DNN.Net.setPreferableBackend(Cv.Constant.cv_DNN_BACKEND_DEFAULT())
+  |> Cv.DNN.Net.setPreferableTarget(Cv.Constant.cv_DNN_TARGET_CPU())
 ```
 
 <!-- livebook:{"output":true} -->
@@ -201,15 +182,10 @@ model = Cv.DNN.Net.setPreferableTarget(model, 0)
 ```elixir
 mat = Cv.imread("space_shuttle.jpg")
 
-blob =
-  Cv.DNN.blobFromImage(mat,
-    scalefactor: 1,
-    swapRB: true,
-    mean: [-104, -117, -123],
-    size: [224, 224]
-  )
+# GoogLeNet was trained in Caffe on BGR images with the per-channel mean subtracted
+blob = Cv.DNN.blobFromImage(mat, mean: {104, 117, 123}, size: {224, 224})
 
-model = Cv.DNN.Net.setInput(model, blob, name: "", scalefactor: 1.0, mean: [0, 0, 0])
+model = Cv.DNN.Net.setInput(model, blob)
 ```
 
 <!-- livebook:{"output":true} -->
@@ -222,7 +198,7 @@ model = Cv.DNN.Net.setInput(model, blob, name: "", scalefactor: 1.0, mean: [0, 0
 
 ```elixir
 start_time = :os.system_time(:millisecond)
-pred = Cv.DNN.Net.forward(model, outputName: "")
+[pred] = Cv.DNN.Net.forward(model)
 end_time = :os.system_time(:millisecond)
 "Inference time=>#{end_time - start_time} ms"
 ```
@@ -235,18 +211,10 @@ end_time = :os.system_time(:millisecond)
 
 ## Get the Classification Result
 ```elixir
-pred = pred |> Cv.Mat.to_nx(Nx.BinaryBackend)
-pred_class_id = pred |> Nx.argmax() |> Nx.to_flat_list() |> Enum.at(0)
-
-confidence =
-  pred
-  |> Nx.take(Nx.tensor(pred_class_id), axis: 1)
-  |> Nx.to_flat_list()
-  |> Enum.at(0)
-
-class_label =
-  classes
-  |> Enum.at(pred_class_id)
+pred = Cv.Mat.to_nx(pred, Nx.BinaryBackend)
+pred_class_id = pred |> Nx.argmax() |> Nx.to_number()
+confidence = Nx.to_number(pred[[0, pred_class_id]])
+class_label = Enum.at(classes, pred_class_id)
 
 "Predict result: #{class_label}=>#{Float.round(confidence * 100, 2)}"
 ```
@@ -254,5 +222,5 @@ class_label =
 <!-- livebook:{"output":true} -->
 
 ```
-"Predict result: space shuttle=>99.13"
+"Predict result: space shuttle=>99.99"
 ```
