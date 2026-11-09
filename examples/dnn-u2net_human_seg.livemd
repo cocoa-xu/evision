@@ -52,7 +52,8 @@ img
 ## Feed the input image to the model
 
 ```elixir
-input_size = 320
+# the ONNX model only accepts 512x512 input
+input_size = 512
 
 blob =
   Evision.DNN.blobFromImage(

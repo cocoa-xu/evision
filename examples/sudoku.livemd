@@ -332,8 +332,8 @@ point_distance = fn p1, p2 ->
     Nx.to_number(
       Nx.sqrt(
         Nx.add(
-          Nx.power(Nx.subtract(p1[[0]], p2[[0]]), 2),
-          Nx.power(Nx.subtract(p1[[1]], p2[[1]]), 2)
+          Nx.pow(Nx.subtract(p1[[0]], p2[[0]]), 2),
+          Nx.pow(Nx.subtract(p1[[1]], p2[[1]]), 2)
         )
       )
     )

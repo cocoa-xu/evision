@@ -70,7 +70,7 @@ img
 face_cascade_path =
   Path.join([
     :code.priv_dir(:evision),
-    "share/opencv4/haarcascades/haarcascade_frontalface_default.xml"
+    "share/opencv5/haarcascades/haarcascade_frontalface_default.xml"
   ])
 
 face_cascade = Evision.CascadeClassifier.cascadeClassifier(face_cascade_path)

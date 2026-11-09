@@ -155,17 +155,17 @@ end
 defmodule DenseNN do
   import Nx.Defn
 
-  defn init_random_params do
+  defn init_random_params(key) do
     # 3 layers
     #  1. Dense(32) with sigmoid
     #  2. Dense(24) with sigmoid
     #  3. Dense(10) with softmax
-    w1 = Nx.random_normal({3072, 32}, 0.0, 0.1, names: [:input, :layer1])
-    b1 = Nx.random_normal({32}, 0.0, 0.1, names: [:layer1])
-    w2 = Nx.random_normal({32, 24}, 0.0, 0.1, names: [:layer1, :layer2])
-    b2 = Nx.random_normal({24}, 0.0, 0.1, names: [:layer2])
-    w3 = Nx.random_normal({24, 10}, 0.0, 0.1, names: [:layer2, :output])
-    b3 = Nx.random_normal({10}, 0.0, 0.1, names: [:output])
+    {w1, key} = Nx.Random.normal(key, 0.0, 0.1, shape: {3072, 32}, names: [:input, :layer1])
+    {b1, key} = Nx.Random.normal(key, 0.0, 0.1, shape: {32}, names: [:layer1])
+    {w2, key} = Nx.Random.normal(key, 0.0, 0.1, shape: {32, 24}, names: [:layer1, :layer2])
+    {b2, key} = Nx.Random.normal(key, 0.0, 0.1, shape: {24}, names: [:layer2])
+    {w3, key} = Nx.Random.normal(key, 0.0, 0.1, shape: {24, 10}, names: [:layer2, :output])
+    {b3, _key} = Nx.Random.normal(key, 0.0, 0.1, shape: {10}, names: [:output])
     {w1, b1, w2, b2, w3, b3}
   end
 
@@ -353,7 +353,7 @@ defmodule Demo do
   end
 
   def init_random_params do
-    {uSec, result} = :timer.tc(fn -> DenseNN.init_random_params() end)
+    {uSec, result} = :timer.tc(fn -> DenseNN.init_random_params(Nx.Random.key(42)) end)
     IO.puts("[Time] init random params: #{uSec / 1000.0} ms")
     result
   end
