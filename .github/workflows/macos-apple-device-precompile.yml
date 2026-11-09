@@ -27,14 +27,14 @@ jobs:
               arch_name: aarch64
               NIF_VERSION: "2.16"
               OTP_VERSION: "25.3.2.2"
-              ELIXIR_VERSION: "1.16.0"
+              ELIXIR_VERSION: "1.17.3"
               CMAKE_VER: "3.20.1"
           # - pair:
           #     mix_target: xros
           #     arch_name: aarch64
           #     NIF_VERSION: "2.16"
           #     OTP_VERSION: "25.3.2.2"
-          #     ELIXIR_VERSION: "1.16.0"
+          #     ELIXIR_VERSION: "1.17.3"
 
     steps:
       - name: Checkout

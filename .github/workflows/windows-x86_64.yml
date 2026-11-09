@@ -63,7 +63,7 @@ jobs:
       MIX_ENV: test
       OPENCV_VER: "5.1.0"
       OTP_VERSION: "26"
-      ELIXIR_VERSION: "1.16.3"
+      ELIXIR_VERSION: "1.17.3"
       EVISION_PREFER_PRECOMPILED: "false"
       MAKE: "nmake"
 
