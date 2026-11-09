@@ -200,7 +200,7 @@ blob =
   )
 
 Evision.DNN.Net.setInput(net, blob)
-[d1] = Evision.DNN.Net.forward(net)
+[d1 | _] = Evision.DNN.Net.forward(net)
 d1 = Evision.Mat.to_nx(d1, Nx.BinaryBackend)
 ```
 
