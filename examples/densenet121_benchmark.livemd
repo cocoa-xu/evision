@@ -6,7 +6,7 @@
 
 ```elixir
 Mix.install([
-  {:evision, "~> 0.2"},
+  {:evision, "~> 1.0"},
   {:kino, "~> 0.7"},
   {:req, "~> 0.5"}
 ], system_env: [
@@ -106,7 +106,7 @@ defmodule DenseNet121 do
     test_filename = "CyprusShorthair.jpg"
 
     Helper.download!(
-      "https://github.com/onnx/models/raw/main/vision/classification/densenet-121/model/densenet-#{opset_version}.onnx",
+      "https://github.com/onnx/models/raw/69c5d3751dda5349fd3fc53f525395d180420c07/vision/classification/densenet-121/model/densenet-#{opset_version}.onnx",
       onnx_filename
     )
 

@@ -6,7 +6,7 @@
 
 ```elixir
 Mix.install([
-  {:evision, "~> 0.2"},
+  {:evision, "~> 1.0"},
   {:kino, "~> 0.7"},
   {:req, "~> 0.5"}
 ], system_env: [
@@ -56,7 +56,7 @@ Mix.install([
 
 ## Set Up Training Data
 
-This example is based on the [Introduction to Support Vector Machines](https://docs.Cv.org/4.x/d1/d73/tutorial_introduction_to_svm.html) from Cv.
+This example is based on the [Introduction to Support Vector Machines](https://docs.opencv.org/4.x/d1/d73/tutorial_introduction_to_svm.html) from OpenCV.
 
 <!-- livebook:{"break_markdown":true} -->
 

@@ -6,7 +6,7 @@
 
 ```elixir
 Mix.install([
-  {:evision, "~> 0.2"},
+  {:evision, "~> 1.0"},
   {:req, "~> 0.5"},
   {:torchx, "~> 0.3"},
   {:nx, "~> 0.3", override: true},
@@ -75,7 +75,7 @@ defmodule Helper do
 end
 
 Helper.download!(
-  "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/Cat03.jpg/1200px-Cat03.jpg",
+  "https://upload.wikimedia.org/wikipedia/commons/3/3a/Cat03.jpg",
   "cat.jpg"
 )
 ```
