@@ -1040,7 +1040,7 @@ defmodule Evision.MixProject do
       app: Metadata.app(),
       name: "Evision",
       version: Metadata.version(),
-      elixir: "~> 1.11",
+      elixir: "~> 1.17",
       deps: deps(),
       docs: docs(),
       aliases: aliases(),
