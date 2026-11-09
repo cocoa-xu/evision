@@ -322,10 +322,6 @@ end
 
 ```elixir
 defmodule Demo do
-  require CIFAR10Dataset
-  require DenseNN
-  require Helper
-
   def load_dataset(backend) do
     {uSec, result} = :timer.tc(fn -> CIFAR10Dataset.fetch(backend) end)
     IO.puts("[Time] load dataset: #{uSec / 1000.0} ms")
