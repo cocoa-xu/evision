@@ -8,7 +8,7 @@
 
 Mix.install(
   [
-    {:evision, "~> 0.2"},
+    {:evision, "~> 1.0"},
     {:req, "~> 0.5"},
     {:kino, "~> 0.11"}
   ],
@@ -52,7 +52,8 @@ img
 ## Feed the input image to the model
 
 ```elixir
-input_size = 320
+# the ONNX model only accepts 512x512 input
+input_size = 512
 
 blob =
   Evision.DNN.blobFromImage(
@@ -65,7 +66,7 @@ blob =
 
 ```elixir
 Evision.DNN.Net.setInput(net, blob)
-[d0] = Evision.DNN.Net.forward(net)
+[d0 | _] = Evision.DNN.Net.forward(net)
 d0
 ```
 

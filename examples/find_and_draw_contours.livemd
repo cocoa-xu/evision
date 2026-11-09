@@ -4,7 +4,7 @@
 
 ```elixir
 Mix.install([
-  {:evision, "~> 0.2"},
+  {:evision, "~> 1.0"},
   {:kino, "~> 0.7"},
   {:req, "~> 0.5"}
 ], system_env: [
@@ -56,9 +56,9 @@ Mix.install([
 
 ```elixir
 defmodule Helper do
-  def download!(url, save_as, overwrite? \\ false) do
+  def download!(url, save_as) do
     unless File.exists?(save_as) do
-      Req.get!(url, http_errors: :raise, into: File.stream!(save_as), cache: not overwrite?)
+      Req.get!(url, http_errors: :raise, into: File.stream!(save_as))
     end
 
     :ok
@@ -73,7 +73,7 @@ end
 ```
 
 ```elixir
-Helper.download!("https://docs.opencv.org/4.x/pca_test1.jpg", "pca_test.jpg")
+Helper.download!("https://raw.githubusercontent.com/opencv/opencv/5.1.0/samples/data/pca_test1.jpg", "pca_test.jpg")
 ```
 
 <!-- livebook:{"output":true} -->

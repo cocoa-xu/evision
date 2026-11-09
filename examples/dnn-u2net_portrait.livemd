@@ -10,7 +10,7 @@
 
 Mix.install(
   [
-    {:evision, "~> 0.2"},
+    {:evision, "~> 1.0"},
     {:req, "~> 0.5"},
     {:kino, "~> 0.11"}
   ],
@@ -29,7 +29,7 @@ model_url =
 save_as = "u2net_portrait.onnx"
 
 unless File.exists?(save_as) do
-  Req.get!(model_url, http_errors: :raise, output: save_as, cache: false)
+  Req.get!(model_url, http_errors: :raise, into: File.stream!(save_as))
 end
 
 :ok
@@ -70,7 +70,7 @@ img
 face_cascade_path =
   Path.join([
     :code.priv_dir(:evision),
-    "share/opencv4/haarcascades/haarcascade_frontalface_default.xml"
+    "share/opencv5/haarcascades/haarcascade_frontalface_default.xml"
   ])
 
 face_cascade = Evision.CascadeClassifier.cascadeClassifier(face_cascade_path)
@@ -200,7 +200,7 @@ blob =
   )
 
 Evision.DNN.Net.setInput(net, blob)
-[d1] = Evision.DNN.Net.forward(net)
+[d1 | _] = Evision.DNN.Net.forward(net)
 d1 = Evision.Mat.to_nx(d1, Nx.BinaryBackend)
 ```
 
