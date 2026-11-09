@@ -10,7 +10,7 @@ Mix.install([
   {:torchx, "~> 0.4"},
   {:nx, "~> 0.4"},
   {:scidata, "~> 0.1"},
-  {:axon, "~> 0.3.0"}
+  {:axon, "~> 0.8"}
 ], system_env: [
   # optional, defaults to `true`
   # set `EVISION_PREFER_PRECOMPILED` to `false`
@@ -608,7 +608,7 @@ defmodule MNIST do
 
   def train_model(model, train_images, train_labels, epochs) do
     model
-    |> Axon.Loop.trainer(:categorical_cross_entropy, Axon.Optimizers.adamw(0.005))
+    |> Axon.Loop.trainer(:categorical_cross_entropy, Polaris.Optimizers.adamw(learning_rate: 0.005))
     |> Axon.Loop.metric(:accuracy, "Accuracy")
     |> Axon.Loop.run(Stream.zip(train_images, train_labels), %{}, epochs: epochs)
   end

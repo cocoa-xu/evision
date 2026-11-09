@@ -9,8 +9,8 @@ Mix.install([
   {:evision, "~> 1.0"},
   {:kino, "~> 0.7"},
   {:scidata, "~> 0.1"},
-  {:nx, "~> 0.4", override: true},
-  {:scholar, "~> 0.1", github: "elixir-nx/scholar"}
+  {:nx, "~> 0.12"},
+  {:scholar, "~> 0.4"}
 ], system_env: [
   # optional, defaults to `true`
   # set `EVISION_PREFER_PRECOMPILED` to `false`
@@ -123,7 +123,7 @@ y_pred =
   |> Nx.reshape({:auto})
   |> Nx.as_type(:s32)
 
-Scholar.Metrics.confusion_matrix(y_true, y_pred, num_classes: 3)
+Scholar.Metrics.Classification.confusion_matrix(y_true, y_pred, num_classes: 3)
 ```
 
 ## Save the Trained Model and Load It Back
@@ -206,7 +206,7 @@ y_pred =
   |> Nx.reshape({:auto})
   |> Nx.as_type(:s32)
 
-Scholar.Metrics.confusion_matrix(y_true, y_pred, num_classes: 3)
+Scholar.Metrics.Classification.confusion_matrix(y_true, y_pred, num_classes: 3)
 ```
 
 ## Save the Trained Model and Load It Back

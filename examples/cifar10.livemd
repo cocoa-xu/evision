@@ -9,7 +9,7 @@ Mix.install([
   {:evision, "~> 1.0"},
   {:req, "~> 0.5"},
   {:torchx, "~> 0.3"},
-  {:nx, "~> 0.3", override: true},
+  {:nx, "~> 0.12"},
   {:kino, "~> 0.7"},
   {:scidata, "~> 0.1"}
 ], system_env: [
