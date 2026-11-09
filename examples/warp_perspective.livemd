@@ -64,9 +64,9 @@ Let's prepare helper functions for preparing resources.
 
 ```elixir
 defmodule Helper do
-  def download!(url, save_as, overwrite? \\ false) do
+  def download!(url, save_as) do
     unless File.exists?(save_as) do
-      Req.get!(url, http_errors: :raise, into: File.stream!(save_as), cache: not overwrite?)
+      Req.get!(url, http_errors: :raise, into: File.stream!(save_as))
     end
 
     :ok

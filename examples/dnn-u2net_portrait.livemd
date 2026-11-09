@@ -29,7 +29,7 @@ model_url =
 save_as = "u2net_portrait.onnx"
 
 unless File.exists?(save_as) do
-  Req.get!(model_url, http_errors: :raise, output: save_as, cache: false)
+  Req.get!(model_url, http_errors: :raise, into: File.stream!(save_as))
 end
 
 :ok
