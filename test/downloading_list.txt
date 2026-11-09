@@ -1,5 +1,4 @@
 dnn_detection_test.exs:  @download_file "https://huggingface.co/opencv/opencv_contribution/resolve/main/ssd_mobilenet_v2_coco_2018_03_29/ssd_mobilenet_v2_coco_2018_03_29_2026jul.onnx?download=true"
-dnn_detection_model_test.exs:  @download_file "https://github.com/AlexeyAB/darknet/releases/download/yolov4/yolov4.weights"
 dnn_text_detection_model_db_test.exs:  @download_file "https://github.com/cocoa-xu/evision-extra/raw/main/testdata/text-detection/DB_IC15_resnet18.onnx"
 dnn_text_detection_model_db_test.exs:      @download_file,
 dnn_text_detection_model_east_test.exs:  @download_file "https://huggingface.co/opencv/opencv_contribution/resolve/main/east_text_detection/east_text_detection_2026jul.onnx?download=true"
