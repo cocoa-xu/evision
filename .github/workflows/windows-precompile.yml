@@ -16,7 +16,7 @@ jobs:
     env:
       MIX_ENV: prod
       OPENCV_VER: "5.1.0"
-      ELIXIR_VERSION: "1.15.4"
+      ELIXIR_VERSION: "1.17.3"
       EVISION_PREFER_PRECOMPILED: "false"
       EVISION_GENERATE_LANG: "erlang,elixir"
       MAKE: "nmake"

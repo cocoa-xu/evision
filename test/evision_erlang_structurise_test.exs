@@ -1,6 +1,8 @@
 defmodule Evision.ErlangStructurise.Test do
   use ExUnit.Case
 
+  @compile {:no_warn_undefined, [:evision_internal_structurise, :evision_mat]}
+
   @generated_erl_dir Path.join([File.cwd!(), "src", "generated"])
   @skip_without_erlang not File.exists?(Path.join(@generated_erl_dir, "evision_dnn_net.erl")) &&
                          "Erlang sources not generated (EVISION_GENERATE_LANG is elixir-only)"
