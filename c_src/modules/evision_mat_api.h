@@ -4,6 +4,7 @@
 
 #include <erl_nif.h>
 #include "../evision_consts.h"
+#include "../evision_mat_allocator.hpp"
 
 static ERL_NIF_TERM __evision_get_mat_type(ErlNifEnv *env, int type) {
     uint8_t depth = type & CV_MAT_DEPTH_MASK;
@@ -57,8 +58,8 @@ static ERL_NIF_TERM _evision_get_mat_shape(ErlNifEnv *env, const cv::Mat& img) {
     return ret;
 }
 
-static ERL_NIF_TERM _evision_make_mat_resource_into_map(ErlNifEnv *env, const cv::Mat& m, ERL_NIF_TERM res_term) {
-    const size_t num_items = 7;
+static ERL_NIF_TERM _evision_make_mat_resource_into_map(ErlNifEnv *env, const cv::Mat& m, ERL_NIF_TERM res_term, ERL_NIF_TERM ref_data) {
+    const size_t num_items = 8;
     size_t item_index = 0;
 
     ERL_NIF_TERM keys[num_items];
@@ -88,6 +89,10 @@ static ERL_NIF_TERM _evision_make_mat_resource_into_map(ErlNifEnv *env, const cv
     values[item_index] = res_term;
     item_index++;
 
+    keys[item_index] = kAtomRefData;
+    values[item_index] = ref_data;
+    item_index++;
+
     keys[item_index] = kAtomClass;
     values[item_index] = kAtomEvisionMatModule;
     item_index++;
@@ -98,6 +103,10 @@ static ERL_NIF_TERM _evision_make_mat_resource_into_map(ErlNifEnv *env, const cv
     } else {
         return evision::nif::error(env, "error when making map from arrays");
     }
+}
+
+static ERL_NIF_TERM _evision_make_mat_resource_into_map(ErlNifEnv *env, const cv::Mat& m, ERL_NIF_TERM res_term) {
+    return _evision_make_mat_resource_into_map(env, m, res_term, evision_mat_ref_data(env, m));
 }
 
 #endif  // EVISION_MAT_API_H

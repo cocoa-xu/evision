@@ -70,7 +70,7 @@ static ERL_NIF_TERM evision_cv_mat_from_binary(ErlNifEnv *env, int argc, const E
                     ERL_NIF_TERM term = enif_make_resource(env, res);
                     enif_release_resource(res);
 
-                    return _evision_make_mat_resource_into_map(env, *res->val, term);
+                    return _evision_make_mat_resource_into_map(env, *res->val, term, erl_binary);
                 } else {
                     return evision::nif::error(env, "no memory");
                 }
@@ -142,7 +142,7 @@ static ERL_NIF_TERM evision_cv_mat_from_binary_by_shape(ErlNifEnv *env, int argc
                     ERL_NIF_TERM term = enif_make_resource(env, res);
                     enif_release_resource(res);
 
-                    return _evision_make_mat_resource_into_map(env, *res->val, term);
+                    return _evision_make_mat_resource_into_map(env, *res->val, term, erl_binary);
                 } else {
                     return evision::nif::error(env, "no memory");
                 }

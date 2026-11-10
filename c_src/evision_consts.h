@@ -13,6 +13,8 @@ static ERL_NIF_TERM kAtomFalse;
 static ERL_NIF_TERM kAtomOutOfMemory;
 // ref
 static ERL_NIF_TERM kAtomRef;
+// ref_data
+static ERL_NIF_TERM kAtomRefData;
 // class
 static ERL_NIF_TERM kAtomClass;
 // dims

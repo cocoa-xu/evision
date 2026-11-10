@@ -82,6 +82,12 @@ defmodule Evision.Mat do
 
     The underlying erlang resource variable.
 
+  - **ref_data**: `binary` or `nil`.
+
+    The binary that holds the matrix data, so that the garbage collector sees how much
+    memory the matrix uses. It is `nil` when the data is small or not held in a binary.
+    Do not read or rely on its contents.
+
   """
   @type t :: %__MODULE__{
           channels: integer(),
@@ -89,10 +95,12 @@ defmodule Evision.Mat do
           type: mat_type(),
           raw_type: integer(),
           shape: tuple(),
-          ref: reference()
+          ref: reference(),
+          ref_data: binary() | nil
         }
   @enforce_keys [:channels, :dims, :type, :raw_type, :shape, :ref]
-  defstruct [:channels, :dims, :type, :raw_type, :shape, :ref]
+  @derive {Inspect, except: [:ref_data]}
+  defstruct [:channels, :dims, :type, :raw_type, :shape, :ref, :ref_data]
 
   alias __MODULE__, as: T
 
@@ -173,21 +181,24 @@ defmodule Evision.Mat do
   def cv_DEPTH_MASK, do: 7
 
   @doc false
-  def to_struct(%{
-        :channels => channels,
-        :dims => dims,
-        :type => type,
-        :raw_type => raw_type,
-        :shape => shape,
-        :ref => ref
-      }) do
+  def to_struct(
+        %{
+          :channels => channels,
+          :dims => dims,
+          :type => type,
+          :raw_type => raw_type,
+          :shape => shape,
+          :ref => ref
+        } = mat
+      ) do
     %T{
       channels: channels,
       dims: dims,
       type: type,
       raw_type: raw_type,
       shape: shape,
-      ref: ref
+      ref: ref,
+      ref_data: Map.get(mat, :ref_data)
     }
   end
 
@@ -2126,6 +2137,10 @@ defmodule Evision.Mat do
   - otherwise, a new Evision.Mat that has dims=`[dims | channels]` will be returned
   """
   @spec channel_as_last_dim(maybe_mat_in()) :: maybe_mat_out()
+  def channel_as_last_dim(%T{ref: ref} = mat) do
+    with ^ref <- channel_as_last_dim(ref), do: mat
+  end
+
   def channel_as_last_dim(mat) when is_struct(mat) do
     mat = Evision.Internal.Structurise.from_struct(mat)
     channel_as_last_dim(mat)
