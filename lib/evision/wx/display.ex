@@ -3,40 +3,9 @@ defmodule Evision.Wx.Display do
 
   import Bitwise
 
-  @event_mousemove 0
-  @event_lbuttondown 1
-  @event_rbuttondown 2
-  @event_mbuttondown 3
-  @event_lbuttonup 4
-  @event_rbuttonup 5
-  @event_mbuttonup 6
-  @event_lbuttondblclk 7
-  @event_rbuttondblclk 8
-  @event_mbuttondblclk 9
-  @event_mousewheel 10
+  alias Evision.Constant
 
-  @flag_lbutton 1
-  @flag_rbutton 2
-  @flag_mbutton 4
-  @flag_ctrlkey 8
-  @flag_shiftkey 16
-  @flag_altkey 32
-
-  @mouse_events %{
-    motion: @event_mousemove,
-    left_down: @event_lbuttondown,
-    right_down: @event_rbuttondown,
-    middle_down: @event_mbuttondown,
-    left_up: @event_lbuttonup,
-    right_up: @event_rbuttonup,
-    middle_up: @event_mbuttonup,
-    left_dclick: @event_lbuttondblclk,
-    right_dclick: @event_rbuttondblclk,
-    middle_dclick: @event_mbuttondblclk,
-    mousewheel: @event_mousewheel
-  }
-
-  def mouse_event_types, do: Map.keys(@mouse_events)
+  def mouse_event_types, do: Map.keys(mouse_events())
 
   def to_rgb(%Nx.Tensor{} = tensor) do
     case Evision.Mat.from_nx_2d(tensor) do
@@ -73,9 +42,9 @@ defmodule Evision.Wx.Display do
   defp image_size({height, width, _}) when height > 0 and width > 0, do: {:ok, height, width}
   defp image_size(shape), do: {:error, "cannot show an image of shape #{inspect(shape)}"}
 
-  defp rgb_conversion(1), do: {:ok, Evision.Constant.cv_COLOR_GRAY2RGB()}
-  defp rgb_conversion(3), do: {:ok, Evision.Constant.cv_COLOR_BGR2RGB()}
-  defp rgb_conversion(4), do: {:ok, Evision.Constant.cv_COLOR_BGRA2RGB()}
+  defp rgb_conversion(1), do: {:ok, Constant.cv_COLOR_GRAY2RGB()}
+  defp rgb_conversion(3), do: {:ok, Constant.cv_COLOR_BGR2RGB()}
+  defp rgb_conversion(4), do: {:ok, Constant.cv_COLOR_BGRA2RGB()}
 
   defp rgb_conversion(channels),
     do: {:error, "cannot show an image with #{channels} channels"}
@@ -88,7 +57,7 @@ defmodule Evision.Wx.Display do
 
   defp to_u8(mat, {:f, bits}) when bits in [32, 64] do
     # convertTo(CV_8U, 255). Evision.multiply with a scalar would scale only the first channel.
-    Evision.addWeighted(mat, 255.0, mat, 0.0, 0.0, dtype: Evision.Constant.cv_8U())
+    Evision.addWeighted(mat, 255.0, mat, 0.0, 0.0, dtype: Constant.cv_8U())
   end
 
   defp to_u8(mat, {:f, 16}), do: mat |> Evision.Mat.as_type({:f, 32}) |> to_u8({:f, 32})
@@ -116,13 +85,32 @@ defmodule Evision.Wx.Display do
     end
   end
 
-  def mouse_event(type), do: Map.get(@mouse_events, type)
+  def mouse_event(type), do: Map.get(mouse_events(), type)
+
+  defp mouse_events do
+    %{
+      motion: Constant.cv_EVENT_MOUSEMOVE(),
+      left_down: Constant.cv_EVENT_LBUTTONDOWN(),
+      right_down: Constant.cv_EVENT_RBUTTONDOWN(),
+      middle_down: Constant.cv_EVENT_MBUTTONDOWN(),
+      left_up: Constant.cv_EVENT_LBUTTONUP(),
+      right_up: Constant.cv_EVENT_RBUTTONUP(),
+      middle_up: Constant.cv_EVENT_MBUTTONUP(),
+      left_dclick: Constant.cv_EVENT_LBUTTONDBLCLK(),
+      right_dclick: Constant.cv_EVENT_RBUTTONDBLCLK(),
+      middle_dclick: Constant.cv_EVENT_MBUTTONDBLCLK(),
+      mousewheel: Constant.cv_EVENT_MOUSEWHEEL()
+    }
+  end
 
   def mouse_flags(event) do
     flags =
-      flag(event.leftDown, @flag_lbutton) ||| flag(event.rightDown, @flag_rbutton) |||
-        flag(event.middleDown, @flag_mbutton) ||| flag(event.controlDown, @flag_ctrlkey) |||
-        flag(event.shiftDown, @flag_shiftkey) ||| flag(event.altDown, @flag_altkey)
+      flag(event.leftDown, Constant.cv_EVENT_FLAG_LBUTTON()) |||
+        flag(event.rightDown, Constant.cv_EVENT_FLAG_RBUTTON()) |||
+        flag(event.middleDown, Constant.cv_EVENT_FLAG_MBUTTON()) |||
+        flag(event.controlDown, Constant.cv_EVENT_FLAG_CTRLKEY()) |||
+        flag(event.shiftDown, Constant.cv_EVENT_FLAG_SHIFTKEY()) |||
+        flag(event.altDown, Constant.cv_EVENT_FLAG_ALTKEY())
 
     if event.type == :mousewheel do
       flags ||| event.wheelRotation <<< 16
