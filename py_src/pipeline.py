@@ -126,7 +126,7 @@ class Pipeline(object):
         self.evision_constant_erlang.write('-module(evision_constant).\n-compile(nowarn_export_all).\n-compile([export_all]).\n\n')
 
         self.evision_erlang_hrl.write(
-            "-record(evision_mat, {channels, dims, type, raw_type, shape, ref}).\n"
+            "-record(evision_mat, {channels, dims, type, raw_type, shape, ref, ref_data}).\n"
             "-record(evision_cuda_gpumat, {channels, type, raw_type, shape, ref, elemSize, step, device_id}).\n"
             "-record(evision_videocapture, {fps, frame_count, frame_width, frame_height, isOpened, ref}).\n"
         )

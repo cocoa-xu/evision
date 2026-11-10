@@ -50,6 +50,7 @@
 #include "erlcompat.hpp"
 #include "ArgInfo.hpp"
 #include "evision_consts.h"
+#include "evision_mat_allocator.hpp"
 #include "modules/evision_cuda.h"
 #include "modules/evision_mat_api.h"
 #include <map>
@@ -3156,6 +3157,7 @@ on_load(ErlNifEnv* env, void**, ERL_NIF_TERM)
     kAtomFalse = evision::nif::atom(env, "false");
     kAtomOutOfMemory = evision::nif::atom(env, "out_of_memory");
     kAtomRef = evision::nif::atom(env, "ref");
+    kAtomRefData = evision::nif::atom(env, "ref_data");
     kAtomClass = evision::nif::atom(env, "class");
     kAtomDims = evision::nif::atom(env, "dims");
     kAtomChannels = evision::nif::atom(env, "channels");
@@ -3214,6 +3216,11 @@ on_load(ErlNifEnv* env, void**, ERL_NIF_TERM)
     kAtomNu21 = evision::nif::atom(env, "nu21");
     kAtomNu12 = evision::nif::atom(env, "nu12");
     kAtomNu03 = evision::nif::atom(env, "nu03");
+
+    const char *mat_allocator = getenv("EVISION_MAT_ALLOCATOR");
+    if (mat_allocator == nullptr || strcmp(mat_allocator, "std") != 0) {
+        cv::Mat::setDefaultAllocator(&evision_binary_mat_allocator());
+    }
     return 0;
 }
 
