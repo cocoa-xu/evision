@@ -6,12 +6,14 @@ defmodule Evision.HighGui do
   @doc """
   Converts an image to 8-bit RGB, scaling it the way `imshow/2` displays it
 
-  This mirrors `convertToShow` in OpenCV's highgui:
+  This mirrors `convertToShow` in OpenCV's highgui. Results are rounded and saturated to `0..255`:
 
-  - `{:s, 8}`: `x + 127`
-  - `{:s, 16}`: `x / 255 + 127`
+  - `{:s, 8}`: `abs(x + 127)`
+  - `{:s, 16}`: `abs(x / 255 + 127)`
   - `{:u, 16}`: `x / 255`
-  - `{:f, _}` and `{:bf, 16}`: `x * 255`, for values in `[0, 1]`
+  - `{:f, 32}` and `{:f, 64}`: `x * 255`, for values in `[0, 1]`
+
+  Unlike OpenCV, `{:f, 16}` and `{:bf, 16}` are accepted and widened to `{:f, 32}` first.
 
   The image is first passed through `Evision.Mat.to_2d_image/1`, then `Evision.Mat.to_rgb/1`.
   """
@@ -33,8 +35,10 @@ defmodule Evision.HighGui do
     Evision.addWeighted(mat, 255.0, mat, 0.0, 0.0, dtype: Evision.Constant.cv_8U())
   end
 
-  defp to_u8(mat, {:f, 16}), do: mat |> Evision.Mat.as_type({:f, 32}) |> to_u8({:f, 32})
-  defp to_u8(mat, {:bf, 16}), do: mat |> Evision.Mat.as_type({:f, 32}) |> to_u8({:f, 32})
+  defp to_u8(mat, type) when type in [{:f, 16}, {:bf, 16}] do
+    with %Evision.Mat{} = f32 <- Evision.Mat.as_type(mat, {:f, 32}), do: to_u8(f32, {:f, 32})
+  end
+
   defp to_u8(_mat, type), do: {:error, "cannot show an image of type #{inspect(type)}"}
 
   @doc """

@@ -22,8 +22,9 @@ defmodule Evision.HighGui.ConvertToShow.Test do
     f64 = <<0.5::float-64-native, -1.0::float-64-native, 2.0::float-64-native>>
     assert <<255, 0, 128>> = show(Mat.from_binary(f64, {:f, 64}, 1, 1, 3))
 
-    f16 = Nx.tensor([[[0.5, 0.0, 1.0]]], type: :f16)
-    assert <<255, 0, 128>> = show(f16)
+    for type <- [:f16, :bf16] do
+      assert <<255, 0, 128>> = show(Nx.tensor([[[0.5, 0.0, 1.0]]], type: type))
+    end
 
     u16 = <<25500::16-native, 0::16-native, 255::16-native>>
     assert <<1, 0, 100>> = show(Mat.from_binary(u16, {:u, 16}, 1, 1, 3))
