@@ -6,7 +6,7 @@
 
 ```elixir
 Mix.install([
-  {:evision, "~> 0.2"},
+  {:evision, "~> 1.0"},
   {:kino, "~> 0.7"},
   {:req, "~> 0.5"}
 ], system_env: [
@@ -58,9 +58,9 @@ Mix.install([
 
 ```elixir
 defmodule Helper do
-  def download!(url, save_as, overwrite? \\ false) do
+  def download!(url, save_as) do
     unless File.exists?(save_as) do
-      Req.get!(url, http_errors: :raise, into: File.stream!(save_as), cache: not overwrite?)
+      Req.get!(url, http_errors: :raise, into: File.stream!(save_as))
     end
 
     :ok
@@ -89,7 +89,7 @@ Evision
 ### Download the test image
 
 ```elixir
-Helper.download!("https://docs.opencv.org/4.x/pca_test1.jpg", "pca_test.jpg")
+Helper.download!("https://raw.githubusercontent.com/opencv/opencv/5.1.0/samples/data/pca_test1.jpg", "pca_test.jpg")
 ```
 
 <!-- livebook:{"output":true} -->
@@ -227,15 +227,15 @@ defmodule PACHelper do
     hypotenuse = :math.sqrt((py - qy) * (py - qy) + (px - qx) * (px - qx))
     qx = trunc(px - scale * hypotenuse * :math.cos(angle))
     qy = trunc(py - scale * hypotenuse * :math.sin(angle))
-    src = Cv.line(src, {px, py}, {qx, qy}, colour, thickness: 1, style: Cv.Constant.cv_LINE_AA())
+    src = Cv.line(src, {px, py}, {qx, qy}, colour, thickness: 1, lineType: Cv.Constant.cv_LINE_AA())
 
     px = trunc(qx + 9 * :math.cos(angle + :math.pi() / 4))
     py = trunc(qy + 9 * :math.sin(angle + :math.pi() / 4))
-    src = Cv.line(src, {px, py}, {qx, qy}, colour, thickness: 1, style: Cv.Constant.cv_LINE_AA())
+    src = Cv.line(src, {px, py}, {qx, qy}, colour, thickness: 1, lineType: Cv.Constant.cv_LINE_AA())
 
     px = trunc(qx + 9 * :math.cos(angle - :math.pi() / 4))
     py = trunc(qy + 9 * :math.sin(angle - :math.pi() / 4))
-    Cv.line(src, {px, py}, {qx, qy}, colour, thickness: 1, style: Cv.Constant.cv_LINE_AA())
+    Cv.line(src, {px, py}, {qx, qy}, colour, thickness: 1, lineType: Cv.Constant.cv_LINE_AA())
   end
 end
 ```

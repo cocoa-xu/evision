@@ -119,6 +119,47 @@ defmodule Evision.Mat do
   """
   @type maybe_mat_in :: reference() | Evision.Mat.t() | Nx.Tensor.t() | number() | tuple()
 
+  @doc """
+  Converts a Mat or tensor to a 2D image with 1, 3 or 4 channels.
+
+  A `{height, width, channels}` tensor or single-channel Mat becomes a `channels`-channel
+  2D Mat, as with `from_nx_2d/1` and `last_dim_as_channel/1`. A 2D Mat is returned as is.
+  Anything else, including 2 or more than 4 channels, is an error.
+
+  The depth is unchanged; `Evision.HighGui.convertToShow/1` also converts it to 8-bit RGB.
+  """
+  @spec to_2d_image(t() | Nx.Tensor.t()) :: maybe_mat_out()
+  def to_2d_image(%Nx.Tensor{} = tensor) do
+    with %T{} = mat <- from_nx_2d(tensor), do: to_2d_image(mat)
+  end
+
+  def to_2d_image(%T{dims: 2, channels: channels} = mat) when channels in [1, 3, 4], do: mat
+
+  def to_2d_image(%T{dims: 3, channels: 1, shape: {_, _, channels}} = mat)
+      when channels in [1, 3, 4] do
+    last_dim_as_channel(mat)
+  end
+
+  def to_2d_image(%T{shape: shape}) do
+    {:error, "expected a 2D image with 1, 3 or 4 channels, got a Mat of shape #{inspect(shape)}"}
+  end
+
+  @doc """
+  Converts a GRAY, BGR or BGRA image to RGB.
+
+  The image is first passed through `to_2d_image/1`.
+  """
+  @spec to_rgb(t() | Nx.Tensor.t()) :: maybe_mat_out()
+  def to_rgb(image) do
+    with %T{channels: channels} = mat <- to_2d_image(image) do
+      Evision.cvtColor(mat, rgb_conversion_code(channels))
+    end
+  end
+
+  defp rgb_conversion_code(1), do: Evision.Constant.cv_COLOR_GRAY2RGB()
+  defp rgb_conversion_code(3), do: Evision.Constant.cv_COLOR_BGR2RGB()
+  defp rgb_conversion_code(4), do: Evision.Constant.cv_COLOR_BGRA2RGB()
+
   @type enum :: integer()
   @doc enum: true
   def cv_MAGIC_VAL, do: 1_124_007_936
@@ -442,27 +483,19 @@ defmodule Evision.Mat do
   """
   @spec quicklook(Nx.Tensor.t()) :: Nx.Tensor.t()
   def quicklook(%Nx.Tensor{} = tensor) do
-    case Evision.Mat.from_nx_2d(tensor) do
-      %Evision.Mat{} = mat ->
-        quicklook(mat)
-    end
-
+    with %Evision.Mat{} = mat <- from_nx_2d(tensor), do: quicklook(mat)
     tensor
   end
 
   @spec quicklook(Evision.Mat.t()) :: Evision.Mat.t()
-  def quicklook(%Evision.Mat{dims: dims, channels: c, shape: shape} = mat) do
+  def quicklook(%Evision.Mat{} = mat) do
     if Application.get_env(:evision, :display_inline_image_max_size) == :error do
       Application.put_env(:evision, :display_inline_image_max_size, {8192, 8192},
         persistent: true
       )
     end
 
-    is_2d_image =
-      (dims == 2 and Enum.member?([1, 3, 4], c)) or
-        (c == 1 and tuple_size(shape) == 3 and elem(shape, 2) == 1)
-
-    with {:is_2d, true} <- {:is_2d, is_2d_image},
+    with %Evision.Mat{shape: shape} = image <- to_2d_image(mat),
          {:display_image_if_in_iterm2, {:ok, true}} <-
            {:display_image_if_in_iterm2,
             Application.fetch_env(:evision, :display_inline_image_iterm2)},
@@ -472,7 +505,8 @@ defmodule Evision.Mat do
          {:within_maximum_size, true} <-
            {:within_maximum_size,
             ((0 < h and elem(shape, 0) < h) or h == :infinity) and
-              ((0 < w and elem(shape, 1) < w) or w == :infinity)} do
+              ((0 < w and elem(shape, 1) < w) or w == :infinity)},
+         binary when is_binary(binary) <- Evision.imencode(".png", image) do
       {osc, st} =
         if String.starts_with?(System.get_env("TERM"), "screen") do
           {"\ePtmux;\e\e", "\a\e\\\r\n"}
@@ -480,7 +514,6 @@ defmodule Evision.Mat do
           {"\e", "\e\\\r\n"}
         end
 
-      binary = Evision.imencode(".png", mat)
       b64 = Base.encode64(binary)
       bin_size = byte_size(binary)
 
@@ -662,14 +695,6 @@ defmodule Evision.Mat do
     defimpl Kino.Render do
       require Logger
 
-      defp is_2d_image(%Evision.Mat{dims: 2}), do: true
-
-      defp is_2d_image(%Evision.Mat{channels: 1, shape: {_h, _w, 1}}) do
-        true
-      end
-
-      defp is_2d_image(_), do: false
-
       defp within_maximum_size(mat) do
         {max_height, max_width} = Evision.Mat.kino_render_image_max_size()
 
@@ -711,9 +736,9 @@ defmodule Evision.Mat do
                   raise RuntimeError, "Cannot render image with encoding `#{inspect(unknown)}`"
               end
 
-            with true <- is_2d_image(mat),
-                 true <- within_maximum_size(mat),
-                 encoded <- Evision.imencode(ext, mat),
+            with %Evision.Mat{} = image <- Evision.Mat.to_2d_image(mat),
+                 true <- within_maximum_size(image),
+                 encoded <- Evision.imencode(ext, image),
                  true <- is_binary(encoded) do
               {"Image", Kino.Image.new(encoded, format)}
             else

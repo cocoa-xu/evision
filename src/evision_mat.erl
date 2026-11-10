@@ -4,6 +4,25 @@
 
 -include("generated/evision.hrl").
 
+to_2d_image(#evision_mat{dims = 2, channels = Channels} = Mat) when Channels == 1; Channels == 3; Channels == 4 ->
+    Mat;
+to_2d_image(#evision_mat{dims = 3, channels = 1, shape = {_, _, Channels}} = Mat) when Channels == 1; Channels == 3; Channels == 4 ->
+    last_dim_as_channel(Mat);
+to_2d_image(#evision_mat{shape = Shape}) ->
+    {error, iolist_to_binary(io_lib:format("expected a 2D image with 1, 3 or 4 channels, got a Mat of shape ~p", [Shape]))}.
+
+to_rgb(Image) ->
+    case to_2d_image(Image) of
+        #evision_mat{channels = Channels} = Mat ->
+            evision:cvtColor(Mat, rgb_conversion_code(Channels));
+        Error ->
+            Error
+    end.
+
+rgb_conversion_code(1) -> evision_constant:cv_COLOR_GRAY2RGB();
+rgb_conversion_code(3) -> evision_constant:cv_COLOR_BGR2RGB();
+rgb_conversion_code(4) -> evision_constant:cv_COLOR_BGRA2RGB().
+
 to_struct(#{class := 'Elixir.Evision.Mat', channels := Channels, dims := Dims, type := Type, raw_type := RawType, shape := Shape, ref := Ref}) ->
     #evision_mat{
         channels = Channels,
@@ -296,7 +315,8 @@ total(Mat, StartDim, EndDim) when is_tuple(Mat), tuple_size(Mat) > 0, element(1,
 
 last_dim_as_channel(Mat) when is_tuple(Mat), tuple_size(Mat) > 0, element(1, Mat) == evision_mat ->
     MatRef = from_struct(Mat),
-    evision_nif:mat_last_dim_as_channel([{src, MatRef}]).
+    Ret = evision_nif:mat_last_dim_as_channel([{src, MatRef}]),
+    evision_internal_structurise:to_struct(Ret).
 
 zeros(Shape, {T, L}) when is_tuple(Shape) ->
     MatShape = [element(I, Shape) || I <- lists:seq(1, tuple_size(Shape))],
