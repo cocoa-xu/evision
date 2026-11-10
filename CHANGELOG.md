@@ -1,5 +1,96 @@
 # Changelog
 
+## v1.1.0 (2026-11-11)
+
+Changes below are relative to v1.1.0-rc.1. See the v1.1.0-rc.0 and v1.1.0-rc.1
+entries for the changes since v1.0.0.
+
+### Compatibility
+
+- OpenCV is upgraded to 5.1.0
+  ([#372](https://github.com/cocoa-xu/evision/pull/372)). OpenCV 5.1 removed
+  the TensorFlow, Caffe and Darknet importers from the DNN module; load ONNX
+  models instead. The DNN tests and examples now use ONNX models
+  ([#373](https://github.com/cocoa-xu/evision/pull/373),
+  [#381](https://github.com/cocoa-xu/evision/pull/381)).
+- Elixir 1.17 or later is required
+  ([#391](https://github.com/cocoa-xu/evision/pull/391)).
+- The Nx requirement is now `~> 0.12.1 or ~> 0.13.0 or ~> 1.0`
+  ([#393](https://github.com/cocoa-xu/evision/pull/393)).
+- `%Evision.Mat{}` has a new `ref_data` field, and the Erlang `#evision_mat{}`
+  record has a matching field after `ref`
+  ([#395](https://github.com/cocoa-xu/evision/pull/395)). Because a Mat now
+  carries its data as a binary:
+  - `inspect/1` shows `#Evision.Mat<...>` and hides `ref_data`.
+  - Hashing a Mat (`:erlang.phash2/1`, ETS keys, keys of large maps and
+    `MapSet`s) reads its data, and `:erlang.term_to_binary/1` or sending a Mat
+    to another node copies it. Use `mat.ref` as an identity key instead.
+- `Evision.Mat.channel_as_last_dim/1` returns the `Evision.Mat` struct, not a
+  bare reference, when the shape does not change (#395).
+
+### Added
+
+- Mat data of 4 KiB or more is allocated in Erlang binaries, so the garbage
+  collector accounts for it and frees dropped Mats promptly, including in
+  processes with large heaps such as GenServers, LiveView processes and
+  Livebook evaluators. Converting 300 1080p images in one process used to take
+  290 MiB to 1.8 GiB of extra memory, depending on the process heap size; it now
+  stays around 20 MiB and runs faster. Mat memory also shows up in
+  `:erlang.memory(:binary)` and observer. Processes that create and drop many
+  medium-sized Mats run the garbage collector more often; raise
+  `min_bin_vheap_size` for such processes if that matters (#395).
+- `Evision.HighGui.convertToShow/1` converts an image to 8-bit RGB the way
+  `imshow` displays it. `Evision.Mat.to_2d_image/1` turns a Mat or tensor into a
+  2D image with 1, 3 or 4 channels, and `Evision.Mat.to_rgb/1` converts GRAY,
+  BGR or BGRA images to RGB. Erlang counterparts are in `evision_highgui` and
+  `evision_mat` ([#394](https://github.com/cocoa-xu/evision/pull/394)).
+- OpenCV 5.1 additions, including `Evision.XFeat`, `Evision.SLAM.VisualOdometry`
+  and `Evision.Viz3D` (#372).
+- OpenCV's FP8 depth `CV_8F_E4M3FN` maps to `{:f8_e4m3fn, 8}` (`:f8_e4m3fn`).
+  `Evision.Backend` computes in f32, or in f64 when an f64 operand is present
+  ([#382](https://github.com/cocoa-xu/evision/pull/382)).
+- OpenCV is built with its Unicode and italic fonts for text drawing. The
+  Unicode font is downloaded when OpenCV is configured, so source builds without
+  network access leave it out
+  ([#377](https://github.com/cocoa-xu/evision/pull/377)).
+- `Evision.FishEye.cv_CALIB_*` constants
+  ([#378](https://github.com/cocoa-xu/evision/pull/378)).
+
+### Fixed
+
+- Enum arguments accept integers. Calls such as
+  `Evision.DNN.Net.setProfilingMode/2` used to raise `FunctionClauseError`
+  ([#370](https://github.com/cocoa-xu/evision/pull/370)).
+- Generated typespecs reference generated modules and enums correctly, the DNN
+  layer-shape specs are correct, and the XFeatures2D classes and `LayerParams`
+  resolve to `Evision.XFeatures2D.*` and maps, which makes
+  `Evision.DNN.Net.addLayer/5` usable
+  ([#366](https://github.com/cocoa-xu/evision/pull/366),
+  [#368](https://github.com/cocoa-xu/evision/pull/368),
+  [#376](https://github.com/cocoa-xu/evision/pull/376)).
+- Every generated Erlang module compiles: `-js` attributes are valid, enum specs
+  are integers, the GpuMat record is complete, and method return and string
+  types are correct
+  ([#367](https://github.com/cocoa-xu/evision/pull/367),
+  [#369](https://github.com/cocoa-xu/evision/pull/369),
+  [#389](https://github.com/cocoa-xu/evision/pull/389)).
+- Erlang struct conversion handles namespaced classes and option tuples,
+  `evision_mat:from_binary/5` and `from_binary_by_shape/3` pass the right
+  argument name ([#380](https://github.com/cocoa-xu/evision/pull/380)), and
+  `evision_mat:last_dim_as_channel/1` returns a record (#394).
+- `Evision.Mat.quicklook/1` and the Kino image tab show 3-D single-channel Mats,
+  and `quicklook/1` no longer raises for tensors that are not images (#394).
+- `Evision.Backend` bitwise operations raise on OpenCV errors instead of
+  returning them as results
+  ([#374](https://github.com/cocoa-xu/evision/pull/374)).
+
+### Notes
+
+- The livebooks in `examples/` pin `{:evision, "~> 1.0"}` and use ONNX models
+  ([#392](https://github.com/cocoa-xu/evision/pull/392)).
+- FreeBSD precompiled packages require FreeBSD 14.4 or later and OpenBLAS
+  (`pkg install openblas`), as for v1.1.0-rc.1.
+
 ## v1.1.0-rc.1 (2026-10-28)
 
 Second release candidate for v1.1.0. It replaces v1.1.0-rc.0, which was not
