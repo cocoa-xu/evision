@@ -65,7 +65,7 @@ jobs:
       MIX_ENV: "test"
       EVISION_PREFER_PRECOMPILED: "false"
       FFMPEG_VER: "6"
-      OTP_VERSION: "25.3.2.2"
+      OTP_VERSION: "26.2.5.9"
       ELIXIR_VERSION: "1.17.3"
       CMAKE_VER: "3.18.6"
     steps:
@@ -189,5 +189,5 @@ jobs:
           set -o pipefail
           find ./test -name '*_test.exs' -print0 | while IFS= read -r -d '' test_file; do
             echo "$test_file"
-            mix test --include require_downloading --include require_ffmpeg "$test_file" </dev/null || exit "$?"
+            mix test --include require_downloading --include require_ffmpeg --include wx "$test_file" </dev/null || exit "$?"
           done
