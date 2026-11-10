@@ -4,6 +4,44 @@ defmodule Evision.HighGui do
   """
 
   @doc """
+  Converts an image to 8-bit RGB, scaling it the way `imshow/2` displays it
+
+  This mirrors `convertToShow` in OpenCV's highgui. Results are rounded and saturated to `0..255`:
+
+  - `{:s, 8}`: `abs(x + 127)`
+  - `{:s, 16}`: `abs(x / 255 + 127)`
+  - `{:u, 16}`: `x / 255`
+  - `{:f, 32}` and `{:f, 64}`: `x * 255`, for values in `[0, 1]`
+
+  Unlike OpenCV, `{:f, 16}` and `{:bf, 16}` are accepted and widened to `{:f, 32}` first.
+
+  The image is first passed through `Evision.Mat.to_2d_image/1`, then `Evision.Mat.to_rgb/1`.
+  """
+  @spec convertToShow(Evision.Mat.t() | Nx.Tensor.t()) :: Evision.Mat.maybe_mat_out()
+  def convertToShow(image) do
+    with %Evision.Mat{type: type} = mat <- Evision.Mat.to_2d_image(image),
+         %Evision.Mat{} = u8 <- to_u8(mat, type) do
+      Evision.Mat.to_rgb(u8)
+    end
+  end
+
+  defp to_u8(mat, {:u, 8}), do: mat
+  defp to_u8(mat, {:s, 8}), do: Evision.convertScaleAbs(mat, alpha: 1, beta: 127)
+  defp to_u8(mat, {:s, 16}), do: Evision.convertScaleAbs(mat, alpha: 1 / 255, beta: 127)
+  defp to_u8(mat, {:u, 16}), do: Evision.convertScaleAbs(mat, alpha: 1 / 255)
+
+  defp to_u8(mat, {:f, bits}) when bits in [32, 64] do
+    # convertTo(CV_8U, 255). Evision.multiply with a scalar would scale only the first channel.
+    Evision.addWeighted(mat, 255.0, mat, 0.0, 0.0, dtype: Evision.Constant.cv_8U())
+  end
+
+  defp to_u8(mat, type) when type in [{:f, 16}, {:bf, 16}] do
+    with %Evision.Mat{} = f32 <- Evision.Mat.as_type(mat, {:f, 32}), do: to_u8(f32, {:f, 32})
+  end
+
+  defp to_u8(_mat, type), do: {:error, "cannot show an image of type #{inspect(type)}"}
+
+  @doc """
   Show a mat in a named window
 
   #### Positional Arguments
