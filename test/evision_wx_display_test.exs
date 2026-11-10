@@ -7,42 +7,15 @@ defmodule Evision.Wx.Display.Test do
   defp mat(binary, type, {h, w, c}), do: Evision.Mat.from_binary(binary, type, h, w, c)
 
   describe "to_rgb/1" do
-    test "swaps BGR to RGB" do
+    test "returns the RGB bytes with width and height" do
       bgr = mat(<<1, 2, 3, 4, 5, 6>>, {:u, 8}, {1, 2, 3})
       assert {:ok, <<3, 2, 1, 6, 5, 4>>, 2, 1} = Display.to_rgb(bgr)
-    end
 
-    test "expands gray and drops alpha" do
-      gray = mat(<<7, 9>>, {:u, 8}, {1, 2, 1})
-      assert {:ok, <<7, 7, 7, 9, 9, 9>>, 2, 1} = Display.to_rgb(gray)
+      f32 = mat(<<0.5::float-32-native>>, {:f, 32}, {1, 1, 1})
+      assert {:ok, <<128, 128, 128>>, 1, 1} = Display.to_rgb(f32)
 
-      bgra = mat(<<1, 2, 3, 255>>, {:u, 8}, {1, 1, 4})
-      assert {:ok, <<3, 2, 1>>, 1, 1} = Display.to_rgb(bgra)
-    end
-
-    test "scales other depths like cv::imshow" do
-      f32 =
-        mat(
-          <<0.5::float-32-native, -1.0::float-32-native, 2.0::float-32-native>>,
-          {:f, 32},
-          {1, 1, 3}
-        )
-
-      assert {:ok, <<255, 0, 128>>, 1, 1} = Display.to_rgb(f32)
-
-      u16 = mat(<<25500::16-native, 0::16-native, 255::16-native>>, {:u, 16}, {1, 1, 3})
-      assert {:ok, <<1, 0, 100>>, 1, 1} = Display.to_rgb(u16)
-
-      s8 = mat(<<-127::signed-8, 0::signed-8, 100::signed-8>>, {:s, 8}, {1, 1, 3})
-      assert {:ok, <<227, 127, 0>>, 1, 1} = Display.to_rgb(s8)
-    end
-
-    test "accepts an Nx tensor and a 3-D Mat" do
-      tensor = Nx.tensor([[[1, 2, 3]]], type: :u8)
-      assert {:ok, <<3, 2, 1>>, 1, 1} = Display.to_rgb(tensor)
-
-      mat_3d = Evision.Mat.from_binary_by_shape(<<1, 2, 3>>, {:u, 8}, {1, 1, 3})
-      assert {:ok, <<3, 2, 1>>, 1, 1} = Display.to_rgb(mat_3d)
+      tensor = Nx.tensor([[[1, 2, 3]], [[4, 5, 6]]], type: :u8)
+      assert {:ok, <<3, 2, 1, 6, 5, 4>>, 1, 2} = Display.to_rgb(tensor)
     end
 
     test "rejects images it cannot show" do

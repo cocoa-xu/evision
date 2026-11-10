@@ -7,62 +7,16 @@ defmodule Evision.Wx.Display do
 
   def mouse_event_types, do: Map.keys(mouse_events())
 
-  def to_rgb(%Nx.Tensor{} = tensor) do
-    case Evision.Mat.from_nx_2d(tensor) do
-      %Evision.Mat{} = mat -> to_rgb(mat)
-      {:error, _} = error -> error
+  def to_rgb(%struct{} = image) when struct in [Evision.Mat, Nx.Tensor] do
+    with %Evision.Mat{shape: {height, width, _}} = rgb <- Evision.HighGui.convertToShow(image),
+         binary when is_binary(binary) <- Evision.Mat.to_binary(rgb) do
+      {:ok, binary, width, height}
     end
-  end
-
-  def to_rgb(%Evision.Mat{dims: 2, shape: shape, channels: channels, type: type} = mat) do
-    with {:ok, height, width} <- image_size(shape),
-         {:ok, code} <- rgb_conversion(channels),
-         %Evision.Mat{} = u8 <- to_u8(mat, type),
-         %Evision.Mat{} = rgb <- Evision.cvtColor(u8, code),
-         rgb when is_binary(rgb) <- Evision.Mat.to_binary(rgb) do
-      {:ok, rgb, width, height}
-    else
-      {:error, _} = error -> error
-    end
-  end
-
-  def to_rgb(%Evision.Mat{dims: 3, channels: 1, shape: {_, _, c}} = mat) when c in [1, 3, 4] do
-    mat |> Evision.Mat.last_dim_as_channel() |> to_rgb()
-  end
-
-  def to_rgb(%Evision.Mat{shape: shape}) do
-    {:error, "cannot show an image of shape #{inspect(shape)}"}
   end
 
   def to_rgb(other) do
     {:error, "expected an Evision.Mat or Nx.Tensor, got: #{inspect(other)}"}
   end
-
-  defp image_size({height, width}) when height > 0 and width > 0, do: {:ok, height, width}
-  defp image_size({height, width, _}) when height > 0 and width > 0, do: {:ok, height, width}
-  defp image_size(shape), do: {:error, "cannot show an image of shape #{inspect(shape)}"}
-
-  defp rgb_conversion(1), do: {:ok, Constant.cv_COLOR_GRAY2RGB()}
-  defp rgb_conversion(3), do: {:ok, Constant.cv_COLOR_BGR2RGB()}
-  defp rgb_conversion(4), do: {:ok, Constant.cv_COLOR_BGRA2RGB()}
-
-  defp rgb_conversion(channels),
-    do: {:error, "cannot show an image with #{channels} channels"}
-
-  # Same scaling as cv::imshow (convertToShow in modules/highgui/src/precomp.hpp).
-  defp to_u8(mat, {:u, 8}), do: mat
-  defp to_u8(mat, {:s, 8}), do: Evision.convertScaleAbs(mat, alpha: 1, beta: 127)
-  defp to_u8(mat, {:s, 16}), do: Evision.convertScaleAbs(mat, alpha: 1 / 255, beta: 127)
-  defp to_u8(mat, {:u, 16}), do: Evision.convertScaleAbs(mat, alpha: 1 / 255)
-
-  defp to_u8(mat, {:f, bits}) when bits in [32, 64] do
-    # convertTo(CV_8U, 255). Evision.multiply with a scalar would scale only the first channel.
-    Evision.addWeighted(mat, 255.0, mat, 0.0, 0.0, dtype: Constant.cv_8U())
-  end
-
-  defp to_u8(mat, {:f, 16}), do: mat |> Evision.Mat.as_type({:f, 32}) |> to_u8({:f, 32})
-  defp to_u8(mat, {:bf, 16}), do: mat |> Evision.Mat.as_type({:f, 32}) |> to_u8({:f, 32})
-  defp to_u8(_mat, type), do: {:error, "cannot show an image of type #{inspect(type)}"}
 
   def fit_rect({image_w, image_h}, {canvas_w, canvas_h}, keep_ratio?) do
     {w, h} =
