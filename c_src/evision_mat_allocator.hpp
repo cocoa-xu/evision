@@ -3,6 +3,7 @@
 #pragma once
 
 #include <erl_nif.h>
+#include <cstring>
 #include <mutex>
 #include <new>
 #include "opencv2/core.hpp"
@@ -39,6 +40,7 @@ public:
                     step[i] = total;
                 }
             }
+            CV_Assert(sizes[i] >= 0 && (sizes[i] == 0 || total <= SIZE_MAX / (size_t)sizes[i]));
             total *= sizes[i];
         }
 
@@ -74,8 +76,12 @@ public:
             delete block;
             CV_Error(cv::Error::StsNoMem, "Failed to allocate UMatData");
         }
-        u->origdata = block->bin.data;
-        u->data = cv::alignPtr(block->bin.data, (int)kEvisionMatAlign);
+        // OpenCL treats origdata as the start of the host buffer, so both point at the aligned data.
+        uchar* data = cv::alignPtr(block->bin.data, (int)kEvisionMatAlign);
+        // The whole binary becomes visible to Erlang, so the padding must not expose stale memory.
+        memset(block->bin.data, 0, data - block->bin.data);
+        memset(data + total, 0, block->bin.data + block->bin.size - (data + total));
+        u->data = u->origdata = data;
         u->size = total;
         u->userdata = block;
         return u;

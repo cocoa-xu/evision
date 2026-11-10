@@ -2137,6 +2137,10 @@ defmodule Evision.Mat do
   - otherwise, a new Evision.Mat that has dims=`[dims | channels]` will be returned
   """
   @spec channel_as_last_dim(maybe_mat_in()) :: maybe_mat_out()
+  def channel_as_last_dim(%T{ref: ref} = mat) do
+    with ^ref <- channel_as_last_dim(ref), do: mat
+  end
+
   def channel_as_last_dim(mat) when is_struct(mat) do
     mat = Evision.Internal.Structurise.from_struct(mat)
     channel_as_last_dim(mat)

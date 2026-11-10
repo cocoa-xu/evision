@@ -16,6 +16,17 @@ defmodule Evision.Mat.RefData.Test do
     assert byte_size(rgb.ref_data) >= @big_bytes
   end
 
+  test "ref_data holds only the data and zeroed padding" do
+    ref_data = sevens(:binary.copy(<<7>>, @big_bytes)).ref_data
+    counts = for <<byte <- ref_data>>, reduce: %{}, do: (acc -> Map.update(acc, byte, 1, &(&1 + 1)))
+    assert counts == %{7 => @big_bytes, 0 => byte_size(ref_data) - @big_bytes}
+  end
+
+  test "channel_as_last_dim keeps the struct when the shape does not change" do
+    mat = Mat.zeros({1024, 1024}, :u8)
+    assert Mat.channel_as_last_dim(mat) == mat
+  end
+
   test "small and empty Mats have no ref_data" do
     assert Mat.zeros({2, 2}, :u8).ref_data == nil
     assert Mat.empty().ref_data == nil
