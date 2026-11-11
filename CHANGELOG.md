@@ -15,6 +15,9 @@ entries for the changes since v1.0.0.
   [#381](https://github.com/cocoa-xu/evision/pull/381)).
 - Elixir 1.17 or later is required
   ([#391](https://github.com/cocoa-xu/evision/pull/391)).
+- The precompiled macOS packages require macOS 15 or later on both Apple silicon
+  and Intel. The Apple silicon packages of v1.1.0-rc.1 required macOS 14
+  ([#397](https://github.com/cocoa-xu/evision/pull/397)).
 - The Nx requirement is now `~> 0.12.1 or ~> 0.13.0 or ~> 1.0`
   ([#393](https://github.com/cocoa-xu/evision/pull/393)).
 - `%Evision.Mat{}` has a new `ref_data` field, and the Erlang `#evision_mat{}`
