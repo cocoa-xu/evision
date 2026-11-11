@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.1.1 (2026-11-12)
+
+### Fixed
+
+- Building from source works again. The v1.1.0 package on Hex was missing a
+  header file, `c_src/evision_mat_allocator.hpp`. Precompiled binaries were
+  fine ([#399](https://github.com/cocoa-xu/evision/pull/399)).
+
 ## v1.1.0 (2026-11-11)
 
 Changes below are relative to v1.1.0-rc.1. See the v1.1.0-rc.0 and v1.1.0-rc.1
