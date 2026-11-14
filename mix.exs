@@ -147,7 +147,11 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
         {"aarch64-apple-darwin-xros", ["aarch64", "apple", "darwin"]}
 
       _ ->
-        target = String.split(to_string(:erlang.system_info(:system_architecture)), "-")
+        target =
+          case :os.type() do
+            {:win32, _} -> ["win32"]
+            _ -> String.split(to_string(:erlang.system_info(:system_architecture)), "-")
+          end
 
         [arch, os, abi] =
           case Enum.count(target) do
