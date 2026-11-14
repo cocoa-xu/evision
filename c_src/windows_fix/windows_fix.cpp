@@ -123,7 +123,6 @@ static ERL_NIF_TERM evision_windows_fix_run_once(ErlNifEnv* env, int argc, const
         wcscat_s(newPath, _countof(newPath), (const wchar_t*)opencvLibDirectoryPCWSTR);
 
         SetEnvironmentVariableW(L"PATH", newPath);
-        SetDefaultDllDirectories(LOAD_LIBRARY_SEARCH_DEFAULT_DIRS | LOAD_LIBRARY_SEARCH_USER_DIRS);
         DLL_DIRECTORY_COOKIE ret = AddDllDirectory(opencvLibDirectoryPCWSTR);
         if (ret == 0) {
             DWORD last_error = GetLastError();
@@ -157,7 +156,6 @@ static ERL_NIF_TERM evision_windows_fix_run_once(ErlNifEnv* env, int argc, const
             wcscat_s(newPath, _countof(newPath), (const wchar_t*)CUDARuntimeDIRBuffer);
 
             SetEnvironmentVariableW(L"PATH", newPath);
-            SetDefaultDllDirectories(LOAD_LIBRARY_SEARCH_DEFAULT_DIRS | LOAD_LIBRARY_SEARCH_USER_DIRS);
             DLL_DIRECTORY_COOKIE ret = AddDllDirectory(CUDARuntimeDIRBuffer);
             if (ret == 0) {
                 DWORD last_error = GetLastError();
