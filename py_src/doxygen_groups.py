@@ -46,11 +46,18 @@ def _is_close(line):
     return "@}" in line
 
 
+def _scan_order(path):
+    m = re.search(r"/modules/([^/]+)/", path)
+    return ("opencv_contrib" in path, m.group(1) if m else "", path)
+
+
 def scan(srcfiles):
     titles = {}
     func_to_group = {}
 
-    for path in srcfiles:
+    # The first declaration of a name picks its group. CMake orders headers by
+    # module dependencies, and CUDA modules change that order, so sort first.
+    for path in sorted(srcfiles, key=_scan_order):
         try:
             with open(path, "r", encoding="utf-8", errors="replace") as f:
                 text = f.read()
