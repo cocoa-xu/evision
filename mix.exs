@@ -1565,6 +1565,7 @@ defmodule Evision.MixProject do
     [
       "Core Functionality": [
         Evision.Constant,
+        Evision.Constant.CUDA,
         Evision.Backend,
         ~r/^Evision\.(Mat|SparseMat|UMat|UMatData|UMatUsageFlags)(\..*)?$/,
         ~r/^Evision\.(AsyncArray|Algorithm|AlgorithmHint|RotatedRect|KeyPoint|DMatch|RNG|TickMeter|Subdiv2D|IStreamReader)$/,
