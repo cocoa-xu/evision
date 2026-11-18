@@ -7,6 +7,9 @@ defmodule Evision.HighGui.Test do
 
   @moduletag :highgui
 
+  # The first window starts the GUI thread, which can take seconds on CI.
+  @timeout 30_000
+
   setup do
     on_exit(fn -> HighGui.destroyAllWindows() end)
     %{image: Evision.Mat.zeros({120, 160}, :u8)}
@@ -22,7 +25,7 @@ defmodule Evision.HighGui.Test do
              end)
 
     assert :ok = HighGui.waitKey(1)
-    assert_receive {:pos, 3, pid}, 5_000
+    assert_receive {:pos, 3, pid}, @timeout
     assert pid == Process.whereis(:evision_highgui)
   end
 
@@ -33,8 +36,8 @@ defmodule Evision.HighGui.Test do
     assert :ok = HighGui.createTrackbar("pos", "replace", 2, 10, &send(test, {:new, &1}))
     assert :ok = HighGui.waitKey(1)
 
-    assert_receive {:old, 1}, 5_000
-    assert_receive {:new, 2}, 5_000
+    assert_receive {:old, 1}, @timeout
+    assert_receive {:new, 2}, @timeout
     refute_received {:old, 2}
   end
 
@@ -46,12 +49,14 @@ defmodule Evision.HighGui.Test do
              HighGui.createTrackbar("pos", "busy", 1, 10, fn _ ->
                # Let the GUI thread enter waitKey(3_000) first.
                Process.sleep(200)
+               start = System.monotonic_time(:millisecond)
                :ok = HighGui.imshow("busy", image)
-               send(test, :shown)
+               send(test, {:shown, System.monotonic_time(:millisecond) - start})
              end)
 
     assert :ok = HighGui.waitKey(3_000)
-    assert_receive :shown, 1_000
+    assert_receive {:shown, ms}, @timeout
+    assert ms < 1_000
   end
 
   test "a failing callback is logged and later callbacks still run", %{image: image} do
@@ -63,7 +68,7 @@ defmodule Evision.HighGui.Test do
         assert :ok = HighGui.createTrackbar("bad", "failing", 1, 10, fn _ -> raise "boom" end)
         assert :ok = HighGui.createTrackbar("good", "failing", 2, 10, &send(test, {:good, &1}))
         assert :ok = HighGui.waitKey(1)
-        assert_receive {:good, 2}, 5_000
+        assert_receive {:good, 2}, @timeout
       end)
 
     assert log =~ "Evision.HighGui callback failed"
