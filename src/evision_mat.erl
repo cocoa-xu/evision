@@ -23,14 +23,15 @@ rgb_conversion_code(1) -> evision_constant:cv_COLOR_GRAY2RGB();
 rgb_conversion_code(3) -> evision_constant:cv_COLOR_BGR2RGB();
 rgb_conversion_code(4) -> evision_constant:cv_COLOR_BGRA2RGB().
 
-to_struct(#{class := 'Elixir.Evision.Mat', channels := Channels, dims := Dims, type := Type, raw_type := RawType, shape := Shape, ref := Ref}) ->
+to_struct(#{class := 'Elixir.Evision.Mat', channels := Channels, dims := Dims, type := Type, raw_type := RawType, shape := Shape, ref := Ref} = Mat) ->
     #evision_mat{
         channels = Channels,
         dims = Dims,
         type = Type,
         raw_type = RawType,
         shape = Shape, 
-        ref = Ref
+        ref = Ref,
+        ref_data = maps:get(ref_data, Mat, nil)
     };
 to_struct(Any) ->
     evision_internal_structurise:to_struct(Any).

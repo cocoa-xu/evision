@@ -335,6 +335,9 @@ def is_enum_type(argtype, classname, decl, get_type: str=None):
     if get_type is None:
         return argtype in enum_types
     elif get_type == 'elixir':
+        enum_module = resolve_parsed_enum(argtype, classname, decl)
+        if enum_module is not None:
+            return f'{enum_module}.enum()'
         return enum_types[argtype]
     else:
         return 'integer()'

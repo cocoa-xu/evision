@@ -2,7 +2,7 @@ defmodule Evision.MixProject.Metadata do
   @moduledoc false
 
   def app, do: :evision
-  def version, do: "1.1.0-rc.1"
+  def version, do: "1.1.1"
   def github_url, do: "https://github.com/cocoa-xu/evision"
   def opencv_version, do: "5.1.0"
   def compatible_opencv_versions, do: ["5.1.0"]
@@ -147,7 +147,11 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
         {"aarch64-apple-darwin-xros", ["aarch64", "apple", "darwin"]}
 
       _ ->
-        target = String.split(to_string(:erlang.system_info(:system_architecture)), "-")
+        target =
+          case :os.type() do
+            {:win32, _} -> ["win32"]
+            _ -> String.split(to_string(:erlang.system_info(:system_architecture)), "-")
+          end
 
         [arch, os, abi] =
           case Enum.count(target) do
@@ -1545,6 +1549,7 @@ defmodule Evision.MixProject do
     [
       "Core Functionality": [
         Evision.Constant,
+        Evision.Constant.CUDA,
         Evision.Backend,
         ~r/^Evision\.(Mat|SparseMat|UMat|UMatData|UMatUsageFlags)(\..*)?$/,
         ~r/^Evision\.(AsyncArray|Algorithm|AlgorithmHint|RotatedRect|KeyPoint|DMatch|RNG|TickMeter|Subdiv2D|IStreamReader)$/,
@@ -1848,6 +1853,7 @@ defmodule Evision.MixProject do
           c_src/erlcompat.hpp
           c_src/evision_consts.h
           c_src/evision_custom_headers.h
+          c_src/evision_mat_allocator.hpp
           c_src/evision_native_safety.hpp
           c_src/evision_numeric_cast.hpp
           c_src/evision_broadcast.hpp

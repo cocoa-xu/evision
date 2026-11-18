@@ -76,6 +76,9 @@ class Pipeline(object):
         self.enum_names = {}
         self.enum_names_io = StringIO()
         self.enum_names_io_erlang = StringIO()
+        self.cuda_enum_names = {}
+        self.cuda_enum_names_io = StringIO()
+        self.cuda_enum_names_io_erlang = StringIO()
         self.code_include = StringIO()
         self.code_enums = StringIO()
         self.code_types = StringIO()
@@ -126,7 +129,7 @@ class Pipeline(object):
         self.evision_constant_erlang.write('-module(evision_constant).\n-compile(nowarn_export_all).\n-compile([export_all]).\n\n')
 
         self.evision_erlang_hrl.write(
-            "-record(evision_mat, {channels, dims, type, raw_type, shape, ref}).\n"
+            "-record(evision_mat, {channels, dims, type, raw_type, shape, ref, ref_data}).\n"
             "-record(evision_cuda_gpumat, {channels, type, raw_type, shape, ref, elemSize, step, device_id}).\n"
             "-record(evision_videocapture, {fps, frame_count, frame_width, frame_height, isOpened, ref}).\n"
         )
@@ -243,22 +246,28 @@ class Pipeline(object):
 
         if not skip_this:
             erl_const_name = map_argname('elixir', erl_const_name, ignore_upper_starting=True)
-            if self.enum_names.get(val, None) is not None:
+            if name.split('.')[1].startswith('cuda'):
+                enum_names = self.cuda_enum_names
+                names_io, names_io_erlang = self.cuda_enum_names_io, self.cuda_enum_names_io_erlang
+            else:
+                enum_names = self.enum_names
+                names_io, names_io_erlang = self.enum_names_io, self.enum_names_io_erlang
+            if enum_names.get(val, None) is not None:
                 val = f'cv_{val}()'
 
             self.typed_enums[struct_name].append((erl_const_name, val, val_erlang))
             
-            if self.enum_names.get(erl_const_name, None) is None:
-                self.enum_names[erl_const_name] = val
-                self.enum_names_io.write(f"  def cv_{erl_const_name}, do: {val}\n")
-                self.enum_names_io_erlang.write(f"cv_{erl_const_name}() ->\n    {val_erlang}.\n")
+            if enum_names.get(erl_const_name, None) is None:
+                enum_names[erl_const_name] = val
+                names_io.write(f"  def cv_{erl_const_name}, do: {val}\n")
+                names_io_erlang.write(f"cv_{erl_const_name}() ->\n    {val_erlang}.\n")
             else:
-                if self.enum_names[erl_const_name] != val:
+                if enum_names[erl_const_name] != val:
                     erl_const_name = map_argname('elixir', f'{module_name}_{erl_const_name}', ignore_upper_starting=True)
-                    if self.enum_names.get(erl_const_name, None) is None:
-                        self.enum_names[erl_const_name] = val
-                        self.enum_names_io.write(f"  def cv_{erl_const_name}, do: {val}\n")
-                        self.enum_names_io_erlang.write(f"cv_{erl_const_name}() ->\n    {val_erlang}.\n")
+                    if enum_names.get(erl_const_name, None) is None:
+                        enum_names[erl_const_name] = val
+                        names_io.write(f"  def cv_{erl_const_name}, do: {val}\n")
+                        names_io_erlang.write(f"cv_{erl_const_name}() ->\n    {val_erlang}.\n")
                     else:
                         raise "duplicated constant name"
 
@@ -962,6 +971,9 @@ class Pipeline(object):
             self.evision_constant_elixir.write(self.enum_names_io.getvalue())
             self.evision_constant_elixir.write('\nend\n')
             self.save(erl_output_path, "evision_constant.ex", self.evision_constant_elixir)
+            self.save(erl_output_path, "evision_constant_cuda.ex",
+                'defmodule Evision.Constant.CUDA do\n  import Bitwise, warn: false\n\n'
+                + self.cuda_enum_names_io.getvalue() + '\nend\n')
 
             # 'evision.ex'
             self.evision_ex.end('elixir')
@@ -996,6 +1008,9 @@ class Pipeline(object):
             self.evision_constant_erlang.write(self.enum_names_io_erlang.getvalue())
             self.evision_constant_erlang.write('\n')
             self.save(erlang_output_path, "evision_constant.erl", self.evision_constant_erlang)
+            self.save(erlang_output_path, "evision_constant_cuda.erl",
+                '-module(evision_constant_cuda).\n-compile(nowarn_export_all).\n-compile([export_all]).\n\n'
+                + self.cuda_enum_names_io_erlang.getvalue() + '\n')
 
             # 'evision.hrl'
             self.save(erlang_output_path, "evision.hrl", self.evision_erlang_hrl)
