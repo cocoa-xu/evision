@@ -57,6 +57,20 @@ def test_enums_resolve_from_the_innermost_scope(enums, classname, argtype, decl,
     assert map_argtype_in_spec_elixir(classname, argtype, True, decl) == expected
 
 
+@pytest.mark.parametrize('classname,expected', [
+    ('dnn_Image2BlobParams', 'Evision.DataLayout.enum()'),
+    ('xxx_Foo', 'Evision.XXX.DataLayout.enum()'),
+])
+def test_scoped_enums_win_over_the_enum_table(enums, monkeypatch, classname, expected):
+    monkeypatch.setitem(helper.ENUM_TYPES, 'DataLayout', 'Evision.DNN.DataLayout.enum()')
+    enums.update({'DataLayout': 'Evision.DataLayout', 'xxx_DataLayout': 'Evision.XXX.DataLayout'})
+    assert map_argtype_in_spec_elixir(classname, 'DataLayout', True, []) == expected
+
+
+def test_the_enum_table_covers_enums_outside_cv(enums):
+    assert map_argtype_in_spec_elixir('flann_Index', 'cvflann::flann_distance_t', False, ['cv.flann.Index.getDistance']) == 'integer()'
+
+
 
 @pytest.mark.parametrize('classname,argtype,decl,expected', [
     ('ccm_ColorCorrectionModel', 'ColorSpace', ['cv.ccm.ColorCorrectionModel.setColorSpace'], 'integer()'),

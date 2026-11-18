@@ -1,10 +1,10 @@
-"""Hand-curated mappings from OpenCV enum names to their Evision typespec
-representations. Consumed by `helper.is_enum_type`.
+"""Hand-curated OpenCV enum names and their Evision typespecs.
+Consumed by `helper.is_enum_type`.
 
-Values are emitted into `@spec` lines and `@type` annotations on the
-Elixir side, so they must be valid Elixir typespec fragments. Most map
-to a generated `Evision.X.Y.enum()` macro; some legacy types map to
-`integer()` because they predate the typed-enum machinery.
+A key marks an argument type as an enum. Its spec comes from the enum the
+name resolves to in the C++ scope (`helper.resolve_parsed_enum`), the same
+way C++ looks it up. The value here is used only when that finds nothing,
+as for the `cvflann::` types, so it must be a valid Elixir typespec fragment.
 """
 
 ENUM_TYPES = {
@@ -26,7 +26,7 @@ ENUM_TYPES = {
     'AKAZE::DescriptorType': 'Evision.AKAZE.DescriptorType.enum()',
     'KAZE_DiffusivityType': 'Evision.KAZE.DiffusivityType.enum()',
     'KAZE::DiffusivityType': 'Evision.KAZE.DiffusivityType.enum()',
-    'DescriptorMatcher_MatcherType': 'integer()',
+    'DescriptorMatcher_MatcherType': 'Evision.DescriptorMatcher.MatcherType.enum()',
     'AgastFeatureDetector_DetectorType': 'Evision.AgastFeatureDetector.DetectorType.enum()',
     'AgastFeatureDetector::DetectorType': 'Evision.AgastFeatureDetector.DetectorType.enum()',
     'FastFeatureDetector_DetectorType': 'Evision.FastFeatureDetector.DetectorType.enum()',
@@ -46,10 +46,9 @@ ENUM_TYPES = {
     'ScoreMethod': 'Evision.ScoreMethod.enum()',
     'AlgorithmHint': 'Evision.AlgorithmHint.enum()',
     'HOGDescriptor_HistogramNormType': 'Evision.HOGDescriptor.HistogramNormType.enum()',
-    "VolumeType": 'Evision.KinFu.VolumeType.enum()',
-    "kinfu_VolumeType": 'Evision.KinFu.VolumeType.enum()',
+    "VolumeType": 'Evision.VolumeType.enum()',
     "text_decoder_mode": 'Evision.Text.DecoderMode.enum()',
-    "cuda_ConnectedComponentsAlgorithmsTypes": 'Evision.ConnectedComponentsAlgorithmsTypes.enum()',
+    "cuda_ConnectedComponentsAlgorithmsTypes": 'Evision.CUDA.ConnectedComponentsAlgorithmsTypes.enum()',
     'CCM_TYPE': 'Evision.CCM.CCM_TYPE.enum()',
     'COLOR_SPACE': 'Evision.CCM.COLOR_SPACE.enum()',
     'CONST_COLOR': 'Evision.CCM.CONST_COLOR.enum()',
@@ -60,7 +59,7 @@ ENUM_TYPES = {
     'CornerRefineMethod': 'Evision.ArUco.CornerRefineMethod.enum()',
     'PatternPositionType': 'Evision.ArUco.PatternPositionType.enum()',
     'PredefinedDictionaryType': 'Evision.ArUco.PredefinedDictionaryType.enum()',
-    'DataLayout': 'Evision.DNN.DataLayout.enum()',
+    'DataLayout': 'Evision.DataLayout.enum()',
     'ImagePaddingMode': 'Evision.DNN.ImagePaddingMode.enum()',
     'TYPECHART': 'Evision.MCC.TYPECHART.enum()',
     'SolverType': 'integer()',
@@ -73,7 +72,6 @@ ENUM_TYPES = {
     # Prefixed forms — the 4.13 hdr_parser exposes enum argtypes with
     # their parent-namespace prefix; older 4.11 paths kept only the
     # unprefixed name above.
-    'dnn_DataLayout': 'Evision.DNN.DataLayout.enum()',
     'dnn_ImagePaddingMode': 'Evision.DNN.ImagePaddingMode.enum()',
     'aruco_PatternPositionType': 'Evision.ArUco.PatternPositionType.enum()',
     # New in OpenCV 4.13.
