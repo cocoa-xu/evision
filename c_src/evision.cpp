@@ -3217,10 +3217,7 @@ on_load(ErlNifEnv* env, void**, ERL_NIF_TERM)
     kAtomNu12 = evision::nif::atom(env, "nu12");
     kAtomNu03 = evision::nif::atom(env, "nu03");
 
-    const char *mat_allocator = getenv("EVISION_MAT_ALLOCATOR");
-    if (mat_allocator == nullptr || strcmp(mat_allocator, "std") != 0) {
-        cv::Mat::setDefaultAllocator(&evision_binary_mat_allocator());
-    }
+    cv::Mat::setDefaultAllocator(&evision_binary_mat_allocator());
     return 0;
 }
 
