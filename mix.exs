@@ -2,7 +2,7 @@ defmodule Evision.MixProject.Metadata do
   @moduledoc false
 
   def app, do: :evision
-  def version, do: "1.1.0-rc.1"
+  def version, do: "1.1.1"
   def github_url, do: "https://github.com/cocoa-xu/evision"
   def opencv_version, do: "5.1.0"
   def compatible_opencv_versions, do: ["5.1.0"]
@@ -147,7 +147,11 @@ defmodule Mix.Tasks.Compile.EvisionPrecompiled do
         {"aarch64-apple-darwin-xros", ["aarch64", "apple", "darwin"]}
 
       _ ->
-        target = String.split(to_string(:erlang.system_info(:system_architecture)), "-")
+        target =
+          case :os.type() do
+            {:win32, _} -> ["win32"]
+            _ -> String.split(to_string(:erlang.system_info(:system_architecture)), "-")
+          end
 
         [arch, os, abi] =
           case Enum.count(target) do
@@ -1040,7 +1044,7 @@ defmodule Evision.MixProject do
       app: Metadata.app(),
       name: "Evision",
       version: Metadata.version(),
-      elixir: "~> 1.11",
+      elixir: "~> 1.17",
       deps: deps(),
       docs: docs(),
       aliases: aliases(),
@@ -1362,7 +1366,7 @@ defmodule Evision.MixProject do
       {:castore, "~> 0.1 or ~> 1.0"},
 
       # runtime
-      {:nx, "~> 0.12.1"},
+      {:nx, "~> 0.12.1 or ~> 0.13.0 or ~> 1.0"},
 
       # optional
       ## kino: for smart cells and better output in livebook
@@ -1380,7 +1384,7 @@ defmodule Evision.MixProject do
 
   defp torchx_benchmark_deps do
     if System.get_env("ENABLE_TORCHX_FOR_BENCHMARKING") == "true" do
-      [{:torchx, "~> 0.12.0", only: :test, optional: true}]
+      [{:torchx, "~> 1.0", only: :test, optional: true}]
     else
       []
     end
@@ -1561,6 +1565,7 @@ defmodule Evision.MixProject do
     [
       "Core Functionality": [
         Evision.Constant,
+        Evision.Constant.CUDA,
         Evision.Backend,
         ~r/^Evision\.(Mat|SparseMat|UMat|UMatData|UMatUsageFlags)(\..*)?$/,
         ~r/^Evision\.(AsyncArray|Algorithm|AlgorithmHint|RotatedRect|KeyPoint|DMatch|RNG|TickMeter|Subdiv2D|IStreamReader)$/,
@@ -1864,6 +1869,7 @@ defmodule Evision.MixProject do
           c_src/erlcompat.hpp
           c_src/evision_consts.h
           c_src/evision_custom_headers.h
+          c_src/evision_mat_allocator.hpp
           c_src/evision_native_safety.hpp
           c_src/evision_numeric_cast.hpp
           c_src/evision_broadcast.hpp

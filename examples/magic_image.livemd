@@ -4,7 +4,7 @@
 
 ```elixir
 Mix.install([
-  {:evision, "~> 0.2"},
+  {:evision, "~> 1.0"},
   {:kino, "~> 0.11"},
   {:req, "~> 0.5"},
   {:nx, "~> 0.4"}
@@ -45,7 +45,7 @@ load_layer = fn kino_input, url, save_as ->
 
     nil ->
       unless File.exists?(save_as) do
-        Req.get!(url, http_errors: :raise, output: save_as, cache: false)
+        Req.get!(url, http_errors: :raise, into: File.stream!(save_as))
       end
 
       Evision.imread(save_as, flags: Evision.Constant.cv_IMREAD_GRAYSCALE())

@@ -51,7 +51,7 @@ jobs:
       # evision related env vars
       MIX_ENV: prod
       OPENCV_VER: "5.1.0"
-      ELIXIR_VERSION: "1.15.2"
+      ELIXIR_VERSION: "1.17.3"
       OTP_VERSION: "25"
       NIF_VERSION: "2.16"
       EVISION_PREFER_PRECOMPILED: "false"

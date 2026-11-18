@@ -66,7 +66,7 @@ jobs:
       EVISION_PREFER_PRECOMPILED: "false"
       FFMPEG_VER: "6"
       OTP_VERSION: "25.3.2.2"
-      ELIXIR_VERSION: "1.15.2"
+      ELIXIR_VERSION: "1.17.3"
       CMAKE_VER: "3.18.6"
     steps:
       - uses: actions/checkout@v7

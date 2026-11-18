@@ -62,8 +62,8 @@ jobs:
     env:
       MIX_ENV: test
       OPENCV_VER: "5.1.0"
-      OTP_VERSION: "26"
-      ELIXIR_VERSION: "1.16.3"
+      OTP_VERSION: "29"
+      ELIXIR_VERSION: "1.20.4"
       EVISION_PREFER_PRECOMPILED: "false"
       MAKE: "nmake"
 
@@ -113,7 +113,7 @@ jobs:
         id: cache-mix-compile
         uses: actions/cache@v6
         with:
-          key: compiled-opencv-${{ env.OPENCV_VER }}-x86_64-windows-msvc-${{ hashFiles('Makefile.win') }}-${{ hashFiles('py_src/*.py') }}-${{ hashFiles('patches/**') }}
+          key: compiled-opencv-${{ env.OPENCV_VER }}-x86_64-windows-msvc-otp${{ env.OTP_VERSION }}-elixir${{ env.ELIXIR_VERSION }}-${{ hashFiles('Makefile.win') }}-${{ hashFiles('py_src/*.py') }}-${{ hashFiles('patches/**') }}
           path: |
             ./_build/${{ env.MIX_ENV }}/lib/evision
             ./c_src/gen_python_config.json

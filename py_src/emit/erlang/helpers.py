@@ -94,7 +94,7 @@ def map_argtype_in_spec_erlang(classname: str, argtype: str, is_in: bool, decl: 
     elif argtype == 'float':
         return 'number()'
     elif argtype in ['String', 'c_string', 'string', 'cv::String', 'std::string']:
-        return 'unicode:charlist()'
+        return 'unicode:chardata()' if is_in else 'binary()'
     elif argtype in ['char', 'uchar']:
         return 'char()'
     elif argtype == 'void':

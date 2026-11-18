@@ -6,7 +6,7 @@
 
 ```elixir
 Mix.install([
-  {:evision, "~> 0.2"},
+  {:evision, "~> 1.0"},
   {:kino, "~> 0.7"},
   {:req, "~> 0.5"}
 ], system_env: [
@@ -56,7 +56,7 @@ Mix.install([
 
 ## Set Up Training Data
 
-This example is based on the [Introduction to Support Vector Machines](https://docs.Cv.org/4.x/d1/d73/tutorial_introduction_to_svm.html) from Cv.
+This example is based on the [Introduction to Support Vector Machines](https://docs.opencv.org/4.x/d1/d73/tutorial_introduction_to_svm.html) from OpenCV.
 
 <!-- livebook:{"break_markdown":true} -->
 
@@ -108,10 +108,10 @@ sv_binary = Cv.Mat.to_binary(sv)
 float_bytes = 4
 
 support_vector =
-  for i <- (rows - 1)..0, reduce: [] do
+  for i <- (rows - 1)..0//-1, reduce: [] do
     support_vector ->
       current_vector =
-        for j <- (cols - 1)..0, reduce: [] do
+        for j <- (cols - 1)..0//-1, reduce: [] do
           vec ->
             <<float_data::float-size(32)-little>> =
               :binary.part(sv_binary, (i * cols + j) * float_bytes, 4)
@@ -141,7 +141,7 @@ width = 512
 height = 512
 
 response_data =
-  for x <- (width - 1)..0, y <- (height - 1)..0, reduce: [] do
+  for x <- (width - 1)..0//-1, y <- (height - 1)..0//-1, reduce: [] do
     acc ->
       sample =
         Cv.Mat.from_binary(

@@ -4,13 +4,13 @@
 
 ```elixir
 Mix.install([
-  {:evision, "~> 0.2"},
+  {:evision, "~> 1.0"},
   {:kino, "~> 0.7"},
   {:req, "~> 0.5"},
   {:torchx, "~> 0.4"},
   {:nx, "~> 0.4"},
   {:scidata, "~> 0.1"},
-  {:axon, "~> 0.3.0"}
+  {:axon, "~> 0.8"}
 ], system_env: [
   # optional, defaults to `true`
   # set `EVISION_PREFER_PRECOMPILED` to `false`
@@ -66,9 +66,9 @@ The code of the neural network was taken from https://github.com/elixir-nx/axon/
 
 ```elixir
 defmodule Helper do
-  def download!(url, save_as, overwrite? \\ false) do
+  def download!(url, save_as) do
     unless File.exists?(save_as) do
-      Req.get!(url, http_errors: :raise, into: File.stream!(save_as), cache: not overwrite?)
+      Req.get!(url, http_errors: :raise, into: File.stream!(save_as))
     end
 
     :ok
@@ -332,8 +332,8 @@ point_distance = fn p1, p2 ->
     Nx.to_number(
       Nx.sqrt(
         Nx.add(
-          Nx.power(Nx.subtract(p1[[0]], p2[[0]]), 2),
-          Nx.power(Nx.subtract(p1[[1]], p2[[1]]), 2)
+          Nx.pow(Nx.subtract(p1[[0]], p2[[0]]), 2),
+          Nx.pow(Nx.subtract(p1[[1]], p2[[1]]), 2)
         )
       )
     )
@@ -573,8 +573,6 @@ Code from https://github.com/elixir-nx/axon/blob/main/examples/vision/mnist.exs 
 
 ```elixir
 defmodule MNIST do
-  require Axon
-
   def transform_images({bin, type, shape}) do
     bin
     |> Nx.from_binary(type, backend: Torchx.Backend)
@@ -608,9 +606,9 @@ defmodule MNIST do
 
   def train_model(model, train_images, train_labels, epochs) do
     model
-    |> Axon.Loop.trainer(:categorical_cross_entropy, Axon.Optimizers.adamw(0.005))
+    |> Axon.Loop.trainer(:categorical_cross_entropy, Polaris.Optimizers.adamw(learning_rate: 0.005))
     |> Axon.Loop.metric(:accuracy, "Accuracy")
-    |> Axon.Loop.run(Stream.zip(train_images, train_labels), %{}, epochs: epochs)
+    |> Axon.Loop.run(Stream.zip(train_images, train_labels), Axon.ModelState.empty(), epochs: epochs)
   end
 
   def test_model(model, model_state, test_images, test_labels) do
