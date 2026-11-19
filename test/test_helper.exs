@@ -87,6 +87,8 @@ ExUnit.configure(
     require_ffmpeg: true,
     require_cuda: true,
     require_tesseract: true,
+    # opens real windows
+    wx: true,
     face: !compiled_modules.face,
     xfeatures2d: !compiled_modules.xfeatures2d,
     stitching: !compiled_modules.stitching,
