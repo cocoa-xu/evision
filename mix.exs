@@ -1129,8 +1129,11 @@ defmodule Evision.MixProject do
   end
 
   def application do
+    # Cross-compiled releases, such as Nerves firmware, would bundle the host's wx driver.
+    wx = if Mix.target() == :host, do: [wx: :optional], else: []
+
     [
-      extra_applications: [:logger, :inets, :ssl, wx: :optional],
+      extra_applications: [:logger, :inets, :ssl | wx],
       mod: {Evision.Application, []}
     ]
   end
