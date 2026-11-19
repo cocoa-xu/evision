@@ -89,6 +89,7 @@ ExUnit.configure(
     require_tesseract: true,
     # opens real windows
     highgui: true,
+    wx: true,
     face: !compiled_modules.face,
     xfeatures2d: !compiled_modules.xfeatures2d,
     stitching: !compiled_modules.stitching,
