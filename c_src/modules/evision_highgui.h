@@ -10,6 +10,8 @@
 #include <mutex>
 #include <condition_variable>
 #include <map>
+#include <functional>
+#include <string>
 #include "opencv2/core.hpp"
 #include "../nif_utils.hpp"
 
@@ -47,6 +49,27 @@ struct destroy_all_windows_cmd {
 };
 int destroy_all_windows_cmd::ID = __LINE__;
 
+struct set_mouse_callback_cmd {
+    static int ID;
+    std::string winname;
+    ErlNifEnv *env = nullptr;
+    ERL_NIF_TERM on_mouse;
+    ~set_mouse_callback_cmd() { if (env) enif_free_env(env); }
+};
+int set_mouse_callback_cmd::ID = __LINE__;
+
+struct create_trackbar_cmd {
+    static int ID;
+    std::string trackbarname;
+    std::string winname;
+    int value;
+    int count;
+    ErlNifEnv *env = nullptr;
+    ERL_NIF_TERM on_change;
+    ~create_trackbar_cmd() { if (env) enif_free_env(env); }
+};
+int create_trackbar_cmd::ID = __LINE__;
+
 #define SHUTDOWN_CMD_ID -1
 
 std::vector<std::pair<int, void *>> gCommands;
@@ -78,6 +101,93 @@ extern "C" {
 #endif
 
 void *evision_main_loop(void * );
+
+static void queue_command(int cmd_id, void *cmd)
+{
+    {
+        std::unique_lock<std::mutex> lock(gMtx);
+        gCommands.emplace_back(cmd_id, cmd);
+        new_commands = true;
+    }
+    gCv.notify_one();
+}
+
+struct highgui_callback {
+    std::string winname;
+    std::string trackbarname;
+    bool mouse;
+    ErlNifEnv *env;
+    ERL_NIF_TERM fun;
+};
+
+// Only the GUI thread touches these. OpenCV gets an id rather than a pointer
+// because a destroyed window can still deliver events that were already queued.
+std::map<intptr_t, highgui_callback> gCallbacks;
+intptr_t gNextCallbackId = 1;
+
+static void forget_callbacks(const std::function<bool(const highgui_callback &)> &match)
+{
+    for (auto it = gCallbacks.begin(); it != gCallbacks.end();) {
+        if (match(it->second)) {
+            enif_free_env(it->second.env);
+            it = gCallbacks.erase(it);
+        } else {
+            ++it;
+        }
+    }
+}
+
+static void send_to_runner(const std::function<ERL_NIF_TERM(ErlNifEnv *)> &make_message)
+{
+    ErlNifEnv *msg_env = enif_alloc_env();
+    ErlNifPid runner;
+    if (enif_whereis_pid(nullptr, enif_make_atom(msg_env, "evision_highgui"), &runner)) {
+        enif_send(nullptr, &runner, msg_env, make_message(msg_env));
+    }
+    enif_free_env(msg_env);
+}
+
+static void run_callback(void *userdata, const std::function<ERL_NIF_TERM(ErlNifEnv *)> &make_args)
+{
+    auto it = gCallbacks.find((intptr_t)userdata);
+    if (it == gCallbacks.end()) return;
+
+    ERL_NIF_TERM fun = it->second.fun;
+    send_to_runner([&](ErlNifEnv *env) {
+        return enif_make_tuple3(env,
+            enif_make_atom(env, "evision_highgui_callback"),
+            enif_make_copy(env, fun),
+            make_args(env));
+    });
+}
+
+static void on_mouse(int event, int x, int y, int flags, void *userdata)
+{
+    run_callback(userdata, [=](ErlNifEnv *env) {
+        return enif_make_list4(env,
+            enif_make_int(env, event),
+            enif_make_int(env, x),
+            enif_make_int(env, y),
+            enif_make_int(env, flags));
+    });
+}
+
+static void on_trackbar(int pos, void *userdata)
+{
+    run_callback(userdata, [=](ErlNifEnv *env) {
+        return enif_make_list1(env, enif_make_int(env, pos));
+    });
+}
+
+static void report_error(const char *message)
+{
+    send_to_runner([=](ErlNifEnv *env) {
+        ERL_NIF_TERM binary;
+        size_t len = strlen(message);
+        memcpy(enif_make_new_binary(env, len, &binary), message, len);
+        return enif_make_tuple2(env, enif_make_atom(env, "evision_highgui_error"), binary);
+    });
+}
 
 /* ************************************************************
  *  START AND STOP of driver thread
@@ -131,6 +241,42 @@ void stop_native_gui(ErlNifEnv* env)
 #endif
 }
 
+static void set_mouse_callback(set_mouse_callback_cmd *cmd)
+{
+    try {
+        intptr_t id = cmd->env ? gNextCallbackId++ : 0;
+        cv::setMouseCallback(cmd->winname, id ? on_mouse : nullptr, (void *)id);
+        forget_callbacks([&](const highgui_callback &cb) {
+            return cb.mouse && cb.winname == cmd->winname;
+        });
+        if (id) {
+            gCallbacks[id] = {cmd->winname, "", true, cmd->env, cmd->on_mouse};
+            cmd->env = nullptr;
+        }
+    } catch (const cv::Exception &e) {
+        report_error(e.what());
+    }
+}
+
+static void create_trackbar(create_trackbar_cmd *cmd)
+{
+    try {
+        intptr_t id = cmd->env ? gNextCallbackId++ : 0;
+        // No value pointer, then set the position, as OpenCV's Python binding does (opencv#20408).
+        cv::createTrackbar(cmd->trackbarname, cmd->winname, nullptr, cmd->count, id ? on_trackbar : nullptr, (void *)id);
+        forget_callbacks([&](const highgui_callback &cb) {
+            return !cb.mouse && cb.winname == cmd->winname && cb.trackbarname == cmd->trackbarname;
+        });
+        if (id) {
+            gCallbacks[id] = {cmd->winname, cmd->trackbarname, false, cmd->env, cmd->on_change};
+            cmd->env = nullptr;
+        }
+        cv::setTrackbarPos(cmd->trackbarname, cmd->winname, cmd->value);
+    } catch (const cv::Exception &e) {
+        report_error(e.what());
+    }
+}
+
 void *evision_main_loop(void * _unused)
 {
     {
@@ -139,61 +285,72 @@ void *evision_main_loop(void * _unused)
     }
     gCv.notify_all();
 
-    int should_wait = true;
+    bool should_wait = true;
     while (should_wait) {
+        std::vector<std::pair<int, void *>> commands;
         {
             std::unique_lock<std::mutex> lk(gMtx);
             gCv.wait(lk, []{return new_commands != false;});
-            unsigned long i = 0;
-            while (i < gCommands.size()) {
-                auto &command = gCommands[i];
-                int cmd_id = command.first;
-                if (cmd_id == imshow_cmd::ID) {
-                    struct imshow_cmd * cmd = (struct imshow_cmd *)command.second;
-
-                    if (cmd->type == IMSHOW_TYPE_MAT) {
-                        cv::Mat show = cmd->mat.mat->clone();
-                        cv::imshow(cmd->winname, show);
-                        delete cmd->mat.mat;
-                    } else if (cmd->type == IMSHOW_TYPE_GPU_MAT) {
-                        cv::cuda::GpuMat show = cmd->mat.gpuMat->clone();
-                        cv::imshow(cmd->winname, show);
-                        delete cmd->mat.gpuMat;
-                    } else if (cmd->type == IMSHOW_TYPE_UMAT) {
-                        cv::UMat show = cmd->mat.uMat->clone();
-                        cv::imshow(cmd->winname, show);
-                        delete cmd->mat.uMat;
-                    }
-
-                    free((void *)cmd->winname);
-                    delete cmd;
-                } else if (cmd_id == waitkey_cmd::ID) {
-                    struct waitkey_cmd * cmd = (struct waitkey_cmd *)command.second;
-                    cv::waitKey(cmd->delay);
-                    delete cmd;
-                } else if (cmd_id == destroy_window_cmd::ID) {
-                    struct destroy_window_cmd * cmd = (struct destroy_window_cmd *)command.second;
-                    cv::destroyWindow(cmd->winname);
-                    // it seems that we have to call cv::waitKey(n), n>=1
-                    // otherwise the window won't close
-                    cv::waitKey(1);
-                    free((void *)cmd->winname);
-                    delete cmd;
-                } else if (cmd_id == destroy_all_windows_cmd::ID) {
-                    struct destroy_all_windows_cmd * cmd = (struct destroy_all_windows_cmd *)command.second;
-                    cv::destroyAllWindows();
-                    // it seems that we have to call cv::waitKey(n), n>=1
-                    // otherwise the window won't close
-                    cv::waitKey(1);
-                    delete cmd;
-                } else if (cmd_id == SHUTDOWN_CMD_ID) {
-                    should_wait = 0;
-                    i = gCommands.size();
-                }
-                i++;
-            }
-            gCommands.clear();
+            commands.swap(gCommands);
             new_commands = false;
+        }
+
+        // Run without gMtx: a callback may queue commands while waitKey is waiting.
+        for (auto &command : commands) {
+            int cmd_id = command.first;
+            if (cmd_id == imshow_cmd::ID) {
+                struct imshow_cmd * cmd = (struct imshow_cmd *)command.second;
+
+                if (cmd->type == IMSHOW_TYPE_MAT) {
+                    cv::Mat show = cmd->mat.mat->clone();
+                    cv::imshow(cmd->winname, show);
+                    delete cmd->mat.mat;
+                } else if (cmd->type == IMSHOW_TYPE_GPU_MAT) {
+                    cv::cuda::GpuMat show = cmd->mat.gpuMat->clone();
+                    cv::imshow(cmd->winname, show);
+                    delete cmd->mat.gpuMat;
+                } else if (cmd->type == IMSHOW_TYPE_UMAT) {
+                    cv::UMat show = cmd->mat.uMat->clone();
+                    cv::imshow(cmd->winname, show);
+                    delete cmd->mat.uMat;
+                }
+
+                free((void *)cmd->winname);
+                delete cmd;
+            } else if (cmd_id == waitkey_cmd::ID) {
+                struct waitkey_cmd * cmd = (struct waitkey_cmd *)command.second;
+                cv::waitKey(cmd->delay);
+                delete cmd;
+            } else if (cmd_id == destroy_window_cmd::ID) {
+                struct destroy_window_cmd * cmd = (struct destroy_window_cmd *)command.second;
+                cv::destroyWindow(cmd->winname);
+                // it seems that we have to call cv::waitKey(n), n>=1
+                // otherwise the window won't close
+                cv::waitKey(1);
+                std::string winname = cmd->winname;
+                forget_callbacks([&](const highgui_callback &cb) { return cb.winname == winname; });
+                free((void *)cmd->winname);
+                delete cmd;
+            } else if (cmd_id == destroy_all_windows_cmd::ID) {
+                struct destroy_all_windows_cmd * cmd = (struct destroy_all_windows_cmd *)command.second;
+                cv::destroyAllWindows();
+                // it seems that we have to call cv::waitKey(n), n>=1
+                // otherwise the window won't close
+                cv::waitKey(1);
+                forget_callbacks([](const highgui_callback &) { return true; });
+                delete cmd;
+            } else if (cmd_id == set_mouse_callback_cmd::ID) {
+                struct set_mouse_callback_cmd * cmd = (struct set_mouse_callback_cmd *)command.second;
+                set_mouse_callback(cmd);
+                delete cmd;
+            } else if (cmd_id == create_trackbar_cmd::ID) {
+                struct create_trackbar_cmd * cmd = (struct create_trackbar_cmd *)command.second;
+                create_trackbar(cmd);
+                delete cmd;
+            } else if (cmd_id == SHUTDOWN_CMD_ID) {
+                should_wait = false;
+                break;
+            }
         }
     }
     if (evision_status == EVISION_INITIATED) {
@@ -233,14 +390,7 @@ static ERL_NIF_TERM evision_cv_imshow(ErlNifEnv *env, int argc, const ERL_NIF_TE
             cmd->winname = strdup(winname.c_str());
 
             start_native_gui(env);
-
-            {
-                std::unique_lock<std::mutex> lock(gMtx);
-                gCommands.emplace_back(cmd->ID, cmd);
-                new_commands = true;
-                lock.unlock();
-                gCv.notify_one();
-            }
+            queue_command(cmd->ID, cmd);
             return evision::nif::ok(env);
         }
     }
@@ -260,14 +410,7 @@ static ERL_NIF_TERM evision_cv_imshow(ErlNifEnv *env, int argc, const ERL_NIF_TE
             cmd->winname = strdup(winname.c_str());
 
             start_native_gui(env);
-
-            {
-                std::unique_lock<std::mutex> lock(gMtx);
-                gCommands.emplace_back(cmd->ID, cmd);
-                new_commands = true;
-                lock.unlock();
-                gCv.notify_one();
-            }
+            queue_command(cmd->ID, cmd);
             return evision::nif::ok(env);
         }
     }
@@ -287,14 +430,7 @@ static ERL_NIF_TERM evision_cv_imshow(ErlNifEnv *env, int argc, const ERL_NIF_TE
             cmd->winname = strdup(winname.c_str());
 
             start_native_gui(env);
-
-            {
-                std::unique_lock<std::mutex> lock(gMtx);
-                gCommands.emplace_back(cmd->ID, cmd);
-                new_commands = true;
-                lock.unlock();
-                gCv.notify_one();
-            }
+            queue_command(cmd->ID, cmd);
             return evision::nif::ok(env);
         }
     }
@@ -318,15 +454,9 @@ static ERL_NIF_TERM evision_cv_waitKey(ErlNifEnv *env, int argc, const ERL_NIF_T
     {
         start_native_gui(env);
 
-        {
-            std::unique_lock<std::mutex> lock(gMtx);
-            struct waitkey_cmd * cmd = new waitkey_cmd;
-            cmd->delay = delay;
-            gCommands.emplace_back(cmd->ID, cmd);
-            new_commands = true;
-            lock.unlock();
-            gCv.notify_one();
-        }
+        struct waitkey_cmd * cmd = new waitkey_cmd;
+        cmd->delay = delay;
+        queue_command(cmd->ID, cmd);
         return evision::nif::ok(env);
     }
 
@@ -352,14 +482,7 @@ static ERL_NIF_TERM evision_cv_destroyWindow(ErlNifEnv *env, int argc, const ERL
         cmd->winname = strdup(winname.c_str());
 
         start_native_gui(env);
-
-        {
-            std::unique_lock<std::mutex> lock(gMtx);
-            gCommands.emplace_back(cmd->ID, cmd);
-            new_commands = true;
-            lock.unlock();
-            gCv.notify_one();
-        }
+        queue_command(cmd->ID, cmd);
         return evision::nif::ok(env);
     }
 
@@ -374,14 +497,68 @@ static ERL_NIF_TERM evision_cv_destroyAllWindows(ErlNifEnv *env, int argc, const
     struct destroy_all_windows_cmd * cmd = new destroy_all_windows_cmd;
 
     start_native_gui(env);
+    queue_command(cmd->ID, cmd);
+    return evision::nif::ok(env);
+}
 
-    {
-        std::unique_lock<std::mutex> lock(gMtx);
-        gCommands.emplace_back(cmd->ID, cmd);
-        new_commands = true;
-        lock.unlock();
-        gCv.notify_one();
+// @evision c: setMouseCallback,evision_cv_setMouseCallback,1
+// @evision nif: def setMouseCallback(_opts \\ []), do: :erlang.nif_error(:undefined)
+static ERL_NIF_TERM evision_cv_setMouseCallback(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
+{
+    std::map<std::string, ERL_NIF_TERM> erl_terms;
+    int nif_opts_index = 0;
+    evision::nif::parse_arg(env, nif_opts_index, argv, erl_terms);
+
+    cv::String winname;
+    if (!evision_to_safe(env, evision_get_kw(env, erl_terms, "winname"), winname, ArgInfo("winname", 0))) {
+        return enif_make_badarg(env);
     }
+
+    struct set_mouse_callback_cmd * cmd = new set_mouse_callback_cmd;
+    cmd->winname = winname;
+    ERL_NIF_TERM on_mouse = evision_get_kw(env, erl_terms, "on_mouse");
+    if (enif_is_fun(env, on_mouse)) {
+        cmd->env = enif_alloc_env();
+        cmd->on_mouse = enif_make_copy(cmd->env, on_mouse);
+    }
+
+    start_native_gui(env);
+    queue_command(cmd->ID, cmd);
+    return evision::nif::ok(env);
+}
+
+// @evision c: createTrackbar,evision_cv_createTrackbar,1
+// @evision nif: def createTrackbar(_opts \\ []), do: :erlang.nif_error(:undefined)
+static ERL_NIF_TERM evision_cv_createTrackbar(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
+{
+    std::map<std::string, ERL_NIF_TERM> erl_terms;
+    int nif_opts_index = 0;
+    evision::nif::parse_arg(env, nif_opts_index, argv, erl_terms);
+
+    cv::String trackbarname;
+    cv::String winname;
+    int value = 0;
+    int count = 0;
+    if (!evision_to_safe(env, evision_get_kw(env, erl_terms, "trackbarname"), trackbarname, ArgInfo("trackbarname", 0)) ||
+        !evision_to_safe(env, evision_get_kw(env, erl_terms, "winname"), winname, ArgInfo("winname", 0)) ||
+        !evision_to_safe(env, evision_get_kw(env, erl_terms, "value"), value, ArgInfo("value", 0)) ||
+        !evision_to_safe(env, evision_get_kw(env, erl_terms, "count"), count, ArgInfo("count", 0))) {
+        return enif_make_badarg(env);
+    }
+
+    struct create_trackbar_cmd * cmd = new create_trackbar_cmd;
+    cmd->trackbarname = trackbarname;
+    cmd->winname = winname;
+    cmd->value = value;
+    cmd->count = count;
+    ERL_NIF_TERM on_change = evision_get_kw(env, erl_terms, "on_change");
+    if (enif_is_fun(env, on_change)) {
+        cmd->env = enif_alloc_env();
+        cmd->on_change = enif_make_copy(cmd->env, on_change);
+    }
+
+    start_native_gui(env);
+    queue_command(cmd->ID, cmd);
     return evision::nif::ok(env);
 }
 
