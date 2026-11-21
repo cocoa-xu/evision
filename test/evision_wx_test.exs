@@ -10,6 +10,9 @@ if Code.ensure_loaded?(Evision.Wx.Server) do
 
     @moduletag :wx
 
+    # Callbacks run in other processes and the window talks to the wx thread, which can be slow on CI.
+    @timeout 30_000
+
     @mouse_fields Keyword.keys(Record.extract(:wxMouse, from_lib: "wx/include/wx.hrl"))
     @key_fields Keyword.keys(Record.extract(:wxKey, from_lib: "wx/include/wx.hrl"))
 
@@ -89,14 +92,14 @@ if Code.ensure_loaded?(Evision.Wx.Server) do
       :ok = Wx.setMouseCallback("mouse", &send(test, {:mouse, &1, &2, &3, &4}))
 
       inject("mouse", mouse(:left_down, 100, 50, leftDown: true, shiftDown: true))
-      assert_receive {:mouse, event, 200, 100, flags}
+      assert_receive {:mouse, event, 200, 100, flags}, @timeout
       assert event == Constant.cv_EVENT_LBUTTONDOWN()
 
       assert flags ==
                Bitwise.bor(Constant.cv_EVENT_FLAG_LBUTTON(), Constant.cv_EVENT_FLAG_SHIFTKEY())
 
       inject("mouse", mouse(:mousewheel, 0, 0, wheelRotation: -120))
-      assert_receive {:mouse, event, 0, 0, flags}
+      assert_receive {:mouse, event, 0, 0, flags}, @timeout
       assert event == Constant.cv_EVENT_MOUSEWHEEL()
       assert Wx.getMouseWheelDelta(flags) == -120
 
@@ -121,7 +124,7 @@ if Code.ensure_loaded?(Evision.Wx.Server) do
       assert capture_log(fn ->
                inject("callbacks", mouse(:left_down, 0, 0))
                inject("callbacks", mouse(:left_down, 1, 0))
-               assert_receive {:imshow, :ok}
+               assert_receive {:imshow, :ok}, @timeout
              end) =~ "boom"
     end
 
@@ -162,20 +165,20 @@ if Code.ensure_loaded?(Evision.Wx.Server) do
       assert {_, _, 400, 300} = Wx.getWindowImageRect("trackbars")
 
       :ok = Wx.setTrackbarPos("t", "trackbars", 7)
-      assert_receive {:pos, 7}
+      assert_receive {:pos, 7}, @timeout
       :ok = Wx.setTrackbarPos("t", "trackbars", 7)
       refute_receive {:pos, _}, 50
 
       :ok = Wx.setTrackbarMax("t", "trackbars", 8)
       :ok = Wx.setTrackbarPos("t", "trackbars", 20)
-      assert_receive {:pos, 8}
+      assert_receive {:pos, 8}, @timeout
 
       :ok = Wx.setTrackbarMin("t", "trackbars", 2)
       :ok = Wx.setTrackbarPos("t", "trackbars", 0)
-      assert_receive {:pos, 2}
+      assert_receive {:pos, 2}, @timeout
 
       inject("trackbars", {:wxCommand, :command_slider_updated, [], 3, 0}, "t")
-      assert_receive {:pos, 3}
+      assert_receive {:pos, 3}, @timeout
     end
 
     test "window management", %{image: image} do
@@ -194,7 +197,7 @@ if Code.ensure_loaded?(Evision.Wx.Server) do
       :ok = Wx.imshow("closed", image)
       ref = Process.monitor(window_pid("closed"))
       send(window_pid("closed"), {:wx, -1, :undefined, [], {:wxClose, :close_window}})
-      assert_receive {:DOWN, ^ref, :process, _, :normal}
+      assert_receive {:DOWN, ^ref, :process, _, :normal}, @timeout
 
       assert Wx.getWindowProperty("closed", Constant.cv_WND_PROP_VISIBLE()) == -1.0
       assert {:error, _} = Wx.setMouseCallback("closed", nil)
