@@ -419,10 +419,10 @@ class Pipeline(object):
                 self.code_ns_reg.write(func.get_tab_entry())
 
         modules_dir = Path(self.output_path) / 'modules'
-        for module_text in modules_dir.glob('*.h'):
+        for module_text in sorted(modules_dir.glob('*.h')):
             self.handle_custom_file(module_text)
         backend_dir = Path(self.output_path) / 'modules' / 'evision_backend'
-        for module_text in backend_dir.glob('*.h'):
+        for module_text in sorted(backend_dir.glob('*.h')):
             self.handle_custom_file(module_text)
 
     def gen_enum_reg(self, enum_name):
