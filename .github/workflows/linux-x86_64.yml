@@ -93,14 +93,11 @@ jobs:
 
       - name: Install elixir
         run: |
-          mkdir -p "${HOME}/.elixir"
-          cd "${HOME}/.elixir"
-          curl -fSL https://github.com/elixir-lang/elixir/archive/refs/tags/v${ELIXIR_VERSION}.tar.gz -o v${ELIXIR_VERSION}.tar.gz
-          tar xf "v${ELIXIR_VERSION}.tar.gz"
-          rm -f "v${ELIXIR_VERSION}.tar.gz"
-          cd "elixir-${ELIXIR_VERSION}"
-          make clean
-          make install
+          curl -fsSL -o /tmp/elixir.zip "https://github.com/elixir-lang/elixir/releases/download/v${ELIXIR_VERSION}/elixir-otp-${OTP_VERSION%%.*}.zip"
+          mkdir -p "${HOME}/.elixir/elixir-${ELIXIR_VERSION}"
+          unzip -q /tmp/elixir.zip -d "${HOME}/.elixir/elixir-${ELIXIR_VERSION}"
+          rm /tmp/elixir.zip
+          echo "${HOME}/.elixir/elixir-${ELIXIR_VERSION}/bin" >> "${GITHUB_PATH}"
           export PATH="${PATH}:${HOME}/.elixir/elixir-${ELIXIR_VERSION}/bin"
           mix local.hex --force
           mix local.rebar --force
