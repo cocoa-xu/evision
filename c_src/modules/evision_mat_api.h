@@ -66,7 +66,7 @@ static ERL_NIF_TERM _evision_make_mat_resource_into_map(ErlNifEnv *env, const cv
     ERL_NIF_TERM values[num_items];
 
     keys[item_index] = kAtomChannels;
-    values[item_index] = enif_make_int(env, m.channels());
+    values[item_index] = enif_make_int(env, m.channels() + 1);
     item_index++;
 
     keys[item_index] = kAtomDims;
