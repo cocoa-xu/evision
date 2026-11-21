@@ -177,17 +177,10 @@ jobs:
 
       - name: Mix Test
         run: |
-          # ulimit -c unlimited
-          # /usr/libexec/PlistBuddy -c "Add :com.apple.security.get-task-allow bool true" tmp.entitlements
-          # sudo touch /cores/test
-          # export ERL_BASE="$(dirname $(dirname $(which erl)))"
-          # export BEAM_SMP="$(find "${ERL_BASE}" -name beam.smp)"
-          # codesign -s - -f --entitlements tmp.entitlements "${BEAM_SMP}"
           export OTP_VERSION="${{ env.OTP_VERSION }}"
           export OTP_MAIN_VER="${OTP_VERSION%%.*}"
           export PATH="$HOME/.elixir-install/installs/otp/${{ env.OTP_VERSION }}/bin:$HOME/.elixir-install/installs/elixir/${{ env.ELIXIR_VERSION }}-otp-${OTP_MAIN_VER}/bin:$PATH"
-          set -o pipefail
-          find ./test -name '*_test.exs' -print0 | while IFS= read -r -d '' test_file; do
-            echo "$test_file"
-            mix test --include require_downloading --include require_ffmpeg --include wx --include highgui "$test_file" </dev/null || exit "$?"
-          done
+          mix test --include require_downloading --include require_ffmpeg
+          # wx and the native HighGui both take over the main thread, so each needs its own VM.
+          mix test --include wx test/evision_wx_test.exs
+          mix test --include highgui test/evision_highgui_test.exs
