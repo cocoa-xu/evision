@@ -98,10 +98,10 @@ jobs:
         id: cache-mix-deps
         uses: actions/cache@v6
         with:
-          key: deps-x86_64-windows-msvc-${{ hashFiles('mix.lock') }}-${{ env.OTP_VERSION }}-${{ env.ELIXIR_VERSION }}
+          key: mix-deps-x86_64-windows-msvc-${{ hashFiles('mix.lock') }}-${{ env.OTP_VERSION }}-${{ env.ELIXIR_VERSION }}
           path: |
             ./deps
-            ./_build/${{ env.MIX_ENV }}/lib
+            ./_build/${{ env.MIX_ENV }}/lib/*
             !./_build/${{ env.MIX_ENV }}/lib/evision
 
       - name: Get mix deps
