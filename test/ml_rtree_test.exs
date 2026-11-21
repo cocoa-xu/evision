@@ -6,7 +6,7 @@ defmodule Evision.ML.RTrees.Test do
   @tag :ml
   @tag :require_downloading
   test "random forest" do
-    {features, labels} = Scidata.Wine.download()
+    {features, labels} = Evision.TestHelper.wine_dataset()
     categories = Enum.count(Enum.uniq(labels))
     features = Evision.Mat.from_nx(Nx.tensor(features, type: :f32, backend: Evision.Backend))
     labels = Evision.Mat.from_nx(Nx.tensor(labels, type: :s32, backend: Evision.Backend))

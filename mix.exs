@@ -1362,10 +1362,7 @@ defmodule Evision.MixProject do
       {:progress_bar, "~> 2.0 or ~> 3.0", optional: true},
 
       # docs
-      {:ex_doc, "~> 0.34.0", only: :docs, runtime: false},
-
-      # test
-      {:scidata, "~> 0.1", only: :test}
+      {:ex_doc, "~> 0.34.0", only: :docs, runtime: false}
     ] ++ torchx_benchmark_deps()
   end
 

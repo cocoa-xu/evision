@@ -39,6 +39,7 @@ compile_commands.json
 /test/testdata/efficientnet-b7.onnx
 /test/testdata/DB_IC15_resnet18.onnx
 /test/testdata/east_text_detection.onnx
+/test/testdata/wine.zip
 
 # examples
 /examples/Lenna_test_image.png

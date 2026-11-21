@@ -4,3 +4,4 @@ dnn_text_detection_model_db_test.exs:      @download_file,
 dnn_text_detection_model_east_test.exs:  @download_file "https://huggingface.co/opencv/opencv_contribution/resolve/main/east_text_detection/east_text_detection_2026jul.onnx?download=true"
 photo_hdr_test.exs:  @download_file_1 "https://raw.githubusercontent.com/opencv/opencv_extra/4.x/testdata/cv/hdr/exposures/list.txt"
 photo_hdr_test.exs:  @download_file_2 "https://raw.githubusercontent.com/opencv/opencv_extra/4.x/testdata/cv/hdr/exposures/"
+test_helper.exs:  @wine_url "https://archive.ics.uci.edu/static/public/109/wine.zip"

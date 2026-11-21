@@ -1,4 +1,27 @@
 defmodule Evision.TestHelper do
+  @wine_url "https://archive.ics.uci.edu/static/public/109/wine.zip"
+  @wine_data_sha256 "6be6b1203f3d51df0b553a70e57b8a723cd405683958204f96d23d7cd6aea659"
+
+  # Same features and labels as Scidata.Wine.download/0, but read from test/testdata once
+  # downloaded: Scidata asks the server on every call, so any server error fails the test.
+  def wine_dataset do
+    zip = Path.join([__DIR__, "testdata", "wine.zip"])
+    :ok = download!(@wine_url, zip)
+    {:ok, [{_, data}]} = :zip.extract(File.read!(zip), [:memory, file_list: [~c"wine.data"]])
+
+    if Base.encode16(:crypto.hash(:sha256, data), case: :lower) != @wine_data_sha256 do
+      raise "#{zip} does not contain the expected wine.data; delete it to download it again"
+    end
+
+    rows =
+      for row <- String.split(data) do
+        [label | values] = String.split(row, ",")
+        {String.to_integer(label) - 1, Enum.map(values, &elem(Float.parse("0" <> &1), 0))}
+      end
+
+    {Enum.map(rows, &elem(&1, 1)), Enum.map(rows, &elem(&1, 0))}
+  end
+
   def download!(url, save_as, overwrite \\ false)
 
   def download!(url, save_as, false) do
