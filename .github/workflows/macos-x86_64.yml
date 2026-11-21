@@ -96,9 +96,11 @@ jobs:
         id: cache-mix-deps
         uses: actions/cache@v6
         with:
-          key: deps-${{ hashFiles('mix.lock') }}
+          key: deps-x86_64-apple-darwin-${{ hashFiles('mix.lock') }}-${{ env.OTP_VERSION }}-${{ env.ELIXIR_VERSION }}
           path: |
             ./deps
+            ./_build/${{ env.MIX_ENV }}/lib
+            !./_build/${{ env.MIX_ENV }}/lib/evision
 
       - name: Get mix deps
         if: steps.cache-mix-deps.outputs.cache-hit != 'true'
