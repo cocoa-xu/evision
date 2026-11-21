@@ -113,7 +113,7 @@ public:
     }
 };
 
-static EvisionBinaryMatAllocator& evision_binary_mat_allocator() {
+inline EvisionBinaryMatAllocator& evision_binary_mat_allocator() {
     static EvisionBinaryMatAllocator allocator;
     return allocator;
 }

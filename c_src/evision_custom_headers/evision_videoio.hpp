@@ -16,7 +16,7 @@ template<> struct evisionVecConverter<cv::VideoCaptureAPIs>
 };
 
 template<>
-bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, std::vector<cv::VideoCaptureAPIs>& apis, const ArgInfo& info)
+inline bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, std::vector<cv::VideoCaptureAPIs>& apis, const ArgInfo& info)
 {
   return evisionVecConverter<cv::VideoCaptureAPIs>::to(env, o, apis, info);
 }

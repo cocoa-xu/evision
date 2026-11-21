@@ -50,6 +50,19 @@ else:
     from cStringIO import StringIO
 
 
+# Each NIF source re-parses evision.hpp and every OpenCV header (about 5 s per file on an M-series core,
+# about 10 s on a 4-vCPU CI runner), so modules are packed into a fixed number of balanced files:
+# ten keeps a cold build near three rounds on 4 CI cores and one round on a 12-core machine.
+NIF_SOURCE_FILES = 10
+NIF_DEFINITION_RE = re.compile(r"^ERL_NIF_TERM (evision_\w+)\(ErlNifEnv \*env, int argc, const ERL_NIF_TERM argv\[\]\)", re.MULTILINE)
+
+
+def opencv_module_of_header(hdr):
+    # .../modules/<module>/include/opencv2/... in opencv and opencv_contrib
+    m = re.search(r"[/\\]modules[/\\]([^/\\]+)[/\\]", hdr)
+    return m.group(1) if m else "other"
+
+
 def _enum_struct_name(original_name):
     # Map an enum's cv namespace path (e.g. "ccm.CcmType", "xfeatures2d.AKAZE")
     # to its Evision module, applying the module-name casing map to the prefix.
@@ -81,8 +94,10 @@ class Pipeline(object):
         self.cuda_enum_names_io_erlang = StringIO()
         self.code_include = StringIO()
         self.code_enums = StringIO()
-        self.code_types = StringIO()
-        self.code_funcs = StringIO()
+        # Converters are shared by every translation unit; NIF wrappers go into one source file per OpenCV module.
+        self.code_converters = StringIO()
+        self.module_code = {}
+        self.current_module = None
         self.code_ns_reg = StringIO()
 
         # lib/generated/evision_nif.ex
@@ -155,6 +170,7 @@ class Pipeline(object):
 
     def add_class(self, stype, name, decl):
         classinfo = ClassInfo(name, decl, self)
+        classinfo.module = self.current_module
         classinfo.decl_idx = self.class_idx
         self.class_idx += 1
 
@@ -335,6 +351,7 @@ class Pipeline(object):
             # Add it as a method to the class
             func_map = self.classes[classname].methods
             func = func_map.setdefault(name, FuncInfo(classname, name, cname, isconstructor, namespace_str, is_static))
+            func.module = getattr(func, 'module', None) or self.current_module
             func.add_variant(decl, isphantom)
 
             # Add it as global function
@@ -351,9 +368,11 @@ class Pipeline(object):
             g_wname = "_".join(w_classes+[name])
             func_map = self.namespaces.setdefault(namespace_str, Namespace()).funcs
             func = func_map.setdefault(g_name, FuncInfo("", g_name, cname, isconstructor, namespace_str, False))
+            func.module = getattr(func, 'module', None) or self.current_module
             func.add_variant(decl, isphantom)
             if g_wname != g_name:  # TODO OpenCV 5.0
                 wfunc = func_map.setdefault(g_wname, FuncInfo("", g_wname, cname, isconstructor, namespace_str, False))
+                wfunc.module = getattr(wfunc, 'module', None) or self.current_module
                 wfunc.add_variant(decl, isphantom)
         else:
             if classname and not isconstructor:
@@ -364,6 +383,7 @@ class Pipeline(object):
                 func_map = self.namespaces.setdefault(namespace_str, Namespace()).funcs
 
             func = func_map.setdefault(name, FuncInfo(classname, name, cname, isconstructor, namespace_str, is_static))
+            func.module = getattr(func, 'module', None) or self.current_module
             func.add_variant(decl, isphantom)
 
         if classname and isconstructor:
@@ -438,6 +458,49 @@ class Pipeline(object):
             code += "typedef {0} {1};\n".format(cname, wname)
         code += "CV_ERL_FROM_ENUM({0});\nCV_ERL_TO_ENUM({0});\n\n".format(wname)
         self.code_enums.write(code)
+
+    def add_module_code(self, module, code):
+        self.module_code.setdefault(module or "other", []).append(code)
+
+    def save_module_sources(self, path):
+        outdir = Path(path)
+        outdir.mkdir(parents=True, exist_ok=True)
+        # CMakeLists.txt compiles every c_src/*.cpp, so remove the ones an earlier configuration generated,
+        # and the single-file outputs that the per-module sources replaced.
+        for stale in outdir.glob("evision_generated_*.cpp"):
+            stale.unlink()
+        for replaced in ("evision_generated_types_content.h", "evision_generated_funcs.h"):
+            if (outdir / replaced).exists():
+                (outdir / replaced).unlink()
+
+        # Largest module first, into the emptiest file; ties go by name, so the layout is deterministic.
+        modules = sorted(((name, "".join(chunks)) for name, chunks in self.module_code.items()),
+                         key=lambda m: (-m[1].count("\n"), m[0]))
+        files = [{"lines": 0, "modules": []} for _ in range(NIF_SOURCE_FILES)]
+        for name, code in modules:
+            target = min(files, key=lambda f: f["lines"])
+            target["lines"] += code.count("\n")
+            target["modules"].append((name, code))
+
+        nif_names = []
+        for index, source in enumerate(files, start=1):
+            if not source["modules"]:
+                continue
+            source["modules"].sort()
+            with open(outdir / f"evision_generated_{index:02d}.cpp", "wt", encoding="utf-8") as f:
+                names = ", ".join(name for name, _ in source["modules"])
+                f.write(f"// NIF wrappers for the OpenCV modules {names}, generated by py_src/gen2.py.\n")
+                f.write('#include "evision.hpp"\n')
+                for _, code in source["modules"]:
+                    nif_names.extend(NIF_DEFINITION_RE.findall(code))
+                    f.write("\n")
+                    f.write(code)
+
+        decls = "".join(
+            f"ERL_NIF_TERM {name}(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]);\n"
+            for name in sorted(nif_names)
+        )
+        self.save(path, "evision_generated_nif_decls.h", decls)
 
     def save(self, path, name, buf):
         outdir_path = path
@@ -625,9 +688,9 @@ class Pipeline(object):
         }
 
         num_total_modules = sum([len(components) for s, components in all_modules.items()])
-        self.code_funcs.write('#include "evision_consts.h"\n')
-        self.code_funcs.write("static ERL_NIF_TERM evision_cv_enabled_modules(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]){\n")
-        self.code_funcs.write(f"""    const size_t num_total_modules = {num_total_modules};
+        code = StringIO()
+        code.write("ERL_NIF_TERM evision_cv_enabled_modules(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]){\n")
+        code.write(f"""    const size_t num_total_modules = {num_total_modules};
     size_t index = 0;
 
     ERL_NIF_TERM keys[num_total_modules];
@@ -636,7 +699,7 @@ class Pipeline(object):
 
         for _, components in all_modules.items():
             for component in components:
-                self.code_funcs.write(f"""    keys[index] = evision::nif::atom(env, "{component}");
+                code.write(f"""    keys[index] = evision::nif::atom(env, "{component}");
 #ifdef HAVE_OPENCV_{component.upper()}
     values[index] = kAtomTrue;
 #else
@@ -645,7 +708,7 @@ class Pipeline(object):
     index++;
 """)
 
-        self.code_funcs.write("""    ERL_NIF_TERM map;
+        code.write("""    ERL_NIF_TERM map;
     if (enif_make_map_from_arrays(env, keys, values, index, &map)) {
         return map;
     } else {
@@ -653,7 +716,8 @@ class Pipeline(object):
     }
 """)
 
-        self.code_funcs.write("}\n")
+        code.write("}\n")
+        self.add_module_code('core', code.getvalue())
         self.code_ns_reg.write(f'    F(enabled_modules, evision_cv_enabled_modules, 0),\n')
         self.evision_nif.write(f'  def enabled_modules, do: :erlang.nif_error(:undefined)\n')
         self.evision_nif_erlang.write(f'enabled_modules() ->\n    not_loaded(?LINE).\n')
@@ -686,6 +750,7 @@ class Pipeline(object):
             decls = self.parser.parse(hdr)
             if len(decls) == 0:
                 continue
+            self.current_module = opencv_module_of_header(hdr)
 
             if 'gapi' in hdr:
                 continue
@@ -753,14 +818,16 @@ class Pipeline(object):
         classlist = list(self.classes.items())
         classlist.sort()
         for name, classinfo in classlist:
-            self.code_types.write("//{}\n".format(80*"="))
-            self.code_types.write("// {} ({})\n".format(name, 'Map' if classinfo.ismap else 'Generic'))
-            self.code_types.write("//{}\n".format(80*"="))
+            banner = "//{0}\n// {1} ({2})\n//{0}\n".format(80*"=", name, 'Map' if classinfo.ismap else 'Generic')
             classinfo.gen_erl_func_list(self)
-            self.code_types.write(classinfo.gen_code(self))
+            class_code = classinfo.gen_code(self)
             if classinfo.ismap:
-                self.code_types.write(ET.gen_template_map_type_cvt.substitute(name=classinfo.name, cname=classinfo.cname))
+                # A map type is only a converter.
+                self.code_converters.write(banner)
+                self.code_converters.write(class_code)
+                self.code_converters.write(ET.gen_template_map_type_cvt.substitute(name=classinfo.name, cname=classinfo.cname))
             else:
+                self.add_module_code(classinfo.module, banner + class_code)
                 mappable_code = "\n".join([
                                       ET.gen_template_mappable.substitute(cname=classinfo.cname, mappable=mappable)
                                           for mappable in classinfo.mappables])
@@ -769,7 +836,7 @@ class Pipeline(object):
                     cname=classinfo.cname if classinfo.issimple else "Ptr<{}>".format(classinfo.cname),
                     mappable_code=mappable_code
                 )
-                self.code_types.write(code)
+                self.code_converters.write(code)
 
         # register classes in the same order as they have been declared.
         # this way, base classes will be registered in Python before their derivatives.
@@ -788,8 +855,7 @@ class Pipeline(object):
             for name, func in sorted(ns.funcs.items()):
                 if func.isconstructor:
                     continue
-                code = func.gen_code(self)
-                self.code_funcs.write(code)
+                self.add_module_code(func.module, func.gen_code(self))
         self.gen_namespace()
 
         # step 4: generate the code for enum types
@@ -851,10 +917,10 @@ class Pipeline(object):
 
         # That's it. Now save all the files
         self.save(output_path, "evision_generated_include.h", self.code_include)
-        self.save(output_path, "evision_generated_funcs.h", self.code_funcs)
         self.save(output_path, "evision_generated_enums.h", self.code_enums)
         self.save(output_path, "evision_generated_types.h", self.code_type_publish)
-        self.save(output_path, "evision_generated_types_content.h", self.code_types)
+        self.save(output_path, "evision_generated_converters.h", self.code_converters)
+        self.save_module_sources(output_path)
 
         # write all module files
         for name in self.evision_modules:

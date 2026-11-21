@@ -12,7 +12,7 @@ namespace evision
 {
   namespace nif
   {
-    ERL_NIF_TERM atom(ErlNifEnv *env, const char *msg)
+    inline ERL_NIF_TERM atom(ErlNifEnv *env, const char *msg)
     {
       ERL_NIF_TERM a;
       if (enif_make_existing_atom(env, msg, &a, ERL_NIF_LATIN1)) {
@@ -25,7 +25,7 @@ namespace evision
     // Status helpers
 
     // Helper for returning `{:error, msg}` from NIF.
-    ERL_NIF_TERM error(ErlNifEnv *env, const char *msg)
+    inline ERL_NIF_TERM error(ErlNifEnv *env, const char *msg)
     {
       ERL_NIF_TERM atom_error = atom(env, "error");
       ERL_NIF_TERM reason;
@@ -41,45 +41,45 @@ namespace evision
     }
 
     // Helper for returning `{:ok, term}` from NIF.
-    ERL_NIF_TERM ok(ErlNifEnv *env)
+    inline ERL_NIF_TERM ok(ErlNifEnv *env)
     {
       return atom(env, "ok");
     }
 
     // Helper for returning `:ok` from NIF.
-    ERL_NIF_TERM ok(ErlNifEnv *env, ERL_NIF_TERM term)
+    inline ERL_NIF_TERM ok(ErlNifEnv *env, ERL_NIF_TERM term)
     {
       return enif_make_tuple2(env, ok(env), term);
     }
 
     // Numeric types
 
-    int get(ErlNifEnv *env, ERL_NIF_TERM term, int *var)
+    inline int get(ErlNifEnv *env, ERL_NIF_TERM term, int *var)
     {
       return enif_get_int(env, term,
                           reinterpret_cast<int *>(var));
     }
 
-    int get(ErlNifEnv *env, ERL_NIF_TERM term, int64_t *var)
+    inline int get(ErlNifEnv *env, ERL_NIF_TERM term, int64_t *var)
     {
       return enif_get_int64(env, term,
                             reinterpret_cast<ErlNifSInt64 *>(var));
     }
 
-    int get(ErlNifEnv *env, ERL_NIF_TERM term, uint64_t *var)
+    inline int get(ErlNifEnv *env, ERL_NIF_TERM term, uint64_t *var)
     {
       return enif_get_uint64(env, term,
                             reinterpret_cast<ErlNifUInt64 *>(var));
     }
 
-    int get(ErlNifEnv *env, ERL_NIF_TERM term, double *var)
+    inline int get(ErlNifEnv *env, ERL_NIF_TERM term, double *var)
     {
       return enif_get_double(env, term, var);
     }
 
     // Standard types
 
-    int get(ErlNifEnv *env, ERL_NIF_TERM term, std::string &var)
+    inline int get(ErlNifEnv *env, ERL_NIF_TERM term, std::string &var)
     {
       unsigned len;
       int ret = enif_get_list_length(env, term, &len);
@@ -114,37 +114,37 @@ namespace evision
       return ret;
     }
 
-    ERL_NIF_TERM make(ErlNifEnv *env, bool var)
+    inline ERL_NIF_TERM make(ErlNifEnv *env, bool var)
     {
         return var ? kAtomTrue : kAtomFalse;
     }
 
-    ERL_NIF_TERM make(ErlNifEnv *env, long var)
+    inline ERL_NIF_TERM make(ErlNifEnv *env, long var)
     {
       return enif_make_int64(env, var);
     }
 
-    ERL_NIF_TERM make(ErlNifEnv *env, int var)
+    inline ERL_NIF_TERM make(ErlNifEnv *env, int var)
     {
       return enif_make_int(env, var);
     }
 
-    ERL_NIF_TERM make(ErlNifEnv *env, double var)
+    inline ERL_NIF_TERM make(ErlNifEnv *env, double var)
     {
       return enif_make_double(env, var);
     }
 
-    ERL_NIF_TERM make(ErlNifEnv *env, ErlNifBinary var)
+    inline ERL_NIF_TERM make(ErlNifEnv *env, ErlNifBinary var)
     {
       return enif_make_binary(env, &var);
     }
 
-    ERL_NIF_TERM make(ErlNifEnv *env, std::string var)
+    inline ERL_NIF_TERM make(ErlNifEnv *env, std::string var)
     {
       return enif_make_string(env, var.c_str(), ERL_NIF_LATIN1);
     }
 
-    ERL_NIF_TERM make(ErlNifEnv *env, const char *string)
+    inline ERL_NIF_TERM make(ErlNifEnv *env, const char *string)
     {
       return enif_make_string(env, string, ERL_NIF_LATIN1);
     }
@@ -246,7 +246,7 @@ namespace evision
 
     // Atoms
 
-    int get_atom(ErlNifEnv *env, ERL_NIF_TERM term, std::string &var)
+    inline int get_atom(ErlNifEnv *env, ERL_NIF_TERM term, std::string &var)
     {
       unsigned atom_length;
       if (!enif_get_atom_length(env, term, &atom_length, ERL_NIF_LATIN1))
@@ -265,13 +265,13 @@ namespace evision
     }
 
     // Check if :nil
-    int check_nil(ErlNifEnv *env, ERL_NIF_TERM term) {
+    inline int check_nil(ErlNifEnv *env, ERL_NIF_TERM term) {
       return enif_is_identical(term, kAtomNil);
     }
 
     // Boolean
 
-    int get(ErlNifEnv *env, ERL_NIF_TERM term, bool *var)
+    inline int get(ErlNifEnv *env, ERL_NIF_TERM term, bool *var)
     {
       if (!enif_is_atom(env, term))
         return 0;
@@ -281,7 +281,7 @@ namespace evision
 
     // Containers
 
-    int get_tuple(ErlNifEnv *env, ERL_NIF_TERM tuple, std::vector<int64_t> &var)
+    inline int get_tuple(ErlNifEnv *env, ERL_NIF_TERM tuple, std::vector<int64_t> &var)
     {
       const ERL_NIF_TERM *terms;
       int length;
@@ -299,7 +299,7 @@ namespace evision
       return 1;
     }
 
-    int get_list(ErlNifEnv *env,
+    inline int get_list(ErlNifEnv *env,
                  ERL_NIF_TERM list,
                  std::vector<ErlNifBinary> &var)
     {
@@ -320,7 +320,7 @@ namespace evision
       return 1;
     }
 
-    int get_list(ErlNifEnv *env,
+    inline int get_list(ErlNifEnv *env,
                  ERL_NIF_TERM list,
                  std::vector<std::string> &var)
     {
@@ -341,7 +341,7 @@ namespace evision
       return 1;
     }
 
-    int get_list(ErlNifEnv *env, ERL_NIF_TERM list, std::vector<int64_t> &var)
+    inline int get_list(ErlNifEnv *env, ERL_NIF_TERM list, std::vector<int64_t> &var)
     {
       unsigned int length;
       if (!enif_get_list_length(env, list, &length))
@@ -360,7 +360,7 @@ namespace evision
       return 1;
     }
 
-    int get_list(ErlNifEnv *env, ERL_NIF_TERM list, std::vector<int> &var)
+    inline int get_list(ErlNifEnv *env, ERL_NIF_TERM list, std::vector<int> &var)
     {
       unsigned int length;
       if (!enif_get_list_length(env, list, &length))
@@ -379,7 +379,7 @@ namespace evision
       return 1;
     }
 
-      int get_list(ErlNifEnv *env, ERL_NIF_TERM list, std::vector<double> &var)
+      inline int get_list(ErlNifEnv *env, ERL_NIF_TERM list, std::vector<double> &var)
       {
           unsigned int length;
           if (!enif_get_list_length(env, list, &length))
@@ -398,7 +398,7 @@ namespace evision
           return 1;
       }
 
-      int get_list(ErlNifEnv *env, ERL_NIF_TERM list, std::vector<float> &var)
+      inline int get_list(ErlNifEnv *env, ERL_NIF_TERM list, std::vector<float> &var)
       {
           unsigned int length;
           if (!enif_get_list_length(env, list, &length))

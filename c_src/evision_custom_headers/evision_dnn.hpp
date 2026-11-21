@@ -248,7 +248,7 @@ bool evision_to(ErlNifEnv *env, ERL_NIF_TERM obj, dnn::LayerParams &lp, const Ar
 }
 
 template<>
-ERL_NIF_TERM evision_from(ErlNifEnv *env, const std::vector<dnn::Target> &t)
+inline ERL_NIF_TERM evision_from(ErlNifEnv *env, const std::vector<dnn::Target> &t)
 {
     return evision_from(env, std::vector<int>(t.begin(), t.end()));
 }
