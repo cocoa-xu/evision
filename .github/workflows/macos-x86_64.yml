@@ -206,3 +206,15 @@ jobs:
           export OTP_MAIN_VER="${OTP_VERSION%%.*}"
           export PATH="$HOME/.elixir-install/installs/otp/${{ env.OTP_VERSION }}/bin:$HOME/.elixir-install/installs/elixir/${{ env.ELIXIR_VERSION }}-otp-${OTP_MAIN_VER}/bin:$PATH"
           mix compile --force --no-optional-deps
+
+      - name: Show crash reports
+        if: failure()
+        run: |
+          # macOS writes the report a few seconds after the process dies.
+          sleep 15
+          for f in ~/Library/Logs/DiagnosticReports/*.ips; do
+            [ -f "$f" ] || continue
+            echo "::group::$f"
+            cat "$f"
+            echo "::endgroup::"
+          done
