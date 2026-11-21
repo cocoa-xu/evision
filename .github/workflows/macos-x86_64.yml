@@ -68,12 +68,15 @@ jobs:
       OTP_VERSION: "26.2.5.9"
       ELIXIR_VERSION: "1.17.3"
       CMAKE_VER: "3.18.6"
+      CCACHE_MAXSIZE: 500M
+      CCACHE_COMPRESS: "1"
+      CMAKE_EVISION_OPTIONS: "-D CMAKE_C_COMPILER_LAUNCHER=ccache -D CMAKE_CXX_COMPILER_LAUNCHER=ccache"
     steps:
       - uses: actions/checkout@v7
 
       - name: Install FFmpeg, Erlang and Elixir
         run: |
-          brew install autoconf coreutils curl git openssl wxwidgets asdf ffmpeg@6 eigen
+          brew install autoconf coreutils curl git openssl wxwidgets asdf ffmpeg@6 eigen ccache
           brew link ffmpeg@6
           
           export OTP_VERSION="${{ env.OTP_VERSION }}"
@@ -147,11 +150,20 @@ jobs:
           export PATH="$HOME/.elixir-install/installs/otp/${{ env.OTP_VERSION }}/bin:$HOME/.elixir-install/installs/elixir/${{ env.ELIXIR_VERSION }}-otp-${OTP_MAIN_VER}/bin:$PATH"
           mix compile_opencv
 
+      - name: Restore ccache
+        uses: actions/cache/restore@v6
+        with:
+          path: .ccache
+          key: ccache-x86_64-apple-darwin-${{ github.sha }}
+          restore-keys: ccache-x86_64-apple-darwin-
+
       - name: Mix Compile
         run: |
           export OTP_VERSION="${{ env.OTP_VERSION }}"
           export OTP_MAIN_VER="${OTP_VERSION%%.*}"
           export PATH="$HOME/.elixir-install/installs/otp/${{ env.OTP_VERSION }}/bin:$HOME/.elixir-install/installs/elixir/${{ env.ELIXIR_VERSION }}-otp-${OTP_MAIN_VER}/bin:$PATH"
+          export CCACHE_DIR="$PWD/.ccache"
+          ccache -z
 
           rm -f _build/test/lib/evision/priv/evision.so
 
@@ -159,6 +171,13 @@ jobs:
           mkdir -p lib/generated && mkdir -p src/generated
 
           mix compile
+          ccache -s
+
+      - name: Save ccache
+        uses: actions/cache/save@v6
+        with:
+          path: .ccache
+          key: ccache-x86_64-apple-darwin-${{ github.sha }}
 
       - name: Compile once again but without optional deps
         run: |
