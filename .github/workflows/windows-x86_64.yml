@@ -66,10 +66,24 @@ jobs:
       ELIXIR_VERSION: "1.20.4"
       EVISION_PREFER_PRECOMPILED: "false"
       MAKE: "nmake"
+      CCACHE_VER: "4.14.3"
+      CCACHE_SHA256: "c845c3d65be81954c75659145a522a793a27586bf940c5dcfe18af33fa1a67dd"
+      CCACHE_MAXSIZE: 500M
+      CCACHE_COMPRESS: "1"
+      CMAKE_EVISION_OPTIONS: "-D CMAKE_C_COMPILER_LAUNCHER=ccache -D CMAKE_CXX_COMPILER_LAUNCHER=ccache"
 
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+
+      - name: Install ccache
+        shell: bash
+        run: |
+          curl -fsSL -o ccache.zip "https://github.com/ccache/ccache/releases/download/v${CCACHE_VER}/ccache-${CCACHE_VER}-windows-x86_64.zip"
+          echo "${CCACHE_SHA256}  ccache.zip" | sha256sum -c -
+          unzip -q ccache.zip -d "${RUNNER_TEMP}"
+          rm ccache.zip
+          echo "${RUNNER_TEMP}/ccache-${CCACHE_VER}-windows-x86_64" >> "${GITHUB_PATH}"
 
       - uses: erlef/setup-beam@v1
         with:
@@ -135,9 +149,18 @@ jobs:
           rm -f Makefile
           mix compile_opencv
 
+      - name: Restore ccache
+        uses: actions/cache/restore@v6
+        with:
+          path: .ccache
+          key: ccache-x86_64-windows-msvc-${{ github.sha }}
+          restore-keys: ccache-x86_64-windows-msvc-
+
       - name: Mix Compile
         shell: bash
         run: |
+          export CCACHE_DIR="$(cygpath -w "$PWD/.ccache")"
+          ccache -z
           rm -f Makefile
           rm -f "_build/${MIX_ENV}/lib/evision/priv/evision.dll"
           rm -f "_build/${MIX_ENV}/lib/evision/priv/windows_fix.dll"
@@ -146,6 +169,13 @@ jobs:
           mkdir -p lib/generated && mkdir -p src/generated
 
           mix compile
+          ccache -s
+
+      - name: Save ccache
+        uses: actions/cache/save@v6
+        with:
+          path: .ccache
+          key: ccache-x86_64-windows-msvc-${{ github.sha }}
 
       - name: Compile once again but without optional deps
         shell: bash
