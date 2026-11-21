@@ -337,7 +337,7 @@ ${methods_code}
 """)
 
 gen_template_get_prop_ptr = Template("""
-static ERL_NIF_TERM evision_${name}_get_${member}(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
+ERL_NIF_TERM evision_${name}_get_${member}(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
     ERL_NIF_TERM self = argv[0];
     ${storage_name}* self_ptr = 0;
@@ -352,7 +352,7 @@ static ERL_NIF_TERM evision_${name}_get_${member}(ErlNifEnv *env, int argc, cons
 """)
 
 gen_template_get_prop = Template("""
-static ERL_NIF_TERM evision_${name}_get_${member}(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
+ERL_NIF_TERM evision_${name}_get_${member}(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
     ERL_NIF_TERM self = argv[0];
     ${storage_name}* self_ptr = 0;
@@ -365,7 +365,7 @@ static ERL_NIF_TERM evision_${name}_get_${member}(ErlNifEnv *env, int argc, cons
 """)
 
 gen_template_get_prop_algo = Template("""
-static ERL_NIF_TERM evision_${name}_get_${member}(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
+ERL_NIF_TERM evision_${name}_get_${member}(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
     ERL_NIF_TERM self = argv[0];
     ${storage_name}* self_ptr = 0;
@@ -383,7 +383,7 @@ static ERL_NIF_TERM evision_${name}_get_${member}(ErlNifEnv *env, int argc, cons
 """)
 
 gen_template_set_prop = Template("""
-static ERL_NIF_TERM evision_${name}_set_${member}(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
+ERL_NIF_TERM evision_${name}_set_${member}(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
     ERL_NIF_TERM self = argv[0];
     ${storage_name}* self_ptr = 0;
@@ -405,7 +405,7 @@ static ERL_NIF_TERM evision_${name}_set_${member}(ErlNifEnv *env, int argc, cons
 """)
 
 gen_template_set_prop_cv_ptr = Template("""
-static ERL_NIF_TERM evision_${name}_set_${member}(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
+ERL_NIF_TERM evision_${name}_set_${member}(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
     ERL_NIF_TERM self = argv[0];
     ${storage_name}* self_ptr = 0;
@@ -429,7 +429,7 @@ static ERL_NIF_TERM evision_${name}_set_${member}(ErlNifEnv *env, int argc, cons
 """)
 
 gen_template_set_prop_algo = Template("""
-static ERL_NIF_TERM evision_${name}_set_${member}(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
+ERL_NIF_TERM evision_${name}_set_${member}(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
     ERL_NIF_TERM self = argv[0];
     ${storage_name}* self_ptr = 0;

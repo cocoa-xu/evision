@@ -7,7 +7,7 @@
 // This non-virtual method delegates to the virtual run() overload that
 // accepts output vectors, converting InputArray → Mat on the way in and
 // std::string → cv::String on the way out.
-void cv::text::OCRTesseract::runWithComponents(
+inline void cv::text::OCRTesseract::runWithComponents(
     InputArray image,
     String& output_text,
     std::vector<Rect>& component_rects,

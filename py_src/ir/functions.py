@@ -55,7 +55,7 @@ class FuncInfo(object):
 
     def get_wrapper_prototype(self, add_cv):
         erl_name, full_fname = self.get_wrapper_name(add_cv)
-        return "static ERL_NIF_TERM %s(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])" % (full_fname,), erl_name, full_fname
+        return "ERL_NIF_TERM %s(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])" % (full_fname,), erl_name, full_fname
 
     def get_tab_entry(self):
         prototype_list = []

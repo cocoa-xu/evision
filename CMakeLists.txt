@@ -115,6 +115,8 @@ include(cmake/EvisionCpuDispatch.cmake)
 evision_add_cpu_kernels(evision_cpu_kernels)
 target_link_libraries(evision "${EVISION_LIBRARIES}" evision_cpu_kernels)
 set_property(TARGET evision PROPERTY CXX_STANDARD 17)
+# ERTS only looks up nif_init, which ERL_NIF_INIT exports; keep the NIF wrappers out of the dynamic symbol table.
+set_target_properties(evision PROPERTIES CXX_VISIBILITY_PRESET hidden VISIBILITY_INLINES_HIDDEN ON)
 set_property(TARGET evision PROPERTY POSITION_INDEPENDENT_CODE ON)
 set_target_properties(evision PROPERTIES PREFIX "")
 if(NOT WIN32)

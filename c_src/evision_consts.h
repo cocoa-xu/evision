@@ -4,90 +4,90 @@
 #include <erl_nif.h>
 
 // nil
-static ERL_NIF_TERM kAtomNil;
+inline ERL_NIF_TERM kAtomNil;
 // true
-static ERL_NIF_TERM kAtomTrue;
+inline ERL_NIF_TERM kAtomTrue;
 // false
-static ERL_NIF_TERM kAtomFalse;
+inline ERL_NIF_TERM kAtomFalse;
 // out_of_memory
-static ERL_NIF_TERM kAtomOutOfMemory;
+inline ERL_NIF_TERM kAtomOutOfMemory;
 // ref
-static ERL_NIF_TERM kAtomRef;
+inline ERL_NIF_TERM kAtomRef;
 // ref_data
-static ERL_NIF_TERM kAtomRefData;
+inline ERL_NIF_TERM kAtomRefData;
 // class
-static ERL_NIF_TERM kAtomClass;
+inline ERL_NIF_TERM kAtomClass;
 // dims
-static ERL_NIF_TERM kAtomDims;
+inline ERL_NIF_TERM kAtomDims;
 // channels
-static ERL_NIF_TERM kAtomChannels;
+inline ERL_NIF_TERM kAtomChannels;
 // type
-static ERL_NIF_TERM kAtomType;
+inline ERL_NIF_TERM kAtomType;
 // data
-static ERL_NIF_TERM kAtomData;
+inline ERL_NIF_TERM kAtomData;
 // raw_type
-static ERL_NIF_TERM kAtomRawType;
+inline ERL_NIF_TERM kAtomRawType;
 // elemSize
-static ERL_NIF_TERM kAtomElemSize;
+inline ERL_NIF_TERM kAtomElemSize;
 // step
-static ERL_NIF_TERM kAtomStep;
+inline ERL_NIF_TERM kAtomStep;
 // device_id
-static ERL_NIF_TERM kAtomDeviceID;
+inline ERL_NIF_TERM kAtomDeviceID;
 // shape
-static ERL_NIF_TERM kAtomShape;
+inline ERL_NIF_TERM kAtomShape;
 // __struct__
-static ERL_NIF_TERM kAtomStructKey;
+inline ERL_NIF_TERM kAtomStructKey;
 // Elixir.Nx.Tensor
-static ERL_NIF_TERM kAtomNxTensorModule;
+inline ERL_NIF_TERM kAtomNxTensorModule;
 // nx_tensor (only for internal use)
-static ERL_NIF_TERM kAtomNxTensor;
+inline ERL_NIF_TERM kAtomNxTensor;
 // Elixir.Nx.Tensor
-static ERL_NIF_TERM kAtomEvisionMatModule;
+inline ERL_NIF_TERM kAtomEvisionMatModule;
 
 // atoms for types
-static ERL_NIF_TERM kAtomU;
-static ERL_NIF_TERM kAtomS;
-static ERL_NIF_TERM kAtomF;
-static ERL_NIF_TERM kAtomU8;
-static ERL_NIF_TERM kAtomS8;
-static ERL_NIF_TERM kAtomU16;
-static ERL_NIF_TERM kAtomS16;
-static ERL_NIF_TERM kAtomU32;
-static ERL_NIF_TERM kAtomS32;
-static ERL_NIF_TERM kAtomU64;
-static ERL_NIF_TERM kAtomS64;
-static ERL_NIF_TERM kAtomF16;
-static ERL_NIF_TERM kAtomF32;
-static ERL_NIF_TERM kAtomF64;
-static ERL_NIF_TERM kAtomBF;
-static ERL_NIF_TERM kAtomBF16;
-static ERL_NIF_TERM kAtomF8E4M3FN;
-static ERL_NIF_TERM kAtomUser;
+inline ERL_NIF_TERM kAtomU;
+inline ERL_NIF_TERM kAtomS;
+inline ERL_NIF_TERM kAtomF;
+inline ERL_NIF_TERM kAtomU8;
+inline ERL_NIF_TERM kAtomS8;
+inline ERL_NIF_TERM kAtomU16;
+inline ERL_NIF_TERM kAtomS16;
+inline ERL_NIF_TERM kAtomU32;
+inline ERL_NIF_TERM kAtomS32;
+inline ERL_NIF_TERM kAtomU64;
+inline ERL_NIF_TERM kAtomS64;
+inline ERL_NIF_TERM kAtomF16;
+inline ERL_NIF_TERM kAtomF32;
+inline ERL_NIF_TERM kAtomF64;
+inline ERL_NIF_TERM kAtomBF;
+inline ERL_NIF_TERM kAtomBF16;
+inline ERL_NIF_TERM kAtomF8E4M3FN;
+inline ERL_NIF_TERM kAtomUser;
 
 // atoms for cv::Moments
-static ERL_NIF_TERM kAtomM00;
-static ERL_NIF_TERM kAtomM10;
-static ERL_NIF_TERM kAtomM01;
-static ERL_NIF_TERM kAtomM20;
-static ERL_NIF_TERM kAtomM11;
-static ERL_NIF_TERM kAtomM02;
-static ERL_NIF_TERM kAtomM30;
-static ERL_NIF_TERM kAtomM21;
-static ERL_NIF_TERM kAtomM12;
-static ERL_NIF_TERM kAtomM03;
-static ERL_NIF_TERM kAtomMu20;
-static ERL_NIF_TERM kAtomMu11;
-static ERL_NIF_TERM kAtomMu02;
-static ERL_NIF_TERM kAtomMu30;
-static ERL_NIF_TERM kAtomMu21;
-static ERL_NIF_TERM kAtomMu12;
-static ERL_NIF_TERM kAtomMu03;
-static ERL_NIF_TERM kAtomNu20;
-static ERL_NIF_TERM kAtomNu11;
-static ERL_NIF_TERM kAtomNu02;
-static ERL_NIF_TERM kAtomNu30;
-static ERL_NIF_TERM kAtomNu21;
-static ERL_NIF_TERM kAtomNu12;
-static ERL_NIF_TERM kAtomNu03;
+inline ERL_NIF_TERM kAtomM00;
+inline ERL_NIF_TERM kAtomM10;
+inline ERL_NIF_TERM kAtomM01;
+inline ERL_NIF_TERM kAtomM20;
+inline ERL_NIF_TERM kAtomM11;
+inline ERL_NIF_TERM kAtomM02;
+inline ERL_NIF_TERM kAtomM30;
+inline ERL_NIF_TERM kAtomM21;
+inline ERL_NIF_TERM kAtomM12;
+inline ERL_NIF_TERM kAtomM03;
+inline ERL_NIF_TERM kAtomMu20;
+inline ERL_NIF_TERM kAtomMu11;
+inline ERL_NIF_TERM kAtomMu02;
+inline ERL_NIF_TERM kAtomMu30;
+inline ERL_NIF_TERM kAtomMu21;
+inline ERL_NIF_TERM kAtomMu12;
+inline ERL_NIF_TERM kAtomMu03;
+inline ERL_NIF_TERM kAtomNu20;
+inline ERL_NIF_TERM kAtomNu11;
+inline ERL_NIF_TERM kAtomNu02;
+inline ERL_NIF_TERM kAtomNu30;
+inline ERL_NIF_TERM kAtomNu21;
+inline ERL_NIF_TERM kAtomNu12;
+inline ERL_NIF_TERM kAtomNu03;
 
 #endif  // EVISION_CONSTS_H
