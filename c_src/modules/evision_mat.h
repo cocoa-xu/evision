@@ -705,7 +705,7 @@ static ERL_NIF_TERM evision_cv_mat_channels(ErlNifEnv *env, int argc, const ERL_
         Mat img;
 
         if (evision_to_safe(env, evision_get_kw(env, erl_terms, "img"), img, ArgInfo("img", ArgInfo::BORROWED_INPUT))) {
-            int channels = img.channels();
+            int channels = img.channels() + 1;
             return enif_make_int64(env, channels);
         }
     }
