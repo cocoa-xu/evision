@@ -303,9 +303,6 @@ jobs:
           path: .ccache
           key: ccache-x86_64-linux-gnu-${{ github.sha }}
 
-      - name: Compile once again but without optional deps
-        run: mix compile --force --warnings-as-errors --no-optional-deps
-
       - name: Cache testdata
         id: cache-mix-testdata
         uses: actions/cache@v6
@@ -317,3 +314,7 @@ jobs:
       - name: Mix Test
         run: |
           mix test --include require_downloading --include require_ffmpeg
+
+      # After the tests, so the tests don't have to recompile everything with the optional deps again.
+      - name: Compile once again but without optional deps
+        run: mix compile --force --warnings-as-errors --no-optional-deps
