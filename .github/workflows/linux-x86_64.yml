@@ -80,6 +80,8 @@ jobs:
       EVISION_PREFER_PRECOMPILED: "false"
       CCACHE_MAXSIZE: 500M
       CCACHE_COMPRESS: "1"
+      # Direct mode can miss a newly added header that shadows an included one.
+      CCACHE_NODIRECT: "1"
       CMAKE_EVISION_OPTIONS: "-D CMAKE_C_COMPILER_LAUNCHER=ccache -D CMAKE_CXX_COMPILER_LAUNCHER=ccache"
     steps:
       - name: Checkout
@@ -219,6 +221,8 @@ jobs:
       PKG_CONFIG_PATH: "/usr/lib/x86_64-linux-gnu/pkgconfig"
       CCACHE_MAXSIZE: 500M
       CCACHE_COMPRESS: "1"
+      # Direct mode can miss a newly added header that shadows an included one.
+      CCACHE_NODIRECT: "1"
       CMAKE_EVISION_OPTIONS: "-D CMAKE_C_COMPILER_LAUNCHER=ccache -D CMAKE_CXX_COMPILER_LAUNCHER=ccache"
     steps:
       - uses: actions/checkout@v7

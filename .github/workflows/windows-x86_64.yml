@@ -70,6 +70,8 @@ jobs:
       CCACHE_SHA256: "c845c3d65be81954c75659145a522a793a27586bf940c5dcfe18af33fa1a67dd"
       CCACHE_MAXSIZE: 500M
       CCACHE_COMPRESS: "1"
+      # Direct mode can miss a newly added header that shadows an included one.
+      CCACHE_NODIRECT: "1"
       CMAKE_EVISION_OPTIONS: "-D CMAKE_C_COMPILER_LAUNCHER=ccache -D CMAKE_CXX_COMPILER_LAUNCHER=ccache"
 
     steps:
