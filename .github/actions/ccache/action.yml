@@ -1,0 +1,29 @@
+name: "OpenCV ccache"
+description: >
+  Installs a pinned ccache and keeps its cache as an asset of the `ccache` draft
+  release: `restore` before the OpenCV build, `save` after the release upload.
+
+inputs:
+  mode:
+    description: "restore or save"
+    required: true
+  name:
+    description: "Name of this build's cache"
+    required: true
+  dir:
+    description: "ccache directory; defaults to $RUNNER_TEMP/ccache"
+    required: false
+    default: ""
+
+runs:
+  using: "composite"
+  steps:
+    - shell: bash
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+        CCACHE_STORE_MODE: ${{ inputs.mode }}
+        CCACHE_STORE_NAME: ${{ inputs.name }}
+        CCACHE_STORE_DIR: ${{ inputs.dir }}
+      run: |
+        python="$(command -v python3 || command -v python)"
+        "${python}" "${GITHUB_ACTION_PATH}/ccache_store.py" "${CCACHE_STORE_MODE}" "${CCACHE_STORE_NAME}" "${CCACHE_STORE_DIR:-${RUNNER_TEMP}/ccache}"

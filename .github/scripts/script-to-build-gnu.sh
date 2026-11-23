@@ -17,7 +17,10 @@ OS_IMAGE=${12:-ubuntu:20.04}
 IMAGE_NAME="${OS_IMAGE}"
 
 RC=0
-sudo docker run --privileged --network=host --platform=linux/arm64 --rm -v $(pwd):/work "${IMAGE_NAME}" \
+sudo docker run --privileged --network=host --platform=linux/arm64 --rm -v $(pwd):/work \
+    -e CCACHE_DIR=/work/.ccache \
+    -e "CMAKE_OPENCV_OPTIONS=-D CMAKE_C_COMPILER_LAUNCHER=/work/.ccache-bin/ccache -D CMAKE_CXX_COMPILER_LAUNCHER=/work/.ccache-bin/ccache" \
+    "${IMAGE_NAME}" \
     sh -c "chmod a+x /work/do-build.sh && /work/do-build.sh '${CUDA_PIN}' '${CUDA_DEB}' '${CUDA_TOOLKIT}' '${CUDA_ID}' '${CUDNN_DEB}' '${CUDNN_PACKAGE}' '${CUDNN_ID}' '${OTP_VERSION}' '${ELIXIR_VERSION}' '${TRIPLET}' '${GITHUB_REF}'" || RC=$?
 # chown back even on failure so actions/cache can read the cached tarballs
 sudo chown -R $(id -u):$(id -g) . || true

@@ -58,6 +58,7 @@ jobs:
       EVISION_GENERATE_LANG: "erlang,elixir"
       EVISION_ENABLE_CUDA: "true"
       PKG_CONFIG_PATH: "/usr/lib/x86_64-linux-gnu/pkgconfig"
+      CMAKE_OPENCV_OPTIONS: "-D CMAKE_C_COMPILER_LAUNCHER=ccache -D CMAKE_CXX_COMPILER_LAUNCHER=ccache"
 
     steps:
       - name: Checkout
@@ -142,6 +143,11 @@ jobs:
           ln -sf "${stub}" /usr/lib/x86_64-linux-gnu/libcuda.so.1
           ldconfig
 
+      - uses: ./.github/actions/ccache
+        with:
+          mode: restore
+          name: x86_64-linux-gnu-cuda${{ matrix.cuda_id }}-cudnn${{ matrix.cudnn_id }}
+
       - name: Compile OpenCV
         run: |
           mix compile_opencv
@@ -178,3 +184,8 @@ jobs:
           files: |
             artifacts/*.tar.gz
             artifacts/*.sha256
+
+      - uses: ./.github/actions/ccache
+        with:
+          mode: save
+          name: x86_64-linux-gnu-cuda${{ matrix.cuda_id }}-cudnn${{ matrix.cudnn_id }}

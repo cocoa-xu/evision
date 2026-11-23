@@ -35,6 +35,8 @@ jobs:
       CMAKE_OPENCV_OPTIONS: >-
         -D CUDA_ARCH_BIN="${{ matrix.pair.cuda_arch_bin }}"
         -D CUDA_NVCC_FLAGS=--expt-relaxed-constexpr
+        -D CMAKE_C_COMPILER_LAUNCHER=ccache
+        -D CMAKE_CXX_COMPILER_LAUNCHER=ccache
     strategy:
       fail-fast: false
       matrix:
@@ -122,6 +124,11 @@ jobs:
           cd C:/evision
           mix deps.get
 
+      - uses: ./.github/actions/ccache
+        with:
+          mode: restore
+          name: x86_64-windows-msvc-cuda${{ matrix.pair.cuda_major }}-cudnn${{ matrix.pair.cudnn_major }}
+
       - name: Mix compile
         shell: bash
         run: |
@@ -164,3 +171,8 @@ jobs:
           files: |
             artifacts/*.tar.gz
             artifacts/*.sha256
+
+      - uses: ./.github/actions/ccache
+        with:
+          mode: save
+          name: x86_64-windows-msvc-cuda${{ matrix.pair.cuda_major }}-cudnn${{ matrix.pair.cudnn_major }}

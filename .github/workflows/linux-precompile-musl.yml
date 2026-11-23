@@ -25,6 +25,7 @@ jobs:
       OPENCV_VER: "5.1.0"
       EVISION_PREFER_PRECOMPILED: "false"
       EVISION_GENERATE_LANG: "erlang,elixir"
+      CMAKE_OPENCV_OPTIONS: "-D CMAKE_C_COMPILER_LAUNCHER=ccache -D CMAKE_CXX_COMPILER_LAUNCHER=ccache"
     strategy:
       matrix:
         include:
@@ -93,6 +94,11 @@ jobs:
         if: steps.cache-opencv.outputs.cache-hit != 'true'
         run: |
           bash scripts/download_opencv.sh ${OPENCV_VER} 3rd_party/cache 3rd_party/opencv/
+
+      - uses: ./.github/actions/ccache
+        with:
+          mode: restore
+          name: x86_64-linux-musl
 
       - name: Compile OpenCV (without contrib modules)
         run: |
@@ -174,6 +180,11 @@ jobs:
           files: |
             artifacts/*.tar.gz
             artifacts/*.sha256
+
+      - uses: ./.github/actions/ccache
+        with:
+          mode: save
+          name: x86_64-linux-musl
 
   zig_build:
     runs-on: ubuntu-22.04
