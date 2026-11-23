@@ -73,6 +73,8 @@ jobs:
       NERVES_LIVEBOOK_VER: "v0.19.0"
       ELIXIR_VERSION: "1.19.5"
       EVISION_PREFER_PRECOMPILED: "false"
+      CMAKE_OPENCV_OPTIONS: "-D CMAKE_C_COMPILER_LAUNCHER=ccache -D CMAKE_CXX_COMPILER_LAUNCHER=ccache"
+      CMAKE_EVISION_OPTIONS: "-D CMAKE_C_COMPILER_LAUNCHER=ccache -D CMAKE_CXX_COMPILER_LAUNCHER=ccache"
 
     strategy:
       matrix:
@@ -160,6 +162,11 @@ jobs:
         run: |
           bash scripts/download_opencv.sh ${OPENCV_VER} 3rd_party/cache 3rd_party/opencv/
 
+      - uses: ./.github/actions/ccache
+        with:
+          mode: restore
+          name: nerves-${{ matrix.pair.target }}
+
       - name: Make a nerves project
         run: |
           # nerves_bootstrap comes from Hex; retry to ride out transient registry timeouts
@@ -212,3 +219,10 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         with:
           files: /tmp/firmware/${{ env.NERVES_PROJ_NAME }}_${{ matrix.pair.target }}_${{ env.MIX_ENV }}.fw
+
+      # PRs and tags read the stored cache; only main replaces it.
+      - uses: ./.github/actions/ccache
+        if: github.ref == 'refs/heads/main'
+        with:
+          mode: save
+          name: nerves-${{ matrix.pair.target }}

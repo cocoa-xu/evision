@@ -1,7 +1,7 @@
 name: "OpenCV ccache"
 description: >
   Installs a pinned ccache and keeps its cache as an asset of the `ccache` draft
-  release: `restore` before the OpenCV build, `save` after the release upload.
+  release: `restore` before the build, `save` after it.
 
 inputs:
   mode:
