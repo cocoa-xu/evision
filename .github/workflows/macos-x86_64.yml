@@ -222,11 +222,35 @@ jobs:
       - name: Show crash reports
         if: failure()
         run: |
-          # macOS writes the report a few seconds after the process dies.
-          sleep 15
-          for f in ~/Library/Logs/DiagnosticReports/*.ips; do
-            [ -f "$f" ] || continue
-            echo "::group::$f"
-            cat "$f"
-            echo "::endgroup::"
+          # macOS writes the report several seconds after the process dies (~10 s for a
+          # bare BEAM), and later still when many libraries are loaded.
+          for _ in $(seq 1 24); do
+            reports=$(find ~/Library/Logs/DiagnosticReports -maxdepth 1 -name '*.ips')
+            [ -n "$reports" ] && break
+            sleep 5
           done
+          if [ -z "$reports" ]; then
+            echo "No crash report after 120 s."
+            exit 0
+          fi
+          mkdir -p crash-reports
+          for f in $reports; do
+            cp "$f" crash-reports/
+            python3 - "$f" <<'PY'
+          import json, sys
+          body = json.loads(open(sys.argv[1]).read().split("\n", 1)[1])
+          images = body["usedImages"]
+          print(sys.argv[1], body["exception"])
+          for thread in body["threads"]:
+              print(("* " if thread.get("triggered") else "  ") + thread.get("name", thread.get("queue", "")))
+              for frame in thread["frames"]:
+                  print("      ", images[frame["imageIndex"]].get("name", "?"), frame.get("symbol", hex(frame["imageOffset"])))
+          PY
+          done
+
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: crash-reports
+          path: crash-reports
+          if-no-files-found: ignore
