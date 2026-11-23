@@ -1982,7 +1982,7 @@ defmodule Evision.Mat do
 
   def channels(mat) when is_struct(mat) do
     mat = Evision.Internal.Structurise.from_struct(mat)
-    :evision_nif.mat_type(img: mat)
+    :evision_nif.mat_channels(img: mat)
   end
 
   def channels(mat) when is_reference(mat) do
