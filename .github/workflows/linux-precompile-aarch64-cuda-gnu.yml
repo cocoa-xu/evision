@@ -90,6 +90,14 @@ jobs:
             cache/otp/otp-*.tar.gz
             cache/elixir/elixir-*.tar.gz
 
+      - uses: ./.github/actions/ccache
+        if: ${{ !inputs.cudnn_version || inputs.cudnn_version == matrix.pair.cudnn_id }}
+        with:
+          mode: restore
+          name: aarch64-linux-gnu-cuda${{ matrix.pair.cuda_id }}-cudnn${{ matrix.pair.cudnn_id }}
+          # The build runs in a container that only sees the workspace.
+          dir: ${{ github.workspace }}/.ccache
+
       - name: Mix compile (with contrib modules)
         if: ${{ !inputs.cudnn_version || inputs.cudnn_version == matrix.pair.cudnn_id }}
         env:
@@ -112,3 +120,11 @@ jobs:
           files: |
             artifacts/*.tar.gz
             artifacts/*.sha256
+
+      # The workspace is now the release tag's tree, which may predate this action.
+      - uses: ./.github/actions/ccache
+        if: ${{ (!inputs.cudnn_version || inputs.cudnn_version == matrix.pair.cudnn_id) && hashFiles('.github/actions/ccache/action.yml') != '' }}
+        with:
+          mode: save
+          name: aarch64-linux-gnu-cuda${{ matrix.pair.cuda_id }}-cudnn${{ matrix.pair.cudnn_id }}
+          dir: ${{ github.workspace }}/.ccache

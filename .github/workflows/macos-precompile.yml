@@ -22,6 +22,7 @@ jobs:
       OPENCV_VER: "5.1.0"
       EVISION_PREFER_PRECOMPILED: "false"
       EVISION_GENERATE_LANG: "erlang,elixir"
+      CMAKE_OPENCV_OPTIONS: "-D CMAKE_C_COMPILER_LAUNCHER=ccache -D CMAKE_CXX_COMPILER_LAUNCHER=ccache"
     strategy:
       fail-fast: false
       matrix:
@@ -95,6 +96,11 @@ jobs:
           bash scripts/download_opencv.sh ${OPENCV_VER} 3rd_party/cache 3rd_party/opencv/
           bash scripts/download_opencv_contrib.sh ${OPENCV_VER} 3rd_party/cache 3rd_party/opencv/
 
+      - uses: ./.github/actions/ccache
+        with:
+          mode: restore
+          name: ${{ matrix.pair.arch_name }}-apple-darwin
+
       - name: Compile OpenCV (without contrib modules)
         run: |
           cmake --version
@@ -103,7 +109,7 @@ jobs:
           export OTP_MAIN_VER="${OTP_VERSION%%.*}"
           export PATH="$HOME/.elixir-install/installs/otp/${{ matrix.pair.OTP_VERSION }}/bin:$HOME/.elixir-install/installs/elixir/${{ matrix.pair.ELIXIR_VERSION }}-otp-${OTP_MAIN_VER}/bin:$PATH"
           export EVISION_ENABLE_CONTRIB=false
-          export CMAKE_OPENCV_OPTIONS="-D WITH_FFMPEG=OFF"
+          export CMAKE_OPENCV_OPTIONS="${CMAKE_OPENCV_OPTIONS} -D WITH_FFMPEG=OFF"
           if [ "${{ matrix.pair.arch }}" = "arm64" ]; then
             export CMAKE_OPENCV_OPTIONS="${CMAKE_OPENCV_OPTIONS} -D WITH_IPP=OFF -D CMAKE_OSX_ARCHITECTURES=arm64"
             export CMAKE_EVISION_OPTIONS="-D CMAKE_OSX_ARCHITECTURES=arm64"
@@ -119,7 +125,7 @@ jobs:
           export OTP_MAIN_VER="${OTP_VERSION%%.*}"
           export PATH="$HOME/.elixir-install/installs/otp/${{ matrix.pair.OTP_VERSION }}/bin:$HOME/.elixir-install/installs/elixir/${{ matrix.pair.ELIXIR_VERSION }}-otp-${OTP_MAIN_VER}/bin:$PATH"
           export EVISION_ENABLE_CONTRIB=false
-          export CMAKE_OPENCV_OPTIONS="-D WITH_FFMPEG=OFF"
+          export CMAKE_OPENCV_OPTIONS="${CMAKE_OPENCV_OPTIONS} -D WITH_FFMPEG=OFF"
           if [ "${{ matrix.pair.arch }}" = "arm64" ]; then
             export CMAKE_OPENCV_OPTIONS="${CMAKE_OPENCV_OPTIONS} -D WITH_IPP=OFF -D CMAKE_OSX_ARCHITECTURES=arm64"
             export CMAKE_EVISION_OPTIONS="-D CMAKE_OSX_ARCHITECTURES=arm64"
@@ -160,7 +166,7 @@ jobs:
           export OTP_MAIN_VER="${OTP_VERSION%%.*}"
           export PATH="$HOME/.elixir-install/installs/otp/${{ matrix.pair.OTP_VERSION }}/bin:$HOME/.elixir-install/installs/elixir/${{ matrix.pair.ELIXIR_VERSION }}-otp-${OTP_MAIN_VER}/bin:$PATH"
           export EVISION_ENABLE_CONTRIB=true
-          export CMAKE_OPENCV_OPTIONS="-D WITH_FFMPEG=OFF"
+          export CMAKE_OPENCV_OPTIONS="${CMAKE_OPENCV_OPTIONS} -D WITH_FFMPEG=OFF"
           if [ "${{ matrix.pair.arch }}" = "arm64" ]; then
             export CMAKE_OPENCV_OPTIONS="${CMAKE_OPENCV_OPTIONS} -D WITH_IPP=OFF -D CMAKE_OSX_ARCHITECTURES=arm64"
             export CMAKE_EVISION_OPTIONS="-D CMAKE_OSX_ARCHITECTURES=arm64"
@@ -176,7 +182,7 @@ jobs:
           export OTP_MAIN_VER="${OTP_VERSION%%.*}"
           export PATH="$HOME/.elixir-install/installs/otp/${{ matrix.pair.OTP_VERSION }}/bin:$HOME/.elixir-install/installs/elixir/${{ matrix.pair.ELIXIR_VERSION }}-otp-${OTP_MAIN_VER}/bin:$PATH"
           export EVISION_ENABLE_CONTRIB=true
-          export CMAKE_OPENCV_OPTIONS="-D WITH_FFMPEG=OFF"
+          export CMAKE_OPENCV_OPTIONS="${CMAKE_OPENCV_OPTIONS} -D WITH_FFMPEG=OFF"
           if [ "${{ matrix.pair.arch }}" = "arm64" ]; then
             export CMAKE_OPENCV_OPTIONS="${CMAKE_OPENCV_OPTIONS} -D WITH_IPP=OFF -D CMAKE_OSX_ARCHITECTURES=arm64"
             export CMAKE_EVISION_OPTIONS="-D CMAKE_OSX_ARCHITECTURES=arm64"
@@ -220,3 +226,8 @@ jobs:
           files: |
             artifacts/*.tar.gz
             artifacts/*.sha256
+
+      - uses: ./.github/actions/ccache
+        with:
+          mode: save
+          name: ${{ matrix.pair.arch_name }}-apple-darwin

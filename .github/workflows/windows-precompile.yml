@@ -20,6 +20,7 @@ jobs:
       EVISION_PREFER_PRECOMPILED: "false"
       EVISION_GENERATE_LANG: "erlang,elixir"
       MAKE: "nmake"
+      CMAKE_OPENCV_OPTIONS: "-D CMAKE_C_COMPILER_LAUNCHER=ccache -D CMAKE_CXX_COMPILER_LAUNCHER=ccache"
     strategy:
       fail-fast: false
       matrix:
@@ -82,6 +83,11 @@ jobs:
         run: |
           bash scripts/download_opencv.sh ${OPENCV_VER} 3rd_party/cache 3rd_party/opencv/
           bash scripts/download_opencv_contrib.sh ${OPENCV_VER} 3rd_party/cache 3rd_party/opencv/
+
+      - uses: ./.github/actions/ccache
+        with:
+          mode: restore
+          name: ${{ matrix.pair.arch_name }}-windows-msvc
 
       - name: Mix compile (without contrib modules)
         shell: bash
@@ -157,3 +163,8 @@ jobs:
           files: |
             artifacts/*.tar.gz
             artifacts/*.sha256
+
+      - uses: ./.github/actions/ccache
+        with:
+          mode: save
+          name: ${{ matrix.pair.arch_name }}-windows-msvc

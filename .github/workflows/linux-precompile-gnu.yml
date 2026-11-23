@@ -128,6 +128,7 @@ jobs:
       ELIXIR_VERSION: "1.17.3"
       EVISION_PREFER_PRECOMPILED: "false"
       EVISION_GENERATE_LANG: "erlang,elixir"
+      CMAKE_OPENCV_OPTIONS: "-D CMAKE_C_COMPILER_LAUNCHER=ccache -D CMAKE_CXX_COMPILER_LAUNCHER=ccache"
     container: ubuntu:20.04
     strategy:
       fail-fast: false
@@ -181,6 +182,11 @@ jobs:
         run: |
           bash scripts/download_opencv.sh ${OPENCV_VER} 3rd_party/cache 3rd_party/opencv/
           bash scripts/download_opencv_contrib.sh ${OPENCV_VER} 3rd_party/cache 3rd_party/opencv/
+
+      - uses: ./.github/actions/ccache
+        with:
+          mode: restore
+          name: ${{ matrix.pair.arch }}
 
       - name: Compile OpenCV (without contrib modules)
         run: |
@@ -287,3 +293,8 @@ jobs:
           files: |
             artifacts/*.tar.gz
             artifacts/*.sha256
+
+      - uses: ./.github/actions/ccache
+        with:
+          mode: save
+          name: ${{ matrix.pair.arch }}
