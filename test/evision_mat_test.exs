@@ -413,6 +413,12 @@ defmodule Evision.Mat.Test do
   end
 
   @tag :nx
+  test "channels of an Nx tensor" do
+    assert 3 == Evision.Mat.channels(Nx.iota({2, 2, 3}, type: :u8))
+    assert 1 == Evision.Mat.channels(Nx.iota({2, 3}, type: :f32))
+  end
+
+  @tag :nx
   test "load an image from file and convert to Nx.tensor" do
     %Mat{} = mat = Evision.imread(Path.join([__DIR__, "testdata", "test.png"]))
 
