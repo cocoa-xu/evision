@@ -2230,18 +2230,8 @@ defmodule Evision.Mat do
   """
   @spec arange(integer(), integer(), integer(), mat_type(), tuple()) :: maybe_mat_out()
   def arange(from, to, step, type, shape) when step != 0 do
-    {t, l} = check_unsupported_type(type)
-
-    with {:ok, mat} <-
-           :evision_nif.mat_arange(
-             from: from,
-             to: to,
-             step: step,
-             t: t,
-             l: l
-           ) do
-      Evision.Mat.reshape(mat, shape)
-    else
+    case arange(from, to, step, type) do
+      %T{} = mat -> reshape(mat, shape)
       error -> error
     end
   end

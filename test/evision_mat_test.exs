@@ -349,6 +349,13 @@ defmodule Evision.Mat.Test do
       end
     end
 
+    test "arange/5 reshapes the result" do
+      mat = Evision.Mat.arange(0, 12, 1, :u8, {2, 2, 3})
+
+      assert Evision.Mat.shape(mat) == {2, 2, 3}
+      assert Evision.Mat.to_binary(mat) == :binary.list_to_bin(Enum.to_list(0..11))
+    end
+
     test "ceil, floor, round all process every channel of multi-channel matrices" do
       values =
         for v <- [0.4, 0.6, 1.4, 1.6, 2.4, 2.6], into: <<>>, do: <<v::float-little-size(32)>>
