@@ -70,6 +70,10 @@ jobs:
       CMAKE_VER: "3.18.6"
       CCACHE_MAXSIZE: 500M
       CCACHE_COMPRESS: "1"
+      # Direct mode can miss a newly added header that shadows an included one.
+      CCACHE_NODIRECT: "1"
+      # /usr/bin/c++ is the same shim for every Xcode, so hash the compiler version.
+      CCACHE_COMPILERCHECK: "%compiler% -v"
       CMAKE_EVISION_OPTIONS: "-D CMAKE_C_COMPILER_LAUNCHER=ccache -D CMAKE_CXX_COMPILER_LAUNCHER=ccache"
     steps:
       - uses: actions/checkout@v7
