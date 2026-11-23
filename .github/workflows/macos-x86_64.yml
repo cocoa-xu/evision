@@ -129,6 +129,9 @@ jobs:
         shell: bash
         # The Makefile skips OpenCV when its outputs exist, so the key has to change with the options mix passes to it.
         run: |
+          export OTP_VERSION="${{ env.OTP_VERSION }}"
+          export OTP_MAIN_VER="${OTP_VERSION%%.*}"
+          export PATH="$HOME/.elixir-install/installs/otp/${{ env.OTP_VERSION }}/bin:$HOME/.elixir-install/installs/elixir/${{ env.ELIXIR_VERSION }}-otp-${OTP_MAIN_VER}/bin:$PATH"
           options="$(mix run --no-compile --no-deps-check --no-start -e 'IO.write(Mix.Project.config()[:make_env]["CMAKE_OPTIONS"])')"
           echo "${options}"
           echo "hash=$(printf '%s' "${options}" | git hash-object --stdin)" >> "${GITHUB_OUTPUT}"
