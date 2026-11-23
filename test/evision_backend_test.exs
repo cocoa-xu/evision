@@ -102,6 +102,19 @@ defmodule Evision.Backend.Test do
     end
   end
 
+  describe "iota" do
+    test "stores the requested shape" do
+      want = Nx.iota({2, 2, 3}, type: :s32)
+      t = Nx.iota({2, 2, 3}, type: :s32, backend: Evision.Backend)
+
+      assert Evision.Mat.shape(t) == {2, 2, 3}
+
+      for axis <- 0..2 do
+        assert_same(Nx.argmax(t, axis: axis), Nx.argmax(want, axis: axis))
+      end
+    end
+  end
+
   describe "argmax/argmin (index family)" do
     test "match Nx.BinaryBackend across axes, ranks, tie-breaks, and dtypes" do
       tensors = [
