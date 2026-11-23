@@ -131,11 +131,20 @@ jobs:
           bash scripts/download_opencv.sh ${OPENCV_VER} 3rd_party/cache 3rd_party/opencv/
           bash scripts/download_opencv_contrib.sh ${OPENCV_VER} 3rd_party/cache 3rd_party/opencv/
 
+      - name: Hash the OpenCV build options
+        id: opencv-options
+        shell: bash
+        # The Makefile skips OpenCV when its outputs exist, so the key has to change with the options mix passes to it.
+        run: |
+          options="$(mix run --no-compile --no-deps-check --no-start -e 'IO.write(Mix.Project.config()[:make_env]["CMAKE_OPTIONS"])')"
+          echo "${options}"
+          echo "hash=$(printf '%s' "${options}" | git hash-object --stdin)" >> "${GITHUB_OUTPUT}"
+
       - name: Cache compiled OpenCV
         id: cache-mix-compile_opencv
         uses: actions/cache@v6
         with:
-          key: compiled-opencv-${{ env.OPENCV_VER }}-cuda${{ matrix.cuda_ver }}-x86_64-linux-gnu-${{ hashFiles('Makefile') }}-${{ hashFiles('py_src/*.py') }}-${{ hashFiles('patches/**') }}
+          key: compiled-opencv-${{ env.OPENCV_VER }}-cuda${{ matrix.cuda_ver }}-x86_64-linux-gnu-${{ hashFiles('Makefile') }}-${{ hashFiles('cmake/OpenCVDetectCUDAUtils.cmake') }}-${{ hashFiles('py_src/*.py') }}-${{ hashFiles('patches/**') }}-${{ steps.opencv-options.outputs.hash }}
           path: |
             ./_build/${{ env.MIX_ENV }}/lib/evision
             ./c_src/headers.txt
