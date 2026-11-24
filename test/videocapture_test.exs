@@ -15,6 +15,7 @@ defmodule Evision.VideoCapture.Test do
       frame_width: 1920.0
     } = video
 
+    assert "FFMPEG" == Evision.VideoCapture.getBackendName(video)
     %Evision.Mat{shape: {1080, 1920, 3}} = Evision.VideoCapture.read(video)
 
     video = Evision.VideoCapture.release(video)
