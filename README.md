@@ -41,7 +41,15 @@ end
 ### Use Precompiled Library (Default)
 The following environment variables can be set based on your needs.
 
-(Note that precompiled binaries do not use FFmpeg. If you'd like to use FFmpeg, please compile from source (please see instructions in the next section) and set corresponding environment variables. We're considering this option at the moment.)
+#### Video files and FFmpeg
+
+How the precompiled binaries read and write video files depends on the platform:
+
+- Linux (`x86_64-linux-gnu`, `aarch64-linux-gnu` and `x86_64-linux-musl`): OpenCV loads FFmpeg 4.x to 9.x from the system the first time a video is opened. Install it with your package manager, for example `apt install ffmpeg` or `apk add ffmpeg`. Without FFmpeg, everything else still works and only video files fail to open.
+- Windows: FFmpeg is bundled.
+- macOS: AVFoundation, which handles MP4 and MOV files with H.264 or HEVC video.
+
+Other precompiled targets don't use FFmpeg. To use FFmpeg there, or a newer FFmpeg than 9.x, compile from source (see the next section).
 
 #### macOS: install Tesseract
 
@@ -114,7 +122,7 @@ This variable will only be checked whenever the `mix compile` task is invoked di
 1. You don't need to keep it in the runtime environment.
 2. If you want to change it later, the directory `_build/${MIX_ENV}/lib/evision` needs to be deleted first.
 
-**If you found the precompiled binaries do not suit your needs (e.g., perhaps you need OpenCV to be compiled with FFmpeg to handle more video formats.), it's possible to override the behaviour by setting the environment variable `EVISION_PREFER_PRECOMPILED` to `false`, and then please delete `_build/${MIX_ENV}/lib/evision` and recompile evision**
+**If you found the precompiled binaries do not suit your needs (e.g., perhaps you need a video backend they don't have), it's possible to override the behaviour by setting the environment variable `EVISION_PREFER_PRECOMPILED` to `false`, and then please delete `_build/${MIX_ENV}/lib/evision` and recompile evision**
 
 **Also, for Linux users only, the precompiled binary is not compiled with GTK support, therefore functions like `Evision.HighGui.imshow/2` will not work. However, you can either use `Evision.Wx.imshow/2` (if Erlang on your system is compiled with `wxWidgets`), or set the environment variable `EVISION_PREFER_PRECOMPILED` to `false` so that OpenCV can detect available HighGui backend when compiling from source.**
 

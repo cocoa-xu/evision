@@ -48,6 +48,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.gen.outputs.matrix }}
+      smoke: ${{ steps.gen.outputs.smoke }}
       version: ${{ steps.gen.outputs.version }}
     steps:
       - name: Resolve build matrix and release version
@@ -109,10 +110,28 @@ jobs:
             matrix="$(echo "$all" | jq -c .)"
           fi
 
+          # Every built target with FFmpeg plugins is tested against each FFmpeg major,
+          # and without FFmpeg.
+          distros="$(cat <<'JSON'
+          [
+            {"name":"Ubuntu 22.04, FFmpeg 4.4","image":"hexpm/elixir:1.17.3-erlang-26.2.5.21-ubuntu-jammy-20261110","ffmpeg":"apt"},
+            {"name":"Debian 12, FFmpeg 5.1","image":"hexpm/elixir:1.17.3-erlang-26.2.5.21-debian-bookworm-20261104","ffmpeg":"apt"},
+            {"name":"Ubuntu 24.04, FFmpeg 6.1","image":"hexpm/elixir:1.17.3-erlang-26.2.5.21-ubuntu-noble-20261110.1","ffmpeg":"apt"},
+            {"name":"Debian 13, FFmpeg 7.1","image":"hexpm/elixir:1.17.3-erlang-26.2.5.21-debian-trixie-20261104","ffmpeg":"apt"},
+            {"name":"Ubuntu 26.04, FFmpeg 8.0","image":"hexpm/elixir:1.17.3-erlang-26.2.5.21-ubuntu-resolute-20261105.1","ffmpeg":"apt"},
+            {"name":"Ubuntu 26.04, FFmpeg 9.1","image":"hexpm/elixir:1.17.3-erlang-26.2.5.21-ubuntu-resolute-20261105.1","ffmpeg":"9.1"},
+            {"name":"Ubuntu 24.04, no FFmpeg","image":"hexpm/elixir:1.17.3-erlang-26.2.5.21-ubuntu-noble-20261110.1","ffmpeg":"none"}
+          ]
+          JSON
+          )"
+          smoke="$(echo "$matrix" | jq -c --argjson distros "$distros" '[.[] | .pair.arch | select(. == "x86_64-linux-gnu" or . == "aarch64-linux-gnu") as $arch | $distros[] | . + {arch: $arch, runs_on: (if $arch == "x86_64-linux-gnu" then "ubuntu-latest" else "ubuntu-24.04-arm" end)}]')"
+
           echo "matrix={\"include\":$matrix}" >> "$GITHUB_OUTPUT"
+          echo "smoke={\"include\":$smoke}" >> "$GITHUB_OUTPUT"
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "Resolved version: $version"
           echo "Resolved matrix:  $matrix"
+          echo "FFmpeg smoke tests: $smoke"
 
   mix_compile:
     needs: setup
@@ -219,6 +238,14 @@ jobs:
 
           mix compile
 
+      - name: Build the FFmpeg plugins (without contrib modules)
+        if: matrix.pair.arch == 'x86_64-linux-gnu' || matrix.pair.arch == 'aarch64-linux-gnu'
+        run: |
+          if [ "${{ matrix.pair.cmake_toolchain_file }}" != "" ]; then
+            toolchain="$(pwd)/${{ matrix.pair.cmake_toolchain_file }}"
+          fi
+          bash .github/scripts/build-ffmpeg-plugins.sh "${{ matrix.pair.arch }}" "_build/${MIX_ENV}/lib/evision/priv" ${toolchain}
+
       - name: Create precompiled library (without contrib modules)
         run: |
           export PKG_NAME=evision-nif_${{ matrix.pair.NIF_VERSION }}-${{ matrix.pair.arch }}-${{ needs.setup.outputs.version }}
@@ -236,6 +263,17 @@ jobs:
           cd artifacts
           sha256sum "${PKG_NAME}.tar.gz" | tee "${PKG_NAME}.tar.gz.sha256"
           mv /tmp/include "${PRIV_DIR}/include"
+
+      - name: Bundle the FFmpeg smoke test
+        if: matrix.pair.arch == 'x86_64-linux-gnu' || matrix.pair.arch == 'aarch64-linux-gnu'
+        run: bash .github/scripts/ffmpeg-smoke/bundle.sh "ffmpeg-smoke-${{ matrix.pair.arch }}.tar.gz"
+
+      - uses: actions/upload-artifact@v7
+        if: matrix.pair.arch == 'x86_64-linux-gnu' || matrix.pair.arch == 'aarch64-linux-gnu'
+        with:
+          name: ffmpeg-smoke-${{ matrix.pair.arch }}
+          path: ffmpeg-smoke-${{ matrix.pair.arch }}.tar.gz
+          retention-days: 7
 
       - name: Compile OpenCV (with contrib modules)
         run: |
@@ -268,6 +306,14 @@ jobs:
 
           mix compile
 
+      - name: Build the FFmpeg plugins (with contrib modules)
+        if: matrix.pair.arch == 'x86_64-linux-gnu' || matrix.pair.arch == 'aarch64-linux-gnu'
+        run: |
+          if [ "${{ matrix.pair.cmake_toolchain_file }}" != "" ]; then
+            toolchain="$(pwd)/${{ matrix.pair.cmake_toolchain_file }}"
+          fi
+          bash .github/scripts/build-ffmpeg-plugins.sh "${{ matrix.pair.arch }}" "_build/${MIX_ENV}/lib/evision/priv" ${toolchain}
+
       - name: Create precompiled library (with contrib modules)
         run: |
           export PKG_NAME=evision-nif_${{ matrix.pair.NIF_VERSION }}-${{ matrix.pair.arch }}-contrib-${{ needs.setup.outputs.version }}
@@ -298,3 +344,63 @@ jobs:
         with:
           mode: save
           name: ${{ matrix.pair.arch }}
+
+  ffmpeg_smoke:
+    name: ffmpeg_smoke (${{ matrix.arch }}, ${{ matrix.name }})
+    needs: [setup, mix_compile]
+    if: ${{ !cancelled() && needs.setup.outputs.smoke != '{"include":[]}' }}
+    runs-on: ${{ matrix.runs_on }}
+    container: ${{ matrix.image }}
+    defaults:
+      run:
+        shell: bash
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.setup.outputs.smoke) }}
+    env:
+      LANG: C.UTF-8
+      DEBIAN_FRONTEND: noninteractive
+      OPENCV_LOG_LEVEL: INFO
+
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: ffmpeg-smoke-${{ matrix.arch }}
+
+      - name: Install FFmpeg from the distribution
+        if: matrix.ffmpeg == 'apt'
+        run: |
+          apt-get update -q
+          apt-get install -y --no-install-recommends ffmpeg
+          ffmpeg -hide_banner -version | head -n 1
+
+      - name: Install curl
+        if: matrix.ffmpeg != 'apt' && matrix.ffmpeg != 'none'
+        run: |
+          apt-get update -q
+          apt-get install -y --no-install-recommends curl ca-certificates
+
+      - uses: cocoa-xu/ffmpeg-build@main
+        if: matrix.ffmpeg != 'apt' && matrix.ffmpeg != 'none'
+        with:
+          ffmpeg_version: ${{ matrix.ffmpeg }}
+          install-dir: /opt/ffmpeg
+
+      - name: Make /opt/ffmpeg the system FFmpeg
+        if: matrix.ffmpeg != 'apt' && matrix.ffmpeg != 'none'
+        run: |
+          echo /opt/ffmpeg/lib > /etc/ld.so.conf.d/ffmpeg.conf
+          ldconfig
+          ffmpeg -hide_banner -version | head -n 1
+
+      - name: Run the FFmpeg video tests
+        if: matrix.ffmpeg != 'none'
+        run: |
+          tar -xzf "ffmpeg-smoke-${{ matrix.arch }}.tar.gz"
+          ERL_LIBS="$PWD/smoke/lib" elixir smoke/run_tests.exs
+
+      - name: Check evision without FFmpeg
+        if: matrix.ffmpeg == 'none'
+        run: |
+          tar -xzf "ffmpeg-smoke-${{ matrix.arch }}.tar.gz"
+          ERL_LIBS="$PWD/smoke/lib" elixir smoke/no_ffmpeg.exs
