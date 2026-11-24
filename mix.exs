@@ -1858,6 +1858,8 @@ defmodule Evision.MixProject do
           c_src/evision_numeric_cast.hpp
           c_src/evision_broadcast.hpp
           c_src/evision.cpp
+          c_src/evision.hpp
+          c_src/evision_convert.cpp
           c_src/nif_utils.hpp
           cc_toolchain
           cmake
