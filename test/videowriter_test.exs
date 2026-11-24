@@ -24,6 +24,7 @@ defmodule Evision.VideoWriter.Test do
         )
 
       assert true == Evision.VideoWriter.isOpened(writer)
+      assert "FFMPEG" == Evision.VideoWriter.getBackendName(writer)
       frame = Evision.VideoCapture.read(reader)
       Evision.VideoCapture.release(reader)
       encode(frame, writer, output_fps * output_seconds)

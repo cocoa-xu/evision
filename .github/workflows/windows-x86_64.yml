@@ -199,6 +199,10 @@ jobs:
         shell: bash
         run: mix test --no-compile test/evision_native_conversion_safety_test.exs test/evision_cpu_dispatch_test.exs test/evision_backend_benchmark_test.exs test/evision_moments_test.exs test/evision_mat_channel_test.exs test/evision_backend_multiply_semantics_test.exs test/evision_backend_dot_gemm_test.exs test/evision_backend_cast_elision_test.exs test/evision_backend_matching_shape_test.exs test/evision_backend_broadcast_suffix_test.exs test/evision_mat_f16_type_test.exs test/evision_backend_scalar_comparison_test.exs test/evision_backend_min_max_type_test.exs test/evision_backend_native_half_reduce_test.exs test/evision_backend_half_product_test.exs
 
+      - name: Test video I/O with the bundled FFmpeg
+        shell: bash
+        run: mix test --no-compile --include require_ffmpeg test/videocapture_test.exs test/videowriter_test.exs
+
       - name: Cache testdata
         id: cache-mix-testdata
         uses: actions/cache@v6
