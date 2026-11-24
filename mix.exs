@@ -1844,41 +1844,15 @@ defmodule Evision.MixProject do
   defp package() do
     [
       name: "evision",
-      # These are the default files included in the package
       files: ~w(
-          c_src/evision_custom_headers
-          c_src/modules
-          c_src/windows_fix
-          c_src/ArgInfo.hpp
-          c_src/erlcompat.hpp
-          c_src/evision_consts.h
-          c_src/evision_custom_headers.h
-          c_src/evision_mat_allocator.hpp
-          c_src/evision_native_safety.hpp
-          c_src/evision_numeric_cast.hpp
-          c_src/evision_broadcast.hpp
-          c_src/evision.cpp
-          c_src/evision.hpp
-          c_src/evision_convert.cpp
-          c_src/nif_utils.hpp
+          c_src
           cc_toolchain
           cmake
-          lib/assets
-          lib/evision
-          lib/mix
-          lib/smartcell
-          lib/zoo
-          lib/*.ex
+          lib
           patches
-          py_src/*.py
-          py_src/config
-          py_src/emit
-          py_src/ir
+          py_src
           scripts
-          src/evision_mat.erl
-          src/evision_highgui.erl
-          src/evision_internal_structurise.erl
-          src/evision.app.src
+          src
           checksum.exs
           checksum.erl
           CMakeLists.txt
@@ -1891,6 +1865,15 @@ defmodule Evision.MixProject do
           README*
           LICENSE*
           CHANGELOG*),
+      exclude_patterns: [
+        # Written into the source directories by the build.
+        ~r"^c_src/evision_generated_",
+        ~r"^c_src/configuration\.private\.hpp$",
+        ~r"^c_src/gen_python_config",
+        ~r"^(lib|src)/generated(/|$)",
+        ~r"__pycache__",
+        ~r"^py_src/tests(/|$)"
+      ],
       licenses: ["Apache-2.0"],
       links: links()
     ]
