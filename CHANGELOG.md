@@ -1,5 +1,66 @@
 # Changelog
 
+## v1.2.0-rc.0 (2026-11-24)
+
+First release candidate for v1.2.0. Changes below are relative to v1.1.1.
+
+### Compatibility
+
+- CUDA constants moved from `Evision.Constant` to `Evision.Constant.CUDA`
+  (`evision_constant_cuda` in Erlang). These are the constants under `cv.cuda`
+  and `cv.cudacodec`. Non-CUDA builds have 33 of them, such as the FeatureSet
+  and ComputeMode values, and they moved there too. `Evision.Constant` is now
+  the same in CUDA and non-CUDA builds. Before, CUDA builds replaced
+  TrackerKCF's `GRAY = 1` with cudacodec's `GRAY = 3`, so
+  `Evision.Constant.cv_GRAY/0` returned 3 there
+  ([#407](https://github.com/cocoa-xu/evision/pull/407)).
+- Releases built on an Erlang/OTP that includes wx now bundle and start the `wx`
+  application, about 10 MB. `Evision.Wx` needs it at runtime
+  ([#384](https://github.com/cocoa-xu/evision/pull/384)).
+
+### Added
+
+- `Evision.Wx` provides HighGui-style windows on Erlang's `:wx`: `imshow`,
+  `waitKey` with key input, mouse callbacks and trackbars. Unlike native
+  HighGui, its callbacks also run while nobody is calling `waitKey/1` (#384).
+- Native `Evision.HighGui.setMouseCallback/2` and
+  `Evision.HighGui.createTrackbar/5` take Elixir functions. Callbacks run one at
+  a time in a separate process, and OpenCV delivers events only while
+  `waitKey/1` is waiting
+  ([#385](https://github.com/cocoa-xu/evision/pull/385)).
+- Precompiled `x86_64-linux-gnu`, `aarch64-linux-gnu` and `x86_64-linux-musl`
+  builds read and write video files with the system FFmpeg 4.x to 9.x, loaded
+  the first time a video is opened. Without FFmpeg, everything else works as
+  before. Windows builds already bundle FFmpeg, and macOS builds use
+  AVFoundation ([#437](https://github.com/cocoa-xu/evision/pull/437)).
+
+### Fixed
+
+- On Windows, evision no longer changes the default DLL search order of the
+  whole BEAM process, which could stop other NIFs from finding their DLLs
+  ([#402](https://github.com/cocoa-xu/evision/pull/402)).
+- evision recognizes Windows on Erlang/OTP 28 and later, in both Mix and rebar3
+  builds ([#403](https://github.com/cocoa-xu/evision/pull/403)).
+- evision no longer crashes at startup when Kino is available at runtime but
+  evision was compiled without it, as `mix compile --no-optional-deps` does on
+  Elixir 1.20 ([#409](https://github.com/cocoa-xu/evision/pull/409)).
+- `Evision.Mat.channels/1` returns the channel count for an Nx tensor. It
+  returned the type tuple
+  ([#428](https://github.com/cocoa-xu/evision/pull/428)).
+- `Evision.Mat.arange/5` reshapes its result. It returned a plain map that
+  `Evision.Mat.shape/1` rejected, so `Nx.iota/2` without `axis` on
+  `Evision.Backend` gave a flat Mat, and `Nx.argmax/2` and `Nx.argmin/2` on it
+  raised ([#429](https://github.com/cocoa-xu/evision/pull/429)).
+- Typespecs that referred to missing enum modules name the right ones:
+  `Evision.DNN.DataLayout` is `Evision.DataLayout`, and
+  `Evision.KinFu.VolumeType` is `Evision.VolumeType`.
+  `Evision.DescriptorMatcher.create/1` takes
+  `Evision.DescriptorMatcher.MatcherType.enum()`
+  ([#410](https://github.com/cocoa-xu/evision/pull/410)).
+- In CUDA builds, root `Evision` functions get the same doc groups as in other
+  builds. HexDocs are built from the CUDA bindings and showed three of them in
+  the wrong group ([#408](https://github.com/cocoa-xu/evision/pull/408)).
+
 ## v1.1.1 (2026-11-12)
 
 ### Fixed
