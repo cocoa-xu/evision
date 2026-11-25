@@ -466,7 +466,7 @@ static ERL_NIF_TERM evision_cv_mat_arange(ErlNifEnv *env, int argc, const ERL_NI
             std::vector<int32_t> values((size_t)count64);
             int64_t v = from;
             for (int64_t i = 0; i < count64; i++) {
-                values[i] = v;
+                values[i] = static_cast<int32_t>(v);
                 v += step;
             }
 

@@ -793,9 +793,9 @@ static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Scalar& s, const ArgInfo&
             if (enif_get_double(env, terms[i], &f64)) {
                 s[i] = f64;
             } else if (enif_get_int64(env, terms[i], (ErlNifSInt64 *)&i64)) {
-                s[i] = i64;
+                s[i] = static_cast<double>(i64);
             } else if (enif_get_uint64(env, terms[i], (ErlNifUInt64 *)&u64)) {
-                s[i] = u64;
+                s[i] = static_cast<double>(u64);
             } else {
                 failmsg(env, "Scalar value for argument '%s' is not numeric", info.name);
                 return false;
@@ -809,9 +809,9 @@ static bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Scalar& s, const ArgInfo&
         if (enif_get_double(env, o, &f64)) {
             s[0] = f64;
         } else if (enif_get_int64(env, o, (ErlNifSInt64 *)&i64)) {
-            s[0] = i64;
+            s[0] = static_cast<double>(i64);
         } else if (enif_get_uint64(env, o, (ErlNifUInt64 *)&u64)) {
-            s[0] = u64;
+            s[0] = static_cast<double>(u64);
         } else {
             failmsg(env, "Scalar value for argument '%s' cannot fit in a double value", info.name);
             return false;

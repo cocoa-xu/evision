@@ -39,12 +39,12 @@ template <typename T>
 static T window_identity(int op) {
     switch (op) {
         case 1: return (T)1;
-        case 2: return std::numeric_limits<T>::has_infinity
-                           ? -std::numeric_limits<T>::infinity()
-                           : std::numeric_limits<T>::lowest();
-        case 3: return std::numeric_limits<T>::has_infinity
-                           ? std::numeric_limits<T>::infinity()
-                           : std::numeric_limits<T>::max();
+        case 2:
+            if constexpr (std::numeric_limits<T>::has_infinity) return -std::numeric_limits<T>::infinity();
+            else return std::numeric_limits<T>::lowest();
+        case 3:
+            if constexpr (std::numeric_limits<T>::has_infinity) return std::numeric_limits<T>::infinity();
+            else return std::numeric_limits<T>::max();
         default: return (T)0;
     }
 }
