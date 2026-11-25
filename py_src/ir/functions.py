@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import re
 from string import Template
 from ir.variants import FuncVariant
 from format_strings import FormatStrings
@@ -19,7 +18,6 @@ class FuncInfo(object):
         self.namespace = namespace
         self.is_static = is_static
         self.variants = []
-        self.argname_prefix_re = re.compile(r'^[_]*')
 
     def __copy__(self):
         copy_info = FuncInfo(self.classname, self.name, self.cname, self.isconstructor, self.namespace, self.is_static)
@@ -109,25 +107,6 @@ class FuncInfo(object):
         else:
             nif_function_decl = f'    F_CPU({erl_name}, {fname}, {func_arity}),\n'
         return nif_function_decl
-
-    def map_elixir_argname(self, argname, ignore_upper_starting=False):
-        name = ""
-        if argname in reserved_keywords():
-            if argname == 'fn':
-                name = 'func'
-            elif argname == 'end':
-                name = 'end_arg'
-            else:
-                name = f'arg_{argname}'
-        else:
-            name = self.argname_prefix_re.sub('', argname)
-        if ignore_upper_starting:
-            return name
-        return f"{name[0:1].lower()}{name[1:]}"
-
-    def map_erlang_argname(self, argname):
-        name = self.argname_prefix_re.sub('', argname)
-        return f"{name[0:1].upper()}{name[1:]}"
 
     def should_return_self(self):
         if self.classname.startswith("dnn_"):
@@ -302,7 +281,7 @@ class FuncInfo(object):
                 parse_name = a.name
                 if a.py_inputarg:
                     parse_name = "erl_term_" + a.name
-                    elixir_argname = self.map_elixir_argname(a.name)
+                    elixir_argname = map_argname('elixir', a.name)
                     erl_term = "evision_get_kw(env, erl_terms, \"%s\")" % (elixir_argname,)
                     self_offset = 0
                     if self.classname and not self.is_static and not self.isconstructor:
@@ -548,4 +527,4 @@ class FuncInfo(object):
     def get_all_named_args(self):
         # Insertion-ordered dedup: set iteration order varies with PYTHONHASHSEED
         # and would make generated kwarg-validation lists nondeterministic.
-        return list(dict.fromkeys(self.map_elixir_argname(a.name) for v in self.variants for a in v.args))
+        return list(dict.fromkeys(map_argname('elixir', a.name) for v in self.variants for a in v.args))

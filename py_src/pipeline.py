@@ -74,7 +74,6 @@ def _enum_struct_name(original_name):
 class Pipeline(object):
     def __init__(self, enabled_modules, langs):
         self.clear()
-        self.argname_prefix_re = re.compile(r'^[_]*')
         self.inline_docs_code_type_re = re.compile(r'@code{.(.*)}')
         self.inline_docs_inline_math_re = re.compile(r'(?:.*?)\\\\f[$\[](.*?)\\\\f[$\]]', re.MULTILINE|re.DOTALL)
         self.enabled_modules = enabled_modules
