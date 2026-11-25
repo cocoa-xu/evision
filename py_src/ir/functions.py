@@ -548,4 +548,4 @@ class FuncInfo(object):
     def get_all_named_args(self):
         # Insertion-ordered dedup: set iteration order varies with PYTHONHASHSEED
         # and would make generated kwarg-validation lists nondeterministic.
-        return list(dict.fromkeys(a.name for v in self.variants for a in v.args))
+        return list(dict.fromkeys(self.map_elixir_argname(a.name) for v in self.variants for a in v.args))

@@ -733,7 +733,7 @@ class ModuleGenerator(object):
                             all_named_args = func.get_all_named_args()
                             keyword_validate = ''
                             if len(all_named_args) > 0:
-                                keyword_validate = ",".join([f':{arg}' for arg in all_named_args])
+                                keyword_validate = ",".join([elixir_atom(arg) for arg in all_named_args])
                                 keyword_validate = f'\n    named_args = Keyword.validate!(named_args, [{keyword_validate}])'
                             named_args_code.write(f'  @spec {module_func_name}(Keyword.t()) :: any() | {{:error, String.t()}}\n'
                                 f'  def {module_func_name}([{{arg, _}} | _] = named_args) when is_atom(arg) do{keyword_validate}\n'
