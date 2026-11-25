@@ -273,7 +273,7 @@ $(EVISION_SO): $(C_SRC_HEADERS_TXT) $(OPENCV_CONFIG_CMAKE)
 	@ if [ ! -f "${EVISION_SO}" ]; then \
 		mkdir -p "$(CMAKE_EVISION_BUILD_DIR)" && \
 		cd "$(CMAKE_EVISION_BUILD_DIR)" && \
-			{ cmake --no-warn-unused-cli \
+			{ cmake \
 			-D C_SRC="$(C_SRC)" \
 			-D GENERATED_ELIXIR_SRC_DIR="$(GENERATED_ELIXIR_SRC_DIR)" \
 			-D GENERATED_ERLANG_SRC_DIR="$(GENERATED_ERLANG_SRC_DIR)" \
