@@ -37,6 +37,10 @@ def normalize_class_name(name):
     return re.sub(r"^cv\.", "", name).replace(".", "_")
 
 
+def elixir_atom(name: str) -> str:
+    return f':{name}' if re.fullmatch(r'[A-Za-z_][A-Za-z0-9_]*', name) else f':"{name}"'
+
+
 def get_type_format_string(arg_type_info):
     if arg_type_info.strict_conversion:
         return FormatStrings.object
