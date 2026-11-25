@@ -291,6 +291,9 @@ if Code.ensure_loaded?(:wx_object) do
       if state.bitmap, do: :wxBitmap.destroy(state.bitmap)
       if state.image, do: :wxImage.destroy(state.image)
       :wxFrame.destroy(state.frame)
+      # destroy/1 only queues the delete. Wait until wx has run it, or the VM can
+      # halt while the main thread is still tearing the frame down.
+      :wx_misc.isBusy()
       :ok
     end
 
