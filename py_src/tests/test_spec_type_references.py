@@ -19,6 +19,15 @@ def enums():
     helper.parsed_enum_modules.update(saved)
 
 
+@pytest.fixture
+def classes():
+    saved = dict(helper.parsed_class_modules)
+    helper.parsed_class_modules.clear()
+    yield helper.parsed_class_modules
+    helper.parsed_class_modules.clear()
+    helper.parsed_class_modules.update(saved)
+
+
 def _enum_decl(name, *consts):
     scope = name.rsplit('.', 1)[0]
     values = [[f'const {scope}.{c}', str(i), [], [], None, ''] for i, c in enumerate(consts)]
@@ -109,3 +118,42 @@ def test_instance_methods_of_namespaced_classes_take_their_own_struct(enums):
     spec = func.variants[0].generate_spec('elixir', 'setNrPlane', True, False, 'CUDA.StereoConstantSpaceBP')
     assert spec == ('@spec setNrPlane(Evision.CUDA.StereoConstantSpaceBP.t(), integer()) :: '
                     'Evision.CUDA.StereoConstantSpaceBP.t() | {:error, String.t()}')
+
+
+def test_classes_are_registered_by_elixir_module(classes):
+    pipeline = _pipeline('cv', 'cv.detail', 'cv.ximgproc', 'cv.ximgproc.segmentation')
+    for name in ['cv.detail.CameraParams', 'cv.ximgproc.segmentation.GraphSegmentation']:
+        pipeline.add_class('class', name, [f'class {name}', '', [], [], None, ''])
+    assert classes == {
+        'detail_CameraParams': 'Evision.Detail.CameraParams',
+        'ximgproc_segmentation_GraphSegmentation': 'Evision.XImgProc.GraphSegmentation',
+    }
+
+
+@pytest.mark.parametrize('classname,argtype,decl,elixir,erlang', [
+    ('QRCodeDetector', 'QRCodeEncoder::ECIEncodings', ['cv.QRCodeDetector.getEncoding'],
+     'Evision.QRCodeEncoder.ECIEncodings.enum()', 'integer()'),
+    ('OdometrySettings', 'RgbdNormals::RgbdNormalsMethod', ['cv.OdometrySettings.getNormalMethod'],
+     'Evision.RgbdNormals.RgbdNormalsMethod.enum()', 'integer()'),
+    ('QRCodeDetectorAruco', 'QRCodeDetectorAruco::Params', ['cv.QRCodeDetectorAruco.getDetectorParameters'],
+     'Evision.QRCodeDetectorAruco.Params.t()', '#evision_qrcodedetectoraruco_params{}'),
+    ('Stitcher', 'std::vector<detail::CameraParams>', ['cv.Stitcher.cameras'],
+     'list(Evision.Detail.CameraParams.t())', 'list(#evision_detail_cameraparams{})'),
+])
+def test_scoped_type_names_resolve_to_their_module(enums, classes, classname, argtype, decl, elixir, erlang):
+    enums.update({
+        'QRCodeEncoder_ECIEncodings': 'Evision.QRCodeEncoder.ECIEncodings',
+        'RgbdNormals_RgbdNormalsMethod': 'Evision.RgbdNormals.RgbdNormalsMethod',
+    })
+    classes.update({
+        'QRCodeDetectorAruco_Params': 'Evision.QRCodeDetectorAruco.Params',
+        'detail_CameraParams': 'Evision.Detail.CameraParams',
+    })
+    assert map_argtype_in_spec_elixir(classname, argtype, False, decl) == elixir
+    assert map_argtype_in_spec_erlang(classname, argtype, False, decl) == erlang
+
+
+def test_unknown_types_fall_back_to_term_and_warn(enums, classes, capsys):
+    assert map_argtype_in_spec_elixir('Foo', 'Foo::Bar', False, ['cv.Foo.bar']) == 'term()'
+    assert map_argtype_in_spec_erlang('Foo', 'Foo::Bar', False, ['cv.Foo.bar']) == 'term()'
+    assert capsys.readouterr().out.count('unknown argtype `Foo::Bar`') == 2

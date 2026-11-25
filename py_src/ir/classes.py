@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from helper import normalize_class_name, get_elixir_module_name
+from helper import normalize_class_name, get_elixir_module_name, erlang_record_name
 from ir.props import ClassProp
 from module_generator import ModuleGenerator  # emit-side; ir/ will be decoupled in a later step
 from ir.inheritance import flatten_methods, flatten_props
@@ -89,6 +89,10 @@ class ClassInfo(object):
     @property
     def has_export_alias(self):
         return self.export_name != self.original_name
+
+    @property
+    def elixir_module_name(self):
+        return get_elixir_module_name(self.cname).replace('XImgProc.Segmentation.', 'XImgProc.')
 
     def gen_map_code(self, codegen):
         all_classes = codegen.classes
@@ -246,9 +250,7 @@ class ClassInfo(object):
         if self.constructor is not None:
             constructor_name = self.constructor.get_wrapper_name(True)
 
-        elixir_module_name = get_elixir_module_name(self.cname)
-        if 'XImgProc.Segmentation.' in elixir_module_name:
-            elixir_module_name = elixir_module_name.replace('XImgProc.Segmentation.', 'XImgProc.')
+        elixir_module_name = self.elixir_module_name
         elixir_module_name_underscore = elixir_module_name.replace(".", "_")
         if elixir_module_name not in ["Text.ERFilter.Callback"] and elixir_module_name_underscore not in evision_modules:
             module_file_generator = ModuleGenerator(elixir_module_name)
@@ -266,9 +268,7 @@ class ClassInfo(object):
                     elixir_module_name=elixir_module_name
                 )
             )
-            atom_erlang_module_name = atom_erlang_module_name.replace("Evision.", "evision_").replace(".", "_").lower()
-            if not atom_erlang_module_name.startswith("evision_"):
-                atom_erlang_module_name = f"evision_{atom_erlang_module_name}"
+            atom_erlang_module_name = erlang_record_name(atom_erlang_module_name)
 
             module_file_generator.write_erlang(f'-module({atom_erlang_module_name.lower()}).\n-compile(nowarn_export_all).\n-compile([export_all]).\n-include("evision.hrl").\n\n')    
             module_file_generator.write_erlang(

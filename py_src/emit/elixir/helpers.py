@@ -183,7 +183,13 @@ def map_argtype_in_spec_elixir(classname: str, argtype: str, is_in: bool, decl: 
         # evision_objdetect.hpp converter emits it as a BEAM binary.
         return 'binary()'
     else:
-        # print(f'warning: generate_spec: unknown argtype `{argtype}`, input_arg? {is_in}, class={classname}')
+        enum_module = resolve_parsed_enum(argtype, classname, decl)
+        if enum_module is not None:
+            return f'{enum_module}.enum()'
+        class_module = resolve_parsed_class(argtype, classname, decl)
+        if class_module is not None:
+            return f'{class_module}.t()'
+        print(f'warning: generate_spec: unknown argtype `{argtype}`, input_arg? {is_in}, class={classname}')
         return 'term()'
 
 

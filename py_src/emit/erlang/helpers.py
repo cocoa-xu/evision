@@ -175,6 +175,11 @@ def map_argtype_in_spec_erlang(classname: str, argtype: str, is_in: bool, decl: 
         ty = struct_name.replace('.', '_').lower()
         return f'#{ty}' + '{}'
     else:
+        if resolve_parsed_enum(argtype, classname, decl) is not None:
+            return 'integer()'
+        class_module = resolve_parsed_class(argtype, classname, decl)
+        if class_module is not None:
+            return f'#{erlang_record_name(class_module)}' + '{}'
         print(f'warning: generate_spec: unknown argtype `{argtype}`, input_arg? {is_in}, class={classname}')
         return 'term()'
 
