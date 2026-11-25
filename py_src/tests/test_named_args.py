@@ -11,5 +11,5 @@ def test_named_args_are_the_keys_the_nif_reads():
         ['FileNode', 'fn', '', []],
     ], None, ''])
     keys = func.get_all_named_args()
-    assert keys == ['disparity', '3dImage', 'q', 'func']
-    assert [elixir_atom(k) for k in keys] == [':disparity', ':"3dImage"', ':q', ':func']
+    assert keys == ['disparity', '3dImage', 'q', 'fileNode']
+    assert [elixir_atom(k) for k in keys] == [':disparity', ':"3dImage"', ':q', ':fileNode']

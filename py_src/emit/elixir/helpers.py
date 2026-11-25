@@ -20,7 +20,7 @@ def map_argname_elixir(argname, ignore_upper_starting=False, argtype=None, from_
     name = ""
     if argname in reserved_keywords():
         if argname == 'fn':
-            name = 'func'
+            name = 'fileNode'
         elif argname == 'end':
             name = 'end_arg'
         else:
