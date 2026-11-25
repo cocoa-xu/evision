@@ -51,33 +51,6 @@ void evision_conversion_failed(ErlNifEnv *env, const ArgInfo& info, const char *
     }
 }
 
-static void * evision_cast(ErlNifBinary& bin, int cast_from, const std::vector<uint64_t> &sizes, const std::vector<uint64_t> &strides) {
-    uint64_t num_elems = 1;
-    for (size_t i = 0; i < sizes.size(); i++) {
-        num_elems *= sizes[i];
-    }
-    size_t buffer_size = num_elems * sizeof(int32_t);
-    int32_t * data = (int32_t *)enif_alloc(buffer_size);
-    if (!data) {
-        return nullptr;
-    }
-    
-    if (cast_from == 1) {
-        for (size_t i = 0; i < num_elems; i++) {
-            data[i] = ((int64_t *)bin.data)[i];
-        }
-    } else if (cast_from == 2) {
-        for (size_t i = 0; i < num_elems; i++) {
-            data[i] = ((uint64_t *)bin.data)[i];
-        }
-    } else if (cast_from == 3) {
-        for (size_t i = 0; i < num_elems; i++) {
-            data[i] = ((uint32_t *)bin.data)[i];
-        }
-    }
-    return data;
-}
-
 // special case, when the converter needs full ArgInfo structure
 bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Mat& m, const ArgInfo& info)
 {
@@ -113,7 +86,6 @@ bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Mat& m, const ArgInfo& info)
     // Nx.tensor
     if (enif_is_map(env, o))
     {
-        bool needcast = false;
         ERL_NIF_TERM struct_name_term;
         if (!enif_get_map_value(env, o, kAtomStructKey, &struct_name_term)) {
             return false;
@@ -151,7 +123,6 @@ bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Mat& m, const ArgInfo& info)
         // now we need to get its type
         ERL_NIF_TERM type_term;
         int type;
-        int cast_from = 0;
         // nx_tensor_type is only used when
         // ( info.arithm_op_src ) && ( ndims == 1 ) && ( size[0] <= 4 )
         int nx_tensor_type;
@@ -365,17 +336,6 @@ bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Mat& m, const ArgInfo& info)
         }
 
         void * mat_data = data.data;
-        bool enif_allocator = false;
-        if (needcast) {
-            // we always cast to int32_t
-            mat_data = evision_cast(data, cast_from, _sizes, _strides);
-            enif_allocator = true;
-
-            _strides[ndims - 1] = elemsize;
-            for (int dim_i = ndims - 2; dim_i >= 0; dim_i--) {
-                _strides[dim_i] = _strides[dim_i + 1] * _sizes[dim_i + 1];
-            }
-        }
 
         int size[CV_MAX_DIM+1] = {};
         size_t step[CV_MAX_DIM+1] = {};
@@ -407,15 +367,12 @@ bool evision_to(ErlNifEnv *env, ERL_NIF_TERM o, Mat& m, const ArgInfo& info)
 
         Mat casted(ndims, size, type, mat_data, step);
         // Nx strides are derived from its contiguous binary above. Borrow only
-        // for calls that cannot retain this data, and never borrow cast storage.
-        if (info.borrowed_input && !enif_allocator &&
+        // for calls that cannot retain this data.
+        if (info.borrowed_input &&
             (uintptr_t)mat_data % CV_ELEM_SIZE1(type) == 0) {
             m = casted;
         } else {
             casted.copyTo(m);
-        }
-        if (enif_allocator) {
-            enif_free(mat_data);
         }
         return true;
     }
