@@ -731,27 +731,37 @@ class ModuleGenerator(object):
                         named_args_code = StringIO()
                         if kind == 'elixir':
                             all_named_args = func.get_all_named_args()
+                            if is_instance_method:
+                                all_named_args = ['self'] + all_named_args
                             keyword_validate = ''
                             if len(all_named_args) > 0:
                                 keyword_validate = ",".join([elixir_atom(arg) for arg in all_named_args])
                                 keyword_validate = f'\n    named_args = Keyword.validate!(named_args, [{keyword_validate}])'
                             named_args_code.write(f'  @spec {module_func_name}(Keyword.t()) :: any() | {{:error, String.t()}}\n'
-                                f'  def {module_func_name}([{{arg, _}} | _] = named_args) when is_atom(arg) do{keyword_validate}\n'
-                                 '    Enum.map(named_args, fn {named_arg, value} -> {named_arg, Evision.Internal.Structurise.from_struct(value)} end)\n'
-                                f'    |> :evision_nif.{nif_name}()\n'
-                                 '    |> to_struct()\n'
+                                f'  def {module_func_name}([{{arg, _}} | _] = named_args) when is_atom(arg) do{keyword_validate}\n')
+                            if is_instance_method:
+                                named_args_code.write('    {self, named_args} = Keyword.pop!(named_args, :self)\n'
+                                    '    named_args = Enum.map(named_args, fn {named_arg, value} -> {named_arg, Evision.Internal.Structurise.from_struct(value)} end)\n'
+                                    f'    :evision_nif.{nif_name}(Evision.Internal.Structurise.from_struct(self), named_args)\n')
+                            else:
+                                named_args_code.write('    Enum.map(named_args, fn {named_arg, value} -> {named_arg, Evision.Internal.Structurise.from_struct(value)} end)\n'
+                                    f'    |> :evision_nif.{nif_name}()\n')
+                            named_args_code.write('    |> to_struct()\n'
                                  '  end\n')
                             self.add_function(kind, module_func_name, 1,
                                 guards_count=99,
                                 generated_code=named_args_code.getvalue()
                             )
                         elif kind == 'erlang':
-                            named_args_code.write(
-                                f'{module_func_name}([{{ArgName, _}} | _] = NamedArgs) when is_atom(ArgName) ->\n'
-                                 '  NamedArgs_ = lists:foldl(fun({Arg, Value}, Acc) -> [{Arg, evision_internal_structurise:from_struct(Value)} | Acc] end, [], NamedArgs),\n'
-                                f'  Ret = evision_nif:{nif_name}(NamedArgs_),\n'
-                                "  to_struct(Ret).\n\n"
-                            )
+                            named_args_code.write(f'{module_func_name}([{{ArgName, _}} | _] = NamedArgs) when is_atom(ArgName) ->\n')
+                            if is_instance_method:
+                                named_args_code.write('  {value, {self, Self}, OtherArgs} = lists:keytake(self, 1, NamedArgs),\n'
+                                    '  NamedArgs_ = lists:foldl(fun({Arg, Value}, Acc) -> [{Arg, evision_internal_structurise:from_struct(Value)} | Acc] end, [], OtherArgs),\n'
+                                    f'  Ret = evision_nif:{nif_name}(evision_internal_structurise:from_struct(Self), NamedArgs_),\n')
+                            else:
+                                named_args_code.write('  NamedArgs_ = lists:foldl(fun({Arg, Value}, Acc) -> [{Arg, evision_internal_structurise:from_struct(Value)} | Acc] end, [], NamedArgs),\n'
+                                    f'  Ret = evision_nif:{nif_name}(NamedArgs_),\n')
+                            named_args_code.write("  to_struct(Ret).\n\n")
                             self.add_function(kind, module_func_name, 1,
                                 guards_count=99,
                                 generated_code=named_args_code.getvalue()
