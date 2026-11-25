@@ -70,12 +70,14 @@ from config.struct_types import (
 
 module_name_map = MODULE_NAME_MAP
 
-# Elixir module of every named enum, keyed by its normalized OpenCV name
-# (`ccm_ColorSpace`). Filled while headers are parsed, read while specs are emitted.
+# Elixir module of every named enum and every class, keyed by its normalized
+# OpenCV name (`ccm_ColorSpace`, `detail_CameraParams`). Filled while headers
+# are parsed, read while specs are emitted.
 parsed_enum_modules = {}
+parsed_class_modules = {}
 
 
-def resolve_parsed_enum(argtype: str, classname: str, decl: list) -> Optional[str]:
+def _resolve_in_scope(modules: dict, argtype: str, classname: str, decl: list) -> Optional[str]:
     name = argtype.replace('cv::', '').replace('::', '_')
     if classname:
         scope = classname
@@ -84,10 +86,23 @@ def resolve_parsed_enum(argtype: str, classname: str, decl: list) -> Optional[st
     else:
         scope = ''
     while True:
-        module = parsed_enum_modules.get(f'{scope}_{name}' if scope else name)
+        module = modules.get(f'{scope}_{name}' if scope else name)
         if module is not None or not scope:
             return module
         scope = scope.rpartition('_')[0]
+
+
+def resolve_parsed_enum(argtype: str, classname: str, decl: list) -> Optional[str]:
+    return _resolve_in_scope(parsed_enum_modules, argtype, classname, decl)
+
+
+def resolve_parsed_class(argtype: str, classname: str, decl: list) -> Optional[str]:
+    return _resolve_in_scope(parsed_class_modules, argtype, classname, decl)
+
+
+def erlang_record_name(elixir_module_name: str) -> str:
+    name = elixir_module_name.replace("Evision.", "evision_").replace(".", "_").lower()
+    return name if name.startswith("evision_") else f"evision_{name}"
 
 
 def reserved_keywords():

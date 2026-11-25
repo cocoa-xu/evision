@@ -181,6 +181,7 @@ class Pipeline(object):
             return
         
         self.classes[classinfo.name] = classinfo
+        parsed_class_modules[classinfo.name] = f'Evision.{classinfo.elixir_module_name}'
 
         # Add Class to json file.
         namespace, classes, name = self.split_decl_name(name)
@@ -590,9 +591,7 @@ class Pipeline(object):
                         elixir_module_name=mapped_elixir_module_name
                     )
                 )
-                atom_erlang_module_name = atom_erlang_module_name.replace("Evision.", "evision_").replace(".", "_").lower()
-                if not atom_erlang_module_name.startswith("evision_"):
-                    atom_erlang_module_name = f"evision_{atom_erlang_module_name}"
+                atom_erlang_module_name = erlang_record_name(atom_erlang_module_name)
                 module_file_generator.write_erlang(
                     ES.generic_struct_template_erlang.substitute(
                         atom_elixir_module_name=f"Elixir.{atom_elixir_module_name}",
