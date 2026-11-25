@@ -405,7 +405,9 @@ class FuncInfo(object):
                             prefix = f'{inner}_'
                             if v.classname.startswith(prefix):
                                 cls = f'{inner}::' + v.classname[len(prefix):]
-                        code_fcall += "_self_->" + cls + "::" + self.cname
+                        # Look the name up in the base class, which finds overloads the subclass
+                        # hides, but don't write `_self_->Base::f()`: that skips the override.
+                        code_fcall += f"static_cast<{cls}*>(_self_.get())->{self.cname}"
                     else:
                         code_fcall += "_self_->" + self.cname
                 else:
