@@ -33,17 +33,17 @@ static ERL_NIF_TERM evision_cv_cuda_cuda_GpuMat_to_pointer(ErlNifEnv *env, int a
 
             ERL_NIF_TERM out_term{};
             std::uintptr_t ptr = (std::uintptr_t)_self_->cudaPtr();
-            ERL_NIF_TERM step_term = enif_make_ulong(env, _self_->step);
+            ERL_NIF_TERM step_term = enif_make_uint64(env, _self_->step);
             ERL_NIF_TERM rows_term = enif_make_ulong(env, _self_->rows);
             ERL_NIF_TERM cols_term = enif_make_ulong(env, _self_->cols);
             ERL_NIF_TERM channels_term = enif_make_ulong(env, _self_->channels());
             ERL_NIF_TERM type_term = __evision_get_mat_type(env, _self_->type());
             if (pointer_kind == "local") {
-                ERL_NIF_TERM ptr_term = enif_make_ulong(env, ptr);
+                ERL_NIF_TERM ptr_term = enif_make_uint64(env, ptr);
                 ERL_NIF_TERM device_id_term;
                 auto device_id = get_gpumat_device_id((void *)ptr);
                 if (device_id) {
-                    device_id_term = enif_make_ulong(env, device_id.value());
+                    device_id_term = enif_make_int64(env, device_id.value());
                 } else {
                     device_id_term = kAtomNil;
                 }
@@ -137,7 +137,7 @@ static ERL_NIF_TERM evision_cv_cuda_cuda_GpuMat_from_pointer(ErlNifEnv *env, int
     {
         std::string pointer_kind;
         void* ptr = nullptr;
-        unsigned long local_pointer = 0;
+        ErlNifUInt64 local_pointer = 0;
         ErlNifBinary cuda_ipc_handle{};
         int fd = -1;
         std::string memname;
@@ -169,12 +169,12 @@ static ERL_NIF_TERM evision_cv_cuda_cuda_GpuMat_from_pointer(ErlNifEnv *env, int
         int type;
 
         int ndims = shape.size();
-        height = shape[0];
+        height = static_cast<int>(shape[0]);
         if (ndims >= 2) {
-            width = shape[1];
+            width = static_cast<int>(shape[1]);
         }
         if (ndims == 3) {
-            cn = shape[2];
+            cn = static_cast<int>(shape[2]);
         }
 
         if (!get_compact_type(dtype, cn, type)) {
@@ -184,8 +184,8 @@ static ERL_NIF_TERM evision_cv_cuda_cuda_GpuMat_from_pointer(ErlNifEnv *env, int
         ERL_NIF_TERM handle = evision_get_kw(env, erl_terms, "handle");
         int tuple_arity = 0;
         const ERL_NIF_TERM* host_ipc_tuple = nullptr;
-        if (pointer_kind == "local" && enif_get_ulong(env, handle, &local_pointer)) {
-            ptr = reinterpret_cast<void*>(local_pointer);
+        if (pointer_kind == "local" && enif_get_uint64(env, handle, &local_pointer)) {
+            ptr = reinterpret_cast<void*>(static_cast<std::uintptr_t>(local_pointer));
         } else if (pointer_kind == "cuda_ipc" && enif_inspect_binary(env, handle, &cuda_ipc_handle)) {
             auto result = get_pointer_for_ipc_handle(cuda_ipc_handle.data, cuda_ipc_handle.size, device_id);
             if (result.first == nullptr) {

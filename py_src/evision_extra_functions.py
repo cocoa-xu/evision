@@ -126,7 +126,6 @@ gpumat_to_pointer_elixir = '''  @doc """
   def from_pointer(handle, opts \\\\ [])
   
   def from_pointer(%Evision.IPCHandle.Local{}=handle, opts) when is_list(opts) do
-    shape = opts[:shape]
     do_from_pointer(:local,
       handle.handle,
       handle.step,
@@ -134,12 +133,11 @@ gpumat_to_pointer_elixir = '''  @doc """
       handle.cols, 
       handle.channels,
       handle.type,
-      shape: shape
+      Keyword.take(opts, [:shape])
     )
   end
   
   def from_pointer(%Evision.IPCHandle.CUDA{}=handle, opts) when is_list(opts) do
-    shape = opts[:shape]
     do_from_pointer(:cuda_ipc, 
       handle.handle, 
       handle.step, 
@@ -147,8 +145,7 @@ gpumat_to_pointer_elixir = '''  @doc """
       handle.cols, 
       handle.channels,
       handle.type,
-      shape: shape,
-      device_id: handle.device_id
+      Keyword.take(opts, [:shape]) ++ [device_id: handle.device_id]
     )
   end
 
@@ -159,7 +156,7 @@ gpumat_to_pointer_elixir = '''  @doc """
   defp do_from_pointer(kind, handle, step, rows, cols, channels, dtype, opts) when is_list(opts) do
     shape = {rows, cols, channels}
     opts = Keyword.validate!(opts, [device_id: 0, shape: shape])
-    expected_step_size = cols * dtype_byte_size(dtype)
+    expected_step_size = cols * dtype_byte_size(compact_type(dtype))
     if expected_step_size > step do
       {:error, "New step size is greater than original step size: new = #{expected_step_size}, original = #{step}"}
     else
