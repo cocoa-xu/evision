@@ -1,5 +1,58 @@
 # Changelog
 
+## v1.2.0-rc.1 (2026-11-26)
+
+Second release candidate for v1.2.0. Changes below are relative to
+v1.2.0-rc.0.
+
+### Compatibility
+
+- All-keyword calls take the same argument names as the keyword options of
+  the positional form: the first letter is lowercase, a leading underscore is
+  dropped, and `FileNode` arguments are named `fileNode`. For example,
+  `Evision.adaptiveThreshold/1` takes `c:`. In 288 functions they accepted
+  only the C++ spelling, such as `C:`, and that value never reached OpenCV.
+  The C++ spellings now raise
+  ([#443](https://github.com/cocoa-xu/evision/pull/443),
+  [#445](https://github.com/cocoa-xu/evision/pull/445)).
+
+### Fixed
+
+- Methods that a class inherits and overrides, such as `read/2`, `write/2`,
+  `clear/1` and `getDefaultName/1`, call the override. They called OpenCV's
+  `Algorithm` versions, which do nothing: `Evision.StereoBM.write/2` wrote no
+  parameters, `Evision.StereoBM.read/2` restored none,
+  `Evision.ML.SVM.clear/1` left the model trained, and `getDefaultName/1`
+  returned `"my_object"`. Descriptor matchers' `add`, `train`, `clear`, `read`
+  and `empty`, and feature matchers' `collectGarbage`, called the base class
+  too. Every release since v0.1.1 had this bug
+  ([#446](https://github.com/cocoa-xu/evision/pull/446)).
+- All-keyword calls to instance methods take the object as `self:`, for
+  example `Evision.ML.SVM.setC(self: svm, val: 3.0)`. They had no way to pass
+  the object and always failed. The Erlang bindings take `{self, Obj}` the same
+  way ([#447](https://github.com/cocoa-xu/evision/pull/447)).
+- `Evision.CUDA.GpuMat.from_pointer/2` and `Evision.CUDA.GpuMat.to_pointer/1`
+  round-trip a GPU pointer. On Windows, `to_pointer/1` cut 64-bit pointers to
+  32 bits and `from_pointer/2` rejected them. `from_pointer/2` also raised
+  without `:shape`, and raised `Unsupported data type` for the handle that
+  `to_pointer/1` returns
+  ([#449](https://github.com/cocoa-xu/evision/pull/449)).
+- Typespecs name the module of scoped C++ types:
+  `QRCodeEncoder::ECIEncodings` is `Evision.QRCodeEncoder.ECIEncodings.enum()`,
+  `QRCodeDetectorAruco::Params` is `Evision.QRCodeDetectorAruco.Params.t()`,
+  and `std::vector<detail::CameraParams>` is
+  `list(Evision.Detail.CameraParams.t())`. They were `term()`, and source
+  builds printed `unknown argtype` warnings for them
+  ([#442](https://github.com/cocoa-xu/evision/pull/442)).
+- `Evision.Wx.destroyWindow/1` and `Evision.Wx.destroyAllWindows/0` return
+  after wx has deleted the window. When the VM halted right after them, for
+  example at the end of a script, it could crash
+  ([#444](https://github.com/cocoa-xu/evision/pull/444)).
+- Source builds no longer print CMake warnings caused by evision's build
+  files, or MSVC conversion warnings from evision's C++ sources
+  ([#448](https://github.com/cocoa-xu/evision/pull/448),
+  [#450](https://github.com/cocoa-xu/evision/pull/450)).
+
 ## v1.2.0-rc.0 (2026-11-24)
 
 First release candidate for v1.2.0. Changes below are relative to v1.1.1.
